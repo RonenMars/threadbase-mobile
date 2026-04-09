@@ -1,0 +1,234 @@
+import React, { useState } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native'
+import { useRouter } from 'expo-router'
+import { useConnectionStore } from '@/stores/connection'
+import { AuthError, NetworkError } from '@/services/api-client'
+import { dark, font, radius, spacing } from '@/constants/theme'
+import type { ServerInfo } from '@/types/api'
+
+export default function OnboardingScreen() {
+  const router = useRouter()
+  const { setConnection, setConnected } = useConnectionStore()
+  const [serverUrl, setServerUrl] = useState(
+    process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
+  )
+  const [apiKey, setApiKey] = useState('')
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null)
+
+  const handleConnect = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const url = serverUrl.replace(/\/$/, '')
+      const res = await fetch(`${url}/api/info`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      })
+      if (res.status === 401) throw new AuthError()
+      if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
+
+      const info: ServerInfo = await res.json()
+      setServerInfo(info)
+      await setConnection(url, apiKey)
+      setConnected(true, info)
+    } catch (err) {
+      if (err instanceof AuthError) {
+        setError('Invalid API key. Check THREADBASE_API_KEY on your server.')
+      } else if (err instanceof NetworkError) {
+        setError('Could not reach the server. Is cch serve running?')
+      } else {
+        setError('Connection failed. Check the server URL and try again.')
+      }
+      setLoading(false)
+      return
+    }
+    setLoading(false)
+    router.replace('/(tabs)/sessions')
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.hero}>
+          <Text style={styles.logo}>⚡</Text>
+          <Text style={styles.title}>Threadbase</Text>
+          <Text style={styles.subtitle}>AI Agent Control Center</Text>
+        </View>
+
+        <View style={styles.form}>
+          <Text style={styles.label}>Server URL</Text>
+          <TextInput
+            style={styles.input}
+            value={serverUrl}
+            onChangeText={setServerUrl}
+            placeholder="http://localhost:7070"
+            placeholderTextColor={dark.text.secondary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            returnKeyType="next"
+          />
+
+          <Text style={styles.label}>API Key</Text>
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              value={apiKey}
+              onChangeText={setApiKey}
+              placeholder="Enter THREADBASE_API_KEY"
+              placeholderTextColor={dark.text.secondary}
+              secureTextEntry={!showApiKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={handleConnect}
+            />
+            <TouchableOpacity
+              style={styles.showHideBtn}
+              onPress={() => setShowApiKey((v) => !v)}
+            >
+              <Text style={styles.showHideText}>{showApiKey ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.connectBtn, loading && styles.connectBtnDisabled]}
+            onPress={handleConnect}
+            disabled={loading || !serverUrl || !apiKey}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.connectBtnText}>Connect</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {serverInfo ? (
+          <View style={styles.serverInfo}>
+            <Text style={styles.serverInfoTitle}>Connected to</Text>
+            <Text style={styles.serverInfoName}>{serverInfo.machineName}</Text>
+            <Text style={styles.serverInfoMeta}>
+              {serverInfo.platform} · v{serverInfo.version} · {serverInfo.activeSessions} active sessions
+            </Text>
+          </View>
+        ) : null}
+
+        <Text style={styles.hint}>
+          Run <Text style={styles.code}>cch serve --tunnel --qr</Text> on your Mac to get a QR-scannable URL.
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  )
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1, backgroundColor: dark.bg.primary },
+  container: {
+    flexGrow: 1,
+    padding: spacing.xl,
+    justifyContent: 'center',
+    gap: spacing.xl,
+  },
+  hero: { alignItems: 'center', gap: spacing.sm },
+  logo: { fontSize: 64 },
+  title: {
+    color: dark.text.primary,
+    fontSize: 32,
+    fontWeight: '700',
+  },
+  subtitle: {
+    color: dark.text.secondary,
+    fontSize: font.lg,
+  },
+  form: { gap: spacing.sm },
+  label: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  input: {
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    color: dark.text.primary,
+    fontSize: font.base,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  passwordInput: { flex: 1 },
+  showHideBtn: {
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
+  },
+  showHideText: {
+    color: dark.text.accent,
+    fontSize: font.sm,
+  },
+  error: {
+    color: dark.status.failed,
+    fontSize: font.sm,
+    marginTop: spacing.xs,
+  },
+  connectBtn: {
+    backgroundColor: dark.text.accent,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    minHeight: 50,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  connectBtnDisabled: { opacity: 0.5 },
+  connectBtnText: {
+    color: '#fff',
+    fontSize: font.lg,
+    fontWeight: '700',
+  },
+  serverInfo: {
+    backgroundColor: `${dark.status.running}15`,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.status.running,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  serverInfoTitle: { color: dark.status.running, fontSize: font.xs, fontWeight: '600' },
+  serverInfoName: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
+  serverInfoMeta: { color: dark.text.secondary, fontSize: font.xs },
+  hint: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    textAlign: 'center',
+  },
+  code: {
+    fontFamily: 'monospace',
+    color: dark.text.primary,
+  },
+})
