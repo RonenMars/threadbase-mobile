@@ -4,12 +4,9 @@
     "slug": "threadbase-mobile",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/icon.png",
     "scheme": "threadbase",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
       "backgroundColor": "#0d1117"
     },
     "platforms": ["ios", "android"],
@@ -23,7 +20,6 @@
     "android": {
       "package": "com.ronenmars.threadbase",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"
       }
     },
