@@ -29,11 +29,30 @@ No manual certificate management needed.
 # Build for App Store
 eas build --platform ios --profile production
 
-# Submit to TestFlight
+# Submit to TestFlight (after build finishes)
 eas submit --platform ios
 ```
 
 The `production` profile in `eas.json` uses `image: "latest"` to ensure Xcode 16+ (iOS 18 SDK) is used — required by Apple since early 2026.
+
+### Submit timing
+
+`eas submit` needs a finished `.ipa`, so the build must complete before submitting. Options:
+
+1. **Wait interactively** — let the build run to completion, then run `eas submit --platform ios` (picks the latest build).
+
+2. **One command, auto-submit** — queue the submit to run as soon as the build succeeds:
+   ```bash
+   eas build --platform ios --profile production --auto-submit
+   ```
+
+3. **Check status later** — if you closed the terminal:
+   ```bash
+   eas build:list --platform ios --limit 5
+   eas submit --platform ios --id <build-id>
+   ```
+
+Option 2 is usually the least friction for TestFlight releases.
 
 ---
 
