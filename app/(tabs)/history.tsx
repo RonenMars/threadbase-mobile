@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react'
-import { View, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
-import { dark } from '@/constants/theme'
+import { dark, font, spacing } from '@/constants/theme'
 import type { Conversation } from '@/types/api'
 
 export default function HistoryScreen() {
@@ -18,6 +18,9 @@ export default function HistoryScreen() {
     isFetchingNextPage,
     refetch,
     isRefetching,
+    isLoading,
+    isError,
+    error,
   } = useConversations()
 
   const searchResult = useConversationSearch(debouncedQuery)
@@ -33,15 +36,36 @@ export default function HistoryScreen() {
   }, [debouncedQuery, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ConversationList
-        conversations={allConversations}
-        onRefresh={refetch}
-        refreshing={isRefetching}
-        onEndReached={handleEndReached}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+    <SafeAreaView style={styles.container} edges={[]}>
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={dark.text.secondary} />
+        </View>
+      ) : isError ? (
+        <ScrollView
+          contentContainerStyle={styles.centered}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={dark.text.secondary}
+            />
+          }
+        >
+          <Text style={styles.errorText}>Failed to load conversations</Text>
+          <Text style={styles.errorDetail}>{String(error)}</Text>
+          <Text style={styles.errorHint}>Pull down to retry</Text>
+        </ScrollView>
+      ) : (
+        <ConversationList
+          conversations={allConversations}
+          onRefresh={refetch}
+          refreshing={isRefetching}
+          onEndReached={handleEndReached}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -50,5 +74,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: dark.bg.primary,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  errorText: {
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+  },
+  errorDetail: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  errorHint: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    marginTop: spacing.sm,
+    opacity: 0.6,
   },
 })
