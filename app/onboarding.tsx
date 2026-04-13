@@ -46,8 +46,15 @@ export default function OnboardingScreen() {
     } catch (err) {
       if (err instanceof AuthError) {
         setError('Invalid API key. Check THREADBASE_API_KEY on your server.')
-      } else if (err instanceof NetworkError) {
-        setError('Could not reach the server. Is cch serve running?')
+      } else if (err instanceof NetworkError || err instanceof TypeError) {
+        const usesLocalhost = /localhost|127\.0\.0\.1/.test(serverUrl)
+        if (usesLocalhost) {
+          setError(
+            "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:7070) or run: cch serve --tunnel --qr"
+          )
+        } else {
+          setError('Could not reach the server. Is cch serve running?')
+        }
       } else {
         setError('Connection failed. Check the server URL and try again.')
       }
