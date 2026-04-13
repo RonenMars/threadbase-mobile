@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ActionSheetIOS, Platform, Alert } from 'react-native'
-import Animated, { FadeInDown, Layout } from 'react-native-reanimated'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { SessionStatusBadge } from './SessionStatusBadge'
@@ -9,6 +9,10 @@ import { Badge } from '@/components/ui/Badge'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { Session } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
+
+// Track which session IDs have already played their enter animation so
+// polling-driven remounts don't re-trigger FadeInDown.
+const _animatedIds = new Set<string>()
 
 interface Props {
   session: Session
@@ -26,6 +30,8 @@ function formatElapsed(ms: number): string {
 export function SessionCard({ session }: Props) {
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.id)
+  const isNew = !_animatedIds.has(session.id)
+  if (isNew) _animatedIds.add(session.id)
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -69,7 +75,7 @@ export function SessionCard({ session }: Props) {
   const isWaiting = session.status === 'waiting_input'
 
   return (
-    <Animated.View entering={FadeInDown} layout={Layout.springify()}>
+    <Animated.View entering={isNew ? FadeInDown : undefined}>
       <TouchableOpacity
         onPress={handlePress}
         onLongPress={handleLongPress}
