@@ -9,19 +9,27 @@
     "splash": {
       "backgroundColor": "#0d1117"
     },
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ronenmars.threadbase",
       "infoPlist": {
-        "NSCameraUsageDescription": "Used for QR code scanning during server setup"
+        "NSCameraUsageDescription": "Used for QR code scanning during server setup",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.ronenmars.threadbase",
       "adaptiveIcon": {
         "backgroundColor": "#0d1117"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -36,6 +44,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "35430e75-2718-4261-a46c-d6f6ff1e27c3"
+      }
+    },
+    "owner": "ronenmars"
   }
 }
