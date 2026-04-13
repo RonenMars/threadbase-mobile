@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Share } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Share, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { FlashList } from '@shopify/flash-list'
@@ -48,7 +48,7 @@ export default function ConversationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const navigation = useNavigation()
   const router = useRouter()
-  const { data: conversation, isLoading } = useConversation(id)
+  const { data: conversation, isLoading, error, refetch } = useConversation(id)
 
   useEffect(() => {
     if (conversation) {
@@ -83,37 +83,64 @@ export default function ConversationDetailScreen() {
     <MessageItem message={item} />
   ), [])
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={styles.centered}>
+          <ActivityIndicator color={dark.text.secondary} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={styles.centered}>
+          <Text style={styles.errorTitle}>Couldn't load conversation</Text>
+          <Text style={styles.errorMessage}>{error.message}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (!conversation) return null
+
+  const hasMessages = conversation.messages.length > 0
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {conversation ? (
-        <>
-          <FlashList
-            data={conversation.messages}
-            keyExtractor={(m) => m.id}
-            renderItem={renderItem}
-            estimatedItemSize={100}
-            contentContainerStyle={styles.listContent}
-          />
+      {hasMessages ? (
+        <FlashList
+          data={conversation.messages}
+          keyExtractor={(m) => m.id}
+          renderItem={renderItem}
+          estimatedItemSize={100}
+          contentContainerStyle={styles.listContent}
+        />
+      ) : (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No messages in this conversation.</Text>
+        </View>
+      )}
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.shareBtn}
-              onPress={handleShare}
-            >
-              <Text style={styles.shareBtnText}>Export</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.resumeBtn, resumeSession.isPending && styles.resumeBtnDisabled]}
-              onPress={() => resumeSession.mutate()}
-              disabled={resumeSession.isPending}
-            >
-              <Text style={styles.resumeBtnText}>
-                {resumeSession.isPending ? 'Starting...' : '▶ Resume Session'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      ) : null}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+          <Text style={styles.shareBtnText}>Export</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.resumeBtn, resumeSession.isPending && styles.resumeBtnDisabled]}
+          onPress={() => resumeSession.mutate()}
+          disabled={resumeSession.isPending}
+        >
+          <Text style={styles.resumeBtnText}>
+            {resumeSession.isPending ? 'Starting...' : '▶ Resume Session'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   )
 }
@@ -150,4 +177,26 @@ const styles = StyleSheet.create({
   },
   resumeBtnDisabled: { opacity: 0.5 },
   resumeBtnText: { color: '#fff', fontWeight: '700', fontSize: font.base },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  errorTitle: { color: dark.text.primary, fontSize: font.base, fontWeight: '600' },
+  errorMessage: { color: dark.text.secondary, fontSize: font.sm, textAlign: 'center' },
+  emptyText: { color: dark.text.secondary, fontSize: font.sm },
+  retryBtn: {
+    marginTop: spacing.md,
+    backgroundColor: dark.bg.card,
+    borderWidth: 1,
+    borderColor: dark.border,
+    borderRadius: 10,
+    paddingHorizontal: spacing.lg,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  retryBtnText: { color: dark.text.primary, fontSize: font.base },
 })
