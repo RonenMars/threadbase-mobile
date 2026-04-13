@@ -1,6 +1,6 @@
 import '../global.css'
 import React, { useEffect } from 'react'
-import { Stack, useRouter, useSegments } from 'expo-router'
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -23,6 +23,7 @@ const queryClient = new QueryClient({
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
+  const navState = useRootNavigationState()
   const { apiKey, serverUrl, isLoading, loadPersistedCredentials, setConnected } =
     useConnectionStore()
   const setSessions = useSessionsStore((s) => s.setSessions)
@@ -34,13 +35,20 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return
+    if (!navState?.key) return
     const inOnboarding = segments[0] === 'onboarding'
-    if (!apiKey && !inOnboarding) {
-      router.replace('/onboarding')
-    } else if (apiKey && inOnboarding) {
-      router.replace('/(tabs)/sessions')
-    }
-  }, [apiKey, isLoading, segments, router])
+    // Defer navigation to the next frame so the root navigator is fully
+    // registered (expo-router v6 throws if router.replace fires during the
+    // same commit that mounts the Root Layout).
+    const handle = requestAnimationFrame(() => {
+      if (!apiKey && !inOnboarding) {
+        router.replace('/onboarding')
+      } else if (apiKey && inOnboarding) {
+        router.replace('/(tabs)/sessions')
+      }
+    })
+    return () => cancelAnimationFrame(handle)
+  }, [apiKey, isLoading, segments, router, navState?.key])
 
   // Wire WebSocket when credentials are available
   useEffect(() => {
