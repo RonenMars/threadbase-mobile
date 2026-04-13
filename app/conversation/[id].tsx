@@ -33,6 +33,7 @@ function MessageItem({ message }: { message: Message }) {
       <View style={styles.toolContainer}>
         {message.content.map((block, i) => {
           if (block.type === 'text') {
+            if (!block.text.trim()) return null
             return <MessageBubble key={i} message={{ ...message, content: [block] }} />
           }
           return renderContent(block, i)
@@ -41,6 +42,7 @@ function MessageItem({ message }: { message: Message }) {
     )
   }
 
+  if (message.content.length === 0) return null
   return <MessageBubble message={message} />
 }
 
@@ -130,15 +132,27 @@ export default function ConversationDetailScreen() {
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
           <Text style={styles.shareBtnText}>Export</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.resumeBtn, resumeSession.isPending && styles.resumeBtnDisabled]}
-          onPress={() => resumeSession.mutate()}
-          disabled={resumeSession.isPending}
-        >
-          <Text style={styles.resumeBtnText}>
-            {resumeSession.isPending ? 'Starting...' : '▶ Resume Session'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.resumeWrapper}>
+          {resumeSession.isError ? (
+            <Text style={styles.resumeError} numberOfLines={2}>
+              {resumeSession.error instanceof Error
+                ? resumeSession.error.message
+                : 'Failed to resume'}
+            </Text>
+          ) : null}
+          <TouchableOpacity
+            style={[
+              styles.resumeBtn,
+              (resumeSession.isPending || resumeSession.isError) && styles.resumeBtnDisabled,
+            ]}
+            onPress={() => resumeSession.mutate()}
+            disabled={resumeSession.isPending}
+          >
+            <Text style={styles.resumeBtnText}>
+              {resumeSession.isPending ? 'Starting...' : '▶ Resume Session'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   )
@@ -155,6 +169,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: dark.border,
   },
+  resumeWrapper: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  resumeError: {
+    color: '#ef4444',
+    fontSize: font.xs,
+    textAlign: 'center',
+  },
   shareBtn: {
     backgroundColor: dark.bg.card,
     borderRadius: 10,
@@ -167,7 +190,6 @@ const styles = StyleSheet.create({
   },
   shareBtnText: { color: dark.text.primary, fontSize: font.base },
   resumeBtn: {
-    flex: 1,
     backgroundColor: dark.text.accent,
     borderRadius: 10,
     minHeight: 44,
