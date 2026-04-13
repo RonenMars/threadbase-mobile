@@ -27,9 +27,14 @@ export function ToolCard({ block }: Props) {
   const icon = TOOL_ICONS[toolName] ?? TOOL_ICONS.default
   const isError = block.type === 'tool_result' && block.isError
 
+  const hasContent =
+    block.type === 'tool_result'
+      ? !!block.content
+      : Object.keys(block.input).length > 0
+
   return (
     <TouchableOpacity
-      onPress={() => setExpanded((v) => !v)}
+      onPress={() => hasContent && setExpanded((v) => !v)}
       style={[styles.card, isError && styles.cardError]}
       accessibilityLabel={`${toolName} tool ${expanded ? 'collapse' : 'expand'}`}
       accessibilityRole="button"
@@ -38,10 +43,12 @@ export function ToolCard({ block }: Props) {
         <Text style={styles.icon}>{icon}</Text>
         <Text style={styles.name}>{toolName}</Text>
         {isError ? <Text style={styles.errorBadge}>Error</Text> : null}
-        <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+        {hasContent ? (
+          <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+        ) : null}
       </View>
 
-      {expanded ? (
+      {expanded && hasContent ? (
         <View style={styles.body}>
           {block.type === 'tool_use' ? (
             <Text style={styles.code} selectable>
