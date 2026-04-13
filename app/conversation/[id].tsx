@@ -118,7 +118,6 @@ export default function ConversationDetailScreen() {
           data={conversation.messages}
           keyExtractor={(m) => m.id}
           renderItem={renderItem}
-          estimatedItemSize={100}
           contentContainerStyle={styles.listContent}
         />
       ) : (

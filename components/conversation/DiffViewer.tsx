@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
-import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler'
-import Animated, { useAnimatedGestureHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import * as Clipboard from 'expo-clipboard'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { DiffHunk } from '@/types/api'
@@ -44,9 +44,8 @@ export function DiffViewer({ filename, hunks, language }: Props) {
   const { added, removed } = countChanges(hunks)
   const scale = useSharedValue(1)
 
-  const pinchHandler = useAnimatedGestureHandler({
-    onActive: (e) => { scale.value = Math.max(0.5, Math.min(2, e.scale)) },
-    onEnd: () => { /* keep scale */ },
+  const pinchGesture = Gesture.Pinch().onUpdate((e) => {
+    scale.value = Math.max(0.5, Math.min(2, e.scale))
   })
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -76,7 +75,7 @@ export function DiffViewer({ filename, hunks, language }: Props) {
         </TouchableOpacity>
       ) : (
         <GestureHandlerRootView>
-          <PinchGestureHandler onGestureEvent={pinchHandler}>
+          <GestureDetector gesture={pinchGesture}>
             <Animated.View style={animatedStyle}>
               <ScrollView horizontal showsHorizontalScrollIndicator>
                 <View>
@@ -105,7 +104,7 @@ export function DiffViewer({ filename, hunks, language }: Props) {
                 </View>
               </ScrollView>
             </Animated.View>
-          </PinchGestureHandler>
+          </GestureDetector>
         </GestureHandlerRootView>
       )}
     </View>

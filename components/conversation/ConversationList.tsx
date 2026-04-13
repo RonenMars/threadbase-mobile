@@ -87,7 +87,6 @@ export function ConversationList({
         data={conversations}
         keyExtractor={(c) => c.id}
         renderItem={({ item }) => <ConversationRow conversation={item} />}
-        estimatedItemSize={72}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.3}
         refreshControl={
