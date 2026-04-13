@@ -55,8 +55,6 @@ export const useConnectionStore = create<ConnectionStore>((set) => ({
 
   clearConnection: async () => {
     await SecureStore.deleteItemAsync(SECURE_KEY_API_KEY)
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default
-    await AsyncStorage.removeItem(ASYNC_KEY_SERVER_URL)
-    set({ serverUrl: '', apiKey: '', isConnected: false, serverInfo: null })
+    set({ apiKey: '', isConnected: false, serverInfo: null })
   },
 }))

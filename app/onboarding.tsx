@@ -18,11 +18,9 @@ import { dark, font, radius, spacing } from '@/constants/theme'
 
 export default function OnboardingScreen() {
   const router = useRouter()
-  const { setConnection, setConnected } = useConnectionStore()
-  const [serverUrl, setServerUrl] = useState(
-    process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
-  )
-  const [apiKey, setApiKey] = useState(process.env.EXPO_PUBLIC_DEFAULT_API_KEY ?? '')
+  const { setConnection, setConnected, serverUrl: storedUrl, apiKey: storedApiKey } = useConnectionStore()
+  const [serverUrl, setServerUrl] = useState(storedUrl)
+  const [apiKey, setApiKey] = useState(storedApiKey)
   const [showApiKey, setShowApiKey] = useState(__DEV__)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
