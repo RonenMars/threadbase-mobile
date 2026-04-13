@@ -23,16 +23,20 @@ export function useSessions() {
     }
   }, [setSessions, updateSession])
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['sessions'],
     queryFn: () => api.get<Session[]>('/api/sessions'),
     refetchInterval: 3000,
     staleTime: 1000,
-    select: (data) => {
-      setSessions(data)
-      return data
-    },
   })
+
+  useEffect(() => {
+    if (query.data) {
+      setSessions(query.data)
+    }
+  }, [query.data, setSessions])
+
+  return query
 }
 
 export function useSessionDetail(id: string) {
