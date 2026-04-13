@@ -22,23 +22,23 @@ const WS_STATUS_LABELS: Record<WsStatus, string> = {
 }
 
 export default function SessionsScreen() {
-  const { refetch, isRefetching } = useSessions()
+  const { refetch } = useSessions()
   const sessionsByStatus = useSessionsStore((s) => s.sessionsByStatus)
   const [wsStatus, setWsStatus] = useState<WsStatus>(wsClient.status())
+  const [manualRefreshing, setManualRefreshing] = useState(false)
 
   useEffect(() => {
     return wsClient.onStatusChange((s) => setWsStatus(s))
   }, [])
 
-  const handleRefresh = () => {
-    refetch()
-    if (wsStatus === 'disconnected') {
-      // wsClient will auto-reconnect via backoff, but a manual pull triggers refetch
-    }
+  const handleRefresh = async () => {
+    setManualRefreshing(true)
+    await refetch()
+    setManualRefreshing(false)
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.statusBar}>
         <Text style={[styles.wsStatus, { color: WS_STATUS_COLORS[wsStatus] }]}>
           {WS_STATUS_LABELS[wsStatus]}
@@ -48,7 +48,7 @@ export default function SessionsScreen() {
       <KanbanBoard
         sessionsByStatus={sessionsByStatus()}
         onRefresh={handleRefresh}
-        refreshing={isRefetching}
+        refreshing={manualRefreshing}
       />
     </SafeAreaView>
   )
@@ -61,7 +61,8 @@ const styles = StyleSheet.create({
   },
   statusBar: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
     alignItems: 'flex-end',
   },
   wsStatus: {
