@@ -16,7 +16,11 @@ interface RawSessionMeta {
   tool_names?: string[]
 }
 
-function adaptPage(raw: RawSessionMeta[], offset: number, limit: number): ConversationPage {
+function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, limit: number): ConversationPage {
+  // Server may return ConversationPage directly (camelCase) or RawSessionMeta[] (snake_case array)
+  if (!Array.isArray(raw)) {
+    return raw as ConversationPage
+  }
   const conversations: Conversation[] = raw.map((s) => ({
     id: s.id,
     title: s.project_name ?? 'Conversation',
@@ -53,11 +57,26 @@ export function useConversations(filter?: ConversationFilter) {
 }
 
 // Raw shape returned by the Go server for a single conversation.
+interface RawContentBlock {
+  type: string
+  // text
+  text?: string
+  // tool_use
+  id?: string
+  name?: string
+  input?: Record<string, unknown>
+  // tool_result
+  tool_use_id?: string
+  content?: string
+  is_error?: boolean
+}
+
 interface RawMessage {
   role: string
   timestamp: string
   text: string
   tool_calls?: string[]
+  content?: RawContentBlock[]
   model?: string
 }
 
@@ -66,16 +85,44 @@ interface RawConversationDetail {
   messages: RawMessage[]
 }
 
+// Resolve a tool name from tool_use_id by looking at sibling content blocks.
+function resolveToolName(toolUseId: string | undefined, blocks: RawContentBlock[] | undefined): string {
+  if (!toolUseId || !blocks) return 'Tool'
+  const match = blocks.find((b) => b.type === 'tool_use' && b.id === toolUseId)
+  return match?.name ?? 'Tool'
+}
+
 function adaptDetail(raw: RawConversationDetail): ConversationDetail {
   const rawMessages = raw.messages ?? []
   const messages: import('@/types/api').Message[] = rawMessages.map((m, i) => {
     const content: import('@/types/api').MessageContent[] = []
-    if (m.text) content.push({ type: 'text', text: m.text })
-    if (m.tool_calls) {
-      m.tool_calls.forEach((name) =>
-        content.push({ type: 'tool_use', name, input: {} })
-      )
+
+    if (m.content && m.content.length > 0) {
+      // Use the rich content blocks from the server
+      for (const block of m.content) {
+        if (block.type === 'text' && block.text) {
+          content.push({ type: 'text', text: block.text })
+        } else if (block.type === 'tool_use') {
+          content.push({ type: 'tool_use', name: block.name ?? '', input: block.input ?? {} })
+        } else if (block.type === 'tool_result') {
+          content.push({
+            type: 'tool_result',
+            toolName: resolveToolName(block.tool_use_id, m.content),
+            content: block.content ?? '',
+            isError: block.is_error,
+          })
+        }
+      }
+    } else {
+      // Fallback for older server responses without content blocks
+      if (m.text) content.push({ type: 'text', text: m.text })
+      if (m.tool_calls) {
+        m.tool_calls.forEach((name) =>
+          content.push({ type: 'tool_use', name, input: {} })
+        )
+      }
     }
+
     return {
       id: `${raw.meta.id}-${i}`,
       role: m.role as 'user' | 'assistant',
