@@ -1,16 +1,9 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api-client'
-import type {
-  ConversationDetail,
-  ConversationFilter,
-  ConversationPage,
-  Message,
-  MessageContent,
-} from '@/types/api'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage } from '@/types/api'
 
-// Shape returned by the CLI server at GET /api/conversations/:id
-// (serializes domain.Session directly). We normalize it here into
-// ConversationDetail so the UI can stay uniform.
+// The Go server returns snake_case SessionMeta objects in a plain array.
+// This adapter normalises them into the ConversationPage shape the app expects.
 interface RawSessionMeta {
   id: string
   profile_id?: string
@@ -23,78 +16,91 @@ interface RawSessionMeta {
   tool_names?: string[]
 }
 
-interface RawMessage {
-  role: 'user' | 'assistant'
-  timestamp?: string
-  text?: string
-  tool_calls?: string[]
-  model?: string
-}
-
-interface RawSession {
-  meta: RawSessionMeta
-  messages: RawMessage[]
-}
-
-function normalizeMessage(raw: RawMessage, index: number): Message {
-  const content: MessageContent[] = []
-  if (raw.text && raw.text.length > 0) {
-    content.push({ type: 'text', text: raw.text })
-  }
-  for (const name of raw.tool_calls ?? []) {
-    content.push({ type: 'tool_use', name, input: {} })
-  }
+function adaptPage(raw: RawSessionMeta[], offset: number, limit: number): ConversationPage {
+  const conversations: Conversation[] = raw.map((s) => ({
+    id: s.id,
+    title: s.project_name ?? 'Conversation',
+    projectPath: s.project_path ?? '',
+    branch: s.git_branch,
+    messageCount: s.message_count ?? 0,
+    lastActivity: s.last_updated_at ?? '',
+  }))
   return {
-    id: `${raw.timestamp ?? 'msg'}-${index}`,
-    role: raw.role,
-    content,
-    timestamp: raw.timestamp ?? '',
-  }
-}
-
-function normalizeConversation(raw: RawSession): ConversationDetail {
-  const meta = raw.meta ?? ({} as RawSessionMeta)
-  const title =
-    (meta.preview && meta.preview.trim()) ||
-    meta.project_name ||
-    'Conversation'
-  return {
-    id: meta.id,
-    title,
-    projectPath: meta.project_path ?? '',
-    branch: meta.git_branch,
-    messageCount: meta.message_count ?? raw.messages?.length ?? 0,
-    lastActivity: meta.last_updated_at ?? '',
-    messages: (raw.messages ?? []).map(normalizeMessage),
+    conversations,
+    hasMore: raw.length === limit,
+    offset,
+    total: offset + raw.length,
   }
 }
 
 export function useConversations(filter?: ConversationFilter) {
-  const params = new URLSearchParams()
-  if (filter?.projectPath) params.set('projectPath', filter.projectPath)
-  if (filter?.dateFrom) params.set('dateFrom', filter.dateFrom)
-  if (filter?.dateTo) params.set(filter.dateTo, filter.dateTo)
-  if (filter?.profileId) params.set('profileId', filter.profileId)
+  const limit = 50
 
   return useInfiniteQuery({
     queryKey: ['conversations', filter],
-    queryFn: ({ pageParam = 0 }) => {
-      params.set('offset', String(pageParam))
-      params.set('limit', '50')
-      return api.get<ConversationPage>(`/api/conversations?${params.toString()}`)
+    queryFn: async ({ pageParam = 0 }) => {
+      const params = new URLSearchParams()
+      if (filter?.projectPath) params.set('project', filter.projectPath)
+      if (filter?.profileId) params.set('profileId', filter.profileId)
+      params.set('limit', String(limit))
+      const raw = await api.get<RawSessionMeta[]>(`/api/conversations?${params.toString()}`)
+      return adaptPage(raw, pageParam as number, limit)
     },
     getNextPageParam: (last: ConversationPage) =>
-      last.hasMore ? last.offset + 50 : undefined,
+      last.hasMore ? last.offset + limit : undefined,
     initialPageParam: 0,
   })
+}
+
+// Raw shape returned by the Go server for a single conversation.
+interface RawMessage {
+  role: string
+  timestamp: string
+  text: string
+  tool_calls?: string[]
+  model?: string
+}
+
+interface RawConversationDetail {
+  meta: RawSessionMeta
+  messages: RawMessage[]
+}
+
+function adaptDetail(raw: RawConversationDetail): ConversationDetail {
+  const rawMessages = raw.messages ?? []
+  const messages: import('@/types/api').Message[] = rawMessages.map((m, i) => {
+    const content: import('@/types/api').MessageContent[] = []
+    if (m.text) content.push({ type: 'text', text: m.text })
+    if (m.tool_calls) {
+      m.tool_calls.forEach((name) =>
+        content.push({ type: 'tool_use', name, input: {} })
+      )
+    }
+    return {
+      id: `${raw.meta.id}-${i}`,
+      role: m.role as 'user' | 'assistant',
+      content,
+      timestamp: m.timestamp,
+    }
+  })
+
+  return {
+    id: raw.meta.id,
+    title: raw.meta.project_name,
+    projectPath: raw.meta.project_path,
+    branch: raw.meta.git_branch,
+    messageCount: rawMessages.length,
+    lastActivity: raw.meta.last_updated_at,
+    messages,
+  }
 }
 
 export function useConversation(id: string) {
   return useQuery({
     queryKey: ['conversation', id],
     queryFn: async () => {
-      const raw = await api.get<RawSession>(`/api/conversations/${id}`)
-      return normalizeConversation(raw)
+      const raw = await api.get<RawConversationDetail>(`/api/conversations/${id}`)
+      return adaptDetail(raw)
     },
   })
 }
@@ -102,8 +108,10 @@ export function useConversation(id: string) {
 export function useConversationSearch(query: string) {
   return useQuery({
     queryKey: ['conversations', 'search', query],
-    queryFn: () =>
-      api.get<ConversationPage>(`/api/search?q=${encodeURIComponent(query)}&limit=50`),
+    queryFn: async () => {
+      const raw = await api.get<RawSessionMeta[]>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
+      return adaptPage(raw, 0, 50)
+    },
     enabled: query.length > 0,
   })
 }

@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router'
 import { useConnectionStore } from '@/stores/connection'
 import { AuthError, NetworkError } from '@/services/api-client'
 import { dark, font, radius, spacing } from '@/constants/theme'
-import type { ServerInfo } from '@/types/api'
+
 
 export default function OnboardingScreen() {
   const router = useRouter()
@@ -22,27 +22,26 @@ export default function OnboardingScreen() {
   const [serverUrl, setServerUrl] = useState(
     process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
   )
-  const [apiKey, setApiKey] = useState('')
-  const [showApiKey, setShowApiKey] = useState(false)
+  const [apiKey, setApiKey] = useState(process.env.EXPO_PUBLIC_DEFAULT_API_KEY ?? '')
+  const [showApiKey, setShowApiKey] = useState(__DEV__)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null)
+
 
   const handleConnect = async () => {
     setError(null)
     setLoading(true)
     try {
       const url = serverUrl.replace(/\/$/, '')
-      const res = await fetch(`${url}/api/info`, {
+      const res = await fetch(`${url}/api/profiles`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       })
       if (res.status === 401) throw new AuthError()
       if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
 
-      const info: ServerInfo = await res.json()
-      setServerInfo(info)
+      await res.json()
       await setConnection(url, apiKey)
-      setConnected(true, info)
+      setConnected(true, null)
     } catch (err) {
       if (err instanceof AuthError) {
         setError('Invalid API key. Check THREADBASE_API_KEY on your server.')
@@ -99,7 +98,8 @@ export default function OnboardingScreen() {
               onChangeText={setApiKey}
               placeholder="Enter THREADBASE_API_KEY"
               placeholderTextColor={dark.text.secondary}
-              secureTextEntry={!showApiKey}
+              secureTextEntry={__DEV__ ? false : !showApiKey}
+              textContentType={__DEV__ ? 'none' : 'password'}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="done"
@@ -127,16 +127,6 @@ export default function OnboardingScreen() {
             )}
           </TouchableOpacity>
         </View>
-
-        {serverInfo ? (
-          <View style={styles.serverInfo}>
-            <Text style={styles.serverInfoTitle}>Connected to</Text>
-            <Text style={styles.serverInfoName}>{serverInfo.machineName}</Text>
-            <Text style={styles.serverInfoMeta}>
-              {serverInfo.platform} · v{serverInfo.version} · {serverInfo.activeSessions} active sessions
-            </Text>
-          </View>
-        ) : null}
 
         <Text style={styles.hint}>
           Run <Text style={styles.code}>cch serve --tunnel --qr</Text> on your Mac to get a QR-scannable URL.
@@ -218,17 +208,6 @@ const styles = StyleSheet.create({
     fontSize: font.lg,
     fontWeight: '700',
   },
-  serverInfo: {
-    backgroundColor: `${dark.status.running}15`,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.status.running,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  serverInfoTitle: { color: dark.status.running, fontSize: font.xs, fontWeight: '600' },
-  serverInfoName: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  serverInfoMeta: { color: dark.text.secondary, fontSize: font.xs },
   hint: {
     color: dark.text.secondary,
     fontSize: font.sm,

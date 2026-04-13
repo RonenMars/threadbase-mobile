@@ -84,7 +84,7 @@ export function ConversationList({
       </View>
 
       <FlashList
-        data={conversations}
+        data={conversations.filter(Boolean)}
         keyExtractor={(c) => c.id}
         renderItem={({ item }) => <ConversationRow conversation={item} />}
         onEndReached={onEndReached}
