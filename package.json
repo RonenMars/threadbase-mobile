@@ -7,6 +7,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "jest --watchAll",
+    "test:ci": "jest --ci --forceExit",
+    "test:unit": "jest --ci --testPathPattern='__tests__/unit'",
+    "test:integration": "jest --ci --testPathPattern='__tests__/integration'",
+    "test:e2e": "jest --ci --testPathPattern='__tests__/e2e'",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
@@ -55,11 +59,15 @@
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@shopify/flash-list)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@shopify/flash-list|@gorhom|react-native-draggable-flatlist|nativewind)"
     ],
-    "setupFilesAfterFramework": [
-      "@testing-library/react-native/extend-expect"
-    ]
+    "setupFilesAfterEnv": [
+      "./jest.setup.js"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1",
+      "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/async-storage.js"
+    }
   },
   "private": true
 }
