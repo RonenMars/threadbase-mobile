@@ -7,6 +7,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
@@ -33,7 +34,7 @@ export default function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const navigation = useNavigation()
   const { data: session, isLoading } = useSessionDetail(id)
-  const { lines, isStreaming } = useTerminalStream(id)
+  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(id)
   const { sendInput } = useSessionActions(id)
 
   const [inputText, setInputText] = useState('')
@@ -82,6 +83,11 @@ export default function SessionDetailScreen() {
 
         <View style={styles.terminal}>
           <TerminalOutput lines={lines} isStreaming={isStreaming} />
+          {isLoadingHistory ? (
+            <View style={styles.historyLoader}>
+              <ActivityIndicator color={dark.text.secondary} />
+            </View>
+          ) : null}
         </View>
 
         {isWaiting ? (
@@ -164,6 +170,12 @@ const styles = StyleSheet.create({
   elapsed: { color: dark.text.secondary, fontSize: font.sm },
   prompts: { color: dark.text.secondary, fontSize: font.sm },
   terminal: { flex: 1 },
+  historyLoader: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: dark.bg.primary,
+  },
   inputArea: {
     borderTopWidth: 1,
     borderTopColor: dark.border,

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback, memo } from 'react'
 import {
   FlatList,
   Text,
@@ -12,11 +12,22 @@ import * as Clipboard from 'expo-clipboard'
 import { dark, font, spacing } from '@/constants/theme'
 
 // Strip ANSI escape codes for safe rendering
-// A more advanced implementation would parse and render colors
 function stripAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1b\[[0-9;]*[mGKHF]/g, '')
+  return str.replace(/\x1b(\[[0-9;?]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[A-Z\\])/g, '')
 }
+
+interface LineRowProps {
+  line: string
+  index: number
+}
+
+const LineRow = memo(({ line, index }: LineRowProps) => (
+  <View style={styles.lineRow}>
+    <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
+    <Text style={styles.lineText} selectable>{stripAnsi(line)}</Text>
+  </View>
+))
 
 interface Props {
   lines: string[]
@@ -26,14 +37,17 @@ interface Props {
 export function TerminalOutput({ lines, isStreaming }: Props) {
   const listRef = useRef<FlatList>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
+  const [showTopButton, setShowTopButton] = useState(false)
   const isAtBottomRef = useRef(true)
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
-    const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height
+    const y = contentOffset.y
+    const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
     const atBottom = distanceFromBottom < 50
     isAtBottomRef.current = atBottom
     setShowJumpButton(!atBottom)
+    setShowTopButton(y > 100)
   }, [])
 
   const jumpToBottom = useCallback(() => {
@@ -44,6 +58,10 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const copyAll = useCallback(() => {
     Clipboard.setStringAsync(lines.join('\n'))
   }, [lines])
+
+  const renderItem = useCallback(({ item, index }: { item: string; index: number }) => (
+    <LineRow line={item} index={index} />
+  ), [])
 
   return (
     <View style={styles.container}>
@@ -65,12 +83,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         ref={listRef}
         data={lines}
         keyExtractor={(_, i) => String(i)}
-        renderItem={({ item, index }) => (
-          <View style={styles.lineRow}>
-            <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
-            <Text style={styles.lineText} selectable>{stripAnsi(item)}</Text>
-          </View>
-        )}
+        renderItem={renderItem}
         onScroll={handleScroll}
         scrollEventThrottle={100}
         onContentSizeChange={() => {
@@ -86,6 +99,15 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         contentContainerStyle={styles.listContent}
       />
 
+      {showTopButton ? (
+        <TouchableOpacity
+          style={[styles.jumpBtn, styles.jumpBtnTop]}
+          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          accessibilityLabel="Jump to top"
+        >
+          <Text style={styles.jumpBtnText}>↑ Top</Text>
+        </TouchableOpacity>
+      ) : null}
       {showJumpButton ? (
         <TouchableOpacity
           style={styles.jumpBtn}
@@ -171,6 +193,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+  },
+  jumpBtnTop: {
+    bottom: undefined,
+    top: spacing.md,
   },
   jumpBtnText: {
     color: '#fff',

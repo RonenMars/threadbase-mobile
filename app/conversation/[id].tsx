@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Share, ActivityIndicator } from 'react-native'
+import React, { useCallback, useRef, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Share, ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { FlashList } from '@shopify/flash-list'
@@ -12,6 +12,9 @@ import { api } from '@/services/api-client'
 import { dark, font, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
 import { useEffect } from 'react'
+
+// Per-conversation scroll offsets persisted for the app session
+const scrollPositions = new Map<string, number>()
 
 function renderContent(block: MessageContent, index: number) {
   if (block.type === 'tool_use' || block.type === 'tool_result') {
@@ -51,12 +54,39 @@ export default function ConversationDetailScreen() {
   const navigation = useNavigation()
   const router = useRouter()
   const { data: conversation, isLoading, error, refetch } = useConversation(id)
+  const listRef = useRef<FlashList<Message>>(null)
+  const hasInitialScrolled = useRef(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
 
   useEffect(() => {
     if (conversation) {
       navigation.setOptions({ title: conversation.title })
     }
   }, [conversation, navigation])
+
+  // Restore saved scroll position or scroll to bottom on first open
+  useEffect(() => {
+    if (!conversation || hasInitialScrolled.current || conversation.messages.length === 0) return
+    hasInitialScrolled.current = true
+    const savedOffset = scrollPositions.get(id)
+    setTimeout(() => {
+      if (savedOffset !== undefined) {
+        listRef.current?.scrollToOffset({ offset: savedOffset, animated: false })
+      } else {
+        listRef.current?.scrollToEnd({ animated: false })
+      }
+    }, 50)
+  }, [conversation, id])
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
+    const y = contentOffset.y
+    scrollPositions.set(id, y)
+    setShowScrollTop(y > 100)
+    const distFromBottom = contentSize.height - y - layoutMeasurement.height
+    setShowScrollBottom(distFromBottom > 100)
+  }, [id])
 
   const resumeSession = useMutation({
     mutationFn: () =>
@@ -116,12 +146,35 @@ export default function ConversationDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {hasMessages ? (
-        <FlashList
-          data={conversation.messages}
-          keyExtractor={(m) => m.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-        />
+        <View style={styles.listWrapper}>
+          <FlashList
+            ref={listRef}
+            data={conversation.messages}
+            keyExtractor={(m) => m.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            onScroll={handleScroll}
+            scrollEventThrottle={100}
+          />
+          {showScrollTop ? (
+            <TouchableOpacity
+              style={[styles.scrollBtn, styles.scrollBtnTop]}
+              onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+              accessibilityLabel="Scroll to top"
+            >
+              <Text style={styles.scrollBtnText}>↑ Top</Text>
+            </TouchableOpacity>
+          ) : null}
+          {showScrollBottom ? (
+            <TouchableOpacity
+              style={[styles.scrollBtn, styles.scrollBtnBottom]}
+              onPress={() => listRef.current?.scrollToEnd({ animated: true })}
+              accessibilityLabel="Scroll to bottom"
+            >
+              <Text style={styles.scrollBtnText}>↓ Bottom</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : (
         <View style={styles.centered}>
           <Text style={styles.emptyText}>No messages in this conversation.</Text>
@@ -160,7 +213,19 @@ export default function ConversationDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
+  listWrapper: { flex: 1 },
   listContent: { paddingVertical: spacing.md },
+  scrollBtn: {
+    position: 'absolute',
+    alignSelf: 'center',
+    backgroundColor: dark.text.accent,
+    borderRadius: 20,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  scrollBtnTop: { top: spacing.md },
+  scrollBtnBottom: { bottom: spacing.md },
+  scrollBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
   toolContainer: { paddingHorizontal: spacing.md, gap: spacing.xs, marginVertical: spacing.xs },
   footer: {
     flexDirection: 'row',

@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet'
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -71,6 +71,8 @@ export function PromptQueueSheet({ sessionId, visible, onClose }: Props) {
       onClose={onClose}
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.handle}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
     >
       <BottomSheetView style={styles.content}>
         <View style={styles.header}>
@@ -79,7 +81,7 @@ export function PromptQueueSheet({ sessionId, visible, onClose }: Props) {
         </View>
 
         <View style={styles.inputRow}>
-          <TextInput
+          <BottomSheetTextInput
             style={styles.input}
             value={input}
             onChangeText={setInput}
