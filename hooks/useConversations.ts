@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from '@/services/api-client'
-import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage } from '@/types/api'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent } from '@/types/api'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -96,8 +96,8 @@ function resolveToolName(toolUseId: string | undefined, blocks: RawContentBlock[
 
 function adaptDetail(raw: RawConversationDetail): ConversationDetail {
   const rawMessages = raw.messages ?? []
-  const messages: import('@/types/api').Message[] = rawMessages.map((m, i) => {
-    const content: import('@/types/api').MessageContent[] = []
+  const messages: Message[] = rawMessages.map((m, i) => {
+    const content: MessageContent[] = []
 
     if (m.content && m.content.length > 0) {
       // Use the rich content blocks from the server
