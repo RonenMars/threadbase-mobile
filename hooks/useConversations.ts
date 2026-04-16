@@ -45,6 +45,8 @@ export function useConversations(filter?: ConversationFilter) {
     queryFn: async ({ pageParam = 0 }) => {
       const params = new URLSearchParams()
       if (filter?.projectPath) params.set('project', filter.projectPath)
+      if (filter?.dateFrom) params.set('dateFrom', filter.dateFrom)
+      if (filter?.dateTo) params.set('dateTo', filter.dateTo)
       if (filter?.profileId) params.set('profileId', filter.profileId)
       params.set('limit', String(limit))
       const raw = await api.get<RawSessionMeta[]>(`/api/conversations?${params.toString()}`)
