@@ -21,7 +21,7 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
   if (!Array.isArray(raw)) {
     return raw as ConversationPage
   }
-  const conversations: Conversation[] = raw.map((s) => ({
+  const conversations: Conversation[] = raw.filter((s): s is RawSessionMeta => s != null).map((s) => ({
     id: s.id,
     title: s.project_name ?? 'Conversation',
     projectPath: s.project_path ?? '',
