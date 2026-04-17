@@ -11,16 +11,19 @@ import {
   Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useConnectionStore } from '@/stores/connection'
+import { useServersStore } from '@/stores/servers'
 import { AuthError, NetworkError } from '@/services/api-client'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
 
 export default function OnboardingScreen() {
   const router = useRouter()
-  const { setConnection, setConnected, serverUrl: storedUrl, apiKey: storedApiKey } = useConnectionStore()
-  const [serverUrl, setServerUrl] = useState(storedUrl)
-  const [apiKey, setApiKey] = useState(storedApiKey)
+  const { addServer } = useServersStore()
+  const [serverUrl, setServerUrl] = useState(
+    process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
+  )
+  const [apiKey, setApiKey] = useState('')
+  const [label, setLabel] = useState('')
   const [showApiKey, setShowApiKey] = useState(__DEV__)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,8 +41,7 @@ export default function OnboardingScreen() {
       if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
 
       await res.json()
-      await setConnection(url, apiKey)
-      setConnected(true, null)
+      await addServer(url, apiKey, label || undefined)
     } catch (err) {
       if (err instanceof AuthError) {
         setError('Invalid API key. Check THREADBASE_API_KEY on your server.')
@@ -85,6 +87,18 @@ export default function OnboardingScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
+            returnKeyType="next"
+          />
+
+          <Text style={styles.label}>Label (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={label}
+            onChangeText={setLabel}
+            placeholder="e.g. Work Mac, Home Server"
+            placeholderTextColor={dark.text.secondary}
+            autoCapitalize="words"
+            autoCorrect={false}
             returnKeyType="next"
           />
 

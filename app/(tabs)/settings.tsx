@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
-import { useConnectionStore } from '@/stores/connection'
+import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import { ServerListCard } from '@/components/servers/ServerListCard'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
 function SectionHeader({ title }: { title: string }) {
@@ -43,7 +43,7 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const router = useRouter()
-  const { serverUrl, serverInfo, clearConnection } = useConnectionStore()
+  const { servers, activeServerIds, removeServer } = useServersStore()
   const { notifications, setNotifications } = useSettingsStore()
 
   const handleTestNotification = async () => {
@@ -56,35 +56,34 @@ export default function SettingsScreen() {
     })
   }
 
-  const handleSignOut = () => {
-    Alert.alert('Disconnect', 'Remove server connection and credentials?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Disconnect',
-        style: 'destructive',
-        onPress: async () => {
-          await clearConnection()
-          router.replace('/onboarding')
-        },
-      },
-    ])
+  const handleRemoveServer = async (serverId: string) => {
+    await removeServer(serverId)
+    if (activeServerIds.length <= 1) {
+      router.replace('/onboarding')
+    }
   }
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <SectionHeader title="Server" />
-        <View style={styles.card}>
-          <Text style={styles.serverUrl}>{serverUrl}</Text>
-          {serverInfo ? (
-            <Text style={styles.serverMeta}>
-              {serverInfo.machineName} · {serverInfo.platform} · v{serverInfo.version}
-            </Text>
-          ) : null}
-          <TouchableOpacity style={styles.disconnectBtn} onPress={handleSignOut}>
-            <Text style={styles.disconnectText}>Disconnect</Text>
-          </TouchableOpacity>
-        </View>
+        <SectionHeader title="Servers" />
+        {activeServerIds.map((id) => {
+          const server = servers[id]
+          if (!server) return null
+          return (
+            <ServerListCard
+              key={id}
+              server={server}
+              onRemove={handleRemoveServer}
+            />
+          )
+        })}
+        <TouchableOpacity
+          style={styles.addServerBtn}
+          onPress={() => router.push('/onboarding')}
+        >
+          <Text style={styles.addServerText}>+ Add Server</Text>
+        </TouchableOpacity>
 
         <SectionHeader title="Notifications" />
         <View style={styles.card}>
@@ -153,27 +152,19 @@ const styles = StyleSheet.create({
     borderColor: dark.border,
     overflow: 'hidden',
   },
-  serverUrl: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontFamily: 'monospace',
+  addServerBtn: {
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    borderStyle: 'dashed',
     padding: spacing.md,
-  },
-  serverMeta: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  disconnectBtn: {
-    borderTopWidth: 1,
-    borderTopColor: dark.border,
-    padding: spacing.md,
+    alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
   },
-  disconnectText: {
-    color: dark.status.failed,
+  addServerText: {
+    color: dark.text.accent,
     fontSize: font.base,
     fontWeight: '500',
   },

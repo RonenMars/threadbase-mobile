@@ -15,17 +15,19 @@ const STATUS_COLORS: Record<QueuedPrompt['status'], string> = {
 }
 
 interface Props {
+  serverId: string
   sessionId: string
   visible: boolean
   onClose: () => void
 }
 
-export function PromptQueueSheet({ sessionId, visible, onClose }: Props) {
+export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Props) {
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
-  const queue = useSessionsStore((s) => s.promptQueues[sessionId] ?? [])
+  const queueKey = `${serverId}::${sessionId}`
+  const queue = useSessionsStore((s) => s.promptQueues[queueKey] ?? [])
   const reorderQueue = useSessionsStore((s) => s.reorderQueue)
-  const { addToQueue, removeFromQueue } = useSessionActions(sessionId)
+  const { addToQueue, removeFromQueue } = useSessionActions(serverId, sessionId)
 
   const snapPoints = ['50%', '85%']
 
@@ -103,7 +105,7 @@ export function PromptQueueSheet({ sessionId, visible, onClose }: Props) {
           data={queue}
           keyExtractor={(p) => p.id}
           renderItem={renderItem}
-          onDragEnd={({ data }) => reorderQueue(sessionId, data)}
+          onDragEnd={({ data }) => reorderQueue(serverId, sessionId, data)}
           style={styles.list}
         />
       </BottomSheetView>

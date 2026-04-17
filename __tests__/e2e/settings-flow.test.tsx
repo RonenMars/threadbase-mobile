@@ -2,19 +2,20 @@
  * E2E: Settings flow
  *
  * Tests the settings screen interactions: displaying server info, toggling
- * notification preferences, and the disconnect confirmation flow.
+ * notification preferences, and the remove server confirmation flow.
  */
 import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import SettingsScreen from '@/app/(tabs)/settings'
-import { useConnectionStore } from '@/stores/connection'
+import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import * as SecureStore from 'expo-secure-store'
 
 const mockReplace = jest.fn()
+const mockPush = jest.fn()
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: mockReplace, back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn() }),
   useLocalSearchParams: () => ({}),
 }))
 
@@ -27,13 +28,21 @@ const SERVER_INFO = {
 
 beforeEach(() => {
   mockReplace.mockReset()
+  mockPush.mockReset()
   jest.clearAllMocks()
 
-  useConnectionStore.setState({
-    serverUrl: 'http://my-server.local:7070',
-    apiKey: 'live-key',
-    isConnected: true,
-    serverInfo: SERVER_INFO,
+  useServersStore.setState({
+    servers: {
+      srv_test: {
+        id: 'srv_test',
+        url: 'http://my-server.local:7070',
+        apiKey: 'live-key',
+        label: 'Dev Mac',
+        isConnected: true,
+        serverInfo: SERVER_INFO,
+      },
+    },
+    activeServerIds: ['srv_test'],
     isLoading: false,
   })
 
@@ -72,13 +81,18 @@ describe('Settings – server section', () => {
     expect(getByText(/2\.1\.0/)).toBeTruthy()
   })
 
-  it('shows Disconnect button', () => {
+  it('shows Remove button', () => {
     const { getByText } = render(<SettingsScreen />)
-    expect(getByText('Disconnect')).toBeTruthy()
+    expect(getByText('Remove')).toBeTruthy()
+  })
+
+  it('shows Add Server button', () => {
+    const { getByText } = render(<SettingsScreen />)
+    expect(getByText('+ Add Server')).toBeTruthy()
   })
 })
 
-// ── Notifications section ─────────────────────────────────────────────────────
+// ── Notifications section ────────────────────────────────────────���────────────
 
 describe('Settings – notifications section', () => {
   it('shows all notification toggle labels', () => {
@@ -122,70 +136,35 @@ describe('Settings – about section', () => {
   })
 })
 
-// ── Disconnect flow ───────────────────────────────────────────────────────────
+// ── Remove server flow ───────────────────────────────────────────────────────
 
-describe('Settings – disconnect flow', () => {
-  it('shows Alert confirmation dialog when Disconnect is pressed', () => {
+describe('Settings – remove server flow', () => {
+  it('shows Alert confirmation dialog when Remove is pressed', () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     const { getByText } = render(<SettingsScreen />)
-    fireEvent.press(getByText('Disconnect'))
+    fireEvent.press(getByText('Remove'))
     expect(alertSpy).toHaveBeenCalledWith(
-      'Disconnect',
-      expect.stringContaining('credentials'),
+      'Remove Server',
+      expect.any(String),
       expect.any(Array)
     )
     alertSpy.mockRestore()
   })
 
-  it('navigates to onboarding after confirming disconnect', async () => {
+  it('navigates to onboarding after removing last server', async () => {
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
-      const confirm = buttons?.find((b) => b.text === 'Disconnect')
+      const confirm = buttons?.find((b) => b.text === 'Remove')
       confirm?.onPress?.()
     })
 
     const { getByText } = render(<SettingsScreen />)
 
     await act(async () => {
-      fireEvent.press(getByText('Disconnect'))
+      fireEvent.press(getByText('Remove'))
     })
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('/onboarding')
-    })
-  })
-
-  it('clears apiKey from store after confirming disconnect', async () => {
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
-      const confirm = buttons?.find((b) => b.text === 'Disconnect')
-      confirm?.onPress?.()
-    })
-
-    const { getByText } = render(<SettingsScreen />)
-
-    await act(async () => {
-      fireEvent.press(getByText('Disconnect'))
-    })
-
-    await waitFor(() => {
-      expect(useConnectionStore.getState().apiKey).toBe('')
-      expect(useConnectionStore.getState().isConnected).toBe(false)
-    })
-  })
-
-  it('calls SecureStore.deleteItemAsync on disconnect confirm', async () => {
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
-      const confirm = buttons?.find((b) => b.text === 'Disconnect')
-      confirm?.onPress?.()
-    })
-
-    const { getByText } = render(<SettingsScreen />)
-
-    await act(async () => {
-      fireEvent.press(getByText('Disconnect'))
-    })
-
-    await waitFor(() => {
-      expect(SecureStore.deleteItemAsync).toHaveBeenCalled()
     })
   })
 
@@ -196,9 +175,8 @@ describe('Settings – disconnect flow', () => {
     })
 
     const { getByText } = render(<SettingsScreen />)
-    fireEvent.press(getByText('Disconnect'))
+    fireEvent.press(getByText('Remove'))
 
-    // Give any pending microtasks a chance to run
     await act(async () => {})
     expect(mockReplace).not.toHaveBeenCalled()
   })

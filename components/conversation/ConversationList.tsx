@@ -1,9 +1,11 @@
-import React, { useState, useCallback } from 'react'
+import React from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
+import { ServerBadge } from '@/components/servers/ServerBadge'
 import { dark, font, radius, spacing } from '@/constants/theme'
-import type { Conversation } from '@/types/api'
+import { useServersStore } from '@/stores/servers'
+import type { MultiConversation } from '@/types/api'
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -17,15 +19,16 @@ function formatDate(iso: string): string {
 }
 
 interface RowProps {
-  conversation: Conversation
+  conversation: MultiConversation
+  showServerBadge: boolean
 }
 
-function ConversationRow({ conversation: c }: RowProps) {
+function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
   const router = useRouter()
   return (
     <TouchableOpacity
       style={styles.row}
-      onPress={() => router.push(`/conversation/${c.id}`)}
+      onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
       accessibilityLabel={`Conversation: ${c.title}`}
       accessibilityRole="button"
     >
@@ -37,6 +40,9 @@ function ConversationRow({ conversation: c }: RowProps) {
             <View style={styles.branchBadge}>
               <Text style={styles.branchText}>{c.branch}</Text>
             </View>
+          ) : null}
+          {showServerBadge ? (
+            <ServerBadge serverId={c.serverId} label={c.serverLabel} />
           ) : null}
         </View>
       </View>
@@ -52,7 +58,7 @@ function ConversationRow({ conversation: c }: RowProps) {
 }
 
 interface Props {
-  conversations: Conversation[]
+  conversations: MultiConversation[]
   onRefresh: () => void
   refreshing: boolean
   onEndReached: () => void
@@ -68,6 +74,8 @@ export function ConversationList({
   searchQuery,
   onSearchChange,
 }: Props) {
+  const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+
   return (
     <View style={styles.container}>
       <View style={styles.searchBar}>
@@ -85,8 +93,10 @@ export function ConversationList({
 
       <FlashList
         data={conversations}
-        keyExtractor={(c) => c.id}
-        renderItem={({ item }) => <ConversationRow conversation={item} />}
+        keyExtractor={(c) => `${c.serverId}::${c.id}`}
+        renderItem={({ item }) => (
+          <ConversationRow conversation={item} showServerBadge={multipleServers} />
+        )}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.3}
         refreshControl={
@@ -139,6 +149,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    flexWrap: 'wrap',
   },
   metaText: {
     color: dark.text.secondary,

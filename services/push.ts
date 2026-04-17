@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import { api } from './api-client'
+import { createApiForServer } from './api-client'
 import type { PushRegisterPayload } from '@/types/api'
 
 Notifications.setNotificationHandler({
@@ -20,7 +20,7 @@ export async function requestPermissions(): Promise<boolean> {
   return status === 'granted'
 }
 
-export async function registerPushToken(serverUrl: string, apiKey: string): Promise<void> {
+export async function registerPushToken(serverId: string): Promise<void> {
   const granted = await requestPermissions()
   if (!granted) return
 
@@ -38,7 +38,13 @@ export async function registerPushToken(serverUrl: string, apiKey: string): Prom
     platform: Platform.OS as 'ios' | 'android',
   }
 
+  const api = createApiForServer(serverId)
   await api.post('/api/push/register', payload)
+}
+
+/** Register push token with all provided servers. */
+export async function registerPushTokenForAll(serverIds: string[]): Promise<void> {
+  await Promise.allSettled(serverIds.map((id) => registerPushToken(id)))
 }
 
 export function isInQuietHours(from: string, to: string): boolean {

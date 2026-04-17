@@ -5,7 +5,7 @@ import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
 import { dark, font, spacing } from '@/constants/theme'
-import type { Conversation } from '@/types/api'
+import type { MultiConversation } from '@/types/api'
 
 export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -25,7 +25,7 @@ export default function HistoryScreen() {
 
   const searchResult = useConversationSearch(debouncedQuery)
 
-  const allConversations: Conversation[] = debouncedQuery
+  const allConversations: MultiConversation[] = debouncedQuery
     ? (searchResult.data?.conversations ?? [])
     : (data?.pages.flatMap((p) => p.conversations) ?? [])
 

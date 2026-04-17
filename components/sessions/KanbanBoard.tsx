@@ -11,7 +11,7 @@ import {
 import { SessionCard } from './SessionCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { dark, font, spacing, TABLET_BREAKPOINT } from '@/constants/theme'
-import type { Session, SessionStatus } from '@/types/api'
+import type { MultiSession, SessionStatus } from '@/types/api'
 
 interface Column {
   status: SessionStatus
@@ -54,7 +54,7 @@ const COLUMNS: Column[] = [
 
 interface KanbanColumnProps {
   column: Column
-  sessions: Session[]
+  sessions: MultiSession[]
   onRefresh: () => void
   refreshing: boolean
   isTablet: boolean
@@ -95,7 +95,7 @@ function KanbanColumn({ column, sessions, onRefresh, refreshing, isTablet }: Kan
 }
 
 interface KanbanBoardProps {
-  sessionsByStatus: Record<SessionStatus, Session[]>
+  sessionsByStatus: Record<SessionStatus, MultiSession[]>
   onRefresh: () => void
   refreshing: boolean
 }

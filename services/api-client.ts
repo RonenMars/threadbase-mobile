@@ -1,4 +1,4 @@
-import { useConnectionStore } from '@/stores/connection'
+import { useServersStore } from '@/stores/servers'
 
 export class NetworkError extends Error {
   constructor(message: string) {
@@ -21,17 +21,24 @@ export class NotFoundError extends Error {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
-  const { serverUrl, apiKey } = useConnectionStore.getState()
+async function request<T>(
+  method: string,
+  path: string,
+  body: unknown | undefined,
+  serverId: string,
+  retried = false,
+): Promise<T> {
+  const server = useServersStore.getState().getServer(serverId)
+  if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${serverUrl.replace(/\/$/, '')}${path}`
+  const url = `${server.url.replace(/\/$/, '')}${path}`
 
   let response: Response
   try {
     response = await fetch(url, {
       method,
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${server.apiKey}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
@@ -39,8 +46,7 @@ async function request<T>(method: string, path: string, body?: unknown, retried 
     })
   } catch (err) {
     if (!retried) {
-      // Single retry on network failure
-      return request(method, path, body, true)
+      return request(method, path, body, serverId, true)
     }
     throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
   }
@@ -54,9 +60,38 @@ async function request<T>(method: string, path: string, body?: unknown, retried 
   return response.json() as Promise<T>
 }
 
-export const api = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+export interface ServerApi {
+  get: <T>(path: string) => Promise<T>
+  post: <T>(path: string, body?: unknown) => Promise<T>
+  patch: <T>(path: string, body?: unknown) => Promise<T>
+  delete: <T>(path: string) => Promise<T>
+}
+
+export function createApiForServer(serverId: string): ServerApi {
+  return {
+    get: <T>(path: string) => request<T>('GET', path, undefined, serverId),
+    post: <T>(path: string, body?: unknown) => request<T>('POST', path, body, serverId),
+    patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body, serverId),
+    delete: <T>(path: string) => request<T>('DELETE', path, undefined, serverId),
+  }
+}
+
+/** @deprecated Use createApiForServer(serverId) instead. */
+export const api: ServerApi = {
+  get: <T>(path: string) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? request<T>('GET', path, undefined, first) : Promise.reject(new NetworkError('No servers configured'))
+  },
+  post: <T>(path: string, body?: unknown) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? request<T>('POST', path, body, first) : Promise.reject(new NetworkError('No servers configured'))
+  },
+  patch: <T>(path: string, body?: unknown) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? request<T>('PATCH', path, body, first) : Promise.reject(new NetworkError('No servers configured'))
+  },
+  delete: <T>(path: string) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? request<T>('DELETE', path, undefined, first) : Promise.reject(new NetworkError('No servers configured'))
+  },
 }

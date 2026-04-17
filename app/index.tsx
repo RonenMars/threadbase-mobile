@@ -1,8 +1,8 @@
 import { Redirect } from 'expo-router'
-import { useConnectionStore } from '@/stores/connection'
+import { useServersStore } from '@/stores/servers'
 
 export default function Index() {
-  const { apiKey, isLoading } = useConnectionStore()
+  const { activeServerIds, isLoading } = useServersStore()
   if (isLoading) return null
-  return <Redirect href={apiKey ? '/(tabs)/sessions' : '/onboarding'} />
+  return <Redirect href={activeServerIds.length > 0 ? '/(tabs)/sessions' : '/onboarding'} />
 }

@@ -6,10 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
-import { useConnectionStore } from '@/stores/connection'
-import { wsClient } from '@/services/ws-client'
+import { useServersStore } from '@/stores/servers'
+import { wsManager } from '@/services/ws-client'
 import { useSessionsStore } from '@/stores/sessions'
-import { registerPushToken } from '@/services/push'
+import { registerPushTokenForAll } from '@/services/push'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,64 +24,72 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
   const navState = useRootNavigationState()
-  const { apiKey, serverUrl, isLoading, loadPersistedCredentials, setConnected } =
-    useConnectionStore()
+  const { servers, activeServerIds, isLoading, loadPersistedServers, setConnected } =
+    useServersStore()
   const setSessions = useSessionsStore((s) => s.setSessions)
   const updateSession = useSessionsStore((s) => s.updateSession)
 
   useEffect(() => {
-    loadPersistedCredentials()
-  }, [loadPersistedCredentials])
+    loadPersistedServers()
+  }, [loadPersistedServers])
 
   useEffect(() => {
     if (isLoading) return
     if (!navState?.key) return
     const inOnboarding = segments[0] === 'onboarding'
-    // Defer navigation to the next frame so the root navigator is fully
-    // registered (expo-router v6 throws if router.replace fires during the
-    // same commit that mounts the Root Layout).
+    const hasServers = activeServerIds.length > 0
     const handle = requestAnimationFrame(() => {
-      if (!apiKey && !inOnboarding) {
+      if (!hasServers && !inOnboarding) {
         router.replace('/onboarding')
-      } else if (apiKey && inOnboarding) {
+      } else if (hasServers && inOnboarding) {
         router.replace('/(tabs)/sessions')
       }
     })
     return () => cancelAnimationFrame(handle)
-  }, [apiKey, isLoading, segments, router, navState?.key])
+  }, [activeServerIds, isLoading, segments, router, navState?.key])
 
-  // Wire WebSocket when credentials are available
+  // Wire WebSocket for all servers
   useEffect(() => {
-    if (!apiKey || !serverUrl) return
-    wsClient.connect(serverUrl, apiKey)
+    if (activeServerIds.length === 0) return
 
-    const unsubList = wsClient.on('session_list', (msg) => {
-      if (msg.type === 'session_list') setSessions(msg.sessions)
+    for (const serverId of activeServerIds) {
+      const server = servers[serverId]
+      if (server) {
+        wsManager.connect(serverId, server.url, server.apiKey)
+      }
+    }
+
+    const unsubList = wsManager.onAll('session_list', (msg) => {
+      if (msg.type === 'session_list') setSessions(msg.serverId, msg.sessions)
     })
-    const unsubUpdate = wsClient.on('session_update', (msg) => {
-      if (msg.type === 'session_update') updateSession(msg.session.id, msg.session)
+    const unsubUpdate = wsManager.onAll('session_update', (msg) => {
+      if (msg.type === 'session_update') updateSession(msg.serverId, msg.session.id, msg.session)
     })
-    const unsubStatus = wsClient.onStatusChange((status) => {
-      setConnected(status === 'connected')
+    const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
+      setConnected(serverId, status === 'connected')
     })
 
-    // Register push token
-    registerPushToken(serverUrl, apiKey).catch(() => {})
+    // Register push tokens for all servers
+    registerPushTokenForAll(activeServerIds).catch(() => {})
 
     return () => {
       unsubList()
       unsubUpdate()
       unsubStatus()
-      wsClient.disconnect()
+      wsManager.disconnectAll()
     }
-  }, [apiKey, serverUrl])
+  }, [activeServerIds, servers])
 
   // Handle notification taps
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { sessionId?: string }
+      const data = response.notification.request.content.data as {
+        sessionId?: string
+        serverId?: string
+      }
       if (data.sessionId) {
-        router.push(`/session/${data.sessionId}`)
+        const serverParam = data.serverId ? `?server=${data.serverId}` : ''
+        router.push(`/session/${data.sessionId}${serverParam}`)
       }
     })
     return () => sub.remove()

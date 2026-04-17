@@ -7,15 +7,16 @@ import { useSessionActions } from '@/hooks/useSessionActions'
 const AUTO_PROCEED_TIMEOUT_MS = 60000
 
 interface Props {
+  serverId: string
   sessionId: string
   plan: string
   visible: boolean
   onClose: () => void
 }
 
-export function PlanPreviewSheet({ sessionId, plan, visible, onClose }: Props) {
+export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }: Props) {
   const sheetRef = useRef<BottomSheet>(null)
-  const { respondToPlan } = useSessionActions(sessionId)
+  const { respondToPlan } = useSessionActions(serverId, sessionId)
   const [editMode, setEditMode] = useState(false)
   const [editedPrompt, setEditedPrompt] = useState('')
   const [secondsLeft, setSecondsLeft] = useState(Math.floor(AUTO_PROCEED_TIMEOUT_MS / 1000))
@@ -26,7 +27,7 @@ export function PlanPreviewSheet({ sessionId, plan, visible, onClose }: Props) {
       setSecondsLeft((s) => {
         if (s <= 1) {
           clearInterval(interval)
-          respondToPlan.mutate('proceed')
+          respondToPlan.mutate({ action: 'proceed' })
           onClose()
           return 0
         }
@@ -39,7 +40,7 @@ export function PlanPreviewSheet({ sessionId, plan, visible, onClose }: Props) {
   if (!visible) return null
 
   const handleProceed = () => {
-    respondToPlan.mutate('proceed')
+    respondToPlan.mutate({ action: 'proceed' })
     onClose()
   }
 
@@ -49,12 +50,12 @@ export function PlanPreviewSheet({ sessionId, plan, visible, onClose }: Props) {
       setEditedPrompt('')
       return
     }
-    respondToPlan.mutate('edit', editedPrompt)
+    respondToPlan.mutate({ action: 'edit', editedPrompt })
     onClose()
   }
 
   const handleCancel = () => {
-    respondToPlan.mutate('cancel')
+    respondToPlan.mutate({ action: 'cancel' })
     onClose()
   }
 
