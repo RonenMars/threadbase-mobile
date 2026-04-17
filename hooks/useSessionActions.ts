@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
+import { useSessionsStore } from '@/stores/sessions'
+import type { QueuedPrompt } from '@/types/api'
 
 export function useSessionActions(serverId: string, sessionId: string) {
   const qc = useQueryClient()
@@ -22,12 +24,18 @@ export function useSessionActions(serverId: string, sessionId: string) {
 
   const addToQueue = useMutation({
     mutationFn: (text: string) =>
-      api.post(`/api/sessions/${sessionId}/queue`, { text }),
+      api.post<QueuedPrompt>(`/api/sessions/${sessionId}/queue`, { text }),
+    onSuccess: (prompt) => {
+      useSessionsStore.getState().addToQueue(serverId, sessionId, prompt)
+    },
   })
 
   const removeFromQueue = useMutation({
     mutationFn: (promptId: string) =>
       api.delete(`/api/sessions/${sessionId}/queue/${promptId}`),
+    onSuccess: (_data, promptId) => {
+      useSessionsStore.getState().removeFromQueue(serverId, sessionId, promptId)
+    },
   })
 
   const respondToPlan = useMutation({

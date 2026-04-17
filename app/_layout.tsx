@@ -52,8 +52,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (activeServerIds.length === 0) return
 
+    const currentServers = useServersStore.getState().servers
     for (const serverId of activeServerIds) {
-      const server = servers[serverId]
+      const server = currentServers[serverId]
       if (server) {
         wsManager.connect(serverId, server.url, server.apiKey)
       }
@@ -78,7 +79,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubStatus()
       wsManager.disconnectAll()
     }
-  }, [activeServerIds, servers])
+  }, [activeServerIds])
 
   // Handle notification taps
   useEffect(() => {

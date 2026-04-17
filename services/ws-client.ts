@@ -22,7 +22,7 @@ class WSClient {
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
 
   connect(url: string, apiKey: string) {
-    this.url = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws'
+    this.url = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
     this.apiKey = apiKey
     this.reconnectAttempt = 0
     this._doConnect()

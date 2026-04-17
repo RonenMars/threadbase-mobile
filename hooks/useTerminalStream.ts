@@ -38,8 +38,8 @@ export function useTerminalStream(serverId: string, sessionId: string) {
         bufferRef.current = initialLines.slice(-maxLines)
         setLines([...bufferRef.current])
       })
-      .catch(() => {
-        // Endpoint may not exist or be empty — silently ignore
+      .catch((err) => {
+        console.warn('[TerminalStream] history fetch failed:', err)
       })
       .finally(() => {
         setIsLoadingHistory(false)
