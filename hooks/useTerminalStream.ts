@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer } from '@/services/api-client'
+import { VirtualTerminal } from '@/services/virtual-terminal'
 
 interface TerminalHistoryResponse {
   output?: string
@@ -13,30 +14,28 @@ export function useTerminalStream(serverId: string, sessionId: string) {
   const [lines, setLines] = useState<string[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
-  const bufferRef = useRef<string[]>([])
+  const vtRef = useRef(new VirtualTerminal())
 
   // Fetch historical terminal output when the session is opened
   useEffect(() => {
+    vtRef.current.reset()
     setIsLoadingHistory(true)
     const api = createApiForServer(serverId)
     api.get<TerminalHistoryResponse>(`/api/sessions/${sessionId}/output`)
       .then((data) => {
-        let initialLines: string[]
+        let raw: string
         if (Array.isArray(data)) {
-          initialLines = data as unknown as string[]
+          raw = (data as unknown as string[]).join('')
         } else if (data.lines) {
-          initialLines = data.lines
+          raw = data.lines.join('\n')
         } else if (data.output) {
-          initialLines = data.output.split('\n').map((line: string) => {
-            const trimmed = line.endsWith('\r') ? line.slice(0, -1) : line
-            const parts = trimmed.split('\r')
-            return parts[parts.length - 1]
-          })
+          raw = data.output
         } else {
           return
         }
-        bufferRef.current = initialLines.slice(-maxLines)
-        setLines([...bufferRef.current])
+        vtRef.current.feed(raw)
+        const visible = vtRef.current.getLines()
+        setLines(visible.slice(-maxLines))
       })
       .catch((err) => {
         console.warn('[TerminalStream] history fetch failed:', err)
@@ -54,17 +53,9 @@ export function useTerminalStream(serverId: string, sessionId: string) {
       if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
 
       setIsStreaming(true)
-      const newLines = msg.data.split('\n').map((line: string) => {
-        const trimmed = line.endsWith('\r') ? line.slice(0, -1) : line
-        const parts = trimmed.split('\r')
-        return parts[parts.length - 1]
-      })
-
-      bufferRef.current = [...bufferRef.current, ...newLines]
-      if (bufferRef.current.length > maxLines) {
-        bufferRef.current = bufferRef.current.slice(bufferRef.current.length - maxLines)
-      }
-      setLines([...bufferRef.current])
+      vtRef.current.feed(msg.data)
+      const visible = vtRef.current.getLines()
+      setLines(visible.slice(-maxLines))
 
       clearTimeout(idleTimer)
       idleTimer = setTimeout(() => setIsStreaming(false), 1500)
@@ -78,7 +69,7 @@ export function useTerminalStream(serverId: string, sessionId: string) {
   }, [serverId, sessionId, maxLines])
 
   const clear = useCallback(() => {
-    bufferRef.current = []
+    vtRef.current.reset()
     setLines([])
   }, [])
 
