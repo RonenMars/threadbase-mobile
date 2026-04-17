@@ -8,17 +8,32 @@ export class VirtualTerminal {
   private grid: string[][] = [[]]
   private row = 0
   private col = 0
+  /** Holds a trailing ESC that was at the end of a feed() chunk. */
+  private pendingEsc = false
 
   /** Feed a chunk of raw terminal data. Can be called incrementally. */
   feed(data: string): void {
     let i = 0
+    // If previous chunk ended with a bare ESC, prepend it
+    if (this.pendingEsc) {
+      this.pendingEsc = false
+      if (data.length > 0) {
+        i = this.parseEscape(data, 0)
+      }
+    }
     while (i < data.length) {
       const ch = data[i]
 
       if (ch === '\x1b') {
+        if (i + 1 >= data.length) {
+          // ESC at end of chunk — save for next feed
+          this.pendingEsc = true
+          return
+        }
         i = this.parseEscape(data, i + 1)
       } else if (ch === '\n') {
         this.row++
+        this.col = 0
         this.ensureRow(this.row)
         i++
       } else if (ch === '\r') {
@@ -43,11 +58,71 @@ export class VirtualTerminal {
     }
   }
 
-  /** Extract visible lines (non-empty, trimmed). */
+  /** Extract visible lines, filtering Claude Code TUI chrome.
+   *  Informed by tweakcc (MIT) knowledge of Claude Code's UI structure:
+   *  - Input border box (round border style with ─ chars)
+   *  - Startup banner / "Clawd" ASCII art (▛███▜)
+   *  - Thinker/spinner symbols (·✢*✳✶✻✽ and braille patterns)
+   *  - Status line (model info, prompt indicator, token counts)
+   *  - Decorative separators (box-drawing characters)
+   */
   getLines(): string[] {
     return this.grid
       .map((chars) => chars.join('').trimEnd())
-      .filter((line) => line.length > 0)
+      .filter((line) => {
+        if (line.length === 0) return false
+        const trimmed = line.trim()
+
+        // --- Decorative separators ---
+        // Lines made entirely of box-drawing, block elements, or whitespace
+        const stripped = line.replace(/[\s=\-─━═│┃┌┐└┘├┤┬┴┼╭╮╯╰╱╲\u2500-\u257F\u2580-\u259F]/g, '')
+        if (stripped.length === 0) return false
+
+        // --- Startup banner / Clawd ASCII art ---
+        if (/[▛▜▙▟███]{3,}/.test(trimmed)) return false
+        if (/Welcome to Claude Code/.test(trimmed)) return false
+
+        // --- Thinker / spinner symbols ---
+        // Claude Code uses: · ✢ * ✳ ✶ ✻ ✽ and braille spinners (from tweakcc defaultSettings)
+        if (/^[·✢*✳✶✻✽⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏◐◑◒◓\s]+$/.test(trimmed)) return false
+        // Sautéed/cooking timer lines (thinker format): "✱ Sautéed for 3m 5s"
+        if (/^[✱✳✶✻✽*·✢]\s+Saut[ée]+d\s+for\s/.test(trimmed)) return false
+        // Thinking verb + ellipsis: "Thinking…", "Computing…" (180+ verbs from tweakcc)
+        if (/^[·✢*✳✶✻✽]\s+\w+ing…\s*$/.test(trimmed)) return false
+        if (/^\w+ing…\s*$/.test(trimmed)) return false
+
+        // --- Status line / prompt chrome ---
+        // Prompt indicator: ❯ 0q, > 2q, etc.
+        if (/^[❯›>]\s*\d*[a-z]?$/.test(trimmed)) return false
+        // Capybara mascot (Bramble)
+        if (/\(●oo●\)/.test(trimmed) || /\(◐oo◐\)/.test(trimmed)) return false
+        // Model info line: "Opus 4.6 (1M context) | ~/path..."
+        if (/^(Opus|Sonnet|Haiku)\s+\d+\.\d+\s+\(.*context\)/.test(trimmed)) return false
+        // "Claude" model variant: "Claude 4.6 Opus..."
+        if (/^Claude\s+\d+\.\d+\s+(Opus|Sonnet|Haiku)/.test(trimmed)) return false
+        // Accept edits / update available / mode chrome
+        if (/^[►▶❯]{1,2}\s*(accept edits|auto|plan)\b/i.test(trimmed)) return false
+        if (/Update available!/.test(trimmed)) return false
+        // Run: command status hints
+        if (/^Run:\s+\S/.test(trimmed)) return false
+        // Token/cost display: "$0.02  12.3k tokens"
+        if (/^\$[\d.]+\s+[\d.]+[kmb]?\s+tokens?$/i.test(trimmed)) return false
+        // Medium/high effort indicators
+        if (/^[◑◐●]\s*(low|medium|high)\b/i.test(trimmed)) return false
+        // Hotkey hints
+        if (/\(shift\+tab to cycle\)/.test(trimmed)) return false
+        if (/\(ctrl\+o to expand\)/.test(trimmed)) return false
+        // Compact line expand hints: "... +14 lines (ctrl+o to expand)"
+        if (/^\.\.\.\s+\+\d+\s+lines\s/.test(trimmed)) return false
+        // Rate limit indicators (from tweakcc suppressRateLimitOptions)
+        if (/rate limit/i.test(trimmed) && /\d+\s*(req|request|min)/i.test(trimmed)) return false
+
+        // --- Input border box remnants ---
+        // Lines that are just the border corners/edges after stripping
+        if (/^[╭╮╯╰│─┌┐└┘┤├]+$/.test(trimmed)) return false
+
+        return true
+      })
   }
 
   /** Reset terminal state. */
@@ -55,6 +130,7 @@ export class VirtualTerminal {
     this.grid = [[]]
     this.row = 0
     this.col = 0
+    this.pendingEsc = false
   }
 
   private putChar(ch: string): void {
@@ -108,7 +184,8 @@ export class VirtualTerminal {
 
   private handleCSI(params: string, cmd: string): void {
     const args = params.split(';').map((s) => parseInt(s, 10) || 0)
-    const n = args[0] || 1
+    // Default to 1 for most commands, but J/K use 0 as a valid mode
+    const n = (cmd === 'J' || cmd === 'K') ? args[0] : (args[0] || 1)
 
     switch (cmd) {
       case 'A': // Cursor up
@@ -173,6 +250,18 @@ export class VirtualTerminal {
       case 'M': // Delete lines
         this.grid.splice(this.row, n)
         this.ensureRow(this.row)
+        break
+      case 'S': // Scroll Up — shift content up n lines
+        this.grid.splice(0, Math.min(n, this.grid.length))
+        this.ensureRow(this.row)
+        break
+      case 'T': // Scroll Down — insert n blank lines at top
+        for (let j = 0; j < n; j++) {
+          this.grid.unshift([])
+        }
+        this.row += n
+        break
+      case 'r': // DECSTBM — Set Scroll Region (ignored, just track)
         break
       // SGR (m), cursor show/hide (h/l), etc. — ignore
     }
