@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { api } from '@/services/api-client'
-import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent } from '@/types/api'
+import { createApiForServer } from '@/services/api-client'
+import { useServersStore } from '@/stores/servers'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation } from '@/types/api'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -37,24 +38,58 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
   }
 }
 
+/** Multi-conversation page with serverId on each entry. */
+interface MultiConversationPage {
+  conversations: MultiConversation[]
+  hasMore: boolean
+}
+
 export function useConversations(filter?: ConversationFilter) {
   const limit = 50
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const servers = useServersStore((s) => s.servers)
 
   return useInfiniteQuery({
-    queryKey: ['conversations', filter],
-    queryFn: async ({ pageParam = 0 }) => {
-      const params = new URLSearchParams()
-      if (filter?.projectPath) params.set('project', filter.projectPath)
-      if (filter?.dateFrom) params.set('dateFrom', filter.dateFrom)
-      if (filter?.dateTo) params.set('dateTo', filter.dateTo)
-      if (filter?.profileId) params.set('profileId', filter.profileId)
-      params.set('limit', String(limit))
-      const raw = await api.get<RawSessionMeta[]>(`/api/conversations?${params.toString()}`)
-      return adaptPage(raw, pageParam as number, limit)
+    queryKey: ['conversations', filter, ...activeServerIds],
+    queryFn: async ({ pageParam = 0 }): Promise<MultiConversationPage> => {
+      const results = await Promise.all(
+        activeServerIds.map(async (serverId) => {
+          const api = createApiForServer(serverId)
+          const params = new URLSearchParams()
+          if (filter?.projectPath) params.set('project', filter.projectPath)
+          if (filter?.dateFrom) params.set('dateFrom', filter.dateFrom)
+          if (filter?.dateTo) params.set('dateTo', filter.dateTo)
+          if (filter?.profileId) params.set('profileId', filter.profileId)
+          params.set('limit', String(limit))
+          const raw = await api.get<RawSessionMeta[]>(`/api/conversations?${params.toString()}`)
+          return { serverId, page: adaptPage(raw, pageParam as number, limit) }
+        })
+      )
+
+      // Merge conversations from all servers, tag with serverId
+      const merged: MultiConversation[] = []
+      let anyHasMore = false
+      for (const { serverId, page } of results) {
+        const label = servers[serverId]?.label
+        for (const conv of page.conversations) {
+          merged.push({ ...conv, serverId, serverLabel: label })
+        }
+        if (page.hasMore) anyHasMore = true
+      }
+
+      // Sort by lastActivity descending
+      merged.sort((a, b) => {
+        const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
+        const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+        return tb - ta
+      })
+
+      return { conversations: merged, hasMore: anyHasMore }
     },
-    getNextPageParam: (last: ConversationPage) =>
-      last.hasMore ? last.offset + limit : undefined,
+    getNextPageParam: (last: MultiConversationPage, _allPages, lastPageParam) =>
+      last.hasMore ? (lastPageParam as number) + limit : undefined,
     initialPageParam: 0,
+    enabled: activeServerIds.length > 0,
   })
 }
 
@@ -135,18 +170,19 @@ function adaptDetail(raw: RawConversationDetail): ConversationDetail {
 
   return {
     id: raw.meta.id,
-    title: raw.meta.project_name,
-    projectPath: raw.meta.project_path,
+    title: raw.meta.project_name ?? 'Conversation',
+    projectPath: raw.meta.project_path ?? '',
     branch: raw.meta.git_branch,
     messageCount: rawMessages.length,
-    lastActivity: raw.meta.last_updated_at,
+    lastActivity: raw.meta.last_updated_at ?? '',
     messages,
   }
 }
 
-export function useConversation(id: string) {
+export function useConversation(serverId: string, id: string) {
+  const api = createApiForServer(serverId)
   return useQuery({
-    queryKey: ['conversation', id],
+    queryKey: ['conversation', serverId, id],
     queryFn: async () => {
       const raw = await api.get<RawConversationDetail>(`/api/conversations/${id}`)
       return adaptDetail(raw)
@@ -155,12 +191,36 @@ export function useConversation(id: string) {
 }
 
 export function useConversationSearch(query: string) {
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const servers = useServersStore((s) => s.servers)
+
   return useQuery({
-    queryKey: ['conversations', 'search', query],
+    queryKey: ['conversations', 'search', query, ...activeServerIds],
     queryFn: async () => {
-      const raw = await api.get<RawSessionMeta[]>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
-      return adaptPage(raw, 0, 50)
+      const results = await Promise.all(
+        activeServerIds.map(async (serverId) => {
+          const api = createApiForServer(serverId)
+          const raw = await api.get<RawSessionMeta[]>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
+          return { serverId, page: adaptPage(raw, 0, 50) }
+        })
+      )
+
+      const merged: MultiConversation[] = []
+      for (const { serverId, page } of results) {
+        const label = servers[serverId]?.label
+        for (const conv of page.conversations) {
+          merged.push({ ...conv, serverId, serverLabel: label })
+        }
+      }
+
+      merged.sort((a, b) => {
+        const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
+        const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+        return tb - ta
+      })
+
+      return { conversations: merged, hasMore: false, offset: 0, total: merged.length }
     },
-    enabled: query.length > 0,
+    enabled: query.length > 0 && activeServerIds.length > 0,
   })
 }

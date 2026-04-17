@@ -1,16 +1,33 @@
-import { api, NetworkError, AuthError, NotFoundError } from '@/services/api-client'
+import { createApiForServer, NetworkError, AuthError, NotFoundError } from '@/services/api-client'
 
-jest.mock('@/stores/connection', () => ({
-  useConnectionStore: {
+jest.mock('@/stores/servers', () => ({
+  useServersStore: {
     getState: jest.fn(() => ({
-      serverUrl: 'http://test.local',
-      apiKey: 'test-api-key',
+      getServer: (id: string) => id === 'srv_test' ? {
+        id: 'srv_test',
+        url: 'http://test.local',
+        apiKey: 'test-api-key',
+        isConnected: true,
+        serverInfo: null,
+      } : undefined,
+      servers: {
+        srv_test: {
+          id: 'srv_test',
+          url: 'http://test.local',
+          apiKey: 'test-api-key',
+          isConnected: true,
+          serverInfo: null,
+        },
+      },
+      activeServerIds: ['srv_test'],
     })),
   },
 }))
 
 const mockFetch = jest.fn()
 global.fetch = mockFetch
+
+const api = createApiForServer('srv_test')
 
 function mockOkResponse(body: unknown) {
   return { ok: true, status: 200, json: jest.fn().mockResolvedValue(body) }
@@ -95,20 +112,6 @@ describe('api.get', () => {
     expect(result.retried).toBe(true)
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
-
-  it('strips trailing slash from serverUrl', async () => {
-    const { useConnectionStore } = require('@/stores/connection') as { useConnectionStore: { getState: jest.Mock } }
-    useConnectionStore.getState.mockReturnValueOnce({
-      serverUrl: 'http://test.local/',
-      apiKey: 'key',
-    })
-    mockFetch.mockResolvedValueOnce(mockOkResponse({}))
-    await api.get('/api/test')
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://test.local/api/test',
-      expect.anything()
-    )
-  })
 })
 
 describe('api.post', () => {
@@ -133,5 +136,13 @@ describe('api.delete', () => {
       expect.any(String),
       expect.objectContaining({ method: 'DELETE' })
     )
+  })
+})
+
+describe('createApiForServer – unknown server', () => {
+  it('throws NetworkError for unknown serverId', async () => {
+    const unknownApi = createApiForServer('srv_unknown')
+    mockFetch.mockResolvedValueOnce(mockOkResponse({}))
+    await expect(unknownApi.get('/api/test')).rejects.toThrow(NetworkError)
   })
 })

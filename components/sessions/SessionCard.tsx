@@ -5,17 +5,19 @@ import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { SessionStatusBadge } from './SessionStatusBadge'
 import { MachineBadge } from './MachineBadge'
+import { ServerBadge } from '@/components/servers/ServerBadge'
 import { Badge } from '@/components/ui/Badge'
 import { dark, font, radius, spacing } from '@/constants/theme'
-import type { Session } from '@/types/api'
+import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useServersStore } from '@/stores/servers'
 
 // Track which session IDs have already played their enter animation so
 // polling-driven remounts don't re-trigger FadeInDown.
 const _animatedIds = new Set<string>()
 
 interface Props {
-  session: Session
+  session: MultiSession
 }
 
 function formatElapsed(ms: number): string {
@@ -29,14 +31,16 @@ function formatElapsed(ms: number): string {
 
 export function SessionCard({ session }: Props) {
   const router = useRouter()
-  const { cancelSession } = useSessionActions(session.id)
-  const isNew = !_animatedIds.has(session.id)
-  if (isNew) _animatedIds.add(session.id)
+  const { cancelSession } = useSessionActions(session.serverId, session.id)
+  const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+  const compoundId = `${session.serverId}::${session.id}`
+  const isNew = !_animatedIds.has(compoundId)
+  if (isNew) _animatedIds.add(compoundId)
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
-    router.push(`/session/${session.id}`)
-  }, [session.id, router])
+    router.push(`/session/${session.id}?server=${session.serverId}`)
+  }, [session.id, session.serverId, router])
 
   const handleLongPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
@@ -58,14 +62,14 @@ export function SessionCard({ session }: Props) {
               },
             ])
           } else if (index === 1) {
-            router.push(`/session/${session.id}`)
+            router.push(`/session/${session.id}?server=${session.serverId}`)
           }
         }
       )
     } else {
       Alert.alert('Session Actions', session.projectName, [
         { text: 'Copy Session ID', onPress: () => {} },
-        { text: 'Send Input', onPress: () => router.push(`/session/${session.id}`) },
+        { text: 'Send Input', onPress: () => router.push(`/session/${session.id}?server=${session.serverId}`) },
         { text: 'Cancel Session', style: 'destructive', onPress: () => cancelSession.mutate() },
         { text: 'Dismiss', style: 'cancel' },
       ])
@@ -91,6 +95,9 @@ export function SessionCard({ session }: Props) {
           ) : null}
           {session.machineName ? (
             <MachineBadge machineName={session.machineName} />
+          ) : null}
+          {multipleServers ? (
+            <ServerBadge serverId={session.serverId} label={session.serverLabel} />
           ) : null}
         </View>
 

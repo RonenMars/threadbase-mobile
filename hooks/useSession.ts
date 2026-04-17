@@ -1,48 +1,58 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { api } from '@/services/api-client'
-import { wsClient } from '@/services/ws-client'
+import { createApiForServer } from '@/services/api-client'
+import { wsManager } from '@/services/ws-client'
 import { useSessionsStore } from '@/stores/sessions'
+import { useServersStore } from '@/stores/servers'
 import type { Session } from '@/types/api'
 
 export function useSessions() {
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
   const setSessions = useSessionsStore((s) => s.setSessions)
   const updateSession = useSessionsStore((s) => s.updateSession)
 
-  // WebSocket wiring
+  // WebSocket wiring across all servers
   useEffect(() => {
-    const unsubList = wsClient.on('session_list', (msg) => {
-      if (msg.type === 'session_list') setSessions(msg.sessions)
+    const unsubList = wsManager.onAll('session_list', (msg) => {
+      if (msg.type === 'session_list') setSessions(msg.serverId, msg.sessions)
     })
-    const unsubUpdate = wsClient.on('session_update', (msg) => {
-      if (msg.type === 'session_update') updateSession(msg.session.id, msg.session)
+    const unsubUpdate = wsManager.onAll('session_update', (msg) => {
+      if (msg.type === 'session_update') updateSession(msg.serverId, msg.session.id, msg.session)
     })
     return () => {
       unsubList()
       unsubUpdate()
     }
-  }, [setSessions, updateSession])
+  }, [activeServerIds, setSessions, updateSession])
 
   const query = useQuery({
-    queryKey: ['sessions'],
-    queryFn: () => api.get<Session[]>('/api/sessions'),
+    queryKey: ['sessions', ...activeServerIds],
+    queryFn: async () => {
+      const results = await Promise.all(
+        activeServerIds.map(async (serverId) => {
+          const api = createApiForServer(serverId)
+          const sessions = await api.get<Session[]>('/api/sessions')
+          return { serverId, sessions }
+        })
+      )
+      for (const { serverId, sessions } of results) {
+        setSessions(serverId, sessions)
+      }
+      return results
+    },
     refetchInterval: 3000,
     staleTime: 1000,
+    enabled: activeServerIds.length > 0,
   })
-
-  useEffect(() => {
-    if (query.data) {
-      setSessions(query.data)
-    }
-  }, [query.data, setSessions])
 
   return query
 }
 
-export function useSessionDetail(id: string) {
+export function useSessionDetail(serverId: string, sessionId: string) {
+  const api = createApiForServer(serverId)
   return useQuery({
-    queryKey: ['session', id],
-    queryFn: () => api.get<Session>(`/api/sessions/${id}`),
+    queryKey: ['session', serverId, sessionId],
+    queryFn: () => api.get<Session>(`/api/sessions/${sessionId}`),
     refetchInterval: 5000,
   })
 }

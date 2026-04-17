@@ -113,3 +113,38 @@ export interface PushRegisterPayload {
   token: string
   platform: 'ios' | 'android'
 }
+
+// ── Multi-server types ──────────────────────────────────────────────────
+
+export interface ServerConfig {
+  id: string
+  url: string
+  apiKey: string
+  label?: string
+  isConnected: boolean
+  serverInfo: ServerInfo | null
+}
+
+export interface MultiSession extends Session {
+  serverId: string
+  serverLabel?: string
+}
+
+export interface MultiConversation extends Conversation {
+  serverId: string
+  serverLabel?: string
+}
+
+/**
+ * Deterministic server ID derived from the URL.
+ * Normalises the URL (lowercase host, strip trailing slash) then produces a
+ * short alphanumeric hash so the same server always maps to the same key.
+ */
+export function serverIdFromUrl(raw: string): string {
+  const normalised = raw.replace(/\/+$/, '').toLowerCase()
+  let hash = 0
+  for (let i = 0; i < normalised.length; i++) {
+    hash = ((hash << 5) - hash + normalised.charCodeAt(i)) | 0
+  }
+  return 'srv_' + Math.abs(hash).toString(36)
+}

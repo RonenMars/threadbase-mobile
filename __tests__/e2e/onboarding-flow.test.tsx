@@ -15,17 +15,13 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }))
 
-// Mock the connection store so setConnection doesn't use a dynamic import()
-const mockSetConnection = jest.fn().mockResolvedValue(undefined)
-const mockSetConnected = jest.fn()
-jest.mock('@/stores/connection', () => ({
-  useConnectionStore: jest.fn(() => ({
-    setConnection: mockSetConnection,
-    setConnected: mockSetConnected,
-    serverUrl: 'http://localhost:7070',
-    apiKey: '',
-    isConnected: false,
-    serverInfo: null,
+// Mock the servers store so addServer doesn't use a dynamic import()
+const mockAddServer = jest.fn().mockResolvedValue('srv_test')
+jest.mock('@/stores/servers', () => ({
+  useServersStore: jest.fn(() => ({
+    addServer: mockAddServer,
+    servers: {},
+    activeServerIds: [],
     isLoading: false,
   })),
 }))
@@ -36,8 +32,7 @@ global.fetch = mockFetch
 beforeEach(() => {
   mockFetch.mockReset()
   mockReplace.mockReset()
-  mockSetConnection.mockReset().mockResolvedValue(undefined)
-  mockSetConnected.mockReset()
+  mockAddServer.mockReset().mockResolvedValue('srv_test')
 })
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
@@ -71,6 +66,11 @@ describe('Onboarding – initial render', () => {
   it('shows the cch hint text', () => {
     const { getByText } = render(<OnboardingScreen />)
     expect(getByText(/cch serve/)).toBeTruthy()
+  })
+
+  it('shows optional Label field', () => {
+    const { getByPlaceholderText } = render(<OnboardingScreen />)
+    expect(getByPlaceholderText(/Work Mac/)).toBeTruthy()
   })
 })
 

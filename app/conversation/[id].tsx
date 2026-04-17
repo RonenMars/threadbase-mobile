@@ -8,7 +8,8 @@ import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { useConversation } from '@/hooks/useConversations'
-import { api } from '@/services/api-client'
+import { createApiForServer } from '@/services/api-client'
+import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
 import { useEffect } from 'react'
@@ -50,10 +51,15 @@ function MessageItem({ message }: { message: Message }) {
 }
 
 export default function ConversationDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const navigation = useNavigation()
   const router = useRouter()
-  const { data: conversation, isLoading, error, refetch } = useConversation(id)
+
+  // Fall back to first server if no server param provided
+  const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
+  const serverId = server || fallbackServerId
+
+  const { data: conversation, isLoading, error, refetch } = useConversation(serverId, id)
   const listRef = useRef<FlashList<Message>>(null)
   const hasInitialScrolled = useRef(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -89,10 +95,12 @@ export default function ConversationDetailScreen() {
   }, [id])
 
   const resumeSession = useMutation({
-    mutationFn: () =>
-      api.post<{ sessionId: string }>('/api/sessions/resume', { conversationId: id }),
+    mutationFn: () => {
+      const api = createApiForServer(serverId)
+      return api.post<{ sessionId: string }>('/api/sessions/resume', { conversationId: id })
+    },
     onSuccess: (data) => {
-      router.push(`/session/${data.sessionId}`)
+      router.push(`/session/${data.sessionId}?server=${serverId}`)
     },
   })
 

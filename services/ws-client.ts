@@ -131,4 +131,76 @@ class WSClient {
   }
 }
 
+export type WSMessageWithServer = WSMessage & { serverId: string }
+
+type ServerMessageHandler = (msg: WSMessageWithServer) => void
+
+class WSClientManager {
+  private clients: Map<string, WSClient> = new Map()
+
+  connect(serverId: string, url: string, apiKey: string) {
+    // Disconnect existing client for this server if any
+    this.disconnect(serverId)
+    const client = new WSClient()
+    this.clients.set(serverId, client)
+    client.connect(url, apiKey)
+  }
+
+  disconnect(serverId: string) {
+    const client = this.clients.get(serverId)
+    if (client) {
+      client.disconnect()
+      this.clients.delete(serverId)
+    }
+  }
+
+  disconnectAll() {
+    for (const [id] of this.clients) {
+      this.disconnect(id)
+    }
+  }
+
+  getClient(serverId: string): WSClient | undefined {
+    return this.clients.get(serverId)
+  }
+
+  /** Register a handler across ALL active (and future) clients for a given message type. */
+  onAll(type: string, handler: ServerMessageHandler): () => void {
+    const unsubs: Array<() => void> = []
+    for (const [serverId, client] of this.clients) {
+      const unsub = client.on(type, (msg) => handler({ ...msg, serverId }))
+      unsubs.push(unsub)
+    }
+    return () => unsubs.forEach((u) => u())
+  }
+
+  /** Listen for status changes on a specific server's client. */
+  onStatusChange(serverId: string, listener: (s: 'connecting' | 'connected' | 'disconnected') => void): () => void {
+    const client = this.clients.get(serverId)
+    if (!client) return () => {}
+    return client.onStatusChange(listener)
+  }
+
+  /** Listen for status changes on ALL clients. */
+  onAnyStatusChange(listener: (serverId: string, s: 'connecting' | 'connected' | 'disconnected') => void): () => void {
+    const unsubs: Array<() => void> = []
+    for (const [serverId, client] of this.clients) {
+      const unsub = client.onStatusChange((s) => listener(serverId, s))
+      unsubs.push(unsub)
+    }
+    return () => unsubs.forEach((u) => u())
+  }
+
+  status(serverId: string): 'connecting' | 'connected' | 'disconnected' {
+    return this.clients.get(serverId)?.status() ?? 'disconnected'
+  }
+
+  send(serverId: string, msg: unknown) {
+    this.clients.get(serverId)?.send(msg)
+  }
+}
+
+export const wsManager = new WSClientManager()
+
+/** @deprecated Use wsManager instead. */
 export const wsClient = new WSClient()

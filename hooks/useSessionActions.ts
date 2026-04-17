@@ -1,14 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/services/api-client'
+import { createApiForServer } from '@/services/api-client'
 
-export function useSessionActions(sessionId: string) {
+export function useSessionActions(serverId: string, sessionId: string) {
   const qc = useQueryClient()
+  const api = createApiForServer(serverId)
 
   const sendInput = useMutation({
     mutationFn: (input: string) =>
       api.post(`/api/sessions/${sessionId}/input`, { input }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['session', sessionId] })
+      qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
     },
   })
 
@@ -30,8 +31,8 @@ export function useSessionActions(sessionId: string) {
   })
 
   const respondToPlan = useMutation({
-    mutationFn: (action: 'proceed' | 'cancel' | 'edit', editedPrompt?: string) =>
-      api.post(`/api/sessions/${sessionId}/plan-response`, { action, editedPrompt }),
+    mutationFn: (vars: { action: 'proceed' | 'cancel' | 'edit'; editedPrompt?: string }) =>
+      api.post(`/api/sessions/${sessionId}/plan-response`, vars),
   })
 
   return { sendInput, cancelSession, addToQueue, removeFromQueue, respondToPlan }

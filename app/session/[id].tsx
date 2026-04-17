@@ -19,7 +19,8 @@ import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { wsClient } from '@/services/ws-client'
+import { wsManager } from '@/services/ws-client'
+import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 
 function formatElapsed(ms: number): string {
@@ -31,11 +32,16 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const navigation = useNavigation()
-  const { data: session, isLoading } = useSessionDetail(id)
-  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(id)
-  const { sendInput } = useSessionActions(id)
+
+  // Fall back to first server if no server param provided (backwards compat)
+  const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
+  const serverId = server || fallbackServerId
+
+  const { data: session, isLoading } = useSessionDetail(serverId, id)
+  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id)
+  const { sendInput } = useSessionActions(serverId, id)
 
   const [inputText, setInputText] = useState('')
   const [queueVisible, setQueueVisible] = useState(false)
@@ -48,15 +54,17 @@ export default function SessionDetailScreen() {
     }
   }, [session, navigation])
 
-  // Listen for plan_ready events for this session
+  // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
-    return wsClient.on('plan_ready', (msg) => {
+    const client = wsManager.getClient(serverId)
+    if (!client) return
+    return client.on('plan_ready', (msg) => {
       if (msg.type === 'plan_ready' && msg.sessionId === id) {
         setPendingPlan(msg.plan)
         setPlanVisible(true)
       }
     })
-  }, [id])
+  }, [serverId, id])
 
   const handleSendInput = () => {
     if (!inputText.trim()) return
@@ -133,6 +141,7 @@ export default function SessionDetailScreen() {
 
       {session ? (
         <PromptQueueSheet
+          serverId={serverId}
           sessionId={id}
           visible={queueVisible}
           onClose={() => setQueueVisible(false)}
@@ -141,6 +150,7 @@ export default function SessionDetailScreen() {
 
       {pendingPlan ? (
         <PlanPreviewSheet
+          serverId={serverId}
           sessionId={id}
           plan={pendingPlan}
           visible={planVisible}
