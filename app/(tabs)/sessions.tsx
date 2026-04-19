@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KanbanBoard } from '@/components/sessions/KanbanBoard'
@@ -7,11 +7,11 @@ import { useSessionsStore } from '@/stores/sessions'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
 import { dark, font, spacing } from '@/constants/theme'
+import type { MultiSession, SessionStatus } from '@/types/api'
 
 export default function SessionsScreen() {
   const { refetch } = useSessions()
-  const sessionsByStatus = useSessionsStore((s) => s.sessionsByStatus)
-  const servers = useServersStore((s) => s.servers)
+  const sessions = useSessionsStore((s) => s.sessions)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const [manualRefreshing, setManualRefreshing] = useState(false)
   const [connectedCount, setConnectedCount] = useState(0)
@@ -34,6 +34,20 @@ export default function SessionsScreen() {
     await refetch()
     setManualRefreshing(false)
   }
+
+  const grouped = useMemo(() => {
+    const result: Record<SessionStatus, MultiSession[]> = {
+      running: [],
+      waiting_input: [],
+      completed: [],
+      failed: [],
+      idle: [],
+    }
+    for (const session of sessions) {
+      result[session.status].push(session)
+    }
+    return result
+  }, [sessions])
 
   const total = activeServerIds.length
   const allConnected = connectedCount === total && total > 0
@@ -58,7 +72,7 @@ export default function SessionsScreen() {
       </View>
 
       <KanbanBoard
-        sessionsByStatus={sessionsByStatus()}
+        sessionsByStatus={grouped}
         onRefresh={handleRefresh}
         refreshing={manualRefreshing}
       />

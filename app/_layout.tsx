@@ -24,8 +24,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
   const navState = useRootNavigationState()
-  const { servers, activeServerIds, isLoading, loadPersistedServers, setConnected } =
-    useServersStore()
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const isLoading = useServersStore((s) => s.isLoading)
+  const loadPersistedServers = useServersStore((s) => s.loadPersistedServers)
+  const setConnected = useServersStore((s) => s.setConnected)
   const setSessions = useSessionsStore((s) => s.setSessions)
   const updateSession = useSessionsStore((s) => s.updateSession)
 
@@ -46,7 +48,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       }
     })
     return () => cancelAnimationFrame(handle)
-  }, [activeServerIds, isLoading, segments, router, navState?.key])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- segments is read but intentionally
+    // excluded: this effect should only fire on auth-state changes (activeServerIds/isLoading),
+    // not on every tab switch. Reading segments from the closure is correct here.
+  }, [activeServerIds, isLoading, navState?.key])
 
   // Wire WebSocket for all servers
   useEffect(() => {

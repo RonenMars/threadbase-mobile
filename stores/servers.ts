@@ -57,7 +57,7 @@ async function persistServerList(servers: Record<string, ServerConfig>, order: s
 export const useServersStore = create<ServersStore>((set, get) => ({
   servers: {},
   activeServerIds: [],
-  isLoading: false,
+  isLoading: true,
 
   get serverUrl() {
     const { servers, activeServerIds } = get()
