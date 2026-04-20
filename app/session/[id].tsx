@@ -90,12 +90,27 @@ export default function SessionDetailScreen() {
         ) : null}
 
         <View style={styles.terminal}>
-          <TerminalOutput lines={lines} isStreaming={isStreaming} />
-          {isLoadingHistory ? (
-            <View style={styles.historyLoader}>
-              <ActivityIndicator color={dark.text.secondary} />
+          {!isLoadingHistory && lines.length === 0 && session?.source === 'discovered' ? (
+            <View style={styles.discoveredInfo}>
+              <Text style={styles.discoveredTitle}>Discovered Session</Text>
+              <Text style={styles.discoveredText}>
+                This session was started outside the streamer.{'\n'}
+                Terminal output is only available for sessions started via Resume.
+              </Text>
+              {session.projectPath ? (
+                <Text style={styles.discoveredPath}>{session.projectPath}</Text>
+              ) : null}
             </View>
-          ) : null}
+          ) : (
+            <>
+              <TerminalOutput lines={lines} isStreaming={isStreaming} />
+              {isLoadingHistory ? (
+                <View style={styles.historyLoader}>
+                  <ActivityIndicator color={dark.text.secondary} />
+                </View>
+              ) : null}
+            </>
+          )}
         </View>
 
         {isWaiting ? (
@@ -185,6 +200,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: dark.bg.primary,
+  },
+  discoveredInfo: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  discoveredTitle: {
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+  },
+  discoveredText: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  discoveredPath: {
+    color: dark.text.accent,
+    fontSize: font.xs,
+    fontFamily: 'monospace',
+    marginTop: spacing.sm,
   },
   inputArea: {
     borderTopWidth: 1,

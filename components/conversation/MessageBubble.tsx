@@ -31,8 +31,17 @@ function TextContent({ text }: { text: string }) {
   )
 }
 
+const MAX_CODE_LINES = 20
+
 function CodeBlock({ code }: { code: string }) {
+  const [expanded, setExpanded] = useState(false)
   const copy = () => Clipboard.setStringAsync(code)
+  const lines = code.split('\n')
+  const shouldCollapse = lines.length > MAX_CODE_LINES
+  const displayed = shouldCollapse && !expanded
+    ? lines.slice(0, MAX_CODE_LINES).join('\n')
+    : code
+
   return (
     <View style={styles.codeBlock}>
       <View style={styles.codeHeader}>
@@ -42,8 +51,15 @@ function CodeBlock({ code }: { code: string }) {
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <Text style={styles.codeText} selectable>{code}</Text>
+        <Text style={styles.codeText} selectable>{displayed}</Text>
       </ScrollView>
+      {shouldCollapse ? (
+        <TouchableOpacity onPress={() => setExpanded((v) => !v)} style={styles.codeExpandBtn}>
+          <Text style={styles.codeExpandText}>
+            {expanded ? 'Show less' : `Show all ${lines.length} lines`}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   )
 }
@@ -154,6 +170,16 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: font.xs,
     padding: spacing.sm,
+  },
+  codeExpandBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: '#1c2128',
+  },
+  codeExpandText: {
+    color: dark.text.accent,
+    fontSize: font.xs,
   },
   toolTag: {
     backgroundColor: `${dark.text.accent}20`,

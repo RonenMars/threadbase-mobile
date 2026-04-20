@@ -97,10 +97,10 @@ export default function ConversationDetailScreen() {
   const resumeSession = useMutation({
     mutationFn: () => {
       const api = createApiForServer(serverId)
-      return api.post<{ sessionId: string }>('/api/sessions/resume', { conversationId: id })
+      return api.post<{ id: string }>('/api/sessions/resume', { conversationId: id })
     },
     onSuccess: (data) => {
-      router.push(`/session/${data.sessionId}?server=${serverId}`)
+      router.push(`/session/${data.id}?server=${serverId}`)
     },
   })
 
@@ -163,6 +163,7 @@ export default function ConversationDetailScreen() {
             contentContainerStyle={styles.listContent}
             onScroll={handleScroll}
             scrollEventThrottle={100}
+            estimatedItemSize={120}
           />
           {showScrollTop ? (
             <TouchableOpacity
@@ -204,7 +205,7 @@ export default function ConversationDetailScreen() {
           <TouchableOpacity
             style={[
               styles.resumeBtn,
-              (resumeSession.isPending || resumeSession.isError) && styles.resumeBtnDisabled,
+              resumeSession.isPending && styles.resumeBtnDisabled,
             ]}
             onPress={() => resumeSession.mutate()}
             disabled={resumeSession.isPending}
