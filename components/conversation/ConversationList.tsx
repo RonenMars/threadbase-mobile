@@ -34,6 +34,9 @@ function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
     >
       <View style={styles.rowMain}>
         <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
+        {c.sessionName ? (
+          <Text style={styles.sessionName} numberOfLines={1}>{c.sessionName}</Text>
+        ) : null}
         <View style={styles.meta}>
           <Text style={styles.metaText}>{c.projectPath.split('/').pop()}</Text>
           {c.branch ? (
@@ -144,6 +147,10 @@ const styles = StyleSheet.create({
     color: dark.text.primary,
     fontSize: font.base,
     fontWeight: '500',
+  },
+  sessionName: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
   },
   meta: {
     flexDirection: 'row',

@@ -19,6 +19,7 @@ export interface Session {
 export interface Conversation {
   id: string
   title: string
+  sessionName?: string
   projectPath: string
   branch?: string
   messageCount: number
