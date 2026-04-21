@@ -12,6 +12,8 @@ export interface Session {
   promptCount: number
   startedAt: string
   completedAt?: string
+  source?: 'managed' | 'discovered'
+  conversationId?: string
 }
 
 export interface Conversation {
