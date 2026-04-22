@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useServersStore } from '@/stores/servers'
+import { useSettingsStore } from '@/stores/settings'
 import type { MultiConversation } from '@/types/api'
 
 function formatDate(iso: string): string {
@@ -18,6 +19,17 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString()
 }
 
+const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function formatMessageTime(iso: string): string {
+  const d = new Date(iso)
+  const mon = SHORT_MONTHS[d.getMonth()]
+  const day = d.getDate()
+  const h = d.getHours()
+  const m = d.getMinutes().toString().padStart(2, '0')
+  return `${mon} ${day}, ${h}:${m}`
+}
+
 interface RowProps {
   conversation: MultiConversation
   showServerBadge: boolean
@@ -25,6 +37,9 @@ interface RowProps {
 
 function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
   const router = useRouter()
+  const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
+  const msg = displayPref === 'last' ? (c.lastMessage ?? c.firstMessage) : (c.firstMessage ?? c.lastMessage)
+  const previewText = msg?.text ?? c.preview
   return (
     <TouchableOpacity
       style={styles.row}
@@ -36,6 +51,12 @@ function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
         <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
         {c.sessionName ? (
           <Text style={styles.sessionName} numberOfLines={1}>{c.sessionName}</Text>
+        ) : null}
+        {previewText ? (
+          <Text style={styles.messagePreview} numberOfLines={1}>
+            {msg?.timestamp ? `${formatMessageTime(msg.timestamp)} · ` : ''}
+            {previewText.length > 80 ? previewText.slice(0, 80) + '...' : previewText}
+          </Text>
         ) : null}
         <View style={styles.meta}>
           <Text style={styles.metaText}>{c.projectPath.split('/').pop()}</Text>
@@ -151,6 +172,11 @@ const styles = StyleSheet.create({
   sessionName: {
     color: dark.text.secondary,
     fontSize: font.xs,
+  },
+  messagePreview: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+    fontStyle: 'italic',
   },
   meta: {
     flexDirection: 'row',
