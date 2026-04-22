@@ -6,10 +6,12 @@ interface SettingsStore {
   completedSessionFadeMs: number
   terminalMaxLines: number
   notifications: NotificationPreferences
+  historyMessageDisplay: 'first' | 'last'
   setColorScheme: (scheme: 'dark' | 'light' | 'system') => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
+  setHistoryMessageDisplay: (v: 'first' | 'last') => void
 }
 
 const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
@@ -28,6 +30,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   completedSessionFadeMs: 60000,
   terminalMaxLines: 5000,
   notifications: DEFAULT_NOTIFICATIONS,
+  historyMessageDisplay: 'first',
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
@@ -36,4 +39,5 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     set((state) => ({
       notifications: { ...state.notifications, ...prefs },
     })),
+  setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
 }))

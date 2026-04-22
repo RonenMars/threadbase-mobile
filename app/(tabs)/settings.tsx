@@ -44,7 +44,7 @@ function SettingsRow({
 export default function SettingsScreen() {
   const router = useRouter()
   const { servers, activeServerIds, removeServer } = useServersStore()
-  const { notifications, setNotifications } = useSettingsStore()
+  const { notifications, setNotifications, historyMessageDisplay, setHistoryMessageDisplay } = useSettingsStore()
 
   const handleTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
@@ -122,6 +122,47 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        <SectionHeader title="History" />
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Message Preview</Text>
+            <View style={styles.segmentedControl}>
+              <TouchableOpacity
+                style={[
+                  styles.segmentBtn,
+                  historyMessageDisplay === 'first' && styles.segmentBtnActive,
+                ]}
+                onPress={() => setHistoryMessageDisplay('first')}
+              >
+                <Text
+                  style={[
+                    styles.segmentBtnText,
+                    historyMessageDisplay === 'first' && styles.segmentBtnTextActive,
+                  ]}
+                >
+                  First
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.segmentBtn,
+                  historyMessageDisplay === 'last' && styles.segmentBtnActive,
+                ]}
+                onPress={() => setHistoryMessageDisplay('last')}
+              >
+                <Text
+                  style={[
+                    styles.segmentBtnText,
+                    historyMessageDisplay === 'last' && styles.segmentBtnTextActive,
+                  ]}
+                >
+                  Last
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         <SectionHeader title="About" />
         <View style={styles.card}>
           <Text style={styles.aboutText}>Threadbase Mobile v1.0.0</Text>
@@ -190,6 +231,28 @@ const styles = StyleSheet.create({
   testBtnText: {
     color: dark.text.accent,
     fontSize: font.base,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: dark.bg.primary,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+  },
+  segmentBtn: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+  },
+  segmentBtnActive: {
+    backgroundColor: dark.text.accent,
+  },
+  segmentBtnText: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    fontWeight: '500',
+  },
+  segmentBtnTextActive: {
+    color: '#fff',
   },
   aboutText: {
     color: dark.text.primary,
