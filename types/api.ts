@@ -16,14 +16,24 @@ export interface Session {
   conversationId?: string
 }
 
+export interface MessageSnapshot {
+  text: string
+  timestamp: string
+}
+
 export interface Conversation {
   id: string
   title: string
   sessionName?: string
+  filePath?: string
   projectPath: string
   branch?: string
+  account?: string
+  preview?: string
   messageCount: number
   lastActivity: string
+  firstMessage?: MessageSnapshot
+  lastMessage?: MessageSnapshot
   model?: string
   totalTokens?: number
 }
