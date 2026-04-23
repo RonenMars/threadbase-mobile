@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useNavigation } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
@@ -34,6 +34,7 @@ function formatElapsed(ms: number): string {
 export default function SessionDetailScreen() {
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const navigation = useNavigation()
+  const router = useRouter()
 
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
@@ -99,6 +100,14 @@ export default function SessionDetailScreen() {
               </Text>
               {session.projectPath ? (
                 <Text style={styles.discoveredPath}>{session.projectPath}</Text>
+              ) : null}
+              {session.conversationId ? (
+                <TouchableOpacity
+                  style={styles.viewConversationBtn}
+                  onPress={() => router.push(`/conversation/${session.conversationId}?server=${serverId}`)}
+                >
+                  <Text style={styles.viewConversationBtnText}>View Conversation</Text>
+                </TouchableOpacity>
               ) : null}
             </View>
           ) : (
@@ -224,6 +233,20 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     fontFamily: 'monospace',
     marginTop: spacing.sm,
+  },
+  viewConversationBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: dark.text.accent,
+    borderRadius: 10,
+    paddingHorizontal: spacing.lg,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewConversationBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: font.base,
   },
   inputArea: {
     borderTopWidth: 1,

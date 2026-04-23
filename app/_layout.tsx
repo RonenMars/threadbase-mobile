@@ -119,7 +119,7 @@ export default function RootLayout() {
                 contentStyle: { backgroundColor: '#0d1117' },
               }}
             >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
               <Stack.Screen
                 name="session/[id]"
