@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "default",
     "scheme": "threadbase",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "backgroundColor": "#0d1117"
@@ -24,6 +25,7 @@
     "android": {
       "package": "com.ronenmars.threadbase",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"
       },
       "permissions": [
