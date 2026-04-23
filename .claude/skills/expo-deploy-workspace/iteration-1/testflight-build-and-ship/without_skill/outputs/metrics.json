@@ -1,0 +1,13 @@
+{
+  "tool_calls": {
+    "Read": 3,
+    "Glob": 1,
+    "Bash": 1,
+    "Write": 2
+  },
+  "total_tool_calls": 7,
+  "files_created": [
+    "/Users/ronen/Desktop/dev/personal/threadbase/mobile/.claude/skills/expo-deploy-workspace/iteration-1/testflight-build-and-ship/without_skill/outputs/response.md",
+    "/Users/ronen/Desktop/dev/personal/threadbase/mobile/.claude/skills/expo-deploy-workspace/iteration-1/testflight-build-and-ship/without_skill/outputs/metrics.json"
+  ]
+}

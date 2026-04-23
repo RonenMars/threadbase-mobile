@@ -1,0 +1,32 @@
+{
+  "eval_id": 2,
+  "eval_name": "monitor-and-non-cli-submit",
+  "prompt": "I kicked off an EAS build like 20 minutes ago and I don't remember the URL. How do I check if it's done? Also once it finishes I want to know my options for getting it to testers without using the terminal.",
+  "assertions": [
+    {
+      "id": "a1",
+      "text": "Runs or recommends `eas build:list` to find the build and its status",
+      "type": "content_check"
+    },
+    {
+      "id": "a2",
+      "text": "Mentions the Expo web dashboard as an alternative to check build status",
+      "type": "content_check"
+    },
+    {
+      "id": "a3",
+      "text": "Provides the Expo dashboard URL pattern or tells user to go to expo.dev",
+      "type": "content_check"
+    },
+    {
+      "id": "a4",
+      "text": "Explains at least 2 non-CLI options for submitting to TestFlight",
+      "type": "content_check"
+    },
+    {
+      "id": "a5",
+      "text": "Does NOT default to CLI commands for the submission part since user asked for non-terminal options",
+      "type": "quality_check"
+    }
+  ]
+}

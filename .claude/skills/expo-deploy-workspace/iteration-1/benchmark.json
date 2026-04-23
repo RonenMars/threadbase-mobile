@@ -1,0 +1,181 @@
+{
+  "metadata": {
+    "skill_name": "expo-deploy",
+    "skill_path": "/Users/ronen/Desktop/dev/personal/threadbase/mobile/.claude/skills/expo-deploy",
+    "timestamp": "2026-04-23T00:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "testflight-build-and-ship",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 51.7,
+        "tokens": 29607,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Runs or recommends eas build --platform ios --profile production", "passed": true, "evidence": "Exact command with --message flag"},
+        {"text": "Explains how to monitor the build", "passed": true, "evidence": "eas build:list, eas build:view, and build URL"},
+        {"text": "Runs or recommends eas submit --platform ios --profile production --latest", "passed": true, "evidence": "Exact command on line 69"},
+        {"text": "Mentions --auto-submit shortcut", "passed": true, "evidence": "Pro tip section with combined command"},
+        {"text": "Explains Apple processing time (5-30 min)", "passed": true, "evidence": "Explicit mention with no-CLI-for-this caveat"},
+        {"text": "Tells user to verify in TestFlight", "passed": true, "evidence": "Steps 5 and 6 cover ASC and tester distribution"},
+        {"text": "Clearly separates CLI vs browser steps", "passed": true, "evidence": "Summary table with Tool column (CLI/Website)"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "testflight-build-and-ship",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 63.0,
+        "tokens": 28434,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Runs or recommends eas build --platform ios --profile production", "passed": true, "evidence": "Correct command on line 47"},
+        {"text": "Explains how to monitor the build", "passed": true, "evidence": "Terminal monitoring and URL mentioned"},
+        {"text": "Runs or recommends eas submit --platform ios --profile production --latest", "passed": true, "evidence": "eas submit --platform ios --latest (omits --profile but works)"},
+        {"text": "Mentions --auto-submit shortcut", "passed": true, "evidence": "Combined command shown on lines 78-80"},
+        {"text": "Explains Apple processing time (5-30 min)", "passed": true, "evidence": "'typically takes 5-30 minutes'"},
+        {"text": "Tells user to verify in TestFlight", "passed": true, "evidence": "ASC TestFlight tab instructions"},
+        {"text": "Clearly separates CLI vs browser steps", "passed": true, "evidence": "'When you need the website:' section"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "monitor-and-non-cli-submit",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 44.5,
+        "tokens": 28111,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Runs or recommends eas build:list", "passed": true, "evidence": "Primary recommendation"},
+        {"text": "Mentions Expo web dashboard", "passed": true, "evidence": "Full instructions for expo.dev"},
+        {"text": "Provides Expo dashboard URL or expo.dev", "passed": true, "evidence": "expo.dev with ronenmars account"},
+        {"text": "At least 2 non-CLI submission options", "passed": true, "evidence": "3 options: Expo dashboard, Transporter, direct download"},
+        {"text": "Does NOT default to CLI for submission", "passed": true, "evidence": "All options are web/GUI-based"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "monitor-and-non-cli-submit",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 53.3,
+        "tokens": 27674,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Runs or recommends eas build:list", "passed": true, "evidence": "Mentioned as terminal alternative"},
+        {"text": "Mentions Expo web dashboard", "passed": true, "evidence": "Primary recommendation with full URL"},
+        {"text": "Provides Expo dashboard URL or expo.dev", "passed": true, "evidence": "Specific URL: expo.dev/accounts/ronenmars/projects/threadbase-mobile/builds"},
+        {"text": "At least 2 non-CLI submission options", "passed": true, "evidence": "5 options: direct link, internal distribution, EAS Update, TestFlight via dashboard, QR codes"},
+        {"text": "Does NOT default to CLI for submission", "passed": true, "evidence": "All five methods are web/dashboard-based"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "full-app-store-release",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 70.6,
+        "tokens": 31999,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Addresses version bump in app.json", "passed": true, "evidence": "Clear diff, states 'only file change needed'"},
+        {"text": "Explains build number auto-increment via EAS", "passed": true, "evidence": "autoIncrement and remote version source explained"},
+        {"text": "Includes building with production profile", "passed": true, "evidence": "eas build --platform ios --profile production"},
+        {"text": "Includes submitting to App Store Connect", "passed": true, "evidence": "eas submit with --latest flag"},
+        {"text": "Walks through ASC steps", "passed": true, "evidence": "Step 7: version creation, release notes, screenshots, build selection, review submission"},
+        {"text": "Mentions Apple review timeline", "passed": true, "evidence": "'typically takes 24-48 hours'"},
+        {"text": "Mentions manual vs automatic release", "passed": true, "evidence": "Both options explained in setup and release steps"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "full-app-store-release",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 61.7,
+        "tokens": 28677,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Addresses version bump in app.json", "passed": true, "evidence": "Shows changes in app.json AND package.json"},
+        {"text": "Explains build number auto-increment via EAS", "passed": true, "evidence": "appVersionSource and autoIncrement explained"},
+        {"text": "Includes building with production profile", "passed": true, "evidence": "eas build --platform ios --profile production"},
+        {"text": "Includes submitting to App Store Connect", "passed": true, "evidence": "eas submit --platform ios --profile production"},
+        {"text": "Walks through ASC steps", "passed": true, "evidence": "Version creation, build selection, metadata, review info"},
+        {"text": "Mentions Apple review timeline", "passed": true, "evidence": "'typically takes 24-48 hours, though it can be faster'"},
+        {"text": "Mentions manual vs automatic release", "passed": true, "evidence": "Manual, automatic, AND scheduled release options"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 55.6, "stddev": 13.5, "min": 44.5, "max": 70.6},
+      "tokens": {"mean": 29906, "stddev": 1984, "min": 28111, "max": 31999}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 59.3, "stddev": 5.0, "min": 53.3, "max": 63.0},
+      "tokens": {"mean": 28262, "stddev": 490, "min": 27674, "max": 28677}
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-3.7",
+      "tokens": "+1644"
+    }
+  },
+  "notes": [
+    "All assertions pass at 100% for both configurations — the current assertions are non-discriminating and cannot differentiate skill value",
+    "With-skill uses ~1600 more tokens on average (reads the skill file) but is ~3.7s faster on average",
+    "Key qualitative differences not captured by assertions: with-skill gives inline troubleshooting, more precise version guidance (only app.json vs app.json+package.json), and project-specific details without needing to read config files",
+    "Without-skill sometimes provides MORE options (eval 2: 5 options vs 3) and additional helpful steps (running tests, git tagging)",
+    "The skill's primary value appears to be consistency and precision rather than enabling capabilities Claude lacks"
+  ]
+}

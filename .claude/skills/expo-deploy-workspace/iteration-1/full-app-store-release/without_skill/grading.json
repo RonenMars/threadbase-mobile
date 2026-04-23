@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Addresses the version bump from 1.0.0 to 1.1.0 (updating app.json version field)",
+      "passed": true,
+      "evidence": "Lines 10-16: Shows changes in both app.json and package.json"
+    },
+    {
+      "text": "Explains that build numbers auto-increment via EAS (appVersionSource: remote)",
+      "passed": true,
+      "evidence": "Lines 18-19: 'appVersionSource: remote and autoIncrement: true means EAS manages buildNumber automatically'"
+    },
+    {
+      "text": "Includes building with production profile",
+      "passed": true,
+      "evidence": "Line 50: `eas build --platform ios --profile production`"
+    },
+    {
+      "text": "Includes submitting to App Store Connect",
+      "passed": true,
+      "evidence": "Lines 67-69: `eas submit --platform ios --profile production`"
+    },
+    {
+      "text": "Walks through App Store Connect steps: create new version, release notes, screenshots, select build, submit for review",
+      "passed": true,
+      "evidence": "Lines 85-98: Covers creating version, build selection, What's New, Screenshots, Description, App Review Information"
+    },
+    {
+      "text": "Mentions Apple review timeline (24-48 hours typical)",
+      "passed": true,
+      "evidence": "Line 111: 'Apple review typically takes 24-48 hours, though it can be faster'"
+    },
+    {
+      "text": "Mentions the choice between manual and automatic release after approval",
+      "passed": true,
+      "evidence": "Lines 105-108: manual, automatic, AND scheduled release options explained (more comprehensive)"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  }
+}

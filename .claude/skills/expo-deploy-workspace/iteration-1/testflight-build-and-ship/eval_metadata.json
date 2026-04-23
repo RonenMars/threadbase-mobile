@@ -1,0 +1,42 @@
+{
+  "eval_id": 1,
+  "eval_name": "testflight-build-and-ship",
+  "prompt": "I just merged a bunch of fixes into main and I want to get a new build out to my testers on TestFlight. Can you walk me through the whole thing? I'd rather use the CLI if possible but tell me when I need to go to a website.",
+  "assertions": [
+    {
+      "id": "a1",
+      "text": "Runs or recommends `eas build --platform ios --profile production`",
+      "type": "content_check"
+    },
+    {
+      "id": "a2",
+      "text": "Explains how to monitor the build (eas build:list or the build URL)",
+      "type": "content_check"
+    },
+    {
+      "id": "a3",
+      "text": "Runs or recommends `eas submit --platform ios --profile production --latest`",
+      "type": "content_check"
+    },
+    {
+      "id": "a4",
+      "text": "Mentions the --auto-submit flag as a shortcut to combine build+submit",
+      "type": "content_check"
+    },
+    {
+      "id": "a5",
+      "text": "Explains that Apple processing takes 5-30 minutes after submission",
+      "type": "content_check"
+    },
+    {
+      "id": "a6",
+      "text": "Tells the user to verify the build in TestFlight / App Store Connect",
+      "type": "content_check"
+    },
+    {
+      "id": "a7",
+      "text": "Clearly separates what can be done via CLI vs what requires a browser",
+      "type": "quality_check"
+    }
+  ]
+}
