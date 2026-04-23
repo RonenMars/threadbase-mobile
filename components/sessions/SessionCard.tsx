@@ -39,8 +39,12 @@ export function SessionCard({ session }: Props) {
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
-    router.push(`/session/${session.id}?server=${session.serverId}`)
-  }, [session.id, session.serverId, router])
+    if (session.source === 'discovered' && session.conversationId) {
+      router.push(`/conversation/${session.conversationId}?server=${session.serverId}`)
+    } else {
+      router.push(`/session/${session.id}?server=${session.serverId}`)
+    }
+  }, [session.id, session.serverId, session.source, session.conversationId, router])
 
   const handleLongPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
