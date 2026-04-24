@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
+import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 import { useSessionsStore } from '@/stores/sessions'
 import { registerPushTokenForAll } from '@/services/push'
@@ -31,9 +32,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const isLoading = useServersStore((s) => s.isLoading)
   const loadPersistedServers = useServersStore((s) => s.loadPersistedServers)
+  const hydrateSettings = useSettingsStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
   const setSessions = useSessionsStore((s) => s.setSessions)
   const updateSession = useSessionsStore((s) => s.updateSession)
+
+  useEffect(() => {
+    hydrateSettings()
+  }, [hydrateSettings])
 
   useEffect(() => {
     loadPersistedServers()

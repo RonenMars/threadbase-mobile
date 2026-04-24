@@ -18,6 +18,14 @@ interface RawSessionMeta {
   tool_names?: string[]
 }
 
+function toEpochMs(iso: string | undefined): number {
+  return iso ? new Date(iso).getTime() : 0
+}
+
+function sortByLastActivityDesc(a: MultiConversation, b: MultiConversation): number {
+  return toEpochMs(b.lastActivity) - toEpochMs(a.lastActivity)
+}
+
 function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, limit: number): ConversationPage {
   // Server may return ConversationPage directly (camelCase) or RawSessionMeta[] (snake_case array)
   if (!Array.isArray(raw)) {
@@ -48,14 +56,14 @@ interface MultiConversationPage {
 /** Increment (e.g. pull-to-refresh) to bust the streamer conversation cache on the first page. */
 export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) {
   const limit = 50
-  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
 
   return useInfiniteQuery({
-    queryKey: ['conversations', filter, refreshEpoch, ...activeServerIds],
+    queryKey: ['conversations', filter, refreshEpoch, ...displayedServerIds],
     queryFn: async ({ pageParam = 0 }): Promise<MultiConversationPage> => {
       const results = await Promise.all(
-        activeServerIds.map(async (serverId) => {
+        displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
           const params = new URLSearchParams()
           if (filter?.projectPath) params.set('project', filter.projectPath)
@@ -89,18 +97,14 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
       // vs a global merge. Single-server installs get correct cursor semantics.
 
       // Sort by lastActivity descending
-      merged.sort((a, b) => {
-        const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
-        const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
-        return tb - ta
-      })
+      merged.sort(sortByLastActivityDesc)
 
       return { conversations: merged, hasMore: anyHasMore }
     },
     getNextPageParam: (last: MultiConversationPage, _allPages, lastPageParam) =>
       last.hasMore ? (lastPageParam as number) + limit : undefined,
     initialPageParam: 0,
-    enabled: activeServerIds.length > 0,
+    enabled: displayedServerIds.length > 0,
   })
 }
 
@@ -255,14 +259,14 @@ export function useConversation(serverId: string, id: string) {
 }
 
 export function useConversationSearch(query: string) {
-  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
 
   return useQuery({
-    queryKey: ['conversations', 'search', query, ...activeServerIds],
+    queryKey: ['conversations', 'search', query, ...displayedServerIds],
     queryFn: async () => {
       const results = await Promise.all(
-        activeServerIds.map(async (serverId) => {
+        displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
           const raw = await api.get<RawSessionMeta[]>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
           return { serverId, page: adaptPage(raw, 0, 50) }
@@ -277,14 +281,10 @@ export function useConversationSearch(query: string) {
         }
       }
 
-      merged.sort((a, b) => {
-        const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
-        const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
-        return tb - ta
-      })
+      merged.sort(sortByLastActivityDesc)
 
       return { conversations: merged, hasMore: false, offset: 0, total: merged.length }
     },
-    enabled: query.length > 0 && activeServerIds.length > 0,
+    enabled: query.length > 0 && displayedServerIds.length > 0,
   })
 }

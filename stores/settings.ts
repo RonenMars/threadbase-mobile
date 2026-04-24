@@ -1,17 +1,23 @@
 import { create } from 'zustand'
 import type { NotificationPreferences } from '@/types/api'
 
+export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
+const ASYNC_KEY_SETTINGS = 'threadbase_settings'
+
 interface SettingsStore {
   colorScheme: 'dark' | 'light' | 'system'
   completedSessionFadeMs: number
   terminalMaxLines: number
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
+  addServerAction: AddServerAction
   setColorScheme: (scheme: 'dark' | 'light' | 'system') => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
   setHistoryMessageDisplay: (v: 'first' | 'last') => void
+  setAddServerAction: (v: AddServerAction) => void
+  hydrate: () => Promise<void>
 }
 
 const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
@@ -25,12 +31,23 @@ const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
   showBadge: true,
 }
 
+async function getAsyncStorage() {
+  return (await import('@react-native-async-storage/async-storage')).default
+}
+
+interface PersistedSettings {
+  notifications: NotificationPreferences
+  historyMessageDisplay: 'first' | 'last'
+  addServerAction: AddServerAction
+}
+
 export const useSettingsStore = create<SettingsStore>((set) => ({
   colorScheme: 'dark',
   completedSessionFadeMs: 60000,
   terminalMaxLines: 5000,
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
+  addServerAction: 'ask',
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
@@ -40,4 +57,29 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       notifications: { ...state.notifications, ...prefs },
     })),
   setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
+  setAddServerAction: (addServerAction) => set({ addServerAction }),
+  hydrate: async () => {
+    const AsyncStorage = await getAsyncStorage()
+    const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
+    if (!raw) return
+    const parsed = JSON.parse(raw) as Partial<PersistedSettings>
+    set((state) => ({
+      notifications: parsed.notifications
+        ? { ...state.notifications, ...parsed.notifications }
+        : state.notifications,
+      historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
+      addServerAction: parsed.addServerAction ?? state.addServerAction,
+    }))
+  },
 }))
+
+useSettingsStore.subscribe((state) => {
+  void getAsyncStorage().then((AsyncStorage) => {
+    const payload: PersistedSettings = {
+      notifications: state.notifications,
+      historyMessageDisplay: state.historyMessageDisplay,
+      addServerAction: state.addServerAction,
+    }
+    return AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
+  })
+})

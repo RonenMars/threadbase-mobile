@@ -18,6 +18,7 @@ import { useSettingsStore } from '@/stores/settings'
 import type { MultiConversation } from '@/types/api'
 
 const CONV_SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `conv-sk-${i}`)
+const MAX_PREVIEW_LENGTH = 80
 
 function ConversationRowSkeleton() {
   return (
@@ -50,7 +51,7 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString()
 }
 
-const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function formatMessageTime(iso: string): string {
   const d = new Date(iso)
@@ -69,7 +70,7 @@ interface RowProps {
 function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
   const router = useRouter()
   const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
-  const msg = displayPref === 'last' ? (c.lastMessage ?? c.firstMessage) : (c.firstMessage ?? c.lastMessage)
+  const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
   const previewText = msg?.text ?? c.preview
   return (
     <TouchableOpacity
@@ -86,7 +87,9 @@ function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
         {previewText ? (
           <Text style={styles.messagePreview} numberOfLines={1}>
             {msg?.timestamp ? `${formatMessageTime(msg.timestamp)} · ` : ''}
-            {previewText.length > 80 ? previewText.slice(0, 80) + '...' : previewText}
+            {previewText.length > MAX_PREVIEW_LENGTH
+              ? `${previewText.slice(0, MAX_PREVIEW_LENGTH)}...`
+              : previewText}
           </Text>
         ) : null}
         <View style={styles.meta}>
@@ -122,6 +125,7 @@ interface Props {
   /** First page still loading — show skeleton rows (FlashList keeps list virtualization). */
   isLoadingInitial?: boolean
   isFetchingNextPage?: boolean
+  headerRight?: React.ReactNode
 }
 
 export function ConversationList({
@@ -133,6 +137,7 @@ export function ConversationList({
   onSearchChange,
   isLoadingInitial = false,
   isFetchingNextPage = false,
+  headerRight,
 }: Props) {
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const skeletonMode = isLoadingInitial
@@ -151,6 +156,7 @@ export function ConversationList({
           returnKeyType="search"
           clearButtonMode="while-editing"
         />
+        {headerRight}
       </View>
 
       <FlashList

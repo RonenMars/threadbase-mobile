@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KanbanBoard } from '@/components/sessions/KanbanBoard'
+import { ServerFilterSheet } from '@/components/servers/ServerFilterSheet'
 import { useSessions } from '@/hooks/useSession'
 import { useSessionsStore } from '@/stores/sessions'
 import { useServersStore } from '@/stores/servers'
@@ -9,12 +10,26 @@ import { wsManager } from '@/services/ws-client'
 import { dark, font, spacing } from '@/constants/theme'
 import type { MultiSession, SessionStatus } from '@/types/api'
 
+function getStatusColor(allConnected: boolean, someConnected: boolean): string {
+  if (allConnected) return dark.status.running
+  if (someConnected) return dark.status.waiting
+  return dark.status.failed
+}
+
+function getStatusLabel(total: number, connectedCount: number, allConnected: boolean): string {
+  if (total === 0) return '○ No servers'
+  if (total === 1) return allConnected ? '● Live' : '○ Offline'
+  return `${connectedCount}/${total} connected`
+}
+
 export default function SessionsScreen() {
   const { refetch, isPending: sessionsInitialLoad } = useSessions()
   const sessions = useSessionsStore((s) => s.sessions)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const [manualRefreshing, setManualRefreshing] = useState(false)
   const [connectedCount, setConnectedCount] = useState(0)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   useEffect(() => {
     const updateCount = () => {
@@ -35,6 +50,11 @@ export default function SessionsScreen() {
     setManualRefreshing(false)
   }
 
+  const visibleSessions = useMemo(
+    () => sessions.filter((session) => displayedServerIds.includes(session.serverId)),
+    [sessions, displayedServerIds],
+  )
+
   const grouped = useMemo(() => {
     const result: Record<SessionStatus, MultiSession[]> = {
       running: [],
@@ -43,30 +63,27 @@ export default function SessionsScreen() {
       failed: [],
       idle: [],
     }
-    for (const session of sessions) {
+    for (const session of visibleSessions) {
       if (session.source === 'discovered') continue
       result[session.status].push(session)
     }
     return result
-  }, [sessions])
+  }, [visibleSessions])
 
   const total = activeServerIds.length
   const allConnected = connectedCount === total && total > 0
   const someConnected = connectedCount > 0
-  const statusColor = allConnected
-    ? dark.status.running
-    : someConnected
-      ? dark.status.waiting
-      : dark.status.failed
-  const statusLabel = total === 0
-    ? '○ No servers'
-    : total === 1
-      ? allConnected ? '● Live' : '○ Offline'
-      : `${connectedCount}/${total} connected`
+  const statusColor = getStatusColor(allConnected, someConnected)
+  const statusLabel = getStatusLabel(total, connectedCount, allConnected)
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.statusBar}>
+        {activeServerIds.length > 1 ? (
+          <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterOpen(true)}>
+            <Text style={styles.filterButtonText}>Filter servers</Text>
+          </TouchableOpacity>
+        ) : null}
         <Text style={[styles.wsStatus, { color: statusColor }]}>
           {statusLabel}
         </Text>
@@ -78,6 +95,7 @@ export default function SessionsScreen() {
         refreshing={manualRefreshing}
         isInitialLoading={sessionsInitialLoad}
       />
+      <ServerFilterSheet visible={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
     </SafeAreaView>
   )
 }
@@ -91,7 +109,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  filterButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  filterButtonText: {
+    color: dark.text.accent,
+    fontSize: font.sm,
+    fontWeight: '500',
   },
   wsStatus: {
     fontSize: font.xs,

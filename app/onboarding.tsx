@@ -11,14 +11,17 @@ import {
   Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { useServersStore } from '@/stores/servers'
+import { useSettingsStore } from '@/stores/settings'
 import { AuthError, NetworkError } from '@/services/api-client'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
 
 export default function OnboardingScreen() {
   const router = useRouter()
-  const { addServer } = useServersStore()
+  const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
+  const { addServerAction, setAddServerAction } = useSettingsStore()
   const [serverUrl, setServerUrl] = useState(
     process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
   )
@@ -27,11 +30,37 @@ export default function OnboardingScreen() {
   const [showApiKey, setShowApiKey] = useState(__DEV__)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [newServerId, setNewServerId] = useState<string | null>(null)
+
+  function applyAddAction(
+    action: 'add' | 'replace' | 'keep',
+    addedServerId: string,
+    rememberChoice: boolean,
+  ): void {
+    switch (action) {
+      case 'add':
+        setDisplayedServerIds(Array.from(new Set([...displayedServerIds, addedServerId])))
+        break
+      case 'replace':
+        setDisplayedServerIds([addedServerId])
+        break
+      case 'keep':
+        break
+    }
+
+    if (rememberChoice) {
+      setAddServerAction(action)
+    }
+
+    setNewServerId(null)
+    router.replace('/(tabs)/sessions')
+  }
 
 
   const handleConnect = async () => {
     setError(null)
     setLoading(true)
+
     try {
       const url = serverUrl.replace(/\/$/, '')
       const res = await fetch(`${url}/api/profiles`, {
@@ -41,7 +70,17 @@ export default function OnboardingScreen() {
       if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
 
       await res.json()
-      await addServer(url, apiKey, label || undefined)
+      const id = await addServer(url, apiKey, label || undefined)
+      const hadCustomMultiSelection = displayedServerIds.length > 1
+      if (hadCustomMultiSelection) {
+        if (addServerAction === 'ask') {
+          setNewServerId(id)
+        } else {
+          applyAddAction(addServerAction, id, false)
+        }
+      } else {
+        router.replace('/(tabs)/sessions')
+      }
     } catch (err) {
       if (err instanceof AuthError) {
         setError('Invalid API key. Check THREADBASE_API_KEY on your server.')
@@ -57,19 +96,18 @@ export default function OnboardingScreen() {
       } else {
         setError('Connection failed. Check the server URL and try again.')
       }
+    } finally {
       setLoading(false)
-      return
     }
-    setLoading(false)
-    router.replace('/(tabs)/sessions')
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <Text style={styles.logo}>⚡</Text>
           <Text style={styles.title}>Threadbase</Text>
@@ -143,8 +181,20 @@ export default function OnboardingScreen() {
         <Text style={styles.hint}>
           Run <Text style={styles.code}>cch serve --tunnel --qr</Text> on your Mac to get a QR-scannable URL.
         </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      <AddServerActionSheet
+        visible={Boolean(newServerId)}
+        onClose={() => {
+          setNewServerId(null)
+          router.replace('/(tabs)/sessions')
+        }}
+        onConfirm={(choice, rememberChoice) => {
+          if (!newServerId) return
+          applyAddAction(choice, newServerId, rememberChoice)
+        }}
+      />
+    </>
   )
 }
 

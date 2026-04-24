@@ -11,9 +11,23 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
-import { useSettingsStore } from '@/stores/settings'
+import { useSettingsStore, type AddServerAction } from '@/stores/settings'
+import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { dark, font, radius, spacing } from '@/constants/theme'
+
+function addServerActionLabel(action: AddServerAction): string {
+  switch (action) {
+    case 'ask':
+      return 'Ask each time'
+    case 'add':
+      return 'Add to displayed'
+    case 'replace':
+      return 'Display only new'
+    case 'keep':
+      return 'Keep current'
+  }
+}
 
 function SectionHeader({ title }: { title: string }) {
   return <Text style={styles.sectionHeader}>{title}</Text>
@@ -43,8 +57,16 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const router = useRouter()
-  const { servers, activeServerIds, removeServer } = useServersStore()
-  const { notifications, setNotifications, historyMessageDisplay, setHistoryMessageDisplay } = useSettingsStore()
+  const { servers, activeServerIds, displayedServerIds, removeServer, setDisplayedServerIds } = useServersStore()
+  const {
+    notifications,
+    setNotifications,
+    historyMessageDisplay,
+    setHistoryMessageDisplay,
+    addServerAction,
+    setAddServerAction,
+  } = useSettingsStore()
+  const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
 
   const handleTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
@@ -84,6 +106,36 @@ export default function SettingsScreen() {
         >
           <Text style={styles.addServerText}>+ Add Server</Text>
         </TouchableOpacity>
+
+        <SectionHeader title="Displayed Servers" />
+        <DisplayedServersList
+          activeServerIds={activeServerIds}
+          servers={servers}
+          selectedServerIds={displayedServerIds}
+          onChange={setDisplayedServerIds}
+        />
+
+        <SectionHeader title="When Adding A New Server" />
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => setIsAddBehaviorOpen((v) => !v)}
+          >
+            <Text style={styles.rowLabel}>Selected action on create</Text>
+            <Text style={styles.rowValue}>{addServerActionLabel(addServerAction)}</Text>
+          </TouchableOpacity>
+          {isAddBehaviorOpen ? (
+            <View style={styles.accordionBody}>
+              <ActionSegment
+                value={addServerAction}
+                onChange={setAddServerAction}
+              />
+              <TouchableOpacity style={styles.resetBtn} onPress={() => setAddServerAction('ask')}>
+                <Text style={styles.resetBtnText}>Reset to ask each time</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
 
         <SectionHeader title="Notifications" />
         <View style={styles.card}>
@@ -173,6 +225,41 @@ export default function SettingsScreen() {
   )
 }
 
+function ActionSegment({
+  value,
+  onChange,
+}: {
+  value: AddServerAction
+  onChange: (v: AddServerAction) => void
+}) {
+  const options: Array<{ id: AddServerAction; label: string }> = [
+    { id: 'ask', label: 'Ask' },
+    { id: 'add', label: 'Add' },
+    { id: 'replace', label: 'Replace' },
+    { id: 'keep', label: 'Keep' },
+  ]
+  return (
+    <View style={styles.segmentedControl}>
+      {options.map((option) => (
+        <TouchableOpacity
+          key={option.id}
+          style={[styles.segmentBtn, value === option.id && styles.segmentBtnActive]}
+          onPress={() => onChange(option.id)}
+        >
+          <Text
+            style={[
+              styles.segmentBtnText,
+              value === option.id && styles.segmentBtnTextActive,
+            ]}
+          >
+            {option.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
   content: { padding: spacing.md, gap: spacing.sm },
@@ -221,6 +308,24 @@ const styles = StyleSheet.create({
   rowLabel: {
     color: dark.text.primary,
     fontSize: font.base,
+  },
+  rowValue: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+  },
+  accordionBody: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  resetBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  resetBtnText: {
+    color: dark.text.accent,
+    fontSize: font.sm,
+    fontWeight: '500',
   },
   testBtn: {
     padding: spacing.md,

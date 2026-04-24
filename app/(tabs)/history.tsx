@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
+import { ServerFilterSheet } from '@/components/servers/ServerFilterSheet'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
+import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import type { MultiConversation } from '@/types/api'
 
@@ -11,6 +13,9 @@ export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const [listRefreshEpoch, setListRefreshEpoch] = useState(0)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
 
   const {
     data,
@@ -73,8 +78,21 @@ export default function HistoryScreen() {
           onSearchChange={setSearchQuery}
           isLoadingInitial={isLoading}
           isFetchingNextPage={isFetchingNextPage}
+          headerRight={
+            activeServerIds.length > 1 ? (
+              <TouchableOpacity
+                style={styles.filterButton}
+                onPress={() => setIsFilterOpen(true)}
+              >
+                <Text style={styles.filterButtonText}>
+                  {displayedServerIds.length > 0 ? `${displayedServerIds.length}` : '0'} filter
+                </Text>
+              </TouchableOpacity>
+            ) : null
+          }
         />
       )}
+      <ServerFilterSheet visible={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
     </SafeAreaView>
   )
 }
@@ -106,5 +124,15 @@ const styles = StyleSheet.create({
     fontSize: font.sm,
     marginTop: spacing.sm,
     opacity: 0.6,
+  },
+  filterButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingLeft: spacing.sm,
+  },
+  filterButtonText: {
+    color: dark.text.accent,
+    fontSize: font.sm,
+    fontWeight: '500',
   },
 })

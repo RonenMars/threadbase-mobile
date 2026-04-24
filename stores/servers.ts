@@ -24,10 +24,13 @@ interface ServersStore {
   servers: Record<string, ServerConfig>
   /** Ordered list of server IDs the user has added. */
   activeServerIds: string[]
+  /** Ordered subset of servers visible in sessions/history. */
+  displayedServerIds: string[]
   isLoading: boolean
 
   addServer: (url: string, apiKey: string, label?: string) => Promise<string>
   removeServer: (serverId: string) => Promise<void>
+  setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
   loadPersistedServers: () => Promise<void>
@@ -44,19 +47,39 @@ async function getAsyncStorage() {
   return (await import('@react-native-async-storage/async-storage')).default
 }
 
-async function persistServerList(servers: Record<string, ServerConfig>, order: string[]) {
+async function persistServerList(
+  servers: Record<string, ServerConfig>,
+  order: string[],
+  displayedServerIds: string[],
+) {
   const AsyncStorage = await getAsyncStorage()
-  const list: PersistedServer[] = order.map((id) => ({
-    id: servers[id].id,
-    url: servers[id].url,
-    label: servers[id].label,
-  }))
-  await AsyncStorage.setItem(ASYNC_KEY_SERVERS, JSON.stringify(list))
+  const list: PersistedServer[] = order
+    .filter((id) => Boolean(servers[id]))
+    .map((id) => ({
+      id: servers[id].id,
+      url: servers[id].url,
+      label: servers[id].label,
+    }))
+  const payload = {
+    list,
+    displayedServerIds: displayedServerIds.filter((id) => order.includes(id)),
+  }
+  await AsyncStorage.setItem(ASYNC_KEY_SERVERS, JSON.stringify(payload))
+}
+
+function defaultDisplayedServerIds(order: string[]): string[] {
+  if (order.length === 0) return []
+  return [order[order.length - 1]]
+}
+
+function toValidUniqueIds(ids: string[], activeServerIds: string[]): string[] {
+  return Array.from(new Set(ids)).filter((id) => activeServerIds.includes(id))
 }
 
 export const useServersStore = create<ServersStore>((set, get) => ({
   servers: {},
   activeServerIds: [],
+  displayedServerIds: [],
   isLoading: true,
 
   get serverUrl() {
@@ -93,9 +116,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const activeServerIds = state.activeServerIds.includes(id)
         ? state.activeServerIds
         : [...state.activeServerIds, id]
+      const displayedServerIds = state.displayedServerIds.length <= 1
+        ? [id]
+        : state.displayedServerIds
       // Persist asynchronously (fire-and-forget from set callback)
-      persistServerList(servers, activeServerIds)
-      return { servers, activeServerIds }
+      persistServerList(servers, activeServerIds, displayedServerIds)
+      return { servers, activeServerIds, displayedServerIds }
     })
 
     return id
@@ -107,8 +133,20 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => {
       const { [serverId]: _removed, ...servers } = state.servers
       const activeServerIds = state.activeServerIds.filter((id) => id !== serverId)
-      persistServerList(servers, activeServerIds)
-      return { servers, activeServerIds }
+      const prunedDisplayed = state.displayedServerIds.filter((id) => activeServerIds.includes(id))
+      const displayedServerIds = prunedDisplayed.length > 0
+        ? prunedDisplayed
+        : defaultDisplayedServerIds(activeServerIds)
+      persistServerList(servers, activeServerIds, displayedServerIds)
+      return { servers, activeServerIds, displayedServerIds }
+    })
+  },
+
+  setDisplayedServerIds: (ids: string[]) => {
+    set((state) => {
+      const displayedServerIds = toValidUniqueIds(ids, state.activeServerIds)
+      persistServerList(state.servers, state.activeServerIds, displayedServerIds)
+      return { displayedServerIds }
     })
   },
 
@@ -117,7 +155,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const server = state.servers[serverId]
       if (!server) return state
       const servers = { ...state.servers, [serverId]: { ...server, label } }
-      persistServerList(servers, state.activeServerIds)
+      persistServerList(servers, state.activeServerIds, state.displayedServerIds)
       return { servers }
     })
   },
@@ -143,7 +181,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       // ── Try new multi-server format first ──
       const raw = await AsyncStorage.getItem(ASYNC_KEY_SERVERS)
       if (raw) {
-        const list: PersistedServer[] = JSON.parse(raw)
+        const parsed: unknown = JSON.parse(raw)
+        const legacyList = Array.isArray(parsed) ? (parsed as PersistedServer[]) : null
+        const list = legacyList ?? (parsed as { list?: PersistedServer[] }).list ?? []
+        const persistedDisplayed = legacyList
+          ? undefined
+          : (parsed as { displayedServerIds?: string[] }).displayedServerIds
         const servers: Record<string, ServerConfig> = {}
         const activeServerIds: string[] = []
 
@@ -160,7 +203,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           activeServerIds.push(entry.id)
         }
 
-        set({ servers, activeServerIds })
+        const validDisplayed = (persistedDisplayed ?? []).filter((id) => activeServerIds.includes(id))
+        const displayedServerIds = validDisplayed.length > 0
+          ? validDisplayed
+          : defaultDisplayedServerIds(activeServerIds)
+        set({ servers, activeServerIds, displayedServerIds })
         return
       }
 
@@ -187,13 +234,14 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
         const servers = { [id]: config }
         const activeServerIds = [id]
-        await persistServerList(servers, activeServerIds)
+        const displayedServerIds = defaultDisplayedServerIds(activeServerIds)
+        await persistServerList(servers, activeServerIds, displayedServerIds)
 
         // Clean up legacy keys
         await SecureStore.deleteItemAsync(LEGACY_SECURE_KEY)
         await AsyncStorage.removeItem(LEGACY_ASYNC_KEY)
 
-        set({ servers, activeServerIds })
+        set({ servers, activeServerIds, displayedServerIds })
       }
     } finally {
       set({ isLoading: false })
