@@ -7,6 +7,8 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -44,7 +46,7 @@ export default function BrowseScreen() {
     navigation.setOptions({
       headerLeft: currentPath
         ? () => (
-            <TouchableOpacity onPress={goBack} style={{ marginLeft: 8 }}>
+            <TouchableOpacity onPress={goBack} style={{ marginLeft: 8, paddingRight: 16 }}>
               <Text style={{ color: dark.text.accent, fontSize: font.base }}>‹ Back</Text>
             </TouchableOpacity>
           )
@@ -131,6 +133,11 @@ export default function BrowseScreen() {
 
   return (
     <GestureDetector gesture={swipeBack}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={100}
+    >
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Breadcrumbs */}
       <View style={styles.breadcrumbs}>
@@ -223,6 +230,7 @@ export default function BrowseScreen() {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+    </KeyboardAvoidingView>
     </GestureDetector>
   )
 }
