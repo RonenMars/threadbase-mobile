@@ -166,7 +166,10 @@ function generateMatrixChars(
         char: DIGITS[Math.floor(Math.random() * DIGITS.length)],
         speed: 40 + Math.random() * 80,
         delay: Math.random() * 250,
-        fadeRate: 0.35 + Math.random() * 0.25,
+        // Tuned so every char fades to 0 within the phase but stays visible
+        // almost all the way through (zero crossings around 1.95s - 2.37s,
+        // matching the sweep bar's 2.5s duration).
+        fadeRate: 0.38 + Math.random() * 0.08,
         size: 12 + Math.random() * 8,
         color: gradientColor(t),
         yOffset,
@@ -258,6 +261,7 @@ function MatrixCharacter({
   yOffset,
   speed,
   delay,
+  fadeRate,
   size,
   color,
   trigger,
@@ -268,6 +272,7 @@ function MatrixCharacter({
   yOffset: number
   speed: number
   delay: number
+  fadeRate: number
   size: number
   color: string
   trigger: SharedValue<number>
@@ -284,7 +289,7 @@ function MatrixCharacter({
       }
     }
     const t = elapsed / 1000
-    const opacity = Math.max(0, 0.9 - t * (0.35 + (speed / 50) * 0.25))
+    const opacity = Math.max(0, 0.9 - t * fadeRate)
     return {
       opacity,
       transform: [{ translateY: speed * t }],
@@ -495,6 +500,7 @@ export function SplashAnimation({ onComplete }: Props) {
                 yOffset={mc.yOffset}
                 speed={mc.speed}
                 delay={mc.delay}
+                fadeRate={mc.fadeRate}
                 size={mc.size}
                 color={mc.color}
                 trigger={matrixProgress}
