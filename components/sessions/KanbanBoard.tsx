@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { SessionCard } from './SessionCard'
+import { SessionCardSkeleton } from './SessionCardSkeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { dark, font, spacing, TABLET_BREAKPOINT } from '@/constants/theme'
 import type { MultiSession, SessionStatus } from '@/types/api'
@@ -52,28 +53,45 @@ const COLUMNS: Column[] = [
   },
 ]
 
+const SESSION_SKELETON_KEYS = ['s0', 's1', 's2', 's3'] as const
+
 interface KanbanColumnProps {
   column: Column
   sessions: MultiSession[]
   onRefresh: () => void
   refreshing: boolean
   isTablet: boolean
+  isInitialLoading: boolean
 }
 
-function KanbanColumn({ column, sessions, onRefresh, refreshing, isTablet }: KanbanColumnProps) {
+function KanbanColumn({
+  column,
+  sessions,
+  onRefresh,
+  refreshing,
+  isTablet,
+  isInitialLoading,
+}: KanbanColumnProps) {
+  const showSkeletons = isInitialLoading
+  const listData: (MultiSession | string)[] = showSkeletons ? [...SESSION_SKELETON_KEYS] : sessions
+
   return (
     <View style={[styles.column, isTablet && styles.columnTablet]}>
       <View style={styles.columnHeader}>
         <Text style={styles.columnIcon}>{column.icon}</Text>
         <Text style={styles.columnLabel}>{column.label}</Text>
         <View style={styles.countBadge}>
-          <Text style={styles.countText}>{sessions.length}</Text>
+          <Text style={styles.countText}>{showSkeletons ? '—' : sessions.length}</Text>
         </View>
       </View>
-      <FlatList
-        data={sessions}
-        keyExtractor={(s) => s.id}
-        renderItem={({ item }) => <SessionCard session={item} />}
+      <FlatList<MultiSession | string>
+        data={listData}
+        keyExtractor={(item) =>
+          typeof item === 'string' ? `sk-${column.status}-${item}` : item.id
+        }
+        renderItem={({ item }) =>
+          typeof item === 'string' ? <SessionCardSkeleton /> : <SessionCard session={item} />
+        }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -84,10 +102,12 @@ function KanbanColumn({ column, sessions, onRefresh, refreshing, isTablet }: Kan
           />
         }
         ListEmptyComponent={
-          <EmptyState
-            title={column.emptyTitle}
-            subtitle={column.emptySubtitle}
-          />
+          showSkeletons ? null : (
+            <EmptyState
+              title={column.emptyTitle}
+              subtitle={column.emptySubtitle}
+            />
+          )
         }
       />
     </View>
@@ -98,9 +118,16 @@ interface KanbanBoardProps {
   sessionsByStatus: Record<SessionStatus, MultiSession[]>
   onRefresh: () => void
   refreshing: boolean
+  /** First fetch after mount — show column skeletons instead of empty states. */
+  isInitialLoading?: boolean
 }
 
-export function KanbanBoard({ sessionsByStatus, onRefresh, refreshing }: KanbanBoardProps) {
+export function KanbanBoard({
+  sessionsByStatus,
+  onRefresh,
+  refreshing,
+  isInitialLoading = false,
+}: KanbanBoardProps) {
   const { width } = useWindowDimensions()
   const isTablet = width >= TABLET_BREAKPOINT
 
@@ -115,6 +142,7 @@ export function KanbanBoard({ sessionsByStatus, onRefresh, refreshing }: KanbanB
             onRefresh={onRefresh}
             refreshing={refreshing}
             isTablet
+            isInitialLoading={isInitialLoading}
           />
         ))}
       </View>
@@ -136,6 +164,7 @@ export function KanbanBoard({ sessionsByStatus, onRefresh, refreshing }: KanbanB
             onRefresh={onRefresh}
             refreshing={refreshing}
             isTablet={false}
+            isInitialLoading={isInitialLoading}
           />
         </View>
       ))}

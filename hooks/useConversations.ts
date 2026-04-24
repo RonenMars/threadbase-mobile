@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
@@ -44,13 +45,14 @@ interface MultiConversationPage {
   hasMore: boolean
 }
 
-export function useConversations(filter?: ConversationFilter) {
+/** Increment (e.g. pull-to-refresh) to bust the streamer conversation cache on the first page. */
+export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) {
   const limit = 50
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
 
   return useInfiniteQuery({
-    queryKey: ['conversations', filter, ...activeServerIds],
+    queryKey: ['conversations', filter, refreshEpoch, ...activeServerIds],
     queryFn: async ({ pageParam = 0 }): Promise<MultiConversationPage> => {
       const results = await Promise.all(
         activeServerIds.map(async (serverId) => {
@@ -61,7 +63,13 @@ export function useConversations(filter?: ConversationFilter) {
           if (filter?.dateTo) params.set('dateTo', filter.dateTo)
           if (filter?.profileId) params.set('profileId', filter.profileId)
           params.set('limit', String(limit))
-          const raw = await api.get<RawSessionMeta[]>(`/api/conversations?${params.toString()}`)
+          params.set('offset', String(pageParam))
+          if (pageParam === 0 && refreshEpoch > 0) {
+            params.set('refresh', '1')
+          }
+          const raw = await api.get<RawSessionMeta[] | ConversationPage>(
+            `/api/conversations?${params.toString()}`,
+          )
           return { serverId, page: adaptPage(raw, pageParam as number, limit) }
         })
       )
@@ -76,6 +84,9 @@ export function useConversations(filter?: ConversationFilter) {
         }
         if (page.hasMore) anyHasMore = true
       }
+
+      // Multi-server note: each server paginates with the same offset; ordering is best-effort
+      // vs a global merge. Single-server installs get correct cursor semantics.
 
       // Sort by lastActivity descending
       merged.sort((a, b) => {
@@ -109,6 +120,8 @@ interface RawContentBlock {
 }
 
 interface RawMessage {
+  /** Stable index in the full filtered message list (for pagination + React keys). */
+  message_index?: number
   role: string
   timestamp: string
   text: string
@@ -117,9 +130,18 @@ interface RawMessage {
   model?: string
 }
 
+export interface ConversationMessagePagination {
+  total: number
+  before_index: number
+  from_index: number
+  has_more_older: boolean
+  next_before_index: number | null
+}
+
 interface RawConversationDetail {
   meta: RawSessionMeta
   messages: RawMessage[]
+  message_pagination?: ConversationMessagePagination
 }
 
 // Resolve a tool name from tool_use_id by looking at sibling content blocks.
@@ -129,65 +151,107 @@ function resolveToolName(toolUseId: string | undefined, blocks: RawContentBlock[
   return match?.name ?? 'Tool'
 }
 
-function adaptDetail(raw: RawConversationDetail): ConversationDetail {
-  const rawMessages = raw.messages ?? []
-  const messages: Message[] = rawMessages.map((m, i) => {
-    const content: MessageContent[] = []
+function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): Message {
+  const content: MessageContent[] = []
 
-    if (m.content && m.content.length > 0) {
-      // Use the rich content blocks from the server
-      for (const block of m.content) {
-        if (block.type === 'text' && block.text) {
-          content.push({ type: 'text', text: block.text })
-        } else if (block.type === 'tool_use') {
-          content.push({ type: 'tool_use', name: block.name ?? '', input: block.input ?? {} })
-        } else if (block.type === 'tool_result') {
-          content.push({
-            type: 'tool_result',
-            toolName: resolveToolName(block.tool_use_id, m.content),
-            content: block.content ?? '',
-            isError: block.is_error,
-          })
-        }
-      }
-    } else {
-      // Fallback for older server responses without content blocks
-      if (m.text) content.push({ type: 'text', text: m.text })
-      if (m.tool_calls) {
-        m.tool_calls.forEach((name) =>
-          content.push({ type: 'tool_use', name, input: {} })
-        )
+  if (m.content && m.content.length > 0) {
+    for (const block of m.content) {
+      if (block.type === 'text' && block.text) {
+        content.push({ type: 'text', text: block.text })
+      } else if (block.type === 'tool_use') {
+        content.push({ type: 'tool_use', name: block.name ?? '', input: block.input ?? {} })
+      } else if (block.type === 'tool_result') {
+        content.push({
+          type: 'tool_result',
+          toolName: resolveToolName(block.tool_use_id, m.content),
+          content: block.content ?? '',
+          isError: block.is_error,
+        })
       }
     }
-
-    return {
-      id: `${raw.meta.id}-${i}`,
-      role: m.role as 'user' | 'assistant',
-      content,
-      timestamp: m.timestamp,
+  } else {
+    if (m.text) content.push({ type: 'text', text: m.text })
+    if (m.tool_calls) {
+      m.tool_calls.forEach((name) =>
+        content.push({ type: 'tool_use', name, input: {} })
+      )
     }
-  })
+  }
+
+  const idx = m.message_index ?? fallbackIndex
+  return {
+    id: `${convId}-${idx}`,
+    role: m.role as 'user' | 'assistant',
+    content,
+    timestamp: m.timestamp,
+  }
+}
+
+/** Pages are ordered newest-chunk first (infinite query page 0 = tail). Merge oldest → newest. */
+function mergeConversationPages(pages: RawConversationDetail[]): ConversationDetail {
+  if (pages.length === 0) {
+    throw new Error('mergeConversationPages: empty pages')
+  }
+  const first = pages[0]
+  const convId = first.meta.id
+  const messages: Message[] = [...pages]
+    .reverse()
+    .flatMap((page) =>
+      (page.messages ?? []).map((m, i) =>
+        adaptRawMessage(m, convId, m.message_index ?? (page.message_pagination?.from_index ?? 0) + i),
+      ),
+    )
 
   return {
-    id: raw.meta.id,
-    title: raw.meta.project_name ?? 'Conversation',
-    projectPath: raw.meta.project_path ?? '',
-    branch: raw.meta.git_branch,
-    messageCount: rawMessages.length,
-    lastActivity: raw.meta.last_updated_at ?? '',
+    id: convId,
+    title: first.meta.project_name ?? 'Conversation',
+    projectPath: first.meta.project_path ?? '',
+    branch: first.meta.git_branch,
+    messageCount: first.meta.message_count ?? messages.length,
+    lastActivity: first.meta.last_updated_at ?? '',
     messages,
   }
 }
 
+const CONVERSATION_MESSAGE_LIMIT = 80
+
 export function useConversation(serverId: string, id: string) {
   const api = createApiForServer(serverId)
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['conversation', serverId, id],
-    queryFn: async () => {
-      const raw = await api.get<RawConversationDetail>(`/api/conversations/${id}`)
-      return adaptDetail(raw)
+    initialPageParam: -1,
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams()
+      params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
+      if (pageParam !== -1) {
+        params.set('before_index', String(pageParam))
+      }
+      const path = `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+      return api.get<RawConversationDetail>(path)
     },
+    getNextPageParam: (last) => {
+      const p = last.message_pagination
+      if (!p?.has_more_older || p.next_before_index == null) return undefined
+      return p.next_before_index
+    },
+    enabled: Boolean(serverId && id),
   })
+
+  const data = useMemo(() => {
+    if (!query.data?.pages.length) return undefined
+    return mergeConversationPages(query.data.pages)
+  }, [query.data])
+
+  return {
+    data,
+    error: query.error,
+    refetch: query.refetch,
+    isLoading: query.isPending,
+    isFetching: query.isFetching,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  }
 }
 
 export function useConversationSearch(query: string) {

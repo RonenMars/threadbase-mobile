@@ -1,12 +1,43 @@
 import React from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { ServerBadge } from '@/components/servers/ServerBadge'
+import { SkeletonBox } from '@/components/ui/Skeleton'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import type { MultiConversation } from '@/types/api'
+
+const CONV_SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `conv-sk-${i}`)
+
+function ConversationRowSkeleton() {
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowMain}>
+        <SkeletonBox height={16} width="70%" borderRadius={radius.sm} />
+        <SkeletonBox height={12} width="45%" borderRadius={radius.sm} style={styles.skLine} />
+        <SkeletonBox height={12} width="92%" borderRadius={radius.sm} style={styles.skLine} />
+        <View style={[styles.meta, styles.skMeta]}>
+          <SkeletonBox height={10} width={64} borderRadius={radius.sm} />
+          <SkeletonBox height={10} width={52} borderRadius={radius.sm} />
+        </View>
+      </View>
+      <View style={styles.rowRight}>
+        <SkeletonBox height={11} width={44} borderRadius={radius.sm} />
+        <SkeletonBox height={11} width={40} borderRadius={radius.sm} />
+      </View>
+    </View>
+  )
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -88,6 +119,9 @@ interface Props {
   onEndReached: () => void
   searchQuery: string
   onSearchChange: (q: string) => void
+  /** First page still loading — show skeleton rows (FlashList keeps list virtualization). */
+  isLoadingInitial?: boolean
+  isFetchingNextPage?: boolean
 }
 
 export function ConversationList({
@@ -97,8 +131,12 @@ export function ConversationList({
   onEndReached,
   searchQuery,
   onSearchChange,
+  isLoadingInitial = false,
+  isFetchingNextPage = false,
 }: Props) {
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+  const skeletonMode = isLoadingInitial
+  const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
 
   return (
     <View style={styles.container}>
@@ -116,13 +154,19 @@ export function ConversationList({
       </View>
 
       <FlashList
-        data={conversations}
-        keyExtractor={(c) => `${c.serverId}::${c.id}`}
-        renderItem={({ item }) => (
-          <ConversationRow conversation={item} showServerBadge={multipleServers} />
-        )}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.3}
+        data={listData}
+        keyExtractor={(item) =>
+          typeof item === 'string' ? item : `${item.serverId}::${item.id}`
+        }
+        renderItem={({ item }) =>
+          typeof item === 'string' ? (
+            <ConversationRowSkeleton />
+          ) : (
+            <ConversationRow conversation={item} showServerBadge={multipleServers} />
+          )
+        }
+        onEndReached={skeletonMode ? undefined : onEndReached}
+        onEndReachedThreshold={0.35}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -131,6 +175,14 @@ export function ConversationList({
           />
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={
+          isFetchingNextPage && !skeletonMode ? (
+            <View style={styles.listFooter}>
+              <ActivityIndicator color={dark.text.secondary} />
+              <Text style={styles.listFooterText}>Loading more…</Text>
+            </View>
+          ) : null
+        }
       />
     </View>
   )
@@ -138,6 +190,19 @@ export function ConversationList({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  skLine: { marginTop: spacing.xs },
+  skMeta: { marginTop: spacing.xs },
+  listFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+  },
+  listFooterText: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',

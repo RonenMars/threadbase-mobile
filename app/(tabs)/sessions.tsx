@@ -10,7 +10,7 @@ import { dark, font, spacing } from '@/constants/theme'
 import type { MultiSession, SessionStatus } from '@/types/api'
 
 export default function SessionsScreen() {
-  const { refetch } = useSessions()
+  const { refetch, isPending: sessionsInitialLoad } = useSessions()
   const sessions = useSessionsStore((s) => s.sessions)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const [manualRefreshing, setManualRefreshing] = useState(false)
@@ -44,6 +44,7 @@ export default function SessionsScreen() {
       idle: [],
     }
     for (const session of sessions) {
+      if (session.source === 'discovered') continue
       result[session.status].push(session)
     }
     return result
@@ -75,6 +76,7 @@ export default function SessionsScreen() {
         sessionsByStatus={grouped}
         onRefresh={handleRefresh}
         refreshing={manualRefreshing}
+        isInitialLoading={sessionsInitialLoad}
       />
     </SafeAreaView>
   )

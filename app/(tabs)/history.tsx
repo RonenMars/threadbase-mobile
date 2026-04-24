@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
@@ -10,6 +10,7 @@ import type { MultiConversation } from '@/types/api'
 export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
+  const [listRefreshEpoch, setListRefreshEpoch] = useState(0)
 
   const {
     data,
@@ -17,11 +18,11 @@ export default function HistoryScreen() {
     hasNextPage,
     isFetchingNextPage,
     refetch,
-    isRefetching,
+    isFetching,
     isLoading,
     isError,
     error,
-  } = useConversations()
+  } = useConversations(undefined, listRefreshEpoch)
 
   const searchResult = useConversationSearch(debouncedQuery)
 
@@ -35,18 +36,24 @@ export default function HistoryScreen() {
     }
   }, [debouncedQuery, hasNextPage, isFetchingNextPage, fetchNextPage])
 
+  const handleListRefresh = useCallback(() => {
+    if (debouncedQuery) {
+      void searchResult.refetch()
+    } else {
+      setListRefreshEpoch((e) => e + 1)
+    }
+  }, [debouncedQuery, searchResult])
+
+  const listRefreshing = debouncedQuery ? searchResult.isFetching : isFetching
+
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={dark.text.secondary} />
-        </View>
-      ) : isError ? (
+      {isError ? (
         <ScrollView
           contentContainerStyle={styles.centered}
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
+              refreshing={isFetching}
               onRefresh={refetch}
               tintColor={dark.text.secondary}
             />
@@ -59,11 +66,13 @@ export default function HistoryScreen() {
       ) : (
         <ConversationList
           conversations={allConversations}
-          onRefresh={refetch}
-          refreshing={isRefetching}
+          onRefresh={handleListRefresh}
+          refreshing={listRefreshing}
           onEndReached={handleEndReached}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          isLoadingInitial={isLoading}
+          isFetchingNextPage={isFetchingNextPage}
         />
       )}
     </SafeAreaView>

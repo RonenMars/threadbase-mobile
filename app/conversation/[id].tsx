@@ -1,9 +1,19 @@
-import React, { useCallback, useRef, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Share, ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Share,
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { FlashList } from '@shopify/flash-list'
+import { FlashList, FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list'
 import { useMutation } from '@tanstack/react-query'
+import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
@@ -12,7 +22,8 @@ import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
-import { useEffect } from 'react'
+
+const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
 // Per-conversation scroll offsets persisted for the app session
 const scrollPositions = new Map<string, number>()
@@ -59,11 +70,23 @@ export default function ConversationDetailScreen() {
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
 
-  const { data: conversation, isLoading, error, refetch } = useConversation(serverId, id)
-  const listRef = useRef<FlashList<Message>>(null)
+  const {
+    data: conversation,
+    isLoading,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useConversation(serverId, id)
+  const listRef = useRef<FlashListRef<Message>>(null)
   const hasInitialScrolled = useRef(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+
+  useEffect(() => {
+    hasInitialScrolled.current = false
+  }, [id])
 
   useEffect(() => {
     if (conversation) {
@@ -84,6 +107,12 @@ export default function ConversationDetailScreen() {
       }
     }, 50)
   }, [conversation, id])
+
+  const handleStartReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
@@ -123,11 +152,20 @@ export default function ConversationDetailScreen() {
     <MessageItem message={item} />
   ), [])
 
+  const renderSkeletonItem = useCallback(({ index }: ListRenderItemInfo<string>) => (
+    <MessageSkeletonRow index={index} />
+  ), [])
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.centered}>
-          <ActivityIndicator color={dark.text.secondary} />
+        <View style={styles.listWrapper}>
+          <FlashList
+            data={MESSAGE_SKELETON_KEYS}
+            keyExtractor={(k) => k}
+            renderItem={renderSkeletonItem}
+            contentContainerStyle={styles.listContent}
+          />
         </View>
       </SafeAreaView>
     )
@@ -163,7 +201,15 @@ export default function ConversationDetailScreen() {
             contentContainerStyle={styles.listContent}
             onScroll={handleScroll}
             scrollEventThrottle={100}
-            estimatedItemSize={120}
+            onStartReached={handleStartReached}
+            onStartReachedThreshold={0.35}
+            ListHeaderComponent={
+              isFetchingNextPage ? (
+                <View style={styles.headerLoading}>
+                  <ActivityIndicator color={dark.text.secondary} />
+                </View>
+              ) : null
+            }
           />
           {showScrollTop ? (
             <TouchableOpacity
@@ -224,6 +270,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
   listWrapper: { flex: 1 },
   listContent: { paddingVertical: spacing.md },
+  headerLoading: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollBtn: {
     position: 'absolute',
     alignSelf: 'center',
