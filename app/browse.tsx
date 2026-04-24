@@ -7,8 +7,7 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
 } from 'react-native'
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -26,6 +25,20 @@ export default function BrowseScreen() {
   const [currentPath, setCurrentPath] = useState('')
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height)
+    })
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+      setKeyboardHeight(0)
+    })
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
 
   const { data, isLoading, isError, error } = useBrowse(serverId ?? '', currentPath)
   const createDir = useCreateDirectory(serverId ?? '')
@@ -133,11 +146,6 @@ export default function BrowseScreen() {
 
   return (
     <GestureDetector gesture={swipeBack}>
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100}
-    >
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Breadcrumbs */}
       <View style={styles.breadcrumbs}>
@@ -184,7 +192,7 @@ export default function BrowseScreen() {
 
       {/* Footer: toggles between normal mode and new-folder mode */}
       {showNewFolder ? (
-        <View style={styles.footer}>
+        <View style={[styles.footer, keyboardHeight > 0 && { paddingBottom: keyboardHeight }]}>
           <TouchableOpacity
             style={styles.newFolderToggle}
             onPress={() => setShowNewFolder(false)}
@@ -233,7 +241,6 @@ export default function BrowseScreen() {
         </View>
       )}
     </SafeAreaView>
-    </KeyboardAvoidingView>
     </GestureDetector>
   )
 }
