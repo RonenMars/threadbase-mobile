@@ -127,6 +127,17 @@ export interface PushRegisterPayload {
   platform: 'ios' | 'android'
 }
 
+// ── Browse types ────────────────────────────────────────────────────
+
+export interface BrowseResponse {
+  path: string
+  directories: Array<{ name: string }>
+}
+
+export interface MkdirResponse {
+  created: string
+}
+
 // ── Multi-server types ──────────────────────────────────────────────────
 
 export interface ServerConfig {
