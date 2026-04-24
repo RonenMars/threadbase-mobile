@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useBrowse, useCreateDirectory, useStartSession } from '@/hooks/useBrowse'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { NetworkError } from '@/services/api-client'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
 export default function BrowseScreen() {
@@ -142,7 +143,10 @@ export default function BrowseScreen() {
     [currentPath, navigateTo],
   )
 
-  const is403 = isError && error?.message?.includes('403')
+  const isBrowseNotConfigured = isError && (
+    (error instanceof NetworkError && error.code === 'BROWSE_ROOT_NOT_SET') ||
+    error?.message?.includes('not configured')
+  )
 
   return (
     <GestureDetector gesture={swipeBack}>
@@ -172,13 +176,13 @@ export default function BrowseScreen() {
               <SkeletonBox key={i} height={44} style={{ marginBottom: spacing.sm }} />
             ))}
           </View>
-        ) : is403 ? (
+        ) : isBrowseNotConfigured ? (
           <EmptyState
             title="Browsing not configured"
             subtitle="Set browseRoot on your server to enable file browsing."
           />
         ) : isError ? (
-          <EmptyState title="Error" subtitle={error?.message ?? 'Failed to load directories'} />
+          <EmptyState title="Unable to load directories" subtitle="Check that the server is running and reachable." />
         ) : data?.directories.length === 0 ? (
           <EmptyState title="Empty directory" subtitle="No subdirectories here." />
         ) : (

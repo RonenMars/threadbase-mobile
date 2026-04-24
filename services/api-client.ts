@@ -1,9 +1,11 @@
 import { useServersStore } from '@/stores/servers'
 
 export class NetworkError extends Error {
-  constructor(message: string) {
+  code?: string
+  constructor(message: string, code?: string) {
     super(message)
     this.name = 'NetworkError'
+    this.code = code
   }
 }
 
@@ -55,11 +57,13 @@ async function request<T>(
   if (response.status === 404) throw new NotFoundError(path)
   if (!response.ok) {
     let detail = ''
+    let code: string | undefined
     try {
       const body = await response.json()
       if (body?.error) detail = body.error
+      if (body?.code) code = body.code
     } catch {}
-    throw new NetworkError(detail || `HTTP ${response.status} from ${path}`)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code)
   }
 
   return response.json() as Promise<T>
