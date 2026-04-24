@@ -1,5 +1,5 @@
 import '../global.css'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -10,6 +10,10 @@ import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
 import { useSessionsStore } from '@/stores/sessions'
 import { registerPushTokenForAll } from '@/services/push'
+import { SplashAnimation } from '@/components/SplashAnimation'
+import * as SplashScreen from 'expo-splash-screen'
+
+SplashScreen.preventAutoHideAsync()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +109,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [splashDone, setSplashDone] = useState(false)
+
+  useEffect(() => {
+    SplashScreen.hideAsync()
+  }, [])
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -133,6 +143,7 @@ export default function RootLayout() {
           </AuthGate>
         </QueryClientProvider>
       </SafeAreaProvider>
+      {!splashDone && <SplashAnimation onComplete={() => setSplashDone(true)} />}
     </GestureHandlerRootView>
   )
 }
