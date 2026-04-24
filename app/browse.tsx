@@ -182,11 +182,17 @@ export default function BrowseScreen() {
         )}
       </View>
 
-      {/* New folder inline input */}
-      {showNewFolder && (
-        <View style={styles.newFolderRow}>
+      {/* Footer: toggles between normal mode and new-folder mode */}
+      {showNewFolder ? (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.newFolderToggle}
+            onPress={() => setShowNewFolder(false)}
+          >
+            <Text style={styles.newFolderToggleText}>Cancel</Text>
+          </TouchableOpacity>
           <TextInput
-            style={styles.newFolderInput}
+            style={[styles.newFolderInput, { flex: 1 }]}
             value={newFolderName}
             onChangeText={setNewFolderName}
             placeholder="Folder name"
@@ -202,33 +208,30 @@ export default function BrowseScreen() {
             )}
           </TouchableOpacity>
         </View>
+      ) : (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.newFolderToggle}
+            onPress={() => setShowNewFolder(true)}
+          >
+            <Text style={styles.newFolderToggleText}>New Folder</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.startBtn, startSession.isPending && styles.startBtnDisabled]}
+            onPress={handleStartSession}
+            disabled={startSession.isPending}
+          >
+            {startSession.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.startBtnText}>
+                Start Session Here
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       )}
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.newFolderToggle}
-          onPress={() => setShowNewFolder((v) => !v)}
-        >
-          <Text style={styles.newFolderToggleText}>
-            {showNewFolder ? 'Cancel' : 'New Folder'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.startBtn, startSession.isPending && styles.startBtnDisabled]}
-          onPress={handleStartSession}
-          disabled={startSession.isPending}
-        >
-          {startSession.isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.startBtnText}>
-              Start Session Here
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
     </KeyboardAvoidingView>
     </GestureDetector>
@@ -289,15 +292,6 @@ const styles = StyleSheet.create({
     color: dark.text.secondary,
     fontSize: font.xl,
     marginLeft: spacing.sm,
-  },
-  newFolderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: dark.border,
-    gap: spacing.sm,
   },
   newFolderInput: {
     flex: 1,
