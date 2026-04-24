@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KanbanBoard } from '@/components/sessions/KanbanBoard'
@@ -23,7 +23,10 @@ function getStatusLabel(total: number, connectedCount: number, allConnected: boo
 }
 
 export default function SessionsScreen() {
-  const { refetch, isPending: sessionsInitialLoad } = useSessions()
+  const { refetch, isPending } = useSessions()
+  const hasLoadedOnce = useRef(false)
+  if (!isPending) hasLoadedOnce.current = true
+  const sessionsInitialLoad = isPending && !hasLoadedOnce.current
   const sessions = useSessionsStore((s) => s.sessions)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
