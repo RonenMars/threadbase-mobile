@@ -168,12 +168,17 @@ export class VirtualTerminal {
 
   private parseCSI(data: string, i: number): number {
     let params = ''
-    // Collect parameter bytes: digits, semicolons, question mark
-    while (i < data.length && /[0-9;?]/.test(data[i])) {
+    // Collect parameter bytes (ECMA-48 0x30-0x3F): digits, semicolons, and
+    // private-use prefixes like ? (DEC), > (xterm), < = : etc.
+    while (i < data.length && /[0-9;?>=<:]/.test(data[i])) {
       params += data[i]
       i++
     }
-    // The next character is the command
+    // Skip intermediate bytes (ECMA-48 0x20-0x2F): space, !, ", #, $, etc.
+    while (i < data.length && data.charCodeAt(i) >= 0x20 && data.charCodeAt(i) <= 0x2f) {
+      i++
+    }
+    // The next character is the final byte (command)
     if (i >= data.length) return i
     const cmd = data[i]
     i++
