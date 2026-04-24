@@ -443,7 +443,7 @@ export function SplashAnimation({ onComplete }: Props) {
   }))
 
   return (
-    <Animated.View style={[styles.container, containerAnimStyle]}>
+    <Animated.View pointerEvents="none" style={[styles.container, containerAnimStyle]}>
       {/* Sweep bar at top (offset below notch / Dynamic Island) */}
       <Animated.View style={[styles.sweepBar, { top: sweepBarTop }, barStyle]} />
 
