@@ -9,6 +9,19 @@ export default function TabsLayout() {
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
 
+  const newSessionButton = () => (
+    <TouchableOpacity
+      onPress={() => {
+        const serverId = activeServerIds[0]
+        if (serverId) router.push(`/browse?server=${serverId}`)
+      }}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+    >
+      <Text style={{ color: dark.text.accent, fontSize: 24, fontWeight: '300' }}>+</Text>
+    </TouchableOpacity>
+  )
+
   return (
     <Tabs
       screenOptions={{
@@ -29,17 +42,7 @@ export default function TabsLayout() {
         options={{
           title: 'Sessions',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚡</Text>,
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => {
-                const serverId = activeServerIds[0]
-                if (serverId) router.push(`/browse?server=${serverId}`)
-              }}
-              style={{ marginRight: 16 }}
-            >
-              <Text style={{ color: dark.text.accent, fontSize: 24, fontWeight: '300' }}>+</Text>
-            </TouchableOpacity>
-          ),
+          headerRight: newSessionButton,
         }}
       />
       <Tabs.Screen
@@ -47,6 +50,7 @@ export default function TabsLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📚</Text>,
+          headerRight: newSessionButton,
         }}
       />
       <Tabs.Screen
