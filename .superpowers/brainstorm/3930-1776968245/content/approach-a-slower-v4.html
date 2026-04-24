@@ -1,0 +1,274 @@
+<h2>Approach A: Sequential Draw-In — Slower</h2>
+<p class="subtitle">With vertical line bottom-exit and matrix dissolve &bull; ~4s total</p>
+<p style="color: #8b949e; font-size: 0.85rem; margin-bottom: 1rem;">Animation loops every 7s so you can watch it
+  repeatedly.</p>
+
+<div style="display: flex; gap: 2rem; max-width: 900px; margin: 0 auto; align-items: flex-start;">
+  <!-- Animation preview -->
+  <div
+    style="flex: 0 0 320px; background: #0d1117; border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 2.5rem; position: relative; overflow: hidden; min-height: 420px; border: 1px solid #30363d;">
+    <canvas id="splash-canvas" width="320" height="400" style="width: 320px; height: 400px;"></canvas>
+  </div>
+
+  <!-- Timeline -->
+  <div style="flex: 1; padding: 0.5rem 0;">
+    <h3 style="color: #58a6ff; margin-top: 0;">Animation Timeline (~4s)</h3>
+
+    <div style="position: relative; padding-left: 24px; border-left: 2px solid #30363d;">
+      <!-- Phase 1 -->
+      <div style="margin-bottom: 1.5rem; position: relative;">
+        <div
+          style="position: absolute; left: -29px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #58a6ff; border: 2px solid #0d1117;">
+        </div>
+        <div style="color: #58a6ff; font-family: 'SF Mono', monospace; font-size: 0.75rem;">0.0s — 0.7s</div>
+        <div style="color: #c9d1d9; font-size: 0.9rem; margin-top: 4px;"><strong>Phase 1:</strong> Vertical line draws
+          down from top</div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div style="margin-bottom: 1.5rem; position: relative;">
+        <div
+          style="position: absolute; left: -29px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #58a6ff; border: 2px solid #0d1117;">
+        </div>
+        <div style="color: #58a6ff; font-family: 'SF Mono', monospace; font-size: 0.75rem;">0.7s — 2.0s</div>
+        <div style="color: #c9d1d9; font-size: 0.9rem; margin-top: 4px;"><strong>Phase 2:</strong> Thread lines draw
+          left-to-right sequentially, nodes pop in with each line</div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div style="margin-bottom: 1.5rem; position: relative;">
+        <div
+          style="position: absolute; left: -29px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #79c0ff; border: 2px solid #0d1117;">
+        </div>
+        <div style="color: #79c0ff; font-family: 'SF Mono', monospace; font-size: 0.75rem;">2.0s — 2.5s</div>
+        <div style="color: #c9d1d9; font-size: 0.9rem; margin-top: 4px;"><strong>Phase 3:</strong> "threadbase" text
+          fades up + brief glow pulse</div>
+      </div>
+
+      <!-- Phase 4 -->
+      <div style="margin-bottom: 1.5rem; position: relative;">
+        <div
+          style="position: absolute; left: -29px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #f0883e; border: 2px solid #0d1117;">
+        </div>
+        <div style="color: #f0883e; font-family: 'SF Mono', monospace; font-size: 0.75rem;">2.5s — 3.0s</div>
+        <div style="color: #c9d1d9; font-size: 0.9rem; margin-top: 4px;"><strong>Phase 4:</strong> Vertical line slides
+          out downward (exits bottom of screen)</div>
+      </div>
+
+      <!-- Phase 5 -->
+      <div style="margin-bottom: 1.5rem; position: relative;">
+        <div
+          style="position: absolute; left: -29px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #f0883e; border: 2px solid #0d1117;">
+        </div>
+        <div style="color: #f0883e; font-family: 'SF Mono', monospace; font-size: 0.75rem;">3.0s — 5.0s</div>
+        <div style="color: #c9d1d9; font-size: 0.9rem; margin-top: 4px;"><strong>Phase 5+6 (simultaneous):</strong> Thread lines dissolve into falling matrix characters <em>while</em> a horizontal bar sweeps left-to-right at top</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var canvas = document.getElementById('splash-canvas');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var CHARS_STR = '0123456789';
+    var startTime = 0;
+    var matrixParticles = [];
+    var matrixSpawned = false;
+
+    var threadLines = [
+      { y: 80, w: 120, color: [121, 192, 255], nodeColor: [121, 192, 255] },
+      { y: 120, w: 95, color: [88, 166, 255], nodeColor: [88, 166, 255] },
+      { y: 160, w: 80, color: [88, 166, 255], nodeColor: [88, 166, 255] },
+      { y: 200, w: 100, color: [88, 166, 255], nodeColor: [88, 166, 255] },
+      { y: 240, w: 130, color: [240, 136, 62], nodeColor: [240, 136, 62] },
+    ];
+
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+    function easeIn(t) { return t * t; }
+    function clamp01(t) { return Math.max(0, Math.min(1, t)); }
+
+    function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+
+    function spawnMatrix() {
+      matrixParticles = [];
+      for (var li = 0; li < threadLines.length; li++) {
+        var l = threadLines[li];
+        var count = Math.floor(l.w / 8);
+        for (var c = 0; c < count; c++) {
+          var ch = CHARS_STR[Math.floor(Math.random() * CHARS_STR.length)];
+          matrixParticles.push({
+            ch: ch,
+            x: 90 + (c / count) * l.w,
+            y: l.y,
+            vy: 15 + Math.random() * 35,
+            life: 1.0,
+            decay: 0.6 + Math.random() * 0.4,
+            color: l.color,
+            size: 8 + Math.random() * 5,
+            delay: Math.random() * 0.25
+          });
+        }
+      }
+      matrixSpawned = true;
+    }
+
+    function draw(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var t = (timestamp - startTime) / 1000;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Phase 1: vertical line (0.0 - 0.7s)
+      var vLineProgress = clamp01(t / 0.7);
+      var vLineHeight = easeOut(vLineProgress) * 180;
+      var vLineTop = 70;
+      var vLineAlpha = 1.0;
+
+      // Phase 4: vertical line exits downward (2.5 - 3.0s)
+      if (t > 2.5) {
+        var exitP = clamp01((t - 2.5) / 0.5);
+        vLineTop = 70 + easeIn(exitP) * 350;
+        vLineAlpha = 1.0 - exitP;
+      }
+
+      if (vLineAlpha > 0 && vLineProgress > 0) {
+        var grad = ctx.createLinearGradient(80, vLineTop, 80, vLineTop + vLineHeight);
+        grad.addColorStop(0, rgba([88, 166, 255], vLineAlpha));
+        grad.addColorStop(1, rgba([240, 136, 62], vLineAlpha));
+        ctx.fillStyle = grad;
+        ctx.fillRect(79, vLineTop, 2, vLineHeight);
+      }
+
+      // Phase 2: thread lines + nodes (0.7 - 2.0s)
+      for (var i = 0; i < threadLines.length; i++) {
+        var l = threadLines[i];
+        var lineStart = 0.7 + i * 0.22;
+        var lineP = clamp01((t - lineStart) / 0.4);
+        var nodeP = clamp01((t - lineStart) / 0.35);
+
+        // Phase 5 dissolve (3.0s+)
+        var dissolveP = 0;
+        if (t > 3.0) {
+          dissolveP = clamp01((t - 3.0) / 0.35);
+        }
+
+        var alpha = (1.0 - dissolveP);
+        if (lineP <= 0) continue;
+
+        var drawW = easeOut(lineP) * l.w;
+
+        // Glow
+        if (alpha > 0) {
+          ctx.save();
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = rgba(l.color, 0.4 * alpha);
+          ctx.fillStyle = rgba(l.color, 0.8 * alpha);
+          ctx.beginPath();
+          ctx.roundRect(90, l.y - 2, drawW, 4, 2);
+          ctx.fill();
+          ctx.restore();
+
+          // Node
+          var nodeScale = easeOut(nodeP);
+          if (nodeScale > 0) {
+            ctx.save();
+            ctx.translate(80, l.y);
+            ctx.scale(nodeScale, nodeScale);
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI * 2);
+            ctx.strokeStyle = rgba(l.nodeColor, alpha);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            if (i === 4) {
+              ctx.fillStyle = rgba(l.color, 0.2 * alpha);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        }
+      }
+
+      // Phase 3: text (2.0s+)
+      if (t > 2.0) {
+        var textP = clamp01((t - 2.0) / 0.5);
+        var textAlpha = easeOut(textP);
+        // Fade out with dissolve
+        if (t > 3.0) {
+          textAlpha = textAlpha * (1.0 - clamp01((t - 3.0) / 0.4));
+        }
+        if (textAlpha > 0) {
+          ctx.save();
+          ctx.font = '14px "SF Mono", "Fira Code", monospace';
+          ctx.fillStyle = rgba([201, 209, 217], textAlpha);
+          ctx.textAlign = 'center';
+          ctx.fillText('threadbase', W / 2, 290 - (1 - easeOut(textP)) * 8);
+          ctx.restore();
+        }
+      }
+
+      // Phase 5: matrix particles (3.0s+)
+      if (t > 3.0 && !matrixSpawned) {
+        spawnMatrix();
+      }
+
+      if (matrixSpawned) {
+        var mt = t - 3.0;
+        for (var p = 0; p < matrixParticles.length; p++) {
+          var pt = matrixParticles[p];
+          var pt_t = mt - pt.delay;
+          if (pt_t < 0) {
+            // Draw character in place before it starts falling
+            ctx.save();
+            ctx.font = pt.size + 'px "SF Mono", "Fira Code", monospace';
+            ctx.fillStyle = rgba(pt.color, 0.9);
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = rgba(pt.color, 0.5);
+            ctx.fillText(pt.ch, pt.x, pt.y + 4);
+            ctx.restore();
+            continue;
+          }
+          var life = 1.0 - pt_t * pt.decay;
+          if (life <= 0) continue;
+          var py = pt.y + pt.vy * pt_t;
+          ctx.save();
+          ctx.font = pt.size + 'px "SF Mono", "Fira Code", monospace';
+          ctx.fillStyle = rgba(pt.color, life * 0.9);
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = rgba(pt.color, life * 0.4);
+          ctx.fillText(pt.ch, pt.x, py + 4);
+          ctx.restore();
+        }
+      }
+
+      // Phase 6: collapse bar (3.0s+ — runs alongside matrix chars)
+      if (t > 3.0) {
+        var barP = clamp01((t - 3.0) / 2.0);
+        var barW = easeOut(barP) * W;
+        var barGrad = ctx.createLinearGradient(0, 0, barW, 0);
+        barGrad.addColorStop(0, rgba([88, 166, 255], barP));
+        barGrad.addColorStop(0.7, rgba([121, 192, 255], barP));
+        barGrad.addColorStop(1, rgba([240, 136, 62], barP));
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = rgba([88, 166, 255], 0.5 * barP);
+        ctx.fillStyle = barGrad;
+        ctx.fillRect(0, 0, barW, 3);
+        ctx.restore();
+      }
+
+      // Loop after 6s
+      if (t < 6) {
+        requestAnimationFrame(draw);
+      } else {
+        startTime = 0;
+        matrixSpawned = false;
+        matrixParticles = [];
+        requestAnimationFrame(draw);
+      }
+    }
+
+    requestAnimationFrame(draw);
+  })();
+</script>

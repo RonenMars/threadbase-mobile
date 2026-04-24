@@ -1,0 +1,173 @@
+<h2>Splash Animation Approaches</h2>
+<p class="subtitle">Developer tool energy &bull; ~2.5s duration &bull; Collapse-to-top exit</p>
+<p style="color: #8b949e; font-size: 0.85rem; margin-bottom: 2rem;">Each option shows the full sequence: entrance &rarr; hold &rarr; collapse exit. Click an option to select it.</p>
+
+<div class="cards" style="display: grid; grid-template-columns: 1fr; gap: 2rem; max-width: 800px; margin: 0 auto;">
+
+  <!-- Approach A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="overflow: hidden;">
+    <div class="card-body" style="padding: 0;">
+      <div style="display: flex; gap: 0;">
+        <!-- Animation preview -->
+        <div style="flex: 0 0 280px; background: #0d1117; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; min-height: 320px;">
+          <div class="anim-a" style="position: relative; width: 160px; height: 200px;">
+            <!-- Vertical line -->
+            <div style="position: absolute; left: 20px; top: 10px; width: 2px; height: 0; background: linear-gradient(180deg, #58a6ff, #f0883e); animation: vertLine 0.4s 0.2s ease-out forwards;"></div>
+            <!-- Thread lines -->
+            <div style="position: absolute; left: 20px; top: 18px; height: 4px; width: 0; background: linear-gradient(90deg, #79c0ff, #58a6ff88); border-radius: 2px; animation: drawLine 0.3s 0.5s ease-out forwards; box-shadow: 0 0 12px #58a6ff88;"></div>
+            <div style="position: absolute; left: 20px; top: 52px; height: 4px; width: 0; background: linear-gradient(90deg, #58a6ff, #58a6ff44); border-radius: 2px; animation: drawLine2 0.3s 0.65s ease-out forwards; box-shadow: 0 0 8px #58a6ff44;"></div>
+            <div style="position: absolute; left: 20px; top: 86px; height: 4px; width: 0; background: linear-gradient(90deg, #58a6ff99, #58a6ff22); border-radius: 2px; animation: drawLine3 0.3s 0.8s ease-out forwards; box-shadow: 0 0 6px #58a6ff33;"></div>
+            <div style="position: absolute; left: 20px; top: 120px; height: 4px; width: 0; background: linear-gradient(90deg, #58a6ff66, #58a6ff11); border-radius: 2px; animation: drawLine2 0.3s 0.95s ease-out forwards;"></div>
+            <div style="position: absolute; left: 20px; top: 154px; height: 4px; width: 0; background: linear-gradient(90deg, #f0883e, #f0883eaa); border-radius: 2px; animation: drawLine 0.3s 1.1s ease-out forwards; box-shadow: 0 0 12px #f0883e88;"></div>
+            <!-- Nodes -->
+            <div style="position: absolute; left: 14px; top: 12px; width: 14px; height: 14px; border: 2px solid #79c0ff; border-radius: 50%; opacity: 0; animation: nodeIn 0.2s 0.5s ease-out forwards; box-shadow: 0 0 8px #58a6ff66;"></div>
+            <div style="position: absolute; left: 14px; top: 46px; width: 14px; height: 14px; border: 2px solid #58a6ff; border-radius: 50%; opacity: 0; animation: nodeIn 0.2s 0.65s ease-out forwards;"></div>
+            <div style="position: absolute; left: 14px; top: 80px; width: 14px; height: 14px; border: 2px solid #58a6ff88; border-radius: 50%; opacity: 0; animation: nodeIn 0.2s 0.8s ease-out forwards;"></div>
+            <div style="position: absolute; left: 14px; top: 114px; width: 14px; height: 14px; border: 2px solid #58a6ff66; border-radius: 50%; opacity: 0; animation: nodeIn 0.2s 0.95s ease-out forwards;"></div>
+            <div style="position: absolute; left: 14px; top: 148px; width: 14px; height: 14px; border: 2px solid #f0883e; border-radius: 50%; background: #f0883e33; opacity: 0; animation: nodeIn 0.2s 1.1s ease-out forwards; box-shadow: 0 0 8px #f0883e66;"></div>
+            <!-- Text -->
+            <div style="position: absolute; bottom: -10px; left: 0; right: 0; text-align: center; opacity: 0; animation: fadeUp 0.4s 1.3s ease-out forwards;">
+              <span style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; color: #c9d1d9; letter-spacing: 2px;">threadbase</span>
+            </div>
+          </div>
+        </div>
+        <!-- Description -->
+        <div style="padding: 1.5rem; flex: 1;">
+          <h3 style="margin-top: 0; color: #58a6ff;">A: Sequential Draw-In</h3>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Entrance:</strong> Vertical timeline draws down, then each thread line draws left-to-right in sequence with its node popping in. Glow effects trail behind each line.
+          </p>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Hold:</strong> Brief pulse/shimmer across all lines.
+          </p>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Exit:</strong> All lines collapse upward into a single glowing bar at top, which fades as app appears.
+          </p>
+          <div style="margin-top: 1rem;">
+            <span class="label" style="color: #f0883e;">Recommended</span>
+            <div class="pros-cons" style="margin-top: 0.5rem;">
+              <div class="pros"><h4>Pros</h4><ul><li>Most faithful to the icon's identity</li><li>Sequential timing feels like code executing</li><li>Natural build-up creates anticipation</li></ul></div>
+              <div class="cons"><h4>Cons</h4><ul><li>Most complex to implement</li><li>Needs careful timing tuning</li></ul></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approach B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="overflow: hidden;">
+    <div class="card-body" style="padding: 0;">
+      <div style="display: flex; gap: 0;">
+        <!-- Animation preview -->
+        <div style="flex: 0 0 280px; background: #0d1117; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; min-height: 320px;">
+          <div class="anim-b" style="position: relative; width: 160px; height: 200px;">
+            <!-- All lines appear at once but with typewriter cursor -->
+            <div style="position: absolute; left: 20px; top: 18px; height: 4px; width: 120px; background: linear-gradient(90deg, #79c0ff, #58a6ff88); border-radius: 2px; opacity: 0; animation: typeIn 0.15s 0.3s ease-out forwards; box-shadow: 0 0 12px #58a6ff88;"></div>
+            <div style="position: absolute; left: 20px; top: 52px; height: 4px; width: 95px; background: linear-gradient(90deg, #58a6ff, #58a6ff44); border-radius: 2px; opacity: 0; animation: typeIn 0.15s 0.45s ease-out forwards;"></div>
+            <div style="position: absolute; left: 20px; top: 86px; height: 4px; width: 80px; background: linear-gradient(90deg, #58a6ff99, #58a6ff22); border-radius: 2px; opacity: 0; animation: typeIn 0.15s 0.6s ease-out forwards;"></div>
+            <div style="position: absolute; left: 20px; top: 120px; height: 4px; width: 100px; background: linear-gradient(90deg, #58a6ff66, #58a6ff11); border-radius: 2px; opacity: 0; animation: typeIn 0.15s 0.75s ease-out forwards;"></div>
+            <div style="position: absolute; left: 20px; top: 154px; height: 4px; width: 130px; background: linear-gradient(90deg, #f0883e, #f0883eaa); border-radius: 2px; opacity: 0; animation: typeIn 0.15s 0.9s ease-out forwards; box-shadow: 0 0 12px #f0883e88;"></div>
+            <!-- Blinking cursor -->
+            <div style="position: absolute; left: 18px; top: 10px; width: 2px; height: 20px; background: #79c0ff; animation: cursorBlink 0.15s 0.3s step-end 10, cursorMove 1.8s 0.3s ease-out forwards; box-shadow: 0 0 6px #58a6ff;"></div>
+            <!-- Text -->
+            <div style="position: absolute; bottom: -10px; left: 0; right: 0; text-align: center; opacity: 0; animation: fadeUp 0.4s 1.2s ease-out forwards;">
+              <span style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; color: #c9d1d9; letter-spacing: 2px;">threadbase</span>
+            </div>
+          </div>
+        </div>
+        <!-- Description -->
+        <div style="padding: 1.5rem; flex: 1;">
+          <h3 style="margin-top: 0; color: #58a6ff;">B: Terminal Typewriter</h3>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Entrance:</strong> A blinking cursor moves down, each thread line "types in" as the cursor passes — like code being written in a terminal.
+          </p>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Hold:</strong> Cursor blinks at the end of the last line.
+          </p>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Exit:</strong> Lines compress upward into a loading bar, cursor becomes the bar's leading edge.
+          </p>
+          <div style="margin-top: 1rem;">
+            <div class="pros-cons">
+              <div class="pros"><h4>Pros</h4><ul><li>Strong terminal/developer metaphor</li><li>Simple animation sequence</li><li>Cursor adds personality</li></ul></div>
+              <div class="cons"><h4>Cons</h4><ul><li>Less faithful to the actual icon design</li><li>May feel gimmicky on repeat views</li></ul></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approach C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)" style="overflow: hidden;">
+    <div class="card-body" style="padding: 0;">
+      <div style="display: flex; gap: 0;">
+        <!-- Animation preview -->
+        <div style="flex: 0 0 280px; background: #0d1117; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; min-height: 320px;">
+          <div class="anim-c" style="position: relative; width: 160px; height: 200px;">
+            <!-- Icon appears as whole unit, scale + fade -->
+            <div style="position: absolute; inset: 0; opacity: 0; transform: scale(0.85); animation: scaleReveal 0.5s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;">
+              <div style="position: absolute; left: 20px; top: 10px; width: 2px; height: 160px; background: linear-gradient(180deg, #58a6ff, #f0883e);"></div>
+              <div style="position: absolute; left: 20px; top: 18px; height: 4px; width: 120px; background: linear-gradient(90deg, #79c0ff, #58a6ff88); border-radius: 2px; box-shadow: 0 0 12px #58a6ff88;"></div>
+              <div style="position: absolute; left: 14px; top: 12px; width: 14px; height: 14px; border: 2px solid #79c0ff; border-radius: 50%; box-shadow: 0 0 8px #58a6ff66;"></div>
+              <div style="position: absolute; left: 20px; top: 52px; height: 4px; width: 95px; background: linear-gradient(90deg, #58a6ff, #58a6ff44); border-radius: 2px;"></div>
+              <div style="position: absolute; left: 14px; top: 46px; width: 14px; height: 14px; border: 2px solid #58a6ff; border-radius: 50%;"></div>
+              <div style="position: absolute; left: 20px; top: 86px; height: 4px; width: 80px; background: linear-gradient(90deg, #58a6ff99, #58a6ff22); border-radius: 2px;"></div>
+              <div style="position: absolute; left: 14px; top: 80px; width: 14px; height: 14px; border: 2px solid #58a6ff88; border-radius: 50%;"></div>
+              <div style="position: absolute; left: 20px; top: 120px; height: 4px; width: 100px; background: linear-gradient(90deg, #58a6ff66, #58a6ff11); border-radius: 2px;"></div>
+              <div style="position: absolute; left: 14px; top: 114px; width: 14px; height: 14px; border: 2px solid #58a6ff66; border-radius: 50%;"></div>
+              <div style="position: absolute; left: 20px; top: 154px; height: 4px; width: 130px; background: linear-gradient(90deg, #f0883e, #f0883eaa); border-radius: 2px; box-shadow: 0 0 12px #f0883e88;"></div>
+              <div style="position: absolute; left: 14px; top: 148px; width: 14px; height: 14px; border: 2px solid #f0883e; background: #f0883e33; border-radius: 50%; box-shadow: 0 0 8px #f0883e66;"></div>
+            </div>
+            <!-- Glow pulse -->
+            <div style="position: absolute; inset: 0; opacity: 0; animation: glowPulse 0.8s 0.8s ease-in-out forwards;">
+              <div style="position: absolute; left: 20px; top: 18px; height: 4px; width: 120px; background: #79c0ff; border-radius: 2px; filter: blur(8px);"></div>
+              <div style="position: absolute; left: 20px; top: 154px; height: 4px; width: 130px; background: #f0883e; border-radius: 2px; filter: blur(8px);"></div>
+            </div>
+            <!-- Text -->
+            <div style="position: absolute; bottom: -10px; left: 0; right: 0; text-align: center; opacity: 0; animation: fadeUp 0.4s 1.0s ease-out forwards;">
+              <span style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; color: #c9d1d9; letter-spacing: 2px;">threadbase</span>
+            </div>
+          </div>
+        </div>
+        <!-- Description -->
+        <div style="padding: 1.5rem; flex: 1;">
+          <h3 style="margin-top: 0; color: #58a6ff;">C: Scale Reveal + Glow Pulse</h3>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Entrance:</strong> Full icon scales in from 85% with a slight overshoot bounce. Then a glow pulse sweeps across the lines top-to-bottom.
+          </p>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Hold:</strong> Subtle breathing glow on the brightest lines.
+          </p>
+          <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6;">
+            <strong>Exit:</strong> Lines collapse upward, icon fades as app enters.
+          </p>
+          <div style="margin-top: 1rem;">
+            <div class="pros-cons">
+              <div class="pros"><h4>Pros</h4><ul><li>Simplest to implement</li><li>Smooth and professional</li><li>Won't annoy on repeated views</li></ul></div>
+              <div class="cons"><h4>Cons</h4><ul><li>Less "developer tool" feel</li><li>Less distinctive — many apps do scale-in</li></ul></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes vertLine { from { height: 0; } to { height: 160px; } }
+@keyframes drawLine { from { width: 0; } to { width: 120px; } }
+@keyframes drawLine2 { from { width: 0; } to { width: 95px; } }
+@keyframes drawLine3 { from { width: 0; } to { width: 80px; } }
+@keyframes nodeIn { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes typeIn { from { opacity: 0; transform: scaleX(0); transform-origin: left; } to { opacity: 1; transform: scaleX(1); transform-origin: left; } }
+@keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes cursorMove { 0% { top: 10px; } 20% { top: 44px; } 40% { top: 78px; } 60% { top: 112px; } 80% { top: 146px; } 100% { top: 146px; opacity: 0; } }
+@keyframes scaleReveal { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+@keyframes glowPulse { 0% { opacity: 0; } 50% { opacity: 0.6; } 100% { opacity: 0; } }
+
+.card { transition: all 0.2s ease; }
+.card:hover { transform: translateY(-2px); }
+</style>
