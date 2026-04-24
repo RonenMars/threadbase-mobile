@@ -54,7 +54,12 @@ async function request<T>(
   if (response.status === 401) throw new AuthError()
   if (response.status === 404) throw new NotFoundError(path)
   if (!response.ok) {
-    throw new NetworkError(`HTTP ${response.status} from ${path}`)
+    let detail = ''
+    try {
+      const body = await response.json()
+      if (body?.error) detail = body.error
+    } catch {}
+    throw new NetworkError(detail || `HTTP ${response.status} from ${path}`)
   }
 
   return response.json() as Promise<T>
