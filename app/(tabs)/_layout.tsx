@@ -1,9 +1,14 @@
 import React from 'react'
 import { Tabs } from 'expo-router'
-import { Text } from 'react-native'
+import { Text, TouchableOpacity } from 'react-native'
+import { useRouter } from 'expo-router'
+import { useServersStore } from '@/stores/servers'
 import { dark } from '@/constants/theme'
 
 export default function TabsLayout() {
+  const router = useRouter()
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+
   return (
     <Tabs
       screenOptions={{
@@ -24,6 +29,17 @@ export default function TabsLayout() {
         options={{
           title: 'Sessions',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚡</Text>,
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => {
+                const serverId = activeServerIds[0]
+                if (serverId) router.push(`/browse?server=${serverId}`)
+              }}
+              style={{ marginRight: 16 }}
+            >
+              <Text style={{ color: dark.text.accent, fontSize: 24, fontWeight: '300' }}>+</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen

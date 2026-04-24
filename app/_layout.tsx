@@ -139,6 +139,14 @@ export default function RootLayout() {
                 name="conversation/[id]"
                 options={{ title: 'Conversation', headerBackTitle: 'Back' }}
               />
+              <Stack.Screen
+                name="browse"
+                options={{
+                  presentation: 'modal',
+                  title: 'Browse',
+                  headerBackTitle: 'Cancel',
+                }}
+              />
             </Stack>
           </AuthGate>
         </QueryClientProvider>
