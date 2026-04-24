@@ -135,7 +135,6 @@ export default function BrowseScreen() {
           <FlashList
             data={data?.directories ?? []}
             renderItem={renderItem}
-            estimatedItemSize={52}
             keyExtractor={(item) => item.name}
           />
         )}
