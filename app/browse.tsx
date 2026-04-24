@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useBrowse, useCreateDirectory, useStartSession } from '@/hooks/useBrowse'
@@ -28,6 +30,38 @@ export default function BrowseScreen() {
   const startSession = useStartSession(serverId ?? '')
 
   const breadcrumbs = currentPath ? currentPath.split('/') : []
+  const navigation = useNavigation()
+
+  const goBack = useCallback(() => {
+    if (!currentPath) return
+    const segments = currentPath.split('/')
+    setCurrentPath(segments.slice(0, -1).join('/'))
+    setShowNewFolder(false)
+  }, [currentPath])
+
+  // Set header back button when inside a subdirectory
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: currentPath
+        ? () => (
+            <TouchableOpacity onPress={goBack} style={{ marginLeft: 8 }}>
+              <Text style={{ color: dark.text.accent, fontSize: font.base }}>‹ Back</Text>
+            </TouchableOpacity>
+          )
+        : undefined,
+    })
+  }, [currentPath, navigation, goBack])
+
+  // Swipe from left edge to go back
+  const swipeBack = Gesture.Pan()
+    .activeOffsetX(30)
+    .failOffsetY([-20, 20])
+    .hitSlop({ left: 0, width: 40 })
+    .onEnd((e) => {
+      if (e.translationX > 80 && currentPath) {
+        runOnJS(goBack)()
+      }
+    })
 
   const navigateTo = useCallback((path: string) => {
     setCurrentPath(path)
@@ -96,6 +130,7 @@ export default function BrowseScreen() {
   const is403 = isError && error?.message?.includes('403')
 
   return (
+    <GestureDetector gesture={swipeBack}>
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Breadcrumbs */}
       <View style={styles.breadcrumbs}>
@@ -188,6 +223,7 @@ export default function BrowseScreen() {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+    </GestureDetector>
   )
 }
 
