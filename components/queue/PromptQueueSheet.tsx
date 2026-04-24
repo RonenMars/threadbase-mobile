@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet'
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
+import { Ionicons } from '@expo/vector-icons'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useSessionsStore } from '@/stores/sessions'
@@ -96,8 +97,9 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             style={[styles.addBtn, !input.trim() && styles.addBtnDisabled]}
             onPress={handleAddToQueue}
             disabled={!input.trim()}
+            accessibilityLabel="Add prompt to queue"
           >
-            <Text style={styles.addBtnText}>Add</Text>
+            <Ionicons name="paper-plane" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -135,13 +137,13 @@ const styles = StyleSheet.create({
   addBtn: {
     backgroundColor: dark.text.accent,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    minWidth: 48,
     minHeight: 44,
+    paddingHorizontal: spacing.sm,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   addBtnDisabled: { opacity: 0.4 },
-  addBtnText: { color: '#fff', fontWeight: '600', fontSize: font.base },
   list: { flex: 1 },
   queueItem: {
     flexDirection: 'row',

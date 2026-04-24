@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
+import { Ionicons } from '@expo/vector-icons'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -74,12 +75,19 @@ export default function SessionDetailScreen() {
     setInputText('')
   }
 
-  // Streamer PTY sessions stay `running` until exit and never emit `waiting_input`;
-  // only show the composer when the server can accept `/input` (managed + active).
+  // Hide composer only for discovered sessions with no PTY stream yet (placeholder state).
+  // Resumed / stream-attached sessions may still be tagged `discovered` while running; they
+  // need the same input UI as managed sessions once terminal lines exist or are loading.
+  const discoveredEmptyPlaceholder =
+    session?.source === 'discovered' &&
+    !isLoadingHistory &&
+    lines.length === 0 &&
+    !isStreaming
+
   const canSendTerminalInput =
     session &&
-    session.source !== 'discovered' &&
-    (session.status === 'waiting_input' || session.status === 'running')
+    (session.status === 'waiting_input' || session.status === 'running') &&
+    !discoveredEmptyPlaceholder
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -136,34 +144,34 @@ export default function SessionDetailScreen() {
                   : 'Failed to send'}
               </Text>
             ) : null}
-            <TextInput
-              style={styles.input}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Send input to session..."
-              placeholderTextColor={dark.text.secondary}
-              multiline
-              returnKeyType="done"
-              blurOnSubmit
-              onSubmitEditing={handleSendInput}
-            />
-            <View style={styles.inputButtons}>
-              <TouchableOpacity
-                style={styles.queueBtn}
-                onPress={() => setQueueVisible(true)}
-                accessibilityLabel="Open prompt queue"
-              >
-                <Text style={styles.queueBtnText}>Queue</Text>
-              </TouchableOpacity>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Send input to session..."
+                placeholderTextColor={dark.text.secondary}
+                multiline
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={handleSendInput}
+              />
               <TouchableOpacity
                 style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
                 onPress={handleSendInput}
                 disabled={!inputText.trim() || sendInput.isPending}
                 accessibilityLabel="Send input"
               >
-                <Text style={styles.sendBtnText}>Send</Text>
+                <Ionicons name="paper-plane" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={styles.queueBtn}
+              onPress={() => setQueueVisible(true)}
+              accessibilityLabel="Open prompt queue"
+            >
+              <Text style={styles.queueBtnText}>Queue</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
@@ -270,7 +278,13 @@ const styles = StyleSheet.create({
     color: dark.status.failed,
     fontSize: font.sm,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.sm,
+  },
   input: {
+    flex: 1,
     backgroundColor: dark.bg.card,
     borderRadius: 10,
     borderWidth: 1,
@@ -280,10 +294,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     maxHeight: 120,
     minHeight: 44,
-  },
-  inputButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   queueBtn: {
     backgroundColor: dark.bg.card,
@@ -297,7 +307,7 @@ const styles = StyleSheet.create({
   },
   queueBtnText: { color: dark.text.primary, fontSize: font.base },
   sendBtn: {
-    flex: 1,
+    aspectRatio: 1,
     backgroundColor: dark.text.accent,
     borderRadius: 10,
     minHeight: 44,
@@ -305,7 +315,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendBtnDisabled: { opacity: 0.4 },
-  sendBtnText: { color: '#fff', fontWeight: '700', fontSize: font.base },
   queueBtnBottom: {
     margin: spacing.md,
     backgroundColor: dark.bg.card,
