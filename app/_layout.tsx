@@ -118,6 +118,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        {!splashDone && <SplashAnimation onComplete={() => setSplashDone(true)} />}
         <QueryClientProvider client={queryClient}>
           <AuthGate>
             <StatusBar style="light" />
@@ -151,7 +152,6 @@ export default function RootLayout() {
           </AuthGate>
         </QueryClientProvider>
       </SafeAreaProvider>
-      {!splashDone && <SplashAnimation onComplete={() => setSplashDone(true)} />}
     </GestureHandlerRootView>
   )
 }

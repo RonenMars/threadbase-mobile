@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { View, StyleSheet, useWindowDimensions } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -45,11 +46,70 @@ const P4_START = 2500    // vertical line exit
 const P4_DURATION = 500  // vertical line exit duration
 
 const P5_START = 3000    // matrix rain + sweep bar start
-const P5_DURATION = 2000 // matrix rain + sweep bar duration
-const FADE_OUT_START = 5000 // final fade out
+const P5_DURATION = 2500 // matrix rain + sweep bar duration (extended by 0.5s)
+const FADE_OUT_START = P5_START + P5_DURATION // final fade out starts right after phase 5
 const FADE_OUT_DUR = 200   // fade out duration
 
 const DIGITS = '0123456789'
+
+type RGB = [number, number, number]
+
+function hexToRgb(hex: string): RGB {
+  const h = hex.replace('#', '')
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ]
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function lerpRgb(a: RGB, b: RGB, t: number): RGB {
+  return [
+    Math.round(lerp(a[0], b[0], t)),
+    Math.round(lerp(a[1], b[1], t)),
+    Math.round(lerp(a[2], b[2], t)),
+  ]
+}
+
+// 4 equally-sized gradient bands (25% each): blue, light blue, light orange,
+// orange. Each color's stop is placed at the center of its 25% band; we
+// interpolate linearly between neighboring stops for smooth transitions,
+// and clamp outside the outermost stops so the edges stay on-color.
+const GRADIENT_STOPS: Array<{ t: number; color: RGB }> = [
+  { t: 0.125, color: hexToRgb(COLORS.blueMid) },     // blue
+  { t: 0.375, color: hexToRgb(COLORS.blueBright) },  // light blue
+  { t: 0.625, color: hexToRgb('#f5b483') },          // light orange
+  { t: 0.875, color: hexToRgb(COLORS.orange) },      // orange
+]
+
+function gradientColor(t: number): string {
+  const clamped = Math.max(0, Math.min(1, t))
+  const first = GRADIENT_STOPS[0]
+  const last = GRADIENT_STOPS[GRADIENT_STOPS.length - 1]
+  if (clamped <= first.t) {
+    const [r, g, b] = first.color
+    return `rgb(${r},${g},${b})`
+  }
+  if (clamped >= last.t) {
+    const [r, g, b] = last.color
+    return `rgb(${r},${g},${b})`
+  }
+  for (let i = 0; i < GRADIENT_STOPS.length - 1; i++) {
+    const a = GRADIENT_STOPS[i]
+    const b = GRADIENT_STOPS[i + 1]
+    if (clamped >= a.t && clamped <= b.t) {
+      const local = (clamped - a.t) / (b.t - a.t)
+      const [r, g, bl] = lerpRgb(a.color, b.color, local)
+      return `rgb(${r},${g},${bl})`
+    }
+  }
+  const [r, g, b] = last.color
+  return `rgb(${r},${g},${b})`
+}
 
 interface MatrixChar {
   id: number
@@ -61,7 +121,16 @@ interface MatrixChar {
   fadeRate: number
   size: number
   color: string
+  yOffset: number
 }
+
+// How far above the thread lines the rain column extends.
+// Combined with the normal downward fall this makes the animation ~2x taller.
+const MATRIX_RISE = 240
+
+// Vertical offset applied to every matrix char so the whole rain block sits
+// lower on the screen (below where the thread lines used to be).
+const MATRIX_DOWN_SHIFT = 160
 
 function generateMatrixChars(
   screenWidth: number,
@@ -72,10 +141,24 @@ function generateMatrixChars(
   let id = 0
   const spreadX = screenWidth * 0.35 // extend x range well beyond thread lines
   const offsetX = -screenWidth * 0.2  // start further left
-  for (const line of THREAD_LINES) {
+
+  // The effective start Y of a char ranges from -MATRIX_RISE (top of rain)
+  // to (THREAD_LINES.length - 1) * LINE_GAP (bottom). We use this span to
+  // color each char along a blue -> orange gradient.
+  const rainTop = -MATRIX_RISE
+  const rainBottom = (THREAD_LINES.length - 1) * LINE_GAP
+  const rainSpan = rainBottom - rainTop
+
+  THREAD_LINES.forEach((line, lineIdx) => {
     const lineWidth = screenWidth * line.widthPct
-    const count = Math.floor(lineWidth / 8)
+    // Doubled density: smaller divisor -> more numbers per line.
+    const count = Math.floor(lineWidth / 4)
     for (let c = 0; c < count; c++) {
+      // Distribute starting positions across a taller vertical range,
+      // extending the rain upward above the thread lines.
+      const yOffset = -Math.random() * MATRIX_RISE
+      const effectiveY = lineIdx * LINE_GAP + yOffset
+      const t = (effectiveY - rainTop) / rainSpan
       chars.push({
         id: id++,
         x: lineLeft + offsetX + (c / count) * (lineWidth + spreadX),
@@ -85,10 +168,11 @@ function generateMatrixChars(
         delay: Math.random() * 250,
         fadeRate: 0.35 + Math.random() * 0.25,
         size: 12 + Math.random() * 8,
-        color: line.color,
+        color: gradientColor(t),
+        yOffset,
       })
     }
-  }
+  })
   return chars
 }
 
@@ -171,6 +255,7 @@ function MatrixCharacter({
   char,
   x,
   startY,
+  yOffset,
   speed,
   delay,
   size,
@@ -180,6 +265,7 @@ function MatrixCharacter({
   char: string
   x: number
   startY: number
+  yOffset: number
   speed: number
   delay: number
   size: number
@@ -211,7 +297,7 @@ function MatrixCharacter({
         {
           position: 'absolute',
           left: x,
-          top: startY,
+          top: startY + yOffset,
           fontFamily: 'monospace',
           fontSize: size,
           color: color,
@@ -226,6 +312,10 @@ function MatrixCharacter({
 
 export function SplashAnimation({ onComplete }: Props) {
   const { width: screenWidth } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  // Keep the sweep bar visible below the notch / Dynamic Island on devices
+  // like iPhone 17 Pro, with a small additional margin.
+  const sweepBarTop = insets.top + 8
   const nodeLeft = screenWidth * 0.32
   const lineLeft = nodeLeft + NODE_SIZE / 2 + 8
   const totalHeight = (THREAD_LINES.length - 1) * LINE_GAP
@@ -302,12 +392,13 @@ export function SplashAnimation({ onComplete }: Props) {
       withTiming(1, { duration: P5_DURATION, easing: Easing.linear })
     )
 
-    // Phase 6: sweep bar (simultaneous with matrix)
+    // Phase 6: sweep bar — same start, duration, and linear easing as the
+    // matrix rain so their progress stays visually in sync across the phase.
     barWidth.value = withDelay(
       P5_START,
       withTiming(screenWidth, {
         duration: P5_DURATION,
-        easing: Easing.out(Easing.cubic),
+        easing: Easing.linear,
       })
     )
 
@@ -348,8 +439,8 @@ export function SplashAnimation({ onComplete }: Props) {
 
   return (
     <Animated.View style={[styles.container, containerAnimStyle]}>
-      {/* Sweep bar at top */}
-      <Animated.View style={[styles.sweepBar, barStyle]} />
+      {/* Sweep bar at top (offset below notch / Dynamic Island) */}
+      <Animated.View style={[styles.sweepBar, { top: sweepBarTop }, barStyle]} />
 
       {/* Vertical line */}
       <Animated.View
@@ -400,7 +491,8 @@ export function SplashAnimation({ onComplete }: Props) {
                 key={mc.id}
                 char={mc.char}
                 x={mc.x}
-                startY={lineIdx * LINE_GAP}
+                startY={lineIdx * LINE_GAP + MATRIX_DOWN_SHIFT}
+                yOffset={mc.yOffset}
                 speed={mc.speed}
                 delay={mc.delay}
                 size={mc.size}
@@ -423,7 +515,6 @@ const styles = StyleSheet.create({
   },
   sweepBar: {
     position: 'absolute',
-    top: 0,
     left: 0,
     height: 4,
     backgroundColor: COLORS.blueBright,
