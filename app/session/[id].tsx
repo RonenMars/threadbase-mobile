@@ -74,7 +74,12 @@ export default function SessionDetailScreen() {
     setInputText('')
   }
 
-  const isWaiting = session?.status === 'waiting_input'
+  // Streamer PTY sessions stay `running` until exit and never emit `waiting_input`;
+  // only show the composer when the server can accept `/input` (managed + active).
+  const canSendTerminalInput =
+    session &&
+    session.source !== 'discovered' &&
+    (session.status === 'waiting_input' || session.status === 'running')
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -122,8 +127,15 @@ export default function SessionDetailScreen() {
           )}
         </View>
 
-        {isWaiting ? (
+        {canSendTerminalInput ? (
           <View style={styles.inputArea}>
+            {sendInput.isError ? (
+              <Text style={styles.sendError} numberOfLines={2}>
+                {sendInput.error instanceof Error
+                  ? sendInput.error.message
+                  : 'Failed to send'}
+              </Text>
+            ) : null}
             <TextInput
               style={styles.input}
               value={inputText}
@@ -253,6 +265,10 @@ const styles = StyleSheet.create({
     borderTopColor: dark.border,
     padding: spacing.sm,
     gap: spacing.sm,
+  },
+  sendError: {
+    color: dark.status.failed,
+    fontSize: font.sm,
   },
   input: {
     backgroundColor: dark.bg.card,
