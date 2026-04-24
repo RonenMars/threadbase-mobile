@@ -6,12 +6,13 @@ import {
   StyleSheet,
   Share,
   ActivityIndicator,
+  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  type ListRenderItemInfo,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { FlashList, FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list'
 import { useMutation } from '@tanstack/react-query'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
@@ -79,7 +80,7 @@ export default function ConversationDetailScreen() {
     hasNextPage,
     isFetchingNextPage,
   } = useConversation(serverId, id)
-  const listRef = useRef<FlashListRef<Message>>(null)
+  const listRef = useRef<FlatList<Message>>(null)
   const hasInitialScrolled = useRef(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
@@ -108,12 +109,6 @@ export default function ConversationDetailScreen() {
     }, 50)
   }, [conversation, id])
 
-  const handleStartReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage()
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
     const y = contentOffset.y
@@ -121,7 +116,12 @@ export default function ConversationDetailScreen() {
     setShowScrollTop(y > 100)
     const distFromBottom = contentSize.height - y - layoutMeasurement.height
     setShowScrollBottom(distFromBottom > 100)
-  }, [id])
+
+    // Load older messages when scrolled near the top
+    if (y < 200 && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage()
+    }
+  }, [id, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const resumeSession = useMutation({
     mutationFn: () => {
@@ -160,7 +160,7 @@ export default function ConversationDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.listWrapper}>
-          <FlashList
+          <FlatList
             data={MESSAGE_SKELETON_KEYS}
             keyExtractor={(k) => k}
             renderItem={renderSkeletonItem}
@@ -193,7 +193,7 @@ export default function ConversationDetailScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {hasMessages ? (
         <View style={styles.listWrapper}>
-          <FlashList
+          <FlatList
             ref={listRef}
             data={conversation.messages}
             keyExtractor={(m) => m.id}
@@ -201,8 +201,6 @@ export default function ConversationDetailScreen() {
             contentContainerStyle={styles.listContent}
             onScroll={handleScroll}
             scrollEventThrottle={100}
-            onStartReached={handleStartReached}
-            onStartReachedThreshold={0.35}
             ListHeaderComponent={
               isFetchingNextPage ? (
                 <View style={styles.headerLoading}>
