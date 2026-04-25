@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
+import { useHeaderHeight } from '@react-navigation/elements'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { useServersStore } from '@/stores/servers'
@@ -21,12 +22,18 @@ import { dark, font, radius, spacing } from '@/constants/theme'
 export default function OnboardingScreen() {
   const router = useRouter()
   const navigation = useNavigation()
+  const headerHeight = useHeaderHeight()
   const { mode } = useLocalSearchParams<{ mode?: string }>()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
   const { addServerAction, setAddServerAction } = useSettingsStore()
   const isAddingServer = mode === 'add'
+  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
+  const [protocol, setProtocol] = useState<'https' | 'http'>(
+    defaultUrl.startsWith('https://') ? 'https' : 'http'
+  )
+  const [showProtocolPicker, setShowProtocolPicker] = useState(false)
   const [serverUrl, setServerUrl] = useState(
-    process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
+    defaultUrl.replace(/^https?:\/\//, '')
   )
   const [apiKey, setApiKey] = useState('')
   const [label, setLabel] = useState('')
@@ -75,7 +82,7 @@ export default function OnboardingScreen() {
     setLoading(true)
 
     try {
-      const url = serverUrl.replace(/\/$/, '')
+      const url = `${protocol}://${serverUrl.replace(/\/$/, '')}`
       const res = await fetch(`${url}/api/profiles`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       })
@@ -119,6 +126,7 @@ export default function OnboardingScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
@@ -129,17 +137,51 @@ export default function OnboardingScreen() {
 
         <View style={styles.form}>
           <Text style={styles.label}>Server URL</Text>
-          <TextInput
-            style={styles.input}
-            value={serverUrl}
-            onChangeText={setServerUrl}
-            placeholder="http://localhost:7070"
-            placeholderTextColor={dark.text.secondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            returnKeyType="next"
-          />
+          <View style={styles.urlRow}>
+            <View>
+              <TouchableOpacity
+                style={styles.protocolDropdown}
+                onPress={() => setShowProtocolPicker((v) => !v)}
+              >
+                <Text style={styles.protocolText}>{protocol}://</Text>
+                <Text style={styles.dropdownArrow}>▼</Text>
+              </TouchableOpacity>
+              {showProtocolPicker && (
+                <View style={styles.protocolOptions}>
+                  {(['https', 'http'] as const).map((opt) => (
+                    <TouchableOpacity
+                      key={opt}
+                      style={styles.protocolOption}
+                      onPress={() => {
+                        setProtocol(opt)
+                        setShowProtocolPicker(false)
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.protocolOptionText,
+                          protocol === opt && styles.protocolOptionSelected,
+                        ]}
+                      >
+                        {opt}://
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+            <TextInput
+              style={[styles.input, styles.urlInput]}
+              value={serverUrl}
+              onChangeText={setServerUrl}
+              placeholder="localhost:7070"
+              placeholderTextColor={dark.text.secondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              returnKeyType="next"
+            />
+          </View>
 
           <Text style={styles.label}>Label (optional)</Text>
           <TextInput
@@ -230,7 +272,56 @@ const styles = StyleSheet.create({
     color: dark.text.secondary,
     fontSize: font.lg,
   },
-  form: { gap: spacing.sm },
+  form: { gap: spacing.sm, zIndex: 1 },
+  urlRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  urlInput: { flex: 1 },
+  protocolDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    paddingHorizontal: spacing.md,
+    minHeight: 44,
+    gap: 4,
+  },
+  protocolText: {
+    color: dark.text.primary,
+    fontSize: font.base,
+  },
+  dropdownArrow: {
+    color: dark.text.secondary,
+    fontSize: 10,
+  },
+  protocolOptions: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    zIndex: 10,
+    overflow: 'hidden',
+  },
+  protocolOption: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  protocolOptionText: {
+    color: dark.text.primary,
+    fontSize: font.base,
+  },
+  protocolOptionSelected: {
+    color: dark.text.accent,
+    fontWeight: '600',
+  },
   label: {
     color: dark.text.secondary,
     fontSize: font.sm,

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useSessionActions } from '@/hooks/useSessionActions'
 
@@ -66,6 +66,8 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
       enablePanDownToClose={false}
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.handle}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
     >
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
@@ -78,7 +80,7 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
         </View>
 
         {editMode ? (
-          <TextInput
+          <BottomSheetTextInput
             style={styles.editInput}
             value={editedPrompt}
             onChangeText={setEditedPrompt}

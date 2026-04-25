@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useHeaderHeight } from '@react-navigation/elements'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { Ionicons } from '@expo/vector-icons'
@@ -36,6 +37,7 @@ export default function SessionDetailScreen() {
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const navigation = useNavigation()
   const router = useRouter()
+  const headerHeight = useHeaderHeight()
 
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
@@ -94,6 +96,7 @@ export default function SessionDetailScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         {session ? (
           <View style={styles.statusBar}>
