@@ -10,9 +10,11 @@ import { Alert } from 'react-native'
 import OnboardingScreen from '@/app/onboarding'
 
 const mockReplace = jest.fn()
+const mockSetOptions = jest.fn()
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: mockReplace, back: jest.fn() }),
   useLocalSearchParams: () => ({}),
+  useNavigation: () => ({ setOptions: mockSetOptions }),
 }))
 
 // Mock the servers store so addServer doesn't use a dynamic import()
@@ -32,6 +34,7 @@ global.fetch = mockFetch
 beforeEach(() => {
   mockFetch.mockReset()
   mockReplace.mockReset()
+  mockSetOptions.mockReset()
   mockAddServer.mockReset().mockResolvedValue('srv_test')
 })
 

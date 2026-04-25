@@ -11,6 +11,8 @@ jest.mock('expo-router', () => ({
     navigate: jest.fn(),
   })),
   useLocalSearchParams: jest.fn(() => ({})),
+  useGlobalSearchParams: jest.fn(() => ({})),
+  useNavigation: jest.fn(() => ({ setOptions: jest.fn() })),
   useSegments: jest.fn(() => []),
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
   Redirect: () => null,

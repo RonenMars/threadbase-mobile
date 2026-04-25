@@ -1,6 +1,12 @@
 import '../global.css'
 import React, { useEffect, useState } from 'react'
-import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router'
+import {
+  Stack,
+  useGlobalSearchParams,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -28,6 +34,7 @@ const queryClient = new QueryClient({
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
+  const { mode } = useGlobalSearchParams<{ mode?: string }>()
   const navState = useRootNavigationState()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const isLoading = useServersStore((s) => s.isLoading)
@@ -49,11 +56,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (isLoading) return
     if (!navState?.key) return
     const inOnboarding = segments[0] === 'onboarding'
+    const addingServer = inOnboarding && mode === 'add'
     const hasServers = activeServerIds.length > 0
     const handle = requestAnimationFrame(() => {
       if (!hasServers && !inOnboarding) {
         router.replace('/onboarding')
-      } else if (hasServers && inOnboarding) {
+      } else if (hasServers && inOnboarding && !addingServer) {
         router.replace('/(tabs)/sessions')
       }
     })
@@ -61,7 +69,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- segments is read but intentionally
     // excluded: this effect should only fire on auth-state changes (activeServerIds/isLoading),
     // not on every tab switch. Reading segments from the closure is correct here.
-  }, [activeServerIds, isLoading, navState?.key])
+  }, [activeServerIds, isLoading, mode, navState?.key])
 
   // Wire WebSocket for all servers
   useEffect(() => {

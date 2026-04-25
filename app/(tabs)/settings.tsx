@@ -102,7 +102,7 @@ export default function SettingsScreen() {
         })}
         <TouchableOpacity
           style={styles.addServerBtn}
-          onPress={() => router.push('/onboarding')}
+          onPress={() => router.push('/onboarding?mode=add')}
         >
           <Text style={styles.addServerText}>+ Add Server</Text>
         </TouchableOpacity>

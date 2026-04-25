@@ -90,6 +90,12 @@ describe('Settings – server section', () => {
     const { getByText } = render(<SettingsScreen />)
     expect(getByText('+ Add Server')).toBeTruthy()
   })
+
+  it('opens add server flow from settings', () => {
+    const { getByText } = render(<SettingsScreen />)
+    fireEvent.press(getByText('+ Add Server'))
+    expect(mockPush).toHaveBeenCalledWith('/onboarding?mode=add')
+  })
 })
 
 // ── Notifications section ────────────────────────────────────────���────────────

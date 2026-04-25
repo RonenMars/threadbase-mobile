@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
@@ -20,8 +20,11 @@ import { dark, font, radius, spacing } from '@/constants/theme'
 
 export default function OnboardingScreen() {
   const router = useRouter()
+  const navigation = useNavigation()
+  const { mode } = useLocalSearchParams<{ mode?: string }>()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
   const { addServerAction, setAddServerAction } = useSettingsStore()
+  const isAddingServer = mode === 'add'
   const [serverUrl, setServerUrl] = useState(
     process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
   )
@@ -31,6 +34,16 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [newServerId, setNewServerId] = useState<string | null>(null)
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: isAddingServer,
+      title: 'Add Server',
+      headerBackTitle: 'Settings',
+      gestureEnabled: isAddingServer,
+      fullScreenGestureEnabled: isAddingServer,
+    })
+  }, [isAddingServer, navigation])
 
   function applyAddAction(
     action: 'add' | 'replace' | 'keep',
