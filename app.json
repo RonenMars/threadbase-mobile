@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "20",
+      "buildNumber": "21",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "infoPlist": {
         "NSCameraUsageDescription": "Used for QR code scanning during server setup",
