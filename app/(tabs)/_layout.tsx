@@ -51,6 +51,10 @@ export default function TabsLayout() {
           title: 'History',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📚</Text>,
           headerRight: newSessionButton,
+          // Mount eagerly so the conversations list is fetched on app open
+          // (parity with Sessions which lands first), without waiting for the
+          // user to navigate to History.
+          lazy: false,
         }}
       />
       <Tabs.Screen

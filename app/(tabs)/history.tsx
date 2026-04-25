@@ -1,10 +1,20 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { ServerFilterSheet } from '@/components/servers/ServerFilterSheet'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
+import { useFocusRefetch } from '@/hooks/useFocusRefetch'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import type { MultiConversation } from '@/types/api'
@@ -49,7 +59,20 @@ export default function HistoryScreen() {
     }
   }, [debouncedQuery, searchResult])
 
+  const focusRefetch = useCallback(async () => {
+    if (debouncedQuery) {
+      await searchResult.refetch()
+    } else {
+      await refetch()
+    }
+  }, [debouncedQuery, refetch, searchResult])
+  const isFocusFetching = useFocusRefetch(focusRefetch)
+
   const listRefreshing = debouncedQuery ? searchResult.isFetching : isFetching
+  const isReloading = isLoading || isFocusFetching
+  const listEmpty = allConversations.length === 0
+  const showOverlay = isReloading && listEmpty
+  const showInlineSpinner = isFocusFetching && !listEmpty
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -69,28 +92,36 @@ export default function HistoryScreen() {
           <Text style={styles.errorHint}>Pull down to retry</Text>
         </ScrollView>
       ) : (
-        <ConversationList
-          conversations={allConversations}
-          onRefresh={handleListRefresh}
-          refreshing={listRefreshing}
-          onEndReached={handleEndReached}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          isLoadingInitial={isLoading}
-          isFetchingNextPage={isFetchingNextPage}
-          headerRight={
-            activeServerIds.length > 1 ? (
-              <TouchableOpacity
-                style={styles.filterButton}
-                onPress={() => setIsFilterOpen(true)}
-              >
-                <Text style={styles.filterButtonText}>
-                  {displayedServerIds.length > 0 ? `${displayedServerIds.length}` : '0'} filter
-                </Text>
-              </TouchableOpacity>
-            ) : null
-          }
-        />
+        <View style={styles.listWrapper}>
+          <ConversationList
+            conversations={allConversations}
+            onRefresh={handleListRefresh}
+            refreshing={listRefreshing}
+            onEndReached={handleEndReached}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            isLoadingInitial={false}
+            isFetchingNextPage={isFetchingNextPage}
+            headerRight={
+              <View style={styles.headerRight}>
+                {showInlineSpinner ? (
+                  <ActivityIndicator size="small" color={dark.text.secondary} />
+                ) : null}
+                {activeServerIds.length > 1 ? (
+                  <TouchableOpacity
+                    style={styles.filterButton}
+                    onPress={() => setIsFilterOpen(true)}
+                  >
+                    <Text style={styles.filterButtonText}>
+                      {displayedServerIds.length > 0 ? `${displayedServerIds.length}` : '0'} filter
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            }
+          />
+          <LoadingOverlay visible={showOverlay} />
+        </View>
       )}
       <ServerFilterSheet visible={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
     </SafeAreaView>
@@ -134,5 +165,14 @@ const styles = StyleSheet.create({
     color: dark.text.accent,
     fontSize: font.sm,
     fontWeight: '500',
+  },
+  listWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 })

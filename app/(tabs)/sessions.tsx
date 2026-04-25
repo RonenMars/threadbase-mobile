@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KanbanBoard } from '@/components/sessions/KanbanBoard'
 import { ServerFilterSheet } from '@/components/servers/ServerFilterSheet'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { useSessions } from '@/hooks/useSession'
+import { useFocusRefetch } from '@/hooks/useFocusRefetch'
 import { useSessionsStore } from '@/stores/sessions'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
@@ -27,6 +29,7 @@ export default function SessionsScreen() {
   const hasLoadedOnce = useRef(false)
   if (!isPending) hasLoadedOnce.current = true
   const sessionsInitialLoad = isPending && !hasLoadedOnce.current
+  const isFocusFetching = useFocusRefetch(refetch)
   const sessions = useSessionsStore((s) => s.sessions)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -79,6 +82,11 @@ export default function SessionsScreen() {
   const statusColor = getStatusColor(allConnected, someConnected)
   const statusLabel = getStatusLabel(total, connectedCount, allConnected)
 
+  const isReloading = sessionsInitialLoad || isFocusFetching
+  const listEmpty = visibleSessions.length === 0
+  const showOverlay = isReloading && listEmpty
+  const showInlineSpinner = isReloading && !listEmpty
+
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.statusBar}>
@@ -87,17 +95,25 @@ export default function SessionsScreen() {
             <Text style={styles.filterButtonText}>Filter servers</Text>
           </TouchableOpacity>
         ) : null}
-        <Text style={[styles.wsStatus, { color: statusColor }]}>
-          {statusLabel}
-        </Text>
+        <View style={styles.statusRight}>
+          {showInlineSpinner ? (
+            <ActivityIndicator size="small" color={dark.text.secondary} />
+          ) : null}
+          <Text style={[styles.wsStatus, { color: statusColor }]}>
+            {statusLabel}
+          </Text>
+        </View>
       </View>
 
-      <KanbanBoard
-        sessionsByStatus={grouped}
-        onRefresh={handleRefresh}
-        refreshing={manualRefreshing}
-        isInitialLoading={sessionsInitialLoad}
-      />
+      <View style={styles.listWrapper}>
+        <KanbanBoard
+          sessionsByStatus={grouped}
+          onRefresh={handleRefresh}
+          refreshing={manualRefreshing}
+          isInitialLoading={false}
+        />
+        <LoadingOverlay visible={showOverlay} />
+      </View>
       <ServerFilterSheet visible={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
     </SafeAreaView>
   )
@@ -116,6 +132,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  statusRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   filterButton: {
     minHeight: 36,
     justifyContent: 'center',
@@ -128,5 +149,9 @@ const styles = StyleSheet.create({
   wsStatus: {
     fontSize: font.xs,
     fontWeight: '500',
+  },
+  listWrapper: {
+    flex: 1,
+    position: 'relative',
   },
 })
