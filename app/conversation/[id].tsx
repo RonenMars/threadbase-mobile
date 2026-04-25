@@ -26,8 +26,6 @@ import type { Message, MessageContent } from '@/types/api'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
-// Per-conversation scroll offsets persisted for the app session
-const scrollPositions = new Map<string, number>()
 
 function renderContent(block: MessageContent, index: number) {
   if (block.type === 'tool_use' || block.type === 'tool_result') {
@@ -95,24 +93,18 @@ export default function ConversationDetailScreen() {
     }
   }, [conversation, navigation])
 
-  // Restore saved scroll position or scroll to bottom on first open
+  // Scroll to bottom on first open
   useEffect(() => {
     if (!conversation || hasInitialScrolled.current || conversation.messages.length === 0) return
     hasInitialScrolled.current = true
-    const savedOffset = scrollPositions.get(id)
     setTimeout(() => {
-      if (savedOffset !== undefined) {
-        listRef.current?.scrollToOffset({ offset: savedOffset, animated: false })
-      } else {
-        listRef.current?.scrollToEnd({ animated: false })
-      }
+      listRef.current?.scrollToEnd({ animated: false })
     }, 50)
   }, [conversation, id])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
     const y = contentOffset.y
-    scrollPositions.set(id, y)
     setShowScrollTop(y > 100)
     const distFromBottom = contentSize.height - y - layoutMeasurement.height
     setShowScrollBottom(distFromBottom > 100)
