@@ -1,0 +1,111 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <radialGradient id="bgGlow" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#0f1e35"></stop>
+      <stop offset="100%" stop-color="#070b11"></stop>
+    </radialGradient>
+
+    
+    <filter id="blueGlow" x="-40%" y="-80%" width="180%" height="360%">
+      <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+      <feMerge>
+        <feMergeNode in="blur"></feMergeNode>
+        <feMergeNode in="blur"></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    </filter>
+
+    
+    <filter id="orangeGlow" x="-60%" y="-160%" width="220%" height="520%">
+      <feGaussianBlur stdDeviation="6" result="blur"></feGaussianBlur>
+      <feMerge>
+        <feMergeNode in="blur"></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    </filter>
+
+    
+    <pattern id="grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1a2d47" stroke-width="0.5" opacity="0.4"></path>
+    </pattern>
+
+    
+    <linearGradient id="blueBubble1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#63b3ff" stop-opacity="0.95"></stop>
+      <stop offset="100%" stop-color="#63b3ff" stop-opacity="0.3"></stop>
+    </linearGradient>
+
+    <linearGradient id="blueBubble2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#63b3ff" stop-opacity="0.6"></stop>
+      <stop offset="100%" stop-color="#63b3ff" stop-opacity="0.12"></stop>
+    </linearGradient>
+
+    
+    <linearGradient id="orangeBubble" x1="100%" y1="0%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#f08a24" stop-opacity="0.95"></stop>
+      <stop offset="100%" stop-color="#f08a24" stop-opacity="0.3"></stop>
+    </linearGradient>
+
+    
+    <linearGradient id="baseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f08a24" stop-opacity="1"></stop>
+      <stop offset="60%" stop-color="#f08a24" stop-opacity="0.5"></stop>
+      <stop offset="100%" stop-color="#f08a24" stop-opacity="0"></stop>
+    </linearGradient>
+
+    
+    <clipPath id="roundedClip">
+      <rect width="512" height="512" rx="96" ry="96"></rect>
+    </clipPath>
+  </defs>
+
+  
+  <rect width="512" height="512" rx="96" fill="#070b11"></rect>
+  <rect width="512" height="512" rx="96" fill="url(#bgGlow)"></rect>
+  <rect width="512" height="512" rx="96" fill="url(#grid)" clip-path="url(#roundedClip)"></rect>
+
+  
+  <rect x="80" y="0" width="352" height="2" rx="1" fill="#63b3ff" opacity="0.12"></rect>
+
+  
+  
+  <rect x="114" y="148" width="238" height="40" rx="20" fill="url(#blueBubble1)" filter="url(#blueGlow)"></rect>
+  
+  <rect x="134" y="162" width="155" height="4" rx="2" fill="#070b11" opacity="0.28"></rect>
+  <rect x="134" y="173" width="95" height="4" rx="2" fill="#070b11" opacity="0.18"></rect>
+
+  
+  
+  <rect x="160" y="208" width="238" height="40" rx="20" fill="url(#orangeBubble)" filter="url(#orangeGlow)"></rect>
+  
+  <rect x="176" y="222" width="140" height="4" rx="2" fill="#070b11" opacity="0.28"></rect>
+  <rect x="176" y="233" width="82" height="4" rx="2" fill="#070b11" opacity="0.18"></rect>
+
+  
+  
+  <rect x="114" y="280" width="182" height="40" rx="20" fill="url(#blueBubble2)"></rect>
+  
+  <circle cx="146" cy="300" r="5" fill="#63b3ff" opacity="0.55"></circle>
+  <circle cx="162" cy="300" r="5" fill="#63b3ff" opacity="0.35"></circle>
+  <circle cx="178" cy="300" r="5" fill="#63b3ff" opacity="0.18"></circle>
+
+  
+  <rect x="90" y="352" width="240" height="14" rx="7" fill="url(#baseGrad)" filter="url(#orangeGlow)"></rect>
+  <rect x="90" y="373" width="180" height="3" rx="1.5" fill="#f08a24" opacity="0.18"></rect>
+  <rect x="90" y="384" width="120" height="3" rx="1.5" fill="#f08a24" opacity="0.09"></rect>
+
+  
+  <circle cx="90" cy="359" r="12" fill="#070b11"></circle>
+  <circle cx="90" cy="359" r="12" fill="#f08a24" opacity="0.12"></circle>
+  <circle cx="90" cy="359" r="6.5" fill="#f08a24" filter="url(#orangeGlow)"></circle>
+  <circle cx="90" cy="359" r="11" fill="none" stroke="#f08a24" stroke-width="1.5" opacity="0.7"></circle>
+
+  
+  <circle cx="390" cy="130" r="3" fill="#63b3ff" opacity="0.35"></circle>
+  <circle cx="406" cy="130" r="2" fill="#63b3ff" opacity="0.2"></circle>
+  <circle cx="418" cy="130" r="1.5" fill="#63b3ff" opacity="0.12"></circle>
+
+  
+  <rect x="1" y="1" width="510" height="510" rx="95" fill="none" stroke="#7497c7" stroke-width="1.5" opacity="0.12"></rect>
+</svg>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threadbase — Onboarding</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--tb-ink-0);
+    background-image: var(--grid-bg);
+    background-attachment: fixed;
+    color: var(--tb-fg-1);
+    font-family: var(--font-sans);
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(70% 50% at 50% 30%, rgba(15,30,53,0.55) 0%, transparent 70%);
+  }
+  /* Hide native input outlines except on focus */
+  input { -webkit-tap-highlight-color: transparent; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="OnboardingShell.jsx"></script>
+<script type="text/babel" src="VariationA.jsx"></script>
+<script type="text/babel" src="VariationB.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="env,react">
+const { useState } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "showBack": true,
+  "manualMode": "url-token"
+}/*EDITMODE-END*/;
+
+function PhoneOnboarding({ steps, showBack }) {
+  return (
+    <window.IOSDevice dark width={390} height={812}>
+      <window.OnboardingShell
+        steps={steps}
+        showBack={showBack}
+        onDone={() => {}}
+      />
+    </window.IOSDevice>
+  );
+}
+
+function App() {
+  const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+
+  return (
+    <>
+      <window.DesignCanvas storageKey="threadbase-onboarding-v1">
+        <window.DCSection
+          id="onboarding"
+          title="Onboarding flow"
+          subtitle="6 steps · welcome → value → connect → notifs → tour → done"
+        >
+          <window.DCArtboard id="safe" label="A · Safe — clean cards, IDE copy" width={420} height={870}>
+            <div style={{padding:"15px 0", display:"flex", justifyContent:"center"}}>
+              <PhoneOnboarding steps={window.VAStepsAll} showBack={tweaks.showBack}/>
+            </div>
+          </window.DCArtboard>
+
+          <window.DCArtboard id="novel" label="B · Novel — terminal-flavored, glow signature" width={420} height={870}>
+            <div style={{padding:"15px 0", display:"flex", justifyContent:"center"}}>
+              <PhoneOnboarding steps={window.VBStepsAll} showBack={tweaks.showBack}/>
+            </div>
+          </window.DCArtboard>
+        </window.DCSection>
+      </window.DesignCanvas>
+
+      <window.TweaksPanel title="Tweaks">
+        <window.TweakSection title="Navigation">
+          <window.TweakToggle
+            label="Show back button"
+            value={tweaks.showBack}
+            onChange={(v) => setTweak('showBack', v)}
+          />
+        </window.TweakSection>
+        <window.TweakSection title="Pairing">
+          <window.TweakRadio
+            label="Manual mode style"
+            value={tweaks.manualMode}
+            onChange={(v) => setTweak('manualMode', v)}
+            options={[
+              { value: "url-token", label: "URL + Token" },
+              { value: "url-only",  label: "URL only" },
+            ]}
+          />
+          <div style={{font:"400 11px/1.4 var(--font-mono)", color:"var(--tb-fg-3)", padding:"4px 0 0"}}>
+            // Variation A & B both render manual entry; the radio is here for future flow swapping.
+          </div>
+        </window.TweakSection>
+        <window.TweakSection title="Try it">
+          <div style={{font:"400 11.5px/1.5 var(--font-sans)", color:"var(--tb-fg-2)"}}>
+            Tap the artboards to open them fullscreen. Swipe / tap "Continue" to walk through. Pager dots at the bottom show your position. Each variation has 6 steps.
+          </div>
+        </window.TweakSection>
+      </window.TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Status Colors</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display: grid; gap: 12px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .lanes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .lane { background: var(--tb-ink-2); border: 1px solid var(--tb-ink-5); border-radius: 12px; padding: 12px; }
+  .lane-h { display:flex; justify-content:space-between; align-items:center; font: 600 11px/1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; }
+  .pill { font: 600 10px/1 var(--font-mono); padding: 4px 8px; border-radius: 999px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:-1px; }
+  .running .lane-h { color: var(--tb-info-400); }
+  .running .pill { background: rgba(99,179,255,0.14); color: var(--tb-info-400); }
+  .running .dot { background: var(--tb-info-400); box-shadow: 0 0 8px var(--tb-info-400); }
+  .waiting .lane-h { color: var(--tb-warning-400); }
+  .waiting .pill { background: rgba(245,161,74,0.14); color: var(--tb-warning-400); }
+  .waiting .dot { background: var(--tb-warning-400); }
+  .completed .lane-h { color: var(--tb-success-400); }
+  .completed .pill { background: rgba(74,222,128,0.14); color: var(--tb-success-400); }
+  .completed .dot { background: var(--tb-success-400); }
+  .failed .lane-h { color: var(--tb-danger-400); }
+  .failed .pill { background: rgba(255,107,107,0.14); color: var(--tb-danger-400); }
+  .failed .dot { background: var(--tb-danger-400); }
+  .cap { margin-top: 8px; font: 500 10px/1.4 var(--font-mono); color: var(--tb-fg-3); }
+</style>
+</head>
+<body>
+  <div class="label">Status / Semantic — kanban lane colors</div>
+  <div class="lanes">
+    <div class="lane running"><div class="lane-h"><span><span class="dot"></span>Running</span><span class="pill">3</span></div><div class="cap">--tb-info-400<br>#63b3ff</div></div>
+    <div class="lane waiting"><div class="lane-h"><span><span class="dot"></span>Waiting</span><span class="pill">2</span></div><div class="cap">--tb-warning-400<br>#f5a14a</div></div>
+    <div class="lane completed"><div class="lane-h"><span><span class="dot"></span>Done</span><span class="pill">12</span></div><div class="cap">--tb-success-400<br>#4ade80</div></div>
+    <div class="lane failed"><div class="lane-h"><span><span class="dot"></span>Failed</span><span class="pill">1</span></div><div class="cap">--tb-danger-400<br>#ff6b6b</div></div>
+  </div>
+</body>
+</html>

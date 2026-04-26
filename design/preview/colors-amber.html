@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Brand Amber (live)</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); }
+  .row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .sw { aspect-ratio: 1 / 1.15; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.04); }
+  .name { font: 600 11px/1 var(--font-sans); }
+  .hex  { font: 500 10px/1 var(--font-mono); opacity: 0.78; }
+  .light { color: #2a1a04; }
+  .dark  { color: var(--tb-amber-50); }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .hero { margin-bottom: 12px; height: 38px; border-radius: 8px; background: var(--tb-amber-400); box-shadow: var(--shadow-glow-amber); display:flex; align-items:center; padding: 0 12px; color: #2a1a04; font: 600 13px/1 var(--font-sans); letter-spacing: -0.01em; gap:8px;}
+  .pulse { width:8px; height:8px; border-radius:50%; background:#2a1a04; animation: p 1.6s var(--ease-standard) infinite; }
+  @keyframes p { 0%,100%{opacity:.4} 50%{opacity:1} }
+</style>
+</head>
+<body>
+  <div class="label">Brand Amber — live / running / now · core token <span style="color:var(--tb-amber-400)">--tb-amber-400</span></div>
+  <div class="hero"><span class="pulse"></span> f08a24 · live state, never decorative</div>
+  <div class="row">
+    <div class="sw light" style="background:var(--tb-amber-50)"><span class="name">50</span><span class="hex">#fff3e3</span></div>
+    <div class="sw light" style="background:var(--tb-amber-100)"><span class="name">100</span><span class="hex">#ffdcb3</span></div>
+    <div class="sw light" style="background:var(--tb-amber-200)"><span class="name">200</span><span class="hex">#ffc488</span></div>
+    <div class="sw light" style="background:var(--tb-amber-300)"><span class="name">300</span><span class="hex">#f5a14a</span></div>
+    <div class="sw light" style="background:var(--tb-amber-400);outline:2px solid var(--tb-amber-200);outline-offset:-2px"><span class="name">400★</span><span class="hex">#f08a24</span></div>
+    <div class="sw dark" style="background:var(--tb-amber-500)"><span class="name">500</span><span class="hex">#d6770e</span></div>
+    <div class="sw dark" style="background:var(--tb-amber-600)"><span class="name">600</span><span class="hex">#a85a06</span></div>
+    <div class="sw dark" style="background:var(--tb-amber-700)"><span class="name">700</span><span class="hex">#7a4204</span></div>
+  </div>
+</body>
+</html>

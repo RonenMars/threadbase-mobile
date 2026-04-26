@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Buttons</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display:grid; gap:12px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .row { display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+  button { font: 600 13px/1 var(--font-sans); cursor: pointer; border-radius: 8px; padding: 0 14px; height: 36px; border: 1px solid transparent; transition: all .12s var(--ease-standard); display:inline-flex; align-items:center; gap:6px; letter-spacing: -0.005em; }
+  .btn-primary { background: var(--tb-blue-400); color: var(--tb-ink-1); }
+  .btn-primary:hover { background: var(--tb-blue-300); }
+  .btn-live { background: var(--tb-amber-400); color: #2a1a04; box-shadow: var(--shadow-glow-amber); }
+  .btn-secondary { background: var(--tb-ink-3); color: var(--tb-fg-0); border-color: var(--tb-ink-6); }
+  .btn-ghost { background: transparent; color: var(--tb-blue-400); }
+  .btn-danger { background: transparent; color: var(--tb-danger-400); border-color: rgba(255,107,107,0.3); }
+  .btn-disabled { background: var(--tb-ink-2); color: var(--tb-fg-4); cursor: not-allowed; border-color: var(--tb-ink-5); }
+</style>
+</head>
+<body>
+  <div class="label">Buttons</div>
+  <div class="row">
+    <button class="btn-primary">Open conversation</button>
+    <button class="btn-live"><span style="width:6px;height:6px;border-radius:50%;background:#2a1a04"></span>Resume in terminal</button>
+    <button class="btn-secondary">Export</button>
+    <button class="btn-ghost">Cancel</button>
+    <button class="btn-danger">Delete</button>
+    <button class="btn-disabled">Loading…</button>
+  </div>
+  <div class="row">
+    <button class="btn-primary" style="height:44px;padding:0 18px;font-size:14px">Large · 44 mobile target</button>
+    <button class="btn-secondary" style="height:28px;padding:0 10px;font-size:12px">Compact</button>
+  </div>
+</body>
+</html>

@@ -3,27 +3,60 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
-import { dark, font, spacing } from '@/constants/theme'
+import { dark, font, radius, spacing } from '@/constants/theme'
+import type { SessionStatus } from '@/types/api'
 
 interface Props {
   visible: boolean
   onClose: () => void
+  selectedStatuses?: SessionStatus[]
+  onChangeStatuses?: (statuses: SessionStatus[]) => void
 }
 
-const SNAP_POINTS = ['40%', '70%']
+const SNAP_POINTS = ['50%', '85%']
 
-export function ServerFilterSheet({ visible, onClose }: Props) {
+const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
+  { value: 'running', label: 'Running', color: dark.status.running },
+  { value: 'waiting_input', label: 'Waiting for Input', color: dark.status.waiting },
+  { value: 'completed', label: 'Completed', color: dark.status.completed },
+  { value: 'failed', label: 'Failed', color: dark.status.failed },
+  { value: 'idle', label: 'Idle', color: dark.status.idle },
+]
+
+const ALL_STATUSES: SessionStatus[] = STATUS_OPTIONS.map((s) => s.value)
+
+function toggleStatus(selected: SessionStatus[], status: SessionStatus): SessionStatus[] {
+  if (selected.includes(status)) return selected.filter((s) => s !== status)
+  return [...selected, status]
+}
+
+export function ServerFilterSheet({
+  visible,
+  onClose,
+  selectedStatuses,
+  onChangeStatuses,
+}: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const setDisplayedServerIds = useServersStore((s) => s.setDisplayedServerIds)
   const [draftIds, setDraftIds] = useState<string[]>(displayedServerIds)
+  const [draftStatuses, setDraftStatuses] = useState<SessionStatus[]>(
+    selectedStatuses ?? ALL_STATUSES,
+  )
 
   useEffect(() => {
     setDraftIds(displayedServerIds)
   }, [displayedServerIds, visible])
 
+  useEffect(() => {
+    if (selectedStatuses) setDraftStatuses(selectedStatuses)
+  }, [selectedStatuses, visible])
+
   if (!visible) return null
+
+  const showStatusFilter = Boolean(onChangeStatuses)
+  const showServerFilter = activeServerIds.length > 1
 
   return (
     <BottomSheet
@@ -35,13 +68,61 @@ export function ServerFilterSheet({ visible, onClose }: Props) {
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>
-        <Text style={styles.title}>Displayed Servers</Text>
-        <DisplayedServersList
-          activeServerIds={activeServerIds}
-          servers={servers}
-          selectedServerIds={draftIds}
-          onChange={setDraftIds}
-        />
+        <Text style={styles.title}>Filters</Text>
+
+        {showStatusFilter ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Status</Text>
+              <View style={styles.quickRow}>
+                <TouchableOpacity
+                  style={styles.quickButton}
+                  onPress={() => setDraftStatuses(ALL_STATUSES)}
+                >
+                  <Text style={styles.quickButtonText}>All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickButton}
+                  onPress={() => setDraftStatuses([])}
+                >
+                  <Text style={styles.quickButtonText}>None</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.chipRow}>
+              {STATUS_OPTIONS.map((opt) => {
+                const selected = draftStatuses.includes(opt.value)
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => setDraftStatuses(toggleStatus(draftStatuses, opt.value))}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        {showServerFilter ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Servers</Text>
+            <DisplayedServersList
+              activeServerIds={activeServerIds}
+              servers={servers}
+              selectedServerIds={draftIds}
+              onChange={setDraftIds}
+            />
+          </View>
+        ) : null}
+
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
             <Text style={styles.cancelText}>Cancel</Text>
@@ -50,6 +131,7 @@ export function ServerFilterSheet({ visible, onClose }: Props) {
             style={styles.applyButton}
             onPress={() => {
               setDisplayedServerIds(draftIds)
+              onChangeStatuses?.(draftStatuses)
               onClose()
             }}
           >
@@ -66,6 +148,70 @@ const styles = StyleSheet.create({
   handle: { backgroundColor: dark.border },
   content: { flex: 1, padding: spacing.md, gap: spacing.md },
   title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
+  section: { gap: spacing.sm },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: dark.border,
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    minHeight: 36,
+  },
+  chipSelected: {
+    borderColor: dark.text.accent,
+    backgroundColor: dark.bg.primary,
+  },
+  chipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.full,
+  },
+  chipText: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    fontWeight: '500',
+  },
+  chipTextSelected: {
+    color: dark.text.primary,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  quickButton: {
+    backgroundColor: dark.bg.card,
+    borderColor: dark.border,
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  quickButtonText: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+    fontWeight: '500',
+  },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

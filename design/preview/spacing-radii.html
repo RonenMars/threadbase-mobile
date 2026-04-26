@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Spacing & Radii</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display:grid; gap:14px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .scale { display:flex; align-items:flex-end; gap:8px; }
+  .bar { background: var(--tb-blue-400); border-radius: 3px; }
+  .b { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .b span { font: 500 10px/1 var(--font-mono); color: var(--tb-fg-3); }
+  .radii { display:flex; align-items:center; gap:10px; }
+  .r { width: 56px; height: 56px; background: var(--tb-ink-2); border:1px solid var(--tb-ink-5); display:flex; align-items:flex-end; justify-content:center; padding-bottom:4px; font: 500 10px/1 var(--font-mono); color: var(--tb-fg-3); }
+</style>
+</head>
+<body>
+  <div>
+    <div class="label" style="margin-bottom:8px">Spacing — 4px base</div>
+    <div class="scale">
+      <div class="b"><div class="bar" style="width:4px;height:4px"></div><span>4</span></div>
+      <div class="b"><div class="bar" style="width:8px;height:8px"></div><span>8</span></div>
+      <div class="b"><div class="bar" style="width:12px;height:12px"></div><span>12</span></div>
+      <div class="b"><div class="bar" style="width:16px;height:16px"></div><span>16</span></div>
+      <div class="b"><div class="bar" style="width:24px;height:24px"></div><span>24</span></div>
+      <div class="b"><div class="bar" style="width:32px;height:32px"></div><span>32</span></div>
+      <div class="b"><div class="bar" style="width:48px;height:48px"></div><span>48</span></div>
+      <div class="b"><div class="bar" style="width:64px;height:64px"></div><span>64</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="label" style="margin-bottom:8px">Radii</div>
+    <div class="radii">
+      <div class="r" style="border-radius:4px">4</div>
+      <div class="r" style="border-radius:6px">6</div>
+      <div class="r" style="border-radius:8px">8</div>
+      <div class="r" style="border-radius:12px">12</div>
+      <div class="r" style="border-radius:16px">16</div>
+      <div class="r" style="border-radius:20px">20</div>
+      <div class="r" style="border-radius:999px">pill</div>
+    </div>
+  </div>
+</body>
+</html>

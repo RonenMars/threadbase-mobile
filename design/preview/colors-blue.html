@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Brand Blue (thread)</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); }
+  .row { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
+  .sw { aspect-ratio: 1 / 1.15; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.04); }
+  .name { font: 600 11px/1 var(--font-sans); }
+  .hex  { font: 500 10px/1 var(--font-mono); opacity: 0.78; }
+  .light { color: var(--tb-ink-1); }
+  .dark  { color: var(--tb-blue-50); }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .hero { margin-bottom: 12px; height: 38px; border-radius: 8px; background: var(--tb-blue-400); box-shadow: var(--shadow-glow-blue); display:flex; align-items:center; padding: 0 12px; color: var(--tb-ink-1); font: 600 13px/1 var(--font-sans); letter-spacing: -0.01em;}
+</style>
+</head>
+<body>
+  <div class="label">Brand Blue — the thread color · core token <span style="color:var(--tb-blue-400)">--tb-blue-400</span></div>
+  <div class="hero">63b3ff · primary action / link / focus</div>
+  <div class="row">
+    <div class="sw light" style="background:var(--tb-blue-50)"><span class="name">50</span><span class="hex">#eaf3ff</span></div>
+    <div class="sw light" style="background:var(--tb-blue-100)"><span class="name">100</span><span class="hex">#c9e0ff</span></div>
+    <div class="sw light" style="background:var(--tb-blue-200)"><span class="name">200</span><span class="hex">#a3c9ff</span></div>
+    <div class="sw light" style="background:var(--tb-blue-300)"><span class="name">300</span><span class="hex">#7fb6ff</span></div>
+    <div class="sw light" style="background:var(--tb-blue-400);outline:2px solid var(--tb-blue-200);outline-offset:-2px"><span class="name">400★</span><span class="hex">#63b3ff</span></div>
+    <div class="sw dark" style="background:var(--tb-blue-500)"><span class="name">500</span><span class="hex">#4a9ef0</span></div>
+    <div class="sw dark" style="background:var(--tb-blue-600)"><span class="name">600</span><span class="hex">#2f7fcc</span></div>
+    <div class="sw dark" style="background:var(--tb-blue-800)"><span class="name">800</span><span class="hex">#163f6a</span></div>
+    <div class="sw dark" style="background:var(--tb-blue-900)"><span class="name">900</span><span class="hex">#0f2a47</span></div>
+  </div>
+</body>
+</html>

@@ -1,4 +1,5 @@
-require('@testing-library/react-native/extend-expect')
+const matchers = require('@testing-library/react-native/matchers')
+expect.extend(matchers)
 
 global.__DEV__ = true
 

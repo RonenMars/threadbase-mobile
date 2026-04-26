@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Mono & Code</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display:grid; gap:10px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .term { background: var(--tb-code-bg); border: 1px solid var(--tb-code-border); border-radius: 8px; padding: 10px 12px; font: 500 13px/1.6 var(--font-mono); color: var(--tb-code-text); }
+  .prompt { color: var(--tb-blue-400); }
+  .str { color: var(--tb-code-string); }
+  .com { color: var(--tb-code-comment); }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+  <div class="label">Type — Mono · JetBrains Mono</div>
+  <div class="term"><span class="com"># shell</span><br><span class="prompt">$</span> cch search <span class="str">"auth refresh"</span> --json | jq <span class="str">'.[].title'</span></div>
+  <div class="row">
+    <span class="tb-code">~/.claude/sessions</span>
+    <span class="tb-code">feat(scanner): two-tier index</span>
+    <span class="tb-kbd">⌘</span><span class="tb-kbd">K</span>
+    <span class="tb-kbd">Esc</span>
+  </div>
+</body>
+</html>

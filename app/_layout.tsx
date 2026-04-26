@@ -16,7 +16,6 @@ import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
-import { useSessionsStore } from '@/stores/sessions'
 import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import { SplashAnimation } from '@/components/SplashAnimation'
@@ -34,8 +33,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const loadPersistedServers = useServersStore((s) => s.loadPersistedServers)
   const hydrateSettings = useSettingsStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
-  const setSessions = useSessionsStore((s) => s.setSessions)
-  const updateSession = useSessionsStore((s) => s.updateSession)
 
   useEffect(() => {
     hydrateSettings()
@@ -78,7 +75,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     const unsubList = wsManager.onAll('session_list', (msg) => {
       if (msg.type !== 'session_list') return
-      setSessions(msg.serverId, msg.sessions)
       queryClient.setQueriesData<{ serverId: string; sessions: Session[] }[]>(
         { queryKey: ['sessions'] },
         (old) =>
@@ -89,7 +85,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubUpdate = wsManager.onAll('session_update', (msg) => {
       if (msg.type !== 'session_update') return
-      updateSession(msg.serverId, msg.session.id, msg.session)
       queryClient.setQueryData<Session>(['session', msg.serverId, msg.session.id], (prev) =>
         prev ? { ...prev, ...msg.session } : (msg.session as Session),
       )

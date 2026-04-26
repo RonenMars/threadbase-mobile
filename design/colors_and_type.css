@@ -1,0 +1,328 @@
+/* =========================================================
+   Threadbase — Colors & Typography
+   =========================================================
+   Base palette is anchored on the app icon: a near-black
+   midnight ground with cyan-blue thread accents and a warm
+   amber "active" highlight. Everything is tuned for a dark,
+   IDE-adjacent surface (the product lives next to terminals
+   and code editors).
+   ========================================================= */
+
+/* ---------- Fonts ----------
+   Loaded via Google Fonts. Drop ttf/woff2 files into fonts/ if you
+   need offline use, then add @font-face declarations pointing there. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+:root {
+  /* ============ COLORS — RAW PALETTE ============ */
+
+  /* Midnight / surface scale — built around the icon ground (#070b11) */
+  --tb-ink-0:        #04070b;   /* deepest, behind everything */
+  --tb-ink-1:        #070b11;   /* canvas / app background */
+  --tb-ink-2:        #0b1220;   /* card surface */
+  --tb-ink-3:        #0f1a2c;   /* raised surface / hover */
+  --tb-ink-4:        #152238;   /* sticky bars, toolbars */
+  --tb-ink-5:        #1a2d47;   /* hairlines / grid lines */
+  --tb-ink-6:        #243a59;   /* dividers, secondary borders */
+  --tb-ink-7:        #2a4060;   /* tertiary track / inactive thread spine */
+
+  /* Foreground / text */
+  --tb-fg-0:         #f4f7fb;   /* primary text */
+  --tb-fg-1:         #d6e0ee;   /* near-primary */
+  --tb-fg-2:         #9fb0c8;   /* secondary text */
+  --tb-fg-3:         #6c809b;   /* tertiary / metadata */
+  --tb-fg-4:         #4a5b76;   /* placeholder / disabled */
+
+  /* Brand blue — the "thread" color */
+  --tb-blue-50:      #eaf3ff;
+  --tb-blue-100:     #c9e0ff;
+  --tb-blue-200:     #a3c9ff;
+  --tb-blue-300:     #7fb6ff;
+  --tb-blue-400:     #63b3ff;   /* CORE BRAND BLUE — from icon */
+  --tb-blue-500:     #4a9ef0;
+  --tb-blue-600:     #2f7fcc;
+  --tb-blue-700:     #1f5fa0;
+  --tb-blue-800:     #163f6a;
+  --tb-blue-900:     #0f2a47;
+  --tb-blue-glow:    rgba(99, 179, 255, 0.45);
+
+  /* Brand amber — the "live / active / now" color */
+  --tb-amber-50:     #fff3e3;
+  --tb-amber-100:    #ffdcb3;
+  --tb-amber-200:    #ffc488;
+  --tb-amber-300:    #f5a14a;
+  --tb-amber-400:    #f08a24;   /* CORE BRAND AMBER — from icon */
+  --tb-amber-500:    #d6770e;
+  --tb-amber-600:    #a85a06;
+  --tb-amber-700:    #7a4204;
+  --tb-amber-glow:   rgba(240, 138, 36, 0.5);
+
+  /* Status / semantic */
+  --tb-success-400:  #4ade80;   /* "Completed" lane */
+  --tb-success-600:  #16a34a;
+  --tb-warning-400:  #f5a14a;   /* "Waiting" lane (uses amber family) */
+  --tb-warning-600:  #d6770e;
+  --tb-danger-400:   #ff6b6b;   /* "Failed" lane / errors */
+  --tb-danger-600:   #d23030;
+  --tb-info-400:     #63b3ff;   /* "Running" lane (uses brand blue) */
+
+  /* Diff colors — Edit tool cards */
+  --tb-diff-add-bg:    rgba(74, 222, 128, 0.10);
+  --tb-diff-add-fg:    #86efac;
+  --tb-diff-add-bar:   #16a34a;
+  --tb-diff-rem-bg:    rgba(255, 107, 107, 0.10);
+  --tb-diff-rem-fg:    #ff9b9b;
+  --tb-diff-rem-bar:   #d23030;
+
+  /* Code / syntax (used in Conversation Viewer) */
+  --tb-code-bg:        #0a111d;
+  --tb-code-border:    #1a2d47;
+  --tb-code-text:      #d6e0ee;
+  --tb-code-keyword:   #c792ea;   /* purple */
+  --tb-code-string:    #c3e88d;   /* green */
+  --tb-code-number:    #f78c6c;   /* coral */
+  --tb-code-comment:   #6c809b;
+  --tb-code-fn:        #82aaff;
+  --tb-code-tag:       #f07178;
+
+  /* ============ COLORS — SEMANTIC ============ */
+  --color-bg:              var(--tb-ink-1);
+  --color-bg-elevated:     var(--tb-ink-2);
+  --color-bg-raised:       var(--tb-ink-3);
+  --color-bg-toolbar:      var(--tb-ink-4);
+  --color-bg-overlay:      rgba(4, 7, 11, 0.72);
+
+  --color-fg:              var(--tb-fg-0);
+  --color-fg-muted:        var(--tb-fg-2);
+  --color-fg-subtle:       var(--tb-fg-3);
+  --color-fg-disabled:     var(--tb-fg-4);
+
+  --color-border:          var(--tb-ink-5);
+  --color-border-strong:   var(--tb-ink-6);
+  --color-divider:         rgba(99, 179, 255, 0.08);
+
+  --color-accent:          var(--tb-blue-400);
+  --color-accent-hover:    var(--tb-blue-300);
+  --color-accent-press:    var(--tb-blue-500);
+  --color-accent-soft:     rgba(99, 179, 255, 0.12);
+  --color-accent-glow:     var(--tb-blue-glow);
+
+  --color-live:            var(--tb-amber-400);   /* live / now / active */
+  --color-live-soft:       rgba(240, 138, 36, 0.14);
+  --color-live-glow:       var(--tb-amber-glow);
+
+  --color-success:         var(--tb-success-400);
+  --color-warning:         var(--tb-warning-400);
+  --color-danger:          var(--tb-danger-400);
+
+  --color-focus-ring:      rgba(99, 179, 255, 0.55);
+
+  /* ============ TYPOGRAPHY — STACKS ============ */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Consolas",
+               ui-monospace, monospace;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ============ TYPOGRAPHY — SCALE ============ */
+  --fs-12: 12px; --lh-12: 16px;
+  --fs-13: 13px; --lh-13: 18px;
+  --fs-14: 14px; --lh-14: 20px;
+  --fs-15: 15px; --lh-15: 22px;
+  --fs-16: 16px; --lh-16: 24px;
+  --fs-18: 18px; --lh-18: 26px;
+  --fs-20: 20px; --lh-20: 28px;
+  --fs-24: 24px; --lh-24: 32px;
+  --fs-30: 30px; --lh-30: 38px;
+  --fs-36: 36px; --lh-36: 44px;
+  --fs-48: 48px; --lh-48: 56px;
+  --fs-60: 60px; --lh-60: 64px;
+
+  /* Weights */
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+
+  /* Letter spacing */
+  --tracking-tight:   -0.02em;
+  --tracking-snug:    -0.01em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.02em;
+  --tracking-caps:    0.08em;     /* uppercase eyebrows / lane labels */
+
+  /* ============ SPACING / RADII / SHADOW ============ */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+  --radius-app-icon: 22.5%;   /* iOS-style superellipse for the app icon */
+
+  /* Shadows tuned for the dark canvas — subtle, with optional brand glow */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.45), 0 1px 0 rgba(99,179,255,0.04) inset;
+  --shadow-lg:  0 14px 40px rgba(0,0,0,0.55), 0 1px 0 rgba(99,179,255,0.05) inset;
+  --shadow-glow-blue:  0 0 0 1px rgba(99,179,255,0.35), 0 0 24px rgba(99,179,255,0.30);
+  --shadow-glow-amber: 0 0 0 1px rgba(240,138,36,0.35), 0 0 22px rgba(240,138,36,0.30);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1);
+  --dur-fast:      120ms;
+  --dur-base:      180ms;
+  --dur-slow:      280ms;
+
+  /* The signature 32px grid pattern from the icon background */
+  --grid-bg:
+    linear-gradient(to right, rgba(26, 45, 71, 0.45) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(to bottom, rgba(26, 45, 71, 0.45) 1px, transparent 1px) 0 0 / 32px 32px;
+}
+
+/* ============ SEMANTIC TYPE TOKENS ============ */
+
+.tb-display {
+  font-family: var(--font-display);
+  font-size: var(--fs-60);
+  line-height: var(--lh-60);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-fg);
+}
+
+.tb-h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-36);
+  line-height: var(--lh-36);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-fg);
+}
+
+.tb-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-24);
+  line-height: var(--lh-24);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--color-fg);
+}
+
+.tb-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-18);
+  line-height: var(--lh-18);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--color-fg);
+}
+
+.tb-h4 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-15);
+  line-height: var(--lh-15);
+  font-weight: var(--fw-semibold);
+  color: var(--color-fg);
+}
+
+.tb-body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  line-height: var(--lh-14);
+  font-weight: var(--fw-regular);
+  color: var(--color-fg);
+}
+
+.tb-body-lg {
+  font-family: var(--font-sans);
+  font-size: var(--fs-16);
+  line-height: var(--lh-16);
+  font-weight: var(--fw-regular);
+  color: var(--color-fg);
+}
+
+.tb-body-sm {
+  font-family: var(--font-sans);
+  font-size: var(--fs-13);
+  line-height: var(--lh-13);
+  font-weight: var(--fw-regular);
+  color: var(--color-fg);
+}
+
+.tb-meta {
+  font-family: var(--font-sans);
+  font-size: var(--fs-12);
+  line-height: var(--lh-12);
+  font-weight: var(--fw-medium);
+  color: var(--color-fg-subtle);
+}
+
+.tb-eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--fs-12);
+  line-height: var(--lh-12);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+
+.tb-code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  line-height: var(--lh-13);
+  font-weight: var(--fw-regular);
+  color: var(--tb-code-text);
+  background: var(--tb-code-bg);
+  border: 1px solid var(--tb-code-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
+
+.tb-kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: var(--fw-medium);
+  color: var(--color-fg-muted);
+  background: var(--tb-ink-3);
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  padding: 2px 6px;
+}
+
+/* ============ BASE ELEMENT MAPPING ============ */
+html, body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  line-height: var(--lh-14);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { @apply tb-h1; }
+h2 { @apply tb-h2; }
+h3 { @apply tb-h3; }
+h4 { @apply tb-h4; }
+p  { @apply tb-body; }
+small { font-size: var(--fs-12); color: var(--color-fg-subtle); }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+::selection { background: rgba(99, 179, 255, 0.35); color: var(--tb-fg-0); }

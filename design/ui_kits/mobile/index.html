@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threadbase Mobile — UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--tb-ink-0);
+    background-image: var(--grid-bg);
+    background-attachment: fixed;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px 16px;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(60% 50% at 50% 38%, rgba(15,30,53,0.7) 0%, transparent 70%);
+  }
+  @keyframes tb-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+  @keyframes tb-blink { 50% { opacity: 0; } }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="MobileApp.jsx"></script>
+<script type="text/babel" src="KanbanScreen.jsx"></script>
+<script type="text/babel" src="SessionDetailScreen.jsx"></script>
+<script type="text/babel" src="HistoryScreen.jsx"></script>
+<script type="text/babel" src="PromptQueueSheet.jsx"></script>
+<script type="text/babel" src="OnboardingScreen.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="env,react">
+const { useState } = React;
+
+function ScreenContainer({ children }) {
+  return (
+    <div style={{
+      position:"absolute", inset:0,
+      display:"flex", flexDirection:"column",
+      background:"var(--tb-ink-1)", color:"var(--tb-fg-0)",
+      fontFamily:"var(--font-sans)",
+      paddingBottom: 78, // tab bar height
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function App() {
+  const [tab, setTab] = useState("kanban");
+  const [active, setActive] = useState(null); // session for detail
+  const [sheet, setSheet] = useState(false);
+  const [onboarded, setOnboarded] = useState(true);
+
+  if (!onboarded) {
+    return (
+      <window.IOSDevice dark width={390} height={812}>
+        <ScreenContainer>
+          <window.OnboardingScreen onConnect={() => setOnboarded(true)}/>
+        </ScreenContainer>
+      </window.IOSDevice>
+    );
+  }
+
+  return (
+    <div style={{display:"flex", gap:32, alignItems:"flex-start", flexWrap:"wrap", justifyContent:"center"}}>
+      <window.IOSDevice dark width={390} height={812}>
+        <ScreenContainer>
+          {active ? (
+            <window.SessionDetailScreen
+              session={active}
+              back={() => setActive(null)}
+              openQueue={() => setSheet(true)}
+            />
+          ) : (
+            <>
+              <window.AppHeader
+                title={tab === "kanban" ? "Sessions" : tab === "history" ? "History" : tab === "terminal" ? "Terminal" : "Settings"}
+                sub={tab === "kanban" ? "3 running · 2 waiting" : tab === "history" ? "82 conversations" : null}
+                right={
+                  <button onClick={() => setOnboarded(false)} style={{
+                    background:"var(--tb-ink-3)", border:"1px solid var(--tb-ink-5)",
+                    borderRadius:8, height:30, padding:"0 10px", cursor:"pointer",
+                    color:"var(--tb-fg-2)", font:"600 11px/1 var(--font-sans)",
+                  }}>{(typeof navigator!=='undefined' ? '⏻' : 'X')}</button>
+                }
+              />
+              {tab === "kanban"  && <window.KanbanScreen openSession={setActive} openQueue={() => setSheet(true)}/>}
+              {tab === "history" && <window.HistoryScreen openSession={setActive}/>}
+              {tab === "terminal" && (
+                <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:24, textAlign:"center"}}>
+                  <div>
+                    <img src="../../assets/threadbase-icon-chat.svg" style={{width:80, height:80, borderRadius:18, marginBottom:16}}/>
+                    <div style={{font:"600 16px/1.3 var(--font-sans)", color:"var(--tb-fg-0)"}}>Pick a session to open the terminal.</div>
+                    <div style={{font:"500 12px/1.5 var(--font-mono)", color:"var(--tb-fg-3)", marginTop:6}}>Sessions · tab</div>
+                  </div>
+                </div>
+              )}
+              {tab === "settings" && (
+                <div style={{padding:"4px 16px", overflow:"auto"}}>
+                  {[
+                    ["Server", "https://threadbase.local:7331"],
+                    ["Notifications", "Plan ready · Errors · Quiet 22–08"],
+                    ["Terminal", "Max 2,000 lines"],
+                    ["Profile", "work-laptop"],
+                    ["About", "v0.1.0"],
+                  ].map(([k,v]) => (
+                    <div key={k} style={{
+                      padding:"14px 4px", borderBottom:"1px solid var(--color-divider)",
+                      display:"flex", justifyContent:"space-between", alignItems:"center",
+                    }}>
+                      <div style={{font:"500 14px/1.2 var(--font-sans)", color:"var(--tb-fg-0)"}}>{k}</div>
+                      <div style={{font:"500 12px/1.2 var(--font-mono)", color:"var(--tb-fg-3)"}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+          <window.TabBar tab={tab} setTab={(t) => { setTab(t); setActive(null); }}/>
+          {sheet && <window.PromptQueueSheet onClose={() => setSheet(false)}/>}
+        </ScreenContainer>
+      </window.IOSDevice>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

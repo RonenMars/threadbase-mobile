@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Inputs & Search</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display:grid; gap:12px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .field { background: var(--tb-ink-2); border: 1px solid var(--tb-ink-5); border-radius: 8px; height: 40px; padding: 0 12px; display:flex; align-items:center; gap:10px; color: var(--tb-fg-2); font: 400 14px/1 var(--font-sans); }
+  .field.focus { border-color: var(--tb-blue-400); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+  .field input { background: transparent; border:0; outline:0; color: var(--tb-fg-0); flex:1; font: inherit; }
+  .ico { width:14px; height:14px; flex:none; opacity: .8; }
+  .kbd { margin-left:auto; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+</style>
+</head>
+<body>
+  <div class="label">Inputs — fields, search, kbd hint</div>
+  <div class="field">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input value="auth refresh" />
+    <span class="tb-kbd kbd">⌘ K</span>
+  </div>
+  <div class="row">
+    <div class="field focus"><input placeholder="Profile name" value="work-laptop"/></div>
+    <div class="field"><input placeholder="Server URL" value=""/><span class="tb-meta">required</span></div>
+  </div>
+</body>
+</html>

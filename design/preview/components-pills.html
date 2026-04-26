@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Status Pills & Badges</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display:grid; gap:12px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .pill { display:inline-flex; align-items:center; gap:6px; font: 600 11px/1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; }
+  .dot { width:6px; height:6px; border-radius:50%; }
+  .pulse { animation: p 1.6s var(--ease-standard) infinite; }
+  @keyframes p { 0%,100%{opacity:.4} 50%{opacity:1} }
+  .live  { background: rgba(240,138,36,0.14); color: var(--tb-amber-400); }
+  .live .dot { background: var(--tb-amber-400); box-shadow: 0 0 8px var(--tb-amber-400); }
+  .running { background: rgba(99,179,255,0.14); color: var(--tb-blue-400); }
+  .running .dot { background: var(--tb-blue-400); }
+  .done { background: rgba(74,222,128,0.14); color: var(--tb-success-400); }
+  .done .dot { background: var(--tb-success-400); }
+  .failed { background: rgba(255,107,107,0.14); color: var(--tb-danger-400); }
+  .failed .dot { background: var(--tb-danger-400); }
+  .typing { background: rgba(99,179,255,0.10); color: var(--tb-blue-300); font-weight:500; text-transform: none; letter-spacing: 0; }
+  .git { background: var(--tb-ink-3); color: var(--tb-fg-2); font-family: var(--font-mono); font-weight:500; text-transform:none; letter-spacing:0; padding: 4px 8px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+</style>
+</head>
+<body>
+  <div class="label">Status Pills · live / running / done / failed</div>
+  <div class="row">
+    <span class="pill live"><span class="dot pulse"></span>Live</span>
+    <span class="pill running"><span class="dot"></span>Running</span>
+    <span class="pill done"><span class="dot"></span>Completed</span>
+    <span class="pill failed"><span class="dot"></span>Failed</span>
+    <span class="pill typing">Typing…</span>
+    <span class="pill typing">Awaiting reply</span>
+  </div>
+  <div class="label" style="margin-top:8px">Metadata Badges · git, project, tokens</div>
+  <div class="row">
+    <span class="pill git">⎇ feat/scanner-v2</span>
+    <span class="pill git">~/projects/threadbase</span>
+    <span class="pill git">12,304 tok</span>
+    <span class="pill git">claude-sonnet-4.6</span>
+  </div>
+</body>
+</html>

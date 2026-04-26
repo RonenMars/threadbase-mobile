@@ -71,7 +71,10 @@ function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
   const router = useRouter()
   const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
   const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
-  const previewText = msg?.text ?? c.preview
+  // Collapse newlines/tabs/repeated spaces — otherwise iOS reserves vertical
+  // space for embedded \n inside the sliced substring even with numberOfLines={1},
+  // which makes some rows mysteriously tall.
+  const previewText = (msg?.text ?? c.preview)?.replace(/\s+/g, ' ').trim()
   return (
     <TouchableOpacity
       style={styles.row}

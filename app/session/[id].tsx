@@ -53,7 +53,7 @@ export default function SessionDetailScreen() {
 
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id)
-  const { sendInput } = useSessionActions(serverId, id)
+  const { sendInput, addToQueue } = useSessionActions(serverId, id)
 
   const [inputText, setInputText] = useState('')
   const [queueVisible, setQueueVisible] = useState(false)
@@ -81,16 +81,33 @@ export default function SessionDetailScreen() {
     })
   }, [serverId, id])
 
-  const handleSendInput = () => {
+  const buildPayload = () => {
     const trimmed = inputText.trim()
-    if (!trimmed && attachments.length === 0) return
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    if (!trimmed && attachments.length === 0) return null
     const refs = attachments.map((a) => `@${a.path}`).join(' ')
-    const payload = refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed
-    sendInput.mutate(payload)
+    return refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed
+  }
+
+  const resetComposer = () => {
     setInputText('')
     setAttachments([])
     setAttachError(null)
+  }
+
+  const handleSendInput = () => {
+    const payload = buildPayload()
+    if (!payload) return
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    sendInput.mutate(payload)
+    resetComposer()
+  }
+
+  const handleQueueInput = () => {
+    const payload = buildPayload()
+    if (!payload) return
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    addToQueue.mutate(payload)
+    resetComposer()
   }
 
   const runUpload = async (source: 'camera' | 'library') => {
@@ -241,21 +258,39 @@ export default function SessionDetailScreen() {
                 multiline
                 returnKeyType="done"
                 blurOnSubmit
-                onSubmitEditing={handleSendInput}
+                onSubmitEditing={isStreaming ? handleQueueInput : handleSendInput}
               />
-              <TouchableOpacity
-                style={[
-                  styles.sendBtn,
-                  !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
-                ]}
-                onPress={handleSendInput}
-                disabled={
-                  (!inputText.trim() && attachments.length === 0) || sendInput.isPending
-                }
-                accessibilityLabel="Send input"
-              >
-                <Ionicons name="paper-plane" size={22} color="#fff" />
-              </TouchableOpacity>
+              {isStreaming ? (
+                <TouchableOpacity
+                  style={[
+                    styles.queueAddBtn,
+                    !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
+                  ]}
+                  onPress={handleQueueInput}
+                  disabled={
+                    (!inputText.trim() && attachments.length === 0) || addToQueue.isPending
+                  }
+                  accessibilityLabel="Add to queue"
+                  accessibilityHint="Agent is streaming — your prompt will run after it finishes"
+                >
+                  <Ionicons name="layers-outline" size={18} color="#fff" />
+                  <Text style={styles.queueAddBtnText}>Queue</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.sendBtn,
+                    !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
+                  ]}
+                  onPress={handleSendInput}
+                  disabled={
+                    (!inputText.trim() && attachments.length === 0) || sendInput.isPending
+                  }
+                  accessibilityLabel="Send input"
+                >
+                  <Ionicons name="paper-plane" size={22} color="#fff" />
+                </TouchableOpacity>
+              )}
             </View>
             <TouchableOpacity
               style={styles.queueBtn}
@@ -405,6 +440,20 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  queueAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: dark.text.warning,
+    borderRadius: 10,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+  queueAddBtnText: {
+    color: '#fff',
+    fontSize: font.sm,
+    fontWeight: '700',
   },
   attachBtn: {
     aspectRatio: 1,

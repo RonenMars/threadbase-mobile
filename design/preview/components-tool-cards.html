@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Tool Result Cards</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); display:grid; gap:10px; }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .tool { background: var(--tb-ink-2); border: 1px solid var(--tb-ink-5); border-radius: 10px; overflow:hidden; }
+  .head { display:flex; align-items:center; gap:8px; padding: 8px 12px; border-bottom: 1px solid var(--tb-ink-5); background: var(--tb-ink-3); }
+  .name { font: 600 11px/1 var(--font-mono); color: var(--tb-fg-0); }
+  .arg  { font: 500 11px/1 var(--font-mono); color: var(--tb-fg-3); margin-left: 6px; }
+  .ok   { margin-left:auto; font: 600 10px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--tb-success-400); }
+  .body { padding: 10px 12px; font: 500 12px/1.55 var(--font-mono); color: var(--tb-code-text); white-space:pre-wrap; }
+  .add { background: var(--tb-diff-add-bg); color: var(--tb-diff-add-fg); display:block; padding:1px 8px; }
+  .rem { background: var(--tb-diff-rem-bg); color: var(--tb-diff-rem-fg); display:block; padding:1px 8px; }
+  .ctx { color: var(--tb-fg-3); display:block; padding:1px 8px; }
+</style>
+</head>
+<body>
+  <div class="label">Tool Cards — Bash & Edit (diff)</div>
+  <div class="tool">
+    <div class="head">
+      <span class="name">Bash</span><span class="arg">pnpm test --filter scanner</span>
+      <span class="ok">✓ exit 0</span>
+    </div>
+    <div class="body">PASS  src/two-tier-index.test.ts (1.42s)
+PASS  src/jsonl-scanner.test.ts (0.89s)
+
+Tests:       24 passed, 24 total
+Snapshots:   0 total
+Time:        2.43 s</div>
+  </div>
+  <div class="tool">
+    <div class="head">
+      <span class="name">Edit</span><span class="arg">scanner/src/index.ts</span>
+      <span class="ok" style="color:var(--tb-blue-400)">+12 −3</span>
+    </div>
+    <div class="body" style="padding: 8px 0">
+      <span class="ctx"> export class Scanner {</span>
+      <span class="rem">-   private cache = new Map();</span>
+      <span class="add">+   private cache = new LRUCache({ max: 256 });</span>
+      <span class="add">+   private metaIndex = new FlexSearch.Document({ tokenize: 'forward' });</span>
+      <span class="ctx">   constructor(opts: ScannerOpts) {</span>
+    </div>
+  </div>
+</body>
+</html>

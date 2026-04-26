@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Grid Background</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 18px; background: var(--tb-ink-1); }
+  .label { font: 600 11px/1 var(--font-sans); color: var(--tb-fg-2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+  .stage { position: relative; height: 200px; border-radius: 14px; overflow: hidden; background: var(--tb-ink-1); border: 1px solid var(--tb-ink-5); }
+  .grid { position:absolute; inset:0; background: var(--grid-bg); }
+  .glow { position:absolute; inset:0; background: radial-gradient(60% 70% at 50% 42%, #0f1e35 0%, transparent 70%); }
+  .center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap: 16px; }
+  .spine { width: 3px; height: 120px; background: var(--tb-ink-7); border-radius: 2px; }
+  .bars { display:flex; flex-direction: column; gap: 10px; }
+  .bar { height: 16px; border-radius: 8px; }
+  .b1 { width: 200px; background: linear-gradient(90deg, var(--tb-blue-400), rgba(99,179,255,0.2)); box-shadow: 0 0 16px var(--tb-blue-glow); }
+  .b2 { width: 150px; background: linear-gradient(90deg, rgba(99,179,255,0.7), rgba(99,179,255,0.1)); }
+  .b3 { width: 120px; background: linear-gradient(90deg, var(--tb-amber-400), rgba(240,138,36,0)); box-shadow: 0 0 14px var(--tb-amber-glow); }
+</style>
+</head>
+<body>
+  <div class="label">Signature Background · 32px grid + radial glow + thread motif</div>
+  <div class="stage">
+    <div class="grid"></div>
+    <div class="glow"></div>
+    <div class="center">
+      <div class="spine"></div>
+      <div class="bars">
+        <div class="bar b1"></div>
+        <div class="bar b2"></div>
+        <div class="bar b3"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
