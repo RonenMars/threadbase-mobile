@@ -7,6 +7,7 @@ set -euo pipefail
 
 : "${ASC_KEY_ID:?source .env.signing first}"
 : "${ASC_ISSUER_ID:?source .env.signing first}"
+: "${ASC_TEAM_ID:?source .env.signing first}"
 : "${ASC_KEY_PATH:?source .env.signing first}"
 : "${EXPORT_OPTIONS_PLIST:?source .env.signing first}"
 
@@ -26,6 +27,8 @@ xcodebuild \
   -authenticationKeyPath "${ASC_KEY_PATH}" \
   -authenticationKeyID "${ASC_KEY_ID}" \
   -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
+  DEVELOPMENT_TEAM="${ASC_TEAM_ID}" \
+  CODE_SIGN_STYLE=Automatic \
   archive | tee build/archive.log
 
 xcodebuild -exportArchive \

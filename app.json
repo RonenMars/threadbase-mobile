@@ -18,6 +18,7 @@
       "supportsTablet": true,
       "buildNumber": "24",
       "bundleIdentifier": "com.ronenmars.threadbase",
+      "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
         "NSCameraUsageDescription": "Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.",
         "NSPhotoLibraryUsageDescription": "Used to attach photos from your library to your Claude Code sessions.",

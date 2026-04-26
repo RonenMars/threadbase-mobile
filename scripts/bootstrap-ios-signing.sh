@@ -37,6 +37,7 @@ fi
 
 ASC_KEY_ID="$(op read "${OP_ITEM}/key_id")"
 ASC_ISSUER_ID="$(op read "${OP_ITEM}/issuer_id")"
+ASC_TEAM_ID="$(op read "${OP_ITEM}/team_id")"
 ASC_KEY_PATH="${HOME}/.appstoreconnect/keys/AuthKey_${ASC_KEY_ID}.p8"
 
 mkdir -p "$(dirname "${ASC_KEY_PATH}")"
@@ -61,6 +62,7 @@ op inject \
 cat > .env.signing <<EOF
 export ASC_KEY_ID="${ASC_KEY_ID}"
 export ASC_ISSUER_ID="${ASC_ISSUER_ID}"
+export ASC_TEAM_ID="${ASC_TEAM_ID}"
 export ASC_KEY_PATH="${ASC_KEY_PATH}"
 export EXPORT_OPTIONS_PLIST="$(pwd)/build/ExportOptions.plist"
 EOF
