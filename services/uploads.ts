@@ -25,9 +25,6 @@ const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
 }
 
 export async function pickFromLibrary(): Promise<PickedImage | null> {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-  if (!perm.granted) throw new Error('Photo library permission denied')
-
   const result = await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS)
   return assetToPicked(result)
 }
