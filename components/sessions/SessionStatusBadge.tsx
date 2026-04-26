@@ -13,12 +13,20 @@ const STATUS_LABELS: Record<SessionStatus, string> = {
   idle: 'Idle',
 }
 
+const STATUS_COLORS: Record<SessionStatus, string> = {
+  running: dark.status.running,
+  waiting_input: dark.status.waiting,
+  completed: dark.status.completed,
+  failed: dark.status.failed,
+  idle: dark.status.idle,
+}
+
 interface Props {
   status: SessionStatus
 }
 
 export function SessionStatusBadge({ status }: Props) {
-  const color = dark.status[status] ?? dark.text.secondary
+  const color = STATUS_COLORS[status] ?? dark.text.secondary
   const opacity = useSharedValue(1)
 
   useEffect(() => {

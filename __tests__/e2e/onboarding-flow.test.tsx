@@ -1,8 +1,9 @@
 /**
- * E2E: Onboarding flow
+ * E2E: Add-server flow
  *
- * Tests the complete onboarding user journey: form rendering, input, API
- * validation, error handling, and navigation to sessions on success.
+ * Tests the add-server form (rendered via /onboarding?mode=add): rendering,
+ * input, API validation, error handling, and navigation on success. The
+ * first-launch onboarding flow has its own dedicated suite.
  */
 import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
@@ -13,7 +14,7 @@ const mockReplace = jest.fn()
 const mockSetOptions = jest.fn()
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: mockReplace, back: jest.fn() }),
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => ({ mode: 'add' }),
   useNavigation: () => ({ setOptions: mockSetOptions }),
 }))
 
