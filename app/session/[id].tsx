@@ -53,7 +53,7 @@ export default function SessionDetailScreen() {
 
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id)
-  const { sendInput, addToQueue } = useSessionActions(serverId, id)
+  const { sendInput, addToQueue, cancelSession } = useSessionActions(serverId, id)
 
   const [inputText, setInputText] = useState('')
   const [queueVisible, setQueueVisible] = useState(false)
@@ -63,11 +63,59 @@ export default function SessionDetailScreen() {
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
 
+  const isStoppable =
+    session?.source !== 'discovered' &&
+    (session?.status === 'running' || session?.status === 'waiting_input')
+
+  const handleStop = () => {
+    Alert.alert(
+      'Stop Claude Code?',
+      'This terminates the running claude process for this session.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Stop',
+          style: 'destructive',
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+            cancelSession.mutate(undefined, {
+              onSuccess: () => router.back(),
+              onError: (err) => {
+                Alert.alert(
+                  'Failed to stop',
+                  err instanceof Error ? err.message : 'Unknown error',
+                )
+              },
+            })
+          },
+        },
+      ],
+    )
+  }
+
   useEffect(() => {
-    if (session) {
-      navigation.setOptions({ title: session.projectName })
-    }
-  }, [session, navigation])
+    if (!session) return
+    navigation.setOptions({
+      title: session.projectName,
+      headerRight: isStoppable
+        ? () => (
+            <TouchableOpacity
+              onPress={handleStop}
+              disabled={cancelSession.isPending}
+              accessibilityLabel="Stop session"
+              hitSlop={8}
+              style={styles.stopBtn}
+            >
+              {cancelSession.isPending ? (
+                <ActivityIndicator size="small" color={dark.status.failed} />
+              ) : (
+                <Ionicons name="stop-circle" size={26} color={dark.status.failed} />
+              )}
+            </TouchableOpacity>
+          )
+        : undefined,
+    })
+  }, [session, navigation, isStoppable, cancelSession.isPending])
 
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
@@ -488,6 +536,13 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   sendBtnDisabled: { opacity: 0.4 },
+  stopBtn: {
+    minHeight: 36,
+    minWidth: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+  },
   queueBtnBottom: {
     margin: spacing.md,
     backgroundColor: dark.bg.card,
