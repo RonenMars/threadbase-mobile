@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { SessionCard } from '@/components/sessions/SessionCard'
-import { ServerFilterSheet } from '@/components/servers/ServerFilterSheet'
+import { ServerFilterSheet, type SortType } from '@/components/servers/ServerFilterSheet'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useSessions } from '@/hooks/useSession'
@@ -21,6 +21,14 @@ import { dark, font, spacing } from '@/constants/theme'
 import type { MultiSession, SessionStatus } from '@/types/api'
 
 const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'completed', 'failed', 'idle']
+
+// For "lastActivity" sort: prefer completedAt; otherwise approximate "still
+// active until" with startedAt + elapsedMs so a long-running session beats
+// an older session that completed quickly.
+function lastActivityMs(s: MultiSession): number {
+  if (s.completedAt) return Date.parse(s.completedAt)
+  return Date.parse(s.startedAt) + (s.elapsedMs ?? 0)
+}
 
 function getStatusColor(allConnected: boolean, someConnected: boolean): string {
   if (allConnected) return dark.status.running
@@ -46,6 +54,7 @@ export default function SessionsScreen() {
   const [connectedCount, setConnectedCount] = useState(0)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedStatuses, setSelectedStatuses] = useState<SessionStatus[]>(ALL_STATUSES)
+  const [sortType, setSortType] = useState<SortType>('lastActivity')
 
   useEffect(() => {
     const updateCount = () => {
@@ -73,8 +82,11 @@ export default function SessionsScreen() {
         displayedServerIds.includes(session.serverId) &&
         selectedStatuses.includes(session.status),
     )
+    if (sortType === 'lastActivity') {
+      return filtered.sort((a, b) => lastActivityMs(b) - lastActivityMs(a))
+    }
     return filtered.sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
-  }, [sessions, displayedServerIds, selectedStatuses])
+  }, [sessions, displayedServerIds, selectedStatuses, sortType])
 
   const total = activeServerIds.length
   const allConnected = connectedCount === total && total > 0
@@ -138,6 +150,8 @@ export default function SessionsScreen() {
         onClose={() => setIsFilterOpen(false)}
         selectedStatuses={selectedStatuses}
         onChangeStatuses={setSelectedStatuses}
+        sortType={sortType}
+        onChangeSortType={setSortType}
       />
     </SafeAreaView>
   )

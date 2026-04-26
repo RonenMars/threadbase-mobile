@@ -6,11 +6,15 @@ import { useServersStore } from '@/stores/servers'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { SessionStatus } from '@/types/api'
 
+export type SortType = 'lastActivity' | 'startedAt'
+
 interface Props {
   visible: boolean
   onClose: () => void
   selectedStatuses?: SessionStatus[]
   onChangeStatuses?: (statuses: SessionStatus[]) => void
+  sortType?: SortType
+  onChangeSortType?: (sort: SortType) => void
 }
 
 const SNAP_POINTS = ['50%', '85%']
@@ -21,6 +25,11 @@ const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] =
   { value: 'completed', label: 'Completed', color: dark.status.completed },
   { value: 'failed', label: 'Failed', color: dark.status.failed },
   { value: 'idle', label: 'Idle', color: dark.status.idle },
+]
+
+const SORT_OPTIONS: { value: SortType; label: string }[] = [
+  { value: 'lastActivity', label: 'Last activity' },
+  { value: 'startedAt', label: 'Started' },
 ]
 
 const ALL_STATUSES: SessionStatus[] = STATUS_OPTIONS.map((s) => s.value)
@@ -35,6 +44,8 @@ export function ServerFilterSheet({
   onClose,
   selectedStatuses,
   onChangeStatuses,
+  sortType,
+  onChangeSortType,
 }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -44,6 +55,7 @@ export function ServerFilterSheet({
   const [draftStatuses, setDraftStatuses] = useState<SessionStatus[]>(
     selectedStatuses ?? ALL_STATUSES,
   )
+  const [draftSort, setDraftSort] = useState<SortType>(sortType ?? 'lastActivity')
 
   useEffect(() => {
     setDraftIds(displayedServerIds)
@@ -53,9 +65,14 @@ export function ServerFilterSheet({
     if (selectedStatuses) setDraftStatuses(selectedStatuses)
   }, [selectedStatuses, visible])
 
+  useEffect(() => {
+    if (sortType) setDraftSort(sortType)
+  }, [sortType, visible])
+
   if (!visible) return null
 
   const showStatusFilter = Boolean(onChangeStatuses)
+  const showSortFilter = Boolean(onChangeSortType)
   const showServerFilter = activeServerIds.length > 1
 
   return (
@@ -69,6 +86,30 @@ export function ServerFilterSheet({
     >
       <BottomSheetView style={styles.content}>
         <Text style={styles.title}>Filters</Text>
+
+        {showSortFilter ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Sort by</Text>
+            <View style={styles.chipRow}>
+              {SORT_OPTIONS.map((opt) => {
+                const selected = draftSort === opt.value
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => setDraftSort(opt.value)}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+        ) : null}
 
         {showStatusFilter ? (
           <View style={styles.section}>
@@ -132,6 +173,7 @@ export function ServerFilterSheet({
             onPress={() => {
               setDisplayedServerIds(draftIds)
               onChangeStatuses?.(draftStatuses)
+              onChangeSortType?.(draftSort)
               onClose()
             }}
           >
