@@ -8,6 +8,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
+  ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useHeaderHeight } from '@react-navigation/elements'
@@ -22,6 +24,12 @@ import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { wsManager } from '@/services/ws-client'
+import {
+  pickFromCamera,
+  pickFromLibrary,
+  uploadAttachment,
+  type UploadedFile,
+} from '@/services/uploads'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 
@@ -51,6 +59,9 @@ export default function SessionDetailScreen() {
   const [queueVisible, setQueueVisible] = useState(false)
   const [planVisible, setPlanVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<UploadedFile[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const [attachError, setAttachError] = useState<string | null>(null)
 
   useEffect(() => {
     if (session) {
@@ -71,10 +82,43 @@ export default function SessionDetailScreen() {
   }, [serverId, id])
 
   const handleSendInput = () => {
-    if (!inputText.trim()) return
+    const trimmed = inputText.trim()
+    if (!trimmed && attachments.length === 0) return
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    sendInput.mutate(inputText.trim())
+    const refs = attachments.map((a) => `@${a.path}`).join(' ')
+    const payload = refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed
+    sendInput.mutate(payload)
     setInputText('')
+    setAttachments([])
+    setAttachError(null)
+  }
+
+  const runUpload = async (source: 'camera' | 'library') => {
+    setAttachError(null)
+    try {
+      const picked = source === 'camera' ? await pickFromCamera() : await pickFromLibrary()
+      if (!picked) return
+      setIsUploading(true)
+      const uploaded = await uploadAttachment(serverId, id, picked)
+      setAttachments((prev) => [...prev, uploaded])
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : 'Failed to attach file')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleAttach = () => {
+    if (isUploading) return
+    Alert.alert('Attach photo', undefined, [
+      { text: 'Take Photo', onPress: () => runUpload('camera') },
+      { text: 'Choose from Library', onPress: () => runUpload('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+
+  const removeAttachment = (attachmentId: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
   }
 
   // Hide composer only for discovered sessions with no PTY stream yet (placeholder state).
@@ -147,7 +191,47 @@ export default function SessionDetailScreen() {
                   : 'Failed to send'}
               </Text>
             ) : null}
+            {attachError ? (
+              <Text style={styles.sendError} numberOfLines={2}>
+                {attachError}
+              </Text>
+            ) : null}
+            {attachments.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                {attachments.map((a) => (
+                  <View key={a.id} style={styles.chip}>
+                    <Ionicons name="image" size={14} color={dark.text.primary} />
+                    <Text style={styles.chipText} numberOfLines={1}>
+                      {a.originalName}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => removeAttachment(a.id)}
+                      accessibilityLabel={`Remove ${a.originalName}`}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="close" size={14} color={dark.text.secondary} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : null}
             <View style={styles.inputRow}>
+              <TouchableOpacity
+                style={[styles.attachBtn, isUploading && styles.sendBtnDisabled]}
+                onPress={handleAttach}
+                disabled={isUploading}
+                accessibilityLabel="Attach photo"
+              >
+                {isUploading ? (
+                  <ActivityIndicator size="small" color={dark.text.primary} />
+                ) : (
+                  <Ionicons name="attach" size={22} color={dark.text.primary} />
+                )}
+              </TouchableOpacity>
               <TextInput
                 style={styles.input}
                 value={inputText}
@@ -160,9 +244,14 @@ export default function SessionDetailScreen() {
                 onSubmitEditing={handleSendInput}
               />
               <TouchableOpacity
-                style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
+                style={[
+                  styles.sendBtn,
+                  !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
+                ]}
                 onPress={handleSendInput}
-                disabled={!inputText.trim() || sendInput.isPending}
+                disabled={
+                  (!inputText.trim() && attachments.length === 0) || sendInput.isPending
+                }
                 accessibilityLabel="Send input"
               >
                 <Ionicons name="paper-plane" size={22} color="#fff" />
@@ -316,6 +405,38 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  attachBtn: {
+    aspectRatio: 1,
+    backgroundColor: dark.bg.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: dark.border,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    backgroundColor: dark.bg.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: dark.border,
+    maxWidth: 200,
+  },
+  chipText: {
+    color: dark.text.primary,
+    fontSize: font.xs,
+    flexShrink: 1,
   },
   sendBtnDisabled: { opacity: 0.4 },
   queueBtnBottom: {

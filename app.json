@@ -19,7 +19,8 @@
       "buildNumber": "21",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "infoPlist": {
-        "NSCameraUsageDescription": "Used for QR code scanning during server setup",
+        "NSCameraUsageDescription": "Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.",
+        "NSPhotoLibraryUsageDescription": "Used to attach photos from your library to your Claude Code sessions.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -41,6 +42,13 @@
         "expo-camera",
         {
           "cameraPermission": "Allow Threadbase to access your camera for QR code scanning."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Threadbase to attach photos from your library to Claude Code sessions.",
+          "cameraPermission": false
         }
       ],
       "expo-secure-store",
