@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -67,14 +67,11 @@ interface RowProps {
   showServerBadge: boolean
 }
 
-function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
+const ConversationRow = React.memo(function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
   const router = useRouter()
   const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
   const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
-  // Collapse newlines/tabs/repeated spaces — otherwise iOS reserves vertical
-  // space for embedded \n inside the sliced substring even with numberOfLines={1},
-  // which makes some rows mysteriously tall.
-  const previewText = (msg?.text ?? c.preview)?.replace(/\s+/g, ' ').trim()
+  const previewText = msg?.text ?? c.preview
   return (
     <TouchableOpacity
       style={styles.row}
@@ -116,7 +113,7 @@ function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
       </View>
     </TouchableOpacity>
   )
-}
+})
 
 interface Props {
   conversations: MultiConversation[]
@@ -129,6 +126,10 @@ interface Props {
   isLoadingInitial?: boolean
   isFetchingNextPage?: boolean
   headerRight?: React.ReactNode
+}
+
+function Separator() {
+  return <View style={styles.separator} />
 }
 
 export function ConversationList({
@@ -145,6 +146,45 @@ export function ConversationList({
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
+
+  const keyExtractor = useCallback(
+    (item: MultiConversation | string) =>
+      typeof item === 'string' ? item : `${item.serverId}::${item.id}`,
+    [],
+  )
+
+  // Bucket items by which optional rows they render. FlashList v2 recycles
+  // cells; if a cell that previously held a 4-line row (sessionName + tokens)
+  // gets reused for a 3-line row, the slot keeps its old measured height and
+  // the row renders with empty space inside it. Giving each shape a distinct
+  // type keeps recycling within compatible buckets.
+  const getItemType = useCallback((item: MultiConversation | string) => {
+    if (typeof item === 'string') return 'skeleton'
+    const session = item.sessionName ? 's' : ''
+    const tokens = item.totalTokens ? 't' : ''
+    return `conv:${session}${tokens}` || 'conv:plain'
+  }, [])
+
+  const renderItem = useCallback(
+    ({ item }: { item: MultiConversation | string }) =>
+      typeof item === 'string' ? (
+        <ConversationRowSkeleton />
+      ) : (
+        <ConversationRow conversation={item} showServerBadge={multipleServers} />
+      ),
+    [multipleServers],
+  )
+
+  const refreshControl = useMemo(
+    () => (
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        tintColor={dark.text.secondary}
+      />
+    ),
+    [refreshing, onRefresh],
+  )
 
   return (
     <View style={styles.container}>
@@ -164,26 +204,13 @@ export function ConversationList({
 
       <FlashList
         data={listData}
-        keyExtractor={(item) =>
-          typeof item === 'string' ? item : `${item.serverId}::${item.id}`
-        }
-        renderItem={({ item }) =>
-          typeof item === 'string' ? (
-            <ConversationRowSkeleton />
-          ) : (
-            <ConversationRow conversation={item} showServerBadge={multipleServers} />
-          )
-        }
+        keyExtractor={keyExtractor}
+        getItemType={getItemType}
+        renderItem={renderItem}
         onEndReached={skeletonMode ? undefined : onEndReached}
         onEndReachedThreshold={0.35}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={dark.text.secondary}
-          />
-        }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshControl={refreshControl}
+        ItemSeparatorComponent={Separator}
         ListFooterComponent={
           isFetchingNextPage && !skeletonMode ? (
             <View style={styles.listFooter}>
