@@ -8,7 +8,8 @@ import {
   useSegments,
 } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { queryClient, queryPersister, persistBuster } from '@/services/query-client'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
@@ -16,20 +17,12 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 import { useSessionsStore } from '@/stores/sessions'
+import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import * as SplashScreen from 'expo-splash-screen'
 
 SplashScreen.preventAutoHideAsync()
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      staleTime: 1000,
-    },
-  },
-})
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -84,10 +77,36 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     const unsubList = wsManager.onAll('session_list', (msg) => {
-      if (msg.type === 'session_list') setSessions(msg.serverId, msg.sessions)
+      if (msg.type !== 'session_list') return
+      setSessions(msg.serverId, msg.sessions)
+      queryClient.setQueriesData<{ serverId: string; sessions: Session[] }[]>(
+        { queryKey: ['sessions'] },
+        (old) =>
+          old?.map((entry) =>
+            entry.serverId === msg.serverId ? { ...entry, sessions: msg.sessions } : entry,
+          ),
+      )
     })
     const unsubUpdate = wsManager.onAll('session_update', (msg) => {
-      if (msg.type === 'session_update') updateSession(msg.serverId, msg.session.id, msg.session)
+      if (msg.type !== 'session_update') return
+      updateSession(msg.serverId, msg.session.id, msg.session)
+      queryClient.setQueryData<Session>(['session', msg.serverId, msg.session.id], (prev) =>
+        prev ? { ...prev, ...msg.session } : (msg.session as Session),
+      )
+      queryClient.setQueriesData<{ serverId: string; sessions: Session[] }[]>(
+        { queryKey: ['sessions'] },
+        (old) =>
+          old?.map((entry) =>
+            entry.serverId === msg.serverId
+              ? {
+                  ...entry,
+                  sessions: entry.sessions.map((s) =>
+                    s.id === msg.session.id ? { ...s, ...msg.session } : s,
+                  ),
+                }
+              : entry,
+          ),
+      )
     })
     const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
       setConnected(serverId, status === 'connected')
@@ -133,7 +152,20 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         {!splashDone && <SplashAnimation onComplete={() => setSplashDone(true)} />}
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister: queryPersister,
+            buster: persistBuster,
+            maxAge: 1000 * 60 * 60 * 24,
+            dehydrateOptions: {
+              shouldDehydrateMutation: () => false,
+              shouldDehydrateQuery: (query) =>
+                query.state.status === 'success' &&
+                (query.meta as { persist?: boolean } | undefined)?.persist !== false,
+            },
+          }}
+        >
           <AuthGate>
             <StatusBar style="light" />
             <Stack
@@ -165,7 +197,7 @@ export default function RootLayout() {
               />
             </Stack>
           </AuthGate>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
