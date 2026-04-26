@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "23",
+      "buildNumber": "24",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "infoPlist": {
         "NSCameraUsageDescription": "Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.",
