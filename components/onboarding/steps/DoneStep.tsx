@@ -24,7 +24,8 @@ interface Props {
   serverPort?: string | number
 }
 
-export function DoneStep({ onEnter, serverHost = 'work-laptop.local', serverPort = 7331 }: Props) {
+export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
+  const paired = serverHost != null && serverPort != null
   const popScale = useSharedValue(0.8)
   const popOpacity = useSharedValue(0)
   const dotOpacity = useSharedValue(0.55)
@@ -35,15 +36,17 @@ export function DoneStep({ onEnter, serverHost = 'work-laptop.local', serverPort
       withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) }),
     )
     popOpacity.value = withTiming(1, { duration: 250 })
-    dotOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.55, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      false,
-    )
-  }, [popScale, popOpacity, dotOpacity])
+    if (paired) {
+      dotOpacity.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.55, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        false,
+      )
+    }
+  }, [paired, popScale, popOpacity, dotOpacity])
 
   const popStyle = useAnimatedStyle(() => ({
     opacity: popOpacity.value,
@@ -89,22 +92,34 @@ export function DoneStep({ onEnter, serverHost = 'work-laptop.local', serverPort
           </View>
         </Animated.View>
 
-        <Text style={styles.eyebrow}>HANDSHAKE COMPLETE</Text>
-        <Text style={styles.headline}>Thread is live.</Text>
+        <Text style={[styles.eyebrow, !paired && styles.eyebrowUnpaired]}>
+          {paired ? 'HANDSHAKE COMPLETE' : 'ALL SET'}
+        </Text>
+        <Text style={styles.headline}>
+          {paired ? 'Thread is live.' : "You're in."}
+        </Text>
         <Text style={styles.body}>
-          Your laptop is listening. Open a session whenever the mood strikes.
+          {paired
+            ? 'Your laptop is listening. Open a session whenever the mood strikes.'
+            : 'No runtime paired yet. Hook one up from Settings when you’re ready.'}
         </Text>
 
         <View style={styles.pill}>
-          <Animated.View style={[styles.pillDot, dotStyle]} />
+          {paired ? (
+            <Animated.View style={[styles.pillDot, dotStyle]} />
+          ) : (
+            <View style={[styles.pillDot, styles.pillDotIdle]} />
+          )}
           <Text style={styles.pillText}>
-            paired · {serverHost} · {serverPort}
+            {paired
+              ? `paired · ${serverHost} · ${serverPort}`
+              : 'no runtime paired · pair from Settings'}
           </Text>
         </View>
       </View>
 
       <PrimaryButton onPress={onEnter} showIcon={false}>
-        Enter Threadbase
+        {paired ? 'Enter Threadbase' : 'Enter without pairing'}
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </View>
@@ -153,6 +168,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 14,
   },
+  eyebrowUnpaired: {
+    color: colors.fg3,
+  },
   headline: {
     color: colors.fg0,
     fontFamily: fonts.sans,
@@ -188,6 +206,10 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
     backgroundColor: colors.green500,
+  },
+  pillDotIdle: {
+    backgroundColor: colors.fg4,
+    opacity: 0.7,
   },
   pillText: {
     color: colors.fg3,

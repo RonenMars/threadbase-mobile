@@ -215,6 +215,17 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <SectionHeader title="Help" />
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => router.push('/onboarding')}
+          >
+            <Text style={styles.rowLabel}>Restart onboarding</Text>
+            <Text style={styles.rowValue}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         <SectionHeader title="About" />
         <View style={styles.card}>
           <Text style={styles.aboutText}>Threadbase Mobile v1.0.0</Text>
