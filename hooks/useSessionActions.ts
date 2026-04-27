@@ -12,6 +12,8 @@ export function useSessionActions(serverId: string, sessionId: string) {
       api.post(`/api/sessions/${sessionId}/input`, { input }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+      // Catch up on any terminal_output the WS missed while connecting/reconnecting.
+      qc.invalidateQueries({ queryKey: ['terminal-output', serverId, sessionId] })
     },
   })
 

@@ -145,8 +145,15 @@ export default function SessionDetailScreen() {
   const handleSendInput = () => {
     const payload = buildPayload()
     if (!payload) return
+    if (wsManager.getClient(serverId)?.status() !== 'connected') {
+      Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
+      return
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    sendInput.mutate(payload)
+    sendInput.mutate(payload, {
+      onError: (err) =>
+        Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
+    })
     resetComposer()
   }
 
