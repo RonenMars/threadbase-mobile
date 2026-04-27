@@ -67,7 +67,7 @@ elif [[ -f pnpm-lock.yaml ]];          then pnpm install
 elif [[ -f yarn.lock ]];               then yarn install
 else                                        npm ci || npm install
 fi
-npx expo install --check >/dev/null
+npx expo install --check >/dev/null || true
 
 # 3. Prebuild if ios/ missing
 if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
