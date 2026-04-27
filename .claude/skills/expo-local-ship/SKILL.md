@@ -1,5 +1,5 @@
 ---
-name: expo-local-build
+name: expo-local-ship
 description: >
   Build, test, and ship Expo / React Native apps locally on macOS using
   native CLI toolchains only — no Xcode UI, no Organizer, no App Store

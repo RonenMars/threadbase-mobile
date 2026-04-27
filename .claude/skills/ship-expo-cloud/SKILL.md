@@ -1,5 +1,5 @@
 ---
-name: expo-deploy
+name: ship-expo-cloud
 description: >
   Build, monitor, and publish the Threadbase mobile app via Expo EAS. Covers
   the full pipeline: EAS Build (dev/preview/production), monitoring build
