@@ -71,7 +71,9 @@ const ConversationRow = React.memo(function ConversationRow({ conversation: c, s
   const router = useRouter()
   const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
   const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
-  const previewText = msg?.text ?? c.preview
+  // iOS reserves vertical space for embedded \n inside a Text with numberOfLines={1},
+  // making rows with multi-line previews mysteriously tall and breaking FlashList cell recycling.
+  const previewText = (msg?.text ?? c.preview)?.replace(/\s+/g, ' ').trim()
   return (
     <TouchableOpacity
       style={styles.row}
