@@ -46,6 +46,8 @@ export default function SessionsScreen() {
   const { data: sessions = [], refetch, isPending } = useSessions()
   const hasLoadedOnce = useRef(false)
   if (!isPending) hasLoadedOnce.current = true
+  const listRef = useRef<FlatList<MultiSession>>(null)
+  const hasScrolledToBottom = useRef(false)
   const sessionsInitialLoad = isPending && !hasLoadedOnce.current
   const isFocusFetching = useFocusRefetch(refetch)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
@@ -68,6 +70,13 @@ export default function SessionsScreen() {
     const unsub = wsManager.onAnyStatusChange(() => updateCount())
     return unsub
   }, [activeServerIds])
+
+  useEffect(() => {
+    if (visibleSessions.length > 0 && !hasScrolledToBottom.current) {
+      hasScrolledToBottom.current = true
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100)
+    }
+  }, [visibleSessions.length])
 
   const handleRefresh = async () => {
     setManualRefreshing(true)
@@ -118,6 +127,7 @@ export default function SessionsScreen() {
 
       <View style={styles.listWrapper}>
         <FlatList<MultiSession>
+          ref={listRef}
           data={visibleSessions}
           keyExtractor={(item) => `${item.serverId}::${item.id}`}
           renderItem={({ item }) => <SessionCard session={item} />}

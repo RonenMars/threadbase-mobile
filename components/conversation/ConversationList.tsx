@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -146,6 +146,15 @@ export function ConversationList({
   headerRight,
 }: Props) {
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+  const listRef = useRef<FlashList<MultiConversation | string>>(null)
+  const hasScrolledToBottom = useRef(false)
+
+  useEffect(() => {
+    if (conversations.length > 0 && !hasScrolledToBottom.current) {
+      hasScrolledToBottom.current = true
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100)
+    }
+  }, [conversations.length])
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
 
@@ -205,6 +214,7 @@ export function ConversationList({
       </View>
 
       <FlashList
+        ref={listRef}
         data={listData}
         keyExtractor={keyExtractor}
         getItemType={getItemType}
