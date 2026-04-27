@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -15,10 +15,19 @@ import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useBrowse, useCreateDirectory, useStartSession } from '@/hooks/useBrowse'
+import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
 import { dark, font, radius, spacing } from '@/constants/theme'
+
+const MAX_RECENT_DIRS = 8
+
+interface RecentDir {
+  path: string
+  name: string
+  lastUsedAt: string
+}
 
 export default function BrowseScreen() {
   const router = useRouter()
@@ -27,6 +36,29 @@ export default function BrowseScreen() {
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [isRecentsOpen, setIsRecentsOpen] = useState(true)
+
+  const { data: allSessions = [] } = useSessions()
+  const recentDirs = useMemo<RecentDir[]>(() => {
+    if (!serverId) return []
+    const seen = new Set<string>()
+    const dirs: RecentDir[] = []
+    const sorted = [...allSessions]
+      .filter((s) => s.serverId === serverId && s.projectPath)
+      .sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
+    for (const session of sorted) {
+      const path = session.projectPath
+      if (seen.has(path)) continue
+      seen.add(path)
+      dirs.push({
+        path,
+        name: path.split('/').filter(Boolean).pop() ?? path,
+        lastUsedAt: session.startedAt,
+      })
+      if (dirs.length >= MAX_RECENT_DIRS) break
+    }
+    return dirs
+  }, [allSessions, serverId])
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
@@ -127,6 +159,24 @@ export default function BrowseScreen() {
     )
   }, [currentPath, serverId, startSession, router])
 
+  const handleStartFromRecent = useCallback(
+    (dir: RecentDir) => {
+      startSession.mutate(
+        { path: dir.path, projectName: dir.name },
+        {
+          onSuccess: (session) => {
+            router.dismiss()
+            router.push(`/session/${session.id}?server=${serverId}`)
+          },
+          onError: (err) => {
+            Alert.alert('Failed to start session', err.message)
+          },
+        },
+      )
+    },
+    [serverId, startSession, router],
+  )
+
   const renderItem = useCallback(
     ({ item }: { item: { name: string } }) => {
       const childPath = currentPath ? `${currentPath}/${item.name}` : item.name
@@ -167,6 +217,48 @@ export default function BrowseScreen() {
           </React.Fragment>
         ))}
       </View>
+
+      {/* Recent directories accordion (only when this server has prior sessions) */}
+      {recentDirs.length > 0 ? (
+        <View style={styles.recents}>
+          <TouchableOpacity
+            style={styles.recentsHeader}
+            onPress={() => setIsRecentsOpen((open) => !open)}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isRecentsOpen ? 'Hide recent directories' : 'Show recent directories'
+            }
+          >
+            <Text style={styles.recentsHeaderText}>
+              Recent directories ({recentDirs.length})
+            </Text>
+            <Text style={styles.recentsChevron}>{isRecentsOpen ? '▾' : '▸'}</Text>
+          </TouchableOpacity>
+          {isRecentsOpen ? (
+            <View style={styles.recentsList}>
+              {recentDirs.map((dir) => (
+                <TouchableOpacity
+                  key={dir.path}
+                  style={styles.recentRow}
+                  onPress={() => handleStartFromRecent(dir)}
+                  disabled={startSession.isPending}
+                >
+                  <Text style={styles.recentIcon}>🕘</Text>
+                  <View style={styles.recentTextWrap}>
+                    <Text style={styles.recentName} numberOfLines={1}>
+                      {dir.name}
+                    </Text>
+                    <Text style={styles.recentPath} numberOfLines={1}>
+                      {dir.path}
+                    </Text>
+                  </View>
+                  <Text style={styles.chevron}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* Directory list */}
       <View style={styles.listContainer}>
@@ -278,6 +370,54 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
+  },
+  recents: {
+    borderBottomWidth: 1,
+    borderBottomColor: dark.border,
+  },
+  recentsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: dark.bg.secondary,
+  },
+  recentsHeaderText: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  recentsChevron: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+  },
+  recentsList: {
+    paddingVertical: spacing.xs,
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  recentIcon: {
+    fontSize: 16,
+    marginRight: spacing.md,
+  },
+  recentTextWrap: {
+    flex: 1,
+  },
+  recentName: {
+    color: dark.text.primary,
+    fontSize: font.base,
+  },
+  recentPath: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+    marginTop: 2,
   },
   skeletons: {
     padding: spacing.lg,
