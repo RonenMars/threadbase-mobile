@@ -1,3 +1,4 @@
+import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
 import {
