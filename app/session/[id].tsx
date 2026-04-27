@@ -32,6 +32,7 @@ import {
 } from '@/services/uploads'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
+import { InfoModal } from '@/components/shared/InfoModal'
 
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -62,6 +63,7 @@ export default function SessionDetailScreen() {
   const [attachments, setAttachments] = useState<UploadedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
+  const [infoVisible, setInfoVisible] = useState(false)
 
   const isStoppable =
     session?.source !== 'discovered' &&
@@ -97,6 +99,16 @@ export default function SessionDetailScreen() {
     if (!session) return
     navigation.setOptions({
       title: session.projectName,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setInfoVisible(true)}
+          hitSlop={8}
+          accessibilityLabel="Session info"
+          style={{ paddingHorizontal: spacing.xs }}
+        >
+          <Ionicons name="information-circle-outline" size={22} color={dark.text.secondary} />
+        </TouchableOpacity>
+      ),
     })
   }, [session, navigation])
 
@@ -353,6 +365,28 @@ export default function SessionDetailScreen() {
             setPlanVisible(false)
             setPendingPlan(null)
           }}
+        />
+      ) : null}
+
+      {session ? (
+        <InfoModal
+          visible={infoVisible}
+          onClose={() => setInfoVisible(false)}
+          title="Session Info"
+          fields={[
+            { label: 'ID', value: session.id },
+            { label: 'Project Name', value: session.projectName },
+            { label: 'Project Path', value: session.projectPath },
+            { label: 'Branch', value: session.branch },
+            { label: 'Machine', value: session.machineName },
+            { label: 'Status', value: session.status },
+            { label: 'Source', value: session.source },
+            { label: 'Prompt Count', value: String(session.promptCount) },
+            { label: 'Elapsed', value: formatElapsed(session.elapsedMs) },
+            { label: 'Started At', value: session.startedAt },
+            { label: 'Completed At', value: session.completedAt },
+            { label: 'Conversation ID', value: session.conversationId },
+          ]}
         />
       ) : null}
     </SafeAreaView>

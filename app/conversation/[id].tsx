@@ -11,6 +11,7 @@ import {
   NativeSyntheticEvent,
   type ListRenderItemInfo,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
@@ -22,6 +23,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
+import { InfoModal } from '@/components/shared/InfoModal'
 import type { Message, MessageContent } from '@/types/api'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
@@ -82,6 +84,7 @@ export default function ConversationDetailScreen() {
   const hasInitialScrolled = useRef(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const [infoVisible, setInfoVisible] = useState(false)
 
   useEffect(() => {
     hasInitialScrolled.current = false
@@ -89,7 +92,19 @@ export default function ConversationDetailScreen() {
 
   useEffect(() => {
     if (conversation) {
-      navigation.setOptions({ title: conversation.title })
+      navigation.setOptions({
+        title: conversation.title,
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => setInfoVisible(true)}
+            hitSlop={8}
+            accessibilityLabel="Conversation info"
+            style={{ paddingHorizontal: spacing.xs }}
+          >
+            <Ionicons name="information-circle-outline" size={22} color={dark.text.secondary} />
+          </TouchableOpacity>
+        ),
+      })
     }
   }, [conversation, navigation])
 
@@ -252,6 +267,25 @@ export default function ConversationDetailScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <InfoModal
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+        title="Conversation Info"
+        fields={[
+          { label: 'ID', value: conversation.id },
+          { label: 'Title', value: conversation.title },
+          { label: 'Session Name', value: conversation.sessionName },
+          { label: 'Project Path', value: conversation.projectPath },
+          { label: 'File Path', value: conversation.filePath },
+          { label: 'Branch', value: conversation.branch },
+          { label: 'Account', value: conversation.account },
+          { label: 'Model', value: conversation.model },
+          { label: 'Message Count', value: String(conversation.messageCount) },
+          { label: 'Total Tokens', value: conversation.totalTokens != null ? String(conversation.totalTokens) : undefined },
+          { label: 'Last Activity', value: conversation.lastActivity },
+        ]}
+      />
     </SafeAreaView>
   )
 }
