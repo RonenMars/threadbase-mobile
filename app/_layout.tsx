@@ -1,5 +1,6 @@
 import '../global.css'
 import React, { useEffect, useState } from 'react'
+import { TouchableOpacity } from 'react-native'
 import {
   Stack,
   useGlobalSearchParams,
@@ -7,6 +8,7 @@ import {
   useRouter,
   useSegments,
 } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { StatusBar } from 'expo-status-bar'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { queryClient, queryPersister, persistBuster } from '@/services/query-client'
@@ -169,19 +171,23 @@ export default function RootLayout() {
                 headerTintColor: '#e6edf3',
                 headerShadowVisible: false,
                 contentStyle: { backgroundColor: '#0d1117' },
+                headerLeft: ({ canGoBack, navigation, tintColor }) =>
+                  canGoBack ? (
+                    <TouchableOpacity
+                      onPress={() => navigation.goBack()}
+                      hitSlop={16}
+                      style={{ paddingHorizontal: 4 }}
+                    >
+                      <Ionicons name="chevron-back" size={28} color={tintColor ?? '#e6edf3'} />
+                    </TouchableOpacity>
+                  ) : null,
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="session/[id]"
-                options={{ title: 'Session', headerBackTitle: 'Back' }}
-              />
-              <Stack.Screen
-                name="conversation/[id]"
-                options={{ title: 'Conversation', headerBackTitle: 'Back' }}
-              />
+              <Stack.Screen name="session/[id]" options={{ title: 'Session' }} />
+              <Stack.Screen name="conversation/[id]" options={{ title: 'Conversation' }} />
               <Stack.Screen
                 name="browse"
                 options={{
