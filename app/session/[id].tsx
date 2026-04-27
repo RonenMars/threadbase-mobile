@@ -330,22 +330,8 @@ export default function SessionDetailScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            <TouchableOpacity
-              style={styles.queueBtn}
-              onPress={() => setQueueVisible(true)}
-              accessibilityLabel="Open prompt queue"
-            >
-              <Text style={styles.queueBtnText}>Queue</Text>
-            </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.queueBtnBottom}
-            onPress={() => setQueueVisible(true)}
-          >
-            <Text style={styles.queueBtnText}>Prompt Queue</Text>
-          </TouchableOpacity>
-        )}
+        ) : null}
       </KeyboardAvoidingView>
 
       {session ? (
