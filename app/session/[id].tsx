@@ -97,25 +97,8 @@ export default function SessionDetailScreen() {
     if (!session) return
     navigation.setOptions({
       title: session.projectName,
-      headerRight: isStoppable
-        ? () => (
-            <TouchableOpacity
-              onPress={handleStop}
-              disabled={cancelSession.isPending}
-              accessibilityLabel="Stop session"
-              hitSlop={8}
-              style={styles.stopBtn}
-            >
-              {cancelSession.isPending ? (
-                <ActivityIndicator size="small" color={dark.status.failed} />
-              ) : (
-                <Ionicons name="stop-circle" size={26} color={dark.status.failed} />
-              )}
-            </TouchableOpacity>
-          )
-        : undefined,
     })
-  }, [session, navigation, isStoppable, cancelSession.isPending])
+  }, [session, navigation])
 
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
