@@ -52,7 +52,6 @@ async function persistServerList(
   order: string[],
   displayedServerIds: string[],
 ) {
-  const AsyncStorage = await getAsyncStorage()
   const list: PersistedServer[] = order
     .filter((id) => Boolean(servers[id]))
     .map((id) => ({
@@ -64,7 +63,8 @@ async function persistServerList(
     list,
     displayedServerIds: displayedServerIds.filter((id) => order.includes(id)),
   }
-  await AsyncStorage.setItem(ASYNC_KEY_SERVERS, JSON.stringify(payload))
+  // SecureStore uses iOS Keychain, which survives app uninstalls
+  await SecureStore.setItemAsync(ASYNC_KEY_SERVERS, JSON.stringify(payload))
 }
 
 function defaultDisplayedServerIds(order: string[]): string[] {
@@ -116,9 +116,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const activeServerIds = state.activeServerIds.includes(id)
         ? state.activeServerIds
         : [...state.activeServerIds, id]
-      const displayedServerIds = state.displayedServerIds.length <= 1
-        ? [id]
-        : state.displayedServerIds
+      const displayedServerIds = state.displayedServerIds.includes(id)
+        ? state.displayedServerIds
+        : [...state.displayedServerIds, id]
       // Persist asynchronously (fire-and-forget from set callback)
       persistServerList(servers, activeServerIds, displayedServerIds)
       return { servers, activeServerIds, displayedServerIds }
@@ -178,8 +178,15 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     try {
       const AsyncStorage = await getAsyncStorage()
 
-      // ── Try new multi-server format first ──
-      const raw = await AsyncStorage.getItem(ASYNC_KEY_SERVERS)
+      // ── Try SecureStore first (survives uninstall on iOS), then migrate from AsyncStorage ──
+      const secureRaw = await SecureStore.getItemAsync(ASYNC_KEY_SERVERS)
+      const asyncRaw = secureRaw ? null : await AsyncStorage.getItem(ASYNC_KEY_SERVERS)
+      if (asyncRaw) {
+        // Migrate existing AsyncStorage data to SecureStore
+        await SecureStore.setItemAsync(ASYNC_KEY_SERVERS, asyncRaw)
+        await AsyncStorage.removeItem(ASYNC_KEY_SERVERS)
+      }
+      const raw = secureRaw ?? asyncRaw
       if (raw) {
         const parsed: unknown = JSON.parse(raw)
         const legacyList = Array.isArray(parsed) ? (parsed as PersistedServer[]) : null

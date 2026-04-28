@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, radius, spacing } from '@/constants/theme'
@@ -69,6 +69,13 @@ export function ServerFilterSheet({
     if (sortType) setDraftSort(sortType)
   }, [sortType, visible])
 
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />
+    ),
+    [],
+  )
+
   if (!visible) return null
 
   const showStatusFilter = Boolean(onChangeStatuses)
@@ -81,11 +88,17 @@ export function ServerFilterSheet({
       index={0}
       enablePanDownToClose
       onClose={onClose}
+      backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>
-        <Text style={styles.title}>Filters</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Filters</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
 
         {showSortFilter ? (
           <View style={styles.section}>
@@ -189,7 +202,10 @@ const styles = StyleSheet.create({
   sheetBg: { backgroundColor: dark.bg.secondary },
   handle: { backgroundColor: dark.border },
   content: { flex: 1, padding: spacing.md, gap: spacing.md },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
+  closeButton: { padding: spacing.xs },
+  closeButtonText: { color: dark.text.secondary, fontSize: font.lg, lineHeight: font.lg },
   section: { gap: spacing.sm },
   sectionHeader: {
     flexDirection: 'row',
