@@ -173,16 +173,16 @@ export default function RootLayout() {
                 headerTintColor: '#e6edf3',
                 headerShadowVisible: false,
                 contentStyle: { backgroundColor: '#0d1117' },
-                headerLeft: ({ canGoBack, tintColor }) =>
-                  canGoBack ? (
-                    <TouchableOpacity
-                      onPress={() => router.back()}
-                      hitSlop={16}
-                      style={{ paddingHorizontal: 4 }}
-                    >
-                      <Ionicons name="chevron-back" size={28} color={tintColor ?? '#e6edf3'} />
-                    </TouchableOpacity>
-                  ) : null,
+                headerLeft: ({ tintColor }) => (
+                  <TouchableOpacity
+                    onPress={() => router.back()}
+                    hitSlop={16}
+                    activeOpacity={1}
+                    style={{ paddingHorizontal: 4 }}
+                  >
+                    <Ionicons name="chevron-back" size={28} color={tintColor ?? '#e6edf3'} />
+                  </TouchableOpacity>
+                ),
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />

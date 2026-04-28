@@ -92,7 +92,7 @@ export default function BrowseScreen() {
     navigation.setOptions({
       headerLeft: currentPath
         ? () => (
-            <TouchableOpacity onPress={goBack} style={{ marginLeft: 8, paddingRight: 16 }}>
+            <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginLeft: 8, paddingRight: 16 }}>
               <Text style={{ color: dark.text.accent, fontSize: font.base }}>‹ Back</Text>
             </TouchableOpacity>
           )
