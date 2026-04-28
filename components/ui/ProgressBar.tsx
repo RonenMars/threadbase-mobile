@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { View, Text, Animated, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, Animated, StyleSheet } from 'react-native'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
 interface Props {
@@ -23,16 +23,9 @@ export function ProgressBar({ loaded, total, label, isCounting = false }: Props)
 
   return (
     <View style={styles.container}>
-      {isCounting ? (
-        <View style={styles.countingRow}>
-          <ActivityIndicator size="small" color={dark.text.secondary} />
-          <Text style={styles.label}>Counting {label}…</Text>
-        </View>
-      ) : (
-        <Text style={styles.label}>
-          {loaded.toLocaleString()} / {total.toLocaleString()} {label}
-        </Text>
-      )}
+      <Text style={styles.label}>
+        {loaded.toLocaleString()} / {total.toLocaleString()} {label}
+      </Text>
       <View style={styles.track}>
         <Animated.View
           style={[
@@ -55,12 +48,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  countingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing.sm,
   },
   label: {
