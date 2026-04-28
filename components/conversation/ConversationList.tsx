@@ -7,8 +7,8 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  FlatList,
 } from 'react-native'
-import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { SkeletonBox } from '@/components/ui/Skeleton'
@@ -71,8 +71,6 @@ const ConversationRow = React.memo(function ConversationRow({ conversation: c, s
   const router = useRouter()
   const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
   const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
-  // iOS reserves vertical space for embedded \n inside a Text with numberOfLines={1},
-  // making rows with multi-line previews mysteriously tall and breaking FlashList cell recycling.
   const previewText = (msg?.text ?? c.preview)?.replace(/\s+/g, ' ').trim()
   return (
     <TouchableOpacity
@@ -124,7 +122,7 @@ interface Props {
   onEndReached: () => void
   searchQuery: string
   onSearchChange: (q: string) => void
-  /** First page still loading — show skeleton rows (FlashList keeps list virtualization). */
+  /** First page still loading — show skeleton rows. */
   isLoadingInitial?: boolean
   isFetchingNextPage?: boolean
   headerRight?: React.ReactNode
@@ -154,19 +152,6 @@ export function ConversationList({
       typeof item === 'string' ? item : `${item.serverId}::${item.id}`,
     [],
   )
-
-  // Bucket items by which optional rows they render. FlashList v2 recycles
-  // cells; if a cell that previously held a 4-line row (sessionName + tokens)
-  // gets reused for a 3-line row, the slot keeps its old measured height and
-  // the row renders with empty space inside it. Giving each shape a distinct
-  // type keeps recycling within compatible buckets.
-  const getItemType = useCallback((item: MultiConversation | string) => {
-    if (typeof item === 'string') return 'skeleton'
-    const session = item.sessionName ? 's' : ''
-    const tokens = item.totalTokens ? 't' : ''
-    const preview = item.firstMessage?.text || item.lastMessage?.text || item.preview ? 'p' : ''
-    return `conv:${session}${tokens}${preview}` || 'conv:plain'
-  }, [])
 
   const renderItem = useCallback(
     ({ item }: { item: MultiConversation | string }) =>
@@ -205,13 +190,11 @@ export function ConversationList({
         {headerRight}
       </View>
 
-      <FlashList
+      <FlatList
         data={listData}
         keyExtractor={keyExtractor}
-        getItemType={getItemType}
         renderItem={renderItem}
         onEndReached={skeletonMode ? undefined : onEndReached}
-        estimatedItemSize={100}
         onEndReachedThreshold={0.35}
         refreshControl={refreshControl}
         ItemSeparatorComponent={Separator}
