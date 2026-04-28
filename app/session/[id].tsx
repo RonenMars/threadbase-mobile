@@ -69,6 +69,23 @@ export default function SessionDetailScreen() {
     session?.source !== 'discovered' &&
     (session?.status === 'running' || session?.status === 'waiting_input')
 
+  // Auto-redirect orphaned managed sessions to their conversation view, where the
+  // JSONL history is rendered and a "Resume Session" button can spawn a fresh PTY.
+  // Only fires once we know the session is truly empty (history loaded, not streaming)
+  // to avoid bouncing fresh sessions whose first byte hasn't arrived yet.
+  useEffect(() => {
+    if (
+      session?.source === 'managed' &&
+      session.status === 'failed' &&
+      session.conversationId &&
+      !isLoadingHistory &&
+      !isStreaming &&
+      lines.length === 0
+    ) {
+      router.replace(`/conversation/${session.conversationId}?server=${serverId}`)
+    }
+  }, [session, isLoadingHistory, isStreaming, lines.length, router, serverId])
+
   const handleStop = () => {
     Alert.alert(
       'Stop Claude Code?',
@@ -228,6 +245,22 @@ export default function SessionDetailScreen() {
               {session.projectPath ? (
                 <Text style={styles.discoveredPath}>{session.projectPath}</Text>
               ) : null}
+              {session.conversationId ? (
+                <TouchableOpacity
+                  style={styles.viewConversationBtn}
+                  onPress={() => router.push(`/conversation/${session.conversationId}?server=${serverId}`)}
+                >
+                  <Text style={styles.viewConversationBtnText}>View Conversation</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : !isLoadingHistory && lines.length === 0 && !isStreaming && session?.source === 'managed' ? (
+            <View style={styles.discoveredInfo}>
+              <Text style={styles.discoveredTitle}>No terminal output</Text>
+              <Text style={styles.discoveredText}>
+                This session has no buffered terminal output.{'\n'}
+                Send a prompt below, or open the conversation history.
+              </Text>
               {session.conversationId ? (
                 <TouchableOpacity
                   style={styles.viewConversationBtn}
