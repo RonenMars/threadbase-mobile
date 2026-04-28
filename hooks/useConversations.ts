@@ -26,6 +26,21 @@ function sortByLastActivityDesc(a: MultiConversation, b: MultiConversation): num
   return toEpochMs(b.lastActivity) - toEpochMs(a.lastActivity)
 }
 
+// Paginated fetches across servers can yield the same conversation twice when
+// rows reorder between the count and a page fetch (last_updated_at moves the
+// row across an offset boundary). Drop later duplicates so FlatList keys stay unique.
+function dedupeByServerAndId(items: MultiConversation[]): MultiConversation[] {
+  const seen = new Set<string>()
+  const out: MultiConversation[] = []
+  for (const item of items) {
+    const key = `${item.serverId}::${item.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(item)
+  }
+  return out
+}
+
 function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, limit: number): ConversationPage {
   // Server may return ConversationPage directly (camelCase) or RawSessionMeta[] (snake_case array)
   if (!Array.isArray(raw)) {
@@ -99,7 +114,7 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
       // Sort by lastActivity descending
       merged.sort(sortByLastActivityDesc)
 
-      return { conversations: merged, hasMore: anyHasMore }
+      return { conversations: dedupeByServerAndId(merged), hasMore: anyHasMore }
     },
     getNextPageParam: (last: MultiConversationPage, _allPages, lastPageParam) =>
       last.hasMore ? (lastPageParam as number) + limit : undefined,
@@ -332,7 +347,7 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
     for (const q of pageQueries) {
       if (q.isSuccess && q.data) all.push(...q.data)
     }
-    return all.sort(sortByLastActivityDesc)
+    return dedupeByServerAndId(all.sort(sortByLastActivityDesc))
   }, [pageQueries])
 
   return { conversations, loaded, total, isDone, isCounting: !countsDone }
@@ -362,8 +377,9 @@ export function useConversationSearch(query: string) {
       }
 
       merged.sort(sortByLastActivityDesc)
+      const deduped = dedupeByServerAndId(merged)
 
-      return { conversations: merged, hasMore: false, offset: 0, total: merged.length }
+      return { conversations: deduped, hasMore: false, offset: 0, total: deduped.length }
     },
     enabled: query.length > 0 && displayedServerIds.length > 0,
   })

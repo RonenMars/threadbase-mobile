@@ -8,6 +8,20 @@ interface PerServerSessions {
   sessions: Session[]
 }
 
+// Defensive: backend can occasionally return the same session twice across
+// refetches in flight. Keep first occurrence so FlatList keys stay unique.
+function dedupeByServerAndId(items: MultiSession[]): MultiSession[] {
+  const seen = new Set<string>()
+  const out: MultiSession[] = []
+  for (const item of items) {
+    const key = `${item.serverId}::${item.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(item)
+  }
+  return out
+}
+
 export function useSessions() {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -31,7 +45,7 @@ export function useSessions() {
           merged.push({ ...s, serverId, serverLabel: label })
         }
       }
-      return merged
+      return dedupeByServerAndId(merged)
     },
     enabled: activeServerIds.length > 0,
   })
@@ -73,15 +87,16 @@ export function useEagerSessions() {
     activeServerIds.length === 0 ||
     (countsDone && sessionQueries.every((q) => q.isSuccess || q.isError))
 
-  const sessions: MultiSession[] = []
+  const rawSessions: MultiSession[] = []
   for (let i = 0; i < activeServerIds.length; i++) {
     const serverId = activeServerIds[i]
     const label = servers[serverId]?.label
     const data = sessionQueries[i]?.data ?? []
     for (const s of data) {
-      sessions.push({ ...s, serverId, serverLabel: label })
+      rawSessions.push({ ...s, serverId, serverLabel: label })
     }
   }
+  const sessions = dedupeByServerAndId(rawSessions)
 
   const refetch = async () => {
     await Promise.all([
