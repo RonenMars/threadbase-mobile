@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, memo } from 'react'
+import React, { useRef, useState, useCallback, memo, useEffect } from 'react'
 import {
   FlatList,
   Text,
@@ -65,6 +65,11 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const [showJumpButton, setShowJumpButton] = useState(false)
   const [showTopButton, setShowTopButton] = useState(false)
   const isAtBottomRef = useRef(true)
+  const isStreamingRef = useRef(isStreaming)
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
+  useEffect(() => () => { if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current) }, [])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
@@ -117,8 +122,16 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         renderItem={renderItem}
         onScroll={handleScroll}
         scrollEventThrottle={100}
+        onScrollBeginDrag={() => { isAtBottomRef.current = false }}
         onContentSizeChange={() => {
-          if (isAtBottomRef.current) {
+          if (!isAtBottomRef.current) return
+          if (isStreamingRef.current) {
+            if (scrollTimerRef.current !== null) return
+            scrollTimerRef.current = setTimeout(() => {
+              scrollTimerRef.current = null
+              if (isAtBottomRef.current) listRef.current?.scrollToEnd({ animated: false })
+            }, 100)
+          } else {
             listRef.current?.scrollToEnd({ animated: false })
           }
         }}
