@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
-import { createApiForServer } from '@/services/api-client'
+import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
 
 interface TerminalHistoryResponse {
@@ -11,6 +11,7 @@ interface TerminalHistoryResponse {
 }
 
 const FIVE_MINUTES = 1000 * 60 * 5
+const EMPTY_HISTORY: TerminalHistoryResponse = { output: '' }
 
 export function useTerminalStream(serverId: string, sessionId: string) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
@@ -20,9 +21,16 @@ export function useTerminalStream(serverId: string, sessionId: string) {
 
   const historyQuery = useQuery({
     queryKey: ['terminal-output', serverId, sessionId],
-    queryFn: () => {
+    queryFn: async () => {
       const api = createApiForServer(serverId)
-      return api.get<TerminalHistoryResponse>(`/api/sessions/${sessionId}/output`)
+      try {
+        return await api.get<TerminalHistoryResponse>(`/api/sessions/${sessionId}/output`)
+      } catch (err) {
+        // Older streamers 404 when the PTY isn't tracked (e.g. orphaned after a
+        // restart). Treat as no buffered output rather than surfacing an error.
+        if (err instanceof NotFoundError) return EMPTY_HISTORY
+        throw err
+      }
     },
     enabled: Boolean(serverId && sessionId),
     staleTime: FIVE_MINUTES,
