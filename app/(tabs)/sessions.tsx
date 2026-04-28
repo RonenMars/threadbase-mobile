@@ -13,7 +13,8 @@ import { SessionCard } from '@/components/sessions/SessionCard'
 import { ServerFilterSheet, type SortType } from '@/components/servers/ServerFilterSheet'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { useSessions } from '@/hooks/useSession'
+import { useEagerSessions } from '@/hooks/useSession'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useFocusRefetch } from '@/hooks/useFocusRefetch'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
@@ -43,9 +44,10 @@ function getStatusLabel(total: number, connectedCount: number, allConnected: boo
 }
 
 export default function SessionsScreen() {
-  const { data: sessions = [], refetch, isPending } = useSessions()
+  const { sessions, loaded, total, isDone, isCounting, refetch } = useEagerSessions()
   const hasLoadedOnce = useRef(false)
-  if (!isPending) hasLoadedOnce.current = true
+  if (isDone) hasLoadedOnce.current = true
+  const isPending = !isDone && !hasLoadedOnce.current
   const listRef = useRef<FlatList<MultiSession>>(null)
   const hasScrolledToBottom = useRef(false)
   const sessionsInitialLoad = isPending && !hasLoadedOnce.current
@@ -97,11 +99,13 @@ export default function SessionsScreen() {
     setManualRefreshing(false)
   }
 
-  const total = activeServerIds.length
-  const allConnected = connectedCount === total && total > 0
+  const showProgress = isPending && !hasLoadedOnce.current
+
+  const serverCount = activeServerIds.length
+  const allConnected = connectedCount === serverCount && serverCount > 0
   const someConnected = connectedCount > 0
   const statusColor = getStatusColor(allConnected, someConnected)
-  const statusLabel = getStatusLabel(total, connectedCount, allConnected)
+  const statusLabel = getStatusLabel(serverCount, connectedCount, allConnected)
 
   const isReloading = sessionsInitialLoad || isFocusFetching
   const listEmpty = visibleSessions.length === 0
@@ -126,6 +130,9 @@ export default function SessionsScreen() {
       </View>
 
       <View style={styles.listWrapper}>
+        {showProgress ? (
+          <ProgressBar loaded={loaded} total={total} label="sessions" isCounting={isCounting} />
+        ) : null}
         <FlatList<MultiSession>
           ref={listRef}
           data={visibleSessions}

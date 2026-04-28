@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation } from '@/types/api'
@@ -246,6 +246,13 @@ export function useConversation(serverId: string, id: string) {
     return mergeConversationPages(query.data.pages)
   }, [query.data])
 
+  const firstPage = query.data?.pages[0]
+  const totalMessages = firstPage?.message_pagination?.total ?? 0
+  const loadedMessages = useMemo(
+    () => (query.data?.pages ?? []).reduce((sum, p) => sum + p.messages.length, 0),
+    [query.data],
+  )
+
   return {
     data,
     error: query.error,
@@ -255,7 +262,80 @@ export function useConversation(serverId: string, id: string) {
     fetchNextPage: query.fetchNextPage,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
+    totalMessages,
+    loadedMessages,
   }
+}
+
+export function useEagerConversations(filter?: ConversationFilter, refreshEpoch = 0) {
+  const limit = 50
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
+  const servers = useServersStore((s) => s.servers)
+
+  // Step 1: fetch total count per server (fires immediately, warms scanner cache)
+  const countQueries = useQueries({
+    queries: displayedServerIds.map((serverId) => ({
+      queryKey: ['conversations-count', serverId, filter, refreshEpoch],
+      queryFn: () => {
+        const params = new URLSearchParams()
+        if (filter?.projectPath) params.set('project', filter.projectPath)
+        if (refreshEpoch > 0) params.set('refresh', '1')
+        const qs = params.toString()
+        return createApiForServer(serverId).get<{ total: number }>(
+          `/api/conversations/count${qs ? `?${qs}` : ''}`,
+        )
+      },
+      enabled: displayedServerIds.length > 0,
+    })),
+  })
+
+  const countsDone = displayedServerIds.length === 0 || countQueries.every((q) => q.isSuccess || q.isError)
+  const serverTotals = countQueries.map((q) => q.data?.total ?? 0)
+  const total = serverTotals.reduce((a, b) => a + b, 0)
+
+  // Step 2: once counts are known, fire all pages in parallel
+  const pageQueryDefs = countsDone
+    ? displayedServerIds.flatMap((serverId, i) => {
+        const serverTotal = serverTotals[i]
+        const pageCount = Math.ceil(serverTotal / limit)
+        return Array.from({ length: pageCount }, (_, page) => ({
+          queryKey: ['conversations-page', serverId, page * limit, filter, refreshEpoch],
+          queryFn: async () => {
+            const params = new URLSearchParams()
+            if (filter?.projectPath) params.set('project', filter.projectPath)
+            params.set('limit', String(limit))
+            params.set('offset', String(page * limit))
+            const raw = await createApiForServer(serverId).get<RawSessionMeta[] | ConversationPage>(
+              `/api/conversations?${params.toString()}`,
+            )
+            const label = servers[serverId]?.label
+            return adaptPage(raw, page * limit, limit).conversations.map(
+              (c): MultiConversation => ({ ...c, serverId, serverLabel: label }),
+            )
+          },
+        }))
+      })
+    : []
+
+  const pageQueries = useQueries({ queries: pageQueryDefs })
+
+  const loaded = pageQueries
+    .filter((q) => q.isSuccess)
+    .reduce((sum, q) => sum + (q.data?.length ?? 0), 0)
+
+  const isDone =
+    displayedServerIds.length === 0 ||
+    (countsDone && (pageQueryDefs.length === 0 || pageQueries.every((q) => q.isSuccess || q.isError)))
+
+  const conversations = useMemo(() => {
+    const all: MultiConversation[] = []
+    for (const q of pageQueries) {
+      if (q.isSuccess && q.data) all.push(...q.data)
+    }
+    return all.sort(sortByLastActivityDesc)
+  }, [pageQueries])
+
+  return { conversations, loaded, total, isDone, isCounting: !countsDone }
 }
 
 export function useConversationSearch(query: string) {

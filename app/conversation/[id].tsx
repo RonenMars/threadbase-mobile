@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ToolCard } from '@/components/conversation/ToolCard'
@@ -79,16 +80,27 @@ export default function ConversationDetailScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    totalMessages,
+    loadedMessages,
   } = useConversation(serverId, id)
   const listRef = useRef<FlatList<Message>>(null)
   const hasInitialScrolled = useRef(false)
+  const hasStartedAutoScroll = useRef(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
 
   useEffect(() => {
     hasInitialScrolled.current = false
+    hasStartedAutoScroll.current = false
   }, [id])
+
+  useEffect(() => {
+    if (!conversation || hasStartedAutoScroll.current) return
+    hasStartedAutoScroll.current = true
+    const t = setTimeout(() => { hasInitialScrolled.current = true }, 600)
+    return () => clearTimeout(t)
+  }, [conversation])
 
   useEffect(() => {
     if (conversation) {
@@ -108,14 +120,17 @@ export default function ConversationDetailScreen() {
     }
   }, [conversation, navigation])
 
-  // Scroll to bottom on first open
+  // Auto-fetch all older message pages upfront
   useEffect(() => {
-    if (!conversation || hasInitialScrolled.current || conversation.messages.length === 0) return
-    hasInitialScrolled.current = true
-    setTimeout(() => {
-      listRef.current?.scrollToEnd({ animated: false })
-    }, 50)
-  }, [conversation, id])
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  const handleContentSizeChange = useCallback(() => {
+    if (hasInitialScrolled.current) return
+    listRef.current?.scrollToEnd({ animated: false })
+  }, [])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
@@ -195,9 +210,17 @@ export default function ConversationDetailScreen() {
   if (!conversation) return null
 
   const hasMessages = conversation.messages.length > 0
+  const isLoadingMessages = Boolean(hasNextPage || isFetchingNextPage)
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {isLoadingMessages && totalMessages > 0 ? (
+        <ProgressBar
+          loaded={loadedMessages}
+          total={totalMessages}
+          label="messages"
+        />
+      ) : null}
       {hasMessages ? (
         <View style={styles.listWrapper}>
           <FlatList
@@ -206,6 +229,7 @@ export default function ConversationDetailScreen() {
             keyExtractor={(m) => m.id}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
+            onContentSizeChange={handleContentSizeChange}
             onScroll={handleScroll}
             scrollEventThrottle={100}
             ListHeaderComponent={

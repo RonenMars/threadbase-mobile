@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { ServerBadge } from '@/components/servers/ServerBadge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useServersStore } from '@/stores/servers'
@@ -126,6 +127,7 @@ interface Props {
   isLoadingInitial?: boolean
   isFetchingNextPage?: boolean
   headerRight?: React.ReactNode
+  loadingProgress?: { loaded: number; total: number; isCounting: boolean } | null
 }
 
 function Separator() {
@@ -142,6 +144,7 @@ export function ConversationList({
   isLoadingInitial = false,
   isFetchingNextPage = false,
   headerRight,
+  loadingProgress = null,
 }: Props) {
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const skeletonMode = isLoadingInitial
@@ -190,8 +193,17 @@ export function ConversationList({
         {headerRight}
       </View>
 
+      {loadingProgress ? (
+        <ProgressBar
+          loaded={loadingProgress.loaded}
+          total={loadingProgress.total}
+          label="conversations"
+          isCounting={loadingProgress.isCounting}
+        />
+      ) : null}
+
       <FlatList
-        data={listData}
+        data={loadingProgress ? [] : listData}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onEndReached={skeletonMode ? undefined : onEndReached}
