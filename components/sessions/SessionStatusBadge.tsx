@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
 import { useEffect } from 'react'
 import { dark, font, radius, spacing } from '@/constants/theme'
@@ -23,9 +23,10 @@ const STATUS_COLORS: Record<SessionStatus, string> = {
 
 interface Props {
   status: SessionStatus
+  isRefetching?: boolean
 }
 
-export function SessionStatusBadge({ status }: Props) {
+export function SessionStatusBadge({ status, isRefetching }: Props) {
   const color = STATUS_COLORS[status] ?? dark.text.secondary
   const opacity = useSharedValue(1)
 
@@ -41,7 +42,11 @@ export function SessionStatusBadge({ status }: Props) {
 
   return (
     <View style={styles.row}>
-      <Animated.View style={[styles.dot, { backgroundColor: color }, dotStyle]} />
+      {isRefetching ? (
+        <ActivityIndicator size="small" color={color} style={styles.spinner} />
+      ) : (
+        <Animated.View style={[styles.dot, { backgroundColor: color }, dotStyle]} />
+      )}
       <Text style={[styles.label, { color }]}>{STATUS_LABELS[status]}</Text>
     </View>
   )
@@ -57,6 +62,9 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: radius.full,
+  },
+  spinner: {
+    transform: [{ scale: 0.6 }],
   },
   label: {
     fontSize: font.xs,

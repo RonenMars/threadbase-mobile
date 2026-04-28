@@ -54,7 +54,7 @@ export default function SessionDetailScreen() {
 
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id)
-  const { sendInput, addToQueue, cancelSession } = useSessionActions(serverId, id)
+  const { sendInput, cancelSession } = useSessionActions(serverId, id)
 
   const [inputText, setInputText] = useState('')
   const [queueVisible, setQueueVisible] = useState(false)
@@ -169,14 +169,6 @@ export default function SessionDetailScreen() {
     resetComposer()
   }
 
-  const handleQueueInput = () => {
-    const payload = buildPayload()
-    if (!payload) return
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    addToQueue.mutate(payload)
-    resetComposer()
-  }
-
   const runUpload = async (source: 'camera' | 'library') => {
     setAttachError(null)
     try {
@@ -228,7 +220,7 @@ export default function SessionDetailScreen() {
       >
         {session ? (
           <View style={styles.statusBar}>
-            <SessionStatusBadge status={session.status} />
+            <SessionStatusBadge status={session.status} isRefetching={isStreaming} />
             <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
             <Text style={styles.prompts}>{session.promptCount} prompts</Text>
           </View>
@@ -341,39 +333,21 @@ export default function SessionDetailScreen() {
                 multiline
                 returnKeyType="done"
                 blurOnSubmit
-                onSubmitEditing={isStreaming ? handleQueueInput : handleSendInput}
+                onSubmitEditing={handleSendInput}
               />
-              {isStreaming ? (
-                <TouchableOpacity
-                  style={[
-                    styles.queueAddBtn,
-                    !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
-                  ]}
-                  onPress={handleQueueInput}
-                  disabled={
-                    (!inputText.trim() && attachments.length === 0) || addToQueue.isPending
-                  }
-                  accessibilityLabel="Add to queue"
-                  accessibilityHint="Agent is streaming — your prompt will run after it finishes"
-                >
-                  <Ionicons name="layers-outline" size={18} color="#fff" />
-                  <Text style={styles.queueAddBtnText}>Queue</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.sendBtn,
-                    !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
-                  ]}
-                  onPress={handleSendInput}
-                  disabled={
-                    (!inputText.trim() && attachments.length === 0) || sendInput.isPending
-                  }
-                  accessibilityLabel="Send input"
-                >
-                  <Ionicons name="paper-plane" size={22} color="#fff" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[
+                  styles.sendBtn,
+                  !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
+                ]}
+                onPress={handleSendInput}
+                disabled={
+                  (!inputText.trim() && attachments.length === 0) || sendInput.isPending
+                }
+                accessibilityLabel="Send input"
+              >
+                <Ionicons name="paper-plane" size={22} color="#fff" />
+              </TouchableOpacity>
             </View>
           </View>
         ) : null}
@@ -531,20 +505,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  queueAddBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: dark.text.warning,
-    borderRadius: 10,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-  },
-  queueAddBtnText: {
-    color: '#fff',
-    fontSize: font.sm,
-    fontWeight: '700',
   },
   attachBtn: {
     aspectRatio: 1,
