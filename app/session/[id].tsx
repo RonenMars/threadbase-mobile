@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'flex-end',
     gap: spacing.sm,
   },
   input: {
