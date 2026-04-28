@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  AppState,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDebounce } from 'use-debounce'
@@ -24,17 +25,32 @@ export default function HistoryScreen() {
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const [refreshEpoch, setRefreshEpoch] = useState(0)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [loaderMode, setLoaderMode] = useState<'full' | 'minimal'>('full')
+  const nextLoaderModeRef = useRef<'full' | 'minimal'>('minimal')
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        nextLoaderModeRef.current = 'full'
+      }
+    })
+    return () => sub.remove()
+  }, [])
 
   const { conversations, loaded, total, isDone, isCounting } = useEagerConversations(undefined, refreshEpoch)
   const searchResult = useConversationSearch(debouncedQuery)
 
   const handleRefresh = useCallback(() => {
+    setLoaderMode('full')
     setRefreshEpoch((e) => e + 1)
   }, [])
 
   useFocusRefetch(useCallback(async () => {
+    const mode = nextLoaderModeRef.current
+    nextLoaderModeRef.current = 'minimal'
+    setLoaderMode(mode)
     setRefreshEpoch((e) => e + 1)
   }, []))
 
@@ -44,6 +60,8 @@ export default function HistoryScreen() {
     : conversations
 
   const isError = !isSearching && searchResult.isError
+  const showFullProgress = !isSearching && !isDone && loaderMode === 'full'
+  const showMinimalLoader = !isSearching && !isDone && loaderMode === 'minimal'
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -66,17 +84,13 @@ export default function HistoryScreen() {
           <ConversationList
             conversations={displayedConversations}
             onRefresh={handleRefresh}
-            refreshing={!isSearching && !isDone}
+            refreshing={showFullProgress}
             onEndReached={() => {}}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             isLoadingInitial={false}
             isFetchingNextPage={false}
-            loadingProgress={
-              !isSearching && !isDone
-                ? { loaded, total, isCounting }
-                : null
-            }
+            loadingProgress={showFullProgress ? { loaded, total, isCounting } : null}
             headerRight={
               <View style={styles.headerRight}>
                 {isSearching && searchResult.isFetching ? (
@@ -95,6 +109,11 @@ export default function HistoryScreen() {
               </View>
             }
           />
+          {showMinimalLoader ? (
+            <View style={styles.minimalLoaderCorner} pointerEvents="none">
+              <ActivityIndicator size="small" color={dark.text.secondary} />
+            </View>
+          ) : null}
         </View>
       )}
       <ServerFilterSheet visible={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
@@ -137,6 +156,11 @@ const styles = StyleSheet.create({
   listWrapper: {
     flex: 1,
     position: 'relative',
+  },
+  minimalLoaderCorner: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
   },
   headerRight: {
     flexDirection: 'row',
