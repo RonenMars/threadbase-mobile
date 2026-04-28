@@ -140,6 +140,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const router = useRouter()
   const [splashDone, setSplashDone] = useState(false)
 
   useEffect(() => {
@@ -172,10 +173,10 @@ export default function RootLayout() {
                 headerTintColor: '#e6edf3',
                 headerShadowVisible: false,
                 contentStyle: { backgroundColor: '#0d1117' },
-                headerLeft: ({ canGoBack, navigation, tintColor }) =>
+                headerLeft: ({ canGoBack, tintColor }) =>
                   canGoBack ? (
                     <TouchableOpacity
-                      onPress={() => navigation.goBack()}
+                      onPress={() => router.back()}
                       hitSlop={16}
                       style={{ paddingHorizontal: 4 }}
                     >

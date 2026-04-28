@@ -71,19 +71,6 @@ export default function SessionsScreen() {
     return unsub
   }, [activeServerIds])
 
-  useEffect(() => {
-    if (visibleSessions.length > 0 && !hasScrolledToBottom.current) {
-      hasScrolledToBottom.current = true
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100)
-    }
-  }, [visibleSessions.length])
-
-  const handleRefresh = async () => {
-    setManualRefreshing(true)
-    await refetch()
-    setManualRefreshing(false)
-  }
-
   const visibleSessions = useMemo(() => {
     const filtered = sessions.filter(
       (session) =>
@@ -96,6 +83,19 @@ export default function SessionsScreen() {
     }
     return filtered.sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
   }, [sessions, displayedServerIds, selectedStatuses, sortType])
+
+  useEffect(() => {
+    if (visibleSessions.length > 0 && !hasScrolledToBottom.current) {
+      hasScrolledToBottom.current = true
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100)
+    }
+  }, [visibleSessions.length])
+
+  const handleRefresh = async () => {
+    setManualRefreshing(true)
+    await refetch()
+    setManualRefreshing(false)
+  }
 
   const total = activeServerIds.length
   const allConnected = connectedCount === total && total > 0

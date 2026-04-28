@@ -13,11 +13,11 @@ Notifications.setNotificationHandler({
 })
 
 export async function requestPermissions(): Promise<boolean> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync()
-  if (existingStatus === 'granted') return true
+  const { granted } = await Notifications.getPermissionsAsync()
+  if (granted) return true
 
-  const { status } = await Notifications.requestPermissionsAsync()
-  return status === 'granted'
+  const result = await Notifications.requestPermissionsAsync()
+  return result.granted
 }
 
 export async function registerPushToken(serverId: string): Promise<void> {

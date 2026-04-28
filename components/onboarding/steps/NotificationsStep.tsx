@@ -43,8 +43,8 @@ export function NotificationsStep({ onNext }: Props) {
     }
     setRequesting(true)
     try {
-      const { status } = await Notifications.requestPermissionsAsync()
-      setEnabled(status === 'granted')
+      const { granted } = await Notifications.requestPermissionsAsync()
+      setEnabled(granted)
     } catch {
       // If the OS prompt is unavailable (e.g. simulator quirks), still flip
       // the visual state so the user can advance.

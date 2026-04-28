@@ -8,7 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native'
-import { FlashList } from '@shopify/flash-list'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { SkeletonBox } from '@/components/ui/Skeleton'
@@ -146,7 +146,7 @@ export function ConversationList({
   headerRight,
 }: Props) {
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
-  const listRef = useRef<FlashList<MultiConversation | string>>(null)
+  const listRef = useRef<FlashListRef<MultiConversation | string>>(null)
   const hasScrolledToBottom = useRef(false)
 
   useEffect(() => {
@@ -173,7 +173,8 @@ export function ConversationList({
     if (typeof item === 'string') return 'skeleton'
     const session = item.sessionName ? 's' : ''
     const tokens = item.totalTokens ? 't' : ''
-    return `conv:${session}${tokens}` || 'conv:plain'
+    const preview = item.firstMessage?.text || item.lastMessage?.text || item.preview ? 'p' : ''
+    return `conv:${session}${tokens}${preview}` || 'conv:plain'
   }, [])
 
   const renderItem = useCallback(
@@ -220,6 +221,7 @@ export function ConversationList({
         getItemType={getItemType}
         renderItem={renderItem}
         onEndReached={skeletonMode ? undefined : onEndReached}
+        estimatedItemSize={100}
         onEndReachedThreshold={0.35}
         refreshControl={refreshControl}
         ItemSeparatorComponent={Separator}
@@ -295,7 +297,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    flexWrap: 'wrap',
+    overflow: 'hidden',
   },
   metaText: {
     color: dark.text.secondary,
