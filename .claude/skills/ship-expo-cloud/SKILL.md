@@ -1,14 +1,11 @@
 ---
 name: ship-expo-cloud
 description: >
-  Build, monitor, and publish the Threadbase mobile app via Expo EAS. Covers
-  the full pipeline: EAS Build (dev/preview/production), monitoring build
-  progress, submitting to TestFlight, and releasing to the App Store. Provides
-  both CLI commands and web-dashboard walkthroughs. Use this skill whenever the
-  user mentions building the app, pushing to Expo, checking build status,
-  submitting to TestFlight, publishing to the App Store, or anything related to
-  EAS build/submit workflows. Also trigger when the user asks about app
-  versioning, build profiles, or release management for the mobile app.
+  EAS cloud build and submit pipeline for the Threadbase iOS app. ONLY invoke
+  this skill when the user explicitly types /ship-expo-cloud. Never trigger
+  automatically on "ship", "TestFlight", or general release requests — those
+  go to /expo-local-ship instead. Before running any EAS command, confirm with
+  the user and wait for explicit approval.
 ---
 
 # Expo Deploy

@@ -1,20 +1,15 @@
 ---
 name: expo-local-ship
 description: >
-  Build, test, and ship Expo / React Native apps locally on macOS using
-  native CLI toolchains only — no Xcode UI, no Organizer, no App Store
-  Connect website clicks. The ship pipeline (preflight → install → prebuild
-  → archive → upload → poll → optionally submit) runs as a single command,
-  defaults to TestFlight, and can target App Store production via a flag.
-  Authentication is via App Store Connect API key (`.p8`), pulled from
-  1Password CLI. Also covers local dev iteration (run:ios / run:android),
-  CocoaPods + Gradle troubleshooting, and Expo-specific gotchas. Use this
-  skill whenever the user wants to ship to TestFlight, submit for App
-  Store review, run the app on a simulator/emulator, debug a native build
-  failure, or set up signing on a fresh machine. Triggers: "ship",
-  "TestFlight", "submit to App Store", "run:ios", "run:android",
-  "prebuild", "archive", "expo build", "local build", "simulator",
-  "dev client", "fresh machine setup", "CocoaPods error", "Gradle error".
+  DEFAULT ship skill for Threadbase iOS. Use this for ALL release operations
+  unless the user explicitly invokes /ship-expo-cloud. Builds and ships
+  locally on macOS using native CLI toolchains only — no Xcode UI, no
+  Organizer, no App Store Connect website clicks. Covers: TestFlight uploads,
+  App Store submissions, local dev (run:ios / run:android), CocoaPods +
+  Gradle troubleshooting, and signing setup. Triggers: "ship", "TestFlight",
+  "submit to App Store", "run:ios", "run:android", "prebuild", "archive",
+  "expo build", "local build", "simulator", "dev client", "CocoaPods error",
+  "Gradle error", "fresh machine setup".
 ---
 
 # Expo Local Build & Ship (CLI-only)
