@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  Platform,
 } from 'react-native'
+import Constants from 'expo-constants'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
@@ -228,7 +230,13 @@ export default function SettingsScreen() {
 
         <SectionHeader title="About" />
         <View style={styles.card}>
-          <Text style={styles.aboutText}>Threadbase Mobile v1.0.0</Text>
+          <Text style={styles.aboutText}>
+            {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${
+              Platform.OS === 'ios'
+                ? (Constants.expoConfig?.ios?.buildNumber ?? '—')
+                : (Constants.expoConfig?.android?.versionCode ?? '—')
+            })`}
+          </Text>
           <Text style={styles.aboutSubtext}>AI Agent Control Center</Text>
         </View>
       </ScrollView>

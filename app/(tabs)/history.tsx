@@ -42,6 +42,13 @@ export default function HistoryScreen() {
   const { conversations, loaded, total, isDone, isCounting } = useEagerConversations(undefined, refreshEpoch)
   const searchResult = useConversationSearch(debouncedQuery)
 
+  const prevConversationsRef = useRef<MultiConversation[]>([])
+  useEffect(() => {
+    if (conversations.length > 0) {
+      prevConversationsRef.current = conversations
+    }
+  }, [conversations])
+
   const handleRefresh = useCallback(() => {
     setLoaderMode('full')
     setRefreshEpoch((e) => e + 1)
@@ -57,7 +64,9 @@ export default function HistoryScreen() {
   const isSearching = debouncedQuery.length > 0
   const displayedConversations: MultiConversation[] = isSearching
     ? (searchResult.data?.conversations ?? [])
-    : conversations
+    : showMinimalLoader && conversations.length === 0
+      ? prevConversationsRef.current
+      : conversations
 
   const isError = !isSearching && searchResult.isError
   const showFullProgress = !isSearching && !isDone && loaderMode === 'full'
@@ -159,7 +168,7 @@ const styles = StyleSheet.create({
   },
   minimalLoaderCorner: {
     position: 'absolute',
-    top: spacing.md,
+    top: spacing.md * 2 + 44,
     right: spacing.md,
   },
   headerRight: {
