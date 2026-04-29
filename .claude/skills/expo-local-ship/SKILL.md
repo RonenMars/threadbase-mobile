@@ -243,3 +243,4 @@ or on-demand.
 - **Detect the package manager from the lockfile.** Don't assume npm.
 - **`prebuild` only when `ios/` is missing**, unless the user requested a clean regen. Warn if `ios/` has uncommitted changes before `--clean`.
 - **The script files are canonical.** This document is a spec; `scripts/*` is the implementation. Don't paraphrase script contents inline — link instead.
+- **Commit `app.json` before shipping.** After bumping the build number (and version if changed), stage and commit `app.json` *before* running the archive/upload. Never ship with an uncommitted `app.json`.
