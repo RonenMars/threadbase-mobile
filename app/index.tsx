@@ -4,8 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
-  RefreshControl,
   AppState,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,7 +15,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
-import { SessionCard } from '@/components/sessions/SessionCard'
+import { ClassicSessionsList } from '@/components/sessions/ClassicSessionsList'
 import { ServerFilterSheet, type SortType } from '@/components/servers/ServerFilterSheet'
 import { SortSheet } from '@/components/servers/SortSheet'
 import { FAB } from '@/components/ui/FAB'
@@ -225,19 +223,10 @@ export default function ProjectsHub() {
 
           {/* Classic sessions */}
           {classicTab === 'sessions' ? (
-            <FlatList<MultiSession>
-              data={visibleSessions}
-              keyExtractor={(item) => `${item.serverId}::${item.id}`}
-              renderItem={({ item }) => <SessionCard session={item} />}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={manualRefreshing}
-                  onRefresh={handleSessionsRefresh}
-                  tintColor={dark.text.secondary}
-                />
-              }
+            <ClassicSessionsList
+              sessions={visibleSessions}
+              refreshing={manualRefreshing}
+              onRefresh={handleSessionsRefresh}
             />
           ) : (
             /* Classic history */
@@ -377,9 +366,5 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: dark.text.primary,
     fontWeight: '600',
-  },
-  listContent: {
-    padding: spacing.sm,
-    flexGrow: 1,
   },
 })
