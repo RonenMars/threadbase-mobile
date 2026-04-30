@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   SectionList,
+  RefreshControl,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useDebounce } from 'use-debounce'
 import type { MultiSession, MultiConversation } from '../../../types/api'
 import type { SortBy, SortOrder } from '../../../types/ui'
 import { useProjectGroups, type ProjectGroup } from './useProjectGroups'
+import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { dark, font, spacing } from '@/constants/theme'
 
@@ -181,28 +183,13 @@ export function ProjectHubList({
   )
 
   const renderGroup = useCallback(
-    ({ item }: { item: ProjectGroup }) => {
-      // ProjectHubCard is not yet available; render a placeholder stub
-      const isOpen = openPaths.has(item.projectPath)
-      return (
-        <TouchableOpacity
-          style={styles.groupRow}
-          onPress={() => toggleOpen(item.projectPath)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.groupName} numberOfLines={1}>
-            {item.projectName}
-          </Text>
-          <Text style={styles.groupMeta}>
-            {item.sessions.length} session{item.sessions.length !== 1 ? 's' : ''}
-            {item.conversations.length > 0
-              ? ` · ${item.conversations.length} conversation${item.conversations.length !== 1 ? 's' : ''}`
-              : ''}
-          </Text>
-          <Text style={styles.chevron}>{isOpen ? '▲' : '▼'}</Text>
-        </TouchableOpacity>
-      )
-    },
+    ({ item }: { item: ProjectGroup }) => (
+      <ProjectHubCard
+        group={item}
+        isOpen={openPaths.has(item.projectPath)}
+        onToggle={() => toggleOpen(item.projectPath)}
+      />
+    ),
     [openPaths, toggleOpen],
   )
 
@@ -244,8 +231,13 @@ export function ProjectHubList({
           data={groups}
           keyExtractor={(item) => item.projectPath}
           renderItem={renderGroup}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={dark.text.secondary}
+            />
+          }
           contentContainerStyle={
             groups.length === 0 ? styles.emptyListContent : styles.listContent
           }
@@ -313,28 +305,5 @@ const styles = StyleSheet.create({
     color: dark.text.secondary,
     fontSize: font.sm,
     marginTop: 2,
-  },
-  groupRow: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  groupName: {
-    flex: 1,
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  groupMeta: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-  },
-  chevron: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
   },
 })
