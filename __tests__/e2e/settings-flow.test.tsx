@@ -7,7 +7,7 @@
 import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import { Alert } from 'react-native'
-import SettingsScreen from '@/app/(tabs)/settings'
+import SettingsScreen from '@/app/settings'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import * as SecureStore from 'expo-secure-store'
