@@ -125,15 +125,11 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         onScrollBeginDrag={() => { isAtBottomRef.current = false }}
         onContentSizeChange={() => {
           if (!isAtBottomRef.current) return
-          if (isStreamingRef.current) {
-            if (scrollTimerRef.current !== null) return
-            scrollTimerRef.current = setTimeout(() => {
-              scrollTimerRef.current = null
-              if (isAtBottomRef.current) listRef.current?.scrollToEnd({ animated: false })
-            }, 100)
-          } else {
-            listRef.current?.scrollToEnd({ animated: false })
-          }
+          if (scrollTimerRef.current !== null) clearTimeout(scrollTimerRef.current)
+          scrollTimerRef.current = setTimeout(() => {
+            scrollTimerRef.current = null
+            if (isAtBottomRef.current) listRef.current?.scrollToEnd({ animated: false })
+          }, isStreamingRef.current ? 150 : 0)
         }}
         initialNumToRender={40}
         maxToRenderPerBatch={20}
