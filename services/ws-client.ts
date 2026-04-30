@@ -137,12 +137,18 @@ type ServerMessageHandler = (msg: WSMessageWithServer) => void
 
 class WSClientManager {
   private clients: Map<string, WSClient> = new Map()
+  // Manager-level status listeners that survive individual client replacement.
+  private managerStatusListeners: Set<(serverId: string, s: 'connecting' | 'connected' | 'disconnected') => void> = new Set()
 
   connect(serverId: string, url: string, apiKey: string) {
     // Disconnect existing client for this server if any
     this.disconnect(serverId)
     const client = new WSClient()
     this.clients.set(serverId, client)
+    // Wire this client's status changes into the manager-level listeners.
+    client.onStatusChange((s) => {
+      this.managerStatusListeners.forEach((l) => l(serverId, s))
+    })
     client.connect(url, apiKey)
   }
 
@@ -181,14 +187,14 @@ class WSClientManager {
     return client.onStatusChange(listener)
   }
 
-  /** Listen for status changes on ALL clients. */
+  /**
+   * Listen for status changes on ALL clients, including clients created after
+   * this call (i.e. when connect() creates a new WSClient instance). Prefer
+   * this over onStatusChange() when the client may not exist yet.
+   */
   onAnyStatusChange(listener: (serverId: string, s: 'connecting' | 'connected' | 'disconnected') => void): () => void {
-    const unsubs: Array<() => void> = []
-    for (const [serverId, client] of this.clients) {
-      const unsub = client.onStatusChange((s) => listener(serverId, s))
-      unsubs.push(unsub)
-    }
-    return () => unsubs.forEach((u) => u())
+    this.managerStatusListeners.add(listener)
+    return () => this.managerStatusListeners.delete(listener)
   }
 
   status(serverId: string): 'connecting' | 'connected' | 'disconnected' {

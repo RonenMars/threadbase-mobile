@@ -60,24 +60,44 @@ export function useTerminalStream(serverId: string, sessionId: string) {
   }, [historyQuery.data, maxLines])
 
   useEffect(() => {
-    const client = wsManager.getClient(serverId)
-    if (!client) return
+    let idleTimer: ReturnType<typeof setTimeout>
+    let unsubOutput: (() => void) | null = null
 
-    const unsub = client.on('terminal_output', (msg) => {
-      if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
+    function subscribeOutput() {
+      unsubOutput?.()
+      const client = wsManager.getClient(serverId)
+      if (!client) return
+      unsubOutput = client.on('terminal_output', (msg) => {
+        if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
 
-      setIsStreaming(true)
-      vtRef.current.feed(msg.data)
-      const visible = vtRef.current.getLines()
-      setLines(visible.slice(-maxLines))
+        setIsStreaming(true)
+        vtRef.current.feed(msg.data)
+        const visible = vtRef.current.getLines()
+        setLines(visible.slice(-maxLines))
 
-      clearTimeout(idleTimer)
-      idleTimer = setTimeout(() => setIsStreaming(false), 1500)
+        clearTimeout(idleTimer)
+        idleTimer = setTimeout(() => setIsStreaming(false), 1500)
+      })
+    }
+
+    subscribeOutput()
+
+    // Re-subscribe on any status change across all clients for this server.
+    // This handles two cases:
+    //   1. Client didn't exist yet when this effect ran (React runs child
+    //      effects before parent, so _layout.tsx's wsManager.connect() may
+    //      not have fired yet).
+    //   2. wsManager.connect() created a new WSClient after reconnect.
+    // In both cases, the first 'connected' event on the new client re-binds
+    // the terminal_output listener.
+    const unsubStatus = wsManager.onAnyStatusChange((sid, status) => {
+      if (sid !== serverId || status !== 'connected') return
+      subscribeOutput()
     })
 
-    let idleTimer: ReturnType<typeof setTimeout>
     return () => {
-      unsub()
+      unsubOutput?.()
+      unsubStatus()
       clearTimeout(idleTimer)
     }
   }, [serverId, sessionId, maxLines])
