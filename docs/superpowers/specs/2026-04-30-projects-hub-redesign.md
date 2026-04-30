@@ -5,13 +5,13 @@
 
 ## Problem
 
-Sessions and History are two separate flat lists that are easy to get lost in. The same project name (e.g. `tb-mobile`) appears repeatedly with no grouping, making it hard to understand what each entry represents and what its relationship to other entries is. The two-tab separation between sessions and conversations adds unnecessary context-switching when a user is thinking in terms of projects, not feed types.
+Sessions and History are two separate flat lists that are easy to get lost in. The same project name (e.g. `tb-mobile`) appears repeatedly with no grouping, making it hard to understand what each entry represents or how it relates to other entries. The tab bar adds navigation weight for what is fundamentally one concern: your AI work, organized by project.
 
 ## Solution Overview
 
-Replace the Sessions + History tabs with a single **Projects** tab in Hub mode. Each project gets one accordion card showing its sessions (as status pills) and its most recent conversations (up to 5 inline). Tapping "See all" opens a new Project Detail screen with the full conversation list and a local search bar. A global search bar in the hub header searches across all projects simultaneously.
+Remove the bottom tab bar entirely. Replace Sessions + History with a single **Projects** screen — the app's root — showing one accordion card per project. An avatar button (top-left) opens a small dropdown for Settings and other navigation. A green FAB (bottom-right) starts a new session. A compact single-row header holds the title, search, filter, and sort icons on the right.
 
-Classic mode (opt-in via Settings) preserves the existing Sessions + History flat lists exactly as they are today.
+Classic mode (opt-in) restores segmented Sessions / History tabs rendered inside the screen body. The FAB and avatar button persist in both modes.
 
 ---
 
@@ -19,157 +19,205 @@ Classic mode (opt-in via Settings) preserves the existing Sessions + History fla
 
 ### Hub Mode (new default)
 
-- Tab bar has **2 tabs**: Projects (📂) + Settings (⚙️)
-- Sessions and History are unified under Projects
-- Each project is an accordion card
+- **No bottom tab bar**
+- Root screen: Projects hub (accordion cards)
+- Avatar button top-left → dropdown menu
+- Green FAB bottom-right → new session
+- Single-row header: Avatar · "Projects" (centered) · connection dot + 🔍 + ⊜ + ≡↑ (right)
 
 ### Classic Mode (opt-in)
 
-- Tab bar has **3 tabs**: Sessions (⚡) + History (📚) + Settings (⚙️)
-- Sessions and History screens are unchanged from today
-- The only change in classic mode is the toolbar icons (Funnel + SortAscending replace "Filters" text)
+- **No bottom tab bar** (tab bar removed permanently)
+- Root screen: same Projects header + FAB + avatar
+- Sessions / History rendered as a **segmented tab control inside the screen body** (not the OS tab bar)
+- Sessions list and History list are unchanged from today
 
 ### Settings Toggle
 
-- Location: Settings screen → Appearance section
+- Location: Settings screen → Appearance section, and also as a shortcut in the avatar dropdown ("Classic view")
 - Control: segmented picker "Hub | Classic"
 - Default: `hub`
-- Persisted key: `sessionsLayout: 'hub' | 'classic'` in `settings.ts` store + AsyncStorage
+- Persisted key: `sessionsLayout: 'hub' | 'classic'` added to `settings.ts` store + AsyncStorage
 
 ---
 
-## Hub Mode — Screen 1: Projects Hub
-
-### Header
+## Navigation Structure
 
 ```
-Projects  [🔍] [+]
-[⊜ Funnel]  [≡↑ Sort]        2/3 connected ●
+Root: app/index.tsx  (Projects hub — replaces tab navigator)
+  ├── Avatar dropdown (inline, not a screen)
+  │     ├── → app/settings.tsx          (stack push)
+  │     ├── → ServerFilterSheet         (bottom sheet, existing)
+  │     └── Layout toggle (hub/classic)
+  ├── FAB (+) → NewSessionServerPicker  (modal, existing)
+  ├── Hub card session pill tap → app/session/[id].tsx     (existing)
+  ├── Hub card conversation row tap → app/conversation/[id].tsx  (existing)
+  └── "See all" → app/project/[path].tsx  (new stack screen)
 ```
 
-- **🔍** (MagnifyingGlass, Phosphor): toggles a search bar that slides in below the header row, above the toolbar. Tapping again or pressing ✕ collapses it and clears the query.
-- **+**: opens the existing NewSessionServerPicker modal (unchanged)
-- **⊜ Funnel icon** (Phosphor `Funnel`): opens the existing `ServerFilterSheet` (unchanged behavior). Shows a blue active-state tint + 4px indicator dot when any filter is non-default.
-- **≡↑ Sort icon** (Phosphor `SortAscending`): opens the new `SortSheet`. Shows active tint + dot when sort differs from default.
+`app/(tabs)/` directory and its `_layout.tsx` are replaced by a flat stack navigator. The Expo Router tab layout is removed.
+
+---
+
+## Screen: Projects Hub (root)
+
+### Header Row (single line)
+
+```
+[Avatar]    Projects    [●] [🔍] [⊜] [≡↑]
+```
+
+- **Avatar button** (left): 28×28 circle, initials or profile image. Tap → dropdown menu overlays below it. Dismissed by tapping outside or selecting an item.
+- **"Projects"** title: centered
+- **Connection dot** (right group): 6px circle, green=all connected, amber=partial, red=none. No label text. Tooltip/accessibility label: "N/M servers connected".
+- **🔍 MagnifyingGlass** (Phosphor): toggles global search bar. Active state: white tint. Tap again or press ✕ to dismiss and clear query.
+- **⊜ Funnel** (Phosphor): opens existing `ServerFilterSheet`. Active state: blue tint + 4px indicator dot when any filter is non-default.
+- **≡↑ SortAscending** (Phosphor): opens new `SortSheet`. Active state: blue tint + dot when sort differs from default.
+
+### Avatar Dropdown Menu
+
+Small popover anchored below the avatar button. Items:
+
+| Item | Action |
+|---|---|
+| ⚙️ Settings | Push `app/settings.tsx` |
+| 🖥️ Servers | Open `ServerFilterSheet` (existing) |
+| 📖 Classic view | Toggle `sessionsLayout` between hub/classic |
+
+Dismissed on outside tap (backdrop with no visual, just touch handler).
 
 ### Global Search Bar (when open)
 
-- Slides in with a smooth height animation (LayoutAnimation or Reanimated)
+- Animates in below the header row with a smooth height expansion
 - Placeholder: "Search sessions & conversations…"
-- Searches both session `projectName`/`lastOutput` and conversation `title`/`preview`/`firstMessage`/`lastMessage`
-- Results replace the hub accordion list with a flat results list grouped by type (Sessions / Conversations), each result showing its project name as a subtitle
-- Debounce: 300ms (same as existing ConversationList search)
+- Searches: session `projectName` + `lastOutput`; conversation `title` + `preview` + `firstMessage.text` + `lastMessage.text`
+- Results replace the hub card list with a flat list grouped by type: **Conversations** section then **Sessions** section, each result showing its project name as a secondary line
+- Debounce: 300ms
+- Clearing the query or dismissing returns to the hub card list
+
+### FAB (Floating Action Button)
+
+- Position: `bottom: 24, right: 16` absolute, above safe area
+- Size: 56×56, border-radius 28
+- Color: `#30d158` (green)
+- Icon: Phosphor `Plus`, 24px, color `#000`
+- Shadow: `0 4px 16px rgba(48,209,88,0.35)`
+- Tap: opens existing `NewSessionServerPicker` modal (unchanged behavior)
+- In classic mode: FAB still present, same behavior
 
 ### Project Hub Cards
 
-A `FlatList` of `ProjectHubCard` components, one per distinct `projectPath`.
+A `FlatList` of `ProjectHubCard`, one per distinct `projectPath`.
 
-**Grouping logic:** Group sessions and conversations by `projectPath`. Project name displayed is `projectPath.split('/').pop()` (same as current ConversationRow).
+**Grouping:** sessions and conversations grouped by `projectPath`. Display name: `projectPath.split('/').pop()`.
 
 **Card header (always visible):**
 ```
-📁 tb-mobile                    4 · 6  ▼
+📁 tb-mobile          4 · 6  ▼
 ```
-- Project name (left)
-- Session count · Conversation count (right, secondary)
-- Chevron: ▼ collapsed, ▲ expanded
-- Tap header → toggle expand/collapse
-- **Multiple cards can be open simultaneously** (no forced collapse of others)
+- Folder icon + project name (left)
+- `N sessions · M conversations` count in compact `N · M` format (right, secondary)
+- Chevron rotates 180° on expand (Reanimated interpolation)
+- Tap → toggle expand/collapse
+- Multiple cards can be open simultaneously
 
-**Card expanded — Sessions strip:**
+**Expanded — Sessions strip** (hidden if project has no sessions):
 ```
 SESSIONS
-● In Progress   ◑ Idle   ✕ Failed ×2
+main · 1h 40m · 1 prompt
+main · 22m 20s · 14 prompts
 ```
-- One pill per session (or grouped: "✕ Failed ×2" when multiple same status)
-- Pill tap → navigates to `/session/[id]?server=[serverId]`
-- Pills only shown if project has sessions
+- One slim row per session: branch + elapsed time + prompt count
+- No status shown here — status lives inside the individual session detail screen
+- Row tap → navigate to that session
+- Long-press → existing action sheet (copy ID, send input, cancel)
 
-**Card expanded — Conversations list:**
-- Up to 5 most-recent conversations, sorted by `lastActivity` descending
-- Each row: title (1 line, truncated) + `branch · N msgs` subtitle + date (right)
+**Date label rule (applies to both session rows and conversation rows in the hub):**
+- If only 1 item from today → show "Today"
+- If 2+ items from today within the same card → show the start time (e.g. "17:40") instead of "Today" so items are distinguishable
+- Yesterday, Xd ago, and older dates are unaffected
+
+**Expanded — Conversations list** (hidden if project has zero conversations):
+- Up to 5 most-recent conversations sorted by `lastActivity` descending
+- Each row: title (1 line, truncated) + `branch · N msgs` (secondary) + date label (right)
 - Row tap → `/conversation/[id]?server=[serverId]`
-- If more than 5 exist: "See all N conversations →" link below the list
-- If zero conversations: conversations section hidden entirely
+- If `messageCount > 5`: "See all N conversations →" link at bottom of card
+- If exactly 0 conversations: section omitted entirely (no empty state inside card)
 
-**Collapsed cards** show only the header row (no sessions, no conversations).
-
-### Session Status Pills in Hub
-
-| Display label | Color | Condition |
-|---|---|---|
-| **In Progress** | Green `#30d158` | `status === 'running'` |
-| **Idle** | Amber `#ff9f0a` | `status === 'idle'` or `status === 'waiting_input'` |
-| **Empty** | Gray `#888` | `promptCount === 0` and status not `running` |
-| **Failed** | Red `#ff375f` | `status === 'failed'` |
-| **Completed** | Secondary gray | `status === 'completed'` |
-
-Existing filter chips in `ServerFilterSheet` keep their current labels (`running`, `waiting_input`, etc.) — the simplified labels are only for the hub pill display.
+**Collapsed cards:** header row only.
 
 ### Hub Sort Options
 
-Default sort for hub cards: **Last message date** (most recent conversation or session activity, descending).
+Default: **Last message date, descending** (most-recent activity first).
 
-Sort sheet options (see SortSheet section below):
+Sort sheet options:
 - Project name (A→Z / Z→A)
-- Last message date (newest first / oldest first) — **default**
-- Created date (newest first / oldest first)
-- Status (groups In Progress → Idle → Empty → Failed → Completed)
+- Last message date *(default)*
+- Created date
+- Status (In Progress → Idle → Empty → Failed → Completed)
 
 ---
 
-## Hub Mode — Screen 2: Project Detail
+## Screen: Project Detail (`app/project/[path].tsx`)
 
-**Route:** `/project/[encodedProjectPath]` (new screen)
+**Route:** `/project/[path]` where `path` is URL-encoded `projectPath`.
 
 **Header:**
 ```
-‹ Projects    tb-mobile
+‹ Projects      tb-mobile
 ```
 
 **Content:**
-- Search bar (always visible, not toggleable — this is a search-centric screen)
-- Full paginated conversation list for this project (reuses `ConversationList` component)
-- Filtered by `projectPath`, otherwise identical behavior to the History tab
-- Pull to refresh, infinite scroll, skeleton loading — all inherited from `ConversationList`
+- Search bar: always visible (not toggleable)
+- Placeholder: "Search in [project name]…"
+- Full paginated conversation list for this project
+- Reuses `ConversationList` component, filtered to `projectPath`
+- Pull to refresh, infinite scroll, skeleton loading — all inherited
+
+---
+
+## Classic Mode Detail
+
+When `sessionsLayout === 'classic'`:
+
+- Root screen renders a segmented control in the body (below the header row): `⚡ Sessions | 📚 History`
+- Sessions tab: existing `SessionCard` FlatList + filter/sort toolbar icons (Funnel + SortAscending, replacing old "Filters" text)
+- History tab: existing `ConversationList` unchanged
+- FAB present in both tabs (new session)
+- Avatar menu present (same as hub mode)
+- No bottom OS tab bar in either mode
 
 ---
 
 ## Filter & Sort Toolbar
 
-### Filter Icon (replaces "Filters" text)
+### Funnel Icon (replaces "Filters" text button)
 
-- Component: Phosphor `Funnel` icon, 20px, `dark.text.accent` color
-- Tappable area: 36×36 minimum
-- Active state: icon color `#0a84ff`, background `#0a84ff18`, small 4px dot indicator top-right of button
-- Active when: any status filter is non-default, or any server is hidden
-- Opens: existing `ServerFilterSheet` (no behavior change)
+- Phosphor `Funnel`, 20px
+- Minimum tappable area: 36×36
+- Default color: `dark.text.secondary`
+- Active: `#0a84ff` tint + `#0a84ff18` background + 4px dot indicator (top-right corner of button bounds)
+- Active when: any status excluded, or any server hidden
+- Opens: existing `ServerFilterSheet` (content unchanged)
 
-### Sort Icon (new)
+### SortAscending Icon (new)
 
-- Component: Phosphor `SortAscending` icon, 20px
-- Tappable area: 36×36 minimum
-- Active state: same blue tint + dot as filter
+- Phosphor `SortAscending`, 20px
+- Same sizing and active-state rules as Funnel
 - Active when: sort differs from default (Last message, Descending)
 - Opens: new `SortSheet`
 
-### SortSheet
+### SortSheet (`components/servers/SortSheet.tsx`)
 
-Same visual style as `ServerFilterSheet` (BottomSheet, `snapPoints: ['40%', '70%']`, backdrop, handle indicator).
+BottomSheet, `snapPoints: ['40%', '70%']`, same backdrop and handle style as `ServerFilterSheet`.
 
-**Sort by section** (single-select chips):
-- Project name
-- Last message date *(default)*
-- Created date
-- Status
+**Sort by** (single-select chips): Project name · Last message date *(default)* · Created date · Status
 
-**Order section** (single-select chips):
-- ↑ Ascending
-- ↓ Descending *(default)*
+**Order** (single-select chips): ↑ Ascending · ↓ Descending *(default)*
 
-Apply/Cancel buttons (same pattern as filter sheet). Changes take effect on Apply.
+Apply/Cancel pattern identical to `ServerFilterSheet`. Changes take effect on Apply.
 
-`SortSheet` is used for **both** Hub mode and Classic mode Sessions screen. Classic History screen sort is handled by the existing mechanism (no change needed there since it already sorts by `lastActivity`).
+`SortSheet` is used in both hub and classic modes.
 
 ---
 
@@ -177,95 +225,60 @@ Apply/Cancel buttons (same pattern as filter sheet). Changes take effect on Appl
 
 ### `settings.ts`
 
-Add to `SettingsStore` interface:
 ```ts
+// Add to SettingsStore interface
 sessionsLayout: 'hub' | 'classic'
 setSessionsLayout: (v: 'hub' | 'classic') => void
-```
 
-Add to `PersistedSettings`:
-```ts
+// Add to PersistedSettings
 sessionsLayout: 'hub' | 'classic'
 ```
 
-Default: `'hub'`.
+Default: `'hub'`. Persisted to AsyncStorage alongside existing keys.
 
 ### Sort State
 
-Sort state (`sortBy` + `sortOrder`) lives in the Sessions screen component state (same as current `sortType`), not in the settings store — it is session-level UI state, not a persistent preference. If persistence is desired later it can be added.
+`sortBy: SortBy` and `sortOrder: SortOrder` live in component state (not persisted).
 
-New `SortBy` type:
 ```ts
+// New types (add to types/api.ts or a new types/ui.ts)
 export type SortBy = 'projectName' | 'lastActivity' | 'startedAt' | 'status'
 export type SortOrder = 'asc' | 'desc'
 ```
 
 ---
 
-## New Components
+## New Components & Files
 
-### `ProjectHubList`
-
-`components/sessions/hub/ProjectHubList.tsx`
-
-- Receives: `sessions: MultiSession[]`, `conversations: MultiConversation[]`, `sortBy`, `sortOrder`
-- Groups by `projectPath` → array of `ProjectGroup { projectPath, sessions, conversations }`
-- Applies sort to the groups array
-- Renders `FlatList<ProjectGroup>` of `ProjectHubCard`
-- Manages accordion open state: `Set<string>` of open projectPaths (stored in `useState`)
-- Manages global search query state + search bar visibility
-- Passes `isOpen`, `onToggle` to each card
-
-### `ProjectHubCard`
-
-`components/sessions/hub/ProjectHubCard.tsx`
-
-- Props: `group: ProjectGroup`, `isOpen: boolean`, `onToggle: () => void`
-- Animated expand/collapse (LayoutAnimation.configureNext on toggle)
-- Session pills strip (hidden if no sessions)
-- Conversation rows (hidden if no conversations and no sessions strip would show)
-- "See all" link (hidden if convos ≤ 5)
-
-### `SessionStatusPill`
-
-`components/sessions/hub/SessionStatusPill.tsx`
-
-- Props: `session: MultiSession`
-- Renders a colored pill with derived label (In Progress / Idle / Empty / Failed / Completed)
-- Tappable, navigates to session
-
-### `SortSheet`
-
-`components/servers/SortSheet.tsx`
-
-- Same structure as `ServerFilterSheet`
-- Props: `visible`, `onClose`, `sortBy`, `onChangeSortBy`, `sortOrder`, `onChangeSortOrder`
+| Path | Description |
+|---|---|
+| `app/index.tsx` | New root screen — renders `ProjectHubList` (hub) or classic segmented view |
+| `app/project/[path].tsx` | Project detail screen — full conversation list + search |
+| `components/sessions/hub/ProjectHubList.tsx` | FlatList of `ProjectHubCard`. Manages accordion state, search bar, sort/filter props. |
+| `components/sessions/hub/ProjectHubCard.tsx` | Accordion card: header + session strip + conversation rows |
+| `components/servers/SortSheet.tsx` | Sort bottom sheet (style matches `ServerFilterSheet`) |
+| `components/ui/AvatarMenu.tsx` | Avatar button + dropdown overlay |
+| `components/ui/FAB.tsx` | Green floating action button |
 
 ---
 
-## Navigation Changes
+## Files Removed / Replaced
 
-`app/(tabs)/_layout.tsx`:
-- Hub mode: render 2 tabs (Projects, Settings). Sessions tab href becomes the hub. History tab is not rendered.
-- Classic mode: render 3 tabs as today.
-- Read `sessionsLayout` from settings store to decide.
-
-New route: `app/project/[path].tsx`
-- Stack screen (not a tab)
-- Receives `path` param (URL-encoded `projectPath`)
-- Shows project name in header with back button
-- Renders `ConversationList` filtered by project
+| File | Disposition |
+|---|---|
+| `app/(tabs)/_layout.tsx` | Deleted — tab navigator replaced by stack |
+| `app/(tabs)/sessions.tsx` | Logic moved into `app/index.tsx` + `ProjectHubList` |
+| `app/(tabs)/history.tsx` | Logic moved into `app/index.tsx` (classic mode) + `app/project/[path].tsx` |
 
 ---
 
 ## What Does Not Change
 
-- `SessionCard.tsx` — used unchanged in classic mode
-- `ConversationList.tsx` and `ConversationRow` — used unchanged in classic History tab and project detail screen
-- `/session/[id]` and `/conversation/[id]` detail screens — untouched
-- `ServerFilterSheet` — content unchanged, only the trigger button changes (text → icon)
-- All existing sort/filter behavior in Sessions classic mode is preserved
-- Long-press session actions (copy ID, send input, cancel) — preserved in classic mode; in hub mode, long-press on a session pill triggers the same action sheet
+- `SessionCard.tsx` — used as-is in classic Sessions tab
+- `ConversationList.tsx` / `ConversationRow` — used as-is in classic History tab and project detail screen
+- `app/session/[id].tsx`, `app/conversation/[id].tsx` — untouched
+- `ServerFilterSheet` — content unchanged; trigger changes from text button to icon
+- Long-press session actions (copy ID, send input, cancel) — preserved; in hub mode, long-press on session pill triggers same action sheet
 
 ---
 
@@ -273,8 +286,12 @@ New route: `app/project/[path].tsx`
 
 | Question | Decision |
 |---|---|
-| Multiple accordions open simultaneously? | Yes — no forced collapse |
-| History tab in hub mode? | Removed; lives inside Project Hub cards + Project Detail screen |
-| Search in hub? | Header 🔍 icon for global search; Project Detail has persistent local search |
-| Sort persistence? | Component state only (not persisted to AsyncStorage) |
-| Tab count in hub mode? | 2 tabs: Projects + Settings |
+| Bottom tab bar? | Removed permanently (both modes) |
+| Settings access? | Avatar dropdown top-left → Settings push; shortcut toggle in dropdown |
+| New session button? | Green FAB bottom-right, always visible |
+| Header layout? | Single compact row: Avatar · title · [●][🔍][⊜][≡↑] |
+| Multiple accordions? | Yes — no forced collapse |
+| History tab in hub mode? | Inside hub cards (5 inline) + Project Detail screen |
+| Global search? | 🔍 icon in header → animated bar; Project Detail has persistent local bar |
+| Classic mode tab bar? | Segmented control in screen body, no OS tab bar |
+| Sort persistence? | Component state only |
