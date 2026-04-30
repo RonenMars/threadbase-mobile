@@ -39,4 +39,5 @@ export interface TreeSessionsListProps {
   conversations: MultiConversation[]
   refreshing: boolean
   onRefresh: () => void
+  searchOpen?: boolean
 }

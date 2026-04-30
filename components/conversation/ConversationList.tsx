@@ -130,6 +130,7 @@ interface Props {
   onEndReached: () => void
   searchQuery: string
   onSearchChange: (q: string) => void
+  searchOpen?: boolean
   /** First page still loading — show skeleton rows. */
   isLoadingInitial?: boolean
   isFetchingNextPage?: boolean
@@ -148,6 +149,7 @@ export function ConversationList({
   onEndReached,
   searchQuery,
   onSearchChange,
+  searchOpen = true,
   isLoadingInitial = false,
   isFetchingNextPage = false,
   headerRight,
@@ -209,19 +211,21 @@ export function ConversationList({
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={onSearchChange}
-          placeholder="Search conversations..."
-          placeholderTextColor={dark.text.secondary}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
-        />
-        {headerRight}
-      </View>
+      {searchOpen ? (
+        <View style={styles.searchBar}>
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            placeholder="Search conversations…"
+            placeholderTextColor={dark.text.secondary}
+            autoFocus
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+          {headerRight}
+        </View>
+      ) : null}
 
       {loadingProgress ? (
         <ProgressBar
@@ -302,7 +306,7 @@ const styles = StyleSheet.create({
     borderColor: dark.border,
     minHeight: 44,
   },
-  searchIcon: { fontSize: font.sm, marginRight: spacing.sm },
+
   searchInput: {
     flex: 1,
     color: dark.text.primary,

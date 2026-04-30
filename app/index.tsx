@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useDebounce } from 'use-debounce'
 import {
   View,
   Text,
   Image,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   Modal,
@@ -16,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
 import { useEagerSessions } from '@/hooks/useSession'
-import { useEagerConversations } from '@/hooks/useConversations'
+import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
@@ -31,6 +33,7 @@ import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, DotsThreeOutline, Gear, EnvelopeSimple, FolderSimple } from 'phosphor-react-native'
 import { dark, font, spacing } from '@/constants/theme'
+import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
@@ -95,6 +98,13 @@ export default function ProjectsHub() {
 
   // Classic tab
   const [classicTab, setClassicTab] = useState<ClassicTab>('sessions')
+  const [classicConvSearch, setClassicConvSearch] = useState('')
+  const [debouncedConvSearch] = useDebounce(classicConvSearch, 300)
+  const { data: convSearchData } = useConversationSearch(debouncedConvSearch)
+
+  useEffect(() => {
+    if (!searchOpen) setClassicConvSearch('')
+  }, [searchOpen])
 
   // Sessions data
   const { sessions, isDone: sessionsDone, isCounting, refetch: refetchSessions } = useEagerSessions()
@@ -226,6 +236,7 @@ export default function ProjectsHub() {
           conversations={conversations}
           refreshing={manualRefreshing}
           onRefresh={handleSessionsRefresh}
+          searchOpen={searchOpen}
         />
       ) : sessionsLayout === 'hub' ? (
         <ProjectHubList
@@ -241,49 +252,13 @@ export default function ProjectsHub() {
         <View style={styles.classicContainer}>
           {mergeChats ? (
             // Merged: single chronological list of sessions + conversations
-            <FlatList
-              data={mergedClassicItems}
-              keyExtractor={(item) =>
-                item.kind === 'session'
-                  ? `s-${item.item.serverId}::${item.item.id}`
-                  : `c-${item.item.serverId}::${item.item.id}`
-              }
-              renderItem={({ item }) =>
-                item.kind === 'session' ? (
-                  <SessionCard session={item.item} />
-                ) : (
-                  <TouchableOpacity
-                    style={styles.convCard}
-                    activeOpacity={0.75}
-                    onPress={() =>
-                      router.push(`/conversation/${item.item.id}?server=${item.item.serverId}`)
-                    }
-                  >
-                    <View style={styles.convCardTitleRow}>
-                      <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
-                      <Text style={styles.convCardTitle} numberOfLines={1}>
-                        {item.item.title || item.item.projectPath}
-                      </Text>
-                    </View>
-                    {item.item.preview ? (
-                      <Text style={styles.convCardPreview} numberOfLines={2}>
-                        {item.item.preview}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.convCardMeta}>
-                      {item.item.messageCount} msg{item.item.messageCount !== 1 ? 's' : ''}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              }
-              contentContainerStyle={styles.mergedContent}
-              refreshControl={
-                <RefreshControl
-                  refreshing={manualRefreshing}
-                  onRefresh={handleSessionsRefresh}
-                  tintColor={dark.text.secondary}
-                />
-              }
+            <MergedClassicList
+              items={mergedClassicItems}
+              refreshing={manualRefreshing}
+              onRefresh={handleSessionsRefresh}
+              searchOpen={searchOpen}
+              searchQuery={classicConvSearch}
+              onSearchChange={setClassicConvSearch}
             />
           ) : (
             <>
@@ -315,20 +290,22 @@ export default function ProjectsHub() {
                   sessions={visibleSessions}
                   refreshing={manualRefreshing}
                   onRefresh={handleSessionsRefresh}
+                  searchOpen={searchOpen}
                 />
               ) : (
                 /* Classic history */
                 <ConversationList
-                  conversations={conversations}
+                  conversations={debouncedConvSearch ? (convSearchData?.conversations ?? []) : conversations}
                   onRefresh={handleConvRefresh}
                   refreshing={showConvProgress}
                   onEndReached={() => {}}
-                  searchQuery=""
-                  onSearchChange={() => {}}
+                  searchQuery={classicConvSearch}
+                  onSearchChange={setClassicConvSearch}
+                  searchOpen={searchOpen}
                   isLoadingInitial={false}
                   isFetchingNextPage={false}
                   loadingProgress={
-                    showConvProgress ? { loaded: convLoaded, total: convTotal, isCounting: convCounting } : null
+                    showConvProgress && !debouncedConvSearch ? { loaded: convLoaded, total: convTotal, isCounting: convCounting } : null
                   }
                 />
               )}
@@ -371,6 +348,98 @@ export default function ProjectsHub() {
         onClose={() => setPickerVisible(false)}
       />
     </SafeAreaView>
+  )
+}
+
+function MergedClassicList({
+  items,
+  refreshing,
+  onRefresh,
+  searchOpen,
+  searchQuery,
+  onSearchChange,
+}: {
+  items: MergedItem[]
+  refreshing: boolean
+  onRefresh: () => void
+  searchOpen: boolean
+  searchQuery: string
+  onSearchChange: (q: string) => void
+}) {
+  const router = useRouter()
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return items
+    const q = searchQuery.toLowerCase()
+    return items.filter((item) => {
+      if (item.kind === 'session') {
+        const s = item.item as MultiSession
+        return s.projectName?.toLowerCase().includes(q) || s.lastOutput?.toLowerCase().includes(q)
+      }
+      const c = item.item as MultiConversation
+      return (
+        c.title?.toLowerCase().includes(q) ||
+        c.preview?.toLowerCase().includes(q)
+      )
+    })
+  }, [searchQuery, items])
+
+  return (
+    <View style={{ flex: 1 }}>
+      {searchOpen ? (
+        <View style={searchStyles.searchBar}>
+          <TextInput
+            style={searchStyles.searchInput}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            placeholder="Search sessions & conversations…"
+            placeholderTextColor={dark.text.secondary}
+            autoFocus
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </View>
+      ) : null}
+      <FlatList
+        data={filteredItems}
+        keyExtractor={(item) =>
+          item.kind === 'session'
+            ? `s-${item.item.serverId}::${item.item.id}`
+            : `c-${item.item.serverId}::${item.item.id}`
+        }
+        renderItem={({ item }) =>
+          item.kind === 'session' ? (
+            <SessionCard session={item.item as MultiSession} />
+          ) : (
+            <TouchableOpacity
+              style={styles.convCard}
+              activeOpacity={0.75}
+              onPress={() =>
+                router.push(`/conversation/${item.item.id}?server=${item.item.serverId}`)
+              }
+            >
+              <View style={styles.convCardTitleRow}>
+                <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
+                <Text style={styles.convCardTitle} numberOfLines={1}>
+                  {(item.item as MultiConversation).title || item.item.projectPath}
+                </Text>
+              </View>
+              {(item.item as MultiConversation).preview ? (
+                <Text style={styles.convCardPreview} numberOfLines={2}>
+                  {(item.item as MultiConversation).preview}
+                </Text>
+              ) : null}
+              <Text style={styles.convCardMeta}>
+                {(item.item as MultiConversation).messageCount} msg{(item.item as MultiConversation).messageCount !== 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
+          )
+        }
+        contentContainerStyle={styles.mergedContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
+        }
+      />
+    </View>
   )
 }
 
