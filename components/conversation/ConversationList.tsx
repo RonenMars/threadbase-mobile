@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   RefreshControl,
   ActivityIndicator,
   FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -149,6 +152,29 @@ export function ConversationList({
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
+  const listRef = useRef<FlatList>(null)
+  const prevScrollY = useRef(0)
+  const showTopVal = useSharedValue(0)
+  const showBottomVal = useSharedValue(0)
+
+  const topBtnStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(showTopVal.value, { duration: 220 }),
+    pointerEvents: showTopVal.value > 0 ? 'auto' : 'none',
+  }))
+  const bottomBtnStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(showBottomVal.value, { duration: 220 }),
+    pointerEvents: showBottomVal.value > 0 ? 'auto' : 'none',
+  }))
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
+    const y = contentOffset.y
+    const scrollingUp = y < prevScrollY.current
+    prevScrollY.current = y
+    const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
+    showTopVal.value = !scrollingUp && y > 120 ? 1 : 0
+    showBottomVal.value = scrollingUp && distanceFromBottom > 120 ? 1 : 0
+  }, [showTopVal, showBottomVal])
 
   const keyExtractor = useCallback(
     (item: MultiConversation | string) =>
@@ -203,12 +229,15 @@ export function ConversationList({
       ) : null}
 
       <FlatList
-        data={loadingProgress ? [] : listData}
+        ref={listRef}
+        data={listData}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onEndReached={skeletonMode ? undefined : onEndReached}
         onEndReachedThreshold={0.35}
         refreshControl={refreshControl}
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
         ItemSeparatorComponent={Separator}
         ListFooterComponent={
           isFetchingNextPage && !skeletonMode ? (
@@ -219,6 +248,26 @@ export function ConversationList({
           ) : null
         }
       />
+
+      <Animated.View style={[styles.scrollBtn, styles.scrollBtnTop, topBtnStyle]} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          accessibilityLabel="Scroll to top"
+          style={styles.scrollBtnInner}
+        >
+          <Text style={styles.scrollBtnText}>↑ Top</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
+      <Animated.View style={[styles.scrollBtn, styles.scrollBtnBottom, bottomBtnStyle]} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={() => listRef.current?.scrollToEnd({ animated: true })}
+          accessibilityLabel="Scroll to bottom"
+          style={styles.scrollBtnInner}
+        >
+          <Text style={styles.scrollBtnText}>↓ Bottom</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   )
 }
@@ -311,5 +360,28 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: dark.border,
     marginHorizontal: spacing.md,
+  },
+  scrollBtn: {
+    position: 'absolute',
+    alignSelf: 'center',
+  },
+  scrollBtnTop: {
+    top: spacing.md,
+  },
+  scrollBtnBottom: {
+    bottom: spacing.md,
+  },
+  scrollBtnInner: {
+    backgroundColor: 'rgba(31, 111, 235, 0.14)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 166, 255, 0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  scrollBtnText: {
+    color: 'rgba(230, 237, 243, 0.6)',
+    fontSize: 12,
+    fontWeight: '500',
   },
 })

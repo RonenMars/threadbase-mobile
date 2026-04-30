@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, memo, useEffect } from 'react'
+import React, { useRef, useCallback, memo, useEffect } from 'react'
 import {
   FlatList,
   Text,
@@ -8,8 +8,8 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native'
-import * as Clipboard from 'expo-clipboard'
-import { dark, font, spacing } from '@/constants/theme'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { spacing } from '@/constants/theme'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -62,8 +62,8 @@ interface Props {
 
 export function TerminalOutput({ lines, isStreaming }: Props) {
   const listRef = useRef<FlatList>(null)
-  const [showJumpButton, setShowJumpButton] = useState(false)
-  const [showTopButton, setShowTopButton] = useState(false)
+  const showJumpButtonVal = useSharedValue(0)
+  const showTopButtonVal = useSharedValue(0)
   const isAtBottomRef = useRef(true)
   const isStreamingRef = useRef(isStreaming)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -73,6 +73,15 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
   useEffect(() => () => { if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current) }, [])
 
+  const bottomBtnStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(showJumpButtonVal.value, { duration: 200 }),
+    pointerEvents: showJumpButtonVal.value > 0 ? 'auto' : 'none',
+  }))
+  const topBtnStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(showTopButtonVal.value, { duration: 200 }),
+    pointerEvents: showTopButtonVal.value > 0 ? 'auto' : 'none',
+  }))
+
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
     const y = contentOffset.y
@@ -81,9 +90,9 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
     const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
     const atBottom = distanceFromBottom < 50
     isAtBottomRef.current = atBottom
-    setShowJumpButton(!atBottom)
-    setShowTopButton(scrollingUp && y > 100)
-  }, [])
+    showJumpButtonVal.value = atBottom ? 0 : 1
+    showTopButtonVal.value = scrollingUp && y > 100 ? 1 : 0
+  }, [showJumpButtonVal, showTopButtonVal])
 
   const scrollToBottom = useCallback((animated: boolean) => {
     listRef.current?.scrollToOffset({ offset: contentHeightRef.current, animated })
@@ -91,12 +100,8 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
 
   const jumpToBottom = useCallback(() => {
     scrollToBottom(true)
-    setShowJumpButton(false)
-  }, [scrollToBottom])
-
-  const copyAll = useCallback(() => {
-    Clipboard.setStringAsync(lines.join('\n'))
-  }, [lines])
+    showJumpButtonVal.value = 0
+  }, [scrollToBottom, showJumpButtonVal])
 
   const renderItem = useCallback(({ item, index }: { item: string; index: number }) => (
     <LineRow line={item} index={index} />
@@ -104,25 +109,6 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.headerDots}>
-            <View style={[styles.dot, { backgroundColor: '#ff5f57' }]} />
-            <View style={[styles.dot, { backgroundColor: '#febc2e' }]} />
-            <View style={[styles.dot, { backgroundColor: '#28c840' }]} />
-          </View>
-          {isStreaming ? (
-            <View style={styles.streamingBadge}>
-              <View style={styles.streamingDot} />
-              <Text style={styles.streamingLabel}>streaming</Text>
-            </View>
-          ) : null}
-        </View>
-        <TouchableOpacity onPress={copyAll} style={styles.copyBtn} accessibilityLabel="Copy all terminal output">
-          <Text style={styles.copyBtnText}>Copy all</Text>
-        </TouchableOpacity>
-      </View>
-
       <FlatList
         ref={listRef}
         data={lines}
@@ -148,24 +134,25 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         contentContainerStyle={styles.listContent}
       />
 
-      {showTopButton ? (
+      <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
-          style={[styles.jumpBtn, styles.jumpBtnTop]}
           onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
           accessibilityLabel="Jump to top"
+          style={styles.jumpBtnInner}
         >
           <Text style={styles.jumpBtnText}>↑ Top</Text>
         </TouchableOpacity>
-      ) : null}
-      {showJumpButton ? (
+      </Animated.View>
+
+      <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
-          style={styles.jumpBtn}
           onPress={jumpToBottom}
           accessibilityLabel="Jump to bottom"
+          style={styles.jumpBtnInner}
         >
-          <Text style={styles.jumpBtnText}>↓ Jump to bottom</Text>
+          <Text style={styles.jumpBtnText}>↓ Bottom</Text>
         </TouchableOpacity>
-      ) : null}
+      </Animated.View>
     </View>
   )
 }
@@ -178,63 +165,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#21262d',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#161b22',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#21262d',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  headerDots: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  streamingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(46, 160, 67, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  streamingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#3fb950',
-  },
-  streamingLabel: {
-    color: '#3fb950',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  copyBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: 'rgba(110, 118, 129, 0.1)',
-    minHeight: 28,
-    justifyContent: 'center',
-  },
-  copyBtnText: {
-    color: '#8b949e',
-    fontSize: 12,
-    fontWeight: '500',
   },
   list: {
     flex: 1,
@@ -269,23 +199,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.md,
     alignSelf: 'center',
-    backgroundColor: '#1f6feb',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
   },
   jumpBtnTop: {
     bottom: undefined,
-    top: 48,
+    top: spacing.md,
+  },
+  jumpBtnInner: {
+    backgroundColor: 'rgba(31, 111, 235, 0.18)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 166, 255, 0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
   jumpBtnText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '500',
   },
 })
