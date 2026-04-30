@@ -33,6 +33,9 @@ import {
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
+import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
+import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
+import type { SlashCommand } from '@/constants/slashCommands'
 
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -64,6 +67,8 @@ export default function SessionDetailScreen() {
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
   const [infoVisible, setInfoVisible] = useState(false)
+  const [slashBoardVisible, setSlashBoardVisible] = useState(false)
+  const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
 
   const isStoppable =
     session?.source !== 'discovered' &&
@@ -140,6 +145,49 @@ export default function SessionDetailScreen() {
       }
     })
   }, [serverId, id])
+
+  const handleInputChange = (text: string) => {
+    setInputText(text)
+    // Show board whenever the text starts with exactly "/" (optionally followed by a query)
+    const isSlashQuery = /^\/.{0,30}$/.test(text)
+    setSlashBoardVisible(isSlashQuery)
+  }
+
+  const handleSlashCommandSelect = (command: SlashCommand) => {
+    setSlashBoardVisible(false)
+    if (command.needsArgs) {
+      // Clear the partial slash text so it doesn't bleed into the arg modal
+      setInputText('')
+      setPendingArgCommand(command)
+    } else {
+      // Execute immediately: replace whatever slash text was typed with the command
+      const payload = `/${command.id}`
+      if (wsManager.getClient(serverId)?.status() !== 'connected') {
+        Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
+        return
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      sendInput.mutate(payload, {
+        onError: (err) =>
+          Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
+      })
+      resetComposer()
+    }
+  }
+
+  const handleSlashArgConfirm = (command: SlashCommand, arg: string) => {
+    setPendingArgCommand(null)
+    const payload = `/${command.id} ${arg}`
+    if (wsManager.getClient(serverId)?.status() !== 'connected') {
+      Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
+      return
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    sendInput.mutate(payload, {
+      onError: (err) =>
+        Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
+    })
+  }
 
   const buildPayload = () => {
     const trimmed = inputText.trim()
@@ -327,8 +375,8 @@ export default function SessionDetailScreen() {
               <TextInput
                 style={styles.input}
                 value={inputText}
-                onChangeText={setInputText}
-                placeholder="Send input to session..."
+                onChangeText={handleInputChange}
+                placeholder="Send input to session…"
                 placeholderTextColor={dark.text.secondary}
                 multiline
                 returnKeyType="done"
@@ -374,6 +422,22 @@ export default function SessionDetailScreen() {
           }}
         />
       ) : null}
+
+      <SlashCommandBoard
+        visible={slashBoardVisible}
+        query={inputText.startsWith('/') ? inputText.slice(1) : ''}
+        onSelect={handleSlashCommandSelect}
+        onDismiss={() => {
+          setSlashBoardVisible(false)
+          setInputText('')
+        }}
+      />
+
+      <SlashCommandArgModal
+        command={pendingArgCommand}
+        onConfirm={handleSlashArgConfirm}
+        onDismiss={() => setPendingArgCommand(null)}
+      />
 
       {session ? (
         <InfoModal
