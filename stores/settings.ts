@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { NotificationPreferences } from '@/types/api'
+import type { SessionsLayout } from '@/types/ui'
 
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
 const ASYNC_KEY_SETTINGS = 'threadbase_settings'
@@ -12,12 +13,14 @@ interface SettingsStore {
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
+  sessionsLayout: SessionsLayout
   setColorScheme: (scheme: 'dark' | 'light' | 'system') => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
   setHistoryMessageDisplay: (v: 'first' | 'last') => void
   setAddServerAction: (v: AddServerAction) => void
+  setSessionsLayout: (v: SessionsLayout) => void
   hydrate: () => Promise<void>
 }
 
@@ -36,6 +39,7 @@ interface PersistedSettings {
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
+  sessionsLayout: SessionsLayout
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -45,6 +49,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
+  sessionsLayout: 'hub',
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
@@ -55,6 +60,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     })),
   setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
   setAddServerAction: (addServerAction) => set({ addServerAction }),
+  setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   hydrate: async () => {
     const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
     if (!raw) return
@@ -65,6 +71,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         : state.notifications,
       historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
       addServerAction: parsed.addServerAction ?? state.addServerAction,
+      sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
     }))
   },
 }))
@@ -74,6 +81,7 @@ useSettingsStore.subscribe((state) => {
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,
+    sessionsLayout: state.sessionsLayout,
   }
   void AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
 })
