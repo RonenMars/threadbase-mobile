@@ -8,7 +8,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Terminal, CaretRight } from 'phosphor-react-native'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
 
@@ -48,7 +48,7 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
       <View style={styles.sheet}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Ionicons name="terminal-outline" size={15} color={dark.text.accent} />
+            <Terminal size={15} color={dark.text.accent} />
             <Text style={styles.headerTitle}>Commands</Text>
           </View>
           {query.length > 0 && (
@@ -91,11 +91,7 @@ function CommandRow({ command, onPress }: RowProps) {
       accessibilityLabel={`${command.title} command: ${command.description}`}
     >
       <View style={styles.iconWrap}>
-        <Ionicons
-          name={command.icon as any}
-          size={18}
-          color={dark.text.accent}
-        />
+        <command.icon size={18} color={dark.text.accent} />
       </View>
       <View style={styles.rowBody}>
         <View style={styles.rowTitleRow}>
@@ -109,7 +105,7 @@ function CommandRow({ command, onPress }: RowProps) {
           {command.description}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={14} color={dark.text.secondary} />
+      <CaretRight size={14} color={dark.text.secondary} />
     </TouchableOpacity>
   )
 }

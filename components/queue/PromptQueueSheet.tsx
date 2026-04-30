@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet'
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
-import { Ionicons } from '@expo/vector-icons'
+import { PaperPlaneRight } from 'phosphor-react-native'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useSessionsStore } from '@/stores/sessions'
@@ -99,7 +99,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             disabled={!input.trim()}
             accessibilityLabel="Add prompt to queue"
           >
-            <Ionicons name="paper-plane" size={22} color="#fff" />
+            <PaperPlaneRight size={22} color="#fff" />
           </TouchableOpacity>
         </View>
 

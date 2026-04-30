@@ -1,8 +1,29 @@
+import type { Icon } from 'phosphor-react-native'
+import {
+  Trash,
+  Stack,
+  CheckCircle,
+  Question,
+  Pulse,
+  Receipt,
+  FirstAid,
+  Bug,
+  Newspaper,
+  SignOut,
+  Sparkle,
+  Gauge,
+  CalendarBlank,
+  ShieldCheck,
+  GearSix,
+  BookmarkSimple,
+  FileText,
+} from 'phosphor-react-native'
+
 export interface SlashCommand {
   /** The command string without the leading slash */
   id: string
-  /** Ionicons icon name */
-  icon: string
+  /** Phosphor icon component */
+  icon: Icon
   /** Short display title */
   title: string
   /** One-line description shown as subtitle */
@@ -29,68 +50,68 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   // ── No-arg commands (execute immediately) ────────────────────────────────
   {
     id: 'clear',
-    icon: 'trash-outline',
+    icon: Trash,
     title: 'Clear',
     description: 'Clear conversation history and free context',
   },
   {
     id: 'compact',
-    icon: 'albums-outline',
+    icon: Stack,
     title: 'Compact',
     description: 'Compress context with a summary to save tokens',
   },
   {
     id: 'review',
-    icon: 'checkmark-circle-outline',
+    icon: CheckCircle,
     title: 'Review',
     description: 'Review recent changes and provide feedback',
   },
   {
     id: 'help',
-    icon: 'help-circle-outline',
+    icon: Question,
     title: 'Help',
     description: 'Show available commands and usage tips',
   },
   {
     id: 'status',
-    icon: 'pulse-outline',
+    icon: Pulse,
     title: 'Status',
     description: 'Show current session status and context usage',
   },
   {
     id: 'cost',
-    icon: 'receipt-outline',
+    icon: Receipt,
     title: 'Cost',
     description: 'Display token usage and estimated cost so far',
   },
   {
     id: 'doctor',
-    icon: 'medkit-outline',
+    icon: FirstAid,
     title: 'Doctor',
     description: 'Run diagnostics and check environment setup',
   },
   {
     id: 'bug',
-    icon: 'bug-outline',
+    icon: Bug,
     title: 'Bug',
     description: 'Open a prefilled bug report for Claude Code',
   },
   {
     id: 'release-notes',
-    icon: 'newspaper-outline',
+    icon: Newspaper,
     title: 'Release Notes',
     description: 'Show what\'s new in the current Claude Code version',
   },
   {
     id: 'logout',
-    icon: 'log-out-outline',
+    icon: SignOut,
     title: 'Logout',
     description: 'Sign out of your Anthropic account',
   },
   // ── Commands that require an argument ────────────────────────────────────
   {
     id: 'model',
-    icon: 'sparkles-outline',
+    icon: Sparkle,
     title: 'Model',
     description: 'Switch the active Claude model for this session',
     needsArgs: true,
@@ -99,7 +120,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     id: 'effort',
-    icon: 'speedometer-outline',
+    icon: Gauge,
     title: 'Effort',
     description: 'Set reasoning effort level (low / medium / high)',
     needsArgs: true,
@@ -108,7 +129,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     id: 'schedule',
-    icon: 'calendar-outline',
+    icon: CalendarBlank,
     title: 'Schedule',
     description: 'Schedule a prompt to run at a specific time',
     needsArgs: true,
@@ -117,7 +138,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     id: 'permissions',
-    icon: 'shield-checkmark-outline',
+    icon: ShieldCheck,
     title: 'Permissions',
     description: 'Allow or deny a specific tool or file path',
     needsArgs: true,
@@ -126,7 +147,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     id: 'config',
-    icon: 'settings-outline',
+    icon: GearSix,
     title: 'Config',
     description: 'Read or write a Claude Code configuration key',
     needsArgs: true,
@@ -135,7 +156,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     id: 'memory',
-    icon: 'bookmark-outline',
+    icon: BookmarkSimple,
     title: 'Memory',
     description: 'Add or update a persistent memory entry',
     needsArgs: true,
@@ -144,7 +165,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     id: 'init',
-    icon: 'document-text-outline',
+    icon: FileText,
     title: 'Init',
     description: 'Create or update CLAUDE.md for this project',
     needsArgs: true,

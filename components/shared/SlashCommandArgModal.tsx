@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { X, PaperPlaneRight } from 'phosphor-react-native'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { SlashCommand } from '@/constants/slashCommands'
 
@@ -55,11 +55,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.iconWrap}>
-                <Ionicons
-                  name={command.icon as any}
-                  size={18}
-                  color={dark.text.accent}
-                />
+                <command.icon size={18} color={dark.text.accent} />
               </View>
               <View>
                 <Text style={styles.commandName}>/{command.id}</Text>
@@ -69,7 +65,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               </View>
             </View>
             <TouchableOpacity onPress={onDismiss} hitSlop={8} accessibilityLabel="Cancel">
-              <Ionicons name="close" size={20} color={dark.text.secondary} />
+              <X size={20} color={dark.text.secondary} />
             </TouchableOpacity>
           </View>
 
@@ -106,7 +102,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               disabled={!canConfirm}
               accessibilityLabel={`Run /${command.id}`}
             >
-              <Ionicons name="paper-plane" size={15} color="#fff" />
+              <PaperPlaneRight size={15} color="#fff" />
               <Text style={styles.confirmBtnText}>Run /{command.id}</Text>
             </TouchableOpacity>
           </View>

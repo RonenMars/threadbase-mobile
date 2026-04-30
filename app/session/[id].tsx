@@ -16,7 +16,7 @@ import { useHeaderHeight } from '@react-navigation/elements'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
-import { Ionicons } from '@expo/vector-icons'
+import { Copy, Info, Image as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -150,7 +150,7 @@ export default function SessionDetailScreen() {
               accessibilityLabel="Copy terminal output"
               style={{ paddingHorizontal: spacing.xs }}
             >
-              <Ionicons name="copy-outline" size={20} color={dark.text.secondary} />
+              <Copy size={20} color={dark.text.secondary} />
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
@@ -159,7 +159,7 @@ export default function SessionDetailScreen() {
             accessibilityLabel="Session info"
             style={{ paddingHorizontal: spacing.xs }}
           >
-            <Ionicons name="information-circle-outline" size={22} color={dark.text.secondary} />
+            <Info size={22} color={dark.text.secondary} />
           </TouchableOpacity>
         </View>
       ),
@@ -378,7 +378,7 @@ export default function SessionDetailScreen() {
               >
                 {attachments.map((a) => (
                   <View key={a.id} style={styles.chip}>
-                    <Ionicons name="image" size={14} color={dark.text.primary} />
+                    <PhosphorImage size={14} color={dark.text.primary} />
                     <Text style={styles.chipText} numberOfLines={1}>
                       {a.originalName}
                     </Text>
@@ -387,7 +387,7 @@ export default function SessionDetailScreen() {
                       accessibilityLabel={`Remove ${a.originalName}`}
                       hitSlop={8}
                     >
-                      <Ionicons name="close" size={14} color={dark.text.secondary} />
+                      <X size={14} color={dark.text.secondary} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -403,7 +403,7 @@ export default function SessionDetailScreen() {
                 {isUploading ? (
                   <ActivityIndicator size="small" color={dark.text.primary} />
                 ) : (
-                  <Ionicons name="attach" size={22} color={dark.text.primary} />
+                  <Paperclip size={22} color={dark.text.primary} />
                 )}
               </TouchableOpacity>
               <TextInput
@@ -429,7 +429,7 @@ export default function SessionDetailScreen() {
                 }
                 accessibilityLabel="Send input"
               >
-                <Ionicons name="paper-plane" size={22} color="#fff" />
+                <PaperPlaneRight size={22} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>

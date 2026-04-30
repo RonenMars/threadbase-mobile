@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { QrCode } from 'phosphor-react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { useNavigation, useRouter } from 'expo-router'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
@@ -166,8 +166,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               onPress={() => setScannerOpen(true)}
               accessibilityLabel="Scan pairing QR"
             >
-              <Ionicons name="qr-code-outline" size={18} color={dark.text.accent} />
-              <Text style={styles.scanQrText}>Scan QR</Text>
+              <QrCode size={18} color={dark.text.accent} />
             </TouchableOpacity>
           </View>
           <View style={styles.urlRow}>
@@ -382,11 +381,6 @@ const styles = StyleSheet.create({
     backgroundColor: dark.bg.card,
     borderWidth: 1,
     borderColor: dark.border,
-  },
-  scanQrText: {
-    color: dark.text.accent,
-    fontSize: font.sm,
-    fontWeight: '600',
   },
   input: {
     backgroundColor: dark.bg.card,

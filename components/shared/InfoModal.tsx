@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { X, Copy, Check } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
 import { dark, font, spacing } from '@/constants/theme'
 
@@ -40,7 +40,7 @@ export function InfoModal({ visible, onClose, title, fields }: Props) {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{title}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Close">
-            <Ionicons name="close" size={22} color={dark.text.secondary} />
+            <X size={22} color={dark.text.secondary} />
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -61,11 +61,9 @@ export function InfoModal({ visible, onClose, title, fields }: Props) {
                   accessibilityLabel={`Copy ${label}`}
                   hitSlop={8}
                 >
-                  <Ionicons
-                    name={isCopied ? 'checkmark' : 'copy-outline'}
-                    size={16}
-                    color={isCopied ? dark.text.success : dark.text.secondary}
-                  />
+                  {isCopied
+                    ? <Check size={16} color={dark.text.success} />
+                    : <Copy size={16} color={dark.text.secondary} />}
                 </TouchableOpacity>
               </View>
             )

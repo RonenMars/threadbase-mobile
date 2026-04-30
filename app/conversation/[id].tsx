@@ -11,7 +11,7 @@ import {
   NativeSyntheticEvent,
   type ListRenderItemInfo,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Info } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
@@ -115,7 +115,7 @@ export default function ConversationDetailScreen() {
             accessibilityLabel="Conversation info"
             style={{ paddingHorizontal: spacing.xs }}
           >
-            <Ionicons name="information-circle-outline" size={22} color={dark.text.secondary} />
+            <Info size={22} color={dark.text.secondary} />
           </TouchableOpacity>
         ),
       })

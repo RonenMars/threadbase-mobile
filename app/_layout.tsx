@@ -9,7 +9,7 @@ import {
   useRouter,
   useSegments,
 } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { CaretLeft } from 'phosphor-react-native'
 import { StatusBar } from 'expo-status-bar'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { queryClient, queryPersister, persistBuster } from '@/services/query-client'
@@ -184,7 +184,7 @@ export default function RootLayout() {
                     activeOpacity={1}
                     style={{ paddingHorizontal: 4 }}
                   >
-                    <Ionicons name="chevron-back" size={28} color={tintColor ?? '#e6edf3'} />
+                    <CaretLeft size={28} color={tintColor ?? '#e6edf3'} />
                   </TouchableOpacity>
                 ),
               }}
