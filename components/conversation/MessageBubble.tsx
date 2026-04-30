@@ -116,11 +116,13 @@ const styles = StyleSheet.create({
   containerAssistant: { alignItems: 'flex-start' },
   bubble: {
     maxWidth: '85%',
+    alignSelf: 'flex-start',
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.xs,
   },
   bubbleUser: {
+    alignSelf: 'flex-end',
     backgroundColor: '#1f6feb',
     borderBottomRightRadius: radius.sm,
   },
