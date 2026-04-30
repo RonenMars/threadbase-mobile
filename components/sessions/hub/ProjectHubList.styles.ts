@@ -22,8 +22,7 @@ export const styles = StyleSheet.create({
     borderColor: dark.border,
   },
   listContent: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xl,
+    padding: spacing.sm,
   },
   emptyListContent: {
     flexGrow: 1,

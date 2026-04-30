@@ -86,7 +86,7 @@ const ConversationRow = React.memo(function ConversationRow({ conversation: c, s
     >
       <View style={styles.rowMain}>
         <View style={styles.titleRow}>
-          <FolderSimple size={14} color={dark.text.secondary} weight="fill" />
+          <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
           <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
         </View>
         {c.sessionName ? (
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: dark.text.primary,
     fontSize: font.base,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   sessionName: {
     color: dark.text.secondary,

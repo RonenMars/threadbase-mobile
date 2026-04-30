@@ -5,6 +5,8 @@ export const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   projectName: {
     flex: 1,
@@ -27,9 +29,10 @@ export const styles = StyleSheet.create({
   body: {
     borderTopWidth: 1,
     borderTopColor: dark.border,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
   section: {
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
   sectionLabel: {
