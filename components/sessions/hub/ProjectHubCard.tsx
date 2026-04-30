@@ -8,6 +8,7 @@ import { dark } from '@/constants/theme'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
 import { ConvRow } from './ConvRow'
+import { Card } from '@/components/ui/Card'
 import { styles } from './ProjectHubCard.styles'
 import type { ProjectHubCardProps } from './types'
 
@@ -41,7 +42,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
   const multipleTodayConvs = todayConvCount > 1
 
   return (
-    <View style={styles.card}>
+    <Card style={{ overflow: 'hidden' }}>
       <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={styles.header}>
         <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
         <Text style={styles.projectName} numberOfLines={1}>{group.projectName}</Text>
@@ -111,6 +112,6 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
           )}
         </View>
       )}
-    </View>
+    </Card>
   )
 }

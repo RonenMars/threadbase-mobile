@@ -1,20 +1,10 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { dark, font, spacing } from '@/constants/theme'
 
 export const styles = StyleSheet.create({
-  card: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    marginBottom: spacing.sm,
-    overflow: 'hidden',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    gap: spacing.sm,
   },
   projectName: {
     flex: 1,
@@ -40,7 +30,6 @@ export const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   section: {
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
   sectionLabel: {
