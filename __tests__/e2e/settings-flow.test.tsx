@@ -82,9 +82,9 @@ describe('Settings – server section', () => {
     expect(getByText(/2\.1\.0/)).toBeTruthy()
   })
 
-  it('shows Remove button', () => {
-    const { getByText } = render(<SettingsScreen />)
-    expect(getByText('Remove')).toBeTruthy()
+  it('shows Delete server button', () => {
+    const { getByLabelText } = render(<SettingsScreen />)
+    expect(getByLabelText('Delete server')).toBeTruthy()
   })
 
   it('shows Add Server button', () => {
@@ -92,10 +92,12 @@ describe('Settings – server section', () => {
     expect(getByText('+ Add Server')).toBeTruthy()
   })
 
-  it('opens add server flow from settings', () => {
+  it('opens add server modal from settings', () => {
     const { getByText } = render(<SettingsScreen />)
+    // Pressing "+ Add Server" now opens the ServerEditModal (sets editServerId to 'new')
+    // rather than navigating to onboarding. Just verify the button is pressable.
     fireEvent.press(getByText('+ Add Server'))
-    expect(mockPush).toHaveBeenCalledWith('/onboarding?mode=add')
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })
 
@@ -146,10 +148,10 @@ describe('Settings – about section', () => {
 // ── Remove server flow ───────────────────────────────────────────────────────
 
 describe('Settings – remove server flow', () => {
-  it('shows Alert confirmation dialog when Remove is pressed', () => {
+  it('shows Alert confirmation dialog when Delete server is pressed', () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-    const { getByText } = render(<SettingsScreen />)
-    fireEvent.press(getByText('Remove'))
+    const { getByLabelText } = render(<SettingsScreen />)
+    fireEvent.press(getByLabelText('Delete server'))
     expect(alertSpy).toHaveBeenCalledWith(
       'Remove Server',
       expect.any(String),
@@ -164,10 +166,10 @@ describe('Settings – remove server flow', () => {
       confirm?.onPress?.()
     })
 
-    const { getByText } = render(<SettingsScreen />)
+    const { getByLabelText } = render(<SettingsScreen />)
 
     await act(async () => {
-      fireEvent.press(getByText('Remove'))
+      fireEvent.press(getByLabelText('Delete server'))
     })
 
     await waitFor(() => {
@@ -181,8 +183,8 @@ describe('Settings – remove server flow', () => {
       cancel?.onPress?.()
     })
 
-    const { getByText } = render(<SettingsScreen />)
-    fireEvent.press(getByText('Remove'))
+    const { getByLabelText } = render(<SettingsScreen />)
+    fireEvent.press(getByLabelText('Delete server'))
 
     await act(async () => {})
     expect(mockReplace).not.toHaveBeenCalled()
