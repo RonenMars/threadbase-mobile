@@ -2,7 +2,7 @@
 # ship.sh — single-command end-to-end ship pipeline.
 #
 #   preflight → install deps → prebuild (if missing) → bootstrap signing →
-#   archive → upload → poll until VALID → optionally submit for App Store review.
+#   check/bump build number → archive → upload → poll until VALID → optionally submit for App Store review.
 #
 # No simulator, no UI. Default target is TestFlight.
 #
@@ -89,16 +89,20 @@ else
   source .env.signing
 fi
 
-# 5. Archive + upload
-echo "▸ [5/6] Archive and upload"
+# 5. Verify (and auto-bump) build number against TestFlight
+echo "▸ [5/7] Check build number against TestFlight"
+"$SCRIPT_DIR/check-build-number.sh"
+
+# 6. Archive + upload
+echo "▸ [6/7] Archive and upload"
 "$SCRIPT_DIR/archive-and-upload.sh"
 
 # Resolve bundle id for polling
 BUNDLE_ID="${BUNDLE_ID_OVERRIDE:-$(jq -r '.expo.ios.bundleIdentifier' app.json)}"
 [[ -n "$BUNDLE_ID" && "$BUNDLE_ID" != "null" ]] || { echo "Could not resolve bundleId" >&2; exit 1; }
 
-# 6. Wait until VALID (or timeout — bounded by poll-build.sh kill switches)
-echo "▸ [6/6] Wait for App Store Connect processing"
+# 7. Wait until VALID (or timeout — bounded by poll-build.sh kill switches)
+echo "▸ [7/7] Wait for App Store Connect processing"
 "$SCRIPT_DIR/poll-build.sh" "$BUNDLE_ID" --watch --timeout 1800 --interval 30
 
 if [[ "$TARGET" == "testflight" ]]; then
@@ -107,8 +111,8 @@ if [[ "$TARGET" == "testflight" ]]; then
   exit 0
 fi
 
-# 7. Production: submit for App Store review
-echo "▸ [7/7] Submit for App Store review"
+# 8. Production: submit for App Store review
+echo "▸ [8/8] Submit for App Store review"
 VERSION=$(jq -r '.expo.version' app.json)
 [[ -n "$VERSION" && "$VERSION" != "null" ]] || { echo "expo.version missing in app.json" >&2; exit 1; }
 
