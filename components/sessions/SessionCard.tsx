@@ -7,7 +7,8 @@ import { SessionStatusBadge } from './SessionStatusBadge'
 import { MachineBadge } from './MachineBadge'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { Badge } from '@/components/ui/Badge'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { Card } from '@/components/ui/Card'
+import { dark, font, spacing } from '@/constants/theme'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -85,56 +86,44 @@ export function SessionCard({ session }: Props) {
 
   return (
     <Animated.View entering={isNew ? FadeInDown : undefined}>
-      <TouchableOpacity
-        onPress={handlePress}
-        onLongPress={handleLongPress}
-        activeOpacity={0.75}
-        accessibilityLabel={`Session ${session.projectName}, status ${session.status}, ${formatElapsed(session.elapsedMs)}`}
-        accessibilityRole="button"
-        style={[styles.card, isWaiting && styles.cardWaiting]}
-      >
-        <View style={styles.row}>
-          <FolderSimple size={16} color={dark.text.secondary} weight="fill" />
-          <Text style={styles.projectName} numberOfLines={1}>{session.projectName}</Text>
-          {session.branch ? (
-            <Badge label={session.branch} />
-          ) : null}
-          {session.machineName ? (
-            <MachineBadge machineName={session.machineName} />
-          ) : null}
-          {multipleServers ? (
-            <ServerBadge serverId={session.serverId} label={session.serverLabel} />
-          ) : null}
-        </View>
+      <Card variant={isWaiting ? 'warning' : 'default'}>
+        <TouchableOpacity
+          onPress={handlePress}
+          onLongPress={handleLongPress}
+          activeOpacity={0.75}
+          accessibilityLabel={`Session ${session.projectName}, status ${session.status}, ${formatElapsed(session.elapsedMs)}`}
+          accessibilityRole="button"
+        >
+          <View style={styles.row}>
+            <FolderSimple size={16} color={dark.text.secondary} weight="fill" />
+            <Text style={styles.projectName} numberOfLines={1}>{session.projectName}</Text>
+            {session.branch ? (
+              <Badge label={session.branch} />
+            ) : null}
+            {session.machineName ? (
+              <MachineBadge machineName={session.machineName} />
+            ) : null}
+            {multipleServers ? (
+              <ServerBadge serverId={session.serverId} label={session.serverLabel} />
+            ) : null}
+          </View>
 
-        <View style={styles.statusRow}>
-          <SessionStatusBadge status={session.status} />
-          <Text style={styles.meta}>{formatElapsed(session.elapsedMs)}</Text>
-          <Text style={styles.meta}>{session.promptCount} prompts</Text>
-        </View>
+          <View style={styles.statusRow}>
+            <SessionStatusBadge status={session.status} />
+            <Text style={styles.meta}>{formatElapsed(session.elapsedMs)}</Text>
+            <Text style={styles.meta}>{session.promptCount} prompts</Text>
+          </View>
 
-        {session.lastOutput ? (
-          <Text style={styles.output} numberOfLines={2}>{session.lastOutput}</Text>
-        ) : null}
-      </TouchableOpacity>
+          {session.lastOutput ? (
+            <Text style={styles.output} numberOfLines={2}>{session.lastOutput}</Text>
+          ) : null}
+        </TouchableOpacity>
+      </Card>
     </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-    minHeight: 44,
-  },
-  cardWaiting: {
-    borderColor: dark.status.waiting,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
