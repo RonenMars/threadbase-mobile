@@ -94,7 +94,12 @@ export function AddServerScreen({ isAddingServer }: Props) {
         if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
 
         await res.json()
-        const id = await addServer(url, keyArg, labelArg || undefined)
+        const addResult = await addServer(url, keyArg, labelArg || undefined)
+        if (typeof addResult !== 'string') {
+          setError('This server is already in your list.')
+          return
+        }
+        const id = addResult
         const hadCustomMultiSelection = displayedServerIds.length > 1
         if (hadCustomMultiSelection) {
           if (addServerAction === 'ask') {

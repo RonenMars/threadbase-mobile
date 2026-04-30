@@ -10,6 +10,7 @@ function makeServer(id: string, overrides: Partial<ServerConfig> = {}): ServerCo
     apiKey: 'key',
     isConnected: false,
     serverInfo: null,
+    connectionError: null,
     ...overrides,
   }
 }

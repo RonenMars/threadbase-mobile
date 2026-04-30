@@ -15,7 +15,7 @@ beforeEach(() => {
 describe('ServersStore – setConnected', () => {
   it('marks a server as connected', () => {
     useServersStore.setState({
-      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: false, serverInfo: null } },
+      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: false, serverInfo: null, connectionError: null } },
       activeServerIds: ['srv_test'],
     })
     useServersStore.getState().setConnected('srv_test', true)
@@ -24,7 +24,7 @@ describe('ServersStore – setConnected', () => {
 
   it('marks a server as disconnected', () => {
     useServersStore.setState({
-      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: true, serverInfo: null } },
+      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: true, serverInfo: null, connectionError: null } },
       activeServerIds: ['srv_test'],
     })
     useServersStore.getState().setConnected('srv_test', false)
@@ -34,7 +34,7 @@ describe('ServersStore – setConnected', () => {
   it('stores serverInfo when provided', () => {
     const info = { version: '1.0.0', machineName: 'mac', platform: 'darwin', activeSessions: 2 }
     useServersStore.setState({
-      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: false, serverInfo: null } },
+      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: false, serverInfo: null, connectionError: null } },
       activeServerIds: ['srv_test'],
     })
     useServersStore.getState().setConnected('srv_test', true, info)
@@ -45,7 +45,7 @@ describe('ServersStore – setConnected', () => {
 describe('ServersStore – removeServer', () => {
   it('removes a server and calls SecureStore.deleteItemAsync', async () => {
     useServersStore.setState({
-      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: true, serverInfo: null } },
+      servers: { srv_test: { id: 'srv_test', url: 'http://test.local', apiKey: 'key', isConnected: true, serverInfo: null, connectionError: null } },
       activeServerIds: ['srv_test'],
     })
     await useServersStore.getState().removeServer('srv_test')

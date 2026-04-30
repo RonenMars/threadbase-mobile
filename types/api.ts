@@ -147,6 +147,7 @@ export interface ServerConfig {
   label?: string
   isConnected: boolean
   serverInfo: ServerInfo | null
+  connectionError: string | null
 }
 
 export interface MultiSession extends Session {

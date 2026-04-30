@@ -18,6 +18,7 @@ interface PersistedServer {
   id: string
   url: string
   label?: string
+  connectionError?: string
 }
 
 interface ServersStore {
@@ -28,11 +29,13 @@ interface ServersStore {
   displayedServerIds: string[]
   isLoading: boolean
 
-  addServer: (url: string, apiKey: string, label?: string) => Promise<string>
+  addServer: (url: string, apiKey: string, label?: string) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
+  refreshServerInfo: (serverId: string) => Promise<void>
+  editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
   getServer: (serverId: string) => ServerConfig | undefined
 
@@ -58,6 +61,7 @@ async function persistServerList(
       id: servers[id].id,
       url: servers[id].url,
       label: servers[id].label,
+      connectionError: servers[id].connectionError ?? undefined,
     }))
   const payload = {
     list,
@@ -96,10 +100,19 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
   getServer: (serverId: string) => get().servers[serverId],
 
-  addServer: async (url: string, apiKey: string, label?: string) => {
+  addServer: async (url: string, apiKey: string, label?: string): Promise<string | { error: 'duplicate' }> => {
     const normalised = url.replace(/\/+$/, '')
-    const id = serverIdFromUrl(normalised)
 
+    // Duplicate check: same normalised URL AND same API key
+    const { servers, activeServerIds } = get()
+    for (const id of activeServerIds) {
+      const s = servers[id]
+      if (s && s.url === normalised && s.apiKey === apiKey) {
+        return { error: 'duplicate' }
+      }
+    }
+
+    const id = serverIdFromUrl(normalised)
     await SecureStore.setItemAsync(secureKeyForServer(id), apiKey)
 
     const config: ServerConfig = {
@@ -109,6 +122,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       label,
       isConnected: false,
       serverInfo: null,
+      connectionError: null,
     }
 
     set((state) => {
@@ -119,7 +133,6 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const displayedServerIds = state.displayedServerIds.includes(id)
         ? state.displayedServerIds
         : [...state.displayedServerIds, id]
-      // Persist asynchronously (fire-and-forget from set callback)
       persistServerList(servers, activeServerIds, displayedServerIds)
       return { servers, activeServerIds, displayedServerIds }
     })
@@ -173,6 +186,90 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     })
   },
 
+  refreshServerInfo: async (serverId: string): Promise<void> => {
+    const server = get().servers[serverId]
+    if (!server) return
+
+    try {
+      const response = await fetch(`${server.url}/api/info`, {
+        headers: { Authorization: `Bearer ${server.apiKey}` },
+      })
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`)
+      }
+      const info = await response.json() as ServerInfo
+      set((state) => {
+        const s = state.servers[serverId]
+        if (!s) return state
+        const updated = { ...s, serverInfo: info, connectionError: null }
+        const servers = { ...state.servers, [serverId]: updated }
+        persistServerList(servers, state.activeServerIds, state.displayedServerIds)
+        return { servers }
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      set((state) => {
+        const s = state.servers[serverId]
+        if (!s) return state
+        const updated = { ...s, serverInfo: null, connectionError: message }
+        const servers = { ...state.servers, [serverId]: updated }
+        persistServerList(servers, state.activeServerIds, state.displayedServerIds)
+        return { servers }
+      })
+    }
+  },
+
+  editServer: async (
+    serverId: string,
+    patch: { url: string; apiKey: string; label?: string },
+  ): Promise<void | { error: 'duplicate' }> => {
+    const normalised = patch.url.replace(/\/+$/, '')
+    const { servers, activeServerIds, displayedServerIds } = get()
+
+    // Duplicate check: same URL+key as any OTHER server
+    for (const id of activeServerIds) {
+      if (id === serverId) continue
+      const s = servers[id]
+      if (s && s.url === normalised && s.apiKey === patch.apiKey) {
+        return { error: 'duplicate' }
+      }
+    }
+
+    const existingServer = servers[serverId]
+    if (!existingServer) return
+
+    const urlChanged = normalised !== existingServer.url
+    const newId = urlChanged ? serverIdFromUrl(normalised) : serverId
+
+    // Update SecureStore key if ID changed
+    if (urlChanged && newId !== serverId) {
+      await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
+    }
+    await SecureStore.setItemAsync(secureKeyForServer(newId), patch.apiKey)
+
+    set((state) => {
+      const { [serverId]: old, ...rest } = state.servers
+      const updated: ServerConfig = {
+        ...old,
+        id: newId,
+        url: normalised,
+        apiKey: patch.apiKey,
+        label: patch.label,
+        isConnected: false,
+        serverInfo: null,
+        connectionError: null,
+      }
+      const newServers = { ...rest, [newId]: updated }
+
+      const replaceId = (id: string) => (id === serverId ? newId : id)
+      const newActiveIds = state.activeServerIds.map(replaceId)
+      const newDisplayedIds = state.displayedServerIds.map(replaceId)
+
+      persistServerList(newServers, newActiveIds, newDisplayedIds)
+      return { servers: newServers, activeServerIds: newActiveIds, displayedServerIds: newDisplayedIds }
+    })
+  },
+
   loadPersistedServers: async () => {
     set({ isLoading: true })
     try {
@@ -206,6 +303,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             label: entry.label,
             isConnected: false,
             serverInfo: null,
+            connectionError: entry.connectionError ?? null,
           }
           activeServerIds.push(entry.id)
         }
@@ -237,6 +335,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           apiKey: legacyKey,
           isConnected: false,
           serverInfo: null,
+          connectionError: null,
         }
 
         const servers = { [id]: config }

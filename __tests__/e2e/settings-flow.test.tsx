@@ -40,6 +40,7 @@ beforeEach(() => {
         label: 'Dev Mac',
         isConnected: true,
         serverInfo: SERVER_INFO,
+        connectionError: null,
       },
     },
     activeServerIds: ['srv_test'],
