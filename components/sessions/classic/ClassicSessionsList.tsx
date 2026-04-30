@@ -1,8 +1,9 @@
 import React from 'react'
-import { FlatList, RefreshControl, StyleSheet } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { dark, spacing } from '@/constants/theme'
+import { dark } from '@/constants/theme'
+import { styles } from './ClassicSessionsList.styles'
 import type { MultiSession } from '@/types/api'
 
 interface Props {
@@ -20,11 +21,7 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh }: Props) 
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={dark.text.secondary}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
       }
       ListEmptyComponent={
         <EmptyState title="No sessions" subtitle="Start a Claude Code session to see it here" />
@@ -32,7 +29,3 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh }: Props) 
     />
   )
 }
-
-const styles = StyleSheet.create({
-  content: { padding: spacing.sm, flexGrow: 1 },
-})

@@ -1,42 +1,16 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
-import {
-  FlatList,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SectionList,
-  RefreshControl,
-} from 'react-native'
+import { FlatList, View, Text, TextInput, TouchableOpacity, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useDebounce } from 'use-debounce'
-import type { MultiSession, MultiConversation } from '../../../types/api'
-import type { SortBy, SortOrder } from '../../../types/ui'
-import { useProjectGroups, type ProjectGroup } from './useProjectGroups'
+import { useProjectGroups } from './useProjectGroups'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
-import { dark, font, spacing } from '@/constants/theme'
-
-interface Props {
-  sessions: MultiSession[]
-  conversations: MultiConversation[]
-  sortBy: SortBy
-  sortOrder: SortOrder
-  refreshing: boolean
-  onRefresh: () => void
-  searchOpen: boolean
-}
-
-type SearchSection = {
-  title: string
-  data: (MultiConversation | MultiSession)[]
-  kind: 'conversation' | 'session'
-}
-
-function isMultiSession(item: MultiConversation | MultiSession): item is MultiSession {
-  return 'status' in item
-}
+import { dark } from '@/constants/theme'
+import { isMultiSession } from './types'
+import { styles } from './ProjectHubList.styles'
+import type { ProjectHubListProps, SearchSection } from './types'
+import type { ProjectGroup } from './useProjectGroups'
+import type { MultiSession, MultiConversation } from '@/types/api'
 
 export function ProjectHubList({
   sessions,
@@ -46,7 +20,7 @@ export function ProjectHubList({
   refreshing,
   onRefresh,
   searchOpen,
-}: Props) {
+}: ProjectHubListProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
@@ -56,19 +30,14 @@ export function ProjectHubList({
   const groups = useProjectGroups(sessions, conversations, sortBy, sortOrder)
 
   useEffect(() => {
-    if (!searchOpen) {
-      setSearchQuery('')
-    }
+    if (!searchOpen) setSearchQuery('')
   }, [searchOpen])
 
   const toggleOpen = useCallback((projectPath: string) => {
     setOpenPaths((prev) => {
       const next = new Set(prev)
-      if (next.has(projectPath)) {
-        next.delete(projectPath)
-      } else {
-        next.add(projectPath)
-      }
+      if (next.has(projectPath)) next.delete(projectPath)
+      else next.add(projectPath)
       return next
     })
   }, [])
@@ -91,26 +60,21 @@ export function ProjectHubList({
     [router],
   )
 
-  // Build search sections when there's a debounced query
   const searchSections: SearchSection[] = React.useMemo(() => {
     if (!debouncedQuery) return []
     const q = debouncedQuery.toLowerCase()
 
-    const matchedConversations = conversations.filter((c) => {
-      return (
-        c.title?.toLowerCase().includes(q) ||
-        c.preview?.toLowerCase().includes(q) ||
-        c.firstMessage?.text?.toLowerCase().includes(q) ||
-        c.lastMessage?.text?.toLowerCase().includes(q)
-      )
-    })
+    const matchedConversations = conversations.filter((c) =>
+      c.title?.toLowerCase().includes(q) ||
+      c.preview?.toLowerCase().includes(q) ||
+      c.firstMessage?.text?.toLowerCase().includes(q) ||
+      c.lastMessage?.text?.toLowerCase().includes(q),
+    )
 
-    const matchedSessions = sessions.filter((s) => {
-      return (
-        s.projectName?.toLowerCase().includes(q) ||
-        s.lastOutput?.toLowerCase().includes(q)
-      )
-    })
+    const matchedSessions = sessions.filter((s) =>
+      s.projectName?.toLowerCase().includes(q) ||
+      s.lastOutput?.toLowerCase().includes(q),
+    )
 
     const result: SearchSection[] = []
     if (matchedConversations.length > 0) {
@@ -132,41 +96,19 @@ export function ProjectHubList({
 
   const renderSearchResultItem = useCallback(
     ({ item }: { item: MultiConversation | MultiSession }) => {
+      const lastSegment = item.projectPath?.split('/').filter(Boolean).pop() ?? ''
       if (isMultiSession(item)) {
-        const lastSegment = item.projectPath?.split('/').filter(Boolean).pop() ?? ''
         return (
-          <TouchableOpacity
-            style={styles.resultRow}
-            onPress={() => handleSessionPress(item)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.resultTitle} numberOfLines={1}>
-              {item.projectName}
-            </Text>
-            {lastSegment ? (
-              <Text style={styles.resultSubtitle} numberOfLines={1}>
-                {lastSegment}
-              </Text>
-            ) : null}
+          <TouchableOpacity style={styles.resultRow} onPress={() => handleSessionPress(item)} activeOpacity={0.7}>
+            <Text style={styles.resultTitle} numberOfLines={1}>{item.projectName}</Text>
+            {lastSegment ? <Text style={styles.resultSubtitle} numberOfLines={1}>{lastSegment}</Text> : null}
           </TouchableOpacity>
         )
       }
-
-      const lastSegment = item.projectPath?.split('/').filter(Boolean).pop() ?? ''
       return (
-        <TouchableOpacity
-          style={styles.resultRow}
-          onPress={() => handleConversationPress(item)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.resultTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          {lastSegment ? (
-            <Text style={styles.resultSubtitle} numberOfLines={1}>
-              {lastSegment}
-            </Text>
-          ) : null}
+        <TouchableOpacity style={styles.resultRow} onPress={() => handleConversationPress(item)} activeOpacity={0.7}>
+          <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
+          {lastSegment ? <Text style={styles.resultSubtitle} numberOfLines={1}>{lastSegment}</Text> : null}
         </TouchableOpacity>
       )
     },
@@ -232,78 +174,14 @@ export function ProjectHubList({
           keyExtractor={(item) => item.projectPath}
           renderItem={renderGroup}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={dark.text.secondary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
           }
-          contentContainerStyle={
-            groups.length === 0 ? styles.emptyListContent : styles.listContent
-          }
+          contentContainerStyle={groups.length === 0 ? styles.emptyListContent : styles.listContent}
           ListEmptyComponent={
-            <EmptyState
-              title="No projects yet"
-              subtitle="Sessions and conversations will appear here"
-            />
+            <EmptyState title="No projects yet" subtitle="Sessions and conversations will appear here" />
           }
         />
       )}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  searchBar: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: dark.border,
-  },
-  searchInput: {
-    backgroundColor: dark.bg.card,
-    color: dark.text.primary,
-    fontSize: font.base,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  listContent: {
-    paddingBottom: spacing.xl,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-  },
-  sectionHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
-  },
-  sectionHeaderText: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  resultRow: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-  },
-  resultTitle: {
-    color: dark.text.primary,
-    fontSize: font.base,
-  },
-  resultSubtitle: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    marginTop: 2,
-  },
-})

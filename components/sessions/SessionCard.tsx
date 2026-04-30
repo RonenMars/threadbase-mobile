@@ -8,6 +8,7 @@ import { MachineBadge } from './MachineBadge'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { Badge } from '@/components/ui/Badge'
 import { dark, font, radius, spacing } from '@/constants/theme'
+import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
@@ -93,6 +94,7 @@ export function SessionCard({ session }: Props) {
         style={[styles.card, isWaiting && styles.cardWaiting]}
       >
         <View style={styles.row}>
+          <FolderSimple size={16} color={dark.text.secondary} weight="fill" />
           <Text style={styles.projectName} numberOfLines={1}>{session.projectName}</Text>
           {session.branch ? (
             <Badge label={session.branch} />

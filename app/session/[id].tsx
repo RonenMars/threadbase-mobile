@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -14,9 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
-import { Copy, Info, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
+import { Info, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -133,26 +132,12 @@ export default function SessionDetailScreen() {
     )
   }
 
-  const copyTerminal = useCallback(() => {
-    Clipboard.setStringAsync(lines.join('\n'))
-  }, [lines])
-
   useEffect(() => {
     if (!session) return
     navigation.setOptions({
       title: session.projectName,
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          {lines.length > 0 ? (
-            <TouchableOpacity
-              onPress={copyTerminal}
-              hitSlop={8}
-              accessibilityLabel="Copy terminal output"
-              style={{ paddingHorizontal: spacing.xs }}
-            >
-              <Copy size={20} color={dark.text.secondary} />
-            </TouchableOpacity>
-          ) : null}
           <TouchableOpacity
             onPress={() => setInfoVisible(true)}
             hitSlop={8}
@@ -164,7 +149,7 @@ export default function SessionDetailScreen() {
         </View>
       ),
     })
-  }, [session, navigation, lines.length, copyTerminal])
+  }, [session, navigation])
 
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {

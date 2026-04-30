@@ -22,14 +22,14 @@ import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
-import { ClassicSessionsList } from '@/components/sessions/ClassicSessionsList'
+import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, DotsThreeOutline, Gear, EnvelopeSimple } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, DotsThreeOutline, Gear, EnvelopeSimple, FolderSimple } from 'phosphor-react-native'
 import { dark, font, spacing } from '@/constants/theme'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -259,9 +259,12 @@ export default function ProjectsHub() {
                       router.push(`/conversation/${item.item.id}?server=${item.item.serverId}`)
                     }
                   >
-                    <Text style={styles.convCardTitle} numberOfLines={1}>
-                      {item.item.title || item.item.projectPath}
-                    </Text>
+                    <View style={styles.convCardTitleRow}>
+                      <FolderSimple size={14} color={dark.text.secondary} weight="fill" />
+                      <Text style={styles.convCardTitle} numberOfLines={1}>
+                        {item.item.title || item.item.projectPath}
+                      </Text>
+                    </View>
                     {item.item.preview ? (
                       <Text style={styles.convCardPreview} numberOfLines={2}>
                         {item.item.preview}
@@ -504,6 +507,7 @@ const styles = StyleSheet.create({
   segmentRow: {
     flexDirection: 'row',
     marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
     marginBottom: spacing.sm,
     backgroundColor: dark.bg.card,
     borderRadius: 10,
@@ -545,7 +549,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.sm,
   },
+  convCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   convCardTitle: {
+    flex: 1,
     color: dark.text.primary,
     fontSize: font.base,
     fontWeight: '600',

@@ -17,6 +17,7 @@ import { ServerBadge } from '@/components/servers/ServerBadge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { dark, font, radius, spacing } from '@/constants/theme'
+import { FolderSimple } from 'phosphor-react-native'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import type { MultiConversation } from '@/types/api'
@@ -84,7 +85,10 @@ const ConversationRow = React.memo(function ConversationRow({ conversation: c, s
       accessibilityRole="button"
     >
       <View style={styles.rowMain}>
-        <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
+        <View style={styles.titleRow}>
+          <FolderSimple size={14} color={dark.text.secondary} weight="fill" />
+          <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
+        </View>
         {c.sessionName ? (
           <Text style={styles.sessionName} numberOfLines={1}>{c.sessionName}</Text>
         ) : null}
@@ -313,7 +317,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   rowMain: { flex: 1, gap: spacing.xs },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   title: {
+    flex: 1,
     color: dark.text.primary,
     fontSize: font.base,
     fontWeight: '500',
