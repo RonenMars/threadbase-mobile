@@ -42,7 +42,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
   const multipleTodayConvs = todayConvCount > 1
 
   return (
-    <Card style={{ overflow: 'hidden' }}>
+    <Card style={{ overflow: 'hidden', gap: 0 }}>
       <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={styles.header}>
         <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
         <Text style={styles.projectName} numberOfLines={1}>{group.projectName}</Text>
