@@ -2,6 +2,7 @@ import React from 'react'
 import { Text } from 'react-native'
 import { render } from '@testing-library/react-native'
 import { Card } from '@/components/ui/Card'
+import { dark } from '@/constants/theme'
 
 describe('Card', () => {
   it('renders children', () => {
@@ -16,7 +17,7 @@ describe('Card', () => {
     const card = getByTestId('card')
     expect(card.props.style).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ borderColor: '#d29922' }),
+        expect.objectContaining({ borderColor: dark.status.waiting }),
       ])
     )
   })
