@@ -68,6 +68,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const isStreamingRef = useRef(isStreaming)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevScrollY = useRef(0)
+  const contentHeightRef = useRef(0)
 
   useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
   useEffect(() => () => { if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current) }, [])
@@ -84,10 +85,14 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
     setShowTopButton(scrollingUp && y > 100)
   }, [])
 
-  const jumpToBottom = useCallback(() => {
-    listRef.current?.scrollToEnd({ animated: true })
-    setShowJumpButton(false)
+  const scrollToBottom = useCallback((animated: boolean) => {
+    listRef.current?.scrollToOffset({ offset: contentHeightRef.current, animated })
   }, [])
+
+  const jumpToBottom = useCallback(() => {
+    scrollToBottom(true)
+    setShowJumpButton(false)
+  }, [scrollToBottom])
 
   const copyAll = useCallback(() => {
     Clipboard.setStringAsync(lines.join('\n'))
@@ -126,12 +131,13 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         onScroll={handleScroll}
         scrollEventThrottle={100}
         onScrollBeginDrag={() => { isAtBottomRef.current = false }}
-        onContentSizeChange={() => {
+        onContentSizeChange={(_w, h) => {
+          contentHeightRef.current = h
           if (!isAtBottomRef.current) return
           if (scrollTimerRef.current !== null) clearTimeout(scrollTimerRef.current)
           scrollTimerRef.current = setTimeout(() => {
             scrollTimerRef.current = null
-            if (isAtBottomRef.current) listRef.current?.scrollToEnd({ animated: false })
+            if (isAtBottomRef.current) scrollToBottom(false)
           }, isStreamingRef.current ? 150 : 0)
         }}
         initialNumToRender={40}

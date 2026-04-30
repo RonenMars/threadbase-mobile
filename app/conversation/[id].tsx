@@ -87,6 +87,7 @@ export default function ConversationDetailScreen() {
   const hasInitialScrolled = useRef(false)
   const hasStartedAutoScroll = useRef(false)
   const prevScrollY = useRef(0)
+  const contentHeightRef = useRef(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
@@ -128,10 +129,15 @@ export default function ConversationDetailScreen() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  const handleContentSizeChange = useCallback(() => {
-    if (hasInitialScrolled.current) return
-    listRef.current?.scrollToEnd({ animated: false })
+  const scrollToBottom = useCallback((animated: boolean) => {
+    listRef.current?.scrollToOffset({ offset: contentHeightRef.current, animated })
   }, [])
+
+  const handleContentSizeChange = useCallback((_w: number, h: number) => {
+    contentHeightRef.current = h
+    if (hasInitialScrolled.current) return
+    scrollToBottom(false)
+  }, [scrollToBottom])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
@@ -255,7 +261,7 @@ export default function ConversationDetailScreen() {
           {showScrollBottom ? (
             <TouchableOpacity
               style={[styles.scrollBtn, styles.scrollBtnBottom]}
-              onPress={() => listRef.current?.scrollToEnd({ animated: true })}
+              onPress={() => scrollToBottom(true)}
               accessibilityLabel="Scroll to bottom"
             >
               <Text style={styles.scrollBtnText}>↓ Bottom</Text>

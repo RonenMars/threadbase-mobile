@@ -50,7 +50,7 @@ function CodeBlock({ code }: { code: string }) {
           <Text style={styles.codeCopyText}>Copy</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 1 }}>
         <Text style={styles.codeText} selectable>{displayed}</Text>
       </ScrollView>
       {shouldCollapse ? (

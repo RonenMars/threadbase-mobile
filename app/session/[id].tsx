@@ -274,7 +274,7 @@ export default function SessionDetailScreen() {
     (session.status === 'waiting_input' || session.status === 'running') &&
     !discoveredEmptyPlaceholder
 
-  const isWakingUp = session?.status === 'running'
+  const isWakingUp = session?.status === 'running' && !isStreaming && lines.length === 0
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
