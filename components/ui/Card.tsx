@@ -6,11 +6,12 @@ interface CardProps {
   children: React.ReactNode
   style?: ViewStyle
   variant?: 'default' | 'warning' | 'danger'
+  testID?: string
 }
 
-export function Card({ children, style, variant = 'default' }: CardProps) {
+export function Card({ children, style, variant = 'default', testID }: CardProps) {
   return (
-    <View style={[styles.card, variantStyles[variant], style]}>
+    <View testID={testID} style={[styles.card, variantStyles[variant], style]}>
       {children}
     </View>
   )
