@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Hub Design — Detail</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    padding: 20px 16px 80px;
+  }
+
+  h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .tagline { color: #888; font-size: 13px; margin-bottom: 24px; }
+
+  .section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: #888; margin-bottom: 12px; margin-top: 28px;
+  }
+
+  /* ── TWO-UP PHONES ── */
+  .two-up { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .phone-wrap { flex: 0 0 auto; }
+  .phone-label { font-size: 11px; font-weight: 600; color: #aaa; text-align: center; margin-bottom: 6px; }
+
+  .phone {
+    width: 210px;
+    background: #000;
+    border-radius: 32px;
+    border: 2px solid #2c2c2e;
+    overflow: hidden;
+    font-size: 9px;
+  }
+  .phone-status {
+    background: #000;
+    padding: 8px 14px 4px;
+    display: flex;
+    justify-content: space-between;
+    color: #ccc;
+    font-size: 9px;
+    font-weight: 500;
+  }
+  .phone-header {
+    padding: 6px 14px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1c1c1e;
+  }
+  .phone-title { font-size: 16px; font-weight: 700; color: #fff; }
+  .phone-header-right { display: flex; align-items: center; gap: 8px; }
+  .icon-btn { color: #0a84ff; font-size: 14px; line-height: 1; }
+
+  .phone-toolbar {
+    padding: 6px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1c1c1e;
+  }
+  .toolbar-left { display: flex; gap: 8px; }
+  .tb-icon-btn {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: #1c1c1e;
+    border: 1px solid #2c2c2e;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .tb-icon-btn.active { background: #0a84ff18; border-color: #0a84ff44; color: #0a84ff; }
+  .ws-status { font-size: 8px; color: #888; }
+  .ws-dot { color: #30d158; margin-right: 3px; }
+
+  .phone-scroll { padding: 8px 8px 4px; min-height: 340px; overflow: hidden; }
+
+  /* ── HUB VIEW ── */
+  .hub-card {
+    background: #1c1c1e;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    border: 1px solid #2c2c2e;
+  }
+  .hub-header {
+    padding: 8px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #242426;
+  }
+  .hub-proj-name { font-size: 11px; font-weight: 700; color: #fff; }
+  .hub-right { display: flex; align-items: center; gap: 6px; }
+  .hub-counts { font-size: 8px; color: #888; }
+  .hub-chevron { font-size: 9px; color: #555; transition: transform 0.2s; }
+  .hub-chevron.open { transform: rotate(180deg); }
+
+  .sessions-strip { padding: 6px 10px; border-bottom: 1px solid #2c2c2e; }
+  .strip-label { font-size: 7px; color: #666; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; font-weight: 600; }
+  .sess-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+  .sess-pill {
+    padding: 2px 7px; border-radius: 5px;
+    font-size: 7px; font-weight: 700;
+    display: flex; align-items: center; gap: 3px;
+    border: 1px solid transparent;
+  }
+  .pill-running { background: #30d15814; border-color: #30d15840; color: #30d158; }
+  .pill-idle    { background: #ff9f0a14; border-color: #ff9f0a40; color: #ff9f0a; }
+  .pill-empty   { background: #48484a30; border-color: #48484a; color: #888; }
+  .pill-failed  { background: #ff375f14; border-color: #ff375f40; color: #ff375f; }
+  .pill-done    { background: #30d15814; border-color: #30d15840; color: #30d158; }
+
+  .conv-list { padding: 0; }
+  .conv-row {
+    padding: 5px 10px;
+    border-bottom: 1px solid #1c1c1e;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .conv-row:last-child { border-bottom: none; }
+  .conv-title { font-size: 9px; color: #ccc; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv-meta { font-size: 7px; color: #555; margin-top: 1px; }
+  .conv-right { text-align: right; }
+  .conv-date { font-size: 7px; color: #666; }
+  .conv-msgs { font-size: 7px; color: #555; }
+  .see-more {
+    padding: 5px 10px;
+    font-size: 8px; color: #0a84ff;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  /* ── CLASSIC LIST VIEW ── */
+  .classic-row {
+    padding: 8px 10px;
+    border-bottom: 1px solid #1c1c1e;
+    display: flex;
+    gap: 6px;
+  }
+  .classic-left { flex: 1; }
+  .classic-proj { font-size: 10px; font-weight: 600; color: #fff; }
+  .classic-status { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+  .classic-output { font-size: 7px; color: #555; font-family: monospace; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+  .classic-right { text-align: right; }
+  .classic-time { font-size: 7px; color: #666; }
+  .classic-prompts { font-size: 7px; color: #555; }
+  .status-dot { font-size: 7px; }
+  .status-label { font-size: 7px; font-weight: 600; }
+  .badge-sm {
+    font-size: 6px; padding: 1px 4px; border-radius: 3px;
+    background: #2c2c2e; color: #888; border: 1px solid #3a3a3c;
+  }
+
+  /* SEARCH BAR */
+  .search-bar {
+    background: #1c1c1e;
+    border: 1px solid #2c2c2e;
+    border-radius: 10px;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+  .search-icon { font-size: 10px; color: #888; }
+  .search-text { font-size: 9px; color: #555; flex: 1; }
+
+  /* TAB BAR */
+  .tab-bar {
+    display: flex; justify-content: space-around;
+    padding: 8px 0 6px;
+    border-top: 1px solid #2c2c2e;
+    background: #1c1c1e;
+  }
+  .tab { font-size: 7px; color: #888; text-align: center; }
+  .tab.active { color: #0a84ff; }
+  .tab-icon { font-size: 12px; display: block; margin-bottom: 1px; }
+
+  /* ── SORT SHEET ── */
+  .sheet {
+    background: #1c1c1e;
+    border-radius: 16px;
+    padding: 12px;
+    margin-top: 16px;
+    border: 1px solid #2c2c2e;
+  }
+  .sheet-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+  .sheet-section { margin-bottom: 12px; }
+  .sheet-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 6px; }
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: 500;
+    border: 1px solid #3a3a3c; background: #2c2c2e; color: #aaa;
+    cursor: pointer;
+  }
+  .chip.sel { border-color: #0a84ff; background: #0a84ff18; color: #fff; }
+  .chip-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .sheet-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+  .btn-cancel { font-size: 12px; color: #888; padding: 6px 10px; }
+  .btn-apply { font-size: 12px; color: #0a84ff; font-weight: 700; padding: 6px 10px; }
+
+  /* ANNOTATIONS */
+  .annotation { font-size: 11px; color: #aaa; line-height: 1.5; margin-top: 10px; padding: 10px 12px; background: #1c1c1e; border-radius: 8px; border-left: 2px solid #0a84ff; }
+  .annotation strong { color: #fff; }
+
+  .divider { height: 1px; background: #2c2c2e; margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<h1>Project Hub — Detailed Design</h1>
+<p class="tagline">Hub view (new) + Classic list (existing) · Toggle in Settings</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 1: Sessions Screen — Hub vs Classic            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="section-label">Sessions Screen — Hub View (new) vs Classic (existing)</div>
+
+<div class="two-up">
+
+  <!-- HUB VIEW -->
+  <div class="phone-wrap">
+    <div class="phone-label">Hub View (new default)</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <span class="phone-title">Sessions</span>
+        <div class="phone-header-right">
+          <span class="icon-btn">+</span>
+        </div>
+      </div>
+      <div class="phone-toolbar">
+        <div class="toolbar-left">
+          <!-- Funnel icon (phosphor) -->
+          <div class="tb-icon-btn">⊜</div>
+          <!-- Sort icon (phosphor sort-ascending) -->
+          <div class="tb-icon-btn">≡↑</div>
+        </div>
+        <div class="ws-status"><span class="ws-dot">●</span>2/3 connected</div>
+      </div>
+      <div class="phone-scroll">
+        <!-- tb-mobile hub card (expanded) -->
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 tb-mobile</span>
+            <div class="hub-right">
+              <span class="hub-counts">4 sessions · 6 convos</span>
+              <span class="hub-chevron open">▼</span>
+            </div>
+          </div>
+          <div class="sessions-strip">
+            <div class="strip-label">Sessions</div>
+            <div class="sess-pills">
+              <div class="sess-pill pill-running">● In Progress</div>
+              <div class="sess-pill pill-idle">◑ Idle</div>
+              <div class="sess-pill pill-failed">✕ Failed</div>
+              <div class="sess-pill pill-empty">○ Empty</div>
+            </div>
+          </div>
+          <div class="conv-list">
+            <div class="conv-row">
+              <div>
+                <div class="conv-title">In the settings screen, modify…</div>
+                <div class="conv-meta">main · 151 msgs</div>
+              </div>
+              <div class="conv-right">
+                <div class="conv-date">Today</div>
+              </div>
+            </div>
+            <div class="conv-row">
+              <div>
+                <div class="conv-title">Make the arrowUp Top button…</div>
+                <div class="conv-meta">main · 67 msgs</div>
+              </div>
+              <div class="conv-right">
+                <div class="conv-date">Today</div>
+              </div>
+            </div>
+            <div class="conv-row">
+              <div>
+                <div class="conv-title">Let's discuss the conversation…</div>
+                <div class="conv-meta">main · 62 msgs</div>
+              </div>
+              <div class="conv-right">
+                <div class="conv-date">Today</div>
+              </div>
+            </div>
+          </div>
+          <div class="see-more">See all 6 conversations →</div>
+        </div>
+
+        <!-- Tabby hub card (collapsed) -->
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 Tabby</span>
+            <div class="hub-right">
+              <span class="hub-counts">3 sessions · 1 convo</span>
+              <span class="hub-chevron">▼</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- threadbase-streamer (collapsed) -->
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 threadbase-streamer</span>
+            <div class="hub-right">
+              <span class="hub-counts">1 session · 0 convos</span>
+              <span class="hub-chevron">▼</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active"><span class="tab-icon">⚡</span>Sessions</div>
+        <div class="tab"><span class="tab-icon">📚</span>History</div>
+        <div class="tab"><span class="tab-icon">⚙️</span>Settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLASSIC VIEW -->
+  <div class="phone-wrap">
+    <div class="phone-label">Classic List (existing, opt-in via Settings)</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <span class="phone-title">Sessions</span>
+        <div class="phone-header-right">
+          <span class="icon-btn">+</span>
+        </div>
+      </div>
+      <div class="phone-toolbar">
+        <div class="toolbar-left">
+          <div class="tb-icon-btn">⊜</div>
+          <div class="tb-icon-btn">≡↑</div>
+        </div>
+        <div class="ws-status"><span class="ws-dot">●</span>2/3 connected</div>
+      </div>
+      <div class="phone-scroll" style="padding:0">
+        <div class="classic-row">
+          <div class="classic-left">
+            <div class="classic-proj">tb-mobile <span class="badge-sm">main</span></div>
+            <div class="classic-status">
+              <span class="status-dot" style="color:#30d158">●</span>
+              <span class="status-label" style="color:#30d158">In Progress</span>
+              <span style="color:#555;font-size:7px">1h 40m</span>
+            </div>
+            <div class="classic-output">Writing SessionCard.tsx…</div>
+          </div>
+          <div class="classic-right">
+            <div class="classic-time">18:33</div>
+            <div class="classic-prompts">1 prompt</div>
+          </div>
+        </div>
+        <div class="classic-row">
+          <div class="classic-left">
+            <div class="classic-proj">tb-mobile <span class="badge-sm">main</span></div>
+            <div class="classic-status">
+              <span class="status-dot" style="color:#ff375f">●</span>
+              <span class="status-label" style="color:#ff375f">Failed</span>
+              <span style="color:#555;font-size:7px">22m 20s</span>
+            </div>
+            <div class="classic-output">Error: Cannot find module…</div>
+          </div>
+          <div class="classic-right">
+            <div class="classic-time">17:33</div>
+            <div class="classic-prompts">14 prompts</div>
+          </div>
+        </div>
+        <div class="classic-row">
+          <div class="classic-left">
+            <div class="classic-proj">Tabby <span class="badge-sm">main</span></div>
+            <div class="classic-status">
+              <span class="status-dot" style="color:#ff375f">●</span>
+              <span class="status-label" style="color:#ff375f">Failed</span>
+              <span style="color:#555;font-size:7px">31m 58s</span>
+            </div>
+          </div>
+          <div class="classic-right">
+            <div class="classic-time">17:16</div>
+            <div class="classic-prompts">4 prompts</div>
+          </div>
+        </div>
+        <div class="classic-row">
+          <div class="classic-left">
+            <div class="classic-proj">Tabby <span class="badge-sm">main</span></div>
+            <div class="classic-status">
+              <span class="status-dot" style="color:#ff9f0a">◑</span>
+              <span class="status-label" style="color:#ff9f0a">Idle</span>
+              <span style="color:#555;font-size:7px">35m 32s</span>
+            </div>
+          </div>
+          <div class="classic-right">
+            <div class="classic-time">17:12</div>
+            <div class="classic-prompts">1 prompt</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active"><span class="tab-icon">⚡</span>Sessions</div>
+        <div class="tab"><span class="tab-icon">📚</span>History</div>
+        <div class="tab"><span class="tab-icon">⚙️</span>Settings</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="annotation">
+  <strong>Hub view accordion behavior:</strong> Tap a project header → expands to show session pills + up to 5 most-recent conversations. Tap "See all N conversations →" → new screen with full conversation list for that project. Tap header again → collapse. Only one project expanded at a time (or allow multiple — TBD).
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 2: Status model                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="section-label">Session Status Display in Hub View</div>
+
+<div class="sheet" style="max-width:440px;margin:0 auto;">
+  <div class="sheet-title" style="font-size:12px">Status pills in the sessions strip</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+    <div class="sess-pill pill-running" style="font-size:10px;padding:4px 10px">● In Progress</div>
+    <div class="sess-pill pill-idle" style="font-size:10px;padding:4px 10px">◑ Idle</div>
+    <div class="sess-pill pill-empty" style="font-size:10px;padding:4px 10px">○ Empty</div>
+  </div>
+  <div style="font-size:11px;color:#aaa;line-height:1.5;">
+    <p>• <strong style="color:#30d158">In Progress</strong> = session is actively running (maps to existing <code style="background:#2c2c2e;padding:1px 4px;border-radius:3px">running</code> status)</p>
+    <p style="margin-top:4px">• <strong style="color:#ff9f0a">Idle</strong> = session exists but paused / waiting input (maps to <code style="background:#2c2c2e;padding:1px 4px;border-radius:3px">idle</code> + <code style="background:#2c2c2e;padding:1px 4px;border-radius:3px">waiting_input</code>)</p>
+    <p style="margin-top:4px">• <strong style="color:#888">Empty</strong> = session started but never sent a prompt (<code style="background:#2c2c2e;padding:1px 4px;border-radius:3px">promptCount === 0</code> + not running)</p>
+    <p style="margin-top:4px">• <code style="background:#2c2c2e;padding:1px 4px;border-radius:3px">failed</code> and <code style="background:#2c2c2e;padding:1px 4px;border-radius:3px">completed</code> keep their existing labels in the pill; shown as smaller secondary pills</p>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 3: Filter + Sort toolbar                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="section-label">Filter & Sort Toolbar + Sort Sheet</div>
+
+<div class="two-up" style="align-items:flex-start">
+
+  <div class="phone-wrap">
+    <div class="phone-label">Toolbar — funnel + sort icons</div>
+    <div class="phone" style="min-height:auto">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <span class="phone-title">Sessions</span>
+        <span class="icon-btn">+</span>
+      </div>
+      <!-- Toolbar with active filter indicator -->
+      <div class="phone-toolbar">
+        <div class="toolbar-left">
+          <!-- Funnel icon with active dot -->
+          <div class="tb-icon-btn active" style="position:relative">
+            ⊜
+            <span style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#0a84ff;border:1px solid #000"></span>
+          </div>
+          <div class="tb-icon-btn">≡↑</div>
+        </div>
+        <div class="ws-status"><span class="ws-dot">●</span>Live</div>
+      </div>
+      <div style="padding:20px 14px;color:#666;font-size:10px;text-align:center">
+        ↑ Funnel (Phosphor <em>Funnel</em>) opens existing filter sheet.<br><br>
+        Sort icon (Phosphor <em>SortAscending</em>) opens sort sheet below.
+      </div>
+    </div>
+  </div>
+
+  <div class="phone-wrap">
+    <div class="phone-label">Sort Sheet (new, same style as Filter)</div>
+    <div class="phone" style="min-height:auto">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header"><span class="phone-title">Sessions</span><span class="icon-btn">+</span></div>
+      <div class="phone-toolbar">
+        <div class="toolbar-left">
+          <div class="tb-icon-btn">⊜</div>
+          <div class="tb-icon-btn active">≡↑</div>
+        </div>
+        <div class="ws-status"><span class="ws-dot">●</span>Live</div>
+      </div>
+      <!-- Sort sheet overlaid at bottom -->
+      <div style="padding:8px 8px 4px;">
+        <div style="background:#1c1c1e;border-radius:12px;padding:10px;border:1px solid #2c2c2e">
+          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:8px;display:flex;justify-content:space-between">Sort<span style="color:#888;font-size:10px">✕</span></div>
+          <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:5px">Sort by</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+            <div style="padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid #0a84ff;background:#0a84ff18;color:#fff">Project name</div>
+            <div style="padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid #3a3a3c;background:#2c2c2e;color:#aaa">Last message</div>
+            <div style="padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid #3a3a3c;background:#2c2c2e;color:#aaa">Created</div>
+            <div style="padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid #3a3a3c;background:#2c2c2e;color:#aaa">Status</div>
+          </div>
+          <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:5px">Order</div>
+          <div style="display:flex;gap:4px;margin-bottom:8px;">
+            <div style="padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid #3a3a3c;background:#2c2c2e;color:#aaa">↑ Ascending</div>
+            <div style="padding:3px 8px;border-radius:10px;font-size:8px;border:1px solid #0a84ff;background:#0a84ff18;color:#fff">↓ Descending</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <div style="font-size:9px;color:#888;padding:4px 6px">Cancel</div>
+            <div style="font-size:9px;color:#0a84ff;font-weight:700;padding:4px 6px">Apply</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="annotation">
+  <strong>Toolbar design:</strong> Replace the text "Filters" button with a <code>Funnel</code> Phosphor icon (28×28 tappable area). Add a <code>SortAscending</code> Phosphor icon next to it. Both icons get an active-state blue tint + small indicator dot when their settings differ from defaults. The existing <code>ServerFilterSheet</code> opens on Funnel tap (unchanged). A new <code>SortSheet</code> (same visual style as filter sheet) opens on Sort tap with Sort by + Order chip selectors.
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 4: Settings Toggle                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="section-label">Settings — Layout Toggle</div>
+
+<div class="sheet" style="max-width:440px;margin:0 auto">
+  <div class="sheet-title">Appearance</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2c2c2e">
+    <div>
+      <div style="font-size:12px;color:#fff;font-weight:500">Sessions Layout</div>
+      <div style="font-size:10px;color:#888;margin-top:2px">How sessions and conversations are displayed</div>
+    </div>
+    <div style="display:flex;background:#2c2c2e;border-radius:8px;overflow:hidden;border:1px solid #3a3a3c">
+      <div style="padding:5px 10px;font-size:10px;background:#0a84ff;color:#fff;font-weight:600">Hub</div>
+      <div style="padding:5px 10px;font-size:10px;color:#888">Classic</div>
+    </div>
+  </div>
+  <div style="padding-top:10px;font-size:10px;color:#666;line-height:1.4">
+    <strong style="color:#aaa">Hub</strong> groups sessions and conversations by project with accordion cards.<br>
+    <strong style="color:#aaa">Classic</strong> shows a flat chronological list (original behavior).
+  </div>
+</div>
+
+</body>
+</html>

@@ -68,6 +68,8 @@ export default function SettingsScreen() {
     setAddServerAction,
     sessionsLayout,
     setSessionsLayout,
+    mergeChats,
+    setMergeChats,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
@@ -126,6 +128,14 @@ export default function SettingsScreen() {
             <Text style={styles.rowLabel}>Layout</Text>
             <View style={styles.segmentedControl}>
               <TouchableOpacity
+                style={[styles.segmentBtn, sessionsLayout === 'tree' && styles.segmentBtnActive]}
+                onPress={() => setSessionsLayout('tree')}
+              >
+                <Text style={[styles.segmentBtnText, sessionsLayout === 'tree' && styles.segmentBtnTextActive]}>
+                  Tree
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.segmentBtn, sessionsLayout === 'hub' && styles.segmentBtnActive]}
                 onPress={() => setSessionsLayout('hub')}
               >
@@ -143,6 +153,11 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          <SettingsRow
+            label="Merge sessions & history as Chats"
+            value={mergeChats}
+            onValueChange={setMergeChats}
+          />
         </View>
 
         <SectionHeader title="Servers" />

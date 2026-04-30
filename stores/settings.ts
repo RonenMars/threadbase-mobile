@@ -14,6 +14,7 @@ interface SettingsStore {
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
   sessionsLayout: SessionsLayout
+  mergeChats: boolean
   setColorScheme: (scheme: 'dark' | 'light' | 'system') => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
@@ -21,6 +22,7 @@ interface SettingsStore {
   setHistoryMessageDisplay: (v: 'first' | 'last') => void
   setAddServerAction: (v: AddServerAction) => void
   setSessionsLayout: (v: SessionsLayout) => void
+  setMergeChats: (v: boolean) => void
   hydrate: () => Promise<void>
 }
 
@@ -40,6 +42,7 @@ interface PersistedSettings {
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
   sessionsLayout: SessionsLayout
+  mergeChats: boolean
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -49,7 +52,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
-  sessionsLayout: 'hub',
+  sessionsLayout: 'tree',
+  mergeChats: true,
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
@@ -61,6 +65,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
   setAddServerAction: (addServerAction) => set({ addServerAction }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
+  setMergeChats: (mergeChats) => set({ mergeChats }),
   hydrate: async () => {
     const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
     if (!raw) return
@@ -72,6 +77,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
       addServerAction: parsed.addServerAction ?? state.addServerAction,
       sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
+      mergeChats: parsed.mergeChats ?? state.mergeChats,
     }))
   },
 }))
@@ -82,6 +88,7 @@ useSettingsStore.subscribe((state) => {
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,
     sessionsLayout: state.sessionsLayout,
+    mergeChats: state.mergeChats,
   }
   void AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
 })

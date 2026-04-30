@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { QrCode } from 'phosphor-react-native'
+import { QrCode, Lightning } from 'phosphor-react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { useNavigation, useRouter } from 'expo-router'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
@@ -78,7 +78,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
     }
 
     setNewServerId(null)
-    router.replace('/(tabs)/sessions')
+    router.replace('/')
   }
 
   const connectWith = useCallback(
@@ -108,7 +108,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
             applyAddAction(addServerAction, id, false)
           }
         } else {
-          router.replace('/(tabs)/sessions')
+          router.replace('/')
         }
       } catch (err) {
         if (err instanceof AuthError) {
@@ -158,7 +158,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
-          <Text style={styles.logo}>⚡</Text>
+          <Lightning size={64} color="#f0883e" weight="fill" />
           <Text style={styles.title}>Threadbase</Text>
           <Text style={styles.subtitle}>AI Agent Control Center</Text>
         </View>
@@ -279,7 +279,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
         visible={Boolean(newServerId)}
         onClose={() => {
           setNewServerId(null)
-          router.replace('/(tabs)/sessions')
+          router.replace('/')
         }}
         onConfirm={(choice, rememberChoice) => {
           if (!newServerId) return
@@ -304,7 +304,6 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   hero: { alignItems: 'center', gap: spacing.sm },
-  logo: { fontSize: 64 },
   title: {
     color: dark.text.primary,
     fontSize: 32,

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tab-Free Navigation — Final</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; padding: 20px 16px 80px; }
+  h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .tagline { color: #888; font-size: 13px; margin-bottom: 24px; }
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 12px; margin-top: 28px; }
+  .divider { height: 1px; background: #2c2c2e; margin: 28px 0; }
+  .annotation { font-size: 11px; color: #aaa; line-height: 1.6; margin-top: 12px; padding: 10px 14px; background: #1c1c1e; border-radius: 8px; border-left: 2px solid #0a84ff; }
+  .annotation strong { color: #fff; }
+
+  .three-up { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+
+  .phone-wrap { flex: 0 0 auto; }
+  .phone-label { font-size: 11px; font-weight: 600; color: #aaa; text-align: center; margin-bottom: 6px; }
+
+  .phone {
+    width: 200px; background: #000; border-radius: 30px;
+    border: 2px solid #2c2c2e; overflow: hidden; font-size: 9px;
+    position: relative;
+  }
+  .phone-status { background: #000; padding: 8px 14px 3px; display: flex; justify-content: space-between; color: #ccc; font-size: 9px; font-weight: 500; }
+
+  /* ── COMPACT HEADER (no tab bar) ── */
+  .phone-header {
+    padding: 6px 12px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #1c1c1e;
+  }
+  .avatar-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #0a84ff, #30d158);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .phone-title { font-size: 15px; font-weight: 700; color: #fff; position: absolute; left: 50%; transform: translateX(-50%); }
+  .header-actions { display: flex; align-items: center; gap: 7px; }
+  .hdr-icon { color: #0a84ff; font-size: 14px; line-height: 1; }
+  .hdr-icon-sm { color: #aaa; font-size: 12px; }
+
+  /* connection status — subtle, inside header */
+  .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: #30d158; display: inline-block; }
+  .conn-dot.partial { background: #ff9f0a; }
+  .conn-dot.offline { background: #ff375f; }
+
+  /* ── SEARCH BAR (slides in) ── */
+  .search-bar-inline {
+    margin: 5px 10px 0;
+    background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 8px;
+    padding: 4px 8px; display: flex; align-items: center; gap: 4px;
+  }
+  .sb-icon { font-size: 9px; color: #888; }
+  .sb-text { font-size: 8px; color: #555; flex: 1; }
+  .sb-clear { font-size: 8px; color: #555; }
+
+  /* ── HUB CARDS ── */
+  .phone-scroll { padding: 8px 8px 80px; min-height: 340px; }
+
+  .hub-card { background: #1c1c1e; border-radius: 12px; margin-bottom: 7px; overflow: hidden; border: 1px solid #2c2c2e; }
+  .hub-header { padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; background: #242426; }
+  .hub-proj-name { font-size: 10px; font-weight: 700; color: #fff; }
+  .hub-right { display: flex; align-items: center; gap: 5px; }
+  .hub-counts { font-size: 7px; color: #888; }
+  .hub-chevron { font-size: 8px; color: #555; }
+
+  .sessions-strip { padding: 5px 10px; border-bottom: 1px solid #2c2c2e; }
+  .strip-label { font-size: 6px; color: #666; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; font-weight: 600; }
+  .sess-pills { display: flex; gap: 3px; flex-wrap: wrap; }
+  .sess-pill { padding: 2px 6px; border-radius: 4px; font-size: 7px; font-weight: 700; border: 1px solid transparent; }
+  .pill-running { background: #30d15814; border-color: #30d15840; color: #30d158; }
+  .pill-idle    { background: #ff9f0a14; border-color: #ff9f0a40; color: #ff9f0a; }
+  .pill-empty   { background: #48484a30; border-color: #48484a; color: #888; }
+  .pill-failed  { background: #ff375f14; border-color: #ff375f40; color: #ff375f; }
+
+  .conv-list {}
+  .conv-row { padding: 4px 10px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: flex-start; }
+  .conv-row:last-child { border-bottom: none; }
+  .conv-title { font-size: 8px; color: #ccc; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv-sub { font-size: 6px; color: #555; margin-top: 1px; }
+  .conv-date { font-size: 7px; color: #666; }
+  .see-more { padding: 5px 10px; font-size: 7px; color: #0a84ff; font-weight: 600; text-align: center; }
+
+  /* ── FAB ── */
+  .fab {
+    position: absolute;
+    bottom: 20px; right: 14px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #30d158;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #000; font-weight: 300; line-height: 1;
+    box-shadow: 0 4px 16px #30d15840;
+  }
+
+  /* ── SETTINGS SLIDE-IN (avatar tap) ── */
+  .settings-menu {
+    position: absolute;
+    top: 48px; left: 10px;
+    background: #2c2c2e;
+    border-radius: 12px;
+    border: 1px solid #3a3a3c;
+    width: 140px;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 8px 24px #00000060;
+  }
+  .settings-item {
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 7px;
+    border-bottom: 1px solid #3a3a3c;
+    font-size: 10px; color: #e0e0e0;
+  }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-item-icon { font-size: 12px; }
+
+  /* full list screen */
+  .full-row { padding: 7px 12px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; }
+  .full-title { font-size: 10px; color: #ddd; font-weight: 500; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .full-sub { font-size: 8px; color: #666; margin-top: 1px; }
+  .full-right { text-align: right; }
+  .full-date { font-size: 8px; color: #666; }
+  .full-msgs { font-size: 7px; color: #555; }
+  .back-btn { font-size: 10px; color: #0a84ff; }
+
+  /* settings full screen */
+  .settings-row { padding: 8px 14px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center; }
+  .settings-label { font-size: 10px; color: #ddd; }
+  .settings-value { font-size: 9px; color: #888; }
+  .settings-section-header { padding: 10px 14px 4px; font-size: 8px; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toggle { width: 28px; height: 16px; border-radius: 8px; background: #30d158; position: relative; }
+  .toggle-knob { width: 12px; height: 12px; border-radius: 50%; background: #fff; position: absolute; top: 2px; right: 2px; }
+</style>
+</head>
+<body>
+
+<h1>Tab-Free Navigation</h1>
+<p class="tagline">No tab bar · Avatar/settings top-left · Green FAB bottom-right</p>
+
+<div class="section-label">Three states of the main screen</div>
+
+<div class="three-up">
+
+  <!-- ① DEFAULT: browsing -->
+  <div class="phone-wrap">
+    <div class="phone-label">① Default — browsing</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <div class="avatar-btn">R</div>
+        <span class="phone-title">Projects</span>
+        <div class="header-actions">
+          <!-- connection dot -->
+          <div class="conn-dot partial" title="2/3 connected"></div>
+          <!-- search -->
+          <span class="hdr-icon">🔍</span>
+          <!-- filter (Funnel) -->
+          <span class="hdr-icon-sm">⊜</span>
+          <!-- sort (SortAscending) -->
+          <span class="hdr-icon-sm">≡↑</span>
+        </div>
+      </div>
+      <div class="phone-scroll">
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 tb-mobile</span>
+            <div class="hub-right"><span class="hub-counts">4 · 6</span><span class="hub-chevron">▲</span></div>
+          </div>
+          <div class="sessions-strip">
+            <div class="strip-label">Sessions</div>
+            <div class="sess-pills">
+              <div class="sess-pill pill-running">● In Progress</div>
+              <div class="sess-pill pill-idle">◑ Idle</div>
+              <div class="sess-pill pill-failed">✕ Failed ×2</div>
+            </div>
+          </div>
+          <div class="conv-list">
+            <div class="conv-row">
+              <div><div class="conv-title">In the settings screen…</div><div class="conv-sub">main · 151 msgs</div></div>
+              <div class="conv-date">17:40</div>
+            </div>
+            <div class="conv-row">
+              <div><div class="conv-title">Make the arrowUp button…</div><div class="conv-sub">main · 67 msgs</div></div>
+              <div class="conv-date">17:16</div>
+            </div>
+            <div class="conv-row">
+              <div><div class="conv-title">Let's discuss the convo…</div><div class="conv-sub">main · 62 msgs</div></div>
+              <div class="conv-date">17:13</div>
+            </div>
+          </div>
+          <div class="see-more">See all 6 conversations →</div>
+        </div>
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 Tabby</span>
+            <div class="hub-right"><span class="hub-counts">3 · 1</span><span class="hub-chevron">▼</span></div>
+          </div>
+        </div>
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 threadbase-streamer</span>
+            <div class="hub-right"><span class="hub-counts">1 · 0</span><span class="hub-chevron">▼</span></div>
+          </div>
+        </div>
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 Users/ronenmars</span>
+            <div class="hub-right"><span class="hub-counts">0 · 3</span><span class="hub-chevron">▼</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- FAB -->
+      <div class="fab">+</div>
+    </div>
+  </div>
+
+  <!-- ② AVATAR MENU open -->
+  <div class="phone-wrap">
+    <div class="phone-label">② Avatar tapped — menu</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <div class="avatar-btn" style="box-shadow:0 0 0 2px #0a84ff">R</div>
+        <span class="phone-title">Projects</span>
+        <div class="header-actions">
+          <div class="conn-dot"></div>
+          <span class="hdr-icon">🔍</span>
+          <span class="hdr-icon-sm">⊜</span>
+          <span class="hdr-icon-sm">≡↑</span>
+        </div>
+      </div>
+      <!-- dropdown menu -->
+      <div class="settings-menu">
+        <div class="settings-item"><span class="settings-item-icon">⚙️</span>Settings</div>
+        <div class="settings-item"><span class="settings-item-icon">🖥️</span>Servers</div>
+        <div class="settings-item"><span class="settings-item-icon">📖</span>Classic view</div>
+      </div>
+      <div class="phone-scroll" style="opacity:0.3">
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 tb-mobile</span>
+            <div class="hub-right"><span class="hub-counts">4 · 6</span><span class="hub-chevron">▲</span></div>
+          </div>
+        </div>
+        <div class="hub-card">
+          <div class="hub-header">
+            <span class="hub-proj-name">📁 Tabby</span>
+            <div class="hub-right"><span class="hub-counts">3 · 1</span><span class="hub-chevron">▼</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="fab" style="opacity:0.3">+</div>
+    </div>
+  </div>
+
+  <!-- ③ SEARCH open -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ Search open</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <div class="avatar-btn">R</div>
+        <span class="phone-title">Projects</span>
+        <div class="header-actions">
+          <div class="conn-dot"></div>
+          <span class="hdr-icon" style="color:#fff">🔍</span>
+          <span class="hdr-icon-sm">⊜</span>
+          <span class="hdr-icon-sm">≡↑</span>
+        </div>
+      </div>
+      <div class="search-bar-inline">
+        <span class="sb-icon">🔍</span>
+        <span class="sb-text" style="color:#ccc">arrowUp</span>
+        <span class="sb-clear">✕</span>
+      </div>
+      <div class="phone-scroll" style="padding-top:6px">
+        <div style="padding:2px 4px 5px;font-size:7px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Conversations · 2 results</div>
+        <div class="hub-card">
+          <div class="hub-header" style="background:#1c1c1e;padding:5px 10px">
+            <span style="font-size:8px;color:#888">💬 tb-mobile</span>
+          </div>
+          <div class="conv-row" style="border:none">
+            <div><div class="conv-title" style="color:#0a84ff">Make the arrowUp Top button…</div><div class="conv-sub">main · 67 msgs · Today</div></div>
+          </div>
+        </div>
+        <div class="hub-card">
+          <div class="hub-header" style="background:#1c1c1e;padding:5px 10px">
+            <span style="font-size:8px;color:#888">💬 tb-mobile</span>
+          </div>
+          <div class="conv-row" style="border:none">
+            <div><div class="conv-title" style="color:#0a84ff">Fix arrowUp scroll behavior…</div><div class="conv-sub">main · 21 msgs · Today</div></div>
+          </div>
+        </div>
+        <div style="padding:6px 4px 5px;font-size:7px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Sessions · 0 results</div>
+        <div style="padding:4px 10px;font-size:8px;color:#555">No matching sessions</div>
+      </div>
+      <div class="fab">+</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="annotation" style="max-width:640px;margin:12px auto 0">
+  <strong>No tab bar at all.</strong> The entire bottom chrome is gone — just the green FAB floats above the content. Avatar (top-left) opens a small dropdown with Settings, Servers, Classic view toggle, and Sign out. The header is one compact row: Avatar · "Projects" (centered) · connection dot + 🔍 + ⊜ + ≡↑ (right).
+</div>
+
+<div class="divider"></div>
+
+<!-- Settings screen -->
+<div class="section-label">Settings screen (pushed from avatar menu)</div>
+
+<div class="three-up">
+  <div class="phone-wrap">
+    <div class="phone-label">Settings (stack screen)</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <span class="back-btn">‹ Projects</span>
+        <span class="phone-title" style="font-size:13px">Settings</span>
+        <span style="width:44px"></span>
+      </div>
+      <div style="padding-bottom:20px">
+        <div class="settings-section-header">Appearance</div>
+        <div class="settings-row">
+          <span class="settings-label">Layout</span>
+          <div style="display:flex;background:#2c2c2e;border-radius:6px;overflow:hidden;border:1px solid #3a3a3c">
+            <div style="padding:3px 8px;font-size:9px;background:#0a84ff;color:#fff;font-weight:600">Hub</div>
+            <div style="padding:3px 8px;font-size:9px;color:#888">Classic</div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Color scheme</span>
+          <span class="settings-value">Dark ›</span>
+        </div>
+        <div class="settings-section-header">Sessions</div>
+        <div class="settings-row">
+          <span class="settings-label">Completed fade</span>
+          <span class="settings-value">60s ›</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Terminal max lines</span>
+          <span class="settings-value">5000 ›</span>
+        </div>
+        <div class="settings-section-header">Notifications</div>
+        <div class="settings-row">
+          <span class="settings-label">Waiting for input</span>
+          <div class="toggle"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Session complete</span>
+          <div class="toggle"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="settings-section-header">History</div>
+        <div class="settings-row">
+          <span class="settings-label">Message display</span>
+          <span class="settings-value">First ›</span>
+        </div>
+        <div class="settings-section-header">Servers</div>
+        <div class="settings-row">
+          <span class="settings-label">Add server action</span>
+          <span class="settings-value">Ask ›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project detail -->
+  <div class="phone-wrap">
+    <div class="phone-label">Project detail screen</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <span class="back-btn">‹ Projects</span>
+        <span class="phone-title" style="font-size:12px">tb-mobile</span>
+        <span style="width:44px"></span>
+      </div>
+      <div class="search-bar-inline" style="margin-bottom:4px">
+        <span class="sb-icon">🔍</span>
+        <span class="sb-text">Search in tb-mobile…</span>
+      </div>
+      <div style="padding:2px 12px 4px;font-size:7px;color:#666;text-transform:uppercase;letter-spacing:0.4px;font-weight:600">6 conversations</div>
+      <div class="full-row">
+        <div><div class="full-title">In the settings screen…</div><div class="full-sub">main · Apr 30, 17:40</div></div>
+        <div class="full-right"><div class="full-date">17:40</div><div class="full-msgs">151 msgs</div></div>
+      </div>
+      <div class="full-row">
+        <div><div class="full-title">Make the arrowUp button…</div><div class="full-sub">main · Apr 30, 17:16</div></div>
+        <div class="full-right"><div class="full-date">17:16</div><div class="full-msgs">67 msgs</div></div>
+      </div>
+      <div class="full-row">
+        <div><div class="full-title">Let's discuss the convo…</div><div class="full-sub">main · Apr 30, 17:13</div></div>
+        <div class="full-right"><div class="full-date">17:13</div><div class="full-msgs">62 msgs</div></div>
+      </div>
+      <div class="full-row">
+        <div><div class="full-title">Fix empty space in code…</div><div class="full-sub">main · Apr 30, 17:09</div></div>
+        <div class="full-right"><div class="full-date">17:09</div><div class="full-msgs">21 msgs</div></div>
+      </div>
+      <div class="full-row">
+        <div><div class="full-title">Soft animated scroll…</div><div class="full-sub">main · Apr 29</div></div>
+        <div class="full-right"><div class="full-date">Yesterday</div><div class="full-msgs">44 msgs</div></div>
+      </div>
+      <div class="full-row">
+        <div><div class="full-title">Debounce conversation…</div><div class="full-sub">main · Apr 28</div></div>
+        <div class="full-right"><div class="full-date">2d ago</div><div class="full-msgs">38 msgs</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Classic mode for reference -->
+  <div class="phone-wrap">
+    <div class="phone-label">Classic mode (opt-in)</div>
+    <div class="phone">
+      <div class="phone-status"><span>18:39</span><span>◼◼◻ ▲ 19%</span></div>
+      <div class="phone-header">
+        <div class="avatar-btn">R</div>
+        <span class="phone-title">Sessions</span>
+        <div class="header-actions">
+          <div class="conn-dot"></div>
+          <span class="hdr-icon-sm">⊜</span>
+          <span class="hdr-icon-sm">≡↑</span>
+        </div>
+      </div>
+      <div style="padding:0">
+        <div style="display:flex;border-bottom:1px solid #1c1c1e">
+          <div style="flex:1;padding:6px 0;text-align:center;font-size:9px;color:#0a84ff;border-bottom:2px solid #0a84ff;font-weight:600">⚡ Sessions</div>
+          <div style="flex:1;padding:6px 0;text-align:center;font-size:9px;color:#888">📚 History</div>
+        </div>
+        <div style="padding:5px 8px 0">
+          <div style="background:#1c1c1e;border-radius:9px;padding:7px 9px;margin-bottom:5px;border:1px solid #2c2c2e">
+            <div style="font-size:10px;font-weight:600;color:#fff">tb-mobile</div>
+            <div style="display:flex;gap:6px;margin-top:3px;align-items:center">
+              <span style="font-size:7px;color:#30d158;font-weight:600">● In Progress</span>
+              <span style="font-size:7px;color:#666">1h 40m</span>
+              <span style="font-size:7px;color:#666">1 prompt</span>
+            </div>
+          </div>
+          <div style="background:#1c1c1e;border-radius:9px;padding:7px 9px;margin-bottom:5px;border:1px solid #2c2c2e">
+            <div style="font-size:10px;font-weight:600;color:#fff">tb-mobile</div>
+            <div style="display:flex;gap:6px;margin-top:3px;align-items:center">
+              <span style="font-size:7px;color:#ff375f;font-weight:600">✕ Failed</span>
+              <span style="font-size:7px;color:#666">22m 20s</span>
+              <span style="font-size:7px;color:#666">14 prompts</span>
+            </div>
+          </div>
+          <div style="background:#1c1c1e;border-radius:9px;padding:7px 9px;border:1px solid #2c2c2e">
+            <div style="font-size:10px;font-weight:600;color:#fff">Tabby</div>
+            <div style="display:flex;gap:6px;margin-top:3px;align-items:center">
+              <span style="font-size:7px;color:#ff375f;font-weight:600">✕ Failed</span>
+              <span style="font-size:7px;color:#666">31m 58s</span>
+              <span style="font-size:7px;color:#666">4 prompts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fab">+</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="annotation" style="max-width:640px;margin:12px auto 0">
+  <strong>Classic mode</strong> restores the Sessions / History segmented tabs inside the screen body (not the bottom tab bar — that's gone permanently). The FAB persists in both modes. The avatar menu gains a quick "Classic view" shortcut in addition to the full toggle in Settings.
+</div>
+
+</body>
+</html>

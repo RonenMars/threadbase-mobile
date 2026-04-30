@@ -2,12 +2,19 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
+  Modal,
+  Pressable,
   AppState,
+  FlatList,
+  RefreshControl,
+  Linking,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
@@ -16,18 +23,24 @@ import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { ClassicSessionsList } from '@/components/sessions/ClassicSessionsList'
-import { ServerFilterSheet, type SortType } from '@/components/servers/ServerFilterSheet'
-import { SortSheet } from '@/components/servers/SortSheet'
+import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
+import { SessionCard } from '@/components/sessions/SessionCard'
+import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
+import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { FAB } from '@/components/ui/FAB'
-import { AvatarMenu } from '@/components/ui/AvatarMenu'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
+import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, DotsThreeOutline, Gear, EnvelopeSimple } from 'phosphor-react-native'
 import { dark, font, spacing } from '@/constants/theme'
-import type { MultiSession, SessionStatus } from '@/types/api'
+import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
-const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'completed', 'failed', 'idle']
+const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
 
 type ClassicTab = 'sessions' | 'history'
+
+type MergedItem =
+  | { kind: 'session'; ms: number; item: MultiSession }
+  | { kind: 'conversation'; ms: number; item: MultiConversation }
 
 function lastActivityMs(s: MultiSession): number {
   if (s.completedAt) return Date.parse(s.completedAt)
@@ -37,6 +50,7 @@ function lastActivityMs(s: MultiSession): number {
 export default function ProjectsHub() {
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
+  const mergeChats = useSettingsStore((s) => (s as any).mergeChats ?? false)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -59,27 +73,23 @@ export default function ProjectsHub() {
   const serverCount = activeServerIds.length
   const allConnected = connectedCount === serverCount && serverCount > 0
   const someConnected = connectedCount > 0
-  const connectionDotColor = allConnected
-    ? dark.status.running
-    : someConnected
-      ? dark.status.waiting
-      : dark.status.failed
 
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [sortOpen, setSortOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [pickerVisible, setPickerVisible] = useState(false)
 
   // Sort state (hub mode)
   const [sortBy, setSortBy] = useState<SortBy>('lastActivity')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
-  const isSortActive = sortBy !== 'lastActivity' || sortOrder !== 'desc'
 
   // Filter state (sessions)
   const [selectedStatuses, setSelectedStatuses] = useState<SessionStatus[]>(ALL_STATUSES)
-  const [sortType, setSortType] = useState<SortType>('lastActivity')
-  const isFilterActive =
+  const isSheetActive =
+    sortBy !== 'lastActivity' ||
+    sortOrder !== 'desc' ||
     selectedStatuses.length < ALL_STATUSES.length ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
@@ -97,17 +107,13 @@ export default function ProjectsHub() {
   }
 
   const visibleSessions = useMemo(() => {
-    const filtered = sessions.filter(
+    return sessions.filter(
       (session) =>
         session.source !== 'discovered' &&
         displayedServerIds.includes(session.serverId) &&
         selectedStatuses.includes(session.status),
-    )
-    if (sortType === 'lastActivity') {
-      return filtered.sort((a, b) => lastActivityMs(b) - lastActivityMs(a))
-    }
-    return filtered.sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
-  }, [sessions, displayedServerIds, selectedStatuses, sortType])
+    ).sort((a, b) => lastActivityMs(b) - lastActivityMs(a))
+  }, [sessions, displayedServerIds, selectedStatuses])
 
   // Conversations data
   const [refreshEpoch, setRefreshEpoch] = useState(0)
@@ -128,10 +134,24 @@ export default function ProjectsHub() {
     setRefreshEpoch((e) => e + 1)
   }, [])
 
+  useFocusEffect(
+    useCallback(() => {
+      refetchSessions()
+    }, [refetchSessions]),
+  )
+
   const { conversations, loaded: convLoaded, total: convTotal, isDone: convDone, isCounting: convCounting } =
     useEagerConversations(undefined, refreshEpoch)
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
+
+  const mergedClassicItems = useMemo((): MergedItem[] => {
+    const items: MergedItem[] = [
+      ...visibleSessions.map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s })),
+      ...conversations.map((c) => ({ kind: 'conversation' as const, ms: Date.parse(c.lastActivity) || 0, item: c })),
+    ]
+    return items.sort((a, b) => b.ms - a.ms)
+  }, [visibleSessions, conversations])
 
   // FAB
   const handleFABPress = () => {
@@ -149,47 +169,65 @@ export default function ProjectsHub() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <AvatarMenu onOpenServerFilter={() => setFilterOpen(true)} />
-        <Text style={styles.headerTitle}>Projects</Text>
+        {/* Left: brand */}
+        <View style={styles.headerLeft}>
+          <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
+          <Text style={styles.headerTitle}>Threadbase</Text>
+        </View>
+
+        {/* Right: actions */}
         <View style={styles.headerRight}>
-          <View style={[styles.connectionDot, { backgroundColor: connectionDotColor }]} />
+          <TouchableOpacity
+            onPress={() => setStatusModalOpen(true)}
+            hitSlop={8}
+            style={styles.headerButton}
+            accessibilityLabel="Server status"
+          >
+            <Cloud size={20} color={dark.text.secondary} />
+            {!allConnected ? (
+              <View style={[styles.notifDot, { backgroundColor: someConnected ? dark.status.waiting : dark.status.failed }]} />
+            ) : null}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setSearchOpen((v) => !v)}
             hitSlop={8}
             style={[styles.headerButton, searchOpen && styles.headerButtonActive]}
+            accessibilityLabel="Search"
           >
-            <Text style={[styles.headerButtonText, searchOpen && styles.headerButtonTextActive]}>
-              🔍
-            </Text>
+            <MagnifyingGlass size={20} color={searchOpen ? dark.text.primary : dark.text.secondary} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setFilterOpen(true)}
+            onPress={() => setSheetOpen(true)}
             hitSlop={8}
-            style={[styles.headerButton, isFilterActive && styles.headerButtonActive]}
+            style={[styles.headerButton, isSheetActive && styles.headerButtonActive]}
+            accessibilityLabel="Filter & Sort"
           >
-            <Text style={[styles.headerButtonText, isFilterActive && styles.headerButtonTextActive]}>
-              {isFilterActive ? '⫡●' : '⫡'}
-            </Text>
-            {isFilterActive ? <View style={styles.activeDot} /> : null}
+            <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
+            {isSheetActive ? <View style={styles.activeDot} /> : null}
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setSortOpen(true)}
+            onPress={() => setMenuOpen(true)}
             hitSlop={8}
-            style={[styles.headerButton, isSortActive && styles.headerButtonActive]}
+            style={styles.headerButton}
+            accessibilityLabel="More options"
           >
-            <Text style={[styles.headerButtonText, isSortActive && styles.headerButtonTextActive]}>
-              ↕
-            </Text>
-            {isSortActive ? <View style={styles.activeDot} /> : null}
+            <DotsThreeOutline size={20} color={dark.text.secondary} weight="fill" />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Content */}
-      {sessionsLayout === 'hub' ? (
+      {sessionsLayout === 'tree' ? (
+        <TreeSessionsList
+          sessions={sessions}
+          conversations={conversations}
+          refreshing={manualRefreshing}
+          onRefresh={handleSessionsRefresh}
+        />
+      ) : sessionsLayout === 'hub' ? (
         <ProjectHubList
           sessions={sessions}
           conversations={conversations}
@@ -201,48 +239,97 @@ export default function ProjectsHub() {
         />
       ) : (
         <View style={styles.classicContainer}>
-          {/* Segmented control */}
-          <View style={styles.segmentRow}>
-            <TouchableOpacity
-              style={[styles.segmentTab, classicTab === 'sessions' && styles.segmentTabActive]}
-              onPress={() => setClassicTab('sessions')}
-            >
-              <Text style={[styles.segmentText, classicTab === 'sessions' && styles.segmentTextActive]}>
-                ⚡ Sessions
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.segmentTab, classicTab === 'history' && styles.segmentTabActive]}
-              onPress={() => setClassicTab('history')}
-            >
-              <Text style={[styles.segmentText, classicTab === 'history' && styles.segmentTextActive]}>
-                📚 History
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Classic sessions */}
-          {classicTab === 'sessions' ? (
-            <ClassicSessionsList
-              sessions={visibleSessions}
-              refreshing={manualRefreshing}
-              onRefresh={handleSessionsRefresh}
-            />
-          ) : (
-            /* Classic history */
-            <ConversationList
-              conversations={conversations}
-              onRefresh={handleConvRefresh}
-              refreshing={showConvProgress}
-              onEndReached={() => {}}
-              searchQuery=""
-              onSearchChange={() => {}}
-              isLoadingInitial={false}
-              isFetchingNextPage={false}
-              loadingProgress={
-                showConvProgress ? { loaded: convLoaded, total: convTotal, isCounting: convCounting } : null
+          {mergeChats ? (
+            // Merged: single chronological list of sessions + conversations
+            <FlatList
+              data={mergedClassicItems}
+              keyExtractor={(item) =>
+                item.kind === 'session'
+                  ? `s-${item.item.serverId}::${item.item.id}`
+                  : `c-${item.item.serverId}::${item.item.id}`
+              }
+              renderItem={({ item }) =>
+                item.kind === 'session' ? (
+                  <SessionCard session={item.item} />
+                ) : (
+                  <TouchableOpacity
+                    style={styles.convCard}
+                    activeOpacity={0.75}
+                    onPress={() =>
+                      router.push(`/conversation/${item.item.id}?server=${item.item.serverId}`)
+                    }
+                  >
+                    <Text style={styles.convCardTitle} numberOfLines={1}>
+                      {item.item.title || item.item.projectPath}
+                    </Text>
+                    {item.item.preview ? (
+                      <Text style={styles.convCardPreview} numberOfLines={2}>
+                        {item.item.preview}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.convCardMeta}>
+                      {item.item.messageCount} msg{item.item.messageCount !== 1 ? 's' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              }
+              contentContainerStyle={styles.mergedContent}
+              refreshControl={
+                <RefreshControl
+                  refreshing={manualRefreshing}
+                  onRefresh={handleSessionsRefresh}
+                  tintColor={dark.text.secondary}
+                />
               }
             />
+          ) : (
+            <>
+              {/* Segmented control */}
+              <View style={styles.segmentRow}>
+                <TouchableOpacity
+                  style={[styles.segmentTab, classicTab === 'sessions' && styles.segmentTabActive]}
+                  onPress={() => setClassicTab('sessions')}
+                >
+                  <Lightning size={13} color={classicTab === 'sessions' ? dark.text.primary : dark.text.secondary} />
+                  <Text style={[styles.segmentText, classicTab === 'sessions' && styles.segmentTextActive]}>
+                    Sessions
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.segmentTab, classicTab === 'history' && styles.segmentTabActive]}
+                  onPress={() => setClassicTab('history')}
+                >
+                  <Books size={13} color={classicTab === 'history' ? dark.text.primary : dark.text.secondary} />
+                  <Text style={[styles.segmentText, classicTab === 'history' && styles.segmentTextActive]}>
+                    History
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Classic sessions */}
+              {classicTab === 'sessions' ? (
+                <ClassicSessionsList
+                  sessions={visibleSessions}
+                  refreshing={manualRefreshing}
+                  onRefresh={handleSessionsRefresh}
+                />
+              ) : (
+                /* Classic history */
+                <ConversationList
+                  conversations={conversations}
+                  onRefresh={handleConvRefresh}
+                  refreshing={showConvProgress}
+                  onEndReached={() => {}}
+                  searchQuery=""
+                  onSearchChange={() => {}}
+                  isLoadingInitial={false}
+                  isFetchingNextPage={false}
+                  loadingProgress={
+                    showConvProgress ? { loaded: convLoaded, total: convTotal, isCounting: convCounting } : null
+                  }
+                />
+              )}
+            </>
           )}
         </View>
       )}
@@ -250,22 +337,28 @@ export default function ProjectsHub() {
       {/* FAB */}
       <FAB onPress={handleFABPress} />
 
-      {/* Sheets */}
-      <ServerFilterSheet
-        visible={filterOpen}
-        onClose={() => setFilterOpen(false)}
-        selectedStatuses={selectedStatuses}
-        onChangeStatuses={setSelectedStatuses}
-        sortType={sortType}
-        onChangeSortType={setSortType}
+      {/* Three-dots menu */}
+      {menuOpen ? (
+        <HeaderMenu
+          onClose={() => setMenuOpen(false)}
+          onSettings={() => { setMenuOpen(false); router.push('/settings') }}
+        />
+      ) : null}
+
+      {/* Modals & Sheets */}
+      <ServerStatusModal
+        visible={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
       />
-      <SortSheet
-        visible={sortOpen}
-        onClose={() => setSortOpen(false)}
+      <FilterSortSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onChangeSortBy={setSortBy}
         onChangeSortOrder={setSortOrder}
+        selectedStatuses={selectedStatuses}
+        onChangeStatuses={setSelectedStatuses}
       />
       <NewSessionServerPicker
         visible={pickerVisible}
@@ -277,6 +370,70 @@ export default function ProjectsHub() {
     </SafeAreaView>
   )
 }
+
+function HeaderMenu({
+  onClose,
+  onSettings,
+}: {
+  onClose: () => void
+  onSettings: () => void
+}) {
+  const handleSupport = () => {
+    Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')
+    onClose()
+  }
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={menuStyles.backdrop} onPress={onClose}>
+        <Pressable style={menuStyles.menu} onPress={() => {}}>
+          <TouchableOpacity style={menuStyles.item} onPress={onSettings}>
+            <Gear size={18} color={dark.text.secondary} />
+            <Text style={menuStyles.itemText}>Settings</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[menuStyles.item, menuStyles.itemLast]} onPress={handleSupport}>
+            <EnvelopeSimple size={18} color={dark.text.secondary} />
+            <Text style={menuStyles.itemText}>Help & Support</Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
+const menuStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+  },
+  menu: {
+    position: 'absolute',
+    top: 56,
+    right: spacing.md,
+    backgroundColor: dark.bg.secondary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: dark.border,
+    minWidth: 180,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: dark.border,
+    minHeight: 44,
+  },
+  itemLast: { borderBottomWidth: 0 },
+  itemText: { color: dark.text.primary, fontSize: font.base },
+})
 
 const styles = StyleSheet.create({
   container: {
@@ -291,23 +448,36 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
-  headerTitle: {
+  headerLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  headerIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+  },
+  headerTitle: {
     color: dark.text.primary,
     fontSize: font.lg,
     fontWeight: '600',
-    textAlign: 'center',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
-  connectionDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    marginRight: spacing.xs,
+  notifDot: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: dark.bg.primary,
   },
   headerButton: {
     width: 32,
@@ -318,13 +488,6 @@ const styles = StyleSheet.create({
   },
   headerButtonActive: {
     backgroundColor: 'rgba(88,166,255,0.12)',
-  },
-  headerButtonText: {
-    fontSize: font.base,
-    color: dark.text.secondary,
-  },
-  headerButtonTextActive: {
-    color: dark.text.accent,
   },
   activeDot: {
     position: 'absolute',
@@ -350,9 +513,11 @@ const styles = StyleSheet.create({
   },
   segmentTab: {
     flex: 1,
+    flexDirection: 'row',
     paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
     minHeight: 36,
   },
   segmentTabActive: {
@@ -366,5 +531,31 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: dark.text.primary,
     fontWeight: '600',
+  },
+  mergedContent: {
+    padding: spacing.sm,
+    flexGrow: 1,
+  },
+  convCard: {
+    backgroundColor: dark.bg.card,
+    borderRadius: 10,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  convCardTitle: {
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+  },
+  convCardPreview: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+  },
+  convCardMeta: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
   },
 })

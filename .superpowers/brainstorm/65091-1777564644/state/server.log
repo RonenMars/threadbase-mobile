@@ -1,0 +1,9 @@
+{"type":"server-started","port":58522,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:58522","screen_dir":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content","state_dir":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/state"}
+{"type":"screen-added","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/solutions-overview.html"}
+{"type":"screen-added","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/design-detail.html"}
+{"type":"screen-added","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/final-scope.html"}
+{"type":"screen-added","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/final-nav.html"}
+{"type":"screen-updated","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/final-nav.html"}
+{"type":"screen-updated","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/final-nav.html"}
+{"type":"screen-updated","file":"/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.superpowers/brainstorm/65091-1777564644/content/final-nav.html"}
+{"type":"server-stopped","reason":"idle timeout"}

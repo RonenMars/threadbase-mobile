@@ -1,23 +1,17 @@
 import React from 'react'
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import { useEffect } from 'react'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { SessionStatus } from '@/types/api'
 
-const STATUS_LABELS: Record<SessionStatus, string> = {
+const STATUS_LABELS: Partial<Record<SessionStatus, string>> = {
   running: 'Running',
-  waiting_input: 'Waiting for Input',
-  completed: 'Completed',
-  failed: 'Failed',
   idle: 'Idle',
 }
 
-const STATUS_COLORS: Record<SessionStatus, string> = {
+const STATUS_COLORS: Partial<Record<SessionStatus, string>> = {
   running: dark.status.running,
-  waiting_input: dark.status.waiting,
-  completed: dark.status.completed,
-  failed: dark.status.failed,
   idle: dark.status.idle,
 }
 
@@ -27,15 +21,11 @@ interface Props {
 }
 
 export function SessionStatusBadge({ status, isRefetching }: Props) {
-  const color = STATUS_COLORS[status] ?? dark.text.secondary
+  const color = STATUS_COLORS[status] ?? dark.status.idle
   const opacity = useSharedValue(1)
 
   useEffect(() => {
-    if (status === 'waiting_input') {
-      opacity.value = withRepeat(withTiming(0.3, { duration: 600 }), -1, true)
-    } else {
-      opacity.value = 1
-    }
+    opacity.value = 1
   }, [status, opacity])
 
   const dotStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
@@ -47,7 +37,7 @@ export function SessionStatusBadge({ status, isRefetching }: Props) {
       ) : (
         <Animated.View style={[styles.dot, { backgroundColor: color }, dotStyle]} />
       )}
-      <Text style={[styles.label, { color }]}>{STATUS_LABELS[status]}</Text>
+      <Text style={[styles.label, { color }]}>{STATUS_LABELS[status] ?? 'Idle'}</Text>
     </View>
   )
 }

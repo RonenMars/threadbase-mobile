@@ -128,9 +128,6 @@ interface MatrixChar {
 // Combined with the normal downward fall this makes the animation ~2x taller.
 const MATRIX_RISE = 240
 
-// Vertical offset applied to every matrix char so the whole rain block sits
-// lower on the screen (below where the thread lines used to be).
-const MATRIX_DOWN_SHIFT = 160
 
 function generateMatrixChars(
   screenWidth: number,
@@ -139,8 +136,8 @@ function generateMatrixChars(
 ): MatrixChar[] {
   const chars: MatrixChar[] = []
   let id = 0
-  const spreadX = screenWidth * 0.35 // extend x range well beyond thread lines
-  const offsetX = -screenWidth * 0.2  // start further left
+  const spreadX = screenWidth * 0.4 // extend x range well beyond thread lines
+  const offsetX = -screenWidth * 0.17  // start further left
 
   // The effective start Y of a char ranges from -MATRIX_RISE (top of rain)
   // to (THREAD_LINES.length - 1) * LINE_GAP (bottom). We use this span to
@@ -316,7 +313,7 @@ function MatrixCharacter({
 }
 
 export function SplashAnimation({ onComplete }: Props) {
-  const { width: screenWidth } = useWindowDimensions()
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   // Keep the sweep bar visible below the notch / Dynamic Island on devices
   // like iPhone 17 Pro, with a small additional margin.
@@ -324,6 +321,9 @@ export function SplashAnimation({ onComplete }: Props) {
   const nodeLeft = screenWidth * 0.32
   const lineLeft = nodeLeft + NODE_SIZE / 2 + 8
   const totalHeight = (THREAD_LINES.length - 1) * LINE_GAP
+  // Matrix rain starts at the vertical midpoint of the first third of the screen.
+  // threadGroup is anchored at 40% screen height, so we shift up by the difference.
+  const matrixDownShift = screenHeight / 2.5 - screenHeight * 0.4
 
   // Phase 1: vertical line
   const vLineHeight = useSharedValue(0)
@@ -496,7 +496,7 @@ export function SplashAnimation({ onComplete }: Props) {
                 key={mc.id}
                 char={mc.char}
                 x={mc.x}
-                startY={lineIdx * LINE_GAP + MATRIX_DOWN_SHIFT}
+                startY={lineIdx * LINE_GAP + matrixDownShift}
                 yOffset={mc.yOffset}
                 speed={mc.speed}
                 delay={mc.delay}

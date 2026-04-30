@@ -21,6 +21,7 @@ import * as Haptics from 'expo-haptics'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useSettingsStore } from '@/stores/settings'
 import type { ProjectGroup } from './useProjectGroups'
 
 if (Platform.OS === 'android') {
@@ -125,7 +126,7 @@ function SessionRow({ session, multipleToday }: SessionRowProps) {
   }, [session, cancelSession])
 
   const label = dateLabel(session.startedAt, multipleToday)
-  const branch = session.branch ?? '—'
+  const branch = session.branch || 'no git'
   const elapsed = formatElapsed(session.elapsedMs)
   const prompts = session.promptCount
 
@@ -188,6 +189,7 @@ interface Props {
 
 export function ProjectHubCard({ group, isOpen, onToggle }: Props) {
   const router = useRouter()
+  const mergeChats = useSettingsStore((s) => s.mergeChats)
   const chevronProgress = useSharedValue(isOpen ? 1 : 0)
 
   const handleToggle = useCallback(() => {
@@ -205,18 +207,14 @@ export function ProjectHubCard({ group, isOpen, onToggle }: Props) {
     ],
   }))
 
-  const todaySessionCount = group.sessions.filter((s) => isToday(s.startedAt)).length
-  const multipleTodaySessions = todaySessionCount > 1
-
-  const todayConvCount = group.conversations.filter((c) => isToday(c.lastActivity)).length
-  const multipleTodayConvs = todayConvCount > 1
-
-  const visibleConvs = group.conversations.slice(0, 5)
-  const extraConvs = group.conversations.length - 5
-
   const sessionCount = group.sessions.length
   const convCount = group.conversations.length
   const encodedPath = encodeURIComponent(group.projectPath)
+
+  const todaySessionCount = group.sessions.filter((s) => isToday(s.startedAt)).length
+  const multipleTodaySessions = todaySessionCount > 1
+  const todayConvCount = group.conversations.filter((c) => isToday(c.lastActivity)).length
+  const multipleTodayConvs = todayConvCount > 1
 
   return (
     <View style={styles.card}>
@@ -231,7 +229,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: Props) {
           {group.projectName}
         </Text>
         <Text style={styles.countBadge}>
-          {sessionCount} · {convCount}
+          {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
         </Text>
         <Animated.Text style={[styles.chevron, chevronStyle]}>{'›'}</Animated.Text>
       </TouchableOpacity>
@@ -239,44 +237,78 @@ export function ProjectHubCard({ group, isOpen, onToggle }: Props) {
       {/* Expanded body */}
       {isOpen && (
         <View style={styles.body}>
-          {/* Sessions strip */}
-          {sessionCount > 0 && (
+          {mergeChats ? (
+            // Merged: single chronological list
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>SESSIONS</Text>
-              {group.sessions.map((session) => (
-                <SessionRow
-                  key={`${session.serverId}::${session.id}`}
-                  session={session}
-                  multipleToday={multipleTodaySessions}
-                />
-              ))}
+              {[
+                ...group.sessions.map((s) => ({
+                  key: `s-${s.serverId}::${s.id}`,
+                  ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
+                  node: (
+                    <SessionRow
+                      key={`${s.serverId}::${s.id}`}
+                      session={s}
+                      multipleToday={multipleTodaySessions}
+                    />
+                  ),
+                })),
+                ...group.conversations.map((c) => ({
+                  key: `c-${c.serverId}::${c.id}`,
+                  ms: Date.parse(c.lastActivity) || 0,
+                  node: (
+                    <ConvRow
+                      key={`${c.serverId}::${c.id}`}
+                      conv={c}
+                      multipleToday={multipleTodayConvs}
+                    />
+                  ),
+                })),
+              ]
+                .sort((a, b) => b.ms - a.ms)
+                .map((item) => item.node)}
             </View>
-          )}
-
-          {/* Conversations section */}
-          {convCount > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>CONVERSATIONS</Text>
-              {visibleConvs.map((conv) => (
-                <ConvRow
-                  key={`${conv.serverId}::${conv.id}`}
-                  conv={conv}
-                  multipleToday={multipleTodayConvs}
-                />
-              ))}
-              {extraConvs > 0 && (
-                <TouchableOpacity
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onPress={() => router.push(`/project/${encodedPath}` as any)}
-                  activeOpacity={0.75}
-                  style={styles.seeAllRow}
-                >
-                  <Text style={styles.seeAllText}>
-                    See all {group.conversations.length} conversations →
-                  </Text>
-                </TouchableOpacity>
+          ) : (
+            <>
+              {/* Sessions strip */}
+              {sessionCount > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>SESSIONS</Text>
+                  {group.sessions.map((session) => (
+                    <SessionRow
+                      key={`${session.serverId}::${session.id}`}
+                      session={session}
+                      multipleToday={multipleTodaySessions}
+                    />
+                  ))}
+                </View>
               )}
-            </View>
+
+              {/* Conversations section */}
+              {convCount > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>CONVERSATIONS</Text>
+                  {group.conversations.slice(0, 5).map((conv) => (
+                    <ConvRow
+                      key={`${conv.serverId}::${conv.id}`}
+                      conv={conv}
+                      multipleToday={multipleTodayConvs}
+                    />
+                  ))}
+                  {convCount > 5 && (
+                    <TouchableOpacity
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      onPress={() => router.push(`/project/${encodedPath}` as any)}
+                      activeOpacity={0.75}
+                      style={styles.seeAllRow}
+                    >
+                      <Text style={styles.seeAllText}>
+                        See all {convCount} conversations →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
           )}
         </View>
       )}

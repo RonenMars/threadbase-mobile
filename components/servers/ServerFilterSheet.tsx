@@ -21,9 +21,6 @@ const SNAP_POINTS = ['50%', '85%']
 
 const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
   { value: 'running', label: 'Running', color: dark.status.running },
-  { value: 'waiting_input', label: 'Waiting for Input', color: dark.status.waiting },
-  { value: 'completed', label: 'Completed', color: dark.status.completed },
-  { value: 'failed', label: 'Failed', color: dark.status.failed },
   { value: 'idle', label: 'Idle', color: dark.status.idle },
 ]
 

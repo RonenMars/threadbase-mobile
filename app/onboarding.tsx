@@ -19,6 +19,6 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <OnboardingNavigator onDone={() => router.replace('/(tabs)/sessions')} />
+    <OnboardingNavigator onDone={() => router.replace('/')} />
   )
 }
