@@ -260,7 +260,7 @@ export default function ProjectsHub() {
                     }
                   >
                     <View style={styles.convCardTitleRow}>
-                      <FolderSimple size={14} color={dark.text.secondary} weight="fill" />
+                      <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
                       <Text style={styles.convCardTitle} numberOfLines={1}>
                         {item.item.title || item.item.projectPath}
                       </Text>
