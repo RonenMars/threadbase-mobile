@@ -23,6 +23,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: dark.border,
+    marginBottom: spacing.sm,
+    gap: spacing.xs,
   },
 })
 
