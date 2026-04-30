@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
@@ -22,8 +22,10 @@ function toEpochMs(iso: string | undefined): number {
   return iso ? new Date(iso).getTime() : 0
 }
 
-function sortByLastActivityDesc(a: MultiConversation, b: MultiConversation): number {
-  return toEpochMs(b.lastActivity) - toEpochMs(a.lastActivity)
+function sortByLastMessageDesc(a: MultiConversation, b: MultiConversation): number {
+  const ta = toEpochMs(a.lastMessage?.timestamp ?? a.lastActivity)
+  const tb = toEpochMs(b.lastMessage?.timestamp ?? b.lastActivity)
+  return tb - ta
 }
 
 // Paginated fetches across servers can yield the same conversation twice when
@@ -112,7 +114,7 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
       // vs a global merge. Single-server installs get correct cursor semantics.
 
       // Sort by lastActivity descending
-      merged.sort(sortByLastActivityDesc)
+      merged.sort(sortByLastMessageDesc)
 
       return { conversations: dedupeByServerAndId(merged), hasMore: anyHasMore }
     },
@@ -342,13 +344,25 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
     displayedServerIds.length === 0 ||
     (countsDone && (pageQueryDefs.length === 0 || pageQueries.every((q) => q.isSuccess || q.isError)))
 
-  const conversations = useMemo(() => {
+  const stableConversations = useRef<MultiConversation[]>([])
+  const [conversations, setConversations] = useState<MultiConversation[]>([])
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!isDone) return
     const all: MultiConversation[] = []
     for (const q of pageQueries) {
       if (q.isSuccess && q.data) all.push(...q.data)
     }
-    return dedupeByServerAndId(all.sort(sortByLastActivityDesc))
-  }, [pageQueries])
+    const next = dedupeByServerAndId(all.sort(sortByLastMessageDesc))
+    stableConversations.current = next
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    debounceTimerRef.current = setTimeout(() => setConversations(next), 80)
+  }, [isDone, pageQueries])
+
+  useEffect(() => () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+  }, [])
 
   return { conversations, loaded, total, isDone, isCounting: !countsDone }
 }
@@ -376,7 +390,7 @@ export function useConversationSearch(query: string) {
         }
       }
 
-      merged.sort(sortByLastActivityDesc)
+      merged.sort(sortByLastMessageDesc)
       const deduped = dedupeByServerAndId(merged)
 
       return { conversations: deduped, hasMore: false, offset: 0, total: deduped.length }
