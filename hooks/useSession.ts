@@ -119,5 +119,13 @@ export function useSessionDetail(serverId: string, sessionId: string) {
   return useQuery({
     queryKey: ['session', serverId, sessionId],
     queryFn: () => api.get<Session>(`/api/sessions/${sessionId}`),
+    // WS session_update events keep this data fresh via setQueryData — no need
+    // to poll or aggressively refetch. staleTime prevents a background refetch
+    // from clobbering a running→waiting_input transition that already arrived
+    // over WS before the HTTP response completed.
+    staleTime: 30_000,
+    // Don't persist session detail across app restarts — each session is
+    // ephemeral and stale persisted state causes false status flickers.
+    meta: { persist: false },
   })
 }
