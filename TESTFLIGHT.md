@@ -11,6 +11,39 @@
 
 ---
 
+## Ship Pipeline (`scripts/ship.sh`)
+
+End-to-end deploy without any manual steps:
+
+```bash
+./scripts/ship.sh                     # → TestFlight
+./scripts/ship.sh --target production # → App Store review
+```
+
+### 1Password auth — no `op signin` required
+
+The ship pipeline calls `scripts/bootstrap-ios-signing.sh` to pull the App Store Connect
+API key from 1Password (`op://MyDevSecrets/AppStoreConnect`). This requires `op` to be
+authenticated, but **not interactively** — as long as `OP_SERVICE_ACCOUNT_TOKEN` is set
+in the environment, `op` works without `op signin`.
+
+This token is stored in `MyDevSecrets/OP_SERVICE_ACCOUNT_TOKEN` and exported via
+`~/dotfiles/config/zsh/secrets-template.zsh`. After running `refresh-secrets` once, every
+new terminal session has it automatically.
+
+**First-time setup on a new machine:**
+1. Ensure `OP_SERVICE_ACCOUNT_TOKEN` is in your environment (`echo $OP_SERVICE_ACCOUNT_TOKEN`)
+2. If missing: `refresh-secrets` (requires one interactive `op signin` to bootstrap)
+3. Then `./scripts/ship.sh` runs without any further 1Password prompts
+
+### Skip bootstrap when already set up
+
+`ship.sh` detects if `.env.signing` exists and the `.p8` key is already on disk, and
+skips the bootstrap step entirely. On repeat deploys from the same machine, signing is
+bootstrapped from the cached files — 1Password isn't contacted at all.
+
+---
+
 ## Credentials (managed by EAS)
 
 All signing credentials are stored on EAS servers and auto-managed:

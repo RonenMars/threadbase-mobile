@@ -86,6 +86,7 @@ export default function ConversationDetailScreen() {
   const listRef = useRef<FlatList<Message>>(null)
   const hasInitialScrolled = useRef(false)
   const hasStartedAutoScroll = useRef(false)
+  const prevScrollY = useRef(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
@@ -135,7 +136,9 @@ export default function ConversationDetailScreen() {
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
     const y = contentOffset.y
-    setShowScrollTop(y > 100)
+    const scrollingUp = y < prevScrollY.current
+    prevScrollY.current = y
+    setShowScrollTop(scrollingUp && y > 100)
     const distFromBottom = contentSize.height - y - layoutMeasurement.height
     setShowScrollBottom(distFromBottom > 100)
 

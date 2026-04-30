@@ -55,10 +55,22 @@ check "ios.bundleIdentifier set"  "jq -e '.expo.ios.bundleIdentifier' app.json" 
 check "Lockfile present"          "[[ -f package-lock.json || -f yarn.lock || -f pnpm-lock.yaml || -f bun.lockb || -f bun.lock ]]" "commit your package manager's lockfile"
 
 if [[ "$SKIP_SECRETS" != "1" ]]; then
-  echo
-  echo "▸ Ship secrets (set SKIP_SECRETS=1 to bypass)"
-  check "1Password CLI installed" "command -v op"                              "brew install --cask 1password-cli"
-  check "1Password signed in"     "op whoami"                                  "eval \"\$(op signin)\" — or set OP_SERVICE_ACCOUNT_TOKEN for CI"
+  # If .env.signing exists and the .p8 key is already on disk, signing is
+  # pre-bootstrapped — no live 1Password session needed.
+  _env_signing_ok=0
+  if [[ -f .env.signing ]]; then
+    _asc_key_path=$(bash -c 'source .env.signing 2>/dev/null && echo "${ASC_KEY_PATH:-}"')
+    [[ -n "$_asc_key_path" && -f "$_asc_key_path" ]] && _env_signing_ok=1
+  fi
+
+  if (( _env_signing_ok )); then
+    log_pass "iOS signing pre-bootstrapped (.env.signing + .p8 present — skipping 1Password check)"
+  else
+    echo
+    echo "▸ Ship secrets (set SKIP_SECRETS=1 to bypass)"
+    check "1Password CLI installed" "command -v op"                              "brew install --cask 1password-cli"
+    check "1Password signed in"     "op whoami"                                  "eval \"\$(op signin)\" — or set OP_SERVICE_ACCOUNT_TOKEN for CI"
+  fi
 fi
 
 echo

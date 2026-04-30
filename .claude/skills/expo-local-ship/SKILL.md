@@ -34,7 +34,6 @@ API-key flags.
 ## Quick start
 
 ```bash
-eval "$(op signin)"            # sign 1Password CLI in (one-time per shell)
 ./scripts/ship.sh              # → TestFlight (default)
 ./scripts/ship.sh --target production --release-notes "Fixes login bug" \
                   --release-type AFTER_APPROVAL          # → App Store
@@ -45,7 +44,7 @@ That's the whole flow. No simulator, no UI clicks. The script:
 1. **Preflight** — runs every prerequisite check, fails loud if anything is off.
 2. **Install deps** — npm / yarn / pnpm / bun, auto-detected from lockfile.
 3. **Prebuild** — runs `npx expo prebuild` only if `ios/` is missing.
-4. **Bootstrap signing** — pulls ASC API key + Team ID from 1Password, renders `ExportOptions.plist`, writes `.env.signing`.
+4. **Bootstrap signing** — skipped automatically if `.env.signing` and the `.p8` key are already on disk. On a fresh machine, pulls ASC API key + Team ID from 1Password (requires `eval "$(op signin)"` or `OP_SERVICE_ACCOUNT_TOKEN`), renders `ExportOptions.plist`, writes `.env.signing`.
 5. **Archive + upload** — `xcodebuild archive` then `xcodebuild -exportArchive` with `destination=upload`.
 6. **Poll** — watches `processingState` until `VALID` (or hard-fails after 30 min).
 7. *(production only)* **Submit for review** — App Store Connect REST API.

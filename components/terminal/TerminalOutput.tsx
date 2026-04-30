@@ -67,6 +67,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const isAtBottomRef = useRef(true)
   const isStreamingRef = useRef(isStreaming)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prevScrollY = useRef(0)
 
   useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
   useEffect(() => () => { if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current) }, [])
@@ -74,11 +75,13 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
     const y = contentOffset.y
+    const scrollingUp = y < prevScrollY.current
+    prevScrollY.current = y
     const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
     const atBottom = distanceFromBottom < 50
     isAtBottomRef.current = atBottom
     setShowJumpButton(!atBottom)
-    setShowTopButton(y > 100)
+    setShowTopButton(scrollingUp && y > 100)
   }, [])
 
   const jumpToBottom = useCallback(() => {

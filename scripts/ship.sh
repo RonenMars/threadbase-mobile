@@ -76,10 +76,18 @@ if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
 fi
 
 # 4. Bootstrap iOS signing from 1Password
-echo "▸ [4/6] Bootstrap iOS signing"
-"$SCRIPT_DIR/bootstrap-ios-signing.sh"
+# Skip if .env.signing already exists and the .p8 key is materialized on disk.
+# On a fresh machine (or after rotating the key) the bootstrap will re-run and
+# repopulate both files from 1Password (requires OP_SERVICE_ACCOUNT_TOKEN or
+# an active `op signin` session).
 # shellcheck disable=SC1091
-source .env.signing
+if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
+  echo "▸ [4/6] iOS signing already bootstrapped — skipping"
+else
+  echo "▸ [4/6] Bootstrap iOS signing"
+  "$SCRIPT_DIR/bootstrap-ios-signing.sh"
+  source .env.signing
+fi
 
 # 5. Archive + upload
 echo "▸ [5/6] Archive and upload"
