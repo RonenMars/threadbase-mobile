@@ -109,8 +109,8 @@ export default function SessionsScreen() {
 
   const isReloading = sessionsInitialLoad || isFocusFetching
   const listEmpty = visibleSessions.length === 0
-  const showOverlay = isReloading && listEmpty
-  const showInlineSpinner = isReloading && !listEmpty
+  const showOverlay = sessionsInitialLoad && listEmpty
+  const showInlineSpinner = isReloading && !showOverlay
   const isFiltered =
     selectedStatuses.length < ALL_STATUSES.length ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)

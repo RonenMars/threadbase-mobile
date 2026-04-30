@@ -1,4 +1,5 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import type { MultiSession, Session } from '@/types/api'
@@ -68,15 +69,20 @@ export function useEagerSessions() {
   const countsDone = activeServerIds.length === 0 || countQueries.every((q) => q.isSuccess || q.isError)
   const total = countQueries.reduce((sum, q) => sum + (q.data?.total ?? 0), 0)
 
-  // Step 2: fetch all sessions per server (single page each)
+  // Step 2: fetch all sessions per server (single page each).
+  // Always keep session queries alive (even while counts are re-fetching) so
+  // their cached data stays visible and the list doesn't flash empty on refetch.
+  const sessionQueriesStarted = useRef(false)
+  if (countsDone) sessionQueriesStarted.current = true
   const sessionQueries = useQueries({
-    queries: countsDone
-      ? activeServerIds.map((serverId) => ({
-          queryKey: ['sessions', serverId],
-          queryFn: () =>
-            createApiForServer(serverId).get<Session[]>('/api/sessions'),
-        }))
-      : [],
+    queries:
+      sessionQueriesStarted.current
+        ? activeServerIds.map((serverId) => ({
+            queryKey: ['sessions', serverId],
+            queryFn: () =>
+              createApiForServer(serverId).get<Session[]>('/api/sessions'),
+          }))
+        : [],
   })
 
   const loaded = sessionQueries

@@ -37,6 +37,21 @@ import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import type { SlashCommand } from '@/constants/slashCommands'
 
+const WAKING_UP_PHRASES = [
+  "I'm waking up, I'll be ready in a moment…",
+  "Loading my entire knowledge of humanity, one sec…",
+  "Stretching my context window, almost there…",
+  "Brewing a fresh pot of tokens, hold tight…",
+  "Reminding myself what code looks like…",
+  "Counting to a trillion really fast, nearly done…",
+]
+
+function wakingUpPhrase(sessionId: string): string {
+  let hash = 0
+  for (let i = 0; i < sessionId.length; i++) hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0
+  return WAKING_UP_PHRASES[hash % WAKING_UP_PHRASES.length]
+}
+
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
   if (s < 60) return `${s}s`
@@ -254,10 +269,12 @@ export default function SessionDetailScreen() {
     lines.length === 0 &&
     !isStreaming
 
-  const canSendTerminalInput =
+  const showInputBar =
     session &&
     (session.status === 'waiting_input' || session.status === 'running') &&
     !discoveredEmptyPlaceholder
+
+  const isWakingUp = session?.status === 'running'
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -322,7 +339,7 @@ export default function SessionDetailScreen() {
           )}
         </View>
 
-        {canSendTerminalInput ? (
+        {showInputBar ? (
           <View style={styles.inputArea}>
             {sendInput.isError ? (
               <Text style={styles.sendError} numberOfLines={2}>
@@ -361,9 +378,9 @@ export default function SessionDetailScreen() {
             ) : null}
             <View style={styles.inputRow}>
               <TouchableOpacity
-                style={[styles.attachBtn, isUploading && styles.sendBtnDisabled]}
+                style={[styles.attachBtn, (isUploading || isWakingUp) && styles.sendBtnDisabled]}
                 onPress={handleAttach}
-                disabled={isUploading}
+                disabled={isUploading || isWakingUp}
                 accessibilityLabel="Attach photo"
               >
                 {isUploading ? (
@@ -373,24 +390,25 @@ export default function SessionDetailScreen() {
                 )}
               </TouchableOpacity>
               <TextInput
-                style={styles.input}
-                value={inputText}
-                onChangeText={handleInputChange}
-                placeholder="Send input to session…"
+                style={[styles.input, isWakingUp && styles.inputDisabled]}
+                value={isWakingUp ? '' : inputText}
+                onChangeText={isWakingUp ? undefined : handleInputChange}
+                placeholder={isWakingUp ? wakingUpPhrase(id) : 'Send input to session…'}
                 placeholderTextColor={dark.text.secondary}
                 multiline
                 returnKeyType="done"
                 blurOnSubmit
-                onSubmitEditing={handleSendInput}
+                onSubmitEditing={isWakingUp ? undefined : handleSendInput}
+                editable={!isWakingUp}
               />
               <TouchableOpacity
                 style={[
                   styles.sendBtn,
-                  !inputText.trim() && attachments.length === 0 && styles.sendBtnDisabled,
+                  (!inputText.trim() && attachments.length === 0 || isWakingUp) && styles.sendBtnDisabled,
                 ]}
                 onPress={handleSendInput}
                 disabled={
-                  (!inputText.trim() && attachments.length === 0) || sendInput.isPending
+                  (!inputText.trim() && attachments.length === 0) || sendInput.isPending || isWakingUp
                 }
                 accessibilityLabel="Send input"
               >
@@ -603,6 +621,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   sendBtnDisabled: { opacity: 0.4 },
+  inputDisabled: { opacity: 0.5 },
   stopBtn: {
     minHeight: 36,
     minWidth: 36,
