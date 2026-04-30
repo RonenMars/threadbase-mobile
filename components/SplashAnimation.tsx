@@ -137,7 +137,7 @@ function generateMatrixChars(
   const chars: MatrixChar[] = []
   let id = 0
   const spreadX = screenWidth * 0.4 // extend x range well beyond thread lines
-  const offsetX = -screenWidth * 0.17  // start further left
+  const offsetX = -screenWidth * 0.19  // start further left
 
   // The effective start Y of a char ranges from -MATRIX_RISE (top of rain)
   // to (THREAD_LINES.length - 1) * LINE_GAP (bottom). We use this span to

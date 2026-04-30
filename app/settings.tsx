@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
   RefreshControl,
+  Linking,
 } from 'react-native'
 import Constants from 'expo-constants'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -96,7 +97,7 @@ export default function SettingsScreen() {
 
   const handleRefreshServer = async (serverId: string) => {
     setRefreshingServerIds((prev) => new Set(prev).add(serverId))
-    await refreshServerInfo(serverId)
+await refreshServerInfo(serverId)
     setRefreshingServerIds((prev) => {
       const next = new Set(prev)
       next.delete(serverId)
@@ -106,7 +107,7 @@ export default function SettingsScreen() {
 
   const handlePullRefresh = async () => {
     setIsPullRefreshing(true)
-    await Promise.all(activeServerIds.map((id) => refreshServerInfo(id)))
+    await Promise.all(activeServerIds.map((id) => handleRefreshServer(id)))
     setIsPullRefreshing(false)
   }
 
@@ -244,14 +245,6 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <SectionHeader title="Help" />
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={() => router.push('/onboarding')}>
-            <Text style={styles.rowLabel}>Restart onboarding</Text>
-            <Text style={styles.rowValue}>›</Text>
-          </TouchableOpacity>
-        </View>
-
         <SectionHeader title="About" />
         <View style={styles.card}>
           <Text style={styles.aboutText}>
@@ -262,6 +255,18 @@ export default function SettingsScreen() {
             })`}
           </Text>
           <Text style={styles.aboutSubtext}>AI Agent Control Center</Text>
+        </View>
+
+        <SectionHeader title="Help" />
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/onboarding')}>
+            <Text style={styles.rowLabel}>Restart onboarding</Text>
+            <Text style={styles.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>
+            <Text style={styles.rowLabel}>Help & Support</Text>
+            <Text style={styles.rowValue}>›</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

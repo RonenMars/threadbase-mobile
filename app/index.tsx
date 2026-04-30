@@ -7,12 +7,9 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  Pressable,
   AppState,
   FlatList,
   RefreshControl,
-  Linking,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -31,7 +28,7 @@ import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, DotsThreeOutline, Gear, EnvelopeSimple, FolderSimple } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -81,7 +78,6 @@ export default function ProjectsHub() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [statusModalOpen, setStatusModalOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [pickerVisible, setPickerVisible] = useState(false)
 
   // Sort state (hub mode)
@@ -186,6 +182,14 @@ export default function ProjectsHub() {
         <View style={styles.headerLeft}>
           <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
           <Text style={styles.headerTitle}>Threadbase</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            hitSlop={8}
+            style={styles.headerButton}
+            accessibilityLabel="Settings"
+          >
+            <Gear size={20} color={dark.text.secondary} />
+          </TouchableOpacity>
         </View>
 
         {/* Right: actions */}
@@ -217,14 +221,6 @@ export default function ProjectsHub() {
           >
             <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setMenuOpen(true)}
-            hitSlop={8}
-            style={styles.headerButton}
-            accessibilityLabel="More options"
-          >
-            <DotsThreeOutline size={20} color={dark.text.secondary} weight="fill" />
           </TouchableOpacity>
         </View>
       </View>
@@ -316,14 +312,6 @@ export default function ProjectsHub() {
 
       {/* FAB */}
       <FAB onPress={handleFABPress} />
-
-      {/* Three-dots menu */}
-      {menuOpen ? (
-        <HeaderMenu
-          onClose={() => setMenuOpen(false)}
-          onSettings={() => { setMenuOpen(false); router.push('/settings') }}
-        />
-      ) : null}
 
       {/* Modals & Sheets */}
       <ServerStatusModal
@@ -443,69 +431,6 @@ function MergedClassicList({
   )
 }
 
-function HeaderMenu({
-  onClose,
-  onSettings,
-}: {
-  onClose: () => void
-  onSettings: () => void
-}) {
-  const handleSupport = () => {
-    Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')
-    onClose()
-  }
-
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={menuStyles.backdrop} onPress={onClose}>
-        <Pressable style={menuStyles.menu} onPress={() => {}}>
-          <TouchableOpacity style={menuStyles.item} onPress={onSettings}>
-            <Gear size={18} color={dark.text.secondary} />
-            <Text style={menuStyles.itemText}>Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[menuStyles.item, menuStyles.itemLast]} onPress={handleSupport}>
-            <EnvelopeSimple size={18} color={dark.text.secondary} />
-            <Text style={menuStyles.itemText}>Help & Support</Text>
-          </TouchableOpacity>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  )
-}
-
-const menuStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-  },
-  menu: {
-    position: 'absolute',
-    top: 56,
-    right: spacing.md,
-    backgroundColor: dark.bg.secondary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: dark.border,
-    minWidth: 180,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 16,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-    minHeight: 44,
-  },
-  itemLast: { borderBottomWidth: 0 },
-  itemText: { color: dark.text.primary, fontSize: font.base },
-})
 
 const styles = StyleSheet.create({
   container: {

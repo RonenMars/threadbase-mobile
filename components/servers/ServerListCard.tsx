@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated, Easing } from 'react-native'
 import { Trash, PencilSimple, ArrowsClockwise, XCircle } from 'phosphor-react-native'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { ServerConfig } from '@/types/api'
@@ -13,7 +13,43 @@ interface Props {
   onViewError: (serverId: string) => void
 }
 
+const REFRESH_TIMEOUT_MS = 12000
+
 export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefresh, onViewError }: Props) {
+  const progress = useRef(new Animated.Value(1)).current
+  const progressAnim = useRef<Animated.CompositeAnimation | null>(null)
+  const resultOpacity = useRef(new Animated.Value(0)).current
+  const [resultColor, setResultColor] = useState<string>(dark.status.running)
+  const [showBottomLine, setShowBottomLine] = useState(false)
+  const prevRefreshing = useRef(false)
+
+  useEffect(() => {
+    progressAnim.current?.stop()
+    if (isRefreshing) {
+      progress.setValue(1)
+      progressAnim.current = Animated.timing(progress, {
+        toValue: 0,
+        duration: REFRESH_TIMEOUT_MS,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      })
+      progressAnim.current.start()
+    } else {
+      progress.setValue(1)
+      if (prevRefreshing.current) {
+        const color = server.connectionError ? dark.status.failed : dark.status.running
+        setResultColor(color)
+        setShowBottomLine(true)
+        resultOpacity.setValue(1)
+        Animated.sequence([
+          Animated.delay(2500),
+          Animated.timing(resultOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+        ]).start(() => setShowBottomLine(false))
+      }
+    }
+    prevRefreshing.current = isRefreshing
+  }, [isRefreshing])
+
   const handleRemove = () => {
     Alert.alert(
       'Remove Server',
@@ -26,7 +62,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
   }
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, showBottomLine && styles.cardNoBottomPad]}>
       <View style={styles.header}>
         <View style={[styles.statusDot, server.isConnected ? styles.dotConnected : styles.dotDisconnected]} />
         <Text style={styles.label} numberOfLines={1}>
@@ -81,6 +117,28 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
           {server.isConnected ? 'Connected' : 'Disconnected'}
         </Text>
       )}
+
+      {(isRefreshing || showBottomLine) ? (
+        <View style={styles.bottomSlot}>
+          {isRefreshing ? (
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          ) : (
+            <Animated.View
+              style={[styles.resultLine, { backgroundColor: resultColor, opacity: resultOpacity }]}
+            />
+          )}
+        </View>
+      ) : null}
     </View>
   )
 }
@@ -95,6 +153,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     padding: spacing.md,
     paddingBottom: spacing.sm,
+  },
+  bottomSlot: {
+    height: 4,
+    marginTop: spacing.sm,
+    marginHorizontal: -spacing.md,
+    marginBottom: -spacing.sm,
+  },
+  progressFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: 4,
+    backgroundColor: dark.text.accent,
+    shadowColor: dark.text.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+  },
+  resultLine: {
+    height: 4,
+    width: '100%',
   },
   header: {
     flexDirection: 'row',

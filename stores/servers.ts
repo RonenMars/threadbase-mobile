@@ -190,10 +190,15 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     const server = get().servers[serverId]
     if (!server) return
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
+
     try {
       const response = await fetch(`${server.url}/api/info`, {
         headers: { Authorization: `Bearer ${server.apiKey}` },
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`)
       }
@@ -207,7 +212,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         return { servers }
       })
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
+      clearTimeout(timeout)
+      const isTimeout = err instanceof Error && err.name === 'AbortError'
+      const message = isTimeout ? 'Request timed out after 12s' : (err instanceof Error ? err.message : String(err))
       set((state) => {
         const s = state.servers[serverId]
         if (!s) return state
