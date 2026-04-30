@@ -55,7 +55,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       if (!hasServers && !inOnboarding) {
         router.replace('/onboarding')
       } else if (hasServers && inOnboarding && !addingServer) {
-        router.replace('/(tabs)/sessions')
+        router.replace('/')
       }
     })
     return () => cancelAnimationFrame(handle)
@@ -190,7 +190,6 @@ export default function RootLayout() {
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
               <Stack.Screen name="session/[id]" options={{ title: 'Session' }} />
               <Stack.Screen name="conversation/[id]" options={{ title: 'Conversation' }} />
@@ -201,6 +200,16 @@ export default function RootLayout() {
                   title: 'Browse',
                   headerBackTitle: 'Cancel',
                 }}
+              />
+              <Stack.Screen
+                name="settings"
+                options={{ title: 'Settings', headerShown: true }}
+              />
+              <Stack.Screen
+                name="project/[path]"
+                options={({ route }) => ({
+                  title: decodeURIComponent((route.params as { path?: string }).path?.split('/').pop() ?? 'Project'),
+                })}
               />
             </Stack>
           </AuthGate>
