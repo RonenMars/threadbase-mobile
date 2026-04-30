@@ -62,15 +62,15 @@ export default function HistoryScreen() {
   }, []))
 
   const isSearching = debouncedQuery.length > 0
+  const isError = !isSearching && searchResult.isError
+  const showFullProgress = !isSearching && !isDone && loaderMode === 'full'
+  const showMinimalLoader = !isSearching && !isDone && loaderMode === 'minimal'
+
   const displayedConversations: MultiConversation[] = isSearching
     ? (searchResult.data?.conversations ?? [])
     : showMinimalLoader && conversations.length === 0
       ? prevConversationsRef.current
       : conversations
-
-  const isError = !isSearching && searchResult.isError
-  const showFullProgress = !isSearching && !isDone && loaderMode === 'full'
-  const showMinimalLoader = !isSearching && !isDone && loaderMode === 'minimal'
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>

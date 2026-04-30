@@ -55,14 +55,14 @@ describe('TerminalOutput – streaming indicator', () => {
     const { getByText } = render(
       <TerminalOutput lines={[]} isStreaming={true} />
     )
-    expect(getByText('● streaming')).toBeTruthy()
+    expect(getByText('streaming')).toBeTruthy()
   })
 
   it('hides streaming label when isStreaming=false', () => {
     const { queryByText } = render(
       <TerminalOutput lines={[]} isStreaming={false} />
     )
-    expect(queryByText('● streaming')).toBeNull()
+    expect(queryByText('streaming')).toBeNull()
   })
 })
 

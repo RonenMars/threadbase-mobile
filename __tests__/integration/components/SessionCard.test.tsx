@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import { SessionCard } from '@/components/sessions/SessionCard'
-import type { Session } from '@/types/api'
+import type { MultiSession } from '@/types/api'
 
 const mockPush = jest.fn()
 jest.mock('expo-router', () => ({
@@ -19,8 +19,9 @@ jest.mock('@/hooks/useSessionActions', () => ({
   }),
 }))
 
-const makeSession = (overrides: Partial<Session> = {}): Session => ({
+const makeSession = (overrides: Partial<MultiSession> = {}): MultiSession => ({
   id: 'session-1',
+  serverId: 'server-1',
   status: 'running',
   projectPath: '/home/user/my-project',
   projectName: 'my-project',
@@ -95,7 +96,7 @@ describe('SessionCard', () => {
     const session = makeSession({ id: 'abc-123' })
     const { getByRole } = render(<SessionCard session={session} />)
     fireEvent.press(getByRole('button'))
-    expect(mockPush).toHaveBeenCalledWith('/session/abc-123')
+    expect(mockPush).toHaveBeenCalledWith('/session/abc-123?server=server-1')
   })
 
   it('has correct accessibility label', () => {

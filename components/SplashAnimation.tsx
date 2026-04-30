@@ -79,7 +79,7 @@ function lerpRgb(a: RGB, b: RGB, t: number): RGB {
 // orange. Each color's stop is placed at the center of its 25% band; we
 // interpolate linearly between neighboring stops for smooth transitions,
 // and clamp outside the outermost stops so the edges stay on-color.
-const GRADIENT_STOPS: Array<{ t: number; color: RGB }> = [
+const GRADIENT_STOPS: { t: number; color: RGB }[] = [
   { t: 0.125, color: hexToRgb(COLORS.blueMid) },     // blue
   { t: 0.375, color: hexToRgb(COLORS.blueBright) },  // light blue
   { t: 0.625, color: hexToRgb('#f5b483') },          // light orange

@@ -12,7 +12,7 @@ const bashError: ToolResult = { type: 'tool_result', toolName: 'Bash', content: 
 const emptyResult: ToolResult = { type: 'tool_result', toolName: 'Read', content: '' }
 
 describe('ToolCard – tool names and icons', () => {
-  const iconMap: Array<[string, string]> = [
+  const iconMap: [string, string][] = [
     ['Edit', '✏️'],
     ['Bash', '💻'],
     ['Read', '👁'],

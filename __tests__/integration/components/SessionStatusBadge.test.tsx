@@ -3,7 +3,7 @@ import { render } from '@testing-library/react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import type { SessionStatus } from '@/types/api'
 
-const STATUSES: Array<[SessionStatus, string]> = [
+const STATUSES: [SessionStatus, string][] = [
   ['running', 'Running'],
   ['waiting_input', 'Waiting for Input'],
   ['completed', 'Completed'],

@@ -152,5 +152,25 @@ jest.mock('react-native-pager-view', () => {
   }
 })
 
+// ─── expo-constants ──────────────────────────────────────────────────────────
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      version: '1.0.0',
+      ios: { buildNumber: '1' },
+      android: { versionCode: 1 },
+    },
+  },
+}))
+
+// ─── @react-navigation/elements ──────────────────────────────────────────────
+jest.mock('@react-navigation/elements', () => ({
+  useHeaderHeight: () => 44,
+  HeaderButton: () => null,
+  HeaderTitle: () => null,
+  HeaderBackButton: () => null,
+}))
+
 // ─── WebSocket global (for ws-client tests) ──────────────────────────────────
 global.WebSocket = global.WebSocket || class {}

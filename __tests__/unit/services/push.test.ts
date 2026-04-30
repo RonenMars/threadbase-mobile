@@ -75,23 +75,23 @@ describe('isInQuietHours – same-day range (12:00–14:00)', () => {
 
 describe('requestPermissions', () => {
   it('returns true when permissions already granted', async () => {
-    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'granted' })
+    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'granted', granted: true })
     const result = await requestPermissions()
     expect(result).toBe(true)
     expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled()
   })
 
   it('requests permissions when not granted and returns true on grant', async () => {
-    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'undetermined' })
-    ;(Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'granted' })
+    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'undetermined', granted: false })
+    ;(Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'granted', granted: true })
     const result = await requestPermissions()
     expect(result).toBe(true)
     expect(Notifications.requestPermissionsAsync).toHaveBeenCalled()
   })
 
   it('returns false when permissions denied', async () => {
-    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'denied' })
-    ;(Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'denied' })
+    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'denied', granted: false })
+    ;(Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'denied', granted: false })
     const result = await requestPermissions()
     expect(result).toBe(false)
   })

@@ -131,7 +131,7 @@ export interface PushRegisterPayload {
 
 export interface BrowseResponse {
   path: string
-  directories: Array<{ name: string }>
+  directories: { name: string }[]
 }
 
 export interface MkdirResponse {

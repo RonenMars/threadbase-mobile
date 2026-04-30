@@ -251,7 +251,7 @@ function ActionSegment({
   value: AddServerAction
   onChange: (v: AddServerAction) => void
 }) {
-  const options: Array<{ id: AddServerAction; label: string }> = [
+  const options: { id: AddServerAction; label: string }[] = [
     { id: 'ask', label: 'Ask' },
     { id: 'add', label: 'Add' },
     { id: 'replace', label: 'Replace' },

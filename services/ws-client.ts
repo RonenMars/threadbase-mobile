@@ -172,7 +172,7 @@ class WSClientManager {
 
   /** Register a handler across ALL active (and future) clients for a given message type. */
   onAll(type: string, handler: ServerMessageHandler): () => void {
-    const unsubs: Array<() => void> = []
+    const unsubs: (() => void)[] = []
     for (const [serverId, client] of this.clients) {
       const unsub = client.on(type, (msg) => handler({ ...msg, serverId }))
       unsubs.push(unsub)

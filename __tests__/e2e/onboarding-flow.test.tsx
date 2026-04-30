@@ -25,6 +25,8 @@ jest.mock('@/stores/servers', () => ({
     addServer: mockAddServer,
     servers: {},
     activeServerIds: [],
+    displayedServerIds: [],
+    setDisplayedServerIds: jest.fn(),
     isLoading: false,
   })),
 }))
@@ -49,7 +51,7 @@ describe('Onboarding – initial render', () => {
 
   it('shows Server URL input', () => {
     const { getByPlaceholderText } = render(<OnboardingScreen />)
-    expect(getByPlaceholderText('http://localhost:7070')).toBeTruthy()
+    expect(getByPlaceholderText('localhost:7070')).toBeTruthy()
   })
 
   it('shows API key input', () => {
@@ -107,7 +109,7 @@ describe('Onboarding – successful connection', () => {
 
     const { getByText, getByPlaceholderText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('http://localhost:7070'), 'http://192.168.1.100:7070')
+    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.100:7070')
     fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'valid-key')
 
     await act(async () => {
@@ -128,7 +130,7 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('http://localhost:7070'), 'http://192.168.1.1:7070')
+    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.1:7070')
     fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'wrong-key')
 
     await act(async () => {
@@ -144,7 +146,7 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('http://localhost:7070'), 'http://192.168.1.1:7070')
+    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.1:7070')
     fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'some-key')
 
     await act(async () => {
@@ -174,7 +176,7 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('http://localhost:7070'), 'http://192.168.1.1:7070')
+    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.1:7070')
     fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'key')
 
     await act(async () => {

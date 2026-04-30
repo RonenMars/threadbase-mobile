@@ -67,8 +67,8 @@ beforeEach(() => {
 
 describe('Settings – server section', () => {
   it('displays the server URL', () => {
-    const { getByText } = render(<SettingsScreen />)
-    expect(getByText('http://my-server.local:7070')).toBeTruthy()
+    const { getAllByText } = render(<SettingsScreen />)
+    expect(getAllByText('http://my-server.local:7070').length).toBeGreaterThan(0)
   })
 
   it('displays server machine name', () => {
@@ -133,7 +133,7 @@ describe('Settings – notifications section', () => {
 describe('Settings – about section', () => {
   it('shows app version', () => {
     const { getByText } = render(<SettingsScreen />)
-    expect(getByText('Threadbase Mobile v1.0.0')).toBeTruthy()
+    expect(getByText(/Threadbase Mobile v1\.0\.0/)).toBeTruthy()
   })
 
   it('shows app tagline', () => {

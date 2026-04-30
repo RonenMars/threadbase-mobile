@@ -14,7 +14,7 @@ interface Props {
 
 const SNAP_POINTS = ['55%']
 
-const OPTIONS: Array<{ id: Choice; label: string; description: string }> = [
+const OPTIONS: { id: Choice; label: string; description: string }[] = [
   {
     id: 'add',
     label: 'Add to displayed',
