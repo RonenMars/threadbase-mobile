@@ -5,6 +5,10 @@ import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
 
+export type TerminalLine =
+  | string
+  | { __divider: true; text: string }
+
 interface TerminalHistoryResponse {
   output?: string
   lines?: string[]
@@ -15,9 +19,10 @@ const EMPTY_HISTORY: TerminalHistoryResponse = { output: '' }
 
 export function useTerminalStream(serverId: string, sessionId: string, skipLiveStream = false) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
-  const [lines, setLines] = useState<string[]>([])
+  const [lines, setLines] = useState<TerminalLine[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const vtRef = useRef(new VirtualTerminal())
+  const pendingDividersRef = useRef<string[]>([])
 
   const historyQuery = useQuery({
     queryKey: ['terminal-output', serverId, sessionId],
@@ -41,6 +46,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   // Feed history into the VT whenever it (re)loads or maxLines changes.
   useEffect(() => {
     vtRef.current.reset()
+    pendingDividersRef.current = []
     setLines([])
     const data = historyQuery.data
     if (!data) return
@@ -74,13 +80,41 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       unsubOutput = client.on('terminal_output', (msg) => {
         if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
 
+        // Flush pending dividers before the first line of a new response
+        if (pendingDividersRef.current.length > 0) {
+          const dividers: TerminalLine[] = pendingDividersRef.current.map(
+            (text) => ({ __divider: true as const, text })
+          )
+          pendingDividersRef.current = []
+          setLines((prev) => [...prev, ...dividers])
+        }
+
         setIsStreaming(true)
         vtRef.current.feed(msg.data)
-        const visible = vtRef.current.getLines()
-        setLines(visible.slice(-maxLines))
+
+        // Preserve divider entries — VT getLines() only returns string lines,
+        // so we filter dividers from prev state and merge with fresh VT output
+        setLines((prev) => {
+          const dividerEntries = prev.filter(
+            (l): l is { __divider: true; text: string } =>
+              typeof l !== 'string' && (l as { __divider: boolean }).__divider
+          )
+          const vtLines = vtRef.current.getLines()
+          return [...dividerEntries, ...vtLines].slice(-maxLines)
+        })
 
         clearTimeout(idleTimer)
-        idleTimer = setTimeout(() => setIsStreaming(false), 1500)
+        idleTimer = setTimeout(() => {
+          // Flush any pending dividers before marking idle
+          if (pendingDividersRef.current.length > 0) {
+            const dividers: TerminalLine[] = pendingDividersRef.current.map(
+              (text) => ({ __divider: true as const, text })
+            )
+            pendingDividersRef.current = []
+            setLines((prev) => [...prev, ...dividers])
+          }
+          setIsStreaming(false)
+        }, 1500)
       })
     }
 
@@ -111,5 +145,9 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     setLines([])
   }, [])
 
-  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending, clear }
+  const recordSentInput = useCallback((text: string) => {
+    pendingDividersRef.current.push(text)
+  }, [])
+
+  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending, clear, recordSentInput }
 }
