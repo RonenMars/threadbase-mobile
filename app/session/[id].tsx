@@ -105,6 +105,115 @@ const pendingStyles = StyleSheet.create({
   phrase: { color: dark.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
 })
 
+function DiscoveredSessionScreen({
+  serverId,
+  sessionId,
+}: {
+  serverId: string
+  sessionId: string
+}) {
+  const router = useRouter()
+  const { adoptSession } = useSessionActions(serverId, sessionId)
+
+  const handleRestart = () => {
+    adoptSession.mutate(undefined, {
+      onSuccess: (data) => {
+        router.replace(`/session/${data.sessionId}?server=${serverId}`)
+      },
+      onError: (err) => {
+        Alert.alert(
+          'Restart failed',
+          err instanceof Error ? err.message : 'Unknown error',
+        )
+      },
+    })
+  }
+
+  return (
+    <SafeAreaView style={discStyles.container} edges={['bottom']}>
+      <View style={discStyles.content}>
+        <Text style={discStyles.title}>Session unavailable</Text>
+        <Text style={discStyles.subtitle}>
+          This session is running but unavailable.{'\n'}Restart it to re-open?
+        </Text>
+        <View style={discStyles.buttons}>
+          <TouchableOpacity
+            style={[discStyles.btn, discStyles.restartBtn, adoptSession.isPending && discStyles.btnDisabled]}
+            onPress={handleRestart}
+            disabled={adoptSession.isPending}
+          >
+            {adoptSession.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={discStyles.restartBtnText}>Restart</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[discStyles.btn, discStyles.backBtn]}
+            onPress={() => router.back()}
+            disabled={adoptSession.isPending}
+          >
+            <Text style={discStyles.backBtnText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  )
+}
+
+const discStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: dark.bg.primary },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+    gap: spacing.lg,
+  },
+  title: {
+    color: dark.text.primary,
+    fontSize: font.lg,
+    fontWeight: '600',
+  },
+  subtitle: {
+    color: dark.text.secondary,
+    fontSize: font.base,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  buttons: {
+    width: '100%',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  btn: {
+    borderRadius: 10,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  restartBtn: {
+    backgroundColor: dark.text.accent,
+  },
+  backBtn: {
+    backgroundColor: dark.bg.card,
+    borderWidth: 1,
+    borderColor: dark.border,
+  },
+  btnDisabled: { opacity: 0.5 },
+  restartBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: font.base,
+  },
+  backBtnText: {
+    color: dark.text.primary,
+    fontWeight: '600',
+    fontSize: font.base,
+  },
+})
+
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
   if (s < 60) return `${s}s`
@@ -139,6 +248,13 @@ export default function SessionDetailScreen() {
   const [infoVisible, setInfoVisible] = useState(false)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
+
+  useEffect(() => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
+    if (session?.ptyAttached === false && session?.status === 'idle' && isUuid) {
+      router.replace(`/conversation/${id}?server=${serverId}`)
+    }
+  }, [session?.ptyAttached, session?.status, id, serverId, router])
 
   if (isPending) {
     return <PendingSessionScreen serverId={serverId} pendingId={id!} />
@@ -175,9 +291,7 @@ export default function SessionDetailScreen() {
   }
 
   useEffect(() => {
-    if (!session) return
     navigation.setOptions({
-      title: session.projectName,
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }} pointerEvents="box-none">
           <TouchableOpacity
@@ -191,7 +305,12 @@ export default function SessionDetailScreen() {
         </View>
       ),
     })
-  }, [session, navigation])
+  }, [navigation])
+
+  useEffect(() => {
+    if (!session) return
+    navigation.setOptions({ title: session.projectName })
+  }, [session?.projectName, navigation])
 
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
@@ -318,6 +437,56 @@ export default function SessionDetailScreen() {
     !noAttachEmptyPlaceholder
 
   const isWakingUp = session?.status === 'running' && !isStreaming && lines.length === 0
+
+  const infoModal = (
+    <InfoModal
+      visible={infoVisible}
+      onClose={() => setInfoVisible(false)}
+      title="Session Info"
+      fields={[
+        { label: 'ID', value: session?.id ?? id },
+        { label: 'Server', value: serverId },
+        { label: 'Project Name', value: session?.projectName },
+        { label: 'Project Path', value: session?.projectPath },
+        { label: 'Branch', value: session?.branch },
+        { label: 'Machine', value: session?.machineName },
+        { label: 'Status', value: session?.status ?? (isLoading ? 'loading…' : 'not found') },
+        { label: 'PTY Attached', value: session != null ? String(session.ptyAttached) : undefined },
+        { label: 'Prompt Count', value: session != null ? String(session.promptCount) : undefined },
+        { label: 'Elapsed', value: session != null ? formatElapsed(session.elapsedMs) : undefined },
+        { label: 'Started At', value: session?.startedAt },
+        { label: 'Completed At', value: session?.completedAt },
+      ]}
+    />
+  )
+
+  if (isLoading && !session) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator color={dark.text.secondary} />
+        </View>
+        {infoModal}
+      </SafeAreaView>
+    )
+  }
+
+  if (!session) {
+    if (id?.startsWith('disc_')) {
+      return <DiscoveredSessionScreen serverId={serverId} sessionId={id} />
+    }
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
+          <Text style={styles.discoveredTitle}>Session not found</Text>
+          <Text style={[styles.discoveredText, { textAlign: 'center', marginTop: spacing.sm }]}>
+            {`No session found for ID:\n${id}`}
+          </Text>
+        </View>
+        {infoModal}
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -476,26 +645,7 @@ export default function SessionDetailScreen() {
         onDismiss={() => setPendingArgCommand(null)}
       />
 
-      {session ? (
-        <InfoModal
-          visible={infoVisible}
-          onClose={() => setInfoVisible(false)}
-          title="Session Info"
-          fields={[
-            { label: 'ID', value: session.id },
-            { label: 'Project Name', value: session.projectName },
-            { label: 'Project Path', value: session.projectPath },
-            { label: 'Branch', value: session.branch },
-            { label: 'Machine', value: session.machineName },
-            { label: 'Status', value: session.status },
-            { label: 'PTY Attached', value: String(session.ptyAttached) },
-            { label: 'Prompt Count', value: String(session.promptCount) },
-            { label: 'Elapsed', value: formatElapsed(session.elapsedMs) },
-            { label: 'Started At', value: session.startedAt },
-            { label: 'Completed At', value: session.completedAt },
-          ]}
-        />
-      ) : null}
+      {infoModal}
     </SafeAreaView>
   )
 }
