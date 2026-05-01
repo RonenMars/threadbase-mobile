@@ -59,6 +59,9 @@ export function useServerGroups(
             ...filteredGroup.conversations.map((c) => toMs(c.lastActivity)),
             0,
           )
+          filteredGroup.earliestStartMs = filteredGroup.sessions.length > 0
+            ? Math.min(...filteredGroup.sessions.map((s) => toMs(s.startedAt)).filter((ms) => ms > 0))
+            : 0
           serverGroup.groups.push(filteredGroup)
           serverGroup.totalCount +=
             filteredGroup.sessions.length + filteredGroup.conversations.length

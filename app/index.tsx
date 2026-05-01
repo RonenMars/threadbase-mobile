@@ -387,8 +387,7 @@ function MergedClassicList({
     for (const id of activeServerIds) buckets.set(id, [])
     for (const item of filteredItems) {
       const sid = item.item.serverId
-      if (!buckets.has(sid)) buckets.set(sid, [])
-      buckets.get(sid)!.push(item)
+      buckets.get(sid)?.push(item)
     }
 
     const result: ClassicFlatItem[] = []
