@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { View, Text, Animated, StyleSheet } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { View, Text, Animated } from 'react-native'
 
 interface Props {
   loaded: number
@@ -22,48 +21,21 @@ export function ProgressBar({ loaded, total, label, isCounting = false }: Props)
   }, [progress])
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>
+    <View className="px-3 pt-4 pb-3 gap-2">
+      <Text className="text-text-secondary text-font-sm text-center">
         {loaded.toLocaleString()} / {total.toLocaleString()} {label}
       </Text>
-      <View style={styles.track}>
+      <View className="h-1 bg-bg-card rounded-full overflow-hidden">
         <Animated.View
-          style={[
-            styles.fill,
-            {
-              width: animWidth.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '100%'],
-              }),
-            },
-          ]}
+          className="h-full bg-text-accent rounded-full"
+          style={{
+            width: animWidth.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '100%'],
+            }),
+          }}
         />
       </View>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  label: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    textAlign: 'center',
-  },
-  track: {
-    height: 4,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    backgroundColor: dark.text.accent,
-    borderRadius: radius.full,
-  },
-})
