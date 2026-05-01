@@ -1,8 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { FlatList, View, Text, TextInput, TouchableOpacity, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useDebounce } from 'use-debounce'
 import { useProjectGroups } from './useProjectGroups'
+import { useServerGroups } from './useServerGroups'
+import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
+import { useServersStore } from '@/stores/servers'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { dark } from '@/constants/theme'
@@ -28,6 +31,15 @@ export function ProjectHubList({
   const inputRef = useRef<TextInput>(null)
 
   const groups = useProjectGroups(sessions, conversations, sortBy, sortOrder)
+
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const servers = useServersStore((s) => s.servers)
+  const serverLabels = useMemo(
+    () => Object.fromEntries(activeServerIds.map((id) => [id, servers[id]?.label ?? id])),
+    [activeServerIds, servers],
+  )
+  const serverGroups = useServerGroups(groups, activeServerIds, serverLabels)
+  const showServerHeaders = serverGroups.length > 0
 
   useEffect(() => {
     if (!searchOpen) setSearchQuery('')
@@ -133,6 +145,17 @@ export function ProjectHubList({
 
   const showSearch = searchOpen && debouncedQuery.length > 0
 
+  type HubFlatItem =
+    | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
+    | { kind: 'group'; group: ProjectGroup }
+
+  const hubFlatData: HubFlatItem[] = showServerHeaders
+    ? serverGroups.flatMap((sg) => [
+        { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
+        ...sg.groups.map((g) => ({ kind: 'group' as const, group: g })),
+      ])
+    : groups.map((g) => ({ kind: 'group' as const, group: g }))
+
   return (
     <View style={styles.container}>
       {searchOpen ? (
@@ -166,13 +189,31 @@ export function ProjectHubList({
         )
       ) : (
         <FlatList
-          data={groups}
-          keyExtractor={(item) => item.projectPath}
-          renderItem={renderGroup}
+          data={hubFlatData}
+          keyExtractor={(item) =>
+            item.kind === 'header' ? `header-${item.serverId}` : item.group.projectPath
+          }
+          renderItem={({ item }) => {
+            if (item.kind === 'header') {
+              return (
+                <ServerHeaderRow
+                  serverLabel={item.serverLabel}
+                  totalCount={item.totalCount}
+                />
+              )
+            }
+            return (
+              <ProjectHubCard
+                group={item.group}
+                isOpen={openPaths.has(item.group.projectPath)}
+                onToggle={() => toggleOpen(item.group.projectPath)}
+              />
+            )
+          }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
           }
-          contentContainerStyle={groups.length === 0 ? styles.emptyListContent : styles.listContent}
+          contentContainerStyle={hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent}
           ListEmptyComponent={
             <EmptyState title="No projects yet" subtitle="Sessions and conversations will appear here" />
           }
