@@ -1,6 +1,7 @@
 import React from 'react'
-import { Text, View, StyleSheet } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { Text, View } from 'react-native'
+import { dark } from '@/constants/theme'
+import { cn } from '@/lib/cn'
 
 interface BadgeProps {
   label: string
@@ -11,30 +12,23 @@ interface BadgeProps {
 
 export function Badge({ label, color = dark.text.secondary, bg = dark.bg.card, size = 'sm' }: BadgeProps) {
   return (
-    <View style={[styles.badge, { backgroundColor: bg }, size === 'md' && styles.badgeMd]}>
-      <Text style={[styles.text, { color }, size === 'md' && styles.textMd]} numberOfLines={1}>
+    <View
+      className={cn(
+        'rounded-full px-2 self-start',
+        size === 'md' ? 'py-1 px-3' : 'py-0',
+      )}
+      style={{ backgroundColor: bg }}
+    >
+      <Text
+        className={cn(
+          'font-medium',
+          size === 'md' ? 'text-font-sm' : 'text-font-xs',
+        )}
+        style={{ color }}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-  },
-  badgeMd: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  text: {
-    fontSize: font.xs,
-    fontWeight: '500',
-  },
-  textMd: {
-    fontSize: font.sm,
-  },
-})
