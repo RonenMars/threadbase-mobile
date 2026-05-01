@@ -14,8 +14,8 @@ export function Badge({ label, color = dark.text.secondary, bg = dark.bg.card, s
   return (
     <View
       className={cn(
-        'rounded-full px-2 self-start',
-        size === 'md' ? 'py-1 px-3' : 'py-0',
+        'rounded-full self-start',
+        size === 'md' ? 'px-3 py-1' : 'px-2 py-0',
       )}
       style={{ backgroundColor: bg }}
     >
