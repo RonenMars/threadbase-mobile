@@ -126,7 +126,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     const items: FlatItem[] = []
     const showHeaders = serverTrees.length > 1
     for (const { serverId, serverLabel, tree, singleRootPath, singleRootNode } of serverTrees) {
-      if (showHeaders) {
+      if (showHeaders && tree.totalCount > 0) {
         items.push({ kind: 'server-header', serverId, serverLabel, totalCount: tree.totalCount })
       }
       if (singleRootNode && singleRootPath) {
