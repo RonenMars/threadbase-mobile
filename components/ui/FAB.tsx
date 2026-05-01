@@ -12,7 +12,8 @@ export function FAB({ onPress }: Props) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.fab, { bottom: 24 + insets.bottom }]}
+      className="absolute right-4 w-14 h-14 rounded-full bg-[#1e7a3a] items-center justify-center"
+      style={[styles.shadow, { bottom: 24 + insets.bottom }]}
       activeOpacity={0.85}
       accessibilityLabel="New session"
       accessibilityRole="button"
@@ -23,15 +24,7 @@ export function FAB({ onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1e7a3a',
-    alignItems: 'center',
-    justifyContent: 'center',
+  shadow: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
