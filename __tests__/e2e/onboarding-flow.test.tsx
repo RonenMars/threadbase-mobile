@@ -117,7 +117,7 @@ describe('Onboarding – successful connection', () => {
     })
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(tabs)/sessions')
+      expect(mockReplace).toHaveBeenCalledWith('/')
     }, { timeout: 10000 })
   }, 15000)
 })

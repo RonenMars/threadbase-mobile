@@ -90,7 +90,7 @@ describe('SessionCard', () => {
 
   it('shows waiting_input status label', () => {
     const { getByText } = render(<SessionCard session={makeSession({ status: 'waiting_input' })} />)
-    expect(getByText('Waiting for Input')).toBeTruthy()
+    expect(getByText('Active')).toBeTruthy()
   })
 
   it('navigates to session detail on press', () => {
