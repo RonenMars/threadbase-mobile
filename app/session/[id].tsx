@@ -234,7 +234,7 @@ export default function SessionDetailScreen() {
   const isPending = id?.startsWith('pending_') ?? false
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
-  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id, skipLiveStream)
+  const { lines, isStreaming, isLoadingHistory, recordSentInput } = useTerminalStream(serverId, id, skipLiveStream)
   const { sendInput, cancelSession } = useSessionActions(serverId, id)
 
   const [inputText, setInputText] = useState('')
@@ -322,6 +322,7 @@ export default function SessionDetailScreen() {
         return
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      recordSentInput(payload)
       sendInput.mutate(payload, {
         onError: (err) =>
           Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
@@ -338,6 +339,7 @@ export default function SessionDetailScreen() {
       return
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    recordSentInput(payload)
     sendInput.mutate(payload, {
       onError: (err) =>
         Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
@@ -365,6 +367,7 @@ export default function SessionDetailScreen() {
       return
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    recordSentInput(payload)
     sendInput.mutate(payload, {
       onError: (err) =>
         Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
