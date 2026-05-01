@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
-import { Animated, StyleSheet, type DimensionValue, type ViewStyle } from 'react-native'
-import { dark, radius } from '@/constants/theme'
+import { Animated, type DimensionValue, type ViewStyle } from 'react-native'
+import { radius } from '@/constants/theme'
 
 type SkeletonBoxProps = {
   width?: DimensionValue
@@ -9,7 +9,6 @@ type SkeletonBoxProps = {
   style?: ViewStyle
 }
 
-/** Subtle pulse placeholder for loading rows. */
 export function SkeletonBox({ width = '100%', height = 14, borderRadius: br = radius.sm, style }: SkeletonBoxProps) {
   const anim = useRef(new Animated.Value(0.4)).current
 
@@ -26,17 +25,8 @@ export function SkeletonBox({ width = '100%', height = 14, borderRadius: br = ra
 
   return (
     <Animated.View
-      style={[
-        styles.box,
-        { width, height, borderRadius: br, opacity: anim },
-        style,
-      ]}
+      className="bg-border"
+      style={[{ width, height, borderRadius: br, opacity: anim }, style]}
     />
   )
 }
-
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: dark.border,
-  },
-})
