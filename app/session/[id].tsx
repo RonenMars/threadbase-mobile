@@ -149,7 +149,7 @@ function DiscoveredSessionScreen({
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[discStyles.btn, discStyles.backBtn]}
+            style={[discStyles.btn, discStyles.backBtn, adoptSession.isPending && discStyles.btnDisabled]}
             onPress={() => router.back()}
             disabled={adoptSession.isPending}
           >
