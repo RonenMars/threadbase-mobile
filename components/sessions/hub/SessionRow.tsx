@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { Text, TouchableOpacity, Platform, Alert, ActionSheetIOS } from 'react-native'
+import { View, Text, TouchableOpacity, Platform, Alert, ActionSheetIOS } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -57,9 +57,14 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
       activeOpacity={0.75}
       style={styles.row}
     >
-      <Text style={styles.rowPrimary} numberOfLines={1}>
-        {branch} · {elapsed} · {prompts} prompt{prompts !== 1 ? 's' : ''}
-      </Text>
+      <View style={styles.rowContent}>
+        <Text style={styles.rowPrimary} numberOfLines={1}>
+          {branch} · {elapsed} · {prompts} prompt{prompts !== 1 ? 's' : ''}
+        </Text>
+        {session.serverLabel ? (
+          <Text style={styles.serverLabel} numberOfLines={1}>{session.serverLabel}</Text>
+        ) : null}
+      </View>
       <Text style={styles.rowDate}>{label}</Text>
     </TouchableOpacity>
   )

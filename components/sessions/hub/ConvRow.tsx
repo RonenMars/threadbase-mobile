@@ -25,6 +25,9 @@ export function ConvRow({ conv, multipleToday }: ConvRowProps) {
         <Text style={styles.rowSecondary} numberOfLines={1}>
           {branch} · {msgs} msg{msgs !== 1 ? 's' : ''}
         </Text>
+        {conv.serverLabel ? (
+          <Text style={styles.serverLabel} numberOfLines={1}>{conv.serverLabel}</Text>
+        ) : null}
       </View>
       <Text style={styles.rowDate}>{label}</Text>
     </TouchableOpacity>

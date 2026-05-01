@@ -9,10 +9,18 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 36,
   },
-  rowPrimary: {
+  rowContent: {
     flex: 1,
+    gap: 2,
+  },
+  rowPrimary: {
     color: dark.text.primary,
     fontSize: font.sm,
+  },
+  serverLabel: {
+    color: dark.text.accent,
+    fontSize: font.xs,
+    opacity: 0.75,
   },
   rowDate: {
     color: dark.text.secondary,

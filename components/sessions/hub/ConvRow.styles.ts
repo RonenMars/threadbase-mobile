@@ -21,6 +21,11 @@ export const styles = StyleSheet.create({
     color: dark.text.secondary,
     fontSize: font.xs,
   },
+  serverLabel: {
+    color: dark.text.accent,
+    fontSize: font.xs,
+    opacity: 0.75,
+  },
   rowDate: {
     color: dark.text.secondary,
     fontSize: font.xs,

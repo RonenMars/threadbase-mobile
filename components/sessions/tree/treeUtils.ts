@@ -7,6 +7,14 @@ export const STATUS_COLOR: Record<string, string> = {
   idle: dark.status.idle,
 }
 
+function splitPath(p: string): string[] {
+  // Normalize Windows backslashes to forward slashes.
+  // Keep the drive letter as the first segment (e.g. "C:" → ["C:", "Users", ...])
+  // so Windows paths stay isolated from Unix /Users/... paths.
+  // Strip leading UNC "\\server" prefix down to just the server name.
+  return p.replace(/\\/g, '/').split('/').filter(Boolean)
+}
+
 export function buildTree(
   sessions: MultiSession[],
   conversations: MultiConversation[],
@@ -41,12 +49,12 @@ export function buildTree(
   }
 
   for (const s of sessions) {
-    const parts = s.projectPath.split('/').filter(Boolean)
+    const parts = splitPath(s.projectPath)
     ensurePath(parts).sessions.push(s)
   }
 
   for (const c of conversations) {
-    const parts = c.projectPath.split('/').filter(Boolean)
+    const parts = splitPath(c.projectPath)
     ensurePath(parts).conversations.push(c)
   }
 
