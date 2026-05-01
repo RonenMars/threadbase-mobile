@@ -61,11 +61,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
       const onPress = isSession
         ? () => {
             const s = item as MultiSession
-            if (s.source === 'discovered' && s.conversationId) {
-              router.push(`/conversation/${s.conversationId}?server=${s.serverId}`)
-            } else {
-              router.push(`/session/${s.id}?server=${s.serverId}`)
-            }
+            router.push(`/session/${s.id}?server=${s.serverId}`)
           }
         : () => {
             const c = item as MultiConversation

@@ -52,6 +52,59 @@ function wakingUpPhrase(sessionId: string): string {
   return WAKING_UP_PHRASES[hash % WAKING_UP_PHRASES.length]
 }
 
+const PENDING_PHRASES = [
+  "Claude is putting on its thinking cap…",
+  "Warming up the neurons…",
+  "Asking the universe for permission…",
+  "Summoning inspiration from the void…",
+  "Untangling some very tangled thoughts…",
+  "Brewing context from scratch…",
+  "Teaching bytes to dream in code…",
+  "Convincing the electrons to cooperate…",
+]
+
+function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendingId: string }) {
+  const router = useRouter()
+  const [phraseIdx, setPhraseIdx] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhraseIdx((i) => (i + 1) % PENDING_PHRASES.length)
+    }, 2500)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const client = wsManager.getClient(serverId)
+    if (!client) return
+    return client.on('session_update', (msg) => {
+      if (msg.type !== 'session_update') return
+      const s = msg.session
+      if (!s.id.startsWith('pending_') && s.ptyAttached) {
+        router.replace(`/session/${s.id}?server=${serverId}`)
+      }
+    })
+  }, [serverId, router])
+
+  return (
+    <SafeAreaView style={pendingStyles.container} edges={['bottom']}>
+      <View style={pendingStyles.content}>
+        <ActivityIndicator size="large" color={dark.text.accent} style={pendingStyles.spinner} />
+        <Text style={pendingStyles.title}>Starting session…</Text>
+        <Text style={pendingStyles.phrase}>{PENDING_PHRASES[phraseIdx]}</Text>
+      </View>
+    </SafeAreaView>
+  )
+}
+
+const pendingStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: dark.bg.primary },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md },
+  spinner: { marginBottom: spacing.md },
+  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
+  phrase: { color: dark.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
+})
+
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
   if (s < 60) return `${s}s`
@@ -70,8 +123,10 @@ export default function SessionDetailScreen() {
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
 
+  const isPending = id?.startsWith('pending_') ?? false
   const { data: session, isLoading } = useSessionDetail(serverId, id)
-  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id)
+  const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
+  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id, skipLiveStream)
   const { sendInput, cancelSession } = useSessionActions(serverId, id)
 
   const [inputText, setInputText] = useState('')
@@ -85,26 +140,13 @@ export default function SessionDetailScreen() {
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
 
-  const isStoppable =
-    session?.source !== 'discovered' &&
-    (session?.status === 'running' || session?.status === 'waiting_input')
+  if (isPending) {
+    return <PendingSessionScreen serverId={serverId} pendingId={id!} />
+  }
 
-  // Auto-redirect orphaned managed sessions to their conversation view, where the
-  // JSONL history is rendered and a "Resume Session" button can spawn a fresh PTY.
-  // Only fires once we know the session is truly empty (history loaded, not streaming)
-  // to avoid bouncing fresh sessions whose first byte hasn't arrived yet.
-  useEffect(() => {
-    if (
-      session?.source === 'managed' &&
-      session.status === 'failed' &&
-      session.conversationId &&
-      !isLoadingHistory &&
-      !isStreaming &&
-      lines.length === 0
-    ) {
-      router.replace(`/conversation/${session.conversationId}?server=${serverId}`)
-    }
-  }, [session, isLoadingHistory, isStreaming, lines.length, router, serverId])
+  const isStoppable =
+    session?.ptyAttached === true &&
+    (session?.status === 'running' || session?.status === 'waiting_input')
 
   const handleStop = () => {
     Alert.alert(
@@ -262,18 +304,18 @@ export default function SessionDetailScreen() {
     setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
   }
 
-  const discoveredEmptyPlaceholder =
-    session?.source === 'discovered' &&
+  const noAttachEmptyPlaceholder =
+    session?.ptyAttached === false &&
     !isLoadingHistory &&
     lines.length === 0 &&
     !isStreaming
 
-  // Discovered sessions have no PTY — input cannot be sent through the streamer.
+  // Sessions without PTY attached — input cannot be sent through the streamer.
   const showInputBar =
     session &&
-    session.source !== 'discovered' &&
+    session.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running') &&
-    !discoveredEmptyPlaceholder
+    !noAttachEmptyPlaceholder
 
   const isWakingUp = session?.status === 'running' && !isStreaming && lines.length === 0
 
@@ -293,39 +335,15 @@ export default function SessionDetailScreen() {
         ) : null}
 
         <View style={styles.terminal}>
-          {!isLoadingHistory && lines.length === 0 && session?.source === 'discovered' ? (
-            <View style={styles.discoveredInfo}>
-              <Text style={styles.discoveredTitle}>Discovered Session</Text>
-              <Text style={styles.discoveredText}>
-                This session was started outside the streamer.{'\n'}
-                Terminal output is only available for sessions started via Resume.
-              </Text>
-              {session.projectPath ? (
-                <Text style={styles.discoveredPath}>{session.projectPath}</Text>
-              ) : null}
-              {session.conversationId ? (
-                <TouchableOpacity
-                  style={styles.viewConversationBtn}
-                  onPress={() => router.push(`/conversation/${session.conversationId}?server=${serverId}`)}
-                >
-                  <Text style={styles.viewConversationBtnText}>View Conversation</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          ) : !isLoadingHistory && lines.length === 0 && !isStreaming && session?.source === 'managed' ? (
+          {noAttachEmptyPlaceholder ? (
             <View style={styles.discoveredInfo}>
               <Text style={styles.discoveredTitle}>No terminal output</Text>
               <Text style={styles.discoveredText}>
-                This session has no buffered terminal output.{'\n'}
-                Send a prompt below, or open the conversation history.
+                This session has no active terminal.{'\n'}
+                Resume the session to start a new terminal.
               </Text>
-              {session.conversationId ? (
-                <TouchableOpacity
-                  style={styles.viewConversationBtn}
-                  onPress={() => router.push(`/conversation/${session.conversationId}?server=${serverId}`)}
-                >
-                  <Text style={styles.viewConversationBtnText}>View Conversation</Text>
-                </TouchableOpacity>
+              {session?.projectPath ? (
+                <Text style={styles.discoveredPath}>{session.projectPath}</Text>
               ) : null}
             </View>
           ) : (
@@ -470,12 +488,11 @@ export default function SessionDetailScreen() {
             { label: 'Branch', value: session.branch },
             { label: 'Machine', value: session.machineName },
             { label: 'Status', value: session.status },
-            { label: 'Source', value: session.source },
+            { label: 'PTY Attached', value: String(session.ptyAttached) },
             { label: 'Prompt Count', value: String(session.promptCount) },
             { label: 'Elapsed', value: formatElapsed(session.elapsedMs) },
             { label: 'Started At', value: session.startedAt },
             { label: 'Completed At', value: session.completedAt },
-            { label: 'Conversation ID', value: session.conversationId },
           ]}
         />
       ) : null}

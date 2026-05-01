@@ -23,6 +23,7 @@ const makeSession = (overrides: Partial<MultiSession> = {}): MultiSession => ({
   id: 'session-1',
   serverId: 'server-1',
   status: 'running',
+  ptyAttached: true,
   projectPath: '/home/user/my-project',
   projectName: 'my-project',
   lastOutput: 'Running tests...',

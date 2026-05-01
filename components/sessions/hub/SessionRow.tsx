@@ -13,12 +13,8 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
-    if (session.source === 'discovered' && session.conversationId) {
-      router.push(`/conversation/${session.conversationId}?server=${session.serverId}`)
-    } else {
-      router.push(`/session/${session.id}?server=${session.serverId}`)
-    }
-  }, [session, router])
+    router.push(`/session/${session.id}?server=${session.serverId}`)
+  }, [session.id, session.serverId, router])
 
   const handleLongPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)

@@ -1,8 +1,9 @@
-export type SessionStatus = 'running' | 'waiting_input' | 'completed' | 'failed' | 'idle'
+export type SessionStatus = 'running' | 'waiting_input' | 'idle'
 
 export interface Session {
   id: string
   status: SessionStatus
+  ptyAttached: boolean
   projectPath: string
   projectName: string
   branch?: string
@@ -12,8 +13,6 @@ export interface Session {
   promptCount: number
   startedAt: string
   completedAt?: string
-  source?: 'managed' | 'discovered'
-  conversationId?: string
 }
 
 export interface MessageSnapshot {

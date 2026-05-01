@@ -115,7 +115,6 @@ export default function ProjectsHub() {
   const visibleSessions = useMemo(() => {
     return sessions.filter(
       (session) =>
-        session.source !== 'discovered' &&
         displayedServerIds.includes(session.serverId) &&
         selectedStatuses.includes(session.status),
     ).sort((a, b) => lastActivityMs(b) - lastActivityMs(a))

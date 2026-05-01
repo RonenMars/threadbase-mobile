@@ -51,11 +51,7 @@ export function ProjectHubList({
 
   const handleSessionPress = useCallback(
     (item: MultiSession) => {
-      if (item.source === 'discovered' && item.conversationId) {
-        router.push(`/conversation/${item.conversationId}?server=${item.serverId}`)
-      } else {
-        router.push(`/session/${item.id}?server=${item.serverId}`)
-      }
+      router.push(`/session/${item.id}?server=${item.serverId}`)
     },
     [router],
   )

@@ -5,9 +5,7 @@ import type { SessionStatus } from '@/types/api'
 
 const STATUSES: [SessionStatus, string][] = [
   ['running', 'Running'],
-  ['waiting_input', 'Waiting for Input'],
-  ['completed', 'Completed'],
-  ['failed', 'Failed'],
+  ['waiting_input', 'Active'],
   ['idle', 'Idle'],
 ]
 

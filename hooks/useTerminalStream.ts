@@ -13,7 +13,7 @@ interface TerminalHistoryResponse {
 const FIVE_MINUTES = 1000 * 60 * 5
 const EMPTY_HISTORY: TerminalHistoryResponse = { output: '' }
 
-export function useTerminalStream(serverId: string, sessionId: string) {
+export function useTerminalStream(serverId: string, sessionId: string, skipLiveStream = false) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<string[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
@@ -60,6 +60,10 @@ export function useTerminalStream(serverId: string, sessionId: string) {
   }, [historyQuery.data, maxLines])
 
   useEffect(() => {
+    // Skip WS subscription for sessions with no live PTY attached — they won't
+    // ever send terminal_output events, so subscribing would cause an indefinite hang.
+    if (skipLiveStream) return
+
     let idleTimer: ReturnType<typeof setTimeout>
     let unsubOutput: (() => void) | null = null
 
@@ -100,7 +104,7 @@ export function useTerminalStream(serverId: string, sessionId: string) {
       unsubStatus()
       clearTimeout(idleTimer)
     }
-  }, [serverId, sessionId, maxLines])
+  }, [serverId, sessionId, maxLines, skipLiveStream])
 
   const clear = useCallback(() => {
     vtRef.current.reset()

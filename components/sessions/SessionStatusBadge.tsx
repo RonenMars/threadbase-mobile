@@ -5,13 +5,15 @@ import { useEffect } from 'react'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { SessionStatus } from '@/types/api'
 
-const STATUS_LABELS: Partial<Record<SessionStatus, string>> = {
+const STATUS_LABELS: Record<SessionStatus, string> = {
   running: 'Running',
+  waiting_input: 'Active',
   idle: 'Idle',
 }
 
-const STATUS_COLORS: Partial<Record<SessionStatus, string>> = {
+const STATUS_COLORS: Record<SessionStatus, string> = {
   running: dark.status.running,
+  waiting_input: dark.status.running,
   idle: dark.status.idle,
 }
 
@@ -37,7 +39,7 @@ export function SessionStatusBadge({ status, isRefetching }: Props) {
       ) : (
         <Animated.View style={[styles.dot, { backgroundColor: color }, dotStyle]} />
       )}
-      <Text style={[styles.label, { color }]}>{STATUS_LABELS[status] ?? 'Idle'}</Text>
+      <Text style={[styles.label, { color }]}>{STATUS_LABELS[status]}</Text>
     </View>
   )
 }

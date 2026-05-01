@@ -78,7 +78,8 @@ const OTHER_SERVER_ID = 'srv_beta'
 const makeSession = (overrides: Partial<MultiSession>): MultiSession => ({
   id: overrides.id ?? 'id',
   serverId: overrides.serverId ?? SERVER_ID,
-  status: 'completed',
+  status: 'idle',
+  ptyAttached: false,
   projectPath: '/home/user/projects/foo',
   projectName: 'foo',
   lastOutput: '',
