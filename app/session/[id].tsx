@@ -575,7 +575,7 @@ export default function SessionDetailScreen() {
                 {isUploading ? (
                   <ActivityIndicator size="small" color={dark.text.primary} />
                 ) : (
-                  <Paperclip size={22} color={dark.text.primary} />
+                  <Paperclip size={26} color={dark.text.primary} />
                 )}
               </TouchableOpacity>
               <TextInput
@@ -602,7 +602,7 @@ export default function SessionDetailScreen() {
                 }
                 accessibilityLabel="Send input"
               >
-                <PaperPlaneRight size={22} color="#fff" />
+                <PaperPlaneRight size={26} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   queueBtnText: { color: dark.text.primary, fontSize: font.base },
   sendBtn: {
-    aspectRatio: 1,
+    width: 52,
     backgroundColor: dark.text.accent,
     borderRadius: 10,
     minHeight: 44,
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   attachBtn: {
-    aspectRatio: 1,
+    width: 52,
     backgroundColor: dark.bg.card,
     borderRadius: 10,
     borderWidth: 1,
