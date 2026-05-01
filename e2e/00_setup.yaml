@@ -1,0 +1,32 @@
+# Reusable setup flow — runs onboarding against the mock server.
+# Usage: include via `runFlow` at the top of other flows.
+# Requires: mock server running on localhost:7071
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "Connect"
+
+- tapOn:
+    placeholder: "http://localhost:7070"
+
+- clearText
+
+- inputText:
+    text: "http://localhost:7071"
+
+- tapOn:
+    placeholder: "Enter THREADBASE_API_KEY"
+
+- inputText:
+    text: "mock-key"
+
+- tapOn:
+    text: "Connect"
+
+- assertVisible:
+    id: "hub-screen"
+    timeout: 8000
