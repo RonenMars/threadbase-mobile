@@ -6,6 +6,7 @@ import { buildTree, compactTree, flattenVisible } from './treeUtils'
 import { TreeRow } from './TreeRow'
 import { DrillView } from './DrillView'
 import { ServerRootRow } from './ServerRootRow'
+import { ServerHeaderRow } from './ServerHeaderRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { styles } from './TreeSessionsList.styles'
 import { searchStyles } from '../SearchStyles'
@@ -123,7 +124,11 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
 
   const flatItems = useMemo((): FlatItem[] => {
     const items: FlatItem[] = []
+    const showHeaders = serverTrees.length > 1
     for (const { serverId, serverLabel, tree, singleRootPath, singleRootNode } of serverTrees) {
+      if (showHeaders) {
+        items.push({ kind: 'server-header', serverId, serverLabel, totalCount: tree.totalCount })
+      }
       if (singleRootNode && singleRootPath) {
         items.push({ kind: 'server-root', serverId, serverLabel, node: singleRootNode })
         for (const fn of flattenVisible(singleRootNode.children, 1, effectiveExpandedPaths)) {
@@ -202,11 +207,21 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
         <FlatList
           data={flatItems}
           keyExtractor={(item) =>
-            item.kind === 'server-root'
+            item.kind === 'server-header'
+              ? `header-${item.serverId}`
+              : item.kind === 'server-root'
               ? `root-${item.serverId}`
               : `row-${item.serverId}-${item.node.fullPath}`
           }
           renderItem={({ item }) => {
+            if (item.kind === 'server-header') {
+              return (
+                <ServerHeaderRow
+                  serverLabel={item.serverLabel}
+                  totalCount={item.totalCount}
+                />
+              )
+            }
             if (item.kind === 'server-root') {
               return (
                 <ServerRootRow
