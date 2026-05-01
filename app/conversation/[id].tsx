@@ -9,6 +9,7 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Animated,
   type ListRenderItemInfo,
 } from 'react-native'
 import { Info } from 'phosphor-react-native'
@@ -17,6 +18,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
+import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
@@ -91,6 +93,8 @@ export default function ConversationDetailScreen() {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
+  const [showSlowLoadingMsg, setShowSlowLoadingMsg] = useState(false)
+  const pulseAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
     hasInitialScrolled.current = false
@@ -121,6 +125,15 @@ export default function ConversationDetailScreen() {
       })
     }
   }, [conversation, navigation])
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowSlowLoadingMsg(false)
+      return
+    }
+    const t = setTimeout(() => setShowSlowLoadingMsg(true), 8000)
+    return () => clearTimeout(t)
+  }, [isLoading])
 
   // Auto-fetch all older message pages upfront
   useEffect(() => {
@@ -157,12 +170,27 @@ export default function ConversationDetailScreen() {
   const resumeSession = useMutation({
     mutationFn: () => {
       const api = createApiForServer(serverId)
-      return api.post<{ id: string }>('/api/sessions/resume', { conversationId: id })
+      return api.post<{ id: string }>('/api/sessions/resume', { sessionId: id })
     },
     onSuccess: (data) => {
       router.push(`/session/${data.id}?server=${serverId}`)
     },
   })
+
+  useEffect(() => {
+    if (!resumeSession.isPending) {
+      pulseAnim.setValue(1)
+      return
+    }
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.45, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    )
+    anim.start()
+    return () => anim.stop()
+  }, [resumeSession.isPending, pulseAnim])
 
   const handleShare = useCallback(async () => {
     if (!conversation) return
@@ -197,6 +225,7 @@ export default function ConversationDetailScreen() {
             renderItem={renderSkeletonItem}
             contentContainerStyle={styles.listContent}
           />
+          {showSlowLoadingMsg ? <SlowLoadingBanner onAbort={() => router.back()} /> : null}
         </View>
       </SafeAreaView>
     )
@@ -223,6 +252,7 @@ export default function ConversationDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      <View style={styles.inner}>
       {isLoadingMessages && totalMessages > 0 ? (
         <ProgressBar
           loaded={loadedMessages}
@@ -287,18 +317,17 @@ export default function ConversationDetailScreen() {
             </Text>
           ) : null}
           <TouchableOpacity
-            style={[
-              styles.resumeBtn,
-              resumeSession.isPending && styles.resumeBtnDisabled,
-            ]}
+            style={styles.resumeBtn}
             onPress={() => resumeSession.mutate()}
             disabled={resumeSession.isPending}
           >
-            <Text style={styles.resumeBtnText}>
+            <Animated.Text style={[styles.resumeBtnText, { opacity: pulseAnim }]}>
               {resumeSession.isPending ? 'Starting...' : '▶ Resume Session'}
-            </Text>
+            </Animated.Text>
           </TouchableOpacity>
         </View>
+      </View>
+
       </View>
 
       <InfoModal
@@ -325,6 +354,7 @@ export default function ConversationDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
+  inner: { flex: 1 },
   listWrapper: { flex: 1 },
   listContent: { paddingVertical: spacing.md },
   headerLoading: {
