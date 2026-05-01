@@ -122,7 +122,7 @@ export function FilterSortSheet({
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetScrollView contentContainerStyle={styles.content}>
+      <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
         <View style={styles.titleRow}>
           <Text style={styles.title}>Filter & Sort</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
@@ -154,51 +154,57 @@ export function FilterSortSheet({
           </View>
         </View>
 
-        {/* Sort by */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sort by</Text>
-          <View style={styles.chipRow}>
-            {SORT_BY_OPTIONS.map((opt) => {
-              const selected = sortBy === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => onChangeSortBy(opt.value)}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
+        {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
+        {sessionsLayout !== 'tree' ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Sort by</Text>
+            <View style={styles.chipRow}>
+              {SORT_BY_OPTIONS.map((opt) => {
+                const selected = sortBy === opt.value
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => onChangeSortBy(opt.value)}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    testID={`sort-option-${opt.value}`}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
           </View>
-        </View>
+        ) : null}
 
-        {/* Order */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order</Text>
-          <View style={styles.chipRow}>
-            {SORT_ORDER_OPTIONS.map((opt) => {
-              const selected = sortOrder === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => onChangeSortOrder(opt.value)}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
+        {/* Order — hidden for Tree layout */}
+        {sessionsLayout !== 'tree' ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Order</Text>
+            <View style={styles.chipRow}>
+              {SORT_ORDER_OPTIONS.map((opt) => {
+                const selected = sortOrder === opt.value
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => onChangeSortOrder(opt.value)}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    testID={`sort-order-${opt.value}`}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
           </View>
-        </View>
+        ) : null}
 
         {/* Status */}
         <View style={styles.section}>
@@ -223,6 +229,7 @@ export function FilterSortSheet({
                   style={[styles.chip, selected && styles.chipSelected]}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
+                  testID={`status-toggle-${opt.value}`}
                 >
                   <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>

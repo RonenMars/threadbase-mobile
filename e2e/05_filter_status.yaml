@@ -1,0 +1,66 @@
+# Maestro E2E — Status filter applied across all layouts
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/05_filter_status.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: 00_setup.yaml
+
+# Hub screen visible with all sessions
+- assertVisible:
+    id: "hub-screen"
+
+# The idle session's project is visible in default Hub view
+- assertVisible:
+    text: "my-project"
+
+# Open filter sheet
+- tapOn:
+    id: "filter-sort-button"
+
+- assertVisible:
+    id: "filter-sort-sheet"
+
+# Deselect Idle status
+- tapOn:
+    id: "status-toggle-idle"
+
+# Close sheet by tapping backdrop / drag down
+- tapOn:
+    text: "✕"
+
+# Idle session (fix/login branch) should no longer be visible
+- assertNotVisible:
+    text: "fix/login"
+
+# Switch to Classic layout to verify filter persists
+- tapOn:
+    id: "filter-sort-button"
+
+- assertVisible:
+    id: "filter-sort-sheet"
+
+- tapOn:
+    text: "Classic"
+
+- tapOn:
+    text: "✕"
+
+- assertNotVisible:
+    text: "fix/login"
+
+# Switch to Tree layout to verify filter persists
+- tapOn:
+    id: "filter-sort-button"
+
+- assertVisible:
+    id: "filter-sort-sheet"
+
+- tapOn:
+    text: "Tree"
+
+- tapOn:
+    text: "✕"
+
+- assertNotVisible:
+    text: "fix/login"

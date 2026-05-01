@@ -1,0 +1,53 @@
+# Maestro E2E — Sort by Project name in Hub layout
+# Requires: mock server running on localhost:7071 (sessions.json has my-project + other-project)
+# Usage: maestro test e2e/06_sort_hub.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: 00_setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# Switch to Hub layout
+- tapOn:
+    id: "filter-sort-button"
+
+- assertVisible:
+    id: "filter-sort-sheet"
+
+- tapOn:
+    text: "Hub"
+
+- tapOn:
+    text: "✕"
+
+# Both project groups should be visible (default sort: last activity)
+- assertVisible:
+    text: "my-project"
+
+- assertVisible:
+    text: "other-project"
+
+# Change sort to Project name ascending
+- tapOn:
+    id: "filter-sort-button"
+
+- assertVisible:
+    id: "filter-sort-sheet"
+
+- tapOn:
+    id: "sort-option-projectName"
+
+- tapOn:
+    id: "sort-order-asc"
+
+- tapOn:
+    text: "✕"
+
+# Both projects still visible after sort change
+- assertVisible:
+    text: "my-project"
+
+- assertVisible:
+    text: "other-project"

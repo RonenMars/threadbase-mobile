@@ -38,6 +38,14 @@ import type { SortBy, SortOrder } from '@/types/ui'
 
 const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
 
+const STATUS_PRIORITY: Record<string, number> = {
+  running: 0,
+  waiting_input: 1,
+  idle: 2,
+  failed: 3,
+  completed: 4,
+}
+
 type ClassicTab = 'sessions' | 'history'
 
 type MergedItem =
@@ -115,12 +123,30 @@ export default function ProjectsHub() {
   }
 
   const visibleSessions = useMemo(() => {
-    return sessions.filter(
+    const filtered = sessions.filter(
       (session) =>
         displayedServerIds.includes(session.serverId) &&
         selectedStatuses.includes(session.status),
-    ).sort((a, b) => lastActivityMs(b) - lastActivityMs(a))
-  }, [sessions, displayedServerIds, selectedStatuses])
+    )
+    return filtered.sort((a, b) => {
+      let cmp = 0
+      switch (sortBy) {
+        case 'projectName':
+          cmp = (a.projectName ?? '').localeCompare(b.projectName ?? '')
+          break
+        case 'startedAt':
+          cmp = Date.parse(b.startedAt) - Date.parse(a.startedAt)
+          break
+        case 'status':
+          cmp = (STATUS_PRIORITY[a.status] ?? 5) - (STATUS_PRIORITY[b.status] ?? 5)
+          break
+        default:
+          cmp = lastActivityMs(b) - lastActivityMs(a)
+          break
+      }
+      return sortOrder === 'asc' ? -cmp : cmp
+    })
+  }, [sessions, displayedServerIds, selectedStatuses, sortBy, sortOrder])
 
   // Conversations data
   const [refreshEpoch, setRefreshEpoch] = useState(0)
@@ -219,6 +245,7 @@ export default function ProjectsHub() {
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, isSheetActive && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Filter & Sort"
+            testID="filter-sort-button"
           >
             <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
@@ -229,7 +256,7 @@ export default function ProjectsHub() {
       {/* Content */}
       {sessionsLayout === 'tree' ? (
         <TreeSessionsList
-          sessions={sessions}
+          sessions={visibleSessions}
           conversations={conversations}
           refreshing={manualRefreshing}
           onRefresh={handleSessionsRefresh}
@@ -237,7 +264,7 @@ export default function ProjectsHub() {
         />
       ) : sessionsLayout === 'hub' ? (
         <ProjectHubList
-          sessions={sessions}
+          sessions={visibleSessions}
           conversations={conversations}
           sortBy={sortBy}
           sortOrder={sortOrder}

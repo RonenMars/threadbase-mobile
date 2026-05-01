@@ -1,6 +1,8 @@
 [
   {
     "id": "session-abc123",
+    "serverId": "server-one",
+    "serverLabel": "Local Dev",
     "status": "running",
     "ptyAttached": true,
     "projectPath": "/home/user/my-project",
@@ -13,6 +15,8 @@
   },
   {
     "id": "session-def456",
+    "serverId": "server-one",
+    "serverLabel": "Local Dev",
     "status": "waiting_input",
     "ptyAttached": true,
     "projectPath": "/home/user/my-project",
@@ -25,6 +29,8 @@
   },
   {
     "id": "session-ghi789",
+    "serverId": "server-one",
+    "serverLabel": "Local Dev",
     "status": "idle",
     "ptyAttached": false,
     "projectPath": "/home/user/my-project",
@@ -36,17 +42,17 @@
     "startedAt": "2026-05-01T08:00:00.000Z"
   },
   {
-    "id": "session-missing-path",
-    "status": "idle",
-    "ptyAttached": false,
-    "projectPath": "/Users/ronenmars/Desktop/dev/personal/new/ai-tools",
-    "projectName": "ai-tools",
+    "id": "session-xyz999",
+    "serverId": "server-two",
+    "serverLabel": "Remote Dev",
+    "status": "running",
+    "ptyAttached": true,
+    "projectPath": "/home/user/other-project",
+    "projectName": "other-project",
     "branch": "main",
-    "lastOutput": "",
-    "elapsedMs": 15,
-    "promptCount": 0,
-    "startedAt": "2026-05-01T18:55:51.002Z",
-    "completedAt": "2026-05-01T18:55:51.017Z",
-    "failureReason": "Project directory not found: /Users/ronenmars/Desktop/dev/personal/new/ai-tools"
+    "lastOutput": "Running tests",
+    "elapsedMs": 5000,
+    "promptCount": 2,
+    "startedAt": "2026-05-01T11:00:00.000Z"
   }
 ]

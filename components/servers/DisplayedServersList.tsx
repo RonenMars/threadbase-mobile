@@ -67,6 +67,7 @@ export function DisplayedServersList({
               onValueChange={() => onChange(toggleServer(selectedServerIds, id))}
               trackColor={{ false: dark.border, true: dark.text.accent }}
               thumbColor="#fff"
+              testID={`server-toggle-${id}`}
             />
           </View>
         )
