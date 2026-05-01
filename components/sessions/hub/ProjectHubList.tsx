@@ -149,12 +149,15 @@ export function ProjectHubList({
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
     | { kind: 'group'; group: ProjectGroup }
 
-  const hubFlatData: HubFlatItem[] = showServerHeaders
-    ? serverGroups.flatMap((sg) => [
-        { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
-        ...sg.groups.map((g) => ({ kind: 'group' as const, group: g })),
-      ])
-    : groups.map((g) => ({ kind: 'group' as const, group: g }))
+  const hubFlatData = useMemo((): HubFlatItem[] =>
+    showServerHeaders
+      ? serverGroups.flatMap((sg) => [
+          { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
+          ...sg.groups.map((g) => ({ kind: 'group' as const, group: g })),
+        ])
+      : groups.map((g) => ({ kind: 'group' as const, group: g })),
+    [showServerHeaders, serverGroups, groups],
+  )
 
   return (
     <View style={styles.container}>
