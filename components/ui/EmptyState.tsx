@@ -1,6 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { View, Text } from 'react-native'
 
 interface EmptyStateProps {
   icon?: string
@@ -10,35 +9,10 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
   return (
-    <View style={styles.container}>
-      {icon ? <Text style={styles.icon}>{icon}</Text> : null}
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+    <View className="flex-1 items-center justify-center p-6 gap-2">
+      {icon ? <Text className="text-[40px] mb-2">{icon}</Text> : null}
+      <Text className="text-text-primary text-font-lg font-semibold text-center">{title}</Text>
+      {subtitle ? <Text className="text-text-secondary text-font-sm text-center">{subtitle}</Text> : null}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.sm,
-  },
-  icon: {
-    fontSize: 40,
-    marginBottom: spacing.sm,
-  },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.lg,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    textAlign: 'center',
-  },
-})
