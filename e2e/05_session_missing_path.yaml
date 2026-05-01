@@ -1,0 +1,31 @@
+# Maestro E2E — Session with missing project directory
+# Verifies that a session whose projectPath no longer exists shows an error
+# banner instead of a blank terminal screen.
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/05_session_missing_path.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: 00_setup.yaml
+
+# Navigate to the failed session (ai-tools, 0 prompts)
+- tapOn:
+    text: "ai-tools"
+
+- tapOn:
+    id: "session-row-session-missing-path"
+
+- assertVisible:
+    id: "session-detail-screen"
+    timeout: 5000
+
+# Error banner must be visible — no blank screen
+- assertVisible:
+    text: "Session failed to start"
+
+- assertVisible:
+    text: "Project directory not found: /Users/ronenmars/Desktop/dev/personal/new/ai-tools"
+
+# Input bar must NOT be shown — can't send to a failed session
+- assertNotVisible:
+    id: "message-input"

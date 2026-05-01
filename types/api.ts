@@ -13,6 +13,7 @@ export interface Session {
   promptCount: number
   startedAt: string
   completedAt?: string
+  failureReason?: string
 }
 
 export interface MessageSnapshot {
