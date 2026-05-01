@@ -56,6 +56,7 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
       onLongPress={handleLongPress}
       activeOpacity={0.75}
       style={styles.row}
+      testID={`session-row-${session.id}`}
     >
       <View style={styles.rowContent}>
         <Text style={styles.rowPrimary} numberOfLines={1}>

@@ -174,7 +174,7 @@ export default function ProjectsHub() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="hub-screen">
       {/* Header */}
       <View style={styles.header}>
         {/* Left: brand */}

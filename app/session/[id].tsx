@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -15,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Info, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
+import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -293,16 +294,14 @@ export default function SessionDetailScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }} pointerEvents="box-none">
-          <TouchableOpacity
-            onPress={() => setInfoVisible(true)}
-            hitSlop={8}
-            accessibilityLabel="Session info"
-            style={{ paddingHorizontal: spacing.xs }}
-          >
-            <Info size={22} color={dark.text.secondary} />
-          </TouchableOpacity>
-        </View>
+        <Pressable
+          onPress={() => setInfoVisible(true)}
+          hitSlop={8}
+          accessibilityLabel="Session info"
+          style={({ pressed }) => ({ paddingHorizontal: spacing.xs, opacity: pressed ? 0.5 : 1 })}
+        >
+          <InfoIcon size={22} color={dark.text.secondary} />
+        </Pressable>
       ),
     })
   }, [navigation])
@@ -489,7 +488,7 @@ export default function SessionDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']} testID="session-detail-screen">
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -503,8 +502,16 @@ export default function SessionDetailScreen() {
           </View>
         ) : null}
 
-        <View style={styles.terminal}>
+        <View style={styles.terminal} testID="terminal-output">
           {noAttachEmptyPlaceholder ? (
+            session?.failureReason ? (
+              <View style={styles.discoveredInfo}>
+                <Text style={[styles.discoveredTitle, { color: dark.text.danger }]}>
+                  Session failed to start
+                </Text>
+                <Text style={styles.discoveredText}>{session.failureReason}</Text>
+              </View>
+            ) : (
             <View style={styles.discoveredInfo}>
               <Text style={styles.discoveredTitle}>No terminal output</Text>
               <Text style={styles.discoveredText}>
@@ -515,6 +522,7 @@ export default function SessionDetailScreen() {
                 <Text style={styles.discoveredPath}>{session.projectPath}</Text>
               ) : null}
             </View>
+            )
           ) : (
             <>
               <TerminalOutput lines={lines} isStreaming={isStreaming} />
@@ -578,6 +586,7 @@ export default function SessionDetailScreen() {
                 )}
               </TouchableOpacity>
               <TextInput
+                testID="message-input"
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
