@@ -197,13 +197,50 @@ Raw ANSI terminal data from WebSocket → `VirtualTerminal` (a minimal VT100 emu
 
 ## Testing
 
+### Unit & Integration (Jest)
+
 ```bash
 npm test              # Jest watch mode (all tests)
 npm run test:ci       # CI mode (no watch, exits with code)
 npm run test:unit     # Unit tests only
 npm run test:integration  # Integration tests
-npm run test:e2e      # End-to-end tests
+npm run test:e2e      # Jest-based e2e tests
 ```
+
+### E2E (Maestro)
+
+Maestro flows live in `e2e/`. A Node mock server (`e2e/mock-server.js`) serves static JSON fixtures so tests run without a live Threadbase server.
+
+**Prerequisites:**
+- [Maestro CLI](https://maestro.mobile.dev): `brew install maestro`
+- App built and installed on the simulator: `npm run ios` (once after any native changes)
+- A booted iOS simulator (the script checks for this automatically)
+
+**Run the full mock suite:**
+```bash
+npm run test:e2e:mock
+```
+
+This starts the mock server on port 7071, runs `e2e/03_hub.yaml` (Sessions Hub) and `e2e/04_session_detail.yaml` (Session Detail), then kills the server.
+
+**Run individual flows:**
+```bash
+node e2e/mock-server.js &
+maestro test e2e/03_hub.yaml
+kill %1
+```
+
+**Flows:**
+
+| File | What it tests |
+|---|---|
+| `00_setup.yaml` | Reusable onboarding helper (called by other flows via `runFlow`) |
+| `01_onboarding.yaml` | Onboarding against a real server (`THREADBASE_SERVER_URL` + `THREADBASE_API_KEY`) |
+| `02_sessions.yaml` | Tab navigation against a real server |
+| `03_hub.yaml` | Sessions Hub: project card expansion, session rows, navigate to detail |
+| `04_session_detail.yaml` | Session detail: terminal output, message input |
+
+**Fixtures** (`e2e/fixtures/`): static JSON returned by the mock server — `sessions.json`, `session-detail.json`, `terminal-output.json`, `conversations.json`.
 
 ---
 

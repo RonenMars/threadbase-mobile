@@ -1,5 +1,24 @@
 # Threadbase Mobile — Claude Instructions
 
+## E2E Testing (Maestro)
+
+Maestro flows live in `e2e/`. Run the full mock suite with:
+
+```bash
+npm run test:e2e:mock
+```
+
+This checks for a booted iOS simulator, starts `e2e/mock-server.js` on port 7071, runs `03_hub.yaml` + `04_session_detail.yaml`, then kills the server.
+
+**Prerequisites (one-time):** `brew install maestro` + `npm run ios` to get the app on the sim.
+
+When adding new Maestro flows:
+- Use `testID` props (not text) for elements without stable visible text — see `e2e/03_hub.yaml` for examples
+- Add new flows to the relevant `test:e2e:*` script in `package.json`
+- Fixtures are in `e2e/fixtures/` — extend them if the new flow needs additional data
+
+---
+
 ## Shipping / Release Pipeline
 
 **Default ship tool: `/expo-local-ship`**
