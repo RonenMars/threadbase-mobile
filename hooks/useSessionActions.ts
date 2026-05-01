@@ -45,5 +45,13 @@ export function useSessionActions(serverId: string, sessionId: string) {
       api.post(`/api/sessions/${sessionId}/plan-response`, vars),
   })
 
-  return { sendInput, cancelSession, addToQueue, removeFromQueue, respondToPlan }
+  const adoptSession = useMutation({
+    mutationFn: () =>
+      api.post<{ sessionId: string }>(`/api/sessions/${sessionId}/adopt`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+    },
+  })
+
+  return { sendInput, cancelSession, addToQueue, removeFromQueue, respondToPlan, adoptSession }
 }
