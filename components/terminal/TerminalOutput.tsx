@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { spacing } from '@/constants/theme'
+import type { TerminalLine } from '@/hooks/useTerminalStream'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -37,6 +38,13 @@ const LINE_STYLE: Record<LineType, { color: string; bg?: string }> = {
   'default': { color: '#e6edf3' },
 }
 
+const DividerRow = memo(({ text }: { text: string }) => (
+  <View style={styles.dividerRow}>
+    <Text style={styles.dividerLabel}>YOU</Text>
+    <Text style={styles.dividerText} numberOfLines={1}>{text}</Text>
+  </View>
+))
+
 interface LineRowProps {
   line: string
   index: number
@@ -56,7 +64,7 @@ const LineRow = memo(({ line, index }: LineRowProps) => {
 })
 
 interface Props {
-  lines: string[]
+  lines: TerminalLine[]
   isStreaming: boolean
 }
 
@@ -103,16 +111,23 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
     showJumpButtonVal.value = 0
   }, [scrollToBottom, showJumpButtonVal])
 
-  const renderItem = useCallback(({ item, index }: { item: string; index: number }) => (
-    <LineRow line={item} index={index} />
-  ), [])
+  const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
+    if (typeof item !== 'string' && item.__divider) {
+      return <DividerRow text={item.text} />
+    }
+    return <LineRow line={item as string} index={index} />
+  }, [])
 
   return (
     <View style={styles.container}>
       <FlatList
         ref={listRef}
         data={lines}
-        keyExtractor={(_, i) => String(i)}
+        keyExtractor={(item, i) =>
+          typeof item !== 'string' && (item as { __divider: boolean }).__divider
+            ? `d-${i}`
+            : String(i)
+        }
         renderItem={renderItem}
         onScroll={handleScroll}
         scrollEventThrottle={100}
@@ -216,5 +231,29 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 12,
     fontWeight: '500',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(31, 111, 235, 0.10)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#58a6ff',
+    marginVertical: 2,
+  },
+  dividerLabel: {
+    color: '#58a6ff',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    letterSpacing: 0.6,
+  },
+  dividerText: {
+    color: '#cdd9e5',
+    fontSize: 12,
+    fontFamily: 'monospace',
+    flex: 1,
   },
 })

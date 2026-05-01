@@ -1,6 +1,7 @@
 import React from 'react'
 import { render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
+import type { TerminalLine } from '@/hooks/useTerminalStream'
 
 describe('TerminalOutput – rendering', () => {
   it('renders provided lines', () => {
@@ -77,5 +78,41 @@ describe('TerminalOutput – controls', () => {
       <TerminalOutput lines={['line']} isStreaming={false} />
     )
     expect(getByLabelText('Jump to top')).toBeTruthy()
+  })
+})
+
+describe('TerminalOutput – divider rows', () => {
+  it('renders YOU label for a divider entry', () => {
+    const lines: TerminalLine[] = [
+      'normal line',
+      { __divider: true, text: 'run the tests' },
+    ]
+    const { getByText } = render(
+      <TerminalOutput lines={lines} isStreaming={false} />
+    )
+    expect(getByText('YOU')).toBeTruthy()
+    expect(getByText('run the tests')).toBeTruthy()
+  })
+
+  it('renders mixed string and divider lines without crash', () => {
+    const lines: TerminalLine[] = [
+      'line one',
+      { __divider: true, text: 'hello' },
+      'line two',
+    ]
+    expect(() =>
+      render(<TerminalOutput lines={lines} isStreaming={false} />)
+    ).not.toThrow()
+  })
+
+  it('does not render a line number for divider entries', () => {
+    const lines: TerminalLine[] = [
+      { __divider: true, text: 'only divider' },
+    ]
+    const { queryByText } = render(
+      <TerminalOutput lines={lines} isStreaming={false} />
+    )
+    // Line number "1" should not appear — divider has no gutter
+    expect(queryByText('1')).toBeNull()
   })
 })
