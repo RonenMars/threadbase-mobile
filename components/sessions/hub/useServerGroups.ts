@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import type { ProjectGroup } from './useProjectGroups'
 
+function toMs(isoString: string | undefined): number {
+  if (!isoString) return 0
+  const ms = Date.parse(isoString)
+  return isNaN(ms) ? 0 : ms
+}
+
 export interface ServerGroup {
   serverId: string
   serverLabel: string
@@ -48,9 +54,9 @@ export function useServerGroups(
           }
           filteredGroup.latestActivityMs = Math.max(
             ...filteredGroup.sessions.map((s) =>
-              s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
+              s.completedAt ? toMs(s.completedAt) : toMs(s.startedAt) + (s.elapsedMs ?? 0),
             ),
-            ...filteredGroup.conversations.map((c) => Date.parse(c.lastActivity) || 0),
+            ...filteredGroup.conversations.map((c) => toMs(c.lastActivity)),
             0,
           )
           serverGroup.groups.push(filteredGroup)
