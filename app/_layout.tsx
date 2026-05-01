@@ -26,6 +26,9 @@ import * as SplashScreen from 'expo-splash-screen'
 
 SplashScreen.preventAutoHideAsync()
 
+// global persists across Expo fast-refresh reloads; resets on native restart.
+const g = global as typeof global & { __splashShown?: boolean }
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
@@ -145,16 +148,21 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const router = useRouter()
-  const [splashDone, setSplashDone] = useState(false)
+  const [splashDone, setSplashDone] = useState(!!g.__splashShown)
 
   useEffect(() => {
     SplashScreen.hideAsync()
   }, [])
 
+  function handleSplashComplete() {
+    g.__splashShown = true
+    setSplashDone(true)
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        {!splashDone && <SplashAnimation onComplete={() => setSplashDone(true)} />}
+        {!splashDone && <SplashAnimation onComplete={handleSplashComplete} />}
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{
