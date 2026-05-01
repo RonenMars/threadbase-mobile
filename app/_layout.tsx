@@ -1,7 +1,7 @@
 import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
-import { TouchableOpacity } from 'react-native'
+import { Pressable } from 'react-native'
 import {
   Stack,
   useGlobalSearchParams,
@@ -186,21 +186,20 @@ export default function RootLayout() {
                 headerShadowVisible: false,
                 contentStyle: { backgroundColor: '#0d1117' },
                 headerLeft: ({ tintColor }) => (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => router.back()}
                     hitSlop={16}
-                    activeOpacity={1}
-                    style={{ paddingHorizontal: 4 }}
+                    style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
                   >
                     <CaretLeft size={28} color={tintColor ?? '#e6edf3'} />
-                  </TouchableOpacity>
+                  </Pressable>
                 ),
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-              <Stack.Screen name="session/[id]" options={{ title: 'Session' }} />
-              <Stack.Screen name="conversation/[id]" options={{ title: 'Conversation' }} />
+              <Stack.Screen name="session/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
               <Stack.Screen
                 name="browse"
                 options={{

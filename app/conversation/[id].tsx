@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Share,
   ActivityIndicator,
@@ -12,9 +13,9 @@ import {
   Animated,
   type ListRenderItemInfo,
 } from 'react-native'
-import { Info } from 'phosphor-react-native'
+import { InfoIcon } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
@@ -27,6 +28,7 @@ import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
+import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, MessageContent } from '@/types/api'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
@@ -67,7 +69,6 @@ function MessageItem({ message }: { message: Message }) {
 
 export default function ConversationDetailScreen() {
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
-  const navigation = useNavigation()
   const router = useRouter()
 
   // Fall back to first server if no server param provided
@@ -107,24 +108,6 @@ export default function ConversationDetailScreen() {
     const t = setTimeout(() => { hasInitialScrolled.current = true }, 600)
     return () => clearTimeout(t)
   }, [conversation])
-
-  useEffect(() => {
-    if (conversation) {
-      navigation.setOptions({
-        title: conversation.title,
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => setInfoVisible(true)}
-            hitSlop={8}
-            accessibilityLabel="Conversation info"
-            style={{ paddingHorizontal: spacing.xs }}
-          >
-            <Info size={22} color={dark.text.secondary} />
-          </TouchableOpacity>
-        ),
-      })
-    }
-  }, [conversation, navigation])
 
   useEffect(() => {
     if (!isLoading) {
@@ -215,9 +198,21 @@ export default function ConversationDetailScreen() {
     <MessageSkeletonRow index={index} />
   ), [])
 
+  const infoButton = (
+    <Pressable
+      onPress={() => setInfoVisible(true)}
+      hitSlop={8}
+      accessibilityLabel="Conversation info"
+      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+    >
+      <InfoIcon size={22} color={dark.text.secondary} />
+    </Pressable>
+  )
+
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenHeader right={infoButton} />
         <View style={styles.listWrapper}>
           <FlatList
             data={MESSAGE_SKELETON_KEYS}
@@ -233,7 +228,8 @@ export default function ConversationDetailScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenHeader right={infoButton} />
         <View style={styles.centered}>
           <Text style={styles.errorTitle}>Couldn't load conversation</Text>
           <Text style={styles.errorMessage}>{error.message}</Text>
@@ -251,7 +247,8 @@ export default function ConversationDetailScreen() {
   const isLoadingMessages = Boolean(hasNextPage || isFetchingNextPage)
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <ScreenHeader title={conversation.title} right={infoButton} />
       <View style={styles.inner}>
       {isLoadingMessages && totalMessages > 0 ? (
         <ProgressBar

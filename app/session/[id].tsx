@@ -13,8 +13,7 @@ import {
   ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useHeaderHeight } from '@react-navigation/elements'
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
@@ -34,6 +33,7 @@ import {
 import { useServersStore } from '@/stores/servers'
 import { dark, font, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
+import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import type { SlashCommand } from '@/constants/slashCommands'
@@ -225,9 +225,7 @@ function formatElapsed(ms: number): string {
 
 export default function SessionDetailScreen() {
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
-  const navigation = useNavigation()
   const router = useRouter()
-  const headerHeight = useHeaderHeight()
 
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
@@ -290,26 +288,6 @@ export default function SessionDetailScreen() {
       ],
     )
   }
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => setInfoVisible(true)}
-          hitSlop={8}
-          accessibilityLabel="Session info"
-          style={({ pressed }) => ({ paddingHorizontal: spacing.xs, opacity: pressed ? 0.5 : 1 })}
-        >
-          <InfoIcon size={22} color={dark.text.secondary} />
-        </Pressable>
-      ),
-    })
-  }, [navigation])
-
-  useEffect(() => {
-    if (!session) return
-    navigation.setOptions({ title: session.projectName })
-  }, [session?.projectName, navigation])
 
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
@@ -461,7 +439,8 @@ export default function SessionDetailScreen() {
 
   if (isLoading && !session) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenHeader />
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center' }]}>
           <ActivityIndicator color={dark.text.secondary} />
         </View>
@@ -475,7 +454,8 @@ export default function SessionDetailScreen() {
       return <DiscoveredSessionScreen serverId={serverId} sessionId={id} />
     }
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenHeader />
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
           <Text style={styles.discoveredTitle}>Session not found</Text>
           <Text style={[styles.discoveredText, { textAlign: 'center', marginTop: spacing.sm }]}>
@@ -487,12 +467,24 @@ export default function SessionDetailScreen() {
     )
   }
 
+  const infoButton = (
+    <Pressable
+      onPress={() => setInfoVisible(true)}
+      hitSlop={8}
+      accessibilityLabel="Session info"
+      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+    >
+      <InfoIcon size={22} color={dark.text.secondary} />
+    </Pressable>
+  )
+
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']} testID="session-detail-screen">
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']} testID="session-detail-screen">
+      <ScreenHeader title={session?.projectName} right={infoButton} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 52 : 0}
       >
         {session ? (
           <View style={styles.statusBar}>
@@ -503,15 +495,14 @@ export default function SessionDetailScreen() {
         ) : null}
 
         <View style={styles.terminal} testID="terminal-output">
-          {noAttachEmptyPlaceholder ? (
-            session?.failureReason ? (
-              <View style={styles.discoveredInfo}>
-                <Text style={[styles.discoveredTitle, { color: dark.text.danger }]}>
-                  Session failed to start
-                </Text>
-                <Text style={styles.discoveredText}>{session.failureReason}</Text>
-              </View>
-            ) : (
+          {session?.failureReason ? (
+            <View style={styles.discoveredInfo}>
+              <Text style={[styles.discoveredTitle, { color: dark.text.danger }]}>
+                Session failed to start
+              </Text>
+              <Text style={styles.discoveredText}>{session.failureReason}</Text>
+            </View>
+          ) : noAttachEmptyPlaceholder ? (
             <View style={styles.discoveredInfo}>
               <Text style={styles.discoveredTitle}>No terminal output</Text>
               <Text style={styles.discoveredText}>
@@ -522,7 +513,6 @@ export default function SessionDetailScreen() {
                 <Text style={styles.discoveredPath}>{session.projectPath}</Text>
               ) : null}
             </View>
-            )
           ) : (
             <>
               <TerminalOutput lines={lines} isStreaming={isStreaming} />
