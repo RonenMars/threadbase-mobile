@@ -11,6 +11,7 @@
     "test:unit": "jest --ci --testPathPattern='__tests__/unit'",
     "test:integration": "jest --ci --testPathPattern='__tests__/integration'",
     "test:e2e": "jest --ci --testPathPattern='__tests__/e2e'",
+    "test:e2e:mock": "node e2e/mock-server.js & sleep 1 && maestro test e2e/03_hub.yaml && maestro test e2e/04_session_detail.yaml; kill %1",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
