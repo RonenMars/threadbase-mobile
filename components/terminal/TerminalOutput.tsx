@@ -124,7 +124,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
         ref={listRef}
         data={lines}
         keyExtractor={(item, i) =>
-          typeof item !== 'string' && (item as { __divider: boolean }).__divider
+          typeof item !== 'string' && item.__divider
             ? `d-${i}`
             : String(i)
         }
