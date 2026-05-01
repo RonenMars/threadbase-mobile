@@ -16,6 +16,7 @@ export interface FlatNode {
 
 export type FlatItem =
   | { kind: 'server-root'; serverId: string; serverLabel: string; node: TreeNode }
+  | { kind: 'server-header'; serverId: string; serverLabel: string; totalCount: number }
   | { kind: 'tree-row'; serverId: string; node: TreeNode; depth: number; depthOffset: number }
 
 export interface ServerTree {
