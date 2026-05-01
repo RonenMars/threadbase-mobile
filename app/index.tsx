@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   AppState,
   FlatList,
   RefreshControl,
@@ -24,6 +25,7 @@ import { ConversationList } from '@/components/conversation/ConversationList'
 import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { FAB } from '@/components/ui/FAB'
@@ -181,46 +183,46 @@ export default function ProjectsHub() {
         <View style={styles.headerLeft}>
           <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
           <Text style={styles.headerTitle}>Threadbase</Text>
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.push('/settings')}
             hitSlop={8}
-            style={styles.headerButton}
+            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Settings"
           >
             <Gear size={20} color={dark.text.secondary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Right: actions */}
         <View style={styles.headerRight}>
-          <TouchableOpacity
+          <Pressable
             onPress={() => setStatusModalOpen(true)}
             hitSlop={8}
-            style={styles.headerButton}
+            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Server status"
           >
             <Cloud size={20} color={dark.text.secondary} />
             {!allConnected ? (
               <View style={[styles.notifDot, { backgroundColor: someConnected ? dark.status.waiting : dark.status.failed }]} />
             ) : null}
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             onPress={() => setSearchOpen((v) => !v)}
             hitSlop={8}
-            style={[styles.headerButton, searchOpen && styles.headerButtonActive]}
+            style={({ pressed }) => [styles.headerButton, searchOpen && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Search"
           >
             <MagnifyingGlass size={20} color={searchOpen ? dark.text.primary : dark.text.secondary} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             onPress={() => setSheetOpen(true)}
             hitSlop={8}
-            style={[styles.headerButton, isSheetActive && styles.headerButtonActive]}
+            style={({ pressed }) => [styles.headerButton, isSheetActive && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Filter & Sort"
           >
             <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -354,6 +356,10 @@ function MergedClassicList({
   onSearchChange: (q: string) => void
 }) {
   const router = useRouter()
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const servers = useServersStore((s) => s.servers)
+  const showServerHeaders = activeServerIds.length > 1
+
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items
     const q = searchQuery.toLowerCase()
@@ -369,6 +375,60 @@ function MergedClassicList({
       )
     })
   }, [searchQuery, items])
+
+  type ClassicFlatItem =
+    | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
+    | MergedItem
+
+  const flatData = useMemo((): ClassicFlatItem[] => {
+    if (!showServerHeaders) return filteredItems
+
+    const buckets = new Map<string, MergedItem[]>()
+    for (const id of activeServerIds) buckets.set(id, [])
+    for (const item of filteredItems) {
+      const sid = item.item.serverId
+      if (!buckets.has(sid)) buckets.set(sid, [])
+      buckets.get(sid)!.push(item)
+    }
+
+    const result: ClassicFlatItem[] = []
+    for (const id of activeServerIds) {
+      const bucket = buckets.get(id) ?? []
+      if (bucket.length === 0) continue
+      result.push({
+        kind: 'header',
+        serverId: id,
+        serverLabel: servers[id]?.label ?? id,
+        totalCount: bucket.length,
+      })
+      result.push(...bucket)
+    }
+    return result
+  }, [filteredItems, showServerHeaders, activeServerIds, servers])
+
+  const renderConvCard = useCallback(
+    (item: MultiConversation) => (
+      <TouchableOpacity
+        style={styles.convCard}
+        activeOpacity={0.75}
+        onPress={() => router.push(`/conversation/${item.id}?server=${item.serverId}`)}
+      >
+        <View style={styles.convCardTitleRow}>
+          <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
+          <Text style={styles.convCardTitle} numberOfLines={1}>
+            {item.title || item.projectPath}
+          </Text>
+        </View>
+        {item.preview ? (
+          <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
+        ) : null}
+        <Text style={styles.convCardMeta}>
+          {item.messageCount} msg{item.messageCount !== 1 ? 's' : ''}
+        </Text>
+      </TouchableOpacity>
+    ),
+    [router],
+  )
 
   return (
     <View style={{ flex: 1 }}>
@@ -387,40 +447,21 @@ function MergedClassicList({
         </View>
       ) : null}
       <FlatList
-        data={filteredItems}
-        keyExtractor={(item) =>
-          item.kind === 'session'
-            ? `s-${item.item.serverId}::${item.item.id}`
-            : `c-${item.item.serverId}::${item.item.id}`
-        }
-        renderItem={({ item }) =>
-          item.kind === 'session' ? (
-            <SessionCard session={item.item as MultiSession} />
-          ) : (
-            <TouchableOpacity
-              style={styles.convCard}
-              activeOpacity={0.75}
-              onPress={() =>
-                router.push(`/conversation/${item.item.id}?server=${item.item.serverId}`)
-              }
-            >
-              <View style={styles.convCardTitleRow}>
-                <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
-                <Text style={styles.convCardTitle} numberOfLines={1}>
-                  {(item.item as MultiConversation).title || item.item.projectPath}
-                </Text>
-              </View>
-              {(item.item as MultiConversation).preview ? (
-                <Text style={styles.convCardPreview} numberOfLines={2}>
-                  {(item.item as MultiConversation).preview}
-                </Text>
-              ) : null}
-              <Text style={styles.convCardMeta}>
-                {(item.item as MultiConversation).messageCount} msg{(item.item as MultiConversation).messageCount !== 1 ? 's' : ''}
-              </Text>
-            </TouchableOpacity>
-          )
-        }
+        data={flatData}
+        keyExtractor={(item) => {
+          if (item.kind === 'header') return `header-${item.serverId}`
+          if (item.kind === 'session') return `s-${item.item.serverId}::${item.item.id}`
+          return `c-${item.item.serverId}::${item.item.id}`
+        }}
+        renderItem={({ item }) => {
+          if (item.kind === 'header') {
+            return <ServerHeaderRow serverLabel={item.serverLabel} totalCount={item.totalCount} />
+          }
+          if (item.kind === 'session') {
+            return <SessionCard session={item.item as MultiSession} />
+          }
+          return renderConvCard(item.item as MultiConversation)
+        }}
         contentContainerStyle={styles.mergedContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
