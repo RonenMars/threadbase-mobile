@@ -1,5 +1,5 @@
 import React from 'react'
-import { TouchableOpacity, StyleSheet } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Gear } from 'phosphor-react-native'
 import { dark } from '@/constants/theme'
@@ -10,7 +10,7 @@ export function AvatarMenu() {
   return (
     <TouchableOpacity
       onPress={() => router.push('/settings')}
-      style={styles.button}
+      className="w-8 h-8 items-center justify-center rounded-lg"
       accessibilityLabel="Settings"
       accessibilityRole="button"
       hitSlop={8}
@@ -19,13 +19,3 @@ export function AvatarMenu() {
     </TouchableOpacity>
   )
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-})
