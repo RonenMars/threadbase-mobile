@@ -1,0 +1,38 @@
+[
+  {
+    "id": "session-abc123",
+    "status": "running",
+    "ptyAttached": true,
+    "projectPath": "/home/user/my-project",
+    "projectName": "my-project",
+    "branch": "main",
+    "lastOutput": "Waiting for input",
+    "elapsedMs": 12000,
+    "promptCount": 3,
+    "startedAt": "2026-05-01T10:00:00.000Z"
+  },
+  {
+    "id": "session-def456",
+    "status": "waiting_input",
+    "ptyAttached": true,
+    "projectPath": "/home/user/my-project",
+    "projectName": "my-project",
+    "branch": "feature/auth",
+    "lastOutput": "Waiting for input",
+    "elapsedMs": 45000,
+    "promptCount": 7,
+    "startedAt": "2026-05-01T09:30:00.000Z"
+  },
+  {
+    "id": "session-ghi789",
+    "status": "idle",
+    "ptyAttached": false,
+    "projectPath": "/home/user/my-project",
+    "projectName": "my-project",
+    "branch": "fix/login",
+    "lastOutput": "",
+    "elapsedMs": 90000,
+    "promptCount": 12,
+    "startedAt": "2026-05-01T08:00:00.000Z"
+  }
+]
