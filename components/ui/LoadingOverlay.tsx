@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, ActivityIndicator } from 'react-native'
 import { dark } from '@/constants/theme'
 
 interface Props {
@@ -9,18 +9,13 @@ interface Props {
 export function LoadingOverlay({ visible }: Props) {
   if (!visible) return null
   return (
-    <View style={styles.overlay} accessibilityRole="progressbar" accessibilityLabel="Loading">
+    <View
+      className="absolute inset-0 items-center justify-center z-50"
+      style={{ backgroundColor: 'rgba(13, 17, 23, 0.7)' }}
+      accessibilityRole="progressbar"
+      accessibilityLabel="Loading"
+    >
       <ActivityIndicator size="large" color={dark.text.accent} />
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 17, 23, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 50,
-  },
-})
