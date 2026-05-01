@@ -137,7 +137,7 @@ export default function SessionDetailScreen() {
     navigation.setOptions({
       title: session.projectName,
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }} pointerEvents="box-none">
           <TouchableOpacity
             onPress={() => setInfoVisible(true)}
             hitSlop={8}
@@ -262,17 +262,16 @@ export default function SessionDetailScreen() {
     setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
   }
 
-  // Hide composer only for discovered sessions with no PTY stream yet (placeholder state).
-  // Resumed / stream-attached sessions may still be tagged `discovered` while running; they
-  // need the same input UI as managed sessions once terminal lines exist or are loading.
   const discoveredEmptyPlaceholder =
     session?.source === 'discovered' &&
     !isLoadingHistory &&
     lines.length === 0 &&
     !isStreaming
 
+  // Discovered sessions have no PTY — input cannot be sent through the streamer.
   const showInputBar =
     session &&
+    session.source !== 'discovered' &&
     (session.status === 'waiting_input' || session.status === 'running') &&
     !discoveredEmptyPlaceholder
 
