@@ -80,27 +80,19 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       unsubOutput = client.on('terminal_output', (msg) => {
         if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
 
-        // Flush pending dividers before the first line of a new response
-        if (pendingDividersRef.current.length > 0) {
-          const dividers: TerminalLine[] = pendingDividersRef.current.map(
-            (text) => ({ __divider: true as const, text })
-          )
-          pendingDividersRef.current = []
-          setLines((prev) => [...prev, ...dividers])
-        }
-
         setIsStreaming(true)
         vtRef.current.feed(msg.data)
-
-        // Preserve divider entries — VT getLines() only returns string lines,
-        // so we filter dividers from prev state and merge with fresh VT output
         setLines((prev) => {
-          const dividerEntries = prev.filter(
+          const existingDividers = prev.filter(
             (l): l is { __divider: true; text: string } =>
               typeof l !== 'string' && (l as { __divider: boolean }).__divider
           )
+          const newDividers: TerminalLine[] = pendingDividersRef.current.map(
+            (text) => ({ __divider: true as const, text })
+          )
+          pendingDividersRef.current = []
           const vtLines = vtRef.current.getLines()
-          return [...dividerEntries, ...vtLines].slice(-maxLines)
+          return [...existingDividers, ...newDividers, ...vtLines].slice(-maxLines)
         })
 
         clearTimeout(idleTimer)
@@ -142,6 +134,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
   const clear = useCallback(() => {
     vtRef.current.reset()
+    pendingDividersRef.current = []
     setLines([])
   }, [])
 
