@@ -1,6 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { View, Text, TouchableOpacity, type ViewStyle } from 'react-native'
 
 interface BannerAction {
   label: string
@@ -18,67 +17,35 @@ interface Props {
 
 export function Banner({ title, message, accent, icon, action, style }: Props) {
   return (
-    <View style={styles.overlay}>
-    <View style={[styles.banner, { borderColor: accent }, style]}>
-      {icon}
-      <Text style={styles.title}>{title}</Text>
-      <Text style={[styles.text, { color: accent }]}>{message}</Text>
-      {action ? (
-        <TouchableOpacity style={styles.actionBtn} onPress={action.onPress}>
-          <Text style={styles.actionBtnText}>{action.label}</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
+    <View
+      className="absolute inset-0 items-center justify-start"
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)', paddingTop: '55%' }}
+    >
+      <View
+        className="w-60 items-center gap-3 bg-bg-card border rounded-[12px] py-4 px-6"
+        style={[{ borderColor: accent }, style]}
+      >
+        {icon}
+        <Text className="text-text-primary text-font-base text-center font-semibold mt-2">
+          {title}
+        </Text>
+        <Text
+          className="text-font-sm text-center"
+          style={{ color: accent, lineHeight: 19 }}
+        >
+          {message}
+        </Text>
+        {action ? (
+          <TouchableOpacity
+            className="mt-2 py-1 px-4 bg-bg-secondary border border-border rounded-lg"
+            onPress={action.onPress}
+          >
+            <Text className="text-text-primary text-font-sm font-semibold">
+              {action.label}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: '55%',
-  },
-  banner: {
-    width: 240,
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: dark.bg.card,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-  },
-  text: {
-    fontSize: font.sm,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    textAlign: 'center',
-    fontWeight: '600',
-    marginTop: spacing.sm,
-  },
-  actionBtn: {
-    marginTop: spacing.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: dark.bg.secondary,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  actionBtnText: {
-    color: dark.text.primary,
-    fontSize: font.sm,
-    fontWeight: '600',
-  },
-})
