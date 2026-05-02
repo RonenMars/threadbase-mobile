@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated, Easing } from 'react-native'
 import { Trash, PencilSimple, ArrowsClockwise, XCircle } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { ServerConfig } from '@/types/api'
 
@@ -16,6 +18,7 @@ interface Props {
 const REFRESH_TIMEOUT_MS = 12000
 
 export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefresh, onViewError }: Props) {
+  const { t } = useTranslation('servers')
   const progress = useRef(new Animated.Value(1)).current
   const progressAnim = useRef<Animated.CompositeAnimation | null>(null)
   const resultOpacity = useRef(new Animated.Value(0)).current
@@ -52,11 +55,11 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
 
   const handleRemove = () => {
     Alert.alert(
-      'Remove Server',
+      i18n.t('servers:dialog.removeTitle'),
       `Disconnect from ${server.label || server.url}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => onRemove(server.id) },
+        { text: i18n.t('common:button.cancel'), style: 'cancel' },
+        { text: i18n.t('servers:dialog.removeConfirm'), style: 'destructive', onPress: () => onRemove(server.id) },
       ]
     )
   }
@@ -114,7 +117,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
         </Text>
       ) : (
         <Text style={styles.meta}>
-          {server.isConnected ? 'Connected' : 'Disconnected'}
+          {server.isConnected ? t('status.connected') : t('status.disconnected')}
         </Text>
       )}
 

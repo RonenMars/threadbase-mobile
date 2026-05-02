@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from 'react-native'
 import { X, Eye, EyeSlash, QrCode, XCircle } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
+  const { t } = useTranslation('common')
   const { servers, addServer, editServer } = useServersStore()
   const server = serverId ? servers[serverId] : null
   const isEditMode = serverId !== null
@@ -217,7 +219,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 onPress={handleSave}
                 disabled={!url.trim() || !apiKey.trim()}
               >
-                <Text style={styles.saveBtnText}>Save</Text>
+                <Text style={styles.saveBtnText}>{t('button.save')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

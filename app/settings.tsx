@@ -14,6 +14,8 @@ import Constants from 'expo-constants'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction } from '@/stores/settings'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -113,6 +115,7 @@ function ThemePicker({
 
 export default function SettingsScreen() {
   const theme = useTheme()
+  const { t } = useTranslation('settings')
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
@@ -138,8 +141,8 @@ export default function SettingsScreen() {
   const handleTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '⚡ Test Notification',
-        body: 'Threadbase notifications are working!',
+        title: i18n.t('settings:notification.testTitle'),
+        body: i18n.t('settings:notification.testBody'),
       },
       trigger: null,
     })
@@ -182,7 +185,7 @@ await refreshServerInfo(serverId)
           />
         }
       >
-        <SectionHeader title="Appearance" />
+        <SectionHeader title={t('section.appearance')} />
         <View style={s.card}>
           <View style={s.row}>
             <Text style={s.rowLabel}>Layout</Text>
@@ -215,7 +218,7 @@ await refreshServerInfo(serverId)
           </View>
           <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border }}>
             <View style={[s.row, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-              <Text style={s.rowLabel}>Theme</Text>
+              <Text style={s.rowLabel}>{t('appearance.theme')}</Text>
             </View>
             <ThemePicker current={colorScheme} onChange={setColorScheme} />
           </View>
@@ -226,7 +229,7 @@ await refreshServerInfo(serverId)
           />
         </View>
 
-        <SectionHeader title="Servers" />
+        <SectionHeader title={t('section.servers')} />
         {activeServerIds.map((id) => {
           const server = servers[id]
           if (!server) return null
@@ -246,7 +249,7 @@ await refreshServerInfo(serverId)
           style={s.addServerBtn}
           onPress={() => setEditServerId('new')}
         >
-          <Text style={s.addServerText}>+ Add Server</Text>
+          <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
         </TouchableOpacity>
 
         <SectionHeader title="Displayed Servers" />
@@ -257,7 +260,7 @@ await refreshServerInfo(serverId)
           onChange={setDisplayedServerIds}
         />
 
-        <SectionHeader title="When Adding A New Server" />
+        <SectionHeader title={t('notifications.whenAddingServer')} />
         <View style={s.card}>
           <TouchableOpacity
             style={s.row}
@@ -276,14 +279,14 @@ await refreshServerInfo(serverId)
           ) : null}
         </View>
 
-        <SectionHeader title="Notifications" />
+        <SectionHeader title={t('section.notifications')} />
         <View style={s.card}>
-          <SettingsRow label="Waiting for Input" value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
-          <SettingsRow label="Session Completed" value={notifications.sessionComplete} onValueChange={(v) => setNotifications({ sessionComplete: v })} />
-          <SettingsRow label="Session Failed" value={notifications.sessionFailed} onValueChange={(v) => setNotifications({ sessionFailed: v })} />
-          <SettingsRow label="Diff Ready" value={notifications.diffReady} onValueChange={(v) => setNotifications({ diffReady: v })} />
-          <SettingsRow label="Show Badge Count" value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
-          <SettingsRow label="Quiet Hours" value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
+          <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
+          <SettingsRow label={t('notifications.sessionCompleted')} value={notifications.sessionComplete} onValueChange={(v) => setNotifications({ sessionComplete: v })} />
+          <SettingsRow label={t('notifications.sessionFailed')} value={notifications.sessionFailed} onValueChange={(v) => setNotifications({ sessionFailed: v })} />
+          <SettingsRow label={t('notifications.diffReady')} value={notifications.diffReady} onValueChange={(v) => setNotifications({ diffReady: v })} />
+          <SettingsRow label={t('notifications.showBadgeCount')} value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
+          <SettingsRow label={t('notifications.quietHours')} value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
           <TouchableOpacity style={s.testBtn} onPress={handleTestNotification}>
             <Text style={s.testBtnText}>Send Test Notification</Text>
           </TouchableOpacity>
@@ -310,7 +313,7 @@ await refreshServerInfo(serverId)
           </View>
         </View>
 
-        <SectionHeader title="About" />
+        <SectionHeader title={t('section.about')} />
         <View style={s.card}>
           <Text style={s.aboutText}>
             {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${
