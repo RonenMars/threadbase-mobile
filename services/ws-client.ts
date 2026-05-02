@@ -6,6 +6,8 @@ export type WSMessage =
   | { type: 'session_list'; sessions: Session[] }
   | { type: 'notification'; event: NotificationEvent }
   | { type: 'plan_ready'; sessionId: string; plan: string }
+  | { type: 'terminal_replay'; sessionId: string; lines: string[] }
+  | { type: 'session_ready'; session: Session }
 
 type MessageHandler = (msg: WSMessage) => void
 

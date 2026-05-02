@@ -22,6 +22,7 @@ import { wsManager } from '@/services/ws-client'
 import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import { SplashAnimation } from '@/components/SplashAnimation'
+import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import * as SplashScreen from 'expo-splash-screen'
 
 SplashScreen.preventAutoHideAsync()
@@ -113,6 +114,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
           ),
       )
     })
+    const unsubReady = wsManager.onAll('session_ready', (msg) => {
+      if (msg.type !== 'session_ready') return
+      const serverParam = `?server=${msg.serverId}`
+      router.push(`/session/${msg.session.id}${serverParam}`)
+    })
     const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
       setConnected(serverId, status === 'connected')
     })
@@ -123,6 +129,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       unsubList()
       unsubUpdate()
+      unsubReady()
       unsubStatus()
       wsManager.disconnectAll()
     }
@@ -178,6 +185,7 @@ export default function RootLayout() {
           }}
         >
           <AuthGate>
+            <SlowQueryBanner />
             <StatusBar style="light" />
             <Stack
               screenOptions={{

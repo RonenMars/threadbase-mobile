@@ -12,6 +12,15 @@ import {
   Alert,
   ScrollView,
 } from 'react-native'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
@@ -64,6 +73,118 @@ const PENDING_PHRASES = [
   "Convincing the electrons to cooperate…",
 ]
 
+function WakingUpOverlay({ phrase }: { phrase: string }) {
+  const bounce = useSharedValue(0)
+  const rotate = useSharedValue(0)
+  const pulse = useSharedValue(1)
+  const dot1 = useSharedValue(0)
+  const dot2 = useSharedValue(0)
+  const dot3 = useSharedValue(0)
+
+  useEffect(() => {
+    bounce.value = withRepeat(
+      withSequence(
+        withTiming(-18, { duration: 500, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 500, easing: Easing.in(Easing.quad) }),
+      ),
+      -1,
+      false,
+    )
+    rotate.value = withRepeat(
+      withSequence(
+        withTiming(-12, { duration: 400 }),
+        withTiming(12, { duration: 400 }),
+        withTiming(0, { duration: 200 }),
+      ),
+      -1,
+      false,
+    )
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.12, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    )
+    dot1.value = withRepeat(
+      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+      -1,
+      false,
+    )
+    dot2.value = withDelay(160, withRepeat(
+      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+      -1,
+      false,
+    ))
+    dot3.value = withDelay(320, withRepeat(
+      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+      -1,
+      false,
+    ))
+  }, [])
+
+  const emojiStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: bounce.value },
+      { rotate: `${rotate.value}deg` },
+      { scale: pulse.value },
+    ],
+  }))
+  const dot1Style = useAnimatedStyle(() => ({ opacity: dot1.value }))
+  const dot2Style = useAnimatedStyle(() => ({ opacity: dot2.value }))
+  const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value }))
+
+  return (
+    <View style={wakingStyles.overlay}>
+      <View style={wakingStyles.card}>
+        <Animated.Text style={[wakingStyles.emoji, emojiStyle]}>🤖</Animated.Text>
+        <View style={wakingStyles.dots}>
+          <Animated.View style={[wakingStyles.dot, dot1Style]} />
+          <Animated.View style={[wakingStyles.dot, dot2Style]} />
+          <Animated.View style={[wakingStyles.dot, dot3Style]} />
+        </View>
+        <Text style={wakingStyles.phrase}>{phrase}</Text>
+      </View>
+    </View>
+  )
+}
+
+const wakingStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(10, 10, 14, 0.85)',
+    zIndex: 10,
+  },
+  card: {
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 32,
+  },
+  emoji: {
+    fontSize: 72,
+  },
+  dots: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: dark.text.accent,
+  },
+  phrase: {
+    color: dark.text.secondary,
+    fontSize: font.base,
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 280,
+  },
+})
+
 function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendingId: string }) {
   const router = useRouter()
   const [phraseIdx, setPhraseIdx] = useState(0)
@@ -78,13 +199,26 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
   useEffect(() => {
     const client = wsManager.getClient(serverId)
     if (!client) return
-    return client.on('session_update', (msg) => {
+
+    // Primary: session_ready is an explicit signal from new streamers
+    const unsubReady = client.on('session_ready', (msg) => {
+      if (msg.type !== 'session_ready') return
+      router.replace(`/session/${msg.session.id}?server=${serverId}`)
+    })
+
+    // Fallback: older streamers emit session_update with ptyAttached: true instead
+    const unsubUpdate = client.on('session_update', (msg) => {
       if (msg.type !== 'session_update') return
       const s = msg.session
       if (!s.id.startsWith('pending_') && s.ptyAttached) {
         router.replace(`/session/${s.id}?server=${serverId}`)
       }
     })
+
+    return () => {
+      unsubReady()
+      unsubUpdate()
+    }
   }, [serverId, router])
 
   return (
@@ -257,6 +391,14 @@ export default function SessionDetailScreen() {
 
   if (isPending) {
     return <PendingSessionScreen serverId={serverId} pendingId={id!} />
+  }
+
+  if (
+    session &&
+    session.ptyAttached === false &&
+    (session.status === 'running' || session.status === 'waiting_input')
+  ) {
+    return <DiscoveredSessionScreen serverId={serverId} sessionId={id!} />
   }
 
   const isStoppable =
@@ -524,6 +666,9 @@ export default function SessionDetailScreen() {
                   <ActivityIndicator color={dark.text.secondary} />
                 </View>
               ) : null}
+              {isWakingUp ? (
+                <WakingUpOverlay phrase={wakingUpPhrase(id)} />
+              ) : null}
             </>
           )}
         </View>
@@ -583,7 +728,7 @@ export default function SessionDetailScreen() {
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
-                placeholder={isWakingUp ? wakingUpPhrase(id) : 'Send input to session…'}
+                placeholder={isWakingUp ? 'Starting up…' : 'Send input to session…'}
                 placeholderTextColor={dark.text.secondary}
                 multiline
                 returnKeyType="done"

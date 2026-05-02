@@ -16,6 +16,7 @@ interface TerminalHistoryResponse {
 
 const FIVE_MINUTES = 1000 * 60 * 5
 const EMPTY_HISTORY: TerminalHistoryResponse = { output: '' }
+const TERMINAL_REPLAY_TIMEOUT_MS = 2000
 
 export function useTerminalStream(serverId: string, sessionId: string, skipLiveStream = false) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
@@ -23,6 +24,13 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const [isStreaming, setIsStreaming] = useState(false)
   const vtRef = useRef(new VirtualTerminal())
   const pendingDividersRef = useRef<string[]>([])
+  // Track whether terminal_replay has been received to avoid firing the HTTP fallback
+  const replayReceivedRef = useRef(false)
+  // Track whether history has been fed (from replay or HTTP) to avoid double-feeding
+  const historyFedRef = useRef(false)
+
+  // HTTP fallback query — disabled by default, enabled only when WS replay times out
+  const [httpFallbackEnabled, setHttpFallbackEnabled] = useState(false)
 
   const historyQuery = useQuery({
     queryKey: ['terminal-output', serverId, sessionId],
@@ -37,19 +45,28 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
         throw err
       }
     },
-    enabled: Boolean(serverId && sessionId),
+    enabled: Boolean(serverId && sessionId) && httpFallbackEnabled,
     staleTime: FIVE_MINUTES,
     gcTime: FIVE_MINUTES,
     meta: { persist: false },
   })
 
-  // Feed history into the VT whenever it (re)loads or maxLines changes.
-  useEffect(() => {
+  function feedHistory(raw: string) {
+    if (historyFedRef.current) return
+    historyFedRef.current = true
     vtRef.current.reset()
     pendingDividersRef.current = []
     setLines([])
+    vtRef.current.feed(raw)
+    const visible = vtRef.current.getLines()
+    setLines(visible.slice(-maxLines))
+  }
+
+  // Feed HTTP fallback history whenever it loads (only if replay wasn't received)
+  useEffect(() => {
     const data = historyQuery.data
     if (!data) return
+    if (replayReceivedRef.current) return
     let raw: string
     if (Array.isArray(data)) {
       raw = (data as unknown as string[]).join('')
@@ -60,18 +77,54 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     } else {
       return
     }
-    vtRef.current.feed(raw)
-    const visible = vtRef.current.getLines()
-    setLines(visible.slice(-maxLines))
+    feedHistory(raw)
   }, [historyQuery.data, maxLines])
 
   useEffect(() => {
-    // Skip WS subscription for sessions with no live PTY attached — they won't
-    // ever send terminal_output events, so subscribing would cause an indefinite hang.
+    // Reset state when sessionId changes
+    vtRef.current.reset()
+    pendingDividersRef.current = []
+    replayReceivedRef.current = false
+    historyFedRef.current = false
+    setLines([])
+    setHttpFallbackEnabled(false)
+  }, [serverId, sessionId])
+
+  useEffect(() => {
     if (skipLiveStream) return
 
     let idleTimer: ReturnType<typeof setTimeout>
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null
     let unsubOutput: (() => void) | null = null
+    let unsubReplay: (() => void) | null = null
+
+    function sendSubscribeAndWaitForReplay() {
+      const client = wsManager.getClient(serverId)
+      if (!client) return
+
+      // Send subscribe_session — server will unicast terminal_replay back
+      client.send({ type: 'subscribe_session', sessionId })
+
+      // Listen for terminal_replay (unicast from server)
+      unsubReplay?.()
+      unsubReplay = client.on('terminal_replay', (msg) => {
+        if (msg.type !== 'terminal_replay' || msg.sessionId !== sessionId) return
+        replayReceivedRef.current = true
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer)
+          fallbackTimer = null
+        }
+        feedHistory(msg.lines.join('\n'))
+      })
+
+      // Start fallback timer — if no terminal_replay within 2s, fall back to HTTP
+      if (fallbackTimer) clearTimeout(fallbackTimer)
+      fallbackTimer = setTimeout(() => {
+        if (!replayReceivedRef.current) {
+          setHttpFallbackEnabled(true)
+        }
+      }, TERMINAL_REPLAY_TIMEOUT_MS)
+    }
 
     function subscribeOutput() {
       unsubOutput?.()
@@ -110,25 +163,30 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       })
     }
 
+    sendSubscribeAndWaitForReplay()
     subscribeOutput()
 
-    // Re-subscribe on any status change across all clients for this server.
-    // This handles two cases:
+    // Re-subscribe on reconnect. This handles two cases:
     //   1. Client didn't exist yet when this effect ran (React runs child
     //      effects before parent, so _layout.tsx's wsManager.connect() may
     //      not have fired yet).
     //   2. wsManager.connect() created a new WSClient after reconnect.
     // In both cases, the first 'connected' event on the new client re-binds
-    // the terminal_output listener.
+    // the listeners and re-sends subscribe_session.
     const unsubStatus = wsManager.onAnyStatusChange((sid, status) => {
       if (sid !== serverId || status !== 'connected') return
+      replayReceivedRef.current = false
+      historyFedRef.current = false
+      sendSubscribeAndWaitForReplay()
       subscribeOutput()
     })
 
     return () => {
       unsubOutput?.()
+      unsubReplay?.()
       unsubStatus()
       clearTimeout(idleTimer)
+      if (fallbackTimer) clearTimeout(fallbackTimer)
     }
   }, [serverId, sessionId, maxLines, skipLiveStream])
 
@@ -142,5 +200,5 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     pendingDividersRef.current.push(text)
   }, [])
 
-  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending, clear, recordSentInput }
+  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear, recordSentInput }
 }
