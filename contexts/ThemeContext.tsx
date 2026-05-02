@@ -35,7 +35,7 @@ function resolveTheme(colorScheme: ThemeId, systemScheme: 'light' | 'dark' | nul
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const colorScheme = useSettingsStore((s) => s.colorScheme)
-  const systemScheme = useColorScheme()
+  const systemScheme = useColorScheme() as 'light' | 'dark' | null | undefined
   const theme = useMemo(() => resolveTheme(colorScheme, systemScheme), [colorScheme, systemScheme])
   const cssVars = useMemo(() => vars(themeToVars(theme)), [theme])
 
