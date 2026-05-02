@@ -103,7 +103,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         { queryKey: ['sessions'] },
         (old) =>
           old?.map((entry) =>
-            entry.serverId === msg.serverId
+            entry.serverId === msg.serverId && Array.isArray(entry.sessions)
               ? {
                   ...entry,
                   sessions: entry.sessions.map((s) =>
