@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -69,6 +70,7 @@ function MessageItem({ message }: { message: Message }) {
 }
 
 export default function ConversationDetailScreen() {
+  const { t } = useTranslation('common')
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -226,7 +228,7 @@ export default function ConversationDetailScreen() {
           <Text style={styles.errorTitle}>Couldn't load conversation</Text>
           <Text style={styles.errorMessage}>{error.message}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-            <Text style={styles.retryBtnText}>Retry</Text>
+            <Text style={styles.retryBtnText}>{t('button.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

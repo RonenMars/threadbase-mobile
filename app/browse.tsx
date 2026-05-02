@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -32,6 +33,7 @@ interface RecentDir {
 }
 
 export default function BrowseScreen() {
+  const { t } = useTranslation('common')
   const router = useRouter()
   const { server: serverId } = useLocalSearchParams<{ server: string }>()
   const [currentPath, setCurrentPath] = useState('')
@@ -296,7 +298,7 @@ export default function BrowseScreen() {
             style={styles.newFolderToggle}
             onPress={() => setShowNewFolder(false)}
           >
-            <Text style={styles.newFolderToggleText}>Cancel</Text>
+            <Text style={styles.newFolderToggleText}>{t('button.cancel')}</Text>
           </TouchableOpacity>
           <TextInput
             style={[styles.newFolderInput, { flex: 1 }]}
