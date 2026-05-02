@@ -1,6 +1,8 @@
 const matchers = require('@testing-library/react-native/matchers')
 expect.extend(matchers)
 
+require('./test-utils/i18n-setup')
+
 global.__DEV__ = true
 
 // ─── expo-router ─────────────────────────────────────────────────────────────
