@@ -45,6 +45,20 @@ describe('useTheme', () => {
     expect(result.current.text.accent).toBe(light.text.accent)
   })
 
+  it('resolves system to light when OS scheme is light', () => {
+    jest.mocked(require('react-native').useColorScheme).mockReturnValue('light')
+    useSettingsStore.setState({ colorScheme: 'system' })
+    const { result } = renderHook(() => useTheme(), { wrapper })
+    expect(result.current.bg.primary).toBe(light.bg.primary)
+  })
+
+  it('resolves system to dark when OS scheme is dark', () => {
+    jest.mocked(require('react-native').useColorScheme).mockReturnValue('dark')
+    useSettingsStore.setState({ colorScheme: 'system' })
+    const { result } = renderHook(() => useTheme(), { wrapper })
+    expect(result.current.bg.primary).toBe(dark.bg.primary)
+  })
+
   it('throws when used outside ThemeProvider', () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => renderHook(() => useTheme())).toThrow('useTheme must be used within ThemeProvider')
