@@ -7,7 +7,8 @@ export const STATUS_COLOR: Record<string, string> = {
   idle: dark.status.idle,
 }
 
-function splitPath(p: string): string[] {
+function splitPath(p: string | null | undefined): string[] {
+  if (!p) return ['(unknown)']
   // Normalize Windows backslashes to forward slashes.
   // Keep the drive letter as the first segment (e.g. "C:" → ["C:", "Users", ...])
   // so Windows paths stay isolated from Unix /Users/... paths.
