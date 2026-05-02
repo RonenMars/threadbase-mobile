@@ -268,10 +268,12 @@ function DiscoveredSessionScreen({
   return (
     <SafeAreaView style={discStyles.container} edges={['bottom']}>
       <View style={discStyles.content}>
-        <Text style={discStyles.title}>Session unavailable</Text>
-        <Text style={discStyles.subtitle}>
-          This session is running but unavailable.{'\n'}Restart it to re-open?
-        </Text>
+        <View style={discStyles.warning}>
+          <Text style={discStyles.warningTitle}>⚠️ Session already running</Text>
+          <Text style={discStyles.warningBody}>
+            This session has an active process on the server. Resuming here will stop that process and start a new terminal session in its place.
+          </Text>
+        </View>
         <View style={discStyles.buttons}>
           <TouchableOpacity
             style={[discStyles.btn, discStyles.restartBtn, adoptSession.isPending && discStyles.btnDisabled]}
@@ -281,7 +283,7 @@ function DiscoveredSessionScreen({
             {adoptSession.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={discStyles.restartBtnText}>Restart</Text>
+              <Text style={discStyles.restartBtnText}>Stop &amp; Resume Here</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -306,16 +308,24 @@ const discStyles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.lg,
+  warning: {
+    backgroundColor: dark.bg.card,
+    borderWidth: 1,
+    borderColor: dark.text.warning,
+    borderRadius: 10,
+    padding: spacing.md,
+    gap: spacing.sm,
+    width: '100%',
+  },
+  warningTitle: {
+    color: dark.text.warning,
+    fontSize: font.base,
     fontWeight: '600',
   },
-  subtitle: {
+  warningBody: {
     color: dark.text.secondary,
-    fontSize: font.base,
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: font.sm,
+    lineHeight: 20,
   },
   buttons: {
     width: '100%',
