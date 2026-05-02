@@ -10,11 +10,11 @@ interface Props {
 export function SessionDetailSlowBanner({ onAbort }: Props) {
   return (
     <Banner
-      title="Boop boop beep…"
-      message="Working really hard fetching the session details. Hang tight!"
+      title="Session details are taking their time…"
+      message="Fetching the details — shouldn't be long."
       accent={dark.text.warning}
       icon={<ActivityIndicator color={dark.text.warning} />}
-      action={{ label: 'Abort', onPress: onAbort }}
+      action={{ label: 'Cancel', onPress: onAbort, variant: 'destructive' }}
     />
   )
 }

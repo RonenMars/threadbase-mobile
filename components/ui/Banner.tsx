@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native'
 import { CaretDown, CaretUp } from 'phosphor-react-native'
+import { dark, font } from '@/constants/theme'
 
 interface BannerAction {
   label: string
   onPress: () => void
+  variant?: 'primary' | 'secondary' | 'destructive'
 }
 
 interface Props {
@@ -53,8 +55,23 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
               </TouchableOpacity>
             ) : null}
             {action ? (
-              <TouchableOpacity style={styles.actionBtn} onPress={action.onPress}>
-                <Text style={styles.actionLabel}>{action.label}</Text>
+              <TouchableOpacity
+                style={[
+                  styles.actionBtn,
+                  action.variant === 'destructive' && { borderColor: dark.text.danger },
+                  action.variant === 'primary' && { borderColor: accent },
+                ]}
+                onPress={action.onPress}
+              >
+                <Text
+                  style={[
+                    styles.actionLabel,
+                    action.variant === 'destructive' && { color: dark.text.danger },
+                    action.variant === 'primary' && { color: accent },
+                  ]}
+                >
+                  {action.label}
+                </Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -83,13 +100,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#e6edf3',
-    fontSize: 15,
+    fontSize: font.base,
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 4,
   },
   message: {
-    fontSize: 13,
+    fontSize: font.sm,
     textAlign: 'center',
     lineHeight: 19,
   },

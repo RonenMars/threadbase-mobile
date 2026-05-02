@@ -14,7 +14,7 @@ export function SlowLoadingBanner({ onAbort }: Props) {
       message="Wasn't expecting them to be this heavy. We're loading as fast as we can."
       accent={dark.text.warning}
       icon={<ActivityIndicator color={dark.text.warning} />}
-      action={{ label: 'Abort', onPress: onAbort }}
+      action={{ label: 'Cancel', onPress: onAbort, variant: 'destructive' }}
     />
   )
 }

@@ -14,6 +14,14 @@ const TITLES: Record<QueryCategory, string> = {
   other: 'Something went wrong',
 }
 
+const MESSAGES: Record<QueryCategory, string> = {
+  sessions: 'Sessions refused to load. Worth a retry.',
+  messages: 'Messages hit a wall. Tap Retry to try again.',
+  'session-detail': 'Session details didn\'t come through. Retry usually fixes it.',
+  browse: 'File tree failed to fetch. Check the connection or retry.',
+  other: 'Something went wrong on our end. Retry or close and carry on.',
+}
+
 function formatDetails(status?: number, message?: string): string | undefined {
   const parts: string[] = []
   if (status) parts.push(`HTTP ${status}`)
@@ -48,11 +56,11 @@ export function ErrorBanner() {
   return (
     <Banner
       title={count > 1 ? `${TITLES[current.category]} (1 of ${count})` : TITLES[current.category]}
-      message="An error occurred while loading data. Tap 'Retry' to try again."
+      message={MESSAGES[current.category]}
       accent={ERROR_RED}
       icon={<WarningCircle size={28} color={ERROR_RED} weight="fill" />}
       details={formatDetails(current.status, current.message)}
-      action={{ label: 'Retry', onPress: handleRetry }}
+      action={{ label: 'Retry', onPress: handleRetry, variant: 'primary' }}
       secondaryAction={{ label: 'Close', onPress: () => dismissError(current.id) }}
     />
   )

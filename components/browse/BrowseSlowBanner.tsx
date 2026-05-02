@@ -14,7 +14,7 @@ export function BrowseSlowBanner({ onAbort }: Props) {
       message="Didn't think it'd be this big. Give us just a moment."
       accent={dark.text.warning}
       icon={<ActivityIndicator color={dark.text.warning} />}
-      action={{ label: 'Abort', onPress: onAbort }}
+      action={{ label: 'Cancel', onPress: onAbort, variant: 'destructive' }}
     />
   )
 }
