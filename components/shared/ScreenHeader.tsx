@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { CaretLeft } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { dark, font, spacing } from '@/constants/theme'
 
 interface Props {
@@ -11,13 +12,14 @@ interface Props {
 
 export function ScreenHeader({ title, right }: Props) {
   const router = useRouter()
+  const { t } = useTranslation('common')
   return (
     <View style={styles.bar}>
       <Pressable
         onPress={() => router.back()}
         hitSlop={16}
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}
-        accessibilityLabel="Back"
+        accessibilityLabel={t('button.back')}
       >
         <CaretLeft size={28} color={dark.text.primary} />
       </Pressable>
