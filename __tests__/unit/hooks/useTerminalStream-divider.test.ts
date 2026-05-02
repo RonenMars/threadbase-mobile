@@ -10,6 +10,7 @@ let capturedStatusHandler: ((sid: string, status: string) => void) | null = null
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
     getClient: () => ({
+      send: () => {},
       on: (event: string, cb: MsgHandler) => {
         if (event === 'terminal_output') capturedOutputHandler = cb
         return () => {}
