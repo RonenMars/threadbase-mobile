@@ -7,11 +7,12 @@ import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
 import { DoneStep } from './steps/DoneStep'
 import { NotificationsStep } from './steps/NotificationsStep'
+import { ThemeStep } from './steps/ThemeStep'
 import { TourStep } from './steps/TourStep'
 import { ValuePropStep } from './steps/ValuePropStep'
 import { WelcomeStep } from './steps/WelcomeStep'
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 export const ONBOARDED_KEY = 'threadbase_onboarded'
 const PAIRED_TOKEN_HASH_KEY = 'threadbase_paired_token_hash'
 
@@ -115,13 +116,14 @@ export function OnboardingNavigator({ onDone }: Props) {
       onSkip={onSkip}
     >
       {index === 0 && <WelcomeStep onNext={onNext} />}
-      {index === 1 && <ValuePropStep onNext={onNext} />}
-      {index === 2 && (
+      {index === 1 && <ThemeStep onNext={onNext} />}
+      {index === 2 && <ValuePropStep onNext={onNext} />}
+      {index === 3 && (
         <ConnectStep onPaired={handlePaired} onAdvance={onNext} />
       )}
-      {index === 3 && <NotificationsStep onNext={onNext} />}
-      {index === 4 && <TourStep onDone={onNext} />}
-      {index === 5 && (
+      {index === 4 && <NotificationsStep onNext={onNext} />}
+      {index === 5 && <TourStep onDone={onNext} />}
+      {index === 6 && (
         <DoneStep
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}
