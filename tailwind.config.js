@@ -20,7 +20,6 @@ module.exports = {
         },
         accent: {
           DEFAULT: 'var(--color-text-accent)',
-          subtle: 'rgba(88,166,255,0.12)',
         },
         border: 'var(--color-border)',
         status: {

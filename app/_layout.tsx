@@ -203,8 +203,7 @@ function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
 
 function ThemedStatusBar() {
   const theme = useTheme()
-  const style = theme.bg.primary === '#ffffff' || theme.bg.primary === '#f6f8fa' ? 'dark' : 'light'
-  return <StatusBar style={style} />
+  return <StatusBar style={theme.colorMode === 'light' ? 'dark' : 'light'} />
 }
 
 export default function RootLayout() {

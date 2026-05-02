@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native'
 import { CaretDown, CaretUp } from 'phosphor-react-native'
-import { dark, font } from '@/constants/theme'
+import { font, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface BannerAction {
   label: string
@@ -21,19 +22,21 @@ interface Props {
 }
 
 export function Banner({ title, message, accent, icon, action, secondaryAction, details, style }: Props) {
+  const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
-      <View style={[styles.card, { borderColor: accent }, style]}>
+    <View style={s.overlay} pointerEvents="box-none">
+      <View style={[s.card, { borderColor: accent }, style]}>
         {icon}
-        <Text style={styles.title}>{title}</Text>
-        <Text style={[styles.message, { color: accent }]}>{message}</Text>
+        <Text style={s.title}>{title}</Text>
+        <Text style={[s.message, { color: accent }]}>{message}</Text>
 
         {details ? (
-          <View style={styles.detailsContainer}>
+          <View style={s.detailsContainer}>
             <TouchableOpacity
-              style={styles.detailsToggle}
+              style={s.detailsToggle}
               onPress={() => setDetailsOpen((v) => !v)}
             >
               <Text style={{ color: accent, fontSize: 12 }}>More info</Text>
@@ -42,31 +45,31 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
                 : <CaretDown size={12} color={accent} />}
             </TouchableOpacity>
             {detailsOpen ? (
-              <Text style={[styles.detailsText, { color: accent }]}>{details}</Text>
+              <Text style={[s.detailsText, { color: accent }]}>{details}</Text>
             ) : null}
           </View>
         ) : null}
 
         {(action || secondaryAction) ? (
-          <View style={styles.actions}>
+          <View style={s.actions}>
             {secondaryAction ? (
-              <TouchableOpacity style={styles.actionBtn} onPress={secondaryAction.onPress}>
-                <Text style={styles.actionLabel}>{secondaryAction.label}</Text>
+              <TouchableOpacity style={s.actionBtn} onPress={secondaryAction.onPress}>
+                <Text style={s.actionLabel}>{secondaryAction.label}</Text>
               </TouchableOpacity>
             ) : null}
             {action ? (
               <TouchableOpacity
                 style={[
-                  styles.actionBtn,
-                  action.variant === 'destructive' && { borderColor: dark.text.danger },
+                  s.actionBtn,
+                  action.variant === 'destructive' && { borderColor: theme.text.danger },
                   action.variant === 'primary' && { borderColor: accent },
                 ]}
                 onPress={action.onPress}
               >
                 <Text
                   style={[
-                    styles.actionLabel,
-                    action.variant === 'destructive' && { color: dark.text.danger },
+                    s.actionLabel,
+                    action.variant === 'destructive' && { color: theme.text.danger },
                     action.variant === 'primary' && { color: accent },
                   ]}
                 >
@@ -81,69 +84,71 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
   )
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    width: 240,
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#21262d',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-  },
-  title: {
-    color: '#e6edf3',
-    fontSize: font.base,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  message: {
-    fontSize: font.sm,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  detailsContainer: {
-    width: '100%',
-  },
-  detailsToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  detailsText: {
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 8,
-    opacity: 0.75,
-    fontFamily: 'monospace',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 16,
-    backgroundColor: '#161b22',
-    borderWidth: 1,
-    borderColor: '#30363d',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  actionLabel: {
-    color: '#e6edf3',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-})
+function styles(theme: Theme) {
+  return StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    card: {
+      width: 240,
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+    },
+    title: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    message: {
+      fontSize: font.sm,
+      textAlign: 'center',
+      lineHeight: 19,
+    },
+    detailsContainer: {
+      width: '100%',
+    },
+    detailsToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+    },
+    detailsText: {
+      fontSize: 11,
+      textAlign: 'center',
+      marginTop: 8,
+      opacity: 0.75,
+      fontFamily: 'monospace',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 8,
+    },
+    actionBtn: {
+      flex: 1,
+      paddingVertical: 4,
+      paddingHorizontal: 16,
+      backgroundColor: theme.bg.secondary,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    actionLabel: {
+      color: theme.text.primary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+  })
+}

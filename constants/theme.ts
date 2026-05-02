@@ -1,4 +1,5 @@
 export type Theme = {
+  readonly colorMode: 'light' | 'dark'
   readonly bg: {
     readonly primary: string
     readonly secondary: string
@@ -23,6 +24,7 @@ export type Theme = {
 }
 
 export const dark = {
+  colorMode: 'dark' as const,
   bg: {
     primary: '#0d1117',
     secondary: '#161b22',
@@ -47,6 +49,7 @@ export const dark = {
 } as const satisfies Theme
 
 export const light = {
+  colorMode: 'light' as const,
   bg: {
     primary: '#ffffff',
     secondary: '#f6f8fa',
@@ -71,6 +74,7 @@ export const light = {
 } as const satisfies Theme
 
 export const dracula = {
+  colorMode: 'dark' as const,
   bg: {
     primary: '#282a36',
     secondary: '#21222c',
@@ -95,6 +99,7 @@ export const dracula = {
 } as const satisfies Theme
 
 export const catppuccin = {
+  colorMode: 'dark' as const,
   bg: {
     primary: '#1e1e2e',
     secondary: '#181825',
@@ -119,6 +124,7 @@ export const catppuccin = {
 } as const satisfies Theme
 
 export const nord = {
+  colorMode: 'dark' as const,
   bg: {
     primary: '#2e3440',
     secondary: '#242933',
