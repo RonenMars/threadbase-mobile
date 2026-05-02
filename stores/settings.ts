@@ -2,12 +2,14 @@ import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { NotificationPreferences } from '@/types/api'
 import type { SessionsLayout } from '@/types/ui'
+import type { ThemeId } from '@/constants/theme'
+export type { ThemeId }
 
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
 const ASYNC_KEY_SETTINGS = 'threadbase_settings'
 
 interface SettingsStore {
-  colorScheme: 'dark' | 'light' | 'system'
+  colorScheme: ThemeId
   completedSessionFadeMs: number
   terminalMaxLines: number
   notifications: NotificationPreferences
@@ -15,7 +17,7 @@ interface SettingsStore {
   addServerAction: AddServerAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
-  setColorScheme: (scheme: 'dark' | 'light' | 'system') => void
+  setColorScheme: (scheme: ThemeId) => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
@@ -38,6 +40,7 @@ const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
 }
 
 interface PersistedSettings {
+  colorScheme: ThemeId
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
@@ -71,6 +74,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     if (!raw) return
     const parsed = JSON.parse(raw) as Partial<PersistedSettings>
     set((state) => ({
+      colorScheme: parsed.colorScheme ?? state.colorScheme,
       notifications: parsed.notifications
         ? { ...state.notifications, ...parsed.notifications }
         : state.notifications,
@@ -84,6 +88,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
 useSettingsStore.subscribe((state) => {
   const payload: PersistedSettings = {
+    colorScheme: state.colorScheme,
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,

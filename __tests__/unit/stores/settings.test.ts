@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useSettingsStore } from '@/stores/settings'
 
 const DEFAULT_NOTIFICATIONS = {
@@ -12,6 +13,8 @@ const DEFAULT_NOTIFICATIONS = {
 }
 
 beforeEach(() => {
+  ;(AsyncStorage.setItem as jest.Mock).mockClear()
+  ;(AsyncStorage.getItem as jest.Mock).mockClear()
   useSettingsStore.setState({
     colorScheme: 'dark',
     completedSessionFadeMs: 60000,
@@ -25,7 +28,7 @@ describe('SettingsStore – colorScheme', () => {
     expect(useSettingsStore.getState().colorScheme).toBe('dark')
   })
 
-  it('updates colorScheme', () => {
+  it('updates colorScheme to light', () => {
     useSettingsStore.getState().setColorScheme('light')
     expect(useSettingsStore.getState().colorScheme).toBe('light')
   })
@@ -33,6 +36,45 @@ describe('SettingsStore – colorScheme', () => {
   it('accepts system as valid scheme', () => {
     useSettingsStore.getState().setColorScheme('system')
     expect(useSettingsStore.getState().colorScheme).toBe('system')
+  })
+
+  it('accepts dracula', () => {
+    useSettingsStore.getState().setColorScheme('dracula')
+    expect(useSettingsStore.getState().colorScheme).toBe('dracula')
+  })
+
+  it('accepts catppuccin', () => {
+    useSettingsStore.getState().setColorScheme('catppuccin')
+    expect(useSettingsStore.getState().colorScheme).toBe('catppuccin')
+  })
+
+  it('accepts nord', () => {
+    useSettingsStore.getState().setColorScheme('nord')
+    expect(useSettingsStore.getState().colorScheme).toBe('nord')
+  })
+
+  it('persists colorScheme to AsyncStorage when changed', async () => {
+    useSettingsStore.getState().setColorScheme('dracula')
+    // Allow the subscriber microtask to flush
+    await Promise.resolve()
+    const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
+    expect(raw).toBeDefined()
+    const payload = JSON.parse(raw[1])
+    expect(payload.colorScheme).toBe('dracula')
+  })
+
+  it('restores colorScheme from AsyncStorage on hydrate', async () => {
+    const stored = JSON.stringify({ colorScheme: 'nord', notifications: DEFAULT_NOTIFICATIONS })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().colorScheme).toBe('nord')
+  })
+
+  it('falls back to dark when hydrate finds no stored colorScheme', async () => {
+    const stored = JSON.stringify({ notifications: DEFAULT_NOTIFICATIONS })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().colorScheme).toBe('dark')
   })
 })
 
