@@ -40,6 +40,7 @@ import {
   type UploadedFile,
 } from '@/services/uploads'
 import { useServersStore } from '@/stores/servers'
+import { useDraftsStore } from '@/stores/drafts'
 import { dark, font, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
@@ -371,6 +372,10 @@ export default function SessionDetailScreen() {
   const { lines, isStreaming, isLoadingHistory, recordSentInput } = useTerminalStream(serverId, id, skipLiveStream)
   const { sendInput, cancelSession } = useSessionActions(serverId, id)
 
+  const setDraft = useDraftsStore((s) => s.setDraft)
+  const clearDraft = useDraftsStore((s) => s.clearDraft)
+  const hydrateDrafts = useDraftsStore((s) => s.hydrate)
+
   const [inputText, setInputText] = useState('')
   const [queueVisible, setQueueVisible] = useState(false)
   const [planVisible, setPlanVisible] = useState(false)
@@ -388,6 +393,13 @@ export default function SessionDetailScreen() {
       router.replace(`/conversation/${id}?server=${serverId}`)
     }
   }, [session?.ptyAttached, session?.status, id, serverId, router])
+
+  useEffect(() => {
+    hydrateDrafts().then(() => {
+      const draft = useDraftsStore.getState().drafts[`${serverId}::${id}`]
+      if (draft) setInputText(draft)
+    })
+  }, [serverId, id])
 
   if (isPending) {
     return <PendingSessionScreen serverId={serverId} pendingId={id!} />
@@ -445,6 +457,7 @@ export default function SessionDetailScreen() {
 
   const handleInputChange = (text: string) => {
     setInputText(text)
+    if (serverId && id) setDraft(serverId, id, text)
     // Show board whenever the text starts with exactly "/" (optionally followed by a query)
     const isSlashQuery = /^\/.{0,30}$/.test(text)
     setSlashBoardVisible(isSlashQuery)
@@ -499,6 +512,7 @@ export default function SessionDetailScreen() {
     setInputText('')
     setAttachments([])
     setAttachError(null)
+    if (serverId && id) clearDraft(serverId, id)
   }
 
   const handleSendInput = () => {
