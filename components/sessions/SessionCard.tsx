@@ -13,6 +13,7 @@ import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
+import i18n from '@/lib/i18n'
 
 // Track which session IDs have already played their enter animation so
 // polling-driven remounts don't re-trigger FadeInDown.
@@ -46,17 +47,22 @@ export function SessionCard({ session }: Props) {
 
   const handleLongPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    const options = ['Copy Session ID', 'Send Input', 'Cancel Session', 'Cancel']
+    const options = [
+      i18n.t('sessions:card.copyId'),
+      i18n.t('sessions:card.sendInput'),
+      i18n.t('sessions:card.cancel'),
+      i18n.t('common:button.cancel'),
+    ]
 
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         { options, destructiveButtonIndex: 2, cancelButtonIndex: 3 },
         (index) => {
           if (index === 2) {
-            Alert.alert('Cancel Session', 'Are you sure?', [
-              { text: 'No', style: 'cancel' },
+            Alert.alert(i18n.t('terminal:dialog.cancelTitle'), i18n.t('terminal:dialog.cancelMessage'), [
+              { text: i18n.t('common:button.cancel'), style: 'cancel' },
               {
-                text: 'Yes', style: 'destructive',
+                text: i18n.t('terminal:dialog.cancelConfirm'), style: 'destructive',
                 onPress: () => {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
                   cancelSession.mutate()
@@ -70,9 +76,9 @@ export function SessionCard({ session }: Props) {
       )
     } else {
       Alert.alert('Session Actions', session.projectName, [
-        { text: 'Copy Session ID', onPress: () => {} },
-        { text: 'Send Input', onPress: () => router.push(`/session/${session.id}?server=${session.serverId}`) },
-        { text: 'Cancel Session', style: 'destructive', onPress: () => cancelSession.mutate() },
+        { text: i18n.t('sessions:card.copyId'), onPress: () => {} },
+        { text: i18n.t('sessions:card.sendInput'), onPress: () => router.push(`/session/${session.id}?server=${session.serverId}`) },
+        { text: i18n.t('sessions:card.cancel'), style: 'destructive', onPress: () => cancelSession.mutate() },
         { text: 'Dismiss', style: 'cancel' },
       ])
     }

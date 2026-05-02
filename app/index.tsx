@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
 import {
   View,
@@ -58,6 +59,7 @@ function lastActivityMs(s: MultiSession): number {
 }
 
 export default function ProjectsHub() {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const mergeChats = useSettingsStore((s) => (s as any).mergeChats ?? false)
@@ -213,7 +215,7 @@ export default function ProjectsHub() {
             onPress={() => router.push('/settings')}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel="Settings"
+            accessibilityLabel={t('settings:header.title')}
           >
             <Gear size={20} color={dark.text.secondary} />
           </Pressable>
@@ -244,7 +246,7 @@ export default function ProjectsHub() {
             onPress={() => setSheetOpen(true)}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, isSheetActive && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel="Filter & Sort"
+            accessibilityLabel={t('filter.label')}
             testID="filter-sort-button"
           >
             <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
@@ -294,7 +296,7 @@ export default function ProjectsHub() {
                 >
                   <Lightning size={13} color={classicTab === 'sessions' ? dark.text.primary : dark.text.secondary} />
                   <Text style={[styles.segmentText, classicTab === 'sessions' && styles.segmentTextActive]}>
-                    Sessions
+                    {t('header.title')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -303,7 +305,7 @@ export default function ProjectsHub() {
                 >
                   <Books size={13} color={classicTab === 'history' ? dark.text.primary : dark.text.secondary} />
                   <Text style={[styles.segmentText, classicTab === 'history' && styles.segmentTextActive]}>
-                    History
+                    {t('header.history')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -382,6 +384,7 @@ function MergedClassicList({
   searchQuery: string
   onSearchChange: (q: string) => void
 }) {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -464,7 +467,7 @@ function MergedClassicList({
             style={searchStyles.searchInput}
             value={searchQuery}
             onChangeText={onSearchChange}
-            placeholder="Search sessions & conversations…"
+            placeholder={t('search.placeholder')}
             placeholderTextColor={dark.text.secondary}
             autoFocus
             returnKeyType="search"

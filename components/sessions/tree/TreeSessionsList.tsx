@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { Text, View, TextInput, FlatList, SectionList, TouchableOpacity, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
 import { buildTree, compactTree, flattenVisible } from './treeUtils'
 import { TreeRow } from './TreeRow'
@@ -15,6 +16,7 @@ import type { MultiSession, MultiConversation } from '@/types/api'
 
 export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen }: TreeSessionsListProps) {
   const router = useRouter()
+  const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const inputRef = useRef<TextInput>(null)
@@ -177,7 +179,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
             style={searchStyles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search sessions & conversations…"
+            placeholder={t('search.placeholder')}
             placeholderTextColor="#7d8590"
             autoFocus
             returnKeyType="search"
@@ -188,7 +190,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
 
       {showSearch ? (
         searchSections.length === 0 ? (
-          <EmptyState title="No results" subtitle={`Nothing matched "${debouncedQuery}"`} />
+          <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
         ) : (
           <SectionList
             sections={searchSections}

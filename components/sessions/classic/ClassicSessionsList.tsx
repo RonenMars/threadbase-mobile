@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { View, TextInput, FlatList, RefreshControl } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
+  const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const inputRef = useRef<TextInput>(null)
@@ -41,7 +43,7 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
             style={searchStyles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search sessions…"
+            placeholder={t('search.placeholder')}
             placeholderTextColor={dark.text.secondary}
             autoFocus
             returnKeyType="search"
@@ -60,9 +62,9 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
         }
         ListEmptyComponent={
           debouncedQuery ? (
-            <EmptyState title="No results" subtitle={`Nothing matched "${debouncedQuery}"`} />
+            <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
           ) : (
-            <EmptyState title="No sessions" subtitle="Start a Claude Code session to see it here" />
+            <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
           )
         }
       />

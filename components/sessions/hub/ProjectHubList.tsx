@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { FlatList, View, Text, TextInput, TouchableOpacity, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
 import { useProjectGroups } from './useProjectGroups'
 import { useServerGroups } from './useServerGroups'
@@ -25,6 +26,7 @@ export function ProjectHubList({
   searchOpen,
 }: ProjectHubListProps) {
   const router = useRouter()
+  const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const [openPaths, setOpenPaths] = useState<Set<string>>(new Set())
@@ -168,7 +170,7 @@ export function ProjectHubList({
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search sessions & conversations…"
+            placeholder={t('search.placeholder')}
             placeholderTextColor={dark.text.secondary}
             autoFocus
             returnKeyType="search"
@@ -179,7 +181,7 @@ export function ProjectHubList({
 
       {showSearch ? (
         searchSections.length === 0 ? (
-          <EmptyState title="No results" subtitle={`Nothing matched "${debouncedQuery}"`} />
+          <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
         ) : (
           <SectionList
             sections={searchSections}
@@ -218,7 +220,7 @@ export function ProjectHubList({
           }
           contentContainerStyle={hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent}
           ListEmptyComponent={
-            <EmptyState title="No projects yet" subtitle="Sessions and conversations will appear here" />
+            <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
           }
         />
       )}
