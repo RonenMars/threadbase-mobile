@@ -271,7 +271,7 @@ function DiscoveredSessionScreen({
         <View style={discStyles.warning}>
           <Text style={discStyles.warningTitle}>⚠️ Session already running</Text>
           <Text style={discStyles.warningBody}>
-            This session has an active process on the server. Resuming here will stop that process and start a new terminal session in its place.
+            This session has an active process on the server. Resuming here will stop that process and start a new terminal session in the app.
           </Text>
         </View>
         <View style={discStyles.buttons}>
@@ -283,7 +283,7 @@ function DiscoveredSessionScreen({
             {adoptSession.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={discStyles.restartBtnText}>Stop &amp; Resume Here</Text>
+              <Text style={discStyles.restartBtnText}>Overtake</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
