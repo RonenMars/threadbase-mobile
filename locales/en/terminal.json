@@ -1,0 +1,31 @@
+{
+  "header": {
+    "session": "Session"
+  },
+  "action": {
+    "copyId": "Copy Session ID",
+    "sendInput": "Send Input",
+    "cancel": "Cancel Session",
+    "more": "More"
+  },
+  "dialog": {
+    "cancelTitle": "Cancel Session",
+    "cancelMessage": "Are you sure you want to cancel this session?",
+    "cancelConfirm": "Cancel Session",
+    "cancelDismiss": "Keep Running",
+    "removeTitle": "Remove Session",
+    "removeMessage": "Are you sure you want to remove this session?",
+    "removeConfirm": "Remove",
+    "removeDismiss": "Keep"
+  },
+  "status": {
+    "connecting": "Connecting…",
+    "reconnecting": "Reconnecting…",
+    "disconnected": "Disconnected",
+    "waking": "Waking up…"
+  },
+  "input": {
+    "placeholder": "Send a message…",
+    "send": "Send"
+  }
+}

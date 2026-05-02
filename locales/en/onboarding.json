@@ -1,0 +1,20 @@
+{
+  "welcome": {
+    "title": "Welcome to Threadbase",
+    "subtitle": "Connect to your Claude Code sessions"
+  },
+  "addServer": {
+    "title": "Add a Server",
+    "subtitle": "Enter your Threadbase server URL to get started"
+  },
+  "browse": {
+    "title": "Browse",
+    "empty": "No files",
+    "emptySubtitle": "This directory is empty"
+  },
+  "conversation": {
+    "title": "Conversation",
+    "empty": "No messages",
+    "emptySubtitle": "No conversation history yet"
+  }
+}

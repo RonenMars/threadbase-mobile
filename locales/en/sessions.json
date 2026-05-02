@@ -1,0 +1,57 @@
+{
+  "header": {
+    "title": "Sessions",
+    "history": "History"
+  },
+  "search": {
+    "placeholder": "Search sessions & conversations…"
+  },
+  "filter": {
+    "label": "Filter & Sort",
+    "all": "All",
+    "active": "Active",
+    "waiting": "Waiting",
+    "completed": "Completed",
+    "failed": "Failed"
+  },
+  "sort": {
+    "label": "Sort",
+    "newest": "Newest",
+    "oldest": "Oldest",
+    "az": "A–Z"
+  },
+  "list": {
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "empty": "No sessions",
+    "emptySubtitle": "Start a Claude Code session to see it here",
+    "noResults": "No results",
+    "noResultsSubtitle": "Nothing matched \"{{query}}\""
+  },
+  "card": {
+    "status": {
+      "active": "Active",
+      "waiting": "Waiting for Input",
+      "completed": "Session Completed",
+      "failed": "Session Failed",
+      "starting": "Starting…",
+      "stopping": "Stopping…"
+    },
+    "connectedTo": "{{server}}",
+    "copyId": "Copy Session ID",
+    "sendInput": "Send Input",
+    "cancel": "Cancel Session",
+    "remove": "Remove Session",
+    "viewError": "View connection error"
+  },
+  "takeover": {
+    "prompt": "Another client is controlling this session",
+    "takeControl": "Take Control",
+    "dismiss": "Dismiss"
+  },
+  "directory": {
+    "empty": "Empty directory",
+    "loadFailed": "Unable to load directories",
+    "browsingNotConfigured": "Browsing not configured"
+  }
+}

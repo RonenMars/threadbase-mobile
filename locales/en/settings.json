@@ -1,0 +1,30 @@
+{
+  "header": {
+    "title": "Settings"
+  },
+  "section": {
+    "appearance": "Appearance",
+    "servers": "Servers",
+    "notifications": "Notifications",
+    "about": "About"
+  },
+  "appearance": {
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
+  "notifications": {
+    "whenAddingServer": "When Adding A New Server",
+    "waitingForInput": "Waiting for Input",
+    "sessionCompleted": "Session Completed",
+    "sessionFailed": "Session Failed",
+    "diffReady": "Diff Ready",
+    "showBadgeCount": "Show Badge Count",
+    "quietHours": "Quiet Hours"
+  },
+  "notification": {
+    "testTitle": "Test Notification",
+    "testBody": "Threadbase notifications are working!"
+  }
+}
