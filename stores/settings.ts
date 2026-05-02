@@ -3,7 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { NotificationPreferences } from '@/types/api'
 import type { SessionsLayout } from '@/types/ui'
 import type { ThemeId } from '@/constants/theme'
-export type { ThemeId }
+
+const VALID_THEME_IDS = new Set<string>(['dark', 'light', 'system', 'dracula', 'catppuccin', 'nord'])
+
+function isValidThemeId(v: unknown): v is ThemeId {
+  return typeof v === 'string' && VALID_THEME_IDS.has(v)
+}
 
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
 const ASYNC_KEY_SETTINGS = 'threadbase_settings'
@@ -74,7 +79,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     if (!raw) return
     const parsed = JSON.parse(raw) as Partial<PersistedSettings>
     set((state) => ({
-      colorScheme: parsed.colorScheme ?? state.colorScheme,
+      colorScheme: isValidThemeId(parsed.colorScheme) ? parsed.colorScheme : state.colorScheme,
       notifications: parsed.notifications
         ? { ...state.notifications, ...parsed.notifications }
         : state.notifications,
