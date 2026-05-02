@@ -12,6 +12,8 @@ import {
   Alert,
   ScrollView,
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -190,6 +192,7 @@ const wakingStyles = StyleSheet.create({
 
 function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendingId: string }) {
   const router = useRouter()
+  const { t } = useTranslation('terminal')
   const [phraseIdx, setPhraseIdx] = useState(0)
 
   useEffect(() => {
@@ -233,7 +236,7 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
       </View>
       <View style={pendingStyles.footer}>
         <TouchableOpacity style={pendingStyles.cancelButton} onPress={() => router.back()}>
-          <Text style={pendingStyles.cancelText}>Cancel</Text>
+          <Text style={pendingStyles.cancelText}>{t('common:button.cancel')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -385,6 +388,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
+  const { t } = useTranslation('terminal')
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -449,7 +453,7 @@ export default function SessionDetailScreen() {
       'Stop Claude Code?',
       'This terminates the running claude process for this session.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: i18n.t('common:button.cancel'), style: 'cancel' },
         {
           text: 'Stop',
           style: 'destructive',
@@ -788,7 +792,7 @@ export default function SessionDetailScreen() {
                 disabled={
                   (!inputText.trim() && attachments.length === 0) || sendInput.isPending || isWakingUp
                 }
-                accessibilityLabel="Send input"
+                accessibilityLabel={t('action.sendInput')}
               >
                 <PaperPlaneRight size={26} color="#fff" />
               </TouchableOpacity>
