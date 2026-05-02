@@ -7,11 +7,11 @@ interface Props {
   onAbort: () => void
 }
 
-export function SlowLoadingBanner({ onAbort }: Props) {
+export function SessionDetailSlowBanner({ onAbort }: Props) {
   return (
     <Banner
-      title="Messages are being dramatic…"
-      message="Wasn't expecting them to be this heavy. We're loading as fast as we can."
+      title="Boop boop beep…"
+      message="Working really hard fetching the session details. Hang tight!"
       accent={dark.text.warning}
       icon={<ActivityIndicator color={dark.text.warning} />}
       action={{ label: 'Abort', onPress: onAbort }}

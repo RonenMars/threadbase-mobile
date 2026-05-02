@@ -19,6 +19,8 @@ import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
+import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
+import { useLoadingStateStore } from '@/stores/loading-state'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
 const MAX_RECENT_DIRS = 8
@@ -74,6 +76,7 @@ export default function BrowseScreen() {
   }, [])
 
   const { data, isLoading, isError, error } = useBrowse(serverId ?? '', currentPath)
+  const isBrowseSlow = useLoadingStateStore((s) => s.slowCounts.browse > 0)
   const createDir = useCreateDirectory(serverId ?? '')
   const startSession = useStartSession(serverId ?? '')
 
@@ -336,6 +339,7 @@ export default function BrowseScreen() {
           </TouchableOpacity>
         </View>
       )}
+      {isBrowseSlow ? <BrowseSlowBanner onAbort={() => router.back()} /> : null}
     </SafeAreaView>
     </GestureDetector>
   )

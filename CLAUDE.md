@@ -19,6 +19,12 @@ When adding new Maestro flows:
 
 ---
 
+## Icons
+
+**Never use emojis in the app UI.** All icons must come from the [Phosphor Icons](https://phosphoricons.com/) library (`phosphor-react-native`). Use the appropriate Phosphor component (e.g. `<Star />`, `<Clock />`, `<Fire />`, `<GearSix />`, `<PencilSimple />`). This applies to all new code and any code you touch.
+
+---
+
 ## Shipping / Release Pipeline
 
 **Default ship tool: `/expo-local-ship`**

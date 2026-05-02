@@ -1,14 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { QueryClient } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
-import { useSlowQueryStore } from '@/stores/slow-query'
+import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 
 const ONE_MINUTE = 1000 * 60
 const ONE_DAY = ONE_MINUTE * 60 * 24
 const SLOW_QUERY_THRESHOLD_MS = 7000
+const HARD_ABORT_TIMEOUT_MS = 15000
 
-// Per-query timer handles — keyed by query hash so each query tracks independently.
 const slowTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const abortTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const abortControllers = new Map<string, AbortController>()
 
 function clearSlowTimer(hash: string) {
   const t = slowTimers.get(hash)
@@ -16,6 +18,24 @@ function clearSlowTimer(hash: string) {
     clearTimeout(t)
     slowTimers.delete(hash)
   }
+}
+
+function clearAbortTimer(hash: string) {
+  const t = abortTimers.get(hash)
+  if (t !== undefined) {
+    clearTimeout(t)
+    abortTimers.delete(hash)
+  }
+  abortControllers.delete(hash)
+}
+
+function categoryForHash(hash: string): QueryCategory {
+  // React Query serialises queryKey arrays as JSON: ["sessions",...] or ["session",...]
+  if (/^\["sessions/.test(hash)) return 'sessions'
+  if (/^\["conversation"/.test(hash)) return 'messages'
+  if (/^\["session"/.test(hash)) return 'session-detail'
+  if (/^\["browse"/.test(hash)) return 'browse'
+  return 'other'
 }
 
 export const queryClient = new QueryClient({
@@ -29,32 +49,63 @@ export const queryClient = new QueryClient({
   },
 })
 
-// Observe fetching state changes to start/clear slow timers.
 queryClient.getQueryCache().subscribe((event) => {
   if (!event) return
   const { query } = event
   const hash = query.queryHash
+  const category = categoryForHash(hash)
+  const store = useLoadingStateStore.getState()
 
   if (query.state.fetchStatus === 'fetching') {
-    // Start a timer only if one isn't already running for this query.
     if (!slowTimers.has(hash)) {
-      const t = setTimeout(() => {
+      const slowTimer = setTimeout(() => {
         slowTimers.delete(hash)
-        useSlowQueryStore.getState().increment()
-        // Decrement when the query eventually settles.
+        store.incrementSlow(category)
+
         const unsub = queryClient.getQueryCache().subscribe((e) => {
           if (!e || e.query.queryHash !== hash) return
           if (e.query.state.fetchStatus !== 'fetching') {
-            useSlowQueryStore.getState().decrement()
+            store.decrementSlow(category)
             unsub()
           }
         })
       }, SLOW_QUERY_THRESHOLD_MS)
-      slowTimers.set(hash, t)
+      slowTimers.set(hash, slowTimer)
+    }
+
+    if (!abortTimers.has(hash)) {
+      const controller = new AbortController()
+      abortControllers.set(hash, controller)
+
+      const abortTimer = setTimeout(() => {
+        abortTimers.delete(hash)
+        const ctrl = abortControllers.get(hash)
+        ctrl?.abort()
+        abortControllers.delete(hash)
+
+        const state = query.state
+        const errorMessage =
+          state.error instanceof Error ? state.error.message : 'Request timed out after 15s'
+        const status =
+          state.error && 'status' in (state.error as object)
+            ? (state.error as { status: number }).status
+            : undefined
+
+        store.pushError({ category, message: errorMessage, status })
+      }, HARD_ABORT_TIMEOUT_MS)
+      abortTimers.set(hash, abortTimer)
     }
   } else {
-    // Query is no longer fetching — cancel any pending slow timer.
     clearSlowTimer(hash)
+    clearAbortTimer(hash)
+
+    if (query.state.status === 'error') {
+      const err = query.state.error
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+      const status =
+        err && 'status' in (err as object) ? (err as { status: number }).status : undefined
+      store.pushError({ category, message, status })
+    }
   }
 })
 
@@ -64,5 +115,4 @@ export const queryPersister = createAsyncStoragePersister({
   throttleTime: 1000,
 })
 
-// Bumped when query shapes change — invalidates persisted cache on restore.
 export const persistBuster = 'v1'

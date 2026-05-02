@@ -1,11 +1,11 @@
 import React from 'react'
 import { ActivityIndicator, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useSlowQueryStore } from '@/stores/slow-query'
+import { useLoadingStateStore } from '@/stores/loading-state'
 import { dark } from '@/constants/theme'
 
 export function SlowQueryBanner() {
-  const isSlow = useSlowQueryStore((s) => s.slowCount > 0)
+  const isSlow = useLoadingStateStore((s) => s.slowCounts.sessions > 0 || s.slowCounts.other > 0)
   const insets = useSafeAreaInsets()
 
   if (!isSlow) return null
@@ -30,7 +30,7 @@ export function SlowQueryBanner() {
     >
       <ActivityIndicator size="small" color={dark.text.warning} />
       <Text style={{ color: dark.text.warning, fontSize: 13, flex: 1 }}>
-        Taking longer than expected…
+        {'Fetching sessions is taking longer than expected.\nHold still…'}
       </Text>
     </View>
   )

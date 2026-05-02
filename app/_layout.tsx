@@ -23,6 +23,7 @@ import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
+import { ErrorBanner } from '@/components/ErrorBanner'
 import * as SplashScreen from 'expo-splash-screen'
 
 SplashScreen.preventAutoHideAsync()
@@ -186,6 +187,7 @@ export default function RootLayout() {
         >
           <AuthGate>
             <SlowQueryBanner />
+            <ErrorBanner />
             <StatusBar style="light" />
             <Stack
               screenOptions={{

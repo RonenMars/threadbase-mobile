@@ -41,11 +41,13 @@ import {
 } from '@/services/uploads'
 import { useServersStore } from '@/stores/servers'
 import { useDraftsStore } from '@/stores/drafts'
-import { dark, font, spacing } from '@/constants/theme'
+import { dark, font, radius, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
+import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
+import { useLoadingStateStore } from '@/stores/loading-state'
 import type { SlashCommand } from '@/constants/slashCommands'
 
 const WAKING_UP_PHRASES = [
@@ -229,6 +231,11 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
         <Text style={pendingStyles.title}>Starting session…</Text>
         <Text style={pendingStyles.phrase}>{PENDING_PHRASES[phraseIdx]}</Text>
       </View>
+      <View style={pendingStyles.footer}>
+        <TouchableOpacity style={pendingStyles.cancelButton} onPress={() => router.back()}>
+          <Text style={pendingStyles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   )
 }
@@ -239,6 +246,15 @@ const pendingStyles = StyleSheet.create({
   spinner: { marginBottom: spacing.md },
   title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
   phrase: { color: dark.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
+  footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: dark.text.danger,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  cancelText: { color: dark.text.danger, fontSize: font.base, fontWeight: '500' },
 })
 
 function DiscoveredSessionScreen({
@@ -378,6 +394,7 @@ export default function SessionDetailScreen() {
 
   const isPending = id?.startsWith('pending_') ?? false
   const { data: session, isLoading } = useSessionDetail(serverId, id)
+  const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
   const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
   const { lines, isStreaming, isLoadingHistory, recordSentInput } = useTerminalStream(serverId, id, skipLiveStream)
   const { sendInput, cancelSession } = useSessionActions(serverId, id)
@@ -614,6 +631,7 @@ export default function SessionDetailScreen() {
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center' }]}>
           <ActivityIndicator color={dark.text.secondary} />
         </View>
+        {isDetailSlow ? <SessionDetailSlowBanner onAbort={() => router.back()} /> : null}
         {infoModal}
       </SafeAreaView>
     )

@@ -20,6 +20,7 @@ import { useMutation } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
+import { useLoadingStateStore } from '@/stores/loading-state'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
@@ -94,7 +95,7 @@ export default function ConversationDetailScreen() {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
-  const [showSlowLoadingMsg, setShowSlowLoadingMsg] = useState(false)
+  const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   const pulseAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -108,15 +109,6 @@ export default function ConversationDetailScreen() {
     const t = setTimeout(() => { hasInitialScrolled.current = true }, 600)
     return () => clearTimeout(t)
   }, [conversation])
-
-  useEffect(() => {
-    if (!isLoading) {
-      setShowSlowLoadingMsg(false)
-      return
-    }
-    const t = setTimeout(() => setShowSlowLoadingMsg(true), 8000)
-    return () => clearTimeout(t)
-  }, [isLoading])
 
   // Auto-fetch all older message pages upfront
   useEffect(() => {
