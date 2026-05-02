@@ -5,8 +5,8 @@ import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state
 
 const ONE_MINUTE = 1000 * 60
 const ONE_DAY = ONE_MINUTE * 60 * 24
-const SLOW_QUERY_THRESHOLD_MS = 7000
-const HARD_ABORT_TIMEOUT_MS = 15000
+const SLOW_QUERY_THRESHOLD_MS = 14000
+const HARD_ABORT_TIMEOUT_MS = 30000
 
 const slowTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const abortTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -85,7 +85,7 @@ queryClient.getQueryCache().subscribe((event) => {
 
         const state = query.state
         const errorMessage =
-          state.error instanceof Error ? state.error.message : 'Request timed out after 15s'
+          state.error instanceof Error ? state.error.message : 'Request timed out after 30s'
         const status =
           state.error && 'status' in (state.error as object)
             ? (state.error as { status: number }).status
