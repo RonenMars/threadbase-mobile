@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -35,7 +35,8 @@ function addServerActionLabel(action: AddServerAction): string {
 
 function SectionHeader({ title }: { title: string }) {
   const theme = useTheme()
-  return <Text style={styles(theme).sectionHeader}>{title}</Text>
+  const s = useMemo(() => styles(theme), [theme])
+  return <Text style={s.sectionHeader}>{title}</Text>
 }
 
 function SettingsRow({
@@ -48,9 +49,10 @@ function SettingsRow({
   onValueChange: (v: boolean) => void
 }) {
   const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
   return (
-    <View style={styles(theme).row}>
-      <Text style={styles(theme).rowLabel}>{label}</Text>
+    <View style={s.row}>
+      <Text style={s.rowLabel}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onValueChange}
@@ -72,13 +74,12 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
 function ThemePicker({
   current,
   onChange,
-  theme,
 }: {
   current: ThemeId
   onChange: (id: ThemeId) => void
-  theme: ReturnType<typeof useTheme>
 }) {
-  const s = styles(theme)
+  const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
   const themeIds = Object.keys(THEMES) as Array<Exclude<ThemeId, 'system'>>
 
   return (
@@ -94,7 +95,7 @@ function ThemePicker({
             activeOpacity={0.7}
           >
             <View style={[s.themeCardPreview, { backgroundColor: t.bg.primary }]}>
-              <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card }} />
+              <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
               <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
               <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
             </View>
@@ -167,7 +168,7 @@ await refreshServerInfo(serverId)
     setIsPullRefreshing(false)
   }
 
-  const s = styles(theme)
+  const s = useMemo(() => styles(theme), [theme])
 
   return (
     <SafeAreaView style={s.container} edges={[]}>
@@ -216,7 +217,7 @@ await refreshServerInfo(serverId)
             <View style={[s.row, { borderBottomWidth: 0, paddingBottom: 0 }]}>
               <Text style={s.rowLabel}>Theme</Text>
             </View>
-            <ThemePicker current={colorScheme} onChange={setColorScheme} theme={theme} />
+            <ThemePicker current={colorScheme} onChange={setColorScheme} />
           </View>
           <SettingsRow
             label="Merge sessions & history as Chats"
@@ -357,6 +358,7 @@ function ActionSegment({
   onChange: (v: AddServerAction) => void
 }) {
   const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
   const options: { id: AddServerAction; label: string }[] = [
     { id: 'ask', label: 'Ask' },
     { id: 'add', label: 'Add' },
@@ -364,14 +366,14 @@ function ActionSegment({
     { id: 'keep', label: 'Keep' },
   ]
   return (
-    <View style={styles(theme).segmentedControl}>
+    <View style={s.segmentedControl}>
       {options.map((option) => (
         <TouchableOpacity
           key={option.id}
-          style={[styles(theme).segmentBtn, value === option.id && styles(theme).segmentBtnActive]}
+          style={[s.segmentBtn, value === option.id && s.segmentBtnActive]}
           onPress={() => onChange(option.id)}
         >
-          <Text style={[styles(theme).segmentBtnText, value === option.id && styles(theme).segmentBtnTextActive]}>
+          <Text style={[s.segmentBtnText, value === option.id && s.segmentBtnTextActive]}>
             {option.label}
           </Text>
         </TouchableOpacity>
