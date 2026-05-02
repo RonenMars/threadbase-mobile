@@ -1,0 +1,26 @@
+{
+  "button": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "done": "Done",
+    "back": "Back",
+    "close": "Close",
+    "retry": "Retry",
+    "remove": "Remove"
+  },
+  "error": {
+    "generic": "Something went wrong",
+    "loadFailed": "Unable to load",
+    "connectionFailed": "Connection failed"
+  },
+  "state": {
+    "loading": "Loading…",
+    "empty": "Nothing here yet",
+    "noResults": "No results"
+  },
+  "search": {
+    "placeholder": "Search…",
+    "clear": "Clear search"
+  }
+}
