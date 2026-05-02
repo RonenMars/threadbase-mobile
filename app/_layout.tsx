@@ -25,6 +25,7 @@ import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import * as SplashScreen from 'expo-splash-screen'
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -154,6 +155,58 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
+  const theme = useTheme()
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: theme.bg.secondary },
+        headerTintColor: theme.text.primary,
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: theme.bg.primary },
+        headerLeft: ({ tintColor }) => (
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={16}
+            style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
+          >
+            <CaretLeft size={28} color={tintColor ?? theme.text.primary} />
+          </Pressable>
+        ),
+      }}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="session/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="browse"
+        options={{
+          presentation: 'modal',
+          title: 'Browse',
+          headerBackTitle: 'Cancel',
+        }}
+      />
+      <Stack.Screen
+        name="settings"
+        options={{ title: 'Settings', headerShown: true }}
+      />
+      <Stack.Screen
+        name="project/[path]"
+        options={({ route }) => ({
+          title: decodeURIComponent((route.params as { path?: string }).path?.split('/').pop() ?? 'Project'),
+        })}
+      />
+    </Stack>
+  )
+}
+
+function ThemedStatusBar() {
+  const theme = useTheme()
+  const style = theme.bg.primary === '#ffffff' || theme.bg.primary === '#f6f8fa' ? 'dark' : 'light'
+  return <StatusBar style={style} />
+}
+
 export default function RootLayout() {
   const router = useRouter()
   const [splashDone, setSplashDone] = useState(!!g.__splashShown)
@@ -168,70 +221,33 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        {!splashDone && <SplashAnimation onComplete={handleSplashComplete} />}
-        <PersistQueryClientProvider
-          client={queryClient}
-          persistOptions={{
-            persister: queryPersister,
-            buster: persistBuster,
-            maxAge: 1000 * 60 * 60 * 24,
-            dehydrateOptions: {
-              shouldDehydrateMutation: () => false,
-              shouldDehydrateQuery: (query) =>
-                query.state.status === 'success' &&
-                (query.meta as { persist?: boolean } | undefined)?.persist !== false,
-            },
-          }}
-        >
-          <AuthGate>
-            <SlowQueryBanner />
-            <ErrorBanner />
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerStyle: { backgroundColor: '#161b22' },
-                headerTintColor: '#e6edf3',
-                headerShadowVisible: false,
-                contentStyle: { backgroundColor: '#0d1117' },
-                headerLeft: ({ tintColor }) => (
-                  <Pressable
-                    onPress={() => router.back()}
-                    hitSlop={16}
-                    style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
-                  >
-                    <CaretLeft size={28} color={tintColor ?? '#e6edf3'} />
-                  </Pressable>
-                ),
-              }}
-            >
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-              <Stack.Screen name="session/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="browse"
-                options={{
-                  presentation: 'modal',
-                  title: 'Browse',
-                  headerBackTitle: 'Cancel',
-                }}
-              />
-              <Stack.Screen
-                name="settings"
-                options={{ title: 'Settings', headerShown: true }}
-              />
-              <Stack.Screen
-                name="project/[path]"
-                options={({ route }) => ({
-                  title: decodeURIComponent((route.params as { path?: string }).path?.split('/').pop() ?? 'Project'),
-                })}
-              />
-            </Stack>
-          </AuthGate>
-        </PersistQueryClientProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ThemeProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          {!splashDone && <SplashAnimation onComplete={handleSplashComplete} />}
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+              persister: queryPersister,
+              buster: persistBuster,
+              maxAge: 1000 * 60 * 60 * 24,
+              dehydrateOptions: {
+                shouldDehydrateMutation: () => false,
+                shouldDehydrateQuery: (query) =>
+                  query.state.status === 'success' &&
+                  (query.meta as { persist?: boolean } | undefined)?.persist !== false,
+              },
+            }}
+          >
+            <AuthGate>
+              <SlowQueryBanner />
+              <ErrorBanner />
+              <ThemedStatusBar />
+              <ThemedStack router={router} />
+            </AuthGate>
+          </PersistQueryClientProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ThemeProvider>
   )
 }
