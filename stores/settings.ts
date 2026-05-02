@@ -22,6 +22,7 @@ interface SettingsStore {
   addServerAction: AddServerAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
+  locale: string
   setColorScheme: (scheme: ThemeId) => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
@@ -30,6 +31,7 @@ interface SettingsStore {
   setAddServerAction: (v: AddServerAction) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
+  setLocale: (locale: string) => void
   hydrate: () => Promise<void>
 }
 
@@ -51,6 +53,7 @@ interface PersistedSettings {
   addServerAction: AddServerAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
+  locale: string
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -62,6 +65,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   addServerAction: 'ask',
   sessionsLayout: 'tree',
   mergeChats: true,
+  locale: 'en',
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
@@ -74,6 +78,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAddServerAction: (addServerAction) => set({ addServerAction }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setMergeChats: (mergeChats) => set({ mergeChats }),
+  setLocale: (locale) => set({ locale }),
   hydrate: async () => {
     const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
     if (!raw) return
@@ -87,6 +92,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       addServerAction: parsed.addServerAction ?? state.addServerAction,
       sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
       mergeChats: parsed.mergeChats ?? state.mergeChats,
+      locale: parsed.locale ?? state.locale,
     }))
   },
 }))
@@ -99,6 +105,7 @@ useSettingsStore.subscribe((state) => {
     addServerAction: state.addServerAction,
     sessionsLayout: state.sessionsLayout,
     mergeChats: state.mergeChats,
+    locale: state.locale,
   }
   void AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
 })

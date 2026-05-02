@@ -26,6 +26,8 @@ import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
+import { I18nextProvider } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync()
 
@@ -220,6 +222,7 @@ export default function RootLayout() {
   }
 
   return (
+    <I18nextProvider i18n={i18n}>
     <ThemeProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
@@ -248,5 +251,6 @@ export default function RootLayout() {
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ThemeProvider>
+    </I18nextProvider>
   )
 }
