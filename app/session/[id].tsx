@@ -396,10 +396,10 @@ export default function SessionDetailScreen() {
 
   useEffect(() => {
     hydrateDrafts().then(() => {
-      const draft = useDraftsStore.getState().drafts[`${serverId}::${id}`]
+      const draft = useDraftsStore.getState().getDraft(serverId, id)
       if (draft) setInputText(draft)
     })
-  }, [serverId, id])
+  }, [serverId, id, hydrateDrafts])
 
   if (isPending) {
     return <PendingSessionScreen serverId={serverId} pendingId={id!} />
@@ -499,6 +499,7 @@ export default function SessionDetailScreen() {
       onError: (err) =>
         Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
     })
+    resetComposer()
   }
 
   const buildPayload = () => {
