@@ -46,7 +46,111 @@ export const light = {
   },
 } as const
 
-export type Theme = typeof dark
+export const dracula = {
+  bg: {
+    primary: '#282a36',
+    secondary: '#21222c',
+    card: '#44475a',
+  },
+  text: {
+    primary: '#f8f8f2',
+    secondary: '#6272a4',
+    accent: '#bd93f9',
+    danger: '#ff5555',
+    warning: '#ffb86c',
+    success: '#50fa7b',
+  },
+  border: '#6272a4',
+  status: {
+    running: '#50fa7b',
+    waiting: '#ffb86c',
+    failed: '#ff5555',
+    completed: '#bd93f9',
+    idle: '#6272a4',
+  },
+} as const
+
+export const catppuccin = {
+  bg: {
+    primary: '#1e1e2e',
+    secondary: '#181825',
+    card: '#313244',
+  },
+  text: {
+    primary: '#cdd6f4',
+    secondary: '#6c7086',
+    accent: '#cba6f7',
+    danger: '#f38ba8',
+    warning: '#fab387',
+    success: '#a6e3a1',
+  },
+  border: '#45475a',
+  status: {
+    running: '#a6e3a1',
+    waiting: '#fab387',
+    failed: '#f38ba8',
+    completed: '#cba6f7',
+    idle: '#6c7086',
+  },
+} as const
+
+export const nord = {
+  bg: {
+    primary: '#2e3440',
+    secondary: '#242933',
+    card: '#3b4252',
+  },
+  text: {
+    primary: '#eceff4',
+    secondary: '#4c566a',
+    accent: '#88c0d0',
+    danger: '#bf616a',
+    warning: '#ebcb8b',
+    success: '#a3be8c',
+  },
+  border: '#4c566a',
+  status: {
+    running: '#a3be8c',
+    waiting: '#ebcb8b',
+    failed: '#bf616a',
+    completed: '#88c0d0',
+    idle: '#4c566a',
+  },
+} as const
+
+export type Theme = {
+  readonly bg: {
+    readonly primary: string
+    readonly secondary: string
+    readonly card: string
+  }
+  readonly text: {
+    readonly primary: string
+    readonly secondary: string
+    readonly accent: string
+    readonly danger: string
+    readonly warning: string
+    readonly success: string
+  }
+  readonly border: string
+  readonly status: {
+    readonly running: string
+    readonly waiting: string
+    readonly failed: string
+    readonly completed: string
+    readonly idle: string
+  }
+}
+
+export type ThemeId = 'dark' | 'light' | 'system' | 'dracula' | 'catppuccin' | 'nord'
+
+export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
+  dark,
+  light,
+  dracula,
+  catppuccin,
+  nord,
+}
 
 export const spacing = {
   xs: 4,
