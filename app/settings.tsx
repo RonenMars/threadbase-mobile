@@ -20,7 +20,9 @@ import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { THEMES, font, radius, spacing } from '@/constants/theme'
+import type { ThemeId } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 function addServerActionLabel(action: AddServerAction): string {
   switch (action) {
@@ -32,7 +34,8 @@ function addServerActionLabel(action: AddServerAction): string {
 }
 
 function SectionHeader({ title }: { title: string }) {
-  return <Text style={styles.sectionHeader}>{title}</Text>
+  const theme = useTheme()
+  return <Text style={styles(theme).sectionHeader}>{title}</Text>
 }
 
 function SettingsRow({
@@ -44,20 +47,71 @@ function SettingsRow({
   value: boolean
   onValueChange: (v: boolean) => void
 }) {
+  const theme = useTheme()
   return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
+    <View style={styles(theme).row}>
+      <Text style={styles(theme).rowLabel}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: dark.border, true: dark.text.accent }}
+        trackColor={{ false: theme.border, true: theme.text.accent }}
         thumbColor="#fff"
       />
     </View>
   )
 }
 
+const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
+  dark: 'Dark',
+  light: 'Light',
+  dracula: 'Dracula',
+  catppuccin: 'Mocha',
+  nord: 'Nord',
+}
+
+function ThemePicker({
+  current,
+  onChange,
+  theme,
+}: {
+  current: ThemeId
+  onChange: (id: ThemeId) => void
+  theme: ReturnType<typeof useTheme>
+}) {
+  const s = styles(theme)
+  const themeIds = Object.keys(THEMES) as Array<Exclude<ThemeId, 'system'>>
+
+  return (
+    <View style={s.themeGrid}>
+      {themeIds.map((id) => {
+        const t = THEMES[id]
+        const isSelected = current === id || (current === 'system' && id === 'dark')
+        return (
+          <TouchableOpacity
+            key={id}
+            style={[s.themeCard, isSelected && s.themeCardSelected]}
+            onPress={() => onChange(id)}
+            activeOpacity={0.7}
+          >
+            <View style={[s.themeCardPreview, { backgroundColor: t.bg.primary }]}>
+              <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card }} />
+              <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
+            </View>
+            <View style={{ backgroundColor: t.bg.secondary }}>
+              <Text style={[s.themeCardName, { color: t.text.secondary }]}>
+                {THEME_LABELS[id]}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )
+      })}
+    </View>
+  )
+}
+
 export default function SettingsScreen() {
+  const theme = useTheme()
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
@@ -71,6 +125,8 @@ export default function SettingsScreen() {
     setSessionsLayout,
     mergeChats,
     setMergeChats,
+    colorScheme,
+    setColorScheme,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
@@ -111,48 +167,56 @@ await refreshServerInfo(serverId)
     setIsPullRefreshing(false)
   }
 
+  const s = styles(theme)
+
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={s.container} edges={[]}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={s.content}
         refreshControl={
           <RefreshControl
             refreshing={isPullRefreshing}
             onRefresh={handlePullRefresh}
-            tintColor={dark.text.secondary}
+            tintColor={theme.text.secondary}
           />
         }
       >
         <SectionHeader title="Appearance" />
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Layout</Text>
-            <View style={styles.segmentedControl}>
+        <View style={s.card}>
+          <View style={s.row}>
+            <Text style={s.rowLabel}>Layout</Text>
+            <View style={s.segmentedControl}>
               <TouchableOpacity
-                style={[styles.segmentBtn, sessionsLayout === 'tree' && styles.segmentBtnActive]}
+                style={[s.segmentBtn, sessionsLayout === 'tree' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('tree')}
               >
-                <Text style={[styles.segmentBtnText, sessionsLayout === 'tree' && styles.segmentBtnTextActive]}>
+                <Text style={[s.segmentBtnText, sessionsLayout === 'tree' && s.segmentBtnTextActive]}>
                   Tree
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.segmentBtn, sessionsLayout === 'hub' && styles.segmentBtnActive]}
+                style={[s.segmentBtn, sessionsLayout === 'hub' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('hub')}
               >
-                <Text style={[styles.segmentBtnText, sessionsLayout === 'hub' && styles.segmentBtnTextActive]}>
+                <Text style={[s.segmentBtnText, sessionsLayout === 'hub' && s.segmentBtnTextActive]}>
                   Hub
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.segmentBtn, sessionsLayout === 'classic' && styles.segmentBtnActive]}
+                style={[s.segmentBtn, sessionsLayout === 'classic' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('classic')}
               >
-                <Text style={[styles.segmentBtnText, sessionsLayout === 'classic' && styles.segmentBtnTextActive]}>
+                <Text style={[s.segmentBtnText, sessionsLayout === 'classic' && s.segmentBtnTextActive]}>
                   Classic
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border }}>
+            <View style={[s.row, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+              <Text style={s.rowLabel}>Theme</Text>
+            </View>
+            <ThemePicker current={colorScheme} onChange={setColorScheme} theme={theme} />
           </View>
           <SettingsRow
             label="Merge sessions & history as Chats"
@@ -178,10 +242,10 @@ await refreshServerInfo(serverId)
           )
         })}
         <TouchableOpacity
-          style={styles.addServerBtn}
+          style={s.addServerBtn}
           onPress={() => setEditServerId('new')}
         >
-          <Text style={styles.addServerText}>+ Add Server</Text>
+          <Text style={s.addServerText}>+ Add Server</Text>
         </TouchableOpacity>
 
         <SectionHeader title="Displayed Servers" />
@@ -193,79 +257,79 @@ await refreshServerInfo(serverId)
         />
 
         <SectionHeader title="When Adding A New Server" />
-        <View style={styles.card}>
+        <View style={s.card}>
           <TouchableOpacity
-            style={styles.row}
+            style={s.row}
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
           >
-            <Text style={styles.rowLabel}>Selected action on create</Text>
-            <Text style={styles.rowValue}>{addServerActionLabel(addServerAction)}</Text>
+            <Text style={s.rowLabel}>Selected action on create</Text>
+            <Text style={s.rowValue}>{addServerActionLabel(addServerAction)}</Text>
           </TouchableOpacity>
           {isAddBehaviorOpen ? (
-            <View style={styles.accordionBody}>
+            <View style={s.accordionBody}>
               <ActionSegment value={addServerAction} onChange={setAddServerAction} />
-              <TouchableOpacity style={styles.resetBtn} onPress={() => setAddServerAction('ask')}>
-                <Text style={styles.resetBtnText}>Reset to ask each time</Text>
+              <TouchableOpacity style={s.resetBtn} onPress={() => setAddServerAction('ask')}>
+                <Text style={s.resetBtnText}>Reset to ask each time</Text>
               </TouchableOpacity>
             </View>
           ) : null}
         </View>
 
         <SectionHeader title="Notifications" />
-        <View style={styles.card}>
+        <View style={s.card}>
           <SettingsRow label="Waiting for Input" value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
           <SettingsRow label="Session Completed" value={notifications.sessionComplete} onValueChange={(v) => setNotifications({ sessionComplete: v })} />
           <SettingsRow label="Session Failed" value={notifications.sessionFailed} onValueChange={(v) => setNotifications({ sessionFailed: v })} />
           <SettingsRow label="Diff Ready" value={notifications.diffReady} onValueChange={(v) => setNotifications({ diffReady: v })} />
           <SettingsRow label="Show Badge Count" value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
           <SettingsRow label="Quiet Hours" value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
-          <TouchableOpacity style={styles.testBtn} onPress={handleTestNotification}>
-            <Text style={styles.testBtnText}>Send Test Notification</Text>
+          <TouchableOpacity style={s.testBtn} onPress={handleTestNotification}>
+            <Text style={s.testBtnText}>Send Test Notification</Text>
           </TouchableOpacity>
         </View>
 
         <SectionHeader title="History" />
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Message Preview</Text>
-            <View style={styles.segmentedControl}>
+        <View style={s.card}>
+          <View style={s.row}>
+            <Text style={s.rowLabel}>Message Preview</Text>
+            <View style={s.segmentedControl}>
               <TouchableOpacity
-                style={[styles.segmentBtn, historyMessageDisplay === 'first' && styles.segmentBtnActive]}
+                style={[s.segmentBtn, historyMessageDisplay === 'first' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('first')}
               >
-                <Text style={[styles.segmentBtnText, historyMessageDisplay === 'first' && styles.segmentBtnTextActive]}>First</Text>
+                <Text style={[s.segmentBtnText, historyMessageDisplay === 'first' && s.segmentBtnTextActive]}>First</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.segmentBtn, historyMessageDisplay === 'last' && styles.segmentBtnActive]}
+                style={[s.segmentBtn, historyMessageDisplay === 'last' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('last')}
               >
-                <Text style={[styles.segmentBtnText, historyMessageDisplay === 'last' && styles.segmentBtnTextActive]}>Last</Text>
+                <Text style={[s.segmentBtnText, historyMessageDisplay === 'last' && s.segmentBtnTextActive]}>Last</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
         <SectionHeader title="About" />
-        <View style={styles.card}>
-          <Text style={styles.aboutText}>
+        <View style={s.card}>
+          <Text style={s.aboutText}>
             {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${
               Platform.OS === 'ios'
                 ? (Constants.expoConfig?.ios?.buildNumber ?? '—')
                 : (Constants.expoConfig?.android?.versionCode ?? '—')
             })`}
           </Text>
-          <Text style={styles.aboutSubtext}>AI Agent Control Center</Text>
+          <Text style={s.aboutSubtext}>AI Agent Control Center</Text>
         </View>
 
         <SectionHeader title="Help" />
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={() => router.push('/onboarding')}>
-            <Text style={styles.rowLabel}>Restart onboarding</Text>
-            <Text style={styles.rowValue}>›</Text>
+        <View style={s.card}>
+          <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
+            <Text style={s.rowLabel}>Restart onboarding</Text>
+            <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>
-            <Text style={styles.rowLabel}>Help & Support</Text>
-            <Text style={styles.rowValue}>›</Text>
+          <TouchableOpacity style={s.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>
+            <Text style={s.rowLabel}>Help & Support</Text>
+            <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -292,6 +356,7 @@ function ActionSegment({
   value: AddServerAction
   onChange: (v: AddServerAction) => void
 }) {
+  const theme = useTheme()
   const options: { id: AddServerAction; label: string }[] = [
     { id: 'ask', label: 'Ask' },
     { id: 'add', label: 'Add' },
@@ -299,14 +364,14 @@ function ActionSegment({
     { id: 'keep', label: 'Keep' },
   ]
   return (
-    <View style={styles.segmentedControl}>
+    <View style={styles(theme).segmentedControl}>
       {options.map((option) => (
         <TouchableOpacity
           key={option.id}
-          style={[styles.segmentBtn, value === option.id && styles.segmentBtnActive]}
+          style={[styles(theme).segmentBtn, value === option.id && styles(theme).segmentBtnActive]}
           onPress={() => onChange(option.id)}
         >
-          <Text style={[styles.segmentBtnText, value === option.id && styles.segmentBtnTextActive]}>
+          <Text style={[styles(theme).segmentBtnText, value === option.id && styles(theme).segmentBtnTextActive]}>
             {option.label}
           </Text>
         </TouchableOpacity>
@@ -315,72 +380,101 @@ function ActionSegment({
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: dark.bg.primary },
-  content: { padding: spacing.md, gap: spacing.sm },
-  sectionHeader: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-    marginLeft: spacing.xs,
-  },
-  card: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    overflow: 'hidden',
-  },
-  addServerBtn: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    borderStyle: 'dashed',
-    padding: spacing.md,
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  addServerText: {
-    color: dark.text.accent,
-    fontSize: font.base,
-    fontWeight: '500',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    minHeight: 44,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-  },
-  rowLabel: { color: dark.text.primary, fontSize: font.base },
-  rowValue: { color: dark.text.secondary, fontSize: font.sm },
-  accordionBody: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  resetBtn: { minHeight: 44, justifyContent: 'center' },
-  resetBtnText: { color: dark.text.accent, fontSize: font.sm, fontWeight: '500' },
-  testBtn: { padding: spacing.md, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
-  testBtnText: { color: dark.text.accent, fontSize: font.base },
-  segmentedControl: {
-    flexDirection: 'row',
-    backgroundColor: dark.bg.primary,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-  },
-  segmentBtn: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.sm },
-  segmentBtnActive: { backgroundColor: dark.text.accent },
-  segmentBtnText: { color: dark.text.secondary, fontSize: font.sm, fontWeight: '500' },
-  segmentBtnTextActive: { color: '#fff' },
-  aboutText: { color: dark.text.primary, fontSize: font.base, padding: spacing.md, fontWeight: '500' },
-  aboutSubtext: { color: dark.text.secondary, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
-})
+function styles(theme: ReturnType<typeof useTheme>) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg.primary },
+    content: { padding: spacing.md, gap: spacing.sm },
+    sectionHeader: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+      marginLeft: spacing.xs,
+    },
+    card: {
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      overflow: 'hidden',
+    },
+    addServerBtn: {
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderStyle: 'dashed',
+      padding: spacing.md,
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    addServerText: {
+      color: theme.text.accent,
+      fontSize: font.base,
+      fontWeight: '500',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      minHeight: 44,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    rowLabel: { color: theme.text.primary, fontSize: font.base },
+    rowValue: { color: theme.text.secondary, fontSize: font.sm },
+    accordionBody: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    resetBtn: { minHeight: 44, justifyContent: 'center' },
+    resetBtnText: { color: theme.text.accent, fontSize: font.sm, fontWeight: '500' },
+    testBtn: { padding: spacing.md, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
+    testBtnText: { color: theme.text.accent, fontSize: font.base },
+    segmentedControl: {
+      flexDirection: 'row',
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+    },
+    segmentBtn: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.sm },
+    segmentBtnActive: { backgroundColor: theme.text.accent },
+    segmentBtnText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
+    segmentBtnTextActive: { color: '#fff' },
+    aboutText: { color: theme.text.primary, fontSize: font.base, padding: spacing.md, fontWeight: '500' },
+    aboutSubtext: { color: theme.text.secondary, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+    themeGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    themeCard: {
+      width: '30%',
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    themeCardSelected: {
+      borderColor: theme.text.accent,
+    },
+    themeCardPreview: {
+      height: 52,
+      padding: spacing.xs,
+      gap: 4,
+    },
+    themeCardName: {
+      fontSize: font.xs,
+      fontWeight: '600' as const,
+      textAlign: 'center' as const,
+      paddingVertical: 4,
+    },
+  })
+}
