@@ -13,7 +13,7 @@
     "test:e2e": "jest --ci --testPathPattern='__tests__/e2e'",
     "test:e2e:mock": "node e2e/check-sim.js && node e2e/mock-server.js & MOCK_PID=$! && sleep 1 && maestro test e2e/03_hub.yaml && maestro test e2e/04_session_detail.yaml; kill $MOCK_PID 2>/dev/null || true",
     "test:e2e:filters": "node e2e/check-sim.js && node e2e/mock-server.js & MOCK_PID=$! && sleep 1 && maestro test e2e/05_filter_status.yaml && maestro test e2e/06_sort_hub.yaml; kill $MOCK_PID 2>/dev/null || true",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -69,7 +69,7 @@
     "@types/jest": "30.0.0",
     "@types/react": "~19.2.10",
     "babel-preset-expo": "56.0.0-canary-20260501-15d3529",
-    "eslint": "^8.57.0",
+    "eslint": "^9.39.4",
     "eslint-config-expo": "56.0.0-canary-20260501-15d3529",
     "eslint-plugin-i18next": "^6.1.4",
     "jest": "^30.3.0",
