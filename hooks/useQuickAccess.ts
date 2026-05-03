@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
-import type { Session, PopularProject } from '@/types/api'
+import type { MultiSession, PopularProject } from '@/types/api'
 
 export function useRecentSessions(serverId: string, limit = 20) {
   return useQuery({
     queryKey: ['quick-access-recents', serverId, limit],
     queryFn: () =>
-      createApiForServer(serverId).get<{ sessions: Session[]; total: number }>(
+      createApiForServer(serverId).get<{ sessions: MultiSession[]; total: number }>(
         `/api/sessions/recents?limit=${limit}`
       ),
     staleTime: 30_000,

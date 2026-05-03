@@ -11,7 +11,6 @@ import { useRecentSessions, usePopularProjects } from '@/hooks/useQuickAccess'
 import { QuickAccessChip, type ChipItem, type QuickAccessTab } from './QuickAccessChip'
 import { QuickAccessActionSheet } from './QuickAccessActionSheet'
 import { dark, font, spacing } from '@/constants/theme'
-import type { MultiSession } from '@/types/api'
 
 const INITIAL_CHIPS = 4
 const LOAD_MORE_STEP = 4
@@ -58,8 +57,8 @@ export function QuickAccessStrip() {
     }
     if (effectiveTab === 'recents') {
       return (recentsData?.sessions ?? [])
-        .filter((s: MultiSession) => !ignoredRecents.includes(`${s.serverId ?? firstServerId}::${s.id}`))
-        .map((s: MultiSession) => ({
+        .filter((s) => !ignoredRecents.includes(`${s.serverId ?? firstServerId}::${s.id}`))
+        .map((s) => ({
           type: 'session' as const,
           id: `${s.serverId ?? firstServerId}::${s.id}`,
           label: s.projectName ?? s.projectPath ?? s.id,
@@ -142,7 +141,7 @@ export function QuickAccessStrip() {
 
         <View style={styles.tabRight}>
           {effectiveTab === 'favorites' && (
-            <Pressable style={styles.iconBtn} onPress={() => router.push('/manage-favorites')} hitSlop={8}>
+            <Pressable style={styles.iconBtn} onPress={() => router.push('/manage-favorites' as any)} hitSlop={8}>
               <GearSix size={16} color={dark.text.secondary} />
             </Pressable>
           )}
