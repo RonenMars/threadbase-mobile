@@ -65,7 +65,7 @@ echo "▸ [2/6] Install dependencies"
 if   [[ -f bun.lockb || -f bun.lock ]]; then bun install
 elif [[ -f pnpm-lock.yaml ]];          then pnpm install
 elif [[ -f yarn.lock ]];               then yarn install
-else                                        npm ci || npm install
+else                                        npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 fi
 npx expo install --check >/dev/null || true
 
