@@ -160,6 +160,12 @@ export interface MultiConversation extends Conversation {
   serverLabel?: string
 }
 
+export interface PopularProject {
+  path: string
+  name: string
+  sessionCount: number
+}
+
 /**
  * Deterministic server ID derived from the URL.
  * Normalises the URL (lowercase host, strip trailing slash) then produces a
