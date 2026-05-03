@@ -26,7 +26,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight } from 'phosphor-react-native'
+import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -49,7 +49,12 @@ import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
+import { RenameSessionSheet } from '@/components/sessions/RenameSessionSheet'
+import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
+import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useSettingsStore } from '@/stores/settings'
+import { useRenameSession } from '@/hooks/useSessionName'
 import type { SlashCommand } from '@/constants/slashCommands'
 
 const WAKING_UP_PHRASES = [
@@ -417,6 +422,17 @@ export default function SessionDetailScreen() {
   const [infoVisible, setInfoVisible] = useState(false)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
+  const [renameSheetVisible, setRenameSheetVisible] = useState(false)
+  const [exitModalVisible, setExitModalVisible] = useState(false)
+
+  const getName = useSessionNamesStore((s) => s.getName)
+  const getOrigin = useSessionNamesStore((s) => s.getOrigin)
+  const setSessionName = useSessionNamesStore((s) => s.setName)
+  const { askOnExit, setAskOnExit, autoNameFromMessage } = useSettingsStore()
+  const renameSession = useRenameSession(serverId)
+
+  const sessionName = getName(serverId, id) ?? session?.projectName
+  const sessionOrigin = getOrigin(serverId, id)
 
   useEffect(() => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
@@ -554,6 +570,14 @@ export default function SessionDetailScreen() {
       Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
       return
     }
+    // Auto-name from first message
+    if (autoNameFromMessage && !getName(serverId, id)) {
+      const autoName = inputText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20)
+      if (autoName) {
+        setSessionName(serverId, id, autoName, 'auto')
+        renameSession.mutate({ sessionId: id, name: autoName })
+      }
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     recordSentInput(payload)
     sendInput.mutate(payload, {
@@ -670,9 +694,35 @@ export default function SessionDetailScreen() {
     </Pressable>
   )
 
+  const pencilButton = (
+    <Pressable
+      onPress={() => setRenameSheetVisible(true)}
+      hitSlop={8}
+      accessibilityLabel="Rename session"
+      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, marginRight: 8 })}
+    >
+      <PencilSimple size={18} color={dark.text.secondary} />
+    </Pressable>
+  )
+
+  const headerRight = (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {pencilButton}
+      {infoButton}
+    </View>
+  )
+
+  const handleBack = () => {
+    if (askOnExit && sessionOrigin !== 'manual') {
+      setExitModalVisible(true)
+    } else {
+      router.back()
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']} testID="session-detail-screen">
-      <ScreenHeader title={session?.projectName} right={infoButton} />
+      <ScreenHeader title={sessionName} right={headerRight} onBack={handleBack} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -837,6 +887,39 @@ export default function SessionDetailScreen() {
       />
 
       {infoModal}
+
+      {renameSheetVisible ? (
+        <RenameSessionSheet
+          currentName={sessionName ?? ''}
+          onSave={(name) => {
+            setSessionName(serverId, id, name, 'manual')
+            renameSession.mutate({ sessionId: id, name })
+            setRenameSheetVisible(false)
+          }}
+          onClose={() => setRenameSheetVisible(false)}
+        />
+      ) : null}
+
+      {exitModalVisible ? (
+        <NameSessionModal
+          visible
+          mode="exit"
+          currentName={sessionName}
+          onSave={(name) => {
+            setSessionName(serverId, id, name, 'manual')
+            renameSession.mutate({ sessionId: id, name })
+            setExitModalVisible(false)
+            router.back()
+          }}
+          onSkip={() => {
+            setExitModalVisible(false)
+            router.back()
+          }}
+          onDontAskAgain={() => {
+            setAskOnExit(false)
+          }}
+        />
+      ) : null}
     </SafeAreaView>
   )
 }

@@ -8,15 +8,16 @@ import { dark, font, spacing } from '@/constants/theme'
 interface Props {
   title?: string
   right?: React.ReactNode
+  onBack?: () => void
 }
 
-export function ScreenHeader({ title, right }: Props) {
+export function ScreenHeader({ title, right, onBack }: Props) {
   const router = useRouter()
   const { t } = useTranslation('common')
   return (
     <View style={styles.bar}>
       <Pressable
-        onPress={() => router.back()}
+        onPress={onBack ?? (() => router.back())}
         hitSlop={16}
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}
         accessibilityLabel={t('button.back')}
