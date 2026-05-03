@@ -427,7 +427,6 @@ export default function SessionDetailScreen() {
 
   const getName = useSessionNamesStore((s) => s.getName)
   const getOrigin = useSessionNamesStore((s) => s.getOrigin)
-  const setSessionName = useSessionNamesStore((s) => s.setName)
   const { askOnExit, setAskOnExit, autoNameFromMessage } = useSettingsStore()
   const renameSession = useRenameSession(serverId)
 
@@ -572,7 +571,7 @@ export default function SessionDetailScreen() {
     }
     // Auto-name from first message
     if (autoNameFromMessage && !getName(serverId, id)) {
-      const autoName = inputText.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20)
+      const autoName = inputText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20)
       if (autoName) {
         renameSession.mutate({ sessionId: id, name: autoName, origin: 'auto' })
       }
@@ -891,7 +890,6 @@ export default function SessionDetailScreen() {
         <RenameSessionSheet
           currentName={sessionName ?? ''}
           onSave={(name) => {
-            setSessionName(serverId, id, name, 'manual')
             renameSession.mutate({ sessionId: id, name })
             setRenameSheetVisible(false)
           }}
@@ -905,7 +903,6 @@ export default function SessionDetailScreen() {
           mode="exit"
           currentName={sessionName}
           onSave={(name) => {
-            setSessionName(serverId, id, name, 'manual')
             renameSession.mutate({ sessionId: id, name })
             setExitModalVisible(false)
             router.back()

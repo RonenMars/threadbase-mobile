@@ -24,7 +24,7 @@ import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
-import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useRenameSession } from '@/hooks/useSessionName'
 import { useSettingsStore } from '@/stores/settings'
 
 const MAX_RECENT_DIRS = 8
@@ -45,8 +45,8 @@ export default function BrowseScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
   const [pendingSession, setPendingSession] = useState<{ id: string; serverId: string } | null>(null)
-  const setName = useSessionNamesStore((s) => s.setName)
   const { askOnCreate, setAskOnCreate, setAskOnExit } = useSettingsStore()
+  const renameSession = useRenameSession(serverId ?? '')
 
   const { data: allSessions = [] } = useSessions()
   const recentDirs = useMemo<RecentDir[]>(() => {
@@ -359,7 +359,7 @@ export default function BrowseScreen() {
           visible
           mode="create"
           onSave={(name) => {
-            setName(pendingSession.serverId, pendingSession.id, name, 'manual')
+            renameSession.mutate({ sessionId: pendingSession.id, name })
             const dest = pendingSession
             setPendingSession(null)
             router.dismiss()
