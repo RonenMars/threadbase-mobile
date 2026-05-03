@@ -89,7 +89,7 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
 function styles(theme: Theme) {
   return StyleSheet.create({
     overlay: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.55)',
       alignItems: 'center',
       justifyContent: 'center',

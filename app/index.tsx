@@ -14,8 +14,7 @@ import {
   RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
-import { useFocusEffect } from '@react-navigation/native'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'

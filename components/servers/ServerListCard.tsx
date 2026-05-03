@@ -158,6 +158,9 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.sm,
   },
+  cardNoBottomPad: {
+    paddingBottom: 0,
+  },
   bottomSlot: {
     height: 4,
     marginTop: spacing.sm,

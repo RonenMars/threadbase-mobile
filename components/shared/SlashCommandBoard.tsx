@@ -85,6 +85,7 @@ interface RowProps {
 }
 
 function CommandRow({ command, onPress }: RowProps) {
+  const { t } = useTranslation('shared')
   return (
     <TouchableOpacity
       style={styles.row}

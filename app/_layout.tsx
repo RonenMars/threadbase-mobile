@@ -175,7 +175,7 @@ function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
             hitSlop={16}
             style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
           >
-            <CaretLeft size={28} color={tintColor ?? theme.text.primary} />
+            <CaretLeft size={28} color={(typeof tintColor === 'string' ? tintColor : undefined) ?? theme.text.primary} />
           </Pressable>
         ),
       }}
