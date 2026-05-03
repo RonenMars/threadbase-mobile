@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import * as Clipboard from 'expo-clipboard'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { DiffHunk } from '@/types/api'
 
@@ -39,6 +40,7 @@ function toPatch(filename: string, hunks: DiffHunk[]): string {
 }
 
 export function DiffViewer({ filename, hunks, language }: Props) {
+  const { t } = useTranslation('conversation')
   const totalLines = hunks.reduce((acc, h) => acc + h.lines.length, 0)
   const [expanded, setExpanded] = useState(totalLines <= COLLAPSE_THRESHOLD)
   const { added, removed } = countChanges(hunks)
@@ -65,13 +67,13 @@ export function DiffViewer({ filename, hunks, language }: Props) {
         <Text style={styles.added}>+{added}</Text>
         <Text style={styles.removed}>−{removed}</Text>
         <TouchableOpacity onPress={copyPatch} style={styles.copyBtn}>
-          <Text style={styles.copyText}>Copy patch</Text>
+          <Text style={styles.copyText}>{t('action.copyPatch')}</Text>
         </TouchableOpacity>
       </View>
 
       {!expanded ? (
         <TouchableOpacity style={styles.collapseBtn} onPress={() => setExpanded(true)}>
-          <Text style={styles.collapseBtnText}>Show all {totalLines} lines</Text>
+          <Text style={styles.collapseBtnText}>{t('action.showAllLines', { count: totalLines })}</Text>
         </TouchableOpacity>
       ) : (
         <GestureHandlerRootView>
@@ -81,6 +83,7 @@ export function DiffViewer({ filename, hunks, language }: Props) {
                 <View>
                   {hunks.map((hunk, hi) => (
                     <View key={hi}>
+                      {/* eslint-disable-next-line i18next/no-literal-string */}
                       <Text style={styles.hunkHeader}>
                         @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
                       </Text>

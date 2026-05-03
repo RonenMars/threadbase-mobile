@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import { useTranslation } from 'react-i18next'
 import type { AddServerAction } from '@/stores/settings'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
@@ -33,6 +34,7 @@ const OPTIONS: { id: Choice; label: string; description: string }[] = [
 ]
 
 export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
+  const { t } = useTranslation('servers')
   const [choice, setChoice] = useState<Choice>('add')
   const [rememberChoice, setRememberChoice] = useState(false)
 
@@ -47,8 +49,8 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>
-        <Text style={styles.title}>New server display preference</Text>
-        <Text style={styles.subtitle}>How should displayed servers update after this add?</Text>
+        <Text style={styles.title}>{t('addAction.title')}</Text>
+        <Text style={styles.subtitle}>{t('addAction.subtitle')}</Text>
 
         <View style={styles.options}>
           {OPTIONS.map((option) => {
@@ -69,7 +71,7 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
         </View>
 
         <View style={styles.rememberRow}>
-          <Text style={styles.rememberLabel}>Remember this choice</Text>
+          <Text style={styles.rememberLabel}>{t('addAction.rememberChoice')}</Text>
           <Switch
             value={rememberChoice}
             onValueChange={setRememberChoice}
@@ -80,13 +82,13 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}
             onPress={() => onConfirm(choice, rememberChoice)}
           >
-            <Text style={styles.applyText}>Confirm</Text>
+            <Text style={styles.applyText}>{t('common:button.confirm')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

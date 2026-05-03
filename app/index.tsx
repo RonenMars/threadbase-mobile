@@ -210,7 +210,7 @@ export default function ProjectsHub() {
         {/* Left: brand */}
         <View style={styles.headerLeft}>
           <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
-          <Text style={styles.headerTitle}>Threadbase</Text>
+          <Text style={styles.headerTitle}>{t('shared:app.title')}</Text>
           <Pressable
             onPress={() => router.push('/settings')}
             hitSlop={8}
@@ -452,7 +452,7 @@ function MergedClassicList({
           <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
         ) : null}
         <Text style={styles.convCardMeta}>
-          {item.messageCount} msg{item.messageCount !== 1 ? 's' : ''}
+          {t('hub.msgs', { count: item.messageCount })}
         </Text>
       </TouchableOpacity>
     ),

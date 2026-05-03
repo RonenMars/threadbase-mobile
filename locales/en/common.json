@@ -7,7 +7,12 @@
     "back": "Back",
     "close": "Close",
     "retry": "Retry",
-    "remove": "Remove"
+    "remove": "Remove",
+    "apply": "Apply",
+    "skip": "Skip",
+    "create": "Create",
+    "export": "Export",
+    "copy": "Copy"
   },
   "error": {
     "generic": "Something went wrong",
@@ -22,5 +27,10 @@
   "search": {
     "placeholder": "Search…",
     "clear": "Clear search"
+  },
+  "nav": {
+    "top": "↑ Top",
+    "bottom": "↓ Bottom",
+    "backArrow": "‹ Back"
   }
 }

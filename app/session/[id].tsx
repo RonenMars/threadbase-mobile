@@ -231,7 +231,7 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
     <SafeAreaView style={pendingStyles.container} edges={['bottom']}>
       <View style={pendingStyles.content}>
         <ActivityIndicator size="large" color={dark.text.accent} style={pendingStyles.spinner} />
-        <Text style={pendingStyles.title}>Starting session…</Text>
+        <Text style={pendingStyles.title}>{t('terminal:status.starting')}</Text>
         <Text style={pendingStyles.phrase}>{PENDING_PHRASES[phraseIdx]}</Text>
       </View>
       <View style={pendingStyles.footer}>
@@ -267,6 +267,7 @@ function DiscoveredSessionScreen({
   serverId: string
   sessionId: string
 }) {
+  const { t } = useTranslation('terminal')
   const router = useRouter()
   const { adoptSession } = useSessionActions(serverId, sessionId)
 
@@ -288,10 +289,9 @@ function DiscoveredSessionScreen({
     <SafeAreaView style={discStyles.container} edges={['bottom']}>
       <View style={discStyles.content}>
         <View style={discStyles.warning}>
-          <Text style={discStyles.warningTitle}>⚠️ Session already running</Text>
-          <Text style={discStyles.warningBody}>
-            This session has an active process on the server. Resuming here will stop that process and start a new terminal session in the app.
-          </Text>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <Text style={discStyles.warningTitle}>⚠️ {t('session.alreadyRunningTitle')}</Text>
+          <Text style={discStyles.warningBody}>{t('session.alreadyRunningBody')}</Text>
         </View>
         <View style={discStyles.buttons}>
           <TouchableOpacity
@@ -302,7 +302,7 @@ function DiscoveredSessionScreen({
             {adoptSession.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={discStyles.restartBtnText}>Overtake</Text>
+              <Text style={discStyles.restartBtnText}>{t('session.overtake')}</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -310,7 +310,7 @@ function DiscoveredSessionScreen({
             onPress={() => router.back()}
             disabled={adoptSession.isPending}
           >
-            <Text style={discStyles.backBtnText}>Back</Text>
+            <Text style={discStyles.backBtnText}>{t('common:button.back')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -649,7 +649,7 @@ export default function SessionDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader />
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
-          <Text style={styles.discoveredTitle}>Session not found</Text>
+          <Text style={styles.discoveredTitle}>{t('session.notFound')}</Text>
           <Text style={[styles.discoveredText, { textAlign: 'center', marginTop: spacing.sm }]}>
             {`No session found for ID:\n${id}`}
           </Text>
@@ -682,7 +682,7 @@ export default function SessionDetailScreen() {
           <View style={styles.statusBar}>
             <SessionStatusBadge status={session.status} isRefetching={isStreaming} />
             <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
-            <Text style={styles.prompts}>{session.promptCount} prompts</Text>
+            <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
           </View>
         ) : null}
 
@@ -690,17 +690,14 @@ export default function SessionDetailScreen() {
           {session?.failureReason ? (
             <View style={styles.discoveredInfo}>
               <Text style={[styles.discoveredTitle, { color: dark.text.danger }]}>
-                Session failed to start
+                {t('session.failedToStart')}
               </Text>
               <Text style={styles.discoveredText}>{session.failureReason}</Text>
             </View>
           ) : noAttachEmptyPlaceholder ? (
             <View style={styles.discoveredInfo}>
-              <Text style={styles.discoveredTitle}>No terminal output</Text>
-              <Text style={styles.discoveredText}>
-                This session has no active terminal.{'\n'}
-                Resume the session to start a new terminal.
-              </Text>
+              <Text style={styles.discoveredTitle}>{t('session.noTerminal')}</Text>
+              <Text style={styles.discoveredText}>{t('session.noTerminalBody')}</Text>
               {session?.projectPath ? (
                 <Text style={styles.discoveredPath}>{session.projectPath}</Text>
               ) : null}

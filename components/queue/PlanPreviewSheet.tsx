@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useSessionActions } from '@/hooks/useSessionActions'
 
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }: Props) {
+  const { t } = useTranslation('queue')
   const sheetRef = useRef<BottomSheet>(null)
   const { respondToPlan } = useSessionActions(serverId, sessionId)
   const [editMode, setEditMode] = useState(false)
@@ -71,8 +73,8 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
     >
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Plan Preview</Text>
-          <Text style={styles.timer}>Auto-proceed in {secondsLeft}s</Text>
+          <Text style={styles.title}>{t('planPreview.title')}</Text>
+          <Text style={styles.timer}>{t('planPreview.autoProceed', { count: secondsLeft })}</Text>
         </View>
 
         <View style={styles.planBox}>
@@ -93,13 +95,13 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.btnProceed} onPress={handleProceed}>
-            <Text style={styles.btnProceedText}>▶ Proceed</Text>
+            <Text style={styles.btnProceedText}>{t('planPreview.proceed')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnEdit} onPress={handleEdit}>
-            <Text style={styles.btnEditText}>✏️ {editMode ? 'Send Edit' : 'Edit Prompt'}</Text>
+            <Text style={styles.btnEditText}>{editMode ? t('planPreview.sendEdit') : t('planPreview.editPrompt')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnCancel} onPress={handleCancel}>
-            <Text style={styles.btnCancelText}>✕ Cancel</Text>
+            <Text style={styles.btnCancelText}>{t('planPreview.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetScrollView>

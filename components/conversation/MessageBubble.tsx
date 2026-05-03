@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
 
@@ -34,6 +35,7 @@ function TextContent({ text }: { text: string }) {
 const MAX_CODE_LINES = 20
 
 function CodeBlock({ code }: { code: string }) {
+  const { t } = useTranslation('conversation')
   const [expanded, setExpanded] = useState(false)
   const copy = () => Clipboard.setStringAsync(code)
   const lines = code.split('\n')
@@ -45,9 +47,9 @@ function CodeBlock({ code }: { code: string }) {
   return (
     <View style={styles.codeBlock}>
       <View style={styles.codeHeader}>
-        <Text style={styles.codeHeaderText}>Code</Text>
+        <Text style={styles.codeHeaderText}>{t('message.code')}</Text>
         <TouchableOpacity onPress={copy} style={styles.codeCopyBtn}>
-          <Text style={styles.codeCopyText}>Copy</Text>
+          <Text style={styles.codeCopyText}>{t('action.copyCode')}</Text>
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 1, maxHeight: 300 }}>
@@ -91,6 +93,7 @@ function ContentBlock({ block }: { block: MessageContent }) {
 }
 
 export function MessageBubble({ message }: Props) {
+  const { t } = useTranslation('conversation')
   const isUser = message.role === 'user'
 
   return (
@@ -100,7 +103,7 @@ export function MessageBubble({ message }: Props) {
           <ContentBlock key={i} block={block} />
         ))}
         {message.tokens ? (
-          <Text style={styles.tokens}>{message.tokens} tokens</Text>
+          <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
         ) : null}
       </View>
     </View>

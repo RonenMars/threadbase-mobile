@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet'
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
 import { PaperPlaneRight } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useSessionsStore } from '@/stores/sessions'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Props) {
+  const { t } = useTranslation('queue')
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
   const queueKey = `${serverId}::${sessionId}`
@@ -79,8 +81,8 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
     >
       <BottomSheetView style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Prompt Queue</Text>
-          <Text style={styles.subtitle}>{queue.filter((p) => p.status === 'pending').length} pending</Text>
+          <Text style={styles.title}>{t('promptQueue.title')}</Text>
+          <Text style={styles.subtitle}>{t('promptQueue.pending', { count: queue.filter((p) => p.status === 'pending').length })}</Text>
         </View>
 
         <View style={styles.inputRow}>

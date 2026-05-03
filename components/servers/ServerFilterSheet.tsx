@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
+import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { dark, font, radius, spacing } from '@/constants/theme'
@@ -44,6 +45,7 @@ export function ServerFilterSheet({
   sortType,
   onChangeSortType,
 }: Props) {
+  const { t } = useTranslation('servers')
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -91,15 +93,15 @@ export function ServerFilterSheet({
     >
       <BottomSheetView style={styles.content}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Filters</Text>
+          <Text style={styles.title}>{t('filter.title')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
           </TouchableOpacity>
         </View>
 
         {showSortFilter ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sort by</Text>
+            <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
             <View style={styles.chipRow}>
               {SORT_OPTIONS.map((opt) => {
                 const selected = draftSort === opt.value
@@ -124,19 +126,19 @@ export function ServerFilterSheet({
         {showStatusFilter ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Status</Text>
+              <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
               <View style={styles.quickRow}>
                 <TouchableOpacity
                   style={styles.quickButton}
                   onPress={() => setDraftStatuses(ALL_STATUSES)}
                 >
-                  <Text style={styles.quickButtonText}>All</Text>
+                  <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickButton}
                   onPress={() => setDraftStatuses([])}
                 >
-                  <Text style={styles.quickButtonText}>None</Text>
+                  <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -164,7 +166,7 @@ export function ServerFilterSheet({
 
         {showServerFilter ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Servers</Text>
+            <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
             <DisplayedServersList
               activeServerIds={activeServerIds}
               servers={servers}
@@ -176,7 +178,7 @@ export function ServerFilterSheet({
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}
@@ -187,7 +189,7 @@ export function ServerFilterSheet({
               onClose()
             }}
           >
-            <Text style={styles.applyText}>Apply</Text>
+            <Text style={styles.applyText}>{t('common:button.apply')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

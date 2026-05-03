@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Polyline } from 'react-native-svg'
 import * as Notifications from 'expo-notifications'
+import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
 
@@ -33,6 +34,7 @@ function BellIcon({ color }: { color: string }) {
 }
 
 export function NotificationsStep({ onNext }: Props) {
+  const { t } = useTranslation('onboarding')
   const [enabled, setEnabled] = useState(false)
   const [requesting, setRequesting] = useState(false)
 
@@ -56,9 +58,12 @@ export function NotificationsStep({ onNext }: Props) {
 
   return (
     <View style={styles.root}>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <Text style={styles.eyebrow}>{'>'} 03 / NOTIFY</Text>
 
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <Text style={styles.headline}>Wake me only when it counts.</Text>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <Text style={styles.subhead}>
         Push fires on plan-ready, tool-confirms, and run failures. That&apos;s it.
       </Text>
@@ -72,10 +77,14 @@ export function NotificationsStep({ onNext }: Props) {
           />
           <View style={styles.previewBody}>
             <View style={styles.previewHead}>
+              {/* eslint-disable-next-line i18next/no-literal-string */}
               <Text style={styles.previewBrand}>THREADBASE</Text>
+              {/* eslint-disable-next-line i18next/no-literal-string */}
               <Text style={styles.previewTime}>now</Text>
             </View>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={styles.previewTitle}>Plan ready · feat/queue</Text>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={styles.previewMessage}>
               3 files queued for edit. Tap to review.
             </Text>
@@ -102,8 +111,9 @@ export function NotificationsStep({ onNext }: Props) {
           <BellIcon color={enabled ? colors.blue400 : colors.fg3} />
         </View>
         <View style={styles.allowText}>
-          <Text style={styles.allowTitle}>Push notifications</Text>
+          <Text style={styles.allowTitle}>{t('notifications.allowTitle')}</Text>
           <Text style={styles.allowStatus}>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             {enabled ? 'ENABLED · alerts.threadbase.dev' : 'TAP TO ALLOW'}
           </Text>
         </View>
@@ -134,6 +144,7 @@ export function NotificationsStep({ onNext }: Props) {
       <View style={styles.flex} />
 
       <PrimaryButton onPress={onNext}>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         {enabled ? 'Continue' : "Skip — I'll watch the kanban"}
       </PrimaryButton>
       <View style={{ height: 14 }} />

@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native'
 import { X, PaperPlaneRight } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { SlashCommand } from '@/constants/slashCommands'
 
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
+  const { t } = useTranslation('shared')
   const [arg, setArg] = useState('')
 
   // Reset arg whenever a new command is shown
@@ -94,7 +96,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               onPress={onDismiss}
               accessibilityLabel="Cancel"
             >
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+              <Text style={styles.cancelBtnText}>{t('common:button.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.confirmBtn, !canConfirm && styles.confirmBtnDisabled]}
@@ -103,7 +105,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               accessibilityLabel={`Run /${command.id}`}
             >
               <PaperPlaneRight size={15} color="#fff" />
-              <Text style={styles.confirmBtnText}>Run /{command.id}</Text>
+              <Text style={styles.confirmBtnText}>{t('commands.run', { command: command.id })}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -4,6 +4,7 @@ import Animated, { SlideInLeft, SlideInRight } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
+import { useTranslation } from 'react-i18next'
 import { PagerDots } from './components/PagerDots'
 import { colors, fonts } from './theme'
 
@@ -27,6 +28,7 @@ export function OnboardingShell({
   children,
 }: Props) {
   const insets = useSafeAreaInsets()
+  const { t } = useTranslation('onboarding')
 
   const swipe = Gesture.Pan()
     .activeOffsetX([-20, 20])
@@ -57,14 +59,14 @@ export function OnboardingShell({
                 strokeLinejoin="round"
               />
             </Svg>
-            <Text style={styles.chromeBack}>Back</Text>
+            <Text style={styles.chromeBack}>{t('shell.back')}</Text>
           </Pressable>
         ) : (
           <View />
         )}
         {showSkip ? (
           <Pressable onPress={onSkip} style={styles.chromeBtn} hitSlop={10}>
-            <Text style={styles.chromeSkip}>Skip</Text>
+            <Text style={styles.chromeSkip}>{t('shell.skip')}</Text>
           </Pressable>
         ) : (
           <View />

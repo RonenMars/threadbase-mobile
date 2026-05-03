@@ -13,6 +13,7 @@ import {
 import { QrCode, Lightning } from 'phosphor-react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { useNavigation, useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { useServersStore } from '@/stores/servers'
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function AddServerScreen({ isAddingServer }: Props) {
+  const { t } = useTranslation('servers')
   const router = useRouter()
   const navigation = useNavigation()
   const headerHeight = useHeaderHeight()
@@ -159,13 +161,13 @@ export function AddServerScreen({ isAddingServer }: Props) {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <Lightning size={64} color="#f0883e" weight="fill" />
-          <Text style={styles.title}>Threadbase</Text>
-          <Text style={styles.subtitle}>AI Agent Control Center</Text>
+          <Text style={styles.title}>{t('shared:app.title')}</Text>
+          <Text style={styles.subtitle}>{t('settings:about.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>Server URL</Text>
+            <Text style={styles.label}>{t('form.serverUrl')}</Text>
             <TouchableOpacity
               style={styles.scanQrBtn}
               onPress={() => setScannerOpen(true)}
@@ -181,6 +183,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
                 onPress={() => setShowProtocolPicker((v) => !v)}
               >
                 <Text style={styles.protocolText}>{protocol}://</Text>
+                {/* eslint-disable-next-line i18next/no-literal-string */}
                 <Text style={styles.dropdownArrow}>▼</Text>
               </TouchableOpacity>
               {showProtocolPicker && (
@@ -220,7 +223,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
             />
           </View>
 
-          <Text style={styles.label}>Label (optional)</Text>
+          <Text style={styles.label}>{t('form.labelOptional')}</Text>
           <TextInput
             style={styles.input}
             value={label}
@@ -232,7 +235,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
             returnKeyType="next"
           />
 
-          <Text style={styles.label}>API Key</Text>
+          <Text style={styles.label}>{t('form.apiKey')}</Text>
           <View style={styles.passwordRow}>
             <TextInput
               style={[styles.input, styles.passwordInput]}
@@ -265,12 +268,13 @@ export function AddServerScreen({ isAddingServer }: Props) {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.connectBtnText}>Connect</Text>
+              <Text style={styles.connectBtnText}>{t('action.connect')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <Text style={styles.hint}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           Run <Text style={styles.code}>cch serve --tunnel --qr</Text> on your Mac to get a QR-scannable URL.
         </Text>
         </ScrollView>

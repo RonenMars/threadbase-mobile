@@ -2,6 +2,7 @@ import React, { useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { Tree, SquaresFour, List } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
@@ -91,6 +92,7 @@ export function FilterSortSheet({
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
 
+  const { t } = useTranslation('servers')
   const showServerFilter = activeServerIds.length > 1
 
   const atDefault = isDefault(sortBy, sortOrder, selectedStatuses, displayedServerIds, activeServerIds, sessionsLayout)
@@ -124,15 +126,15 @@ export function FilterSortSheet({
     >
       <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Filter & Sort</Text>
+          <Text style={styles.title}>{t('filter.filterSort')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* View */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>View</Text>
+          <Text style={styles.sectionTitle}>{t('filter.view')}</Text>
           <View style={styles.chipRow}>
             {LAYOUT_OPTIONS.map(({ value, label, Icon }) => {
               const selected = sessionsLayout === value
@@ -157,7 +159,7 @@ export function FilterSortSheet({
         {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
         {sessionsLayout !== 'tree' ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sort by</Text>
+            <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
             <View style={styles.chipRow}>
               {SORT_BY_OPTIONS.map((opt) => {
                 const selected = sortBy === opt.value
@@ -183,7 +185,7 @@ export function FilterSortSheet({
         {/* Order — hidden for Tree layout */}
         {sessionsLayout !== 'tree' ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Order</Text>
+            <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
             <View style={styles.chipRow}>
               {SORT_ORDER_OPTIONS.map((opt) => {
                 const selected = sortOrder === opt.value
@@ -209,13 +211,13 @@ export function FilterSortSheet({
         {/* Status */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Status</Text>
+            <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
             <View style={styles.quickRow}>
               <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses(ALL_STATUSES)}>
-                <Text style={styles.quickButtonText}>All</Text>
+                <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses([])}>
-                <Text style={styles.quickButtonText}>None</Text>
+                <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -244,7 +246,7 @@ export function FilterSortSheet({
         {/* Servers */}
         {showServerFilter ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Servers</Text>
+            <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
             <DisplayedServersList
               activeServerIds={activeServerIds}
               servers={servers}
@@ -261,7 +263,7 @@ export function FilterSortSheet({
           disabled={atDefault}
         >
           <Text style={[styles.resetText, atDefault && styles.resetTextDisabled]}>
-            Reset to defaults
+            {t('filter.resetDefaults')}
           </Text>
         </TouchableOpacity>
       </BottomSheetScrollView>

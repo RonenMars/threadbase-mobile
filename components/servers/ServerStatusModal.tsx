@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native'
 import { Cloud, ListDashes } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { ServersManageModal } from '@/components/servers/ServersManageModal'
@@ -76,6 +77,7 @@ function StatusRow({
 }
 
 export function ServerStatusModal({ visible, onClose }: Props) {
+  const { t } = useTranslation('servers')
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
   const statuses = useServerStatuses(activeServerIds)
@@ -95,7 +97,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
         <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <Cloud size={18} color={dark.text.secondary} weight="regular" />
-            <Text style={styles.title}>Server Status</Text>
+            <Text style={styles.title}>{t('statusModal.title')}</Text>
             <TouchableOpacity
               onPress={() => setManageOpen(true)}
               hitSlop={8}
@@ -105,12 +107,12 @@ export function ServerStatusModal({ visible, onClose }: Props) {
               <ListDashes size={18} color={dark.text.secondary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.iconBtn}>
-              <Text style={styles.closeText}>✕</Text>
+              <Text style={styles.closeText}>{t('statusModal.close')}</Text>
             </TouchableOpacity>
           </View>
 
           {activeServerIds.length === 0 ? (
-            <Text style={styles.empty}>No servers added yet.</Text>
+            <Text style={styles.empty}>{t('manage.empty')}</Text>
           ) : (
             activeServerIds.map((id) => {
               const server = servers[id]

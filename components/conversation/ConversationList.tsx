@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SkeletonBox } from '@/components/ui/Skeleton'
@@ -73,6 +74,7 @@ interface RowProps {
 }
 
 const ConversationRow = React.memo(function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
+  const { t } = useTranslation('conversation')
   const router = useRouter()
   const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
   const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
@@ -114,9 +116,9 @@ const ConversationRow = React.memo(function ConversationRow({ conversation: c, s
       </View>
       <View style={styles.rowRight}>
         <Text style={styles.date}>{formatDate(c.lastActivity)}</Text>
-        <Text style={styles.metaText}>{c.messageCount} msgs</Text>
+        <Text style={styles.metaText}>{t('list.msgs', { count: c.messageCount })}</Text>
         {c.totalTokens ? (
-          <Text style={styles.metaText}>{(c.totalTokens / 1000).toFixed(1)}k tokens</Text>
+          <Text style={styles.metaText}>{t('list.tokens', { count: parseFloat((c.totalTokens / 1000).toFixed(1)) })}</Text>
         ) : null}
       </View>
     </TouchableOpacity>
@@ -155,6 +157,7 @@ export function ConversationList({
   headerRight,
   loadingProgress = null,
 }: Props) {
+  const { t } = useTranslation('conversation')
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
@@ -251,7 +254,7 @@ export function ConversationList({
           isFetchingNextPage && !skeletonMode ? (
             <View style={styles.listFooter}>
               <ActivityIndicator color={dark.text.secondary} />
-              <Text style={styles.listFooterText}>Loading more…</Text>
+              <Text style={styles.listFooterText}>{t('list.loadingMore')}</Text>
             </View>
           ) : null
         }
@@ -263,7 +266,7 @@ export function ConversationList({
           accessibilityLabel="Scroll to top"
           style={styles.scrollBtnInner}
         >
-          <Text style={styles.scrollBtnText}>↑ Top</Text>
+          <Text style={styles.scrollBtnText}>{t('common:nav.top')}</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -273,7 +276,7 @@ export function ConversationList({
           accessibilityLabel="Scroll to bottom"
           style={styles.scrollBtnInner}
         >
-          <Text style={styles.scrollBtnText}>↓ Bottom</Text>
+          <Text style={styles.scrollBtnText}>{t('common:nav.bottom')}</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>

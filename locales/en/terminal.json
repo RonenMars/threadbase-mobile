@@ -22,10 +22,22 @@
     "connecting": "Connecting…",
     "reconnecting": "Reconnecting…",
     "disconnected": "Disconnected",
-    "waking": "Waking up…"
+    "waking": "Waking up…",
+    "starting": "Starting session…"
   },
   "input": {
     "placeholder": "Send a message…",
     "send": "Send"
+  },
+  "session": {
+    "notFound": "Session not found",
+    "failedToStart": "Session failed to start",
+    "noTerminal": "No terminal output",
+    "noTerminalBody": "This session has no active terminal.\nResume the session to start a new terminal.",
+    "alreadyRunningTitle": "Session already running",
+    "alreadyRunningBody": "This session has an active process on the server. Resuming here will stop that process and start a new terminal session in the app.",
+    "overtake": "Overtake",
+    "prompts_one": "{{count}} prompt",
+    "prompts_other": "{{count}} prompts"
   }
 }

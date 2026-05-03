@@ -9,6 +9,7 @@ import {
   Pressable,
 } from 'react-native'
 import { Terminal, CaretRight } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
 
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props) {
+  const { t } = useTranslation('shared')
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return SLASH_COMMANDS
@@ -49,7 +51,7 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Terminal size={15} color={dark.text.accent} />
-            <Text style={styles.headerTitle}>Commands</Text>
+            <Text style={styles.headerTitle}>{t('commands.title')}</Text>
           </View>
           {query.length > 0 && (
             <Text style={styles.queryBadge}>/{query}</Text>
@@ -58,7 +60,7 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
 
         {filtered.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No commands match "/{query}"</Text>
+            <Text style={styles.emptyText}>{t('commands.empty', { query })}</Text>
           </View>
         ) : (
           <FlatList
@@ -98,7 +100,7 @@ function CommandRow({ command, onPress }: RowProps) {
           <Text style={styles.commandSlash}>/</Text>
           <Text style={styles.commandTitle}>{command.id}</Text>
           {command.needsArgs && (
-            <Text style={styles.argsBadge}>args</Text>
+            <Text style={styles.argsBadge}>{t('commands.argsBadge')}</Text>
           )}
         </View>
         <Text style={styles.commandDesc} numberOfLines={1}>

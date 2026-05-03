@@ -2,6 +2,7 @@ import React, { useCallback } from 'react'
 import { View, Text, TouchableOpacity, Platform, UIManager, LayoutAnimation } from 'react-native'
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/settings'
 import { FolderSimple } from 'phosphor-react-native'
 import { dark } from '@/constants/theme'
@@ -17,6 +18,7 @@ if (Platform.OS === 'android') {
 }
 
 export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps) {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const chevronProgress = useSharedValue(isOpen ? 1 : 0)
@@ -103,7 +105,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                       activeOpacity={0.75}
                       style={styles.seeAllRow}
                     >
-                      <Text style={styles.seeAllText}>See all {convCount} conversations →</Text>
+                      <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
                     </TouchableOpacity>
                   )}
                 </View>

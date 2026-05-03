@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import { dark, font, spacing } from '@/constants/theme'
 import type { MultiConversation } from '@/types/api'
 
 export default function ProjectDetailScreen() {
+  const { t } = useTranslation('browse')
   const { path } = useLocalSearchParams<{ path: string }>()
   const projectPath = decodeURIComponent(path ?? '')
   const projectName = projectPath.split('/').pop() ?? projectPath
@@ -89,8 +91,8 @@ export default function ProjectDetailScreen() {
             />
           }
         >
-          <Text style={styles.errorText}>Failed to load conversations</Text>
-          <Text style={styles.errorHint}>Pull down to retry</Text>
+          <Text style={styles.errorText}>{t('error.loadFailed')}</Text>
+          <Text style={styles.errorHint}>{t('error.retryHint')}</Text>
         </ScrollView>
       ) : (
         <View style={styles.listWrapper}>

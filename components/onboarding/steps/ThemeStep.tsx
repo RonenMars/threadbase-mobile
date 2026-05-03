@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { THEMES } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import { useSettingsStore } from '@/stores/settings'
@@ -21,6 +22,7 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
 const THEME_IDS = Object.keys(THEMES) as Array<Exclude<ThemeId, 'system'>>
 
 export function ThemeStep({ onNext }: Props) {
+  const { t } = useTranslation('onboarding')
   const setColorScheme = useSettingsStore((s) => s.setColorScheme)
   const currentScheme = useSettingsStore((s) => s.colorScheme)
   const [selected, setSelected] = useState<Exclude<ThemeId, 'system'>>(
@@ -35,12 +37,15 @@ export function ThemeStep({ onNext }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.center}>
-        <Text style={styles.eyebrow}>// APPEARANCE</Text>
+        <Text style={styles.eyebrow}>{t('theme.eyebrow')}</Text>
         <Text style={styles.headline}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           Pick your{'\n'}
-          <Text style={styles.headlineAccent}>vibe.</Text>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <Text style={styles.headlineAccent}>{t('valueProp.headlineAccent')}</Text>
         </Text>
         <Text style={styles.body}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           Choose a color theme. You can always change it later in Settings.
         </Text>
 
@@ -96,7 +101,7 @@ export function ThemeStep({ onNext }: Props) {
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton onPress={onNext}>Continue</PrimaryButton>
+        <PrimaryButton onPress={onNext}>{t('notifications.continue')}</PrimaryButton>
       </View>
     </View>
   )

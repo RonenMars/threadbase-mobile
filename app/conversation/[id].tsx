@@ -70,7 +70,7 @@ function MessageItem({ message }: { message: Message }) {
 }
 
 export default function ConversationDetailScreen() {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation('conversation')
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -225,10 +225,10 @@ export default function ConversationDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader right={infoButton} />
         <View style={styles.centered}>
-          <Text style={styles.errorTitle}>Couldn't load conversation</Text>
+          <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
           <Text style={styles.errorMessage}>{error.message}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-            <Text style={styles.retryBtnText}>{t('button.retry')}</Text>
+            <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -276,7 +276,7 @@ export default function ConversationDetailScreen() {
               onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
               accessibilityLabel="Scroll to top"
             >
-              <Text style={styles.scrollBtnText}>↑ Top</Text>
+              <Text style={styles.scrollBtnText}>{t('common:nav.top')}</Text>
             </TouchableOpacity>
           ) : null}
           {showScrollBottom ? (
@@ -285,19 +285,19 @@ export default function ConversationDetailScreen() {
               onPress={() => scrollToBottom(true)}
               accessibilityLabel="Scroll to bottom"
             >
-              <Text style={styles.scrollBtnText}>↓ Bottom</Text>
+              <Text style={styles.scrollBtnText}>{t('common:nav.bottom')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       ) : (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No messages in this conversation.</Text>
+          <Text style={styles.emptyText}>{t('list.empty')}</Text>
         </View>
       )}
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-          <Text style={styles.shareBtnText}>Export</Text>
+          <Text style={styles.shareBtnText}>{t('action.export')}</Text>
         </TouchableOpacity>
         <View style={styles.resumeWrapper}>
           {resumeSession.isError ? (

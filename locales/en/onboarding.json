@@ -1,7 +1,12 @@
 {
   "welcome": {
     "title": "Welcome to Threadbase",
-    "subtitle": "Connect to your Claude Code sessions"
+    "subtitle": "Connect to your Claude Code sessions",
+    "eyebrow": "// AMBIENT CODING",
+    "headline": "Pull a thread.",
+    "headlineAccent": "Watch it weave.",
+    "body": "A remote control for Claude Code, on the device you actually carry.",
+    "cta": "Begin handshake"
   },
   "addServer": {
     "title": "Add a Server",
@@ -16,5 +21,42 @@
     "title": "Conversation",
     "empty": "No messages",
     "emptySubtitle": "No conversation history yet"
+  },
+  "shell": {
+    "back": "Back",
+    "skip": "Skip"
+  },
+  "connect": {
+    "eyebrow": "> 02 / PAIR",
+    "headline": "Connect a runtime.",
+    "modeBlurb": "Pick how you want to hand the server its keys.",
+    "scanQr": "Scan QR",
+    "scanQrBody": "Run <1>tb pair</1> on your server to print a QR. Fastest, no typing.",
+    "pasteCredentials": "Paste credentials",
+    "pasteCredentialsBody": "Enter a server URL and API key by hand.",
+    "qrEyebrow": "> 02 / PAIR · QR",
+    "qrHeadline": "Scan to pair.",
+    "step1": "<0>1.</0> On your server, run <1>tb pair</1>. A QR will print to the terminal.",
+    "step2": "<0>2.</0> Tap <1>Open camera</1> below. Threadbase will ask permission to use the camera — that's only used to read the QR.",
+    "openCamera": "Open camera",
+    "pairMyLaptop": "Pair my laptop"
+  },
+  "tour": {
+    "eyebrow": "> 04 / TOUR",
+    "dropIn": "Drop me in",
+    "nextConcept": "Next concept"
+  },
+  "valueProp": {
+    "eyebrow": "// APPEARANCE",
+    "headlineAccent": "vibe.",
+    "body": "Threadbase keeps your agents alive on the box that has the GPU, the keys, and the file tree — and gives you a calm surface to drive them from anywhere.",
+    "cta": "Pair my laptop"
+  },
+  "notifications": {
+    "allowTitle": "Push notifications",
+    "continue": "Continue"
+  },
+  "theme": {
+    "eyebrow": "// APPEARANCE"
   }
 }

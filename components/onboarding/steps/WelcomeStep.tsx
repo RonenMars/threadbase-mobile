@@ -8,6 +8,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { ThreadField } from '../components/ThreadField'
 import { colors, fonts } from '../theme'
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function WelcomeStep({ onNext }: Props) {
+  const { t } = useTranslation('onboarding')
   const glow = useSharedValue(0.55)
 
   useEffect(() => {
@@ -46,20 +48,18 @@ export function WelcomeStep({ onNext }: Props) {
           />
         </View>
 
-        <Text style={styles.eyebrow}>// AMBIENT CODING</Text>
+        <Text style={styles.eyebrow}>{t('welcome.eyebrow')}</Text>
 
         <Text style={styles.headline}>
-          Pull a thread.{'\n'}
-          <Text style={styles.headlineAccent}>Watch it weave.</Text>
+          {t('welcome.headline')}{'\n'}
+          <Text style={styles.headlineAccent}>{t('welcome.headlineAccent')}</Text>
         </Text>
 
-        <Text style={styles.body}>
-          A remote control for Claude Code, on the device you actually carry.
-        </Text>
+        <Text style={styles.body}>{t('welcome.body')}</Text>
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton onPress={onNext}>Begin handshake</PrimaryButton>
+        <PrimaryButton onPress={onNext}>{t('welcome.cta')}</PrimaryButton>
       </View>
     </View>
   )

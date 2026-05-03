@@ -9,6 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
 
@@ -45,6 +46,7 @@ const CONCEPTS: Concept[] = [
 ]
 
 export function TourStep({ onDone }: Props) {
+  const { t } = useTranslation('onboarding')
   const [n, setN] = useState(0)
   const concept = CONCEPTS[n]
   const Preview = concept.Preview
@@ -82,15 +84,16 @@ export function TourStep({ onDone }: Props) {
       </View>
 
       {isLast ? (
-        <PrimaryButton onPress={onDone}>Drop me in</PrimaryButton>
+        <PrimaryButton onPress={onDone}>{t('tour.dropIn')}</PrimaryButton>
       ) : (
-        <PrimaryButton onPress={() => setN(n + 1)}>Next concept</PrimaryButton>
+        <PrimaryButton onPress={() => setN(n + 1)}>{t('tour.nextConcept')}</PrimaryButton>
       )}
       <View style={{ height: 14 }} />
     </View>
   )
 }
 
+/* eslint-disable i18next/no-literal-string */
 // ── Kanban preview ─────────────────────────────────────────────────────────
 function KanbanPreview() {
   const lanes = [
@@ -348,6 +351,8 @@ const terminalStyles = StyleSheet.create({
     marginLeft: 3,
   },
 })
+
+/* eslint-enable i18next/no-literal-string */
 
 // ── Step shell styles ──────────────────────────────────────────────────────
 const styles = StyleSheet.create({

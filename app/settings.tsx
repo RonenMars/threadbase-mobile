@@ -188,14 +188,14 @@ await refreshServerInfo(serverId)
         <SectionHeader title={t('section.appearance')} />
         <View style={s.card}>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Layout</Text>
+            <Text style={s.rowLabel}>{t('appearance.layout')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, sessionsLayout === 'tree' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('tree')}
               >
                 <Text style={[s.segmentBtnText, sessionsLayout === 'tree' && s.segmentBtnTextActive]}>
-                  Tree
+                  {t('appearance.layoutTree')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -203,7 +203,7 @@ await refreshServerInfo(serverId)
                 onPress={() => setSessionsLayout('hub')}
               >
                 <Text style={[s.segmentBtnText, sessionsLayout === 'hub' && s.segmentBtnTextActive]}>
-                  Hub
+                  {t('appearance.layoutHub')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -211,7 +211,7 @@ await refreshServerInfo(serverId)
                 onPress={() => setSessionsLayout('classic')}
               >
                 <Text style={[s.segmentBtnText, sessionsLayout === 'classic' && s.segmentBtnTextActive]}>
-                  Classic
+                  {t('appearance.layoutClassic')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -252,7 +252,7 @@ await refreshServerInfo(serverId)
           <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
         </TouchableOpacity>
 
-        <SectionHeader title="Displayed Servers" />
+        <SectionHeader title={t('section.displayedServers')} />
         <DisplayedServersList
           activeServerIds={activeServerIds}
           servers={servers}
@@ -266,14 +266,14 @@ await refreshServerInfo(serverId)
             style={s.row}
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
           >
-            <Text style={s.rowLabel}>Selected action on create</Text>
+            <Text style={s.rowLabel}>{t('addServer.selectedAction')}</Text>
             <Text style={s.rowValue}>{addServerActionLabel(addServerAction)}</Text>
           </TouchableOpacity>
           {isAddBehaviorOpen ? (
             <View style={s.accordionBody}>
               <ActionSegment value={addServerAction} onChange={setAddServerAction} />
               <TouchableOpacity style={s.resetBtn} onPress={() => setAddServerAction('ask')}>
-                <Text style={s.resetBtnText}>Reset to ask each time</Text>
+                <Text style={s.resetBtnText}>{t('addServer.resetAction')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -288,26 +288,26 @@ await refreshServerInfo(serverId)
           <SettingsRow label={t('notifications.showBadgeCount')} value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
           <SettingsRow label={t('notifications.quietHours')} value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
           <TouchableOpacity style={s.testBtn} onPress={handleTestNotification}>
-            <Text style={s.testBtnText}>Send Test Notification</Text>
+            <Text style={s.testBtnText}>{t('notifications.sendTest')}</Text>
           </TouchableOpacity>
         </View>
 
-        <SectionHeader title="History" />
+        <SectionHeader title={t('section.history')} />
         <View style={s.card}>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Message Preview</Text>
+            <Text style={s.rowLabel}>{t('history.messagePreview')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, historyMessageDisplay === 'first' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('first')}
               >
-                <Text style={[s.segmentBtnText, historyMessageDisplay === 'first' && s.segmentBtnTextActive]}>First</Text>
+                <Text style={[s.segmentBtnText, historyMessageDisplay === 'first' && s.segmentBtnTextActive]}>{t('history.first')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, historyMessageDisplay === 'last' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('last')}
               >
-                <Text style={[s.segmentBtnText, historyMessageDisplay === 'last' && s.segmentBtnTextActive]}>Last</Text>
+                <Text style={[s.segmentBtnText, historyMessageDisplay === 'last' && s.segmentBtnTextActive]}>{t('history.last')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -322,17 +322,17 @@ await refreshServerInfo(serverId)
                 : (Constants.expoConfig?.android?.versionCode ?? '—')
             })`}
           </Text>
-          <Text style={s.aboutSubtext}>AI Agent Control Center</Text>
+          <Text style={s.aboutSubtext}>{t('about.subtitle')}</Text>
         </View>
 
-        <SectionHeader title="Help" />
+        <SectionHeader title={t('section.help')} />
         <View style={s.card}>
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
-            <Text style={s.rowLabel}>Restart onboarding</Text>
+            <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>
-            <Text style={s.rowLabel}>Help & Support</Text>
+            <Text style={s.rowLabel}>{t('help.helpSupport')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
         </View>

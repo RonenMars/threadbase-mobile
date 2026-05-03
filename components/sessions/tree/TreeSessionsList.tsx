@@ -253,7 +253,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           }
           contentContainerStyle={flatItems.length === 0 ? styles.emptyContainer : styles.listContent}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No projects yet</Text>
+            <Text style={styles.emptyText}>{t('list.emptyProjects')}</Text>
           }
         />
       )}

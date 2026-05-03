@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import Animated, { FadeIn } from 'react-native-reanimated'
+import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import type { ExchangeResult } from '@/services/pair-exchange'
@@ -31,6 +32,7 @@ function colorForKind(k: PairLogKind): string {
 }
 
 export function ConnectStep({ onPaired, onAdvance }: Props) {
+  const { t } = useTranslation('onboarding')
   const [url, setUrl] = useState('https://threadbase.local:7331')
   const [token, setToken] = useState('')
   const [mode, setMode] = useState<Mode>('choose')
@@ -78,19 +80,18 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   if (mode === 'choose') {
     return (
       <View style={styles.root}>
-        <Text style={styles.eyebrow}>{'>'} 02 / PAIR</Text>
-        <Text style={styles.headline}>Connect a runtime.</Text>
-        <Text style={styles.modeBlurb}>
-          Pick how you want to hand the server its keys.
-        </Text>
+        <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
+        <Text style={styles.headline}>{t('connect.headline')}</Text>
+        <Text style={styles.modeBlurb}>{t('connect.modeBlurb')}</Text>
 
         <TouchableOpacity
           style={styles.modeCard}
           onPress={() => setMode('qr-explain')}
           activeOpacity={0.85}
         >
-          <Text style={styles.modeCardTitle}>Scan QR</Text>
+          <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
           <Text style={styles.modeCardBody}>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             Run <Text style={{ color: colors.fg2 }}>tb pair</Text> on your server to print a QR.
             Fastest, no typing.
           </Text>
@@ -101,10 +102,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           onPress={() => setMode('manual')}
           activeOpacity={0.85}
         >
-          <Text style={styles.modeCardTitle}>Paste credentials</Text>
-          <Text style={styles.modeCardBody}>
-            Enter a server URL and API key by hand.
-          </Text>
+          <Text style={styles.modeCardTitle}>{t('connect.pasteCredentials')}</Text>
+          <Text style={styles.modeCardBody}>{t('connect.pasteCredentialsBody')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -113,30 +112,37 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   if (mode === 'qr-explain') {
     return (
       <View style={styles.root}>
-        <Text style={styles.eyebrow}>{'>'} 02 / PAIR · QR</Text>
-        <Text style={styles.headline}>Scan to pair.</Text>
+        <Text style={styles.eyebrow}>{t('connect.qrEyebrow')}</Text>
+        <Text style={styles.headline}>{t('connect.qrHeadline')}</Text>
 
         <TerminalCard>
           <Text style={styles.explainStep}>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={styles.stepNum}>1.</Text>{' '}On your server, run{' '}
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={{ color: colors.fg2 }}>tb pair</Text>. A QR will print to the terminal.
           </Text>
           <Text style={[styles.explainStep, { marginTop: 10 }]}>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={styles.stepNum}>2.</Text>{' '}Tap{' '}
-            <Text style={{ color: colors.fg2 }}>Open camera</Text> below. Threadbase will ask
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <Text style={{ color: colors.fg2 }}>{t('connect.openCamera')}</Text> below. Threadbase will ask
             permission to use the camera — that&apos;s only used to read the QR.
           </Text>
           <Text style={[styles.explainStep, { marginTop: 10 }]}>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={styles.stepNum}>3.</Text>{' '}Point your phone at the QR. The pair token is
             valid for 3 minutes; if it expires, just run{' '}
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={{ color: colors.fg2 }}>tb pair</Text> again.
           </Text>
         </TerminalCard>
 
         <View style={styles.flex} />
 
-        <PrimaryButton onPress={() => setScannerOpen(true)}>Open camera</PrimaryButton>
+        <PrimaryButton onPress={() => setScannerOpen(true)}>{t('connect.openCamera')}</PrimaryButton>
         <TouchableOpacity onPress={() => setMode('manual')} style={styles.linkBtn}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           <Text style={styles.linkText}>Use manual entry instead</Text>
         </TouchableOpacity>
         <View style={{ height: 14 }} />
@@ -156,14 +162,16 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={80}
     >
-      <Text style={styles.eyebrow}>{'>'} 02 / PAIR</Text>
-      <Text style={styles.headline}>Connect a runtime.</Text>
+      <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
+      <Text style={styles.headline}>{t('connect.headline')}</Text>
 
       <TouchableOpacity onPress={() => setMode('qr-explain')} style={styles.linkBtnTop}>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         <Text style={styles.linkText}>Scan a QR instead →</Text>
       </TouchableOpacity>
 
       <TerminalCard>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         <Text style={styles.commandLabel}>$ tb pair --server</Text>
         <View style={styles.inputRow}>
           <Text style={styles.prompt}>›</Text>
@@ -180,6 +188,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           />
         </View>
 
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         <Text style={[styles.commandLabel, { marginTop: 10 }]}>$ tb pair --token</Text>
         <View style={styles.inputRow}>
           <Text style={styles.prompt}>›</Text>
@@ -218,6 +227,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
                 entering={FadeIn.duration(200)}
                 style={[styles.logLine, { color: colors.green400, marginTop: 4 }]}
               >
+                {/* eslint-disable-next-line i18next/no-literal-string */}
                 ✓ ready
               </Animated.Text>
             )}
@@ -228,7 +238,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       <View style={styles.footnote}>
         <Text style={[styles.footnoteText, { color: colors.fg3 }]}>{'//'}</Text>
         <Text style={styles.footnoteText}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           {' '}On your desktop, run{' '}
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           <Text style={{ color: colors.fg2 }}>tb token --new</Text> to mint one.
         </Text>
       </View>

@@ -113,6 +113,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
 
       {server.serverInfo ? (
         <Text style={styles.meta}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
           {server.serverInfo.machineName} · {server.serverInfo.platform} · v{server.serverInfo.version}
         </Text>
       ) : (

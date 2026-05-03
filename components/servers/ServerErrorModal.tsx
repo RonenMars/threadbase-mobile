@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { XCircle, X } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { ServerConfig } from '@/types/api'
 
@@ -24,6 +25,7 @@ function maskApiKey(key: string): string {
 }
 
 export function ServerErrorModal({ visible, server, onClose }: Props) {
+  const { t } = useTranslation('servers')
   if (!server) return null
 
   return (
@@ -66,7 +68,7 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
 
           {/* Close button */}
           <TouchableOpacity style={styles.closeFooterBtn} onPress={onClose}>
-            <Text style={styles.closeFooterText}>Close</Text>
+            <Text style={styles.closeFooterText}>{t('common:button.close')}</Text>
           </TouchableOpacity>
         </View>
       </View>

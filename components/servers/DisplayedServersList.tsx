@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
@@ -25,6 +26,7 @@ export function DisplayedServersList({
   onChange,
   showQuickActions = true,
 }: Props) {
+  const { t } = useTranslation('servers')
   const latestServerId = activeServerIds[activeServerIds.length - 1]
 
   return (
@@ -32,16 +34,16 @@ export function DisplayedServersList({
       {showQuickActions ? (
         <View style={styles.quickRow}>
           <TouchableOpacity style={styles.quickButton} onPress={() => onChange(activeServerIds)}>
-            <Text style={styles.quickButtonText}>All</Text>
+            <Text style={styles.quickButtonText}>{t('displayedServers.all')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickButton}
             onPress={() => onChange(latestServerId ? [latestServerId] : [])}
           >
-            <Text style={styles.quickButtonText}>Latest only</Text>
+            <Text style={styles.quickButtonText}>{t('displayedServers.latestOnly')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickButton} onPress={() => onChange([])}>
-            <Text style={styles.quickButtonText}>None</Text>
+            <Text style={styles.quickButtonText}>{t('displayedServers.none')}</Text>
           </TouchableOpacity>
         </View>
       ) : null}

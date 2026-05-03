@@ -12,7 +12,8 @@
     "add": "Add Server",
     "edit": "Edit",
     "remove": "Remove Server",
-    "viewError": "View connection error"
+    "viewError": "View connection error",
+    "connect": "Connect"
   },
   "dialog": {
     "removeTitle": "Remove Server",
@@ -24,6 +25,45 @@
     "name": "Name",
     "url": "URL",
     "namePlaceholder": "My Server",
-    "urlPlaceholder": "http://localhost:3000"
+    "urlPlaceholder": "http://localhost:3000",
+    "labelOptional": "Label (optional)",
+    "serverUrl": "Server URL",
+    "apiKey": "API Key"
+  },
+  "manage": {
+    "title": "Servers",
+    "addServer": "+ Add Server",
+    "empty": "No servers added yet."
+  },
+  "filter": {
+    "title": "Filters",
+    "filterSort": "Filter & Sort",
+    "sortTitle": "Sort",
+    "view": "View",
+    "sortBy": "Sort by",
+    "order": "Order",
+    "status": "Status",
+    "servers": "Servers",
+    "all": "All",
+    "none": "None",
+    "resetDefaults": "Reset to defaults",
+    "close": "✕"
+  },
+  "displayedServers": {
+    "all": "All",
+    "latestOnly": "Latest only",
+    "none": "None"
+  },
+  "newSessionPicker": {
+    "title": "Start session on"
+  },
+  "addAction": {
+    "title": "New server display preference",
+    "subtitle": "How should displayed servers update after this add?",
+    "rememberChoice": "Remember this choice"
+  },
+  "statusModal": {
+    "title": "Server Status",
+    "close": "✕"
   }
 }

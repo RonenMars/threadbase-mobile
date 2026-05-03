@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { X } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { useServersStore } from '@/stores/servers'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function ServersManageModal({ visible, onClose }: Props) {
+  const { t } = useTranslation('servers')
   const router = useRouter()
   const { servers, activeServerIds, removeServer, refreshServerInfo } = useServersStore()
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
@@ -67,7 +69,7 @@ export function ServersManageModal({ visible, onClose }: Props) {
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.header}>
-          <Text style={styles.title}>Servers</Text>
+          <Text style={styles.title}>{t('manage.title')}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeBtn}>
             <X size={20} color={dark.text.secondary} />
           </TouchableOpacity>
@@ -102,7 +104,7 @@ export function ServersManageModal({ visible, onClose }: Props) {
             style={styles.addServerBtn}
             onPress={() => setEditServerId('new')}
           >
-            <Text style={styles.addServerText}>+ Add Server</Text>
+            <Text style={styles.addServerText}>{t('manage.addServer')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>

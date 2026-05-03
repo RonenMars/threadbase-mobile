@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import Svg, { Path } from 'react-native-svg'
+import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
 
@@ -61,12 +62,17 @@ function PulsingArc({
 }
 
 export function ValuePropStep({ onNext }: Props) {
+  const { t } = useTranslation('onboarding')
+
   return (
     <View style={styles.root}>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
       <Text style={styles.eyebrow}>{'>'} 01 / WHY</Text>
 
       <Text style={styles.headline}>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         Your laptop is the runtime.{' '}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         <Text style={styles.headlineMuted}>Your phone is the cockpit.</Text>
       </Text>
 
@@ -78,6 +84,7 @@ export function ValuePropStep({ onNext }: Props) {
               <View style={styles.phoneSpeaker} />
               <View style={styles.phoneHome} />
             </View>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={[styles.glyphLabel, { color: colors.blue400 }]}>YOU</Text>
           </View>
 
@@ -103,11 +110,13 @@ export function ValuePropStep({ onNext }: Props) {
             </Svg>
             <View style={[styles.connectorLabel, styles.connectorLabelTop]}>
               <Text style={[styles.connectorLabelText, { color: colors.blue400 }]}>
+                {/* eslint-disable-next-line i18next/no-literal-string */}
                 prompts ▸
               </Text>
             </View>
             <View style={[styles.connectorLabel, styles.connectorLabelBottom]}>
               <Text style={[styles.connectorLabelText, { color: colors.amber400 }]}>
+                {/* eslint-disable-next-line i18next/no-literal-string */}
                 ◂ stdout
               </Text>
             </View>
@@ -116,26 +125,25 @@ export function ValuePropStep({ onNext }: Props) {
           {/* Laptop glyph */}
           <View style={styles.col}>
             <View style={styles.laptopLid}>
+              {/* eslint-disable-next-line i18next/no-literal-string */}
               <Text style={styles.laptopText}>claude run</Text>
             </View>
             <View style={styles.laptopBase} />
             <Text
               style={[styles.glyphLabel, { color: colors.amber400, marginTop: 8 }]}
             >
+              {/* eslint-disable-next-line i18next/no-literal-string */}
               RUNTIME
             </Text>
           </View>
         </View>
       </View>
 
-      <Text style={styles.body}>
-        Threadbase keeps your agents alive on the box that has the GPU, the keys, and
-        the file tree — and gives you a calm surface to drive them from anywhere.
-      </Text>
+      <Text style={styles.body}>{t('valueProp.body')}</Text>
 
       <View style={styles.flex} />
 
-      <PrimaryButton onPress={onNext}>Pair my laptop</PrimaryButton>
+      <PrimaryButton onPress={onNext}>{t('valueProp.cta')}</PrimaryButton>
       <View style={{ height: 14 }} />
     </View>
   )

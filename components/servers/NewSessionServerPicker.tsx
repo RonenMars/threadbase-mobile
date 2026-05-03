@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
@@ -15,6 +16,7 @@ interface Props {
 const SNAP_POINTS = ['40%', '70%']
 
 export function NewSessionServerPicker({ visible, serverIds, servers, onPick, onClose }: Props) {
+  const { t } = useTranslation('servers')
   if (!visible) return null
 
   return (
@@ -27,7 +29,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>
-        <Text style={styles.title}>Start session on</Text>
+        <Text style={styles.title}>{t('newSessionPicker.title')}</Text>
         <View style={styles.list}>
           {serverIds.map((id) => {
             const server = servers[id]
@@ -51,7 +53,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
         </View>
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

@@ -1,0 +1,16 @@
+{
+  "planPreview": {
+    "title": "Plan Preview",
+    "autoProceed": "Auto-proceed in {{count}}s",
+    "proceed": "▶ Proceed",
+    "editPrompt": "Edit Prompt",
+    "sendEdit": "Send Edit",
+    "cancel": "✕ Cancel"
+  },
+  "promptQueue": {
+    "title": "Prompt Queue",
+    "pending_one": "{{count}} pending",
+    "pending_other": "{{count}} pending",
+    "remove": "✕"
+  }
+}

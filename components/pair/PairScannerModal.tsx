@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import {
   exchangeToken,
@@ -26,6 +27,7 @@ interface Props {
 type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 
 export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
+  const { t } = useTranslation('pair')
   const [permission, requestPermission] = useCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
@@ -89,10 +91,8 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   } else if (!permission.granted) {
     body = (
       <View style={styles.permissionWrap}>
-        <Text style={styles.permissionTitle}>Camera access</Text>
-        <Text style={styles.permissionBody}>
-          Threadbase needs camera access to scan a pairing QR code shown by your server.
-        </Text>
+        <Text style={styles.permissionTitle}>{t('scanner.permissionTitle')}</Text>
+        <Text style={styles.permissionBody}>{t('scanner.permissionBody')}</Text>
         {permission.canAskAgain ? (
           <TouchableOpacity
             style={styles.primaryBtn}
@@ -101,12 +101,10 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
               if (next.granted) reset()
             }}
           >
-            <Text style={styles.primaryBtnText}>Allow camera</Text>
+            <Text style={styles.primaryBtnText}>{t('scanner.allowCamera')}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.permissionHint}>
-            Camera access is disabled. Open Settings to enable it for Threadbase.
-          </Text>
+          <Text style={styles.permissionHint}>{t('scanner.permissionHint')}</Text>
         )}
       </View>
     )
@@ -114,16 +112,16 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
     body = (
       <View style={styles.center}>
         <ActivityIndicator color={dark.text.primary} />
-        <Text style={styles.statusText}>Exchanging pair token…</Text>
+        <Text style={styles.statusText}>{t('scanner.exchanging')}</Text>
       </View>
     )
   } else if (phase === 'error') {
     body = (
       <View style={styles.center}>
-        <Text style={styles.errorTitle}>Pairing failed</Text>
+        <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
         <Text style={styles.errorBody}>{error}</Text>
         <TouchableOpacity style={styles.primaryBtn} onPress={reset}>
-          <Text style={styles.primaryBtnText}>Try again</Text>
+          <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -140,7 +138,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
         )}
         <View style={styles.reticleWrap} pointerEvents="none">
           <View style={styles.reticle} />
-          <Text style={styles.reticleHint}>Point at the QR shown by your server</Text>
+          <Text style={styles.reticleHint}>{t('scanner.reticleHint')}</Text>
         </View>
       </>
     )

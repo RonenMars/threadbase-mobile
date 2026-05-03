@@ -13,6 +13,7 @@ import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
+import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 
 // Track which session IDs have already played their enter animation so
@@ -33,6 +34,7 @@ function formatElapsed(ms: number): string {
 }
 
 export function SessionCard({ session }: Props) {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
@@ -113,7 +115,7 @@ export function SessionCard({ session }: Props) {
           <View style={styles.statusRow}>
             <SessionStatusBadge status={session.status} />
             <Text style={styles.meta}>{formatElapsed(session.elapsedMs)}</Text>
-            <Text style={styles.meta}>{session.promptCount} prompts</Text>
+            <Text style={styles.meta}>{t('card.prompts', { count: session.promptCount })}</Text>
           </View>
 
           {session.lastOutput ? (

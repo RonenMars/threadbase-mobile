@@ -1,0 +1,26 @@
+{
+  "header": {
+    "title": "Conversation"
+  },
+  "list": {
+    "loadingMore": "Loading more…",
+    "empty": "No messages in this conversation.",
+    "msgs_one": "{{count}} msg",
+    "msgs_other": "{{count}} msgs",
+    "tokens": "{{count}}k tokens"
+  },
+  "error": {
+    "loadFailed": "Couldn't load conversation"
+  },
+  "action": {
+    "export": "Export",
+    "copyPatch": "Copy patch",
+    "showAllLines": "Show all {{count}} lines",
+    "copyCode": "Copy"
+  },
+  "message": {
+    "code": "Code",
+    "tokens": "{{count}} tokens",
+    "errorBadge": "Error"
+  }
+}

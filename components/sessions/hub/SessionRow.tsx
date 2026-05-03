@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react'
 import { View, Text, TouchableOpacity, Platform, Alert, ActionSheetIOS } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import * as Haptics from 'expo-haptics'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { dateLabel, formatElapsed } from './hubUtils'
@@ -8,6 +9,7 @@ import { styles } from './SessionRow.styles'
 import type { SessionRowProps } from './types'
 
 export function SessionRow({ session, multipleToday }: SessionRowProps) {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
 
@@ -60,7 +62,8 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
     >
       <View style={styles.rowContent}>
         <Text style={styles.rowPrimary} numberOfLines={1}>
-          {branch} · {elapsed} · {prompts} prompt{prompts !== 1 ? 's' : ''}
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {branch} · {elapsed} · {t('hub.prompts', { count: prompts })}
         </Text>
         {session.serverLabel ? (
           <Text style={styles.serverLabel} numberOfLines={1}>{session.serverLabel}</Text>

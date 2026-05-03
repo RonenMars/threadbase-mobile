@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native'
 import { CaretDown, CaretUp } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { font, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function Banner({ title, message, accent, icon, action, secondaryAction, details, style }: Props) {
+  const { t } = useTranslation('shared')
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -39,7 +41,7 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
               style={s.detailsToggle}
               onPress={() => setDetailsOpen((v) => !v)}
             >
-              <Text style={{ color: accent, fontSize: 12 }}>More info</Text>
+              <Text style={{ color: accent, fontSize: 12 }}>{t('banner.moreInfo')}</Text>
               {detailsOpen
                 ? <CaretUp size={12} color={accent} />
                 : <CaretDown size={12} color={accent} />}

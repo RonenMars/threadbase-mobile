@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { SortBy, SortOrder } from '@/types/ui'
 
@@ -35,6 +36,7 @@ export function SortSheet({
   onChangeSortBy,
   onChangeSortOrder,
 }: Props) {
+  const { t } = useTranslation('servers')
   const [draftBy, setDraftBy] = useState<SortBy>(sortBy)
   const [draftOrder, setDraftOrder] = useState<SortOrder>(sortOrder)
 
@@ -64,14 +66,14 @@ export function SortSheet({
     >
       <BottomSheetView style={styles.content}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Sort</Text>
+          <Text style={styles.title}>{t('filter.sortTitle')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sort by</Text>
+          <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
           <View style={styles.chipRow}>
             {SORT_BY_OPTIONS.map((opt) => {
               const selected = draftBy === opt.value
@@ -93,7 +95,7 @@ export function SortSheet({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order</Text>
+          <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
           <View style={styles.chipRow}>
             {SORT_ORDER_OPTIONS.map((opt) => {
               const selected = draftOrder === opt.value
@@ -116,7 +118,7 @@ export function SortSheet({
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}
@@ -126,7 +128,7 @@ export function SortSheet({
               onClose()
             }}
           >
-            <Text style={styles.applyText}>Apply</Text>
+            <Text style={styles.applyText}>{t('common:button.apply')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

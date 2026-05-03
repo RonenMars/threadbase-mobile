@@ -1,0 +1,14 @@
+{
+  "commands": {
+    "title": "Commands",
+    "empty": "No commands match \"/{{query}}\"",
+    "argsBadge": "args",
+    "run": "Run /{{command}}"
+  },
+  "banner": {
+    "moreInfo": "More info"
+  },
+  "app": {
+    "title": "Threadbase"
+  }
+}

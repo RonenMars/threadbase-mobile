@@ -477,6 +477,7 @@ export function SplashAnimation({ onComplete }: Props) {
         </Animated.View>
 
         {/* Text */}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         <Animated.Text style={[styles.brandText, textAnimStyle]}>
           threadbase
         </Animated.Text>

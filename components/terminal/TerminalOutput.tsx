@@ -9,6 +9,7 @@ import {
   NativeSyntheticEvent,
 } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 
@@ -69,6 +70,7 @@ interface Props {
 }
 
 export function TerminalOutput({ lines, isStreaming }: Props) {
+  const { t } = useTranslation('common')
   const listRef = useRef<FlatList>(null)
   const showJumpButtonVal = useSharedValue(0)
   const showTopButtonVal = useSharedValue(0)
@@ -155,7 +157,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
           accessibilityLabel="Jump to top"
           style={styles.jumpBtnInner}
         >
-          <Text style={styles.jumpBtnText}>↑ Top</Text>
+          <Text style={styles.jumpBtnText}>{t('nav.top')}</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -165,7 +167,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
           accessibilityLabel="Jump to bottom"
           style={styles.jumpBtnInner}
         >
-          <Text style={styles.jumpBtnText}>↓ Bottom</Text>
+          <Text style={styles.jumpBtnText}>{t('nav.bottom')}</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>

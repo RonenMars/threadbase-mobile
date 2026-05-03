@@ -149,7 +149,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
               {/* Label row — QR icon right-aligned */}
               <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Label (optional)</Text>
+                <Text style={styles.fieldLabel}>{t('servers:form.labelOptional')}</Text>
                 <TouchableOpacity
                   onPress={() => setScannerOpen(true)}
                   hitSlop={12}
@@ -169,7 +169,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>Server URL</Text>
+              <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
               <TextInput
                 style={styles.input}
                 value={url}
@@ -182,7 +182,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>API Key</Text>
+              <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
               <View style={styles.apiKeyRow}>
                 <TextInput
                   style={[styles.input, styles.apiKeyInput]}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { MessageContent } from '@/types/api'
 
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ToolCard({ block }: Props) {
+  const { t } = useTranslation('conversation')
   const [expanded, setExpanded] = useState(false)
 
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
@@ -42,7 +44,7 @@ export function ToolCard({ block }: Props) {
       <View style={styles.header}>
         <Text style={styles.icon}>{icon}</Text>
         <Text style={styles.name}>{toolName}</Text>
-        {isError ? <Text style={styles.errorBadge}>Error</Text> : null}
+        {isError ? <Text style={styles.errorBadge}>{t('message.errorBadge')}</Text> : null}
         {hasContent ? (
           <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
         ) : null}

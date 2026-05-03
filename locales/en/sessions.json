@@ -26,7 +26,8 @@
     "empty": "No sessions",
     "emptySubtitle": "Start a Claude Code session to see it here",
     "noResults": "No results",
-    "noResultsSubtitle": "Nothing matched \"{{query}}\""
+    "noResultsSubtitle": "Nothing matched \"{{query}}\"",
+    "emptyProjects": "No projects yet"
   },
   "card": {
     "status": {
@@ -42,7 +43,9 @@
     "sendInput": "Send Input",
     "cancel": "Cancel Session",
     "remove": "Remove Session",
-    "viewError": "View connection error"
+    "viewError": "View connection error",
+    "prompts_one": "{{count}} prompt",
+    "prompts_other": "{{count}} prompts"
   },
   "takeover": {
     "prompt": "Another client is controlling this session",
@@ -53,5 +56,13 @@
     "empty": "Empty directory",
     "loadFailed": "Unable to load directories",
     "browsingNotConfigured": "Browsing not configured"
+  },
+  "hub": {
+    "seeAll_one": "See all {{count}} conversation →",
+    "seeAll_other": "See all {{count}} conversations →",
+    "msgs_one": "{{count}} msg",
+    "msgs_other": "{{count}} msgs",
+    "prompts_one": "{{count}} prompt",
+    "prompts_other": "{{count}} prompts"
   }
 }

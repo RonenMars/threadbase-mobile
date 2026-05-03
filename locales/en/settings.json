@@ -6,13 +6,20 @@
     "appearance": "Appearance",
     "servers": "Servers",
     "notifications": "Notifications",
-    "about": "About"
+    "about": "About",
+    "displayedServers": "Displayed Servers",
+    "history": "History",
+    "help": "Help"
   },
   "appearance": {
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "system": "System"
+    "system": "System",
+    "layout": "Layout",
+    "layoutTree": "Tree",
+    "layoutHub": "Hub",
+    "layoutClassic": "Classic"
   },
   "notifications": {
     "whenAddingServer": "When Adding A New Server",
@@ -21,10 +28,27 @@
     "sessionFailed": "Session Failed",
     "diffReady": "Diff Ready",
     "showBadgeCount": "Show Badge Count",
-    "quietHours": "Quiet Hours"
+    "quietHours": "Quiet Hours",
+    "sendTest": "Send Test Notification"
   },
   "notification": {
     "testTitle": "Test Notification",
     "testBody": "Threadbase notifications are working!"
+  },
+  "addServer": {
+    "selectedAction": "Selected action on create",
+    "resetAction": "Reset to ask each time"
+  },
+  "history": {
+    "messagePreview": "Message Preview",
+    "first": "First",
+    "last": "Last"
+  },
+  "about": {
+    "subtitle": "AI Agent Control Center"
+  },
+  "help": {
+    "restartOnboarding": "Restart onboarding",
+    "helpSupport": "Help & Support"
   }
 }

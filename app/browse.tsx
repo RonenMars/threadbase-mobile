@@ -33,7 +33,7 @@ interface RecentDir {
 }
 
 export default function BrowseScreen() {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation('browse')
   const router = useRouter()
   const { server: serverId } = useLocalSearchParams<{ server: string }>()
   const [currentPath, setCurrentPath] = useState('')
@@ -98,7 +98,7 @@ export default function BrowseScreen() {
       headerLeft: currentPath
         ? () => (
             <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginLeft: 8, paddingRight: 16 }}>
-              <Text style={{ color: dark.text.accent, fontSize: font.base }}>‹ Back</Text>
+              <Text style={{ color: dark.text.accent, fontSize: font.base }}>{t('nav.back')}</Text>
             </TouchableOpacity>
           )
         : undefined,
@@ -235,7 +235,7 @@ export default function BrowseScreen() {
             }
           >
             <Text style={styles.recentsHeaderText}>
-              Recent directories ({recentDirs.length})
+              {t('nav.recentDirs', { count: recentDirs.length })}
             </Text>
             <Text style={styles.recentsChevron}>{isRecentsOpen ? '▾' : '▸'}</Text>
           </TouchableOpacity>
@@ -298,7 +298,7 @@ export default function BrowseScreen() {
             style={styles.newFolderToggle}
             onPress={() => setShowNewFolder(false)}
           >
-            <Text style={styles.newFolderToggleText}>{t('button.cancel')}</Text>
+            <Text style={styles.newFolderToggleText}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TextInput
             style={[styles.newFolderInput, { flex: 1 }]}
@@ -313,7 +313,7 @@ export default function BrowseScreen() {
             {createDir.isPending ? (
               <ActivityIndicator size="small" color={dark.text.accent} />
             ) : (
-              <Text style={styles.newFolderBtnText}>Create</Text>
+              <Text style={styles.newFolderBtnText}>{t('nav.create')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -323,7 +323,7 @@ export default function BrowseScreen() {
             style={styles.newFolderToggle}
             onPress={() => setShowNewFolder(true)}
           >
-            <Text style={styles.newFolderToggleText}>New Folder</Text>
+            <Text style={styles.newFolderToggleText}>{t('nav.newFolder')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -334,9 +334,7 @@ export default function BrowseScreen() {
             {startSession.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.startBtnText}>
-                Start Session Here
-              </Text>
+              <Text style={styles.startBtnText}>{t('nav.startSession')}</Text>
             )}
           </TouchableOpacity>
         </View>

@@ -1,12 +1,14 @@
 import React, { useCallback } from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import * as Haptics from 'expo-haptics'
 import { dateLabel } from './hubUtils'
 import { styles } from './ConvRow.styles'
 import type { ConvRowProps } from './types'
 
 export function ConvRow({ conv, multipleToday }: ConvRowProps) {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
 
   const handlePress = useCallback(() => {
@@ -23,7 +25,8 @@ export function ConvRow({ conv, multipleToday }: ConvRowProps) {
       <View style={styles.convRowInner}>
         <Text style={styles.convTitle} numberOfLines={1}>{conv.title}</Text>
         <Text style={styles.rowSecondary} numberOfLines={1}>
-          {branch} · {msgs} msg{msgs !== 1 ? 's' : ''}
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {branch} · {t('hub.msgs', { count: msgs })}
         </Text>
         {conv.serverLabel ? (
           <Text style={styles.serverLabel} numberOfLines={1}>{conv.serverLabel}</Text>
