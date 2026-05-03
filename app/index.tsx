@@ -32,6 +32,7 @@ import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
+import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -260,6 +261,9 @@ export default function ProjectsHub() {
           </Pressable>
         </View>
       </View>
+
+      {/* Quick Access Strip */}
+      <QuickAccessStrip />
 
       {/* Content */}
       {sessionsLayout === 'tree' ? (

@@ -19,6 +19,7 @@ import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useQuickAccessStore } from '@/stores/quickAccess'
 import { wsManager } from '@/services/ws-client'
 import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
@@ -45,12 +46,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const loadPersistedServers = useServersStore((s) => s.loadPersistedServers)
   const hydrateSettings = useSettingsStore((s) => s.hydrate)
   const hydrateSessionNames = useSessionNamesStore((s) => s.hydrate)
+  const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
 
   useEffect(() => {
     hydrateSettings()
     void hydrateSessionNames()
-  }, [hydrateSettings, hydrateSessionNames])
+    void hydrateQuickAccess()
+  }, [hydrateSettings, hydrateSessionNames, hydrateQuickAccess])
 
   useEffect(() => {
     loadPersistedServers()

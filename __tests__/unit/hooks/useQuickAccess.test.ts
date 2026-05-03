@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react-native'
 import { useRecentSessions, usePopularProjects } from '@/hooks/useQuickAccess'
-import { createWrapper } from '../test-utils'
+import { createWrapper } from '@/test-utils'
 
 const mockGet = jest.fn()
 jest.mock('@/services/api-client', () => ({
