@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
 
-const SECURE_KEY = 'threadbase_session_names'
+const SECURE_KEY = 'session_names'
 
 type NameOrigin = 'manual' | 'auto' | 'ai'
 
@@ -11,7 +11,7 @@ function sessionKey(serverId: string, sessionId: string): string {
 
 interface SessionNamesStore {
   names: Record<string, string>
-  nameOrigins: Record<string, NameOrigin>
+  nameOrigin: Record<string, NameOrigin>
   getName: (serverId: string, sessionId: string) => string | undefined
   getOrigin: (serverId: string, sessionId: string) => NameOrigin | undefined
   setName: (serverId: string, sessionId: string, name: string, origin: NameOrigin) => void
@@ -21,24 +21,24 @@ interface SessionNamesStore {
 
 export const useSessionNamesStore = create<SessionNamesStore>((set, get) => ({
   names: {},
-  nameOrigins: {},
+  nameOrigin: {},
 
   getName: (serverId, sessionId) => get().names[sessionKey(serverId, sessionId)],
 
-  getOrigin: (serverId, sessionId) => get().nameOrigins[sessionKey(serverId, sessionId)],
+  getOrigin: (serverId, sessionId) => get().nameOrigin[sessionKey(serverId, sessionId)],
 
   setName: (serverId, sessionId, name, origin) => {
     const key = sessionKey(serverId, sessionId)
     const names = { ...get().names, [key]: name }
-    const nameOrigins = { ...get().nameOrigins, [key]: origin }
-    set({ names, nameOrigins })
-    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names, nameOrigins }))
+    const nameOrigin = { ...get().nameOrigin, [key]: origin }
+    set({ names, nameOrigin })
+    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names, nameOrigin }))
   },
 
   mergeFromServer: (serverId, serverNames) => {
-    const { names, nameOrigins } = get()
+    const { names, nameOrigin } = get()
     const merged = { ...names }
-    const mergedOrigins = { ...nameOrigins }
+    const mergedOrigins = { ...nameOrigin }
     for (const [sessionId, name] of Object.entries(serverNames)) {
       const key = sessionKey(serverId, sessionId)
       if (mergedOrigins[key] !== 'manual') {
@@ -46,16 +46,16 @@ export const useSessionNamesStore = create<SessionNamesStore>((set, get) => ({
         mergedOrigins[key] = mergedOrigins[key] ?? 'auto'
       }
     }
-    set({ names: merged, nameOrigins: mergedOrigins })
-    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names: merged, nameOrigins: mergedOrigins }))
+    set({ names: merged, nameOrigin: mergedOrigins })
+    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names: merged, nameOrigin: mergedOrigins }))
   },
 
   hydrate: async () => {
     const raw = await SecureStore.getItemAsync(SECURE_KEY)
     if (!raw) return
     try {
-      const parsed = JSON.parse(raw) as { names: Record<string, string>; nameOrigins: Record<string, NameOrigin> }
-      set({ names: parsed.names ?? {}, nameOrigins: parsed.nameOrigins ?? {} })
+      const parsed = JSON.parse(raw) as { names: Record<string, string>; nameOrigin: Record<string, NameOrigin> }
+      set({ names: parsed.names ?? {}, nameOrigin: parsed.nameOrigin ?? {} })
     } catch {
       // corrupted — ignore
     }

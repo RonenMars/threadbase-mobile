@@ -1,7 +1,7 @@
 import { useSessionNamesStore } from '@/stores/sessionNames'
 
 beforeEach(() => {
-  useSessionNamesStore.setState({ names: {}, nameOrigins: {} })
+  useSessionNamesStore.setState({ names: {}, nameOrigin: {} })
 })
 
 describe('sessionNamesStore – getName/setName', () => {
