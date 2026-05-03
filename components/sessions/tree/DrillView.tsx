@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, TouchableOpacity, FlatList, SectionList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSettingsStore } from '@/stores/settings'
+import { useSessionNamesStore } from '@/stores/sessionNames'
 import { latestActivityLabel } from './treeUtils'
 import { DrillRow } from './DrillRow'
 import { styles } from './DrillView.styles'
@@ -15,10 +16,11 @@ interface Props {
 export function DrillView({ node, onBack }: Props) {
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
+  const getSessionName = useSessionNamesStore((s) => s.getName)
 
   const sessionItems: DrillItem[] = node.sessions.map((s) => ({
     key: `s-${s.id}`,
-    label: s.projectName || s.projectPath,
+    label: getSessionName(s.serverId, s.id) ?? s.projectName ?? s.projectPath,
     time: latestActivityLabel(node),
     status: s.status,
     onPress: () => router.push(`/session/${s.id}?server=${s.serverId}`),

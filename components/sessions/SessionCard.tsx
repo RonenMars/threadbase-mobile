@@ -13,6 +13,7 @@ import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
+import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 
@@ -38,6 +39,8 @@ export function SessionCard({ session }: Props) {
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+  const customName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  const displayName = customName ?? session.projectName
   const compoundId = `${session.serverId}::${session.id}`
   const isNew = !_animatedIds.has(compoundId)
   if (isNew) _animatedIds.add(compoundId)
@@ -95,12 +98,12 @@ export function SessionCard({ session }: Props) {
           onPress={handlePress}
           onLongPress={handleLongPress}
           activeOpacity={0.75}
-          accessibilityLabel={`Session ${session.projectName}, status ${session.status}, ${formatElapsed(session.elapsedMs)}`}
+          accessibilityLabel={`Session ${displayName}, status ${session.status}, ${formatElapsed(session.elapsedMs)}`}
           accessibilityRole="button"
         >
           <View style={styles.row}>
             <FolderSimple size={16} color={dark.text.secondary} weight="fill" />
-            <Text style={styles.projectName} numberOfLines={1}>{session.projectName}</Text>
+            <Text style={styles.projectName} numberOfLines={1}>{displayName}</Text>
             {session.branch ? (
               <Badge label={session.branch} />
             ) : null}
