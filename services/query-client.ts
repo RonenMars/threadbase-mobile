@@ -5,8 +5,8 @@ import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state
 
 const ONE_MINUTE = 1000 * 60
 const ONE_DAY = ONE_MINUTE * 60 * 24
-const SLOW_QUERY_THRESHOLD_MS = 14000
-const HARD_ABORT_TIMEOUT_MS = 30000
+const SLOW_QUERY_THRESHOLD_MS = 20000
+const HARD_ABORT_TIMEOUT_MS = 36000
 
 const slowTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const abortTimers = new Map<string, ReturnType<typeof setTimeout>>()
