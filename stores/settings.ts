@@ -32,6 +32,14 @@ interface SettingsStore {
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
   setLocale: (locale: string) => void
+  askOnCreate: boolean
+  askOnExit: boolean
+  autoNameFromMessage: boolean
+  aiGeneratedNames: boolean
+  setAskOnCreate: (v: boolean) => void
+  setAskOnExit: (v: boolean) => void
+  setAutoNameFromMessage: (v: boolean) => void
+  setAiGeneratedNames: (v: boolean) => void
   hydrate: () => Promise<void>
 }
 
@@ -54,6 +62,10 @@ interface PersistedSettings {
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
+  askOnCreate: boolean
+  askOnExit: boolean
+  autoNameFromMessage: boolean
+  aiGeneratedNames: boolean
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -66,6 +78,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionsLayout: 'tree',
   mergeChats: true,
   locale: 'en',
+  askOnCreate: true,
+  askOnExit: true,
+  autoNameFromMessage: true,
+  aiGeneratedNames: false,
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
@@ -79,6 +95,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setMergeChats: (mergeChats) => set({ mergeChats }),
   setLocale: (locale) => set({ locale }),
+  setAskOnCreate: (askOnCreate) => set({ askOnCreate }),
+  setAskOnExit: (askOnExit) => set({ askOnExit }),
+  setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
+  setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   hydrate: async () => {
     const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
     if (!raw) return
@@ -93,6 +113,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
       mergeChats: parsed.mergeChats ?? state.mergeChats,
       locale: parsed.locale ?? state.locale,
+      askOnCreate: parsed.askOnCreate ?? state.askOnCreate,
+      askOnExit: parsed.askOnExit ?? state.askOnExit,
+      autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
+      aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
     }))
   },
 }))
@@ -106,6 +130,10 @@ useSettingsStore.subscribe((state) => {
     sessionsLayout: state.sessionsLayout,
     mergeChats: state.mergeChats,
     locale: state.locale,
+    askOnCreate: state.askOnCreate,
+    askOnExit: state.askOnExit,
+    autoNameFromMessage: state.autoNameFromMessage,
+    aiGeneratedNames: state.aiGeneratedNames,
   }
   void AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
 })
