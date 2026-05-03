@@ -131,6 +131,14 @@ export default function SettingsScreen() {
     setMergeChats,
     colorScheme,
     setColorScheme,
+    askOnCreate,
+    setAskOnCreate,
+    askOnExit,
+    setAskOnExit,
+    autoNameFromMessage,
+    setAutoNameFromMessage,
+    aiGeneratedNames,
+    setAiGeneratedNames,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
@@ -292,6 +300,18 @@ await refreshServerInfo(serverId)
           </TouchableOpacity>
         </View>
 
+        <SectionHeader title="Session Naming" />
+        <View style={s.card}>
+          <SettingsRow label="Ask for name on session start" value={askOnCreate} onValueChange={setAskOnCreate} />
+          <Text style={s.rowNote}>Show a prompt to name the session when you start a new one.</Text>
+          <SettingsRow label="Ask for name on exit" value={askOnExit} onValueChange={setAskOnExit} />
+          <Text style={s.rowNote}>Suggest naming the session when you leave it, if it hasn{"'"}t been named yet. Suppressed when the creation prompt is disabled.</Text>
+          <SettingsRow label="Auto-name from first message" value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
+          <Text style={s.rowNote}>Set the session name from the first words of your first message. No AI, no tokens.</Text>
+          <SettingsRow label="AI-generated session names" value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
+          <Text style={s.rowNote}>Use an AI model to generate a meaningful name. Uses tokens from your configured API key.</Text>
+        </View>
+
         <SectionHeader title={t('section.history')} />
         <View style={s.card}>
           <View style={s.row}>
@@ -433,6 +453,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
     },
     rowLabel: { color: theme.text.primary, fontSize: font.base },
     rowValue: { color: theme.text.secondary, fontSize: font.sm },
+    rowNote: { color: theme.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
     accordionBody: {
       paddingHorizontal: spacing.md,
       paddingBottom: spacing.md,
