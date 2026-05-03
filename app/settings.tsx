@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction } from '@/stores/settings'
+import { useQuickAccessStore } from '@/stores/quickAccess'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
@@ -140,6 +141,11 @@ export default function SettingsScreen() {
     aiGeneratedNames,
     setAiGeneratedNames,
   } = useSettingsStore()
+  const {
+    favoritesEnabled, setFavoritesEnabled,
+    recentsEnabled, setRecentsEnabled,
+    popularEnabled, setPopularEnabled,
+  } = useQuickAccessStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
@@ -299,6 +305,23 @@ await refreshServerInfo(serverId)
             <Text style={s.testBtnText}>{t('notifications.sendTest')}</Text>
           </TouchableOpacity>
         </View>
+
+        <SectionHeader title="Quick Access" />
+        <SettingsRow
+          label="Favorites"
+          value={favoritesEnabled}
+          onValueChange={setFavoritesEnabled}
+        />
+        <SettingsRow
+          label="Recent Sessions"
+          value={recentsEnabled}
+          onValueChange={setRecentsEnabled}
+        />
+        <SettingsRow
+          label="Popular Projects"
+          value={popularEnabled}
+          onValueChange={setPopularEnabled}
+        />
 
         <SectionHeader title="Session Naming" />
         <View style={s.card}>
