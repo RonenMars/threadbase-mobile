@@ -31,7 +31,7 @@ export const useDraftsStore = create<DraftsStore>((set, get) => ({
     const key = sessionKey(serverId, sessionId)
     const { [key]: _removed, ...rest } = get().drafts
     set({ drafts: rest })
-    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify(rest))
+    SecureStore.setItemAsync(SECURE_KEY, JSON.stringify(rest)).catch(() => {})
   },
 
   hydrate: async () => {

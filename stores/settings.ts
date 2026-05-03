@@ -139,5 +139,5 @@ useSettingsStore.subscribe((state) => {
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
   }
-  void AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
+  AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload)).catch(() => {})
 })

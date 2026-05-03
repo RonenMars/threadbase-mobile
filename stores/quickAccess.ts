@@ -108,5 +108,5 @@ useQuickAccessStore.subscribe((state) => {
     recentsEnabled: state.recentsEnabled,
     popularEnabled: state.popularEnabled,
   }
-  void AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(payload))
+  AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(payload)).catch(() => {})
 })
