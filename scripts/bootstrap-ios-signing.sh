@@ -8,7 +8,21 @@
 #
 # Prereqs (one-time per machine):
 #   brew install --cask 1password-cli
-#   eval "$(op signin)"   # interactive — or set OP_SERVICE_ACCOUNT_TOKEN
+#   op vault list                     # first-time only — triggers interactive account setup
+#                                     # (prompts for sign-in address, email, Secret Key, and
+#                                     # master password in one flow; easier than op account add
+#                                     # with flags).
+#                                     # Non-interactive alternative:
+#                                     #   OP_SECRET_KEY=<key> op account add \
+#                                     #     --address my.1password.com \
+#                                     #     --email you@example.com
+#   eval "$(op signin)"               # interactive — or set OP_SERVICE_ACCOUNT_TOKEN
+#
+# If `op whoami` says "No accounts configured", the CLI has never been linked
+# to a 1Password account on this machine. Running `op vault list` triggers the
+# interactive setup flow. This is separate from the desktop app's "Integrate
+# with 1Password CLI" toggle — that toggle only works after an account is
+# already registered with the CLI.
 #
 # 1Password item shape (vault MyDevSecrets, item title "AppStoreConnect"):
 #   field   key_id          — App Store Connect API Key ID      (e.g. ABC123XYZ4)

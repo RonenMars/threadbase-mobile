@@ -219,6 +219,7 @@ or on-demand.
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | `account is not signed in` from `op` | New shell, no session | `eval "$(op signin)"` (interactive) — or set `OP_SERVICE_ACCOUNT_TOKEN` |
+| `No accounts configured for use with 1Password CLI` | CLI installed but never linked to an account on this machine | Run `op vault list` — it triggers an interactive setup flow (sign-in address, email, Secret Key, master password). Non-interactive: `OP_SECRET_KEY=<key> op account add --address my.1password.com --email you@example.com`. One-time per machine; separate from the desktop app's "Integrate with 1Password CLI" toggle, which only works after an account is registered. |
 | Bootstrap dies on PEM sanity check | `.p8` field stripped of newlines (single-line text field) | Re-encode: `base64 -i AuthKey_*.p8` and store in `auth_key_b64` |
 | Archive succeeds, upload rejected: "Invalid Bundle Structure" | Stale Pods after a config-plugin change | `cd ios && pod install --repo-update && cd ..` then re-archive |
 | `processingState=INVALID` | App Store Connect rejected the binary | `curl …/v1/builds/<id>` for reason; common: missing privacy manifest, deprecated APIs |
