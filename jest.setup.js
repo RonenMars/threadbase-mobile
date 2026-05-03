@@ -166,12 +166,9 @@ jest.mock('expo-constants', () => ({
   },
 }))
 
-// ─── @react-navigation/elements ──────────────────────────────────────────────
-jest.mock('@react-navigation/elements', () => ({
+// ─── expo-router/react-navigation (useHeaderHeight escape hatch) ──────────────
+jest.mock('expo-router/react-navigation', () => ({
   useHeaderHeight: () => 44,
-  HeaderButton: () => null,
-  HeaderTitle: () => null,
-  HeaderBackButton: () => null,
 }))
 
 // ─── WebSocket global (for ws-client tests) ──────────────────────────────────

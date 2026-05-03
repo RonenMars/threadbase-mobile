@@ -64,6 +64,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
+    "@react-native/jest-preset": "^0.85.2",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.10",
@@ -74,7 +75,7 @@
     "jest": "^29.7.0",
     "jest-expo": "56.0.0-canary-20260501-15d3529",
     "react-refresh": "^0.18.0",
-    "react-test-renderer": "^19.2.0",
+    "react-test-renderer": "^19.2.3",
     "tailwindcss": "^3.4.10",
     "typescript": "~5.9.3"
   },
