@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
 
-const SECURE_KEY = 'session_names'
+const SECURE_KEY = 'threadbase_session_names'
 
-type NameOrigin = 'manual' | 'auto' | 'ai'
+export type NameOrigin = 'manual' | 'auto' | 'ai'
 
 function sessionKey(serverId: string, sessionId: string): string {
   return `${serverId}::${sessionId}`
@@ -39,13 +39,16 @@ export const useSessionNamesStore = create<SessionNamesStore>((set, get) => ({
     const { names, nameOrigin } = get()
     const merged = { ...names }
     const mergedOrigins = { ...nameOrigin }
+    let changed = false
     for (const [sessionId, name] of Object.entries(serverNames)) {
       const key = sessionKey(serverId, sessionId)
       if (mergedOrigins[key] !== 'manual') {
         merged[key] = name
         mergedOrigins[key] = mergedOrigins[key] ?? 'auto'
+        changed = true
       }
     }
+    if (!changed) return
     set({ names: merged, nameOrigin: mergedOrigins })
     void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names: merged, nameOrigin: mergedOrigins }))
   },
