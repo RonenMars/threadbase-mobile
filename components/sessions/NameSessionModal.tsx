@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Modal,
   View,
@@ -24,6 +24,13 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onSkip, o
   const [name, setName] = useState('')
   const [dontAsk, setDontAsk] = useState(false)
 
+  useEffect(() => {
+    if (visible) {
+      setName('')
+      setDontAsk(false)
+    }
+  }, [visible])
+
   const title = mode === 'create' ? 'Name this session?' : 'Name this session before you go?'
   const skipLabel = mode === 'create' ? 'Skip' : 'Leave as is'
   const saveLabel = mode === 'create' ? 'Start' : 'Save'
@@ -34,8 +41,10 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onSkip, o
   }
 
   function handleSave() {
+    const trimmed = name.trim()
+    if (!trimmed) return
     if (dontAsk) onDontAskAgain()
-    onSave(name.trim())
+    onSave(trimmed)
   }
 
   return (

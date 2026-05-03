@@ -19,7 +19,8 @@ export function RenameSessionSheet({ currentName, onSave, onClose }: Props) {
 
   const handleSave = useCallback(() => {
     const trimmed = name.trim()
-    if (trimmed) onSave(trimmed)
+    if (!trimmed) return
+    onSave(trimmed)
     sheetRef.current?.close()
   }, [name, onSave])
 
