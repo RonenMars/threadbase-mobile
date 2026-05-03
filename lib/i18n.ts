@@ -33,6 +33,9 @@ i18n.use(initReactI18next).init({
   },
   interpolation: {
     escapeValue: false,
+    // Disable nesting ($t() syntax) — not used, and the nestingRegexp triggers
+    // a Hermes 0.14.1 regex engine crash on iOS 26 (null read in appendASCIIRef).
+    disableSafeNesting: true,
   },
 });
 

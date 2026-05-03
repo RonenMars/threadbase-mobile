@@ -79,18 +79,22 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
   setPopularEnabled: (popularEnabled) => set({ popularEnabled }),
 
   hydrate: async () => {
-    const raw = await AsyncStorage.getItem(ASYNC_KEY)
-    if (!raw) return
-    const parsed = JSON.parse(raw) as Partial<PersistedState>
-    set((s) => ({
-      favorites: Array.isArray(parsed.favorites) ? parsed.favorites : s.favorites,
-      ignoredRecents: Array.isArray(parsed.ignoredRecents) ? parsed.ignoredRecents : s.ignoredRecents,
-      ignoredPopular: Array.isArray(parsed.ignoredPopular) ? parsed.ignoredPopular : s.ignoredPopular,
-      stripCollapsed: parsed.stripCollapsed ?? s.stripCollapsed,
-      favoritesEnabled: parsed.favoritesEnabled ?? s.favoritesEnabled,
-      recentsEnabled: parsed.recentsEnabled ?? s.recentsEnabled,
-      popularEnabled: parsed.popularEnabled ?? s.popularEnabled,
-    }))
+    try {
+      const raw = await AsyncStorage.getItem(ASYNC_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Partial<PersistedState>
+      set((s) => ({
+        favorites: Array.isArray(parsed.favorites) ? parsed.favorites : s.favorites,
+        ignoredRecents: Array.isArray(parsed.ignoredRecents) ? parsed.ignoredRecents : s.ignoredRecents,
+        ignoredPopular: Array.isArray(parsed.ignoredPopular) ? parsed.ignoredPopular : s.ignoredPopular,
+        stripCollapsed: parsed.stripCollapsed ?? s.stripCollapsed,
+        favoritesEnabled: parsed.favoritesEnabled ?? s.favoritesEnabled,
+        recentsEnabled: parsed.recentsEnabled ?? s.recentsEnabled,
+        popularEnabled: parsed.popularEnabled ?? s.popularEnabled,
+      }))
+    } catch {
+      // storage unavailable or corrupted — ignore
+    }
   },
 }))
 

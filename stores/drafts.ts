@@ -24,7 +24,7 @@ export const useDraftsStore = create<DraftsStore>((set, get) => ({
     const key = sessionKey(serverId, sessionId)
     const drafts = { ...get().drafts, [key]: text }
     set({ drafts })
-    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify(drafts))
+    SecureStore.setItemAsync(SECURE_KEY, JSON.stringify(drafts)).catch(() => {})
   },
 
   clearDraft: (serverId, sessionId) => {
@@ -35,12 +35,12 @@ export const useDraftsStore = create<DraftsStore>((set, get) => ({
   },
 
   hydrate: async () => {
-    const raw = await SecureStore.getItemAsync(SECURE_KEY)
-    if (!raw) return
     try {
+      const raw = await SecureStore.getItemAsync(SECURE_KEY)
+      if (!raw) return
       set({ drafts: JSON.parse(raw) as Record<string, string> })
     } catch {
-      // corrupted — ignore
+      // keychain unavailable or corrupted — ignore
     }
   },
 }))

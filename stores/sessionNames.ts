@@ -32,7 +32,7 @@ export const useSessionNamesStore = create<SessionNamesStore>((set, get) => ({
     const names = { ...get().names, [key]: name }
     const nameOrigin = { ...get().nameOrigin, [key]: origin }
     set({ names, nameOrigin })
-    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names, nameOrigin }))
+    SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names, nameOrigin })).catch(() => {})
   },
 
   mergeFromServer: (serverId, serverNames) => {
@@ -50,17 +50,17 @@ export const useSessionNamesStore = create<SessionNamesStore>((set, get) => ({
     }
     if (!changed) return
     set({ names: merged, nameOrigin: mergedOrigins })
-    void SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names: merged, nameOrigin: mergedOrigins }))
+    SecureStore.setItemAsync(SECURE_KEY, JSON.stringify({ names: merged, nameOrigin: mergedOrigins })).catch(() => {})
   },
 
   hydrate: async () => {
-    const raw = await SecureStore.getItemAsync(SECURE_KEY)
-    if (!raw) return
     try {
+      const raw = await SecureStore.getItemAsync(SECURE_KEY)
+      if (!raw) return
       const parsed = JSON.parse(raw) as { names: Record<string, string>; nameOrigin: Record<string, NameOrigin> }
       set({ names: parsed.names ?? {}, nameOrigin: parsed.nameOrigin ?? {} })
     } catch {
-      // corrupted — ignore
+      // keychain unavailable or corrupted — ignore
     }
   },
 }))

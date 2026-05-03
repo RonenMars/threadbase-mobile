@@ -100,24 +100,28 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   hydrate: async () => {
-    const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
-    if (!raw) return
-    const parsed = JSON.parse(raw) as Partial<PersistedSettings>
-    set((state) => ({
-      colorScheme: isValidThemeId(parsed.colorScheme) ? parsed.colorScheme : state.colorScheme,
-      notifications: parsed.notifications
-        ? { ...state.notifications, ...parsed.notifications }
-        : state.notifications,
-      historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
-      addServerAction: parsed.addServerAction ?? state.addServerAction,
-      sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
-      mergeChats: parsed.mergeChats ?? state.mergeChats,
-      locale: parsed.locale ?? state.locale,
-      askOnCreate: parsed.askOnCreate ?? state.askOnCreate,
-      askOnExit: parsed.askOnExit ?? state.askOnExit,
-      autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
-      aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
-    }))
+    try {
+      const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Partial<PersistedSettings>
+      set((state) => ({
+        colorScheme: isValidThemeId(parsed.colorScheme) ? parsed.colorScheme : state.colorScheme,
+        notifications: parsed.notifications
+          ? { ...state.notifications, ...parsed.notifications }
+          : state.notifications,
+        historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
+        addServerAction: parsed.addServerAction ?? state.addServerAction,
+        sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
+        mergeChats: parsed.mergeChats ?? state.mergeChats,
+        locale: parsed.locale ?? state.locale,
+        askOnCreate: parsed.askOnCreate ?? state.askOnCreate,
+        askOnExit: parsed.askOnExit ?? state.askOnExit,
+        autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
+        aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
+      }))
+    } catch {
+      // storage unavailable or corrupted — ignore
+    }
   },
 }))
 
