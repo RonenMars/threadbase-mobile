@@ -572,10 +572,9 @@ export default function SessionDetailScreen() {
     }
     // Auto-name from first message
     if (autoNameFromMessage && !getName(serverId, id)) {
-      const autoName = inputText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20)
+      const autoName = inputText.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20)
       if (autoName) {
-        setSessionName(serverId, id, autoName, 'auto')
-        renameSession.mutate({ sessionId: id, name: autoName })
+        renameSession.mutate({ sessionId: id, name: autoName, origin: 'auto' })
       }
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)

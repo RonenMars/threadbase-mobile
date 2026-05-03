@@ -7,15 +7,15 @@ export function useRenameSession(serverId: string) {
   const { setName, getName, getOrigin } = useSessionNamesStore()
 
   type Context = { prevName: string | undefined; prevOrigin: NameOrigin | undefined }
-  return useMutation<void, Error, { sessionId: string; name: string }, Context>({
+  return useMutation<void, Error, { sessionId: string; name: string; origin?: NameOrigin }, Context>({
     mutationFn: async ({ sessionId, name }) => {
       const api = createApiForServer(serverId)
       await api.patch(`/api/sessions/${sessionId}/name`, { name })
     },
-    onMutate: ({ sessionId, name }) => {
+    onMutate: ({ sessionId, name, origin = 'manual' }) => {
       const prevName = getName(serverId, sessionId)
       const prevOrigin = getOrigin(serverId, sessionId)
-      setName(serverId, sessionId, name, 'manual')
+      setName(serverId, sessionId, name, origin)
       return { prevName, prevOrigin }
     },
     onError: (_err, { sessionId }, context) => {
