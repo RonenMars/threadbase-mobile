@@ -6,7 +6,8 @@ import type { NameOrigin } from '@/stores/sessionNames'
 export function useRenameSession(serverId: string) {
   const { setName, getName, getOrigin } = useSessionNamesStore()
 
-  return useMutation<void, Error, { sessionId: string; name: string }>({
+  type Context = { prevName: string | undefined; prevOrigin: NameOrigin | undefined }
+  return useMutation<void, Error, { sessionId: string; name: string }, Context>({
     mutationFn: async ({ sessionId, name }) => {
       const api = createApiForServer(serverId)
       await api.patch(`/api/sessions/${sessionId}/name`, { name })
@@ -18,9 +19,8 @@ export function useRenameSession(serverId: string) {
       return { prevName, prevOrigin }
     },
     onError: (_err, { sessionId }, context) => {
-      const ctx = context as { prevName?: string; prevOrigin?: NameOrigin } | undefined
-      if (ctx?.prevName !== undefined) {
-        setName(serverId, sessionId, ctx.prevName, ctx.prevOrigin ?? 'auto')
+      if (context?.prevName !== undefined) {
+        setName(serverId, sessionId, context.prevName, context.prevOrigin ?? 'auto')
       }
     },
   })
