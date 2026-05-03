@@ -20,6 +20,7 @@ import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import { useFetchSessionNames } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
@@ -56,6 +57,11 @@ type MergedItem =
 function lastActivityMs(s: MultiSession): number {
   if (s.completedAt) return Date.parse(s.completedAt)
   return Date.parse(s.startedAt) + (s.elapsedMs ?? 0)
+}
+
+function SessionNamesSyncer({ serverId }: { serverId: string }) {
+  useFetchSessionNames(serverId)
+  return null
 }
 
 export default function ProjectsHub() {
@@ -205,6 +211,7 @@ export default function ProjectsHub() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']} testID="hub-screen">
+      {activeServerIds.map((sid) => <SessionNamesSyncer key={sid} serverId={sid} />)}
       {/* Header */}
       <View style={styles.header}>
         {/* Left: brand */}
