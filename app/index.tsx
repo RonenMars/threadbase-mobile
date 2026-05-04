@@ -131,8 +131,11 @@ export default function ProjectsHub() {
 
   const handleSessionsRefresh = async () => {
     setManualRefreshing(true)
-    await refetchSessions()
-    setManualRefreshing(false)
+    try {
+      await refetchSessions()
+    } finally {
+      setManualRefreshing(false)
+    }
   }
 
   const visibleSessions = useMemo(
@@ -161,7 +164,9 @@ export default function ProjectsHub() {
 
   useFocusEffect(
     useCallback(() => {
-      refetchSessions()
+      // Swallow rejections — useQuery already exposes the failure via its
+      // error state; an unhandled rejection here crashes the app on RN 0.85.
+      refetchSessions().catch(() => {})
     }, [refetchSessions]),
   )
 

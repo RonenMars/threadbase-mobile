@@ -69,7 +69,7 @@ async function fetchAllPagesForServer(
   while (true) {
     if (signal?.aborted) throw new Error('aborted')
     const qs = buildSessionsQueryString({ limit: DEFAULT_PAGE_SIZE, cursor, sortBy, order, status })
-    const page = await api.get<SessionListPage>(`/api/sessions?${qs}`)
+    const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, { signal })
     for (const s of page.sessions) {
       collected.push({ ...s, serverId, serverLabel })
     }

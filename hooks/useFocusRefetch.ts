@@ -21,9 +21,13 @@ export function useFocusRefetch(refetch: () => Promise<unknown>): boolean {
       }
       let cancelled = false
       setIsFocusFetching(true)
-      refetchRef.current().finally(() => {
-        if (!cancelled) setIsFocusFetching(false)
-      })
+      // .catch swallows the rejection; useQuery exposes the error via its
+      // own state and an unhandled rejection here is fatal on RN 0.85.
+      refetchRef.current()
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setIsFocusFetching(false)
+        })
       return () => {
         cancelled = true
         setIsFocusFetching(false)
