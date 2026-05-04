@@ -52,6 +52,23 @@ export interface ConversationPage {
   total: number
 }
 
+// ── Session pagination ──────────────────────────────────────────────
+
+// Wire-format sort keys, must match the streamer's SessionSortKey enum.
+// The home-screen UI uses a slightly different naming ('lastActivity' vs
+// 'lastActivityAt'); see toWireSortKey in hooks/useSession.ts for the mapping.
+export type SessionSortKeyWire = 'startedAt' | 'lastActivityAt' | 'projectName' | 'status'
+
+export interface SessionListPage {
+  sessions: Session[]
+  nextCursor: string | null
+  total: number
+}
+
+export interface SessionFilter {
+  status?: SessionStatus[]
+}
+
 export interface ConversationDetail extends Conversation {
   messages: Message[]
 }

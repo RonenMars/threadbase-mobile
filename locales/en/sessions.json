@@ -64,5 +64,11 @@
     "msgs_other": "{{count}} msgs",
     "prompts_one": "{{count}} prompt",
     "prompts_other": "{{count}} prompts"
+  },
+  "loading": {
+    "title": "Loading sessions",
+    "progress": "{{loaded}} of {{total}}",
+    "fetchingServer": "Fetching {{server}}",
+    "fetchingNoLabel": "Fetching"
   }
 }

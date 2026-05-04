@@ -33,20 +33,13 @@ import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
+import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
 const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
-
-const STATUS_PRIORITY: Record<string, number> = {
-  running: 0,
-  waiting_input: 1,
-  idle: 2,
-  failed: 3,
-  completed: 4,
-}
 
 type ClassicTab = 'sessions' | 'history'
 
@@ -120,8 +113,20 @@ export default function ProjectsHub() {
     if (!searchOpen) setClassicConvSearch('')
   }, [searchOpen])
 
-  // Sessions data
-  const { sessions, isDone: sessionsDone, isCounting, refetch: refetchSessions } = useEagerSessions()
+  // Sessions data — sort + status filter are now server-side. Per-server
+  // selection (displayedServerIds) remains client-side because it's a UI
+  // toggle the user can flip without re-querying.
+  const {
+    sessions,
+    isDone: sessionsDone,
+    loaded: sessionsLoaded,
+    total: sessionsTotal,
+    currentServerLabel,
+    refetch: refetchSessions,
+  } = useEagerSessions({
+    sort: { sortBy, order: sortOrder },
+    filter: { status: selectedStatuses },
+  })
   const [manualRefreshing, setManualRefreshing] = useState(false)
 
   const handleSessionsRefresh = async () => {
@@ -130,31 +135,10 @@ export default function ProjectsHub() {
     setManualRefreshing(false)
   }
 
-  const visibleSessions = useMemo(() => {
-    const filtered = sessions.filter(
-      (session) =>
-        displayedServerIds.includes(session.serverId) &&
-        selectedStatuses.includes(session.status),
-    )
-    return filtered.sort((a, b) => {
-      let cmp = 0
-      switch (sortBy) {
-        case 'projectName':
-          cmp = (a.projectName ?? '').localeCompare(b.projectName ?? '')
-          break
-        case 'startedAt':
-          cmp = Date.parse(b.startedAt) - Date.parse(a.startedAt)
-          break
-        case 'status':
-          cmp = (STATUS_PRIORITY[a.status] ?? 5) - (STATUS_PRIORITY[b.status] ?? 5)
-          break
-        default:
-          cmp = lastActivityMs(b) - lastActivityMs(a)
-          break
-      }
-      return sortOrder === 'asc' ? -cmp : cmp
-    })
-  }, [sessions, displayedServerIds, selectedStatuses, sortBy, sortOrder])
+  const visibleSessions = useMemo(
+    () => sessions.filter((s) => displayedServerIds.includes(s.serverId)),
+    [sessions, displayedServerIds],
+  )
 
   // Conversations data
   const [refreshEpoch, setRefreshEpoch] = useState(0)
@@ -374,6 +358,13 @@ export default function ProjectsHub() {
         servers={servers}
         onPick={startSessionOn}
         onClose={() => setPickerVisible(false)}
+      />
+
+      <SessionsLoadingOverlay
+        visible={!sessionsDone}
+        loaded={sessionsLoaded}
+        total={sessionsTotal}
+        serverLabel={currentServerLabel}
       />
     </SafeAreaView>
   )

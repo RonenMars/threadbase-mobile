@@ -30,7 +30,22 @@ const server = http.createServer((req, res) => {
   }
 
   if (method === 'GET' && p === '/api/sessions') {
-    return json(res, 200, readFixture('sessions.json'))
+    const sessions = JSON.parse(readFixture('sessions.json'))
+    const hasPaginationParams =
+      url.searchParams.has('limit') ||
+      url.searchParams.has('cursor') ||
+      url.searchParams.has('sortBy') ||
+      url.searchParams.has('order') ||
+      url.searchParams.has('status')
+    if (!hasPaginationParams) {
+      return json(res, 200, sessions)
+    }
+    // Mock streamer always returns one full page (the fixture is small).
+    return json(res, 200, {
+      sessions,
+      nextCursor: null,
+      total: sessions.length,
+    })
   }
 
   if (method === 'GET' && p === '/api/conversations') {
