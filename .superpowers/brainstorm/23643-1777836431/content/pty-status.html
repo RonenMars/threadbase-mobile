@@ -1,0 +1,41 @@
+<h2>PTY Turn Divider — Already Done</h2>
+<p class="subtitle">All three tasks are implemented and committed. But there's a broken test suite to sort out first.</p>
+
+<div class="section">
+  <h3>What's in place</h3>
+  <ul>
+    <li><strong>hooks/useTerminalStream.ts</strong> — <code>TerminalLine</code> type, <code>pendingDividersRef</code>, <code>recordSentInput</code>, idle-flush + stream-start-flush logic</li>
+    <li><strong>components/terminal/TerminalOutput.tsx</strong> — <code>DividerRow</code> component, branched <code>renderItem</code>, divider key prefix</li>
+    <li><strong>app/session/[id].tsx</strong> — <code>recordSentInput(payload)</code> wired at all 3 send sites</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>Broken: test suite won't run</h3>
+  <p>The Expo 55→56 / RN 0.85 upgrade moved the React Native Jest preset to <code>@react-native/jest-preset</code>, but <code>jest-expo</code>'s preset still references the old path. <strong>Every test run fails before any test executes.</strong></p>
+  <p>Fix: install <code>@react-native/jest-preset</code> and update <code>jest.config.js</code>.</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="fix-tests" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Fix the test suite first</h3>
+      <p>Install <code>@react-native/jest-preset</code>, update jest.config.js, verify all 291 tests still pass. Then the PTY divider is truly done.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ship-anyway" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Ship to TestFlight now, fix tests separately</h3>
+      <p>The feature code is complete. Tests are a CI concern, not a runtime one. Ship the build and fix the test suite as a follow-up.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="brainstorm-next" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Brainstorm a genuinely new feature</h3>
+      <p>PTY divider is done, NativeWind migration is the obvious next tech task. Or we can explore something product-driven — search, export, notifications, etc.</p>
+    </div>
+  </div>
+</div>

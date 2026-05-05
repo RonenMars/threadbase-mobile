@@ -1,0 +1,31 @@
+<h2>What should we build next?</h2>
+<p class="subtitle">Pick the area that feels most valuable right now</p>
+
+<div class="options">
+  <div class="option" data-choice="nativewind" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>NativeWind Migration (Waves 2–6)</h3>
+      <p>Migrate remaining ~60 components from StyleSheet to className=. This is the prerequisite that makes the 5-theme system actually work app-wide — right now only a handful of ui/ primitives are theme-aware.</p>
+      <p style="margin-top:8px;font-size:12px;opacity:0.6">~60 files · pure refactor · unlocks full theming</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="pty-divider" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>PTY Turn Divider</h3>
+      <p>Visual separator between Claude turns in the terminal view. Spec + implementation plan already written — just needs execution. Improves readability when reviewing long sessions.</p>
+      <p style="margin-top:8px;font-size:12px;opacity:0.6">~1 day · spec ready · medium complexity</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="new" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Something New</h3>
+      <p>Brainstorm a fresh feature — e.g. session search, conversation export, notifications improvements, keyboard shortcuts, iPad layout, or anything else on your mind.</p>
+      <p style="margin-top:8px;font-size:12px;opacity:0.6">open-ended · depends on the idea</p>
+    </div>
+  </div>
+</div>
