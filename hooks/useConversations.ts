@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from 'react'
-import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation } from '@/types/api'
@@ -284,87 +284,121 @@ export function useConversation(serverId: string, id: string) {
   }
 }
 
-export function useEagerConversations(filter?: ConversationFilter, refreshEpoch = 0) {
+// Drain one server's pages sequentially — keeps server load proportional to
+// progress rather than firing N pages × 3 servers in parallel at every focus.
+async function fetchAllConversationPagesForServer(
+  serverId: string,
+  serverLabel: string | undefined,
+  filter: ConversationFilter | undefined,
+  refreshEpoch: number,
+  onProgress: (loadedSoFar: number, total: number) => void,
+  signal?: AbortSignal,
+): Promise<MultiConversation[]> {
   const limit = 50
+  const api = createApiForServer(serverId)
+
+  const countParams = new URLSearchParams()
+  if (filter?.projectPath) countParams.set('project', filter.projectPath)
+  if (refreshEpoch > 0) countParams.set('refresh', '1')
+  const countQs = countParams.toString()
+  const { total } = await api.get<{ total: number }>(
+    `/api/conversations/count${countQs ? `?${countQs}` : ''}`,
+    { signal },
+  )
+
+  onProgress(0, total)
+
+  const collected: MultiConversation[] = []
+  const pageCount = Math.ceil(total / limit)
+  for (let page = 0; page < pageCount; page++) {
+    if (signal?.aborted) throw new Error('aborted')
+    const params = new URLSearchParams()
+    if (filter?.projectPath) params.set('project', filter.projectPath)
+    params.set('limit', String(limit))
+    params.set('offset', String(page * limit))
+    const raw = await api.get<RawSessionMeta[] | ConversationPage>(
+      `/api/conversations?${params.toString()}`,
+      { signal },
+    )
+    for (const c of adaptPage(raw, page * limit, limit).conversations) {
+      collected.push({ ...c, serverId, serverLabel })
+    }
+    onProgress(collected.length, total)
+  }
+
+  return collected
+}
+
+interface EagerConversationsProgress {
+  loaded: number
+  total: number
+}
+
+export function useEagerConversations(filter?: ConversationFilter, refreshEpoch = 0) {
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
 
-  // Step 1: fetch total count per server (fires immediately, warms scanner cache)
-  const countQueries = useQueries({
-    queries: displayedServerIds.map((serverId) => ({
-      queryKey: ['conversations-count', serverId, filter, refreshEpoch],
-      queryFn: () => {
-        const params = new URLSearchParams()
-        if (filter?.projectPath) params.set('project', filter.projectPath)
-        if (refreshEpoch > 0) params.set('refresh', '1')
-        const qs = params.toString()
-        return createApiForServer(serverId).get<{ total: number }>(
-          `/api/conversations/count${qs ? `?${qs}` : ''}`,
+  const serversRef = useRef(servers)
+  serversRef.current = servers
+
+  const [progress, setProgress] = useState<EagerConversationsProgress>({ loaded: 0, total: 0 })
+
+  const queryKey = useMemo(
+    () => ['conversations-eager', filter, refreshEpoch, ...displayedServerIds],
+    [filter, refreshEpoch, displayedServerIds],
+  )
+
+  const query = useQuery<MultiConversation[], Error>({
+    queryKey,
+    queryFn: async ({ signal }) => {
+      setProgress({ loaded: 0, total: 0 })
+      const merged: MultiConversation[] = []
+      let runningLoaded = 0
+      let runningTotal = 0
+
+      for (const serverId of displayedServerIds) {
+        const label = serversRef.current[serverId]?.label
+        const baselineLoaded = runningLoaded
+        const baselineTotal = runningTotal
+        const items = await fetchAllConversationPagesForServer(
+          serverId,
+          label,
+          filter,
+          refreshEpoch,
+          (loadedSoFar, totalSoFar) => {
+            setProgress({
+              loaded: baselineLoaded + loadedSoFar,
+              total: baselineTotal + totalSoFar,
+            })
+          },
+          signal,
         )
-      },
-      enabled: displayedServerIds.length > 0,
-    })),
+        runningLoaded += items.length
+        runningTotal += items.length
+        merged.push(...items)
+      }
+
+      merged.sort(sortByLastMessageDesc)
+      return dedupeByServerAndId(merged)
+    },
+    enabled: displayedServerIds.length > 0,
+    // Conversations rarely change minute-to-minute; list is augmented by WS
+    // session_update for live status. Avoid re-paginating on every focus.
+    staleTime: 60_000,
   })
 
-  const countsDone = displayedServerIds.length === 0 || countQueries.every((q) => q.isSuccess || q.isError)
-  const serverTotals = countQueries.map((q) => q.data?.total ?? 0)
-  const total = serverTotals.reduce((a, b) => a + b, 0)
-
-  // Step 2: once counts are known, fire all pages in parallel
-  const pageQueryDefs = countsDone
-    ? displayedServerIds.flatMap((serverId, i) => {
-        const serverTotal = serverTotals[i]
-        const pageCount = Math.ceil(serverTotal / limit)
-        return Array.from({ length: pageCount }, (_, page) => ({
-          queryKey: ['conversations-page', serverId, page * limit, filter, refreshEpoch],
-          queryFn: async () => {
-            const params = new URLSearchParams()
-            if (filter?.projectPath) params.set('project', filter.projectPath)
-            params.set('limit', String(limit))
-            params.set('offset', String(page * limit))
-            const raw = await createApiForServer(serverId).get<RawSessionMeta[] | ConversationPage>(
-              `/api/conversations?${params.toString()}`,
-            )
-            const label = servers[serverId]?.label
-            return adaptPage(raw, page * limit, limit).conversations.map(
-              (c): MultiConversation => ({ ...c, serverId, serverLabel: label }),
-            )
-          },
-        }))
-      })
-    : []
-
-  const pageQueries = useQueries({ queries: pageQueryDefs })
-
-  const loaded = pageQueries
-    .filter((q) => q.isSuccess)
-    .reduce((sum, q) => sum + (q.data?.length ?? 0), 0)
-
+  const conversations = query.data ?? []
   const isDone =
-    displayedServerIds.length === 0 ||
-    (countsDone && (pageQueryDefs.length === 0 || pageQueries.every((q) => q.isSuccess || q.isError)))
+    displayedServerIds.length === 0 || (query.isFetched && !query.isFetching)
+  const isCounting = !isDone && progress.total === 0
 
-  const stableConversations = useRef<MultiConversation[]>([])
-  const [conversations, setConversations] = useState<MultiConversation[]>([])
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    if (!isDone) return
-    const all: MultiConversation[] = []
-    for (const q of pageQueries) {
-      if (q.isSuccess && q.data) all.push(...q.data)
-    }
-    const next = dedupeByServerAndId(all.sort(sortByLastMessageDesc))
-    stableConversations.current = next
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
-    debounceTimerRef.current = setTimeout(() => setConversations(next), 80)
-  }, [isDone, pageQueries])
-
-  useEffect(() => () => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
-  }, [])
-
-  return { conversations, loaded, total, isDone, isCounting: !countsDone }
+  return {
+    conversations,
+    loaded: progress.loaded,
+    total: progress.total,
+    isDone,
+    isCounting,
+  }
 }
 
 export function useConversationSearch(query: string) {

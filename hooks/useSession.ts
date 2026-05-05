@@ -187,7 +187,10 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       return dedupeByServerAndId(merged)
     },
     enabled: activeServerIds.length > 0,
-    staleTime: 0,
+    // Live updates arrive via WS session_update; the HTTP eager paginate
+    // is only needed on cold start, manual pull-to-refresh, or after the
+    // sessions list has actually drifted. 60s prevents a focus storm.
+    staleTime: 60_000,
   })
 
   const refetch = useCallback(async () => {
@@ -251,6 +254,7 @@ export function useSessions() {
       return dedupeByServerAndId(merged)
     },
     enabled: activeServerIds.length > 0,
+    staleTime: 60_000,
   })
 }
 

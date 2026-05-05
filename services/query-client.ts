@@ -6,11 +6,8 @@ import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state
 const ONE_MINUTE = 1000 * 60
 const ONE_DAY = ONE_MINUTE * 60 * 24
 const SLOW_QUERY_THRESHOLD_MS = 20000
-const HARD_ABORT_TIMEOUT_MS = 36000
 
 const slowTimers = new Map<string, ReturnType<typeof setTimeout>>()
-const abortTimers = new Map<string, ReturnType<typeof setTimeout>>()
-const abortControllers = new Map<string, AbortController>()
 
 function clearSlowTimer(hash: string) {
   const t = slowTimers.get(hash)
@@ -18,15 +15,6 @@ function clearSlowTimer(hash: string) {
     clearTimeout(t)
     slowTimers.delete(hash)
   }
-}
-
-function clearAbortTimer(hash: string) {
-  const t = abortTimers.get(hash)
-  if (t !== undefined) {
-    clearTimeout(t)
-    abortTimers.delete(hash)
-  }
-  abortControllers.delete(hash)
 }
 
 function categoryForHash(hash: string): QueryCategory {
@@ -41,7 +29,10 @@ function categoryForHash(hash: string): QueryCategory {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      // Per-hook overrides where stronger retry semantics are warranted.
+      // Default 0 keeps a 3-server, multi-page eager loop from amplifying a
+      // single transient failure into 3×N×3 retried requests.
+      retry: 0,
       staleTime: 30 * 1000,
       gcTime: ONE_DAY,
       refetchOnReconnect: true,
@@ -72,32 +63,8 @@ queryClient.getQueryCache().subscribe((event) => {
       }, SLOW_QUERY_THRESHOLD_MS)
       slowTimers.set(hash, slowTimer)
     }
-
-    if (!abortTimers.has(hash)) {
-      const controller = new AbortController()
-      abortControllers.set(hash, controller)
-
-      const abortTimer = setTimeout(() => {
-        abortTimers.delete(hash)
-        const ctrl = abortControllers.get(hash)
-        ctrl?.abort()
-        abortControllers.delete(hash)
-
-        const state = query.state
-        const errorMessage =
-          state.error instanceof Error ? state.error.message : 'Request timed out after 30s'
-        const status =
-          state.error && 'status' in (state.error as object)
-            ? (state.error as { status: number }).status
-            : undefined
-
-        store.pushError({ category, message: errorMessage, status })
-      }, HARD_ABORT_TIMEOUT_MS)
-      abortTimers.set(hash, abortTimer)
-    }
   } else {
     clearSlowTimer(hash)
-    clearAbortTimer(hash)
 
     if (query.state.status === 'error') {
       const err = query.state.error

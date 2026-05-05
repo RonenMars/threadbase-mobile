@@ -21,7 +21,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { wsManager } from '@/services/ws-client'
-import type { Session } from '@/types/api'
+import type { Session, MultiSession } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
@@ -90,16 +90,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       }
     }
 
-    const unsubList = wsManager.onAll('session_list', (msg) => {
-      if (msg.type !== 'session_list') return
-      queryClient.setQueriesData<{ serverId: string; sessions: Session[] }[]>(
-        { queryKey: ['sessions'] },
-        (old) =>
-          old?.map((entry) =>
-            entry.serverId === msg.serverId ? { ...entry, sessions: msg.sessions } : entry,
-          ),
-      )
-    })
     const unsubUpdate = wsManager.onAll('session_update', (msg) => {
       if (msg.type !== 'session_update') return
       const key = ['session', msg.serverId, msg.session.id]
@@ -109,19 +99,18 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData<Session>(key, (prev) =>
         prev ? { ...prev, ...msg.session } : (msg.session as Session),
       )
-      queryClient.setQueriesData<{ serverId: string; sessions: Session[] }[]>(
-        { queryKey: ['sessions'] },
+      // Patch the eager paginated sessions cache (home-screen list) in place
+      // so the row's status flips without an HTTP refetch.
+      queryClient.setQueriesData<MultiSession[]>(
+        { queryKey: ['sessions-eager'] },
         (old) =>
-          old?.map((entry) =>
-            entry.serverId === msg.serverId && Array.isArray(entry.sessions)
-              ? {
-                  ...entry,
-                  sessions: entry.sessions.map((s) =>
-                    s.id === msg.session.id ? { ...s, ...msg.session } : s,
-                  ),
-                }
-              : entry,
-          ),
+          Array.isArray(old)
+            ? old.map((s) =>
+                s.serverId === msg.serverId && s.id === msg.session.id
+                  ? { ...s, ...msg.session }
+                  : s,
+              )
+            : old,
       )
     })
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
@@ -137,7 +126,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     registerPushTokenForAll(activeServerIds).catch(() => {})
 
     return () => {
-      unsubList()
       unsubUpdate()
       unsubReady()
       unsubStatus()
