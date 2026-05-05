@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react'
-import { Animated, Easing, View, Text } from 'react-native'
+import { Animated, Easing, StyleSheet, View, Text } from 'react-native'
 import { CircleNotch } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { dark } from '@/constants/theme'
+import { dark, font, spacing } from '@/constants/theme'
 
 interface Props {
   visible: boolean
@@ -43,60 +43,87 @@ export function SessionsLoadingOverlay({ visible, loaded, total, serverLabel }: 
   return (
     <View
       pointerEvents="auto"
-      className="absolute inset-0 items-center justify-center z-50"
-      style={{ backgroundColor: 'rgba(13, 17, 23, 0.55)' }}
+      style={styles.scrim}
       accessibilityRole="progressbar"
       accessibilityLabel={t('loading.title')}
     >
-      <View
-        className="rounded-2xl px-6 py-5 items-center"
-        style={{
-          backgroundColor: dark.bg.card,
-          minWidth: 240,
-          shadowColor: '#000',
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 6 },
-        }}
-      >
-        <Animated.View style={{ transform: [{ rotate }] }}>
+      <View style={styles.card}>
+        <Animated.View style={[styles.iconWrap, { transform: [{ rotate }] }]}>
           <CircleNotch size={28} color={dark.text.accent} weight="bold" />
         </Animated.View>
 
-        <Text
-          className="mt-3 text-base font-semibold"
-          style={{ color: dark.text.primary }}
-          numberOfLines={1}
-        >
+        <Text style={styles.title} numberOfLines={1}>
           {showRatio
             ? t('loading.progress', { loaded, total })
             : t('loading.title')}
         </Text>
 
-        <Text
-          className="mt-1 text-xs"
-          style={{ color: dark.text.secondary }}
-          numberOfLines={1}
-        >
+        <Text style={styles.subtitle} numberOfLines={1}>
           {serverLabel
             ? t('loading.fetchingServer', { server: serverLabel })
             : t('loading.fetchingNoLabel')}
         </Text>
 
-        <View
-          className="mt-3 h-1.5 w-48 rounded-full overflow-hidden"
-          style={{ backgroundColor: dark.border }}
-        >
-          <View
-            style={{
-              width: `${ratio * 100}%`,
-              height: '100%',
-              backgroundColor: dark.text.accent,
-              borderRadius: 999,
-            }}
-          />
+        <View style={styles.barTrack}>
+          <View style={[styles.barFill, { width: `${ratio * 100}%` }]} />
         </View>
       </View>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(13, 17, 23, 0.55)',
+    zIndex: 50,
+  },
+  card: {
+    backgroundColor: dark.bg.card,
+    borderRadius: 16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    minWidth: 240,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    marginTop: spacing.sm,
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+  },
+  subtitle: {
+    marginTop: 4,
+    color: dark.text.secondary,
+    fontSize: font.xs,
+  },
+  barTrack: {
+    marginTop: spacing.sm,
+    height: 6,
+    width: 192,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: dark.border,
+  },
+  barFill: {
+    height: '100%',
+    backgroundColor: dark.text.accent,
+    borderRadius: 999,
+  },
+})
