@@ -45,9 +45,11 @@ That's the whole flow. No simulator, no UI clicks. The script:
 2. **Install deps** — npm / yarn / pnpm / bun, auto-detected from lockfile.
 3. **Prebuild** — runs `npx expo prebuild` only if `ios/` is missing.
 4. **Bootstrap signing** — skipped automatically if `.env.signing` and the `.p8` key are already on disk. On a fresh machine, pulls ASC API key + Team ID from 1Password (requires `eval "$(op signin)"` or `OP_SERVICE_ACCOUNT_TOKEN`), renders `ExportOptions.plist`, writes `.env.signing`.
-5. **Archive + upload** — `xcodebuild archive` then `xcodebuild -exportArchive` with `destination=upload`.
-6. **Poll** — watches `processingState` until `VALID` (or hard-fails after 30 min).
-7. *(production only)* **Submit for review** — App Store Connect REST API.
+5. **Git sync check** — `git fetch origin` then refuses to ship if local `main` is behind `origin/main` (someone else may have pushed an `app.json` bump from another machine that you haven't pulled). Also refuses if `app.json` has uncommitted edits.
+6. **Build-number reconciliation** — queries the App Store Connect API for the highest `buildNumber` already in TestFlight for this `bundleIdentifier`, compares against `app.json`. If local ≤ remote, auto-bumps `app.json` to `remote + 1`. A drift ≥ 2 prints a louder warning (likely sign of a multi-machine skip).
+7. **Archive + upload** — `xcodebuild archive` then `xcodebuild -exportArchive` with `destination=upload`.
+8. **Poll** — watches `processingState` until `VALID` (or hard-fails after 30 min).
+9. *(production only)* **Submit for review** — App Store Connect REST API.
 
 ## Architecture
 
@@ -60,6 +62,8 @@ reference if needed.
 |--------|------|
 | `ship.sh` | Top-level orchestrator. The only command users typically run. |
 | `preflight.sh` | Runs every prerequisite check and fails loud. Standalone too. |
+| `git-sync-check.sh` | Verifies local `main` is up to date with `origin/main` and `app.json` has no uncommitted edits. Prevents shipping from a stale base on a multi-machine setup. |
+| `check-build-number.sh` | Queries App Store Connect for the highest `buildNumber` in TestFlight, compares to `app.json`, and auto-bumps if local ≤ remote. Surfaces a louder warning when drift ≥ 2 (sign of a missed bump). |
 | `bootstrap-ios-signing.sh` | Pulls API key + Team ID from 1Password, writes `.p8`, renders plist, emits `.env.signing`. |
 | `archive-and-upload.sh` | `xcodebuild archive` + `xcodebuild -exportArchive --destination=upload`. |
 | `asc-jwt.sh` | Mints a 19-min ES256 JWT for ASC API requests. |
@@ -244,3 +248,5 @@ or on-demand.
 - **`prebuild` only when `ios/` is missing**, unless the user requested a clean regen. Warn if `ios/` has uncommitted changes before `--clean`.
 - **The script files are canonical.** This document is a spec; `scripts/*` is the implementation. Don't paraphrase script contents inline — link instead.
 - **Commit `app.json` before shipping.** After bumping the build number (and version if changed), stage and commit `app.json` *before* running the archive/upload. Never ship with an uncommitted `app.json`.
+- **Pull `main` before any ship.** `ship.sh` runs `git-sync-check.sh` to refuse if local `main` is behind `origin/main`, because someone else may have shipped (and bumped `app.json`) from another machine. The fix is `git checkout main && git pull --ff-only`, *not* skipping the check.
+- **Auto-bump prints both numbers.** `check-build-number.sh` always shows local `app.json` + the highest TestFlight `buildNumber` it found, side by side, before any bump. A drift ≥ 2 between them prints a louder warning — that's almost always a sign of an unpushed bump on another machine, and worth investigating before reshipping.

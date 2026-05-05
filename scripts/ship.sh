@@ -54,14 +54,17 @@ esac
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(pwd)"
 
+TOTAL_STEPS=8
+[[ "$TARGET" == "production" ]] && TOTAL_STEPS=9
+
 # 1. Preflight
 if (( SKIP_PREFLIGHT == 0 )); then
-  echo "▸ [1/6] Preflight"
+  echo "▸ [1/$TOTAL_STEPS] Preflight"
   "$SCRIPT_DIR/preflight.sh"
 fi
 
 # 2. Install deps (detect package manager)
-echo "▸ [2/6] Install dependencies"
+echo "▸ [2/$TOTAL_STEPS] Install dependencies"
 if   [[ -f bun.lockb || -f bun.lock ]]; then bun install
 elif [[ -f pnpm-lock.yaml ]];          then pnpm install
 elif [[ -f yarn.lock ]];               then yarn install
@@ -71,7 +74,7 @@ npx expo install --check >/dev/null || true
 
 # 3. Prebuild if ios/ missing
 if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
-  echo "▸ [3/6] Prebuild (no ios/ directory)"
+  echo "▸ [3/$TOTAL_STEPS] Prebuild (no ios/ directory)"
   npx expo prebuild --platform ios --non-interactive
 fi
 
@@ -82,27 +85,33 @@ fi
 # an active `op signin` session).
 # shellcheck disable=SC1091
 if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
-  echo "▸ [4/6] iOS signing already bootstrapped — skipping"
+  echo "▸ [4/$TOTAL_STEPS] iOS signing already bootstrapped — skipping"
 else
-  echo "▸ [4/6] Bootstrap iOS signing"
+  echo "▸ [4/$TOTAL_STEPS] Bootstrap iOS signing"
   "$SCRIPT_DIR/bootstrap-ios-signing.sh"
   source .env.signing
 fi
 
-# 5. Verify (and auto-bump) build number against TestFlight
-echo "▸ [5/7] Check build number against TestFlight"
+# 5. Git sync — refuse to ship if local main is behind origin/main, or if
+# app.json has uncommitted changes. Catches the multi-machine "someone else
+# already shipped a higher build number on another laptop" footgun.
+echo "▸ [5/$TOTAL_STEPS] Git sync check"
+"$SCRIPT_DIR/git-sync-check.sh"
+
+# 6. Verify (and auto-bump) build number against TestFlight
+echo "▸ [6/$TOTAL_STEPS] Check build number against TestFlight"
 "$SCRIPT_DIR/check-build-number.sh"
 
-# 6. Archive + upload
-echo "▸ [6/7] Archive and upload"
+# 7. Archive + upload
+echo "▸ [7/$TOTAL_STEPS] Archive and upload"
 "$SCRIPT_DIR/archive-and-upload.sh"
 
 # Resolve bundle id for polling
 BUNDLE_ID="${BUNDLE_ID_OVERRIDE:-$(jq -r '.expo.ios.bundleIdentifier' app.json)}"
 [[ -n "$BUNDLE_ID" && "$BUNDLE_ID" != "null" ]] || { echo "Could not resolve bundleId" >&2; exit 1; }
 
-# 7. Wait until VALID (or timeout — bounded by poll-build.sh kill switches)
-echo "▸ [7/7] Wait for App Store Connect processing"
+# 8. Wait until VALID (or timeout — bounded by poll-build.sh kill switches)
+echo "▸ [8/$TOTAL_STEPS] Wait for App Store Connect processing"
 "$SCRIPT_DIR/poll-build.sh" "$BUNDLE_ID" --watch --timeout 1800 --interval 30
 
 if [[ "$TARGET" == "testflight" ]]; then
@@ -111,8 +120,8 @@ if [[ "$TARGET" == "testflight" ]]; then
   exit 0
 fi
 
-# 8. Production: submit for App Store review
-echo "▸ [8/8] Submit for App Store review"
+# 9. Production: submit for App Store review
+echo "▸ [9/$TOTAL_STEPS] Submit for App Store review"
 VERSION=$(jq -r '.expo.version' app.json)
 [[ -n "$VERSION" && "$VERSION" != "null" ]] || { echo "expo.version missing in app.json" >&2; exit 1; }
 

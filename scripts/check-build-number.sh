@@ -85,11 +85,20 @@ REMOTE_DATE=$(echo "$LATEST_REMOTE" | cut -f3)
 echo "  latest TestFlight buildNumber: $REMOTE_BUILD ($REMOTE_STATE, uploaded $REMOTE_DATE)"
 
 if (( LOCAL_BUILD > REMOTE_BUILD )); then
-  echo "  ✓ app.json buildNumber ($LOCAL_BUILD) is ahead of TestFlight ($REMOTE_BUILD) — no bump needed"
+  GAP=$(( LOCAL_BUILD - REMOTE_BUILD ))
+  if (( GAP == 1 )); then
+    echo "  ✓ app.json buildNumber ($LOCAL_BUILD) is one ahead of TestFlight ($REMOTE_BUILD) — no bump needed"
+  else
+    # Local is more than 1 ahead — possible if you bumped multiple times locally
+    # without shipping, but also a sign of skipped/failed uploads. Surface it.
+    echo "  ✓ app.json buildNumber ($LOCAL_BUILD) is $GAP ahead of TestFlight ($REMOTE_BUILD) — no bump needed"
+    echo "    (gap > 1: prior local bumps that never shipped, or remote query missed builds)"
+  fi
   exit 0
 fi
 
 NEXT_BUILD=$(( REMOTE_BUILD + 1 ))
+DRIFT=$(( REMOTE_BUILD - LOCAL_BUILD ))
 
 if (( CHECK_ONLY )); then
   echo "  ✗ app.json buildNumber ($LOCAL_BUILD) must be > $REMOTE_BUILD (latest in TestFlight)" >&2
@@ -97,6 +106,18 @@ if (( CHECK_ONLY )); then
   exit 1
 fi
 
+# A gap > 0 between remote and local is normal (someone shipped from
+# another machine since your last pull); a large gap is a stronger signal
+# that the working copy is stale or someone else's bump never landed in git.
+if (( DRIFT >= 2 )); then
+  echo
+  echo "  ⚠ Suspicious build-number drift: TestFlight is at $REMOTE_BUILD, local app.json is at $LOCAL_BUILD (gap $DRIFT)"
+  echo "    This usually means another machine shipped without committing the app.json bump."
+  echo "    Check: did you run \`git pull --ff-only\` recently? Did a teammate forget to push?"
+  echo
+fi
+
 echo "  ⚠ app.json buildNumber ($LOCAL_BUILD) ≤ TestFlight latest ($REMOTE_BUILD) — auto-bumping to $NEXT_BUILD"
 jq ".expo.ios.buildNumber = \"$NEXT_BUILD\"" app.json > app.json.tmp && mv app.json.tmp app.json
 echo "  ✓ app.json updated to buildNumber $NEXT_BUILD"
+echo "    Don't forget to commit this bump after the ship completes."
