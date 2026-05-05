@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
   inner: { flex: 1 },
   listWrapper: { flex: 1 },
-  listContent: { paddingVertical: spacing.md },
+  listContent: { paddingTop: spacing.md, paddingBottom: spacing.lg },
   headerLoading: {
     paddingVertical: spacing.md,
     alignItems: 'center',
