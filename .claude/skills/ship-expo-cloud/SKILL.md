@@ -33,7 +33,41 @@ There are four main workflows, each available via CLI or web dashboard:
 3. **Submit to TestFlight** — send a build to App Store Connect for beta testing
 4. **Release to App Store** — promote a TestFlight build to production
 
-The typical release flow is: **Build** -> **Monitor** -> **Submit to TestFlight** -> test -> **Release to App Store**.
+The typical release flow is: **pre-ship checks** -> **Build** -> **Monitor** -> **Submit to TestFlight** -> test -> **Release to App Store**.
+
+---
+
+## 0. Pre-ship checks (mandatory)
+
+Before any `eas build`, run the same gating checks as `/expo-local-ship`.
+The rules are canonical and shared — see
+[`../_shared/pre-ship-checks.md`](../_shared/pre-ship-checks.md) for the
+full rationale and rules.
+
+The two scripts in `scripts/` enforce them:
+
+```bash
+# 1. Branch sanity, no uncommitted app.json, local main synced with origin/main.
+./scripts/git-sync-check.sh
+
+# 2. Source signing creds (asc-jwt.sh needs them) then reconcile buildNumber.
+source .env.signing
+./scripts/check-build-number.sh
+```
+
+Run both before `eas build --profile production`. EAS minutes are
+expensive — failing fast on a stale base (or a build number that's
+already taken in TestFlight) saves a 15-minute wasted cloud build.
+
+If `check-build-number.sh` auto-bumps `app.json`, **commit the bump
+before** running `eas build`. Cloud builds capture the working tree at
+build-start time; an uncommitted bump means the version that ships
+won't match what's in git.
+
+```bash
+# After the pre-ship scripts pass and any auto-bump is committed:
+eas build --platform ios --profile production
+```
 
 ---
 
@@ -221,13 +255,17 @@ Read `references/troubleshooting.md` for common issues like:
 Use this checklist when doing a production release:
 
 1. [ ] All tests pass locally and in CI
-2. [ ] Version bump (if needed beyond auto-increment)
-3. [ ] `eas build --platform ios --profile production`
-4. [ ] Monitor build until `finished`
-5. [ ] `eas submit --platform ios --profile production --latest`
-6. [ ] Wait for Apple processing in App Store Connect
-7. [ ] Verify build in TestFlight — install and smoke test
-8. [ ] Create new version in App Store Connect
-9. [ ] Write release notes, attach build, update screenshots if needed
-10. [ ] Submit for App Review
-11. [ ] After approval: release (manual or automatic)
+2. [ ] **Pre-ship checks** (`./scripts/git-sync-check.sh` then
+       `source .env.signing && ./scripts/check-build-number.sh`).
+       See [`../_shared/pre-ship-checks.md`](../_shared/pre-ship-checks.md).
+3. [ ] Commit any auto-bumped `app.json` *before* triggering EAS
+4. [ ] Version bump (if needed beyond auto-increment)
+5. [ ] `eas build --platform ios --profile production`
+6. [ ] Monitor build until `finished`
+7. [ ] `eas submit --platform ios --profile production --latest`
+8. [ ] Wait for Apple processing in App Store Connect
+9. [ ] Verify build in TestFlight — install and smoke test
+10. [ ] Create new version in App Store Connect
+11. [ ] Write release notes, attach build, update screenshots if needed
+12. [ ] Submit for App Review
+13. [ ] After approval: release (manual or automatic)
