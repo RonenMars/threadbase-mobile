@@ -1,9 +1,11 @@
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import { View, Text, TouchableOpacity, Platform, Alert, ActionSheetIOS } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import * as Haptics from 'expo-haptics'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { dark } from '@/constants/theme'
+import { LiveDot } from '@/components/sessions/LiveDot'
 import { dateLabel, formatElapsed } from './hubUtils'
 import { styles } from './SessionRow.styles'
 import type { SessionRowProps } from './types'
@@ -51,6 +53,11 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
   const branch = session.branch || 'no git'
   const elapsed = formatElapsed(session.elapsedMs)
   const prompts = session.promptCount
+  const isLive = session.status === 'running' || session.status === 'waiting_input'
+  // Brand colour for the row's leading dot. Amber = live, blue = idle.
+  // Mirrors SessionCard, SessionStatusBadge, and TreeRow so the same
+  // session reads identically in every view.
+  const dotColor = isLive ? dark.status.waiting : dark.text.accent
 
   return (
     <TouchableOpacity
@@ -60,6 +67,7 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
       style={styles.row}
       testID={`session-row-${session.id}`}
     >
+      <LiveDot live={isLive} color={dotColor} size={6} />
       <View style={styles.rowContent}>
         <Text style={styles.rowPrimary} numberOfLines={1}>
           {/* eslint-disable-next-line i18next/no-literal-string */}

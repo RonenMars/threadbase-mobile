@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { View, TextInput, FlatList, RefreshControl } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { dark } from '@/constants/theme'
 import { styles } from './ClassicSessionsList.styles'
 import { searchStyles } from '../SearchStyles'
-import type { MultiSession } from '@/types/api'
+import type { MultiSession, SessionStatus } from '@/types/api'
 
 interface Props {
   sessions: MultiSession[]
@@ -15,6 +16,12 @@ interface Props {
   onRefresh: () => void
   searchOpen?: boolean
 }
+
+const LIVE_STATUSES: SessionStatus[] = ['running', 'waiting_input']
+
+type Row =
+  | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean }
+  | { kind: 'session'; session: MultiSession }
 
 export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
   const { t } = useTranslation('sessions')
@@ -34,6 +41,20 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
     )
   }, [debouncedQuery, sessions])
 
+  // Cluster live (running / waiting_input) sessions to the top of the list
+  // and tag the block with a LIVE/IDLE eyebrow header. Idle sessions follow.
+  // Mirrors the merged-list ordering on the hub screen.
+  const rows = useMemo<Row[]>(() => {
+    if (filteredSessions.length === 0) return []
+    const live = filteredSessions.filter((s) => LIVE_STATUSES.includes(s.status))
+    const idle = filteredSessions.filter((s) => !LIVE_STATUSES.includes(s.status))
+    return [
+      { kind: 'liveHeader', id: 'live-header', count: filteredSessions.length, hasLive: live.length > 0 },
+      ...live.map((s) => ({ kind: 'session' as const, session: s })),
+      ...idle.map((s) => ({ kind: 'session' as const, session: s })),
+    ]
+  }, [filteredSessions])
+
   return (
     <View style={{ flex: 1 }}>
       {searchOpen ? (
@@ -52,9 +73,17 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
         </View>
       ) : null}
       <FlatList
-        data={filteredSessions}
-        keyExtractor={(item) => `${item.serverId}::${item.id}`}
-        renderItem={({ item }) => <SessionCard session={item} />}
+        data={rows}
+        keyExtractor={(item) =>
+          item.kind === 'liveHeader' ? item.id : `${item.session.serverId}::${item.session.id}`
+        }
+        renderItem={({ item }) =>
+          item.kind === 'liveHeader' ? (
+            <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
+          ) : (
+            <SessionCard session={item.session} />
+          )
+        }
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={

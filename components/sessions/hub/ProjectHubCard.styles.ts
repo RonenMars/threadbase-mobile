@@ -2,6 +2,22 @@ import { StyleSheet } from 'react-native'
 import { dark, font, spacing } from '@/constants/theme'
 
 export const styles = StyleSheet.create({
+  // Spine wrapper: a flex row that pins the brand-coloured thread spine to
+  // the left edge of the card and lets the existing header / body fill the
+  // remaining width. Mirrors SessionCard's structure.
+  spineRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  spine: {
+    width: 3,
+  },
+  spinePlaceholder: {
+    width: 3,
+  },
+  spineRowBody: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

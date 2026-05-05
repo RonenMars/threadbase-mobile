@@ -2,9 +2,14 @@ import { dark } from '@/constants/theme'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { TreeNode, FlatNode } from './types'
 
+// Brand palette for the tree leaf indicator. Live (running / waiting_input)
+// gets amber, the brand "now" colour. Idle gets blue, the brand "thread /
+// archive" colour. Matches SessionCard's spine and SessionStatusBadge dots
+// so the same node reads identically across hub, classic, and tree modes.
 export const STATUS_COLOR: Record<string, string> = {
-  running: dark.status.running,
-  idle: dark.status.idle,
+  running: dark.status.waiting,
+  waiting_input: dark.status.waiting,
+  idle: dark.text.accent,
 }
 
 function splitPath(p: string | null | undefined): string[] {
@@ -142,11 +147,22 @@ export function latestActivityLabel(node: TreeNode): string {
 }
 
 export function activeSessionColor(node: TreeNode): string | null {
-  const priority = ['running', 'idle']
+  // Priority: live first (running / waiting_input both map to amber), then
+  // idle. The first matching status decides the leaf colour for the node.
+  const priority = ['running', 'waiting_input', 'idle']
   for (const status of priority) {
     if (node.sessions.some((s) => s.status === status)) {
       return STATUS_COLOR[status]
     }
   }
   return null
+}
+
+/**
+ * Whether a tree node has at least one session that is currently live
+ * (running or waiting_input). Used by TreeRow to decide whether the leaf
+ * dot should pulse.
+ */
+export function hasLiveSession(node: TreeNode): boolean {
+  return node.sessions.some((s) => s.status === 'running' || s.status === 'waiting_input')
 }

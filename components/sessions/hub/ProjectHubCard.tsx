@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { View, Text, TouchableOpacity, Platform, UIManager, LayoutAnimation } from 'react-native'
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
@@ -12,6 +12,7 @@ import { ConvRow } from './ConvRow'
 import { Card } from '@/components/ui/Card'
 import { styles } from './ProjectHubCard.styles'
 import type { ProjectHubCardProps } from './types'
+import type { MultiSession } from '@/types/api'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
@@ -43,19 +44,45 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
   const todayConvCount = group.conversations.filter((c) => isToday(c.lastActivity)).length
   const multipleTodayConvs = todayConvCount > 1
 
+  // Derive the project's lifecycle colour the same way SessionCard does.
+  // Amber spine when any session is live; blue spine when sessions exist
+  // but are all idle (still a thread, just quiet); no spine when only
+  // conversations are present (history-only project).
+  const liveStatus = useMemo(() => {
+    const hasLive = group.sessions.some(
+      (s: MultiSession) => s.status === 'running' || s.status === 'waiting_input',
+    )
+    if (hasLive) return { color: dark.status.waiting, opacity: 1 }
+    if (group.sessions.length > 0) return { color: dark.text.accent, opacity: 0.55 }
+    return null
+  }, [group.sessions])
+
   return (
     <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
-      <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={styles.header}>
-        <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
-        <Text style={styles.projectName} numberOfLines={1}>{group.projectName}</Text>
-        <Text style={styles.countBadge}>
-          {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
-        </Text>
-        <Animated.Text style={[styles.chevron, chevronStyle]}>{'›'}</Animated.Text>
-      </TouchableOpacity>
+      <View style={styles.spineRow}>
+        {liveStatus ? (
+          <View
+            style={[
+              styles.spine,
+              { backgroundColor: liveStatus.color, opacity: liveStatus.opacity },
+            ]}
+          />
+        ) : (
+          <View style={styles.spinePlaceholder} />
+        )}
 
-      {isOpen && (
-        <View style={styles.body}>
+        <View style={styles.spineRowBody}>
+          <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={styles.header}>
+            <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
+            <Text style={styles.projectName} numberOfLines={1}>{group.projectName}</Text>
+            <Text style={styles.countBadge}>
+              {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
+            </Text>
+            <Animated.Text style={[styles.chevron, chevronStyle]}>{'›'}</Animated.Text>
+          </TouchableOpacity>
+
+          {isOpen && (
+            <View style={styles.body}>
           {mergeChats ? (
             <View style={styles.section}>
               {[
@@ -112,8 +139,10 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
               )}
             </>
           )}
+            </View>
+          )}
         </View>
-      )}
+      </View>
     </Card>
   )
 }

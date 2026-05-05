@@ -26,6 +26,7 @@ import { ConversationList } from '@/components/conversation/ConversationList'
 import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
@@ -171,12 +172,30 @@ export default function ProjectsHub() {
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
 
+  // Sessions cluster to the top of the merged list under the LIVE header
+  // (running / waiting_input first, then idle), regardless of conversation
+  // recency. Conversations stay chronologically sorted below. Matches the
+  // brand "amber = now" frame: the user wants to see active work without
+  // scrolling past archive chatter.
   const mergedClassicItems = useMemo((): MergedItem[] => {
-    const items: MergedItem[] = [
-      ...visibleSessions.map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s })),
-      ...conversations.map((c) => ({ kind: 'conversation' as const, ms: Date.parse(c.lastActivity) || 0, item: c })),
-    ]
-    return items.sort((a, b) => b.ms - a.ms)
+    const liveStatuses: SessionStatus[] = ['running', 'waiting_input']
+    const isLive = (s: MultiSession) => liveStatuses.includes(s.status)
+
+    const liveSessions = visibleSessions
+      .filter(isLive)
+      .map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s }))
+      .sort((a, b) => b.ms - a.ms)
+
+    const idleSessions = visibleSessions
+      .filter((s) => !isLive(s))
+      .map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s }))
+      .sort((a, b) => b.ms - a.ms)
+
+    const convs = conversations
+      .map((c) => ({ kind: 'conversation' as const, ms: Date.parse(c.lastActivity) || 0, item: c }))
+      .sort((a, b) => b.ms - a.ms)
+
+    return [...liveSessions, ...idleSessions, ...convs]
   }, [visibleSessions, conversations])
 
   // FAB
@@ -410,10 +429,25 @@ function MergedClassicList({
 
   type ClassicFlatItem =
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
+    | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean }
     | MergedItem
 
   const flatData = useMemo((): ClassicFlatItem[] => {
-    if (!showServerHeaders) return filteredItems
+    // Single-server: inject one LIVE/IDLE eyebrow above the contiguous
+    // session block at the top. Sessions are already clustered first by
+    // mergedClassicItems' sort (live → idle → conversations).
+    if (!showServerHeaders) {
+      const sessionItems = filteredItems.filter((it) => it.kind === 'session')
+      if (sessionItems.length === 0) return filteredItems
+      const hasLive = sessionItems.some((it) => {
+        const s = it.item as MultiSession
+        return s.status === 'running' || s.status === 'waiting_input'
+      })
+      return [
+        { kind: 'liveHeader', id: 'live-header', count: sessionItems.length, hasLive },
+        ...filteredItems,
+      ]
+    }
 
     const buckets = new Map<string, MergedItem[]>()
     for (const id of activeServerIds) buckets.set(id, [])
@@ -481,12 +515,16 @@ function MergedClassicList({
         data={flatData}
         keyExtractor={(item) => {
           if (item.kind === 'header') return `header-${item.serverId}`
+          if (item.kind === 'liveHeader') return item.id
           if (item.kind === 'session') return `s-${item.item.serverId}::${item.item.id}`
           return `c-${item.item.serverId}::${item.item.id}`
         }}
         renderItem={({ item }) => {
           if (item.kind === 'header') {
             return <ServerHeaderRow serverLabel={item.serverLabel} totalCount={item.totalCount} />
+          }
+          if (item.kind === 'liveHeader') {
+            return <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
           }
           if (item.kind === 'session') {
             return <SessionCard session={item.item as MultiSession} />

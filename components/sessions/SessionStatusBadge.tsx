@@ -1,8 +1,6 @@
-import React from 'react'
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
-import { useEffect } from 'react'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { dark, font, spacing } from '@/constants/theme'
+import { LiveDot } from './LiveDot'
 import type { SessionStatus } from '@/types/api'
 
 const STATUS_LABELS: Record<SessionStatus, string> = {
@@ -24,20 +22,14 @@ interface Props {
 
 export function SessionStatusBadge({ status, isRefetching }: Props) {
   const color = STATUS_COLORS[status] ?? dark.status.idle
-  const opacity = useSharedValue(1)
-
-  useEffect(() => {
-    opacity.value = 1
-  }, [status, opacity])
-
-  const dotStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
+  const isLive = status === 'running' || status === 'waiting_input'
 
   return (
     <View style={styles.row}>
       {isRefetching ? (
         <ActivityIndicator size="small" color={color} style={styles.spinner} />
       ) : (
-        <Animated.View style={[styles.dot, { backgroundColor: color }, dotStyle]} />
+        <LiveDot live={isLive} color={color} size={7} />
       )}
       <Text style={[styles.label, { color }]}>{STATUS_LABELS[status]}</Text>
     </View>
@@ -49,11 +41,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: radius.full,
   },
   spinner: {
     transform: [{ scale: 0.6 }],

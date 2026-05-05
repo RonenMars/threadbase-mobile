@@ -70,5 +70,11 @@
     "progress": "{{loaded}} of {{total}}",
     "fetchingServer": "Fetching {{server}}",
     "fetchingNoLabel": "Fetching"
+  },
+  "live": {
+    "headerLive_one": "LIVE · {{count}}",
+    "headerLive_other": "LIVE · {{count}}",
+    "headerIdle_one": "IDLE · {{count}}",
+    "headerIdle_other": "IDLE · {{count}}"
   }
 }

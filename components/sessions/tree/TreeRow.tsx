@@ -1,8 +1,8 @@
-import React from 'react'
 import { View, Text, TouchableOpacity, Pressable } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { spacing } from '@/constants/theme'
-import { activeSessionColor, latestActivityLabel } from './treeUtils'
+import { activeSessionColor, hasLiveSession, latestActivityLabel } from './treeUtils'
+import { LiveDot } from '@/components/sessions/LiveDot'
 import { styles } from './TreeRow.styles'
 import type { TreeNode } from './types'
 
@@ -22,6 +22,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
   const isMixed = hasChildren && hasItems
   const accentColor = activeSessionColor(node)
   const timeLabel = latestActivityLabel(node)
+  const isLive = hasLiveSession(node)
 
   const handlePress = () => {
     if (isLeaf) {
@@ -40,8 +41,13 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
       <View style={styles.iconSlot}>
         {hasChildren ? (
           <Text style={[styles.chevron, isExpanded && styles.chevronOpen]}>›</Text>
+        ) : accentColor ? (
+          // Pulsing brand dot when the leaf has any live session; static
+          // otherwise. Matches SessionStatusBadge so a leaf in tree mode and
+          // a row in classic/merged mode read identically.
+          <LiveDot live={isLive} color={accentColor} size={6} />
         ) : (
-          <View style={[styles.leafDot, accentColor ? { backgroundColor: accentColor } : null]} />
+          <View style={styles.leafDot} />
         )}
       </View>
 

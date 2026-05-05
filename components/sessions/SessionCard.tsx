@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ActionSheetIOS, Platform, Alert } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
@@ -7,8 +7,7 @@ import { SessionStatusBadge } from './SessionStatusBadge'
 import { MachineBadge } from './MachineBadge'
 import { ServerBadge } from '@/components/servers/ServerBadge'
 import { Badge } from '@/components/ui/Badge'
-import { Card } from '@/components/ui/Card'
-import { dark, font, spacing } from '@/constants/theme'
+import { dark, font, radius, spacing } from '@/constants/theme'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -44,6 +43,13 @@ export function SessionCard({ session }: Props) {
   const compoundId = `${session.serverId}::${session.id}`
   const isNew = !_animatedIds.has(compoundId)
   if (isNew) _animatedIds.add(compoundId)
+
+  const isLive = session.status === 'running' || session.status === 'waiting_input'
+  // Brand thread spine: amber for live (running / waiting_input), blue for
+  // idle (still a "thread", just not actively producing output). The spine
+  // is a structural column — the row's left edge IS the thread, echoing
+  // the brand mark. Not a decorative side-stripe border.
+  const spineColor = isLive ? dark.status.waiting : dark.text.accent
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -89,74 +95,123 @@ export function SessionCard({ session }: Props) {
     }
   }, [session, cancelSession, router])
 
-  const isWaiting = session.status === 'waiting_input'
+  const elapsedLabel = formatElapsed(session.elapsedMs)
+  const promptsLabel = t('card.prompts', { count: session.promptCount })
 
   return (
-    <Animated.View entering={isNew ? FadeInDown : undefined}>
-      <Card variant={isWaiting ? 'warning' : 'default'}>
-        <TouchableOpacity
-          onPress={handlePress}
-          onLongPress={handleLongPress}
-          activeOpacity={0.75}
-          accessibilityLabel={`Session ${displayName}, status ${session.status}, ${formatElapsed(session.elapsedMs)}`}
-          accessibilityRole="button"
-        >
-          <View style={styles.row}>
-            <FolderSimple size={16} color={dark.text.secondary} weight="fill" />
-            <Text style={styles.projectName} numberOfLines={1}>{displayName}</Text>
-            {session.branch ? (
-              <Badge label={session.branch} />
-            ) : null}
-            {session.machineName ? (
-              <MachineBadge machineName={session.machineName} />
-            ) : null}
-            {multipleServers ? (
-              <ServerBadge serverId={session.serverId} label={session.serverLabel} />
+    <Animated.View entering={isNew ? FadeInDown : undefined} style={styles.cardWrap}>
+      <TouchableOpacity
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        activeOpacity={0.75}
+        accessibilityLabel={`Session ${displayName}, status ${session.status}, ${elapsedLabel}`}
+        accessibilityRole="button"
+        style={styles.touchable}
+      >
+        <View style={styles.row}>
+          {/* Thread spine — structural column, brand-mark echo. */}
+          <View style={[styles.spine, { backgroundColor: spineColor, opacity: isLive ? 1 : 0.55 }]} />
+
+          <View style={styles.body}>
+            {/* Line 1: project name + trailing meta chips */}
+            <View style={styles.titleRow}>
+              <FolderSimple size={14} color={dark.text.secondary} weight="fill" />
+              <Text style={styles.projectName} numberOfLines={1}>{displayName}</Text>
+              <View style={styles.titleMeta}>
+                {session.branch ? <Badge label={session.branch} /> : null}
+                {session.machineName ? <MachineBadge machineName={session.machineName} /> : null}
+                {multipleServers ? (
+                  <ServerBadge serverId={session.serverId} label={session.serverLabel} />
+                ) : null}
+              </View>
+            </View>
+
+            {/* Line 2: status + runtime + prompts in mono. The bullets give
+                the row a terminal-log rhythm without adding chrome. */}
+            <View style={styles.statusRow}>
+              <SessionStatusBadge status={session.status} />
+              <Text style={styles.metaSeparator}>•</Text>
+              <Text style={styles.metaMono}>{elapsedLabel}</Text>
+              <Text style={styles.metaSeparator}>•</Text>
+              <Text style={styles.metaMono}>{promptsLabel}</Text>
+            </View>
+
+            {/* Line 3: last terminal output, mono, single line. Drop entirely
+                if there's no output (rather than reserving empty space). */}
+            {session.lastOutput ? (
+              <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
             ) : null}
           </View>
-
-          <View style={styles.statusRow}>
-            <SessionStatusBadge status={session.status} />
-            <Text style={styles.meta}>{formatElapsed(session.elapsedMs)}</Text>
-            <Text style={styles.meta}>{t('card.prompts', { count: session.promptCount })}</Text>
-          </View>
-
-          {session.lastOutput ? (
-            <Text style={styles.output} numberOfLines={2}>{session.lastOutput}</Text>
-          ) : null}
-        </TouchableOpacity>
-      </Card>
+        </View>
+      </TouchableOpacity>
     </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
+  cardWrap: {
+    marginBottom: spacing.sm,
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    overflow: 'hidden', // clip the spine to the card's rounded corners
+  },
+  touchable: {
+    // Touchable is the press target; the row inside lays out spine + body.
+  },
   row: {
     flexDirection: 'row',
+    alignItems: 'stretch',
+    minHeight: 64,
+  },
+  spine: {
+    width: 3,
+  },
+  body: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs + 2,
+  },
+  titleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
   },
   projectName: {
     color: dark.text.primary,
     fontSize: font.base,
     fontWeight: '600',
-    flex: 1,
+    flexShrink: 1,
+  },
+  titleMeta: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs + 2,
     flexWrap: 'wrap',
   },
-  meta: {
+  metaMono: {
     color: dark.text.secondary,
     fontSize: font.xs,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontVariant: ['tabular-nums'],
+  },
+  metaSeparator: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+    opacity: 0.5,
   },
   output: {
     color: dark.text.secondary,
     fontSize: font.xs,
-    fontFamily: 'monospace',
-    marginTop: spacing.xs,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    opacity: 0.85,
   },
 })
