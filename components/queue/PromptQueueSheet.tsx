@@ -16,6 +16,8 @@ const STATUS_COLORS: Record<QueuedPrompt['status'], string> = {
   cancelled: dark.status.failed,
 }
 
+const EMPTY_QUEUE: QueuedPrompt[] = []
+
 interface Props {
   serverId: string
   sessionId: string
@@ -28,7 +30,10 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
   const queueKey = `${serverId}::${sessionId}`
-  const queue = useSessionsStore((s) => s.promptQueues[queueKey] ?? [])
+  // Select the raw slot; fall back outside the selector so we never return a
+  // fresh [] each render (Zustand v5 uses Object.is, which would loop).
+  const rawQueue = useSessionsStore((s) => s.promptQueues[queueKey])
+  const queue = rawQueue ?? EMPTY_QUEUE
   const reorderQueue = useSessionsStore((s) => s.reorderQueue)
   const { addToQueue, removeFromQueue } = useSessionActions(serverId, sessionId)
 

@@ -166,8 +166,8 @@ jest.mock('expo-constants', () => ({
   },
 }))
 
-// ─── expo-router/react-navigation (useHeaderHeight escape hatch) ──────────────
-jest.mock('expo-router/react-navigation', () => ({
+// ─── @react-navigation/elements (useHeaderHeight escape hatch) ───────────────
+jest.mock('@react-navigation/elements', () => ({
   useHeaderHeight: () => 44,
 }))
 
