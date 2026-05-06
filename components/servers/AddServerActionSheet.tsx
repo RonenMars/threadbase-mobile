@@ -34,7 +34,7 @@ const OPTIONS: { id: Choice; label: string; description: string }[] = [
 ]
 
 export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'common'])
   const [choice, setChoice] = useState<Choice>('add')
   const [rememberChoice, setRememberChoice] = useState(false)
 

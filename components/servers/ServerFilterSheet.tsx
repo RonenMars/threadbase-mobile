@@ -45,7 +45,7 @@ export function ServerFilterSheet({
   sortType,
   onChangeSortType,
 }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'common'])
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)

@@ -25,7 +25,7 @@ function maskApiKey(key: string): string {
 }
 
 export function ServerErrorModal({ visible, server, onClose }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'common'])
   if (!server) return null
 
   return (

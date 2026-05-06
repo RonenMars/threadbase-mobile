@@ -28,7 +28,7 @@ interface Props {
 }
 
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'servers'])
   const { servers, addServer, editServer } = useServersStore()
   const server = serverId ? servers[serverId] : null
   const isEditMode = serverId !== null

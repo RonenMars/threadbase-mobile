@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
-  const { t } = useTranslation('shared')
+  const { t } = useTranslation(['shared', 'common'])
   const [arg, setArg] = useState('')
 
   // Reset arg whenever a new command is shown

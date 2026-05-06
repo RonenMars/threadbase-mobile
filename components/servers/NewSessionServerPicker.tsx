@@ -16,7 +16,7 @@ interface Props {
 const SNAP_POINTS = ['40%', '70%']
 
 export function NewSessionServerPicker({ visible, serverIds, servers, onPick, onClose }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'common'])
   if (!visible) return null
 
   return (

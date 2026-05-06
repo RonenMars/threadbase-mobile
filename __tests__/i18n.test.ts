@@ -18,7 +18,8 @@ describe('i18n', () => {
   });
 
   it('falls back to key when translation is missing', () => {
-    expect(i18n.t('common:nonexistent.key')).toBe('nonexistent.key');
+    // Intentionally missing key to verify fallback — bypass strict key typing.
+    expect(i18n.t('nonexistent.key' as never, { ns: 'common' })).toBe('nonexistent.key');
   });
 
   it.skip('runtime locale switch re-renders with new strings (implement when runtime switching is added)', () => {

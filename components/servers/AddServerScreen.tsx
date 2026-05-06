@@ -27,7 +27,7 @@ interface Props {
 }
 
 export function AddServerScreen({ isAddingServer }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'shared', 'settings'])
   const router = useRouter()
   const navigation = useNavigation()
   const headerHeight = useHeaderHeight()
