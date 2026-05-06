@@ -4,6 +4,8 @@ export interface Session {
   id: string
   status: SessionStatus
   ptyAttached: boolean
+  /** Stable backend identity. Optional during migration; will be required. */
+  projectId?: string
   projectPath: string
   projectName: string
   branch?: string
@@ -14,6 +16,8 @@ export interface Session {
   startedAt: string
   completedAt?: string
   failureReason?: string
+  /** Set when this session was started via `/api/sessions/resume`. */
+  resumedFromConversationId?: string | null
 }
 
 export interface MessageSnapshot {
@@ -26,6 +30,8 @@ export interface Conversation {
   title: string
   sessionName?: string
   filePath?: string
+  /** Stable backend identity. Optional during migration; will be required. */
+  projectId?: string
   projectPath: string
   branch?: string
   account?: string

@@ -187,7 +187,7 @@ export function ConversationList({
 
   const keyExtractor = useCallback(
     (item: MultiConversation | string) =>
-      typeof item === 'string' ? item : `${item.serverId}::${item.id}`,
+      typeof item === 'string' ? item : `conversation:${item.serverId}::${item.id}`,
     [],
   )
 

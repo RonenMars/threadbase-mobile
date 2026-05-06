@@ -3,6 +3,9 @@ import type { MultiSession, MultiConversation } from '../../../types/api'
 import type { SortBy, SortOrder } from '../../../types/ui'
 
 export interface ProjectGroup {
+  /** Backend-stable project identity. Falls back to projectPath while
+   *  the backend rolls out projectId support. */
+  projectId: string
   projectPath: string
   projectName: string
   sessions: MultiSession[]
@@ -35,10 +38,13 @@ export function useProjectGroups(
     const map = new Map<string, ProjectGroup>()
 
     for (const session of sessions) {
-      const key = session.projectPath
+      // Prefer projectId for grouping; fall back to projectPath while
+      // backend migration is in progress.
+      const key = session.projectId ?? session.projectPath
       if (!map.has(key)) {
         map.set(key, {
-          projectPath: key,
+          projectId: session.projectId ?? session.projectPath,
+          projectPath: session.projectPath,
           projectName: session.projectName,
           sessions: [],
           conversations: [],
@@ -63,11 +69,12 @@ export function useProjectGroups(
     }
 
     for (const conversation of conversations) {
-      const key = conversation.projectPath
+      const key = conversation.projectId ?? conversation.projectPath
       if (!map.has(key)) {
         map.set(key, {
-          projectPath: key,
-          projectName: key,
+          projectId: conversation.projectId ?? conversation.projectPath,
+          projectPath: conversation.projectPath,
+          projectName: conversation.projectPath,
           sessions: [],
           conversations: [],
           latestActivityMs: 0,

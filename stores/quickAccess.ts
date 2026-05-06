@@ -3,11 +3,59 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const ASYNC_KEY = 'threadbase_quick_access'
 
-export interface FavoriteItem {
-  type: 'dir' | 'session'
-  id: string
-  label: string
-  serverId?: string
+/**
+ * Favorite item with stable identity. New favorites of type `session`,
+ * `conversation`, or `project-chat` should use the canonical favorite id
+ * shape `${serverId}::${type}::${id}` (or `${serverId}::project-chat::${chatType}::${chatId}`)
+ * so a project's identity isn't accidentally hashed by `projectPath`.
+ *
+ * Legacy `dir` and pre-migration `session` favorites remain valid; we never
+ * migrate them automatically because the backend may not yet have a
+ * `projectId` for the underlying directory.
+ */
+export type FavoriteItem =
+  | {
+      type: 'dir'
+      id: string
+      label: string
+      serverId?: string
+    }
+  | {
+      type: 'session'
+      id: string
+      label: string
+      serverId: string
+      sessionId?: string
+      projectId?: string
+    }
+  | {
+      type: 'conversation'
+      id: string
+      label: string
+      serverId: string
+      conversationId: string
+      projectId?: string
+    }
+  | {
+      type: 'project-chat'
+      id: string
+      label: string
+      serverId: string
+      chatType: 'session' | 'conversation'
+      chatId: string
+      projectId: string
+    }
+
+/**
+ * Canonical id for new favorites. Existing favorites that pre-date this
+ * helper keep their old ids — never re-key on read or you'll dedupe-drop them.
+ */
+export function buildFavoriteId(
+  serverId: string,
+  type: FavoriteItem['type'],
+  ...idParts: string[]
+): string {
+  return [serverId, type, ...idParts].join('::')
 }
 
 interface PersistedState {

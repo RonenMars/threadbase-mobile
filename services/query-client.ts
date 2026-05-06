@@ -19,7 +19,9 @@ function clearSlowTimer(hash: string) {
 
 function categoryForHash(hash: string): QueryCategory {
   // React Query serialises queryKey arrays as JSON: ["sessions",...] or ["session",...]
+  if (/^\["projectChats/.test(hash)) return 'project-chats'
   if (/^\["sessions/.test(hash)) return 'sessions'
+  if (/^\["conversations/.test(hash)) return 'conversations'
   if (/^\["conversation"/.test(hash)) return 'messages'
   if (/^\["session"/.test(hash)) return 'session-detail'
   if (/^\["browse"/.test(hash)) return 'browse'
@@ -78,8 +80,36 @@ queryClient.getQueryCache().subscribe((event) => {
 
 export const queryPersister = createAsyncStoragePersister({
   storage: AsyncStorage,
-  key: 'threadbase-rq-cache-v1',
+  key: 'threadbase-rq-cache-v2',
   throttleTime: 1000,
 })
 
-export const persistBuster = 'v1'
+// Bumped from v1 → v2 alongside the ProjectChat migration so any cached
+// session/conversation entries keyed without `projectId` are dropped instead
+// of being read back as legacy data.
+export const persistBuster = 'v2'
+
+const PERSISTED_QUERY_ROOTS = new Set([
+  'projectChats',
+  'projectChats-all',
+  'session',
+  'conversation',
+  'project',
+  'serverInfo',
+])
+
+/**
+ * Decide whether a successful query is allowed to persist to AsyncStorage.
+ * Default: only the explicit allow-list above. Per spec, full message bodies
+ * are NOT persisted unless product/security explicitly opts them in.
+ *
+ * Individual queries can still set `meta: { persist: false }` to bail out of
+ * the allow-list (used by `useSessionDetail` to keep ephemeral status data
+ * out of the persisted cache).
+ */
+export function shouldPersistQuery(query: { queryKey: readonly unknown[]; meta?: unknown }): boolean {
+  const meta = query.meta as { persist?: boolean } | undefined
+  if (meta?.persist === false) return false
+  const root = String(query.queryKey[0])
+  return PERSISTED_QUERY_ROOTS.has(root)
+}

@@ -29,7 +29,9 @@ export function ProjectHubList({
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
-  const [openPaths, setOpenPaths] = useState<Set<string>>(new Set())
+  // Tracks which groups are expanded, keyed by projectId (with projectPath
+  // fallback during migration — see useProjectGroups).
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
   const inputRef = useRef<TextInput>(null)
 
   const groups = useProjectGroups(sessions, conversations, sortBy, sortOrder)
@@ -47,11 +49,11 @@ export function ProjectHubList({
     if (!searchOpen) setSearchQuery('')
   }, [searchOpen])
 
-  const toggleOpen = useCallback((projectPath: string) => {
-    setOpenPaths((prev) => {
+  const toggleOpen = useCallback((projectId: string) => {
+    setOpenIds((prev) => {
       const next = new Set(prev)
-      if (next.has(projectPath)) next.delete(projectPath)
-      else next.add(projectPath)
+      if (next.has(projectId)) next.delete(projectId)
+      else next.add(projectId)
       return next
     })
   }, [])
@@ -138,11 +140,11 @@ export function ProjectHubList({
     ({ item }: { item: ProjectGroup }) => (
       <ProjectHubCard
         group={item}
-        isOpen={openPaths.has(item.projectPath)}
-        onToggle={() => toggleOpen(item.projectPath)}
+        isOpen={openIds.has(item.projectId)}
+        onToggle={() => toggleOpen(item.projectId)}
       />
     ),
-    [openPaths, toggleOpen],
+    [openIds, toggleOpen],
   )
 
   const showSearch = searchOpen && debouncedQuery.length > 0
@@ -185,7 +187,11 @@ export function ProjectHubList({
         ) : (
           <SectionList
             sections={searchSections}
-            keyExtractor={(item) => (isMultiSession(item) ? `s-${item.id}` : `c-${item.id}`)}
+            keyExtractor={(item) =>
+              isMultiSession(item)
+                ? `session:${item.serverId}::${item.id}`
+                : `conversation:${item.serverId}::${item.id}`
+            }
             renderItem={renderSearchResultItem}
             renderSectionHeader={renderSectionHeader}
             contentContainerStyle={styles.listContent}
@@ -196,7 +202,7 @@ export function ProjectHubList({
         <FlatList
           data={hubFlatData}
           keyExtractor={(item) =>
-            item.kind === 'header' ? `header-${item.serverId}` : item.group.projectPath
+            item.kind === 'header' ? `header-${item.serverId}` : `project:${item.group.projectId}`
           }
           renderItem={({ item }) => {
             if (item.kind === 'header') {
@@ -210,8 +216,8 @@ export function ProjectHubList({
             return (
               <ProjectHubCard
                 group={item.group}
-                isOpen={openPaths.has(item.group.projectPath)}
-                onToggle={() => toggleOpen(item.group.projectPath)}
+                isOpen={openIds.has(item.group.projectId)}
+                onToggle={() => toggleOpen(item.group.projectId)}
               />
             )
           }}

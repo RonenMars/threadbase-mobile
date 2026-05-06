@@ -35,6 +35,21 @@ interface RecentDir {
   lastUsedAt: string
 }
 
+/**
+ * Build the chat-screen URL for a freshly-created session, including the
+ * `projectId` (when known) and `projectPath` (display/debug only) so the
+ * downstream screen can render before the next ProjectChat refetch lands.
+ */
+function buildSessionRoute(
+  session: { id: string; projectId?: string; projectPath?: string | null },
+  serverId: string,
+): string {
+  const params = new URLSearchParams({ server: serverId })
+  if (session.projectId) params.set('projectId', session.projectId)
+  if (session.projectPath) params.set('projectPath', session.projectPath)
+  return `/session/${session.id}?${params.toString()}`
+}
+
 export default function BrowseScreen() {
   const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
@@ -44,7 +59,12 @@ export default function BrowseScreen() {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
-  const [pendingSession, setPendingSession] = useState<{ id: string; serverId: string } | null>(null)
+  const [pendingSession, setPendingSession] = useState<{
+    id: string
+    serverId: string
+    projectId?: string
+    projectPath?: string
+  } | null>(null)
   const { askOnCreate, setAskOnCreate, setAskOnExit } = useSettingsStore()
   const renameSession = useRenameSession(serverId ?? '')
 
@@ -161,10 +181,16 @@ export default function BrowseScreen() {
       {
         onSuccess: (session) => {
           if (askOnCreate) {
-            setPendingSession({ id: session.id, serverId: serverId ?? '' })
+            setPendingSession({
+              id: session.id,
+              serverId: serverId ?? '',
+              projectId: session.projectId,
+              projectPath: session.projectPath,
+            })
           } else {
             router.dismiss()
-            router.push(`/session/${session.id}?server=${serverId}`)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            router.push(buildSessionRoute(session, serverId ?? '') as any)
           }
         },
         onError: (err) => {
@@ -181,10 +207,16 @@ export default function BrowseScreen() {
         {
           onSuccess: (session) => {
             if (askOnCreate) {
-              setPendingSession({ id: session.id, serverId: serverId ?? '' })
+              setPendingSession({
+                id: session.id,
+                serverId: serverId ?? '',
+                projectId: session.projectId,
+                projectPath: session.projectPath,
+              })
             } else {
               router.dismiss()
-              router.push(`/session/${session.id}?server=${serverId}`)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              router.push(buildSessionRoute(session, serverId ?? '') as any)
             }
           },
           onError: (err) => {
@@ -363,13 +395,13 @@ export default function BrowseScreen() {
             const dest = pendingSession
             setPendingSession(null)
             router.dismiss()
-            router.push(`/session/${dest.id}?server=${dest.serverId}`)
+            router.push(`/session/${dest.id}?server=${dest.serverId}${dest.projectId ? `&projectId=${dest.projectId}` : ''}${dest.projectPath ? `&projectPath=${encodeURIComponent(dest.projectPath)}` : ''}`)
           }}
           onSkip={() => {
             const dest = pendingSession
             setPendingSession(null)
             router.dismiss()
-            router.push(`/session/${dest.id}?server=${dest.serverId}`)
+            router.push(`/session/${dest.id}?server=${dest.serverId}${dest.projectId ? `&projectId=${dest.projectId}` : ''}${dest.projectPath ? `&projectPath=${encodeURIComponent(dest.projectPath)}` : ''}`)
           }}
           onDontAskAgain={() => {
             setAskOnCreate(false)

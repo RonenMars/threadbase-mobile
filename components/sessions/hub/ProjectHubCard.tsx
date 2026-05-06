@@ -38,6 +38,12 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
   const sessionCount = group.sessions.length
   const convCount = group.conversations.length
   const encodedPath = encodeURIComponent(group.projectPath)
+  // Prefer projectId for navigation identity (Step 5). Falls back to the
+  // path-encoded value during migration when backend hasn't filled it yet.
+  const projectId =
+    group.sessions.find((s) => s.projectId)?.projectId ??
+    group.conversations.find((c) => c.projectId)?.projectId ??
+    encodedPath
 
   const todaySessionCount = group.sessions.filter((s) => isToday(s.startedAt)).length
   const multipleTodaySessions = todaySessionCount > 1
@@ -128,7 +134,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                   {convCount > 5 && (
                     <TouchableOpacity
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      onPress={() => router.push(`/project/${encodedPath}` as any)}
+                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}` as any)}
                       activeOpacity={0.75}
                       style={styles.seeAllRow}
                     >

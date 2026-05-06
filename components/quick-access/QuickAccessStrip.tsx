@@ -93,8 +93,25 @@ export function QuickAccessStrip() {
 
   const handleTogglePin = () => {
     if (!activeItem) return
-    if (isFavorite(activeItem)) unpinItem(activeItem.id)
-    else pinItem({ type: activeItem.type, id: activeItem.id, label: activeItem.label, serverId: activeItem.serverId })
+    if (isFavorite(activeItem)) {
+      unpinItem(activeItem.id)
+    } else {
+      // Build a typed favorite. Existing chip data only carries `dir` and
+      // `session` shapes today; project-chat favorites are added by the
+      // ProjectChat list (Step 5/Step 6) once that flow is wired in.
+      if (activeItem.type === 'dir') {
+        pinItem({ type: 'dir', id: activeItem.id, label: activeItem.label, serverId: activeItem.serverId })
+      } else if (activeItem.type === 'session' && activeItem.serverId) {
+        const [, sessionId] = activeItem.id.split('::')
+        pinItem({
+          type: 'session',
+          id: activeItem.id,
+          label: activeItem.label,
+          serverId: activeItem.serverId,
+          sessionId,
+        })
+      }
+    }
     setActiveItem(null)
   }
 

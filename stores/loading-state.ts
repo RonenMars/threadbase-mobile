@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 
-export type QueryCategory = 'sessions' | 'messages' | 'session-detail' | 'browse' | 'other'
+export type QueryCategory =
+  | 'project-chats'
+  | 'sessions'
+  | 'conversations'
+  | 'messages'
+  | 'session-detail'
+  | 'browse'
+  | 'other'
 
 export interface QueryError {
   id: string
@@ -19,7 +26,15 @@ interface LoadingStateStore {
 }
 
 export const useLoadingStateStore = create<LoadingStateStore>((set) => ({
-  slowCounts: { sessions: 0, messages: 0, 'session-detail': 0, browse: 0, other: 0 },
+  slowCounts: {
+    'project-chats': 0,
+    sessions: 0,
+    conversations: 0,
+    messages: 0,
+    'session-detail': 0,
+    browse: 0,
+    other: 0,
+  },
   errors: [],
 
   incrementSlow: (category) =>

@@ -26,8 +26,11 @@ import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { useConversation } from '@/hooks/useConversations'
+import { invalidateProjectChats } from '@/hooks/useProjectChats'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
+import { useQueryClient } from '@tanstack/react-query'
+import type { ResumeConversationResponse } from '@/types/projectChat'
 import { dark, font, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
@@ -144,13 +147,37 @@ export default function ConversationDetailScreen() {
     }
   }, [id, hasNextPage, isFetchingNextPage, fetchNextPage])
 
+  const queryClient = useQueryClient()
+
   const resumeSession = useMutation({
-    mutationFn: () => {
+    mutationFn: async (): Promise<{ sessionId: string; projectId?: string; projectPath?: string | null; conversationId: string }> => {
       const api = createApiForServer(serverId)
-      return api.post<{ id: string }>('/api/sessions/resume', { sessionId: id })
+      // Backend may return either the modern ResumeConversationResponse or the
+      // legacy `{ id }` shape during migration — normalise here.
+      const resp = await api.post<ResumeConversationResponse | { id: string }>(
+        '/api/sessions/resume',
+        { sessionId: id },
+      )
+      if ('sessionId' in resp) {
+        return {
+          sessionId: resp.sessionId,
+          projectId: resp.projectId,
+          projectPath: resp.projectPath,
+          conversationId: resp.conversationId,
+        }
+      }
+      return { sessionId: resp.id, projectPath: conversation?.projectPath, conversationId: id }
     },
-    onSuccess: (data) => {
-      router.push(`/session/${data.id}?server=${serverId}`)
+    onSuccess: async (result) => {
+      // Invalidate the unified ProjectChat list so the resumed conversation
+      // is replaced by the new session (backend dedupes; UI also dedupes
+      // defensively in useProjectChats).
+      invalidateProjectChats(queryClient, serverId)
+      const params = new URLSearchParams({ server: serverId })
+      if (result.projectId) params.set('projectId', result.projectId)
+      if (result.projectPath) params.set('projectPath', result.projectPath)
+      params.set('resumedFromConversationId', result.conversationId)
+      router.push(`/session/${result.sessionId}?${params.toString()}`)
     },
   })
 

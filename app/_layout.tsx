@@ -12,7 +12,7 @@ import {
 import { CaretLeft } from 'phosphor-react-native'
 import { StatusBar } from 'expo-status-bar'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
-import { queryClient, queryPersister, persistBuster } from '@/services/query-client'
+import { queryClient, queryPersister, persistBuster, shouldPersistQuery } from '@/services/query-client'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
@@ -188,10 +188,14 @@ function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
         options={{ title: 'Settings', headerShown: true }}
       />
       <Stack.Screen
-        name="project/[path]"
-        options={({ route }) => ({
-          title: decodeURIComponent((route.params as { path?: string }).path?.split('/').pop() ?? 'Project'),
-        })}
+        name="project/[id]"
+        options={({ route }) => {
+          const params = route.params as { id?: string; path?: string }
+          const fromPath = params.path
+            ? decodeURIComponent(params.path).split('/').filter(Boolean).pop()
+            : undefined
+          return { title: fromPath ?? params.id ?? 'Project' }
+        }}
       />
     </Stack>
   )
@@ -230,8 +234,7 @@ export default function RootLayout() {
               dehydrateOptions: {
                 shouldDehydrateMutation: () => false,
                 shouldDehydrateQuery: (query) =>
-                  query.state.status === 'success' &&
-                  (query.meta as { persist?: boolean } | undefined)?.persist !== false,
+                  query.state.status === 'success' && shouldPersistQuery(query),
               },
             }}
           >

@@ -516,8 +516,8 @@ function MergedClassicList({
         keyExtractor={(item) => {
           if (item.kind === 'header') return `header-${item.serverId}`
           if (item.kind === 'liveHeader') return item.id
-          if (item.kind === 'session') return `s-${item.item.serverId}::${item.item.id}`
-          return `c-${item.item.serverId}::${item.item.id}`
+          if (item.kind === 'session') return `session:${item.item.serverId}::${item.item.id}`
+          return `conversation:${item.item.serverId}::${item.item.id}`
         }}
         renderItem={({ item }) => {
           if (item.kind === 'header') {

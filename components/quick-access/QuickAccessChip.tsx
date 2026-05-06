@@ -5,8 +5,10 @@ import { dark, font, spacing } from '@/constants/theme'
 
 export type QuickAccessTab = 'favorites' | 'recents' | 'popular'
 
+export type ChipItemType = 'dir' | 'session' | 'conversation' | 'project-chat'
+
 export interface ChipItem {
-  type: 'dir' | 'session'
+  type: ChipItemType
   id: string
   label: string
   serverId?: string
@@ -34,10 +36,13 @@ export function QuickAccessChip({ item, tab, editMode, onPress, onDelete }: Prop
       onPress={onPress}
       accessibilityLabel={item.label}
     >
-      {item.type === 'dir'
-        ? <Folder size={13} color={isPinned ? dark.text.accent : dark.text.secondary} />
-        : <Lightning size={13} color={isPinned ? dark.text.accent : dark.text.secondary} />
-      }
+      {item.type === 'dir' ? (
+        <Folder size={13} color={isPinned ? dark.text.accent : dark.text.secondary} />
+      ) : (
+        // session, conversation, and project-chat all visually represent a chat;
+        // use the same lightning icon to match SessionCard branding.
+        <Lightning size={13} color={isPinned ? dark.text.accent : dark.text.secondary} />
+      )}
       <Text style={[styles.label, isPinned && styles.labelPinned]} numberOfLines={1}>
         {item.label}
       </Text>

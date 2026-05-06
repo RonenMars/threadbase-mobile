@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -6,23 +6,29 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
-  AppState,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
-import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
-import { useFocusRefetch } from '@/hooks/useFocusRefetch'
+import { useAllProjectChats } from '@/hooks/useProjectChats'
+import { useConversationSearch } from '@/hooks/useConversations'
 import { dark, font, spacing } from '@/constants/theme'
 import type { MultiConversation } from '@/types/api'
+import type { ProjectChat } from '@/types/projectChat'
 
+/**
+ * Project drill-down keyed by `projectId`. Optional `?path=` and `?server=`
+ * query params are display/debug only — never used as primary identity.
+ */
 export default function ProjectDetailScreen() {
   const { t } = useTranslation('browse')
-  const { path } = useLocalSearchParams<{ path: string }>()
-  const projectPath = decodeURIComponent(path ?? '')
-  const projectName = projectPath.split('/').pop() ?? projectPath
+  const params = useLocalSearchParams<{ id: string; path?: string; server?: string }>()
+  const projectId = params.id ?? ''
+  const projectPath = params.path ? decodeURIComponent(params.path) : ''
+  const projectName = projectPath
+    ? projectPath.split('/').filter(Boolean).pop() ?? projectPath
+    : projectId
 
   const navigation = useNavigation()
   useEffect(() => {
@@ -31,52 +37,57 @@ export default function ProjectDetailScreen() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
-  const [refreshEpoch, setRefreshEpoch] = useState(0)
-  const [loaderMode, setLoaderMode] = useState<'full' | 'minimal'>('full')
-  const nextLoaderModeRef = useRef<'full' | 'minimal'>('minimal')
 
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        nextLoaderModeRef.current = 'full'
-      }
-    })
-    return () => sub.remove()
-  }, [])
-
-  const { conversations, loaded, total, isDone, isCounting } = useEagerConversations(
-    { projectPath },
-    refreshEpoch,
-  )
+  const { items, isFetching, refresh } = useAllProjectChats()
   const searchResult = useConversationSearch(debouncedQuery)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const handleRefresh = useCallback(() => {
-    setLoaderMode('full')
-    setRefreshEpoch((e) => e + 1)
-  }, [])
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await refresh()
+    } finally {
+      setRefreshing(false)
+    }
+  }, [refresh])
 
-  useFocusRefetch(
-    useCallback(async () => {
-      const mode = nextLoaderModeRef.current
-      nextLoaderModeRef.current = 'minimal'
-      setLoaderMode(mode)
-      setRefreshEpoch((e) => e + 1)
-    }, []),
+  // Filter the unified list down to this project.
+  const projectItems: ProjectChat[] = useMemo(
+    () => items.filter((it) => it.projectId === projectId),
+    [items, projectId],
+  )
+
+  // ConversationList takes MultiConversation[] for rendering. Map historical
+  // ProjectChat conversations into that shape for display only — backend ids
+  // remain canonical.
+  const projectConversations: MultiConversation[] = useMemo(
+    () =>
+      projectItems
+        .filter((it) => it.type === 'conversation')
+        .map((it) => ({
+          id: it.id,
+          title: it.title,
+          projectPath: it.projectPath ?? '',
+          messageCount: 0,
+          lastActivity: it.latestMessageAt ?? '',
+          serverId: it.serverId,
+          serverLabel: it.serverLabel,
+        })),
+    [projectItems],
   )
 
   const isSearching = debouncedQuery.length > 0
   const isError = !isSearching && searchResult.isError
-  const showFullProgress = !isSearching && !isDone && loaderMode === 'full'
-  const showMinimalLoader = !isSearching && !isDone && loaderMode === 'minimal'
 
   const allSearchResults: MultiConversation[] = isSearching
     ? (searchResult.data?.conversations ?? [])
-    : conversations
+    : projectConversations
 
-  // When searching, filter search results to this project only
   const displayedConversations: MultiConversation[] = isSearching
-    ? allSearchResults.filter((c) => c.projectPath === projectPath)
-    : conversations
+    ? allSearchResults.filter((c) =>
+        projectItems.some((p) => p.type === 'conversation' && p.id === c.id),
+      )
+    : projectConversations
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -99,24 +110,14 @@ export default function ProjectDetailScreen() {
           <ConversationList
             conversations={displayedConversations}
             onRefresh={handleRefresh}
-            refreshing={showFullProgress}
+            refreshing={refreshing || isFetching}
             onEndReached={() => {}}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             isLoadingInitial={false}
             isFetchingNextPage={false}
-            loadingProgress={showFullProgress ? { loaded, total, isCounting } : null}
-            headerRight={
-              isSearching && searchResult.isFetching ? (
-                <ActivityIndicator size="small" color={dark.text.secondary} />
-              ) : null
-            }
+            loadingProgress={null}
           />
-          {showMinimalLoader ? (
-            <View style={styles.minimalLoaderCorner} pointerEvents="none">
-              <ActivityIndicator size="small" color={dark.text.secondary} />
-            </View>
-          ) : null}
         </View>
       )}
     </SafeAreaView>
@@ -148,10 +149,5 @@ const styles = StyleSheet.create({
   listWrapper: {
     flex: 1,
     position: 'relative',
-  },
-  minimalLoaderCorner: {
-    position: 'absolute',
-    top: spacing.md * 2 + 44,
-    right: spacing.md,
   },
 })

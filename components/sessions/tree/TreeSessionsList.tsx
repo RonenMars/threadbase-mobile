@@ -194,7 +194,11 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
         ) : (
           <SectionList
             sections={searchSections}
-            keyExtractor={(item) => ('status' in item ? `s-${item.id}` : `c-${item.id}`)}
+            keyExtractor={(item) =>
+              'status' in item
+                ? `session:${item.serverId}::${item.id}`
+                : `conversation:${item.serverId}::${item.id}`
+            }
             renderItem={renderSearchItem}
             renderSectionHeader={({ section }) => (
               <View style={searchStyles.sectionHeader}>

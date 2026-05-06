@@ -19,7 +19,7 @@ export function DrillView({ node, onBack }: Props) {
   const getSessionName = useSessionNamesStore((s) => s.getName)
 
   const sessionItems: DrillItem[] = node.sessions.map((s) => ({
-    key: `s-${s.id}`,
+    key: `session:${s.serverId}::${s.id}`,
     label: getSessionName(s.serverId, s.id) ?? s.projectName ?? s.projectPath,
     time: latestActivityLabel(node),
     status: s.status,
@@ -27,7 +27,7 @@ export function DrillView({ node, onBack }: Props) {
   }))
 
   const conversationItems: DrillItem[] = node.conversations.map((c) => ({
-    key: `c-${c.id}`,
+    key: `conversation:${c.serverId}::${c.id}`,
     label: c.title || c.projectPath,
     time: latestActivityLabel(node),
     onPress: () => router.push(`/conversation/${c.id}?server=${c.serverId}`),
