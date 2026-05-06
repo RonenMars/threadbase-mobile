@@ -197,7 +197,7 @@ const wakingStyles = StyleSheet.create({
 
 function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendingId: string }) {
   const router = useRouter()
-  const { t } = useTranslation('terminal')
+  const { t } = useTranslation(['terminal', 'common'])
   const [phraseIdx, setPhraseIdx] = useState(0)
 
   useEffect(() => {
@@ -272,7 +272,7 @@ function DiscoveredSessionScreen({
   serverId: string
   sessionId: string
 }) {
-  const { t } = useTranslation('terminal')
+  const { t } = useTranslation(['terminal', 'common'])
   const router = useRouter()
   const { adoptSession } = useSessionActions(serverId, sessionId)
 
@@ -393,7 +393,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
-  const { t } = useTranslation('terminal')
+  const { t } = useTranslation(['terminal', 'common'])
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 

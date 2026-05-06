@@ -36,7 +36,7 @@ export function SortSheet({
   onChangeSortBy,
   onChangeSortOrder,
 }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'common'])
   const [draftBy, setDraftBy] = useState<SortBy>(sortBy)
   const [draftOrder, setDraftOrder] = useState<SortOrder>(sortOrder)
 

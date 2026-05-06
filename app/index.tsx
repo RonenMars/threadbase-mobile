@@ -59,7 +59,7 @@ function SessionNamesSyncer({ serverId }: { serverId: string }) {
 }
 
 export default function ProjectsHub() {
-  const { t } = useTranslation('sessions')
+  const { t } = useTranslation(['sessions', 'shared', 'settings'])
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const mergeChats = useSettingsStore((s) => (s as any).mergeChats ?? false)

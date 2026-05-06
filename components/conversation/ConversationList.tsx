@@ -157,7 +157,7 @@ export function ConversationList({
   headerRight,
   loadingProgress = null,
 }: Props) {
-  const { t } = useTranslation('conversation')
+  const { t } = useTranslation(['conversation', 'common'])
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations

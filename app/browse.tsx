@@ -36,7 +36,7 @@ interface RecentDir {
 }
 
 export default function BrowseScreen() {
-  const { t } = useTranslation('browse')
+  const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
   const { server: serverId } = useLocalSearchParams<{ server: string }>()
   const [currentPath, setCurrentPath] = useState('')

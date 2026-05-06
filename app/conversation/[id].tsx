@@ -70,7 +70,7 @@ function MessageItem({ message }: { message: Message }) {
 }
 
 export default function ConversationDetailScreen() {
-  const { t } = useTranslation('conversation')
+  const { t } = useTranslation(['conversation', 'common'])
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
