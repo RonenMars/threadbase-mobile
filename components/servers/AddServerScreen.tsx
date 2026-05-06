@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native'
 import { QrCode, Lightning } from 'phosphor-react-native'
-import { useHeaderHeight } from 'expo-router/react-navigation'
+import { useHeaderHeight } from '@react-navigation/elements'
 import { useNavigation, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
