@@ -75,8 +75,16 @@ export interface SessionFilter {
   status?: SessionStatus[]
 }
 
+export interface TurnDuration {
+  duration_ms: number
+  message_count: number
+  uuid?: string
+}
+
 export interface ConversationDetail extends Conversation {
   messages: Message[]
+  turn_durations?: TurnDuration[]
+  lastPrompt?: string
 }
 
 export interface Message {
@@ -85,10 +93,16 @@ export interface Message {
   content: MessageContent[]
   timestamp: string
   tokens?: number
+  has_images?: boolean
+  parent_uuid?: string | null
+  permission_mode?: string | null
+  is_sidechain?: boolean
+  attachment?: Record<string, unknown> | null
 }
 
 export type MessageContent =
   | { type: 'text'; text: string }
+  | { type: 'thinking'; thinking: string; signature?: string }
   | { type: 'tool_use'; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; toolName: string; content: string; isError?: boolean }
   | { type: 'diff'; filename: string; hunks: DiffHunk[] }
