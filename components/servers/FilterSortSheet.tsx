@@ -256,11 +256,12 @@ export function FilterSortSheet({
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel={isEditingOrder ? t('filter.lockOrder') : t('filter.editOrder')}
+                  accessibilityState={{ selected: isEditingOrder }}
                   testID="server-order-toggle"
                 >
                   {isEditingOrder
-                    ? <LockSimple size={18} color={dark.text.accent} />
-                    : <LockSimpleOpen size={18} color={dark.text.secondary} />
+                    ? <LockSimpleOpen size={18} color={dark.text.accent} />
+                    : <LockSimple size={18} color={dark.text.secondary} />
                   }
                 </TouchableOpacity>
               ) : null}
