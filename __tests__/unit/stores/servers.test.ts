@@ -210,14 +210,16 @@ describe('reorderServers', () => {
     seedTwoServers()
     useServersStore.getState().reorderServers(['srv_b', 'srv_a'])
     const { displayedServerIds } = useServersStore.getState()
-    expect(displayedServerIds).toContain('srv_a')
-    expect(displayedServerIds).toContain('srv_b')
+    expect(displayedServerIds).toEqual(['srv_a', 'srv_b'])
   })
 
   it('calls persistServerList (SecureStore.setItemAsync)', () => {
     const SecureStore = require('expo-secure-store')
     seedTwoServers()
     useServersStore.getState().reorderServers(['srv_b', 'srv_a'])
-    expect(SecureStore.setItemAsync).toHaveBeenCalled()
+    expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
+      'threadbase_servers',
+      expect.stringContaining('"srv_b"'),
+    )
   })
 })
