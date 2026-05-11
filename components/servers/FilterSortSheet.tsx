@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { Tree, SquaresFour, List } from 'phosphor-react-native'
+import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
@@ -89,6 +89,8 @@ export function FilterSortSheet({
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const setDisplayedServerIds = useServersStore((s) => s.setDisplayedServerIds)
+  const reorderServers = useServersStore((s) => s.reorderServers)
+  const [isEditingOrder, setIsEditingOrder] = useState(false)
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
 
@@ -246,12 +248,30 @@ export function FilterSortSheet({
         {/* Servers */}
         {showServerFilter ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
+              {activeServerIds.length >= 2 ? (
+                <TouchableOpacity
+                  onPress={() => setIsEditingOrder((v) => !v)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={isEditingOrder ? t('filter.lockOrder') : t('filter.editOrder')}
+                  testID="server-order-toggle"
+                >
+                  {isEditingOrder
+                    ? <LockSimple size={18} color={dark.text.accent} />
+                    : <LockSimpleOpen size={18} color={dark.text.secondary} />
+                  }
+                </TouchableOpacity>
+              ) : null}
+            </View>
             <DisplayedServersList
               activeServerIds={activeServerIds}
               servers={servers}
               selectedServerIds={displayedServerIds}
               onChange={setDisplayedServerIds}
+              isEditingOrder={isEditingOrder}
+              onReorder={reorderServers}
             />
           </View>
         ) : null}

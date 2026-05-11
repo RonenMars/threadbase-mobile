@@ -47,7 +47,9 @@
     "all": "All",
     "none": "None",
     "resetDefaults": "Reset to defaults",
-    "close": "✕"
+    "close": "✕",
+    "editOrder": "Edit order",
+    "lockOrder": "Lock order"
   },
   "displayedServers": {
     "all": "All",
