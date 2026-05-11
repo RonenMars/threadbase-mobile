@@ -1,5 +1,14 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated'
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
+import { DotsSixVertical } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
 import { dark, font, radius, spacing } from '@/constants/theme'
@@ -10,6 +19,8 @@ interface Props {
   selectedServerIds: string[]
   onChange: (ids: string[]) => void
   showQuickActions?: boolean
+  isEditingOrder?: boolean
+  onReorder?: (orderedIds: string[]) => void
 }
 
 function toggleServer(selectedServerIds: string[], serverId: string): string[] {
@@ -19,15 +30,103 @@ function toggleServer(selectedServerIds: string[], serverId: string): string[] {
   return [...selectedServerIds, serverId]
 }
 
+interface JigglingRowProps {
+  server: ServerConfig
+  index: number
+  drag: () => void
+  isActive: boolean
+  isEditingOrder: boolean
+}
+
+function JigglingRow({ server, index, drag, isActive, isEditingOrder }: JigglingRowProps) {
+  const rotation = useSharedValue(0)
+
+  useEffect(() => {
+    if (isEditingOrder) {
+      const delay = index * 40
+      const timer = setTimeout(() => {
+        rotation.value = withRepeat(
+          withSequence(
+            withTiming(-2, { duration: 80 }),
+            withTiming(2, { duration: 80 }),
+          ),
+          -1,
+          true,
+        )
+      }, delay)
+      return () => clearTimeout(timer)
+    } else {
+      rotation.value = withTiming(0, { duration: 100 })
+    }
+  }, [isEditingOrder, index, rotation])
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }))
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity
+        onLongPress={drag}
+        disabled={isActive}
+        style={[styles.row, isActive && styles.rowActive]}
+        activeOpacity={0.8}
+      >
+        <View style={styles.serverInfo}>
+          <Text style={styles.serverLabel} numberOfLines={1}>
+            {server.label || server.url}
+          </Text>
+          {server.label ? (
+            <Text style={styles.serverUrl} numberOfLines={1}>
+              {server.url}
+            </Text>
+          ) : null}
+        </View>
+        <View testID={`drag-handle-${server.id}`}>
+          <DotsSixVertical size={20} color={dark.text.secondary} />
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  )
+}
+
 export function DisplayedServersList({
   activeServerIds,
   servers,
   selectedServerIds,
   onChange,
   showQuickActions = true,
+  isEditingOrder = false,
+  onReorder,
 }: Props) {
   const { t } = useTranslation('servers')
   const latestServerId = activeServerIds[activeServerIds.length - 1]
+
+  if (isEditingOrder) {
+    const data = activeServerIds
+      .map((id) => servers[id])
+      .filter((s): s is ServerConfig => Boolean(s))
+
+    return (
+      <View style={styles.container}>
+        <DraggableFlatList
+          data={data}
+          keyExtractor={(s) => s.id}
+          renderItem={({ item, drag, isActive }: RenderItemParams<ServerConfig>) => (
+            <JigglingRow
+              server={item}
+              index={data.indexOf(item)}
+              drag={drag}
+              isActive={isActive}
+              isEditingOrder={isEditingOrder}
+            />
+          )}
+          onDragEnd={({ data: reordered }) => onReorder?.(reordered.map((s) => s.id))}
+          containerStyle={styles.draggableContainer}
+        />
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -82,6 +181,9 @@ const styles = StyleSheet.create({
   container: {
     gap: spacing.sm,
   },
+  draggableContainer: {
+    gap: spacing.sm,
+  },
   quickRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -113,6 +215,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  rowActive: {
+    opacity: 0.7,
+    transform: [{ scale: 1.02 }],
   },
   serverInfo: {
     flex: 1,
