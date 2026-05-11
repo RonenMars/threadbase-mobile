@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -440,6 +440,22 @@ export default function SessionDetailScreen() {
     }
   }, [session?.ptyAttached, session?.status, id, serverId, router])
 
+  // Track whether Claude has reached its first interactive prompt for THIS
+  // session id. The streamer reports `waiting_input` once the prompt marker
+  // fires; until then we treat the session as "waking up" so the input bar
+  // shows the overlay and disables sending into a not-yet-ready PTY.
+  // (See pty-manager.ts pendingReady — server-side input queueing covers the
+  // race when the user does send anyway, but the overlay is the right UX.)
+  const hasReachedPromptRef = useRef(false)
+  const lastSessionIdRef = useRef<string | undefined>(undefined)
+  if (lastSessionIdRef.current !== id) {
+    hasReachedPromptRef.current = false
+    lastSessionIdRef.current = id
+  }
+  if (session?.status === 'waiting_input') {
+    hasReachedPromptRef.current = true
+  }
+
   useEffect(() => {
     hydrateDrafts().then(() => {
       const draft = useDraftsStore.getState().getDraft(serverId, id)
@@ -626,7 +642,21 @@ export default function SessionDetailScreen() {
     (session.status === 'waiting_input' || session.status === 'running') &&
     !noAttachEmptyPlaceholder
 
-  const isWakingUp = session?.status === 'running' && !isStreaming && lines.length === 0
+  // "Waking up" = running PTY, no streaming yet, no terminal lines yet, AND
+  // Claude has never reported waiting_input for THIS session id. The added
+  // hasReachedPromptRef clause is defensive: once Claude has been at its
+  // prompt at least once on this mount, never re-show the overlay even if
+  // lines momentarily empties (e.g., terminal cleared). Cases this hook
+  // does NOT cover (where the overlay won't show even though Claude isn't
+  // really ready): partial-banner streams that push lines > 0 before the
+  // prompt marker fires. That residual gap is harmless because the streamer
+  // queues input in pendingReady (pty-manager.ts) and flushes it once the
+  // prompt is reached.
+  const isWakingUp =
+    session?.status === 'running' &&
+    !isStreaming &&
+    lines.length === 0 &&
+    !hasReachedPromptRef.current
 
   const infoModal = (
     <InfoModal

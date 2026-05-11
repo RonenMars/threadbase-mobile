@@ -23,6 +23,7 @@ import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
+import { ThinkingCard } from '@/components/conversation/ThinkingCard'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { useConversation } from '@/hooks/useConversations'
@@ -40,6 +41,9 @@ const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`
 
 
 function renderContent(block: MessageContent, index: number) {
+  if (block.type === 'thinking') {
+    return <ThinkingCard key={index} block={block} />
+  }
   if (block.type === 'tool_use' || block.type === 'tool_result') {
     return <ToolCard key={index} block={block} />
   }
@@ -51,12 +55,15 @@ function renderContent(block: MessageContent, index: number) {
 
 function MessageItem({ message }: { message: Message }) {
   const hasToolOrDiff = message.content.some(
-    (b) => b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
+    (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
 
   if (hasToolOrDiff) {
     return (
       <View style={styles.toolContainer}>
+        {message.has_images ? (
+          <Text style={styles.imageBadge}>📎 Contains image</Text>
+        ) : null}
         {message.content.map((block, i) => {
           if (block.type === 'text') {
             if (!block.text.trim()) return null
@@ -69,7 +76,14 @@ function MessageItem({ message }: { message: Message }) {
   }
 
   if (message.content.length === 0) return null
-  return <MessageBubble message={message} />
+  return (
+    <>
+      {message.has_images ? (
+        <Text style={styles.imageBadge}>📎 Contains image</Text>
+      ) : null}
+      <MessageBubble message={message} />
+    </>
+  )
 }
 
 export default function ConversationDetailScreen() {
@@ -392,6 +406,7 @@ const styles = StyleSheet.create({
   scrollBtnBottom: { bottom: spacing.md },
   scrollBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
   toolContainer: { paddingHorizontal: spacing.md, gap: spacing.xs, marginVertical: spacing.xs },
+  imageBadge: { color: dark.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   footer: {
     flexDirection: 'row',
     gap: spacing.sm,

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useEffect } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
-import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation } from '@/types/api'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration } from '@/types/api'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -130,6 +130,9 @@ interface RawContentBlock {
   type: string
   // text
   text?: string
+  // thinking
+  thinking?: string
+  signature?: string
   // tool_use
   id?: string
   name?: string
@@ -143,12 +146,19 @@ interface RawContentBlock {
 interface RawMessage {
   /** Stable index in the full filtered message list (for pagination + React keys). */
   message_index?: number
+  uuid?: string | null
   role: string
   timestamp: string
   text: string
   tool_calls?: string[]
   content?: RawContentBlock[]
   model?: string
+  has_images?: boolean
+  parent_uuid?: string | null
+  permission_mode?: string | null
+  is_sidechain?: boolean
+  is_tool_result?: boolean
+  attachment?: Record<string, unknown> | null
 }
 
 export interface ConversationMessagePagination {
@@ -160,9 +170,10 @@ export interface ConversationMessagePagination {
 }
 
 interface RawConversationDetail {
-  meta: RawSessionMeta
+  meta: RawSessionMeta & { last_prompt?: string }
   messages: RawMessage[]
   message_pagination?: ConversationMessagePagination
+  turn_durations?: TurnDuration[]
 }
 
 // Resolve a tool name from tool_use_id by looking at sibling content blocks.
@@ -177,7 +188,9 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
 
   if (m.content && m.content.length > 0) {
     for (const block of m.content) {
-      if (block.type === 'text' && block.text) {
+      if (block.type === 'thinking') {
+        content.push({ type: 'thinking', thinking: block.thinking ?? '', signature: block.signature })
+      } else if (block.type === 'text' && block.text) {
         content.push({ type: 'text', text: block.text })
       } else if (block.type === 'tool_use') {
         content.push({ type: 'tool_use', name: block.name ?? '', input: block.input ?? {} })
@@ -202,9 +215,16 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
   const idx = m.message_index ?? fallbackIndex
   return {
     id: `${convId}-${idx}`,
+    uuid: m.uuid,
     role: m.role as 'user' | 'assistant',
     content,
     timestamp: m.timestamp,
+    has_images: m.has_images,
+    parent_uuid: m.parent_uuid,
+    permission_mode: m.permission_mode,
+    is_sidechain: m.is_sidechain,
+    is_tool_result: m.is_tool_result,
+    attachment: m.attachment,
   }
 }
 
@@ -231,6 +251,8 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     messageCount: first.meta.message_count ?? messages.length,
     lastActivity: first.meta.last_updated_at ?? '',
     messages,
+    lastPrompt: first.meta.last_prompt,
+    turn_durations: first.turn_durations,
   }
 }
 
