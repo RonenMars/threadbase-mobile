@@ -121,7 +121,7 @@ export function FilterSortSheet({
     <BottomSheet
       snapPoints={SNAP_POINTS}
       index={0}
-      enablePanDownToClose
+      enablePanDownToClose={!isEditingOrder}
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}

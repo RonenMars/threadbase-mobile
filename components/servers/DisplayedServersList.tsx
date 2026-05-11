@@ -49,8 +49,8 @@ function JigglingRow({ server, index, drag, isActive, isEditingOrder }: Jiggling
       const timer = setTimeout(() => {
         rotation.value = withRepeat(
           withSequence(
-            withTiming(-2, { duration: 80 }),
-            withTiming(2, { duration: 80 }),
+            withTiming(-1, { duration: 120 }),
+            withTiming(1, { duration: 120 }),
           ),
           -1,
           true,
