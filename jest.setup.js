@@ -114,16 +114,19 @@ jest.mock('@gorhom/bottom-sheet', () => {
 jest.mock('react-native-draggable-flatlist', () => {
   const React = require('react')
   const { View } = require('react-native')
+  const listMock = (testID) => ({ data = [], renderItem }) =>
+    React.createElement(
+      View,
+      { testID },
+      data.map((item, index) =>
+        renderItem({ item, index, drag: jest.fn(), isActive: false, getIndex: () => index })
+      )
+    )
   return {
     __esModule: true,
-    default: ({ data = [], renderItem }) =>
-      React.createElement(
-        View,
-        { testID: 'draggable-flatlist' },
-        data.map((item, index) =>
-          renderItem({ item, index, drag: jest.fn(), isActive: false, getIndex: () => index })
-        )
-      ),
+    default: listMock('draggable-flatlist'),
+    NestableDraggableFlatList: listMock('draggable-flatlist'),
+    NestableScrollContainer: ({ children, ...props }) => React.createElement(View, props, children),
   }
 })
 

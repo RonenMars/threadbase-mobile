@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { NestableScrollContainer } from 'react-native-draggable-flatlist'
 import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -126,168 +127,333 @@ export function FilterSortSheet({
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{t('filter.filterSort')}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* View */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('filter.view')}</Text>
-          <View style={styles.chipRow}>
-            {LAYOUT_OPTIONS.map(({ value, label, Icon }) => {
-              const selected = sessionsLayout === value
-              return (
-                <TouchableOpacity
-                  key={value}
-                  onPress={() => setSessionsLayout(value)}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Icon size={14} color={selected ? dark.text.primary : dark.text.secondary} />
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
+      {isEditingOrder ? (
+        <NestableScrollContainer contentContainerStyle={styles.content} testID="filter-sort-sheet">
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{t('filter.filterSort')}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
+              <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
-        {sessionsLayout !== 'tree' ? (
+          {/* View */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
+            <Text style={styles.sectionTitle}>{t('filter.view')}</Text>
             <View style={styles.chipRow}>
-              {SORT_BY_OPTIONS.map((opt) => {
-                const selected = sortBy === opt.value
+              {LAYOUT_OPTIONS.map(({ value, label, Icon }) => {
+                const selected = sessionsLayout === value
                 return (
                   <TouchableOpacity
-                    key={opt.value}
-                    onPress={() => onChangeSortBy(opt.value)}
+                    key={value}
+                    onPress={() => setSessionsLayout(value)}
                     style={[styles.chip, selected && styles.chipSelected]}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    testID={`sort-option-${opt.value}`}
                   >
+                    <Icon size={14} color={selected ? dark.text.primary : dark.text.secondary} />
                     <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                      {opt.label}
+                      {label}
                     </Text>
                   </TouchableOpacity>
                 )
               })}
             </View>
           </View>
-        ) : null}
 
-        {/* Order — hidden for Tree layout */}
-        {sessionsLayout !== 'tree' ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
-            <View style={styles.chipRow}>
-              {SORT_ORDER_OPTIONS.map((opt) => {
-                const selected = sortOrder === opt.value
-                return (
-                  <TouchableOpacity
-                    key={opt.value}
-                    onPress={() => onChangeSortOrder(opt.value)}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    testID={`sort-order-${opt.value}`}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
+          {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
+          {sessionsLayout !== 'tree' ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
+              <View style={styles.chipRow}>
+                {SORT_BY_OPTIONS.map((opt) => {
+                  const selected = sortBy === opt.value
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      onPress={() => onChangeSortBy(opt.value)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      testID={`sort-option-${opt.value}`}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
             </View>
-          </View>
-        ) : null}
+          ) : null}
 
-        {/* Status */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
-            <View style={styles.quickRow}>
-              <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses(ALL_STATUSES)}>
-                <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses([])}>
-                <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
-              </TouchableOpacity>
+          {/* Order — hidden for Tree layout */}
+          {sessionsLayout !== 'tree' ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
+              <View style={styles.chipRow}>
+                {SORT_ORDER_OPTIONS.map((opt) => {
+                  const selected = sortOrder === opt.value
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      onPress={() => onChangeSortOrder(opt.value)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      testID={`sort-order-${opt.value}`}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
             </View>
-          </View>
-          <View style={styles.chipRow}>
-            {STATUS_OPTIONS.map((opt) => {
-              const selected = selectedStatuses.includes(opt.value)
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => onChangeStatuses(toggleStatus(selectedStatuses, opt.value))}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  testID={`status-toggle-${opt.value}`}
-                >
-                  <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
+          ) : null}
 
-        {/* Servers */}
-        {showServerFilter ? (
+          {/* Status */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
-              {activeServerIds.length >= 2 ? (
-                <TouchableOpacity
-                  onPress={() => setIsEditingOrder((v) => !v)}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel={isEditingOrder ? t('filter.lockOrder') : t('filter.editOrder')}
-                  accessibilityState={{ selected: isEditingOrder }}
-                  testID="server-order-toggle"
-                >
-                  {isEditingOrder
-                    ? <LockSimpleOpen size={18} color={dark.text.accent} />
-                    : <LockSimple size={18} color={dark.text.secondary} />
-                  }
+              <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
+              <View style={styles.quickRow}>
+                <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses(ALL_STATUSES)}>
+                  <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
                 </TouchableOpacity>
-              ) : null}
+                <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses([])}>
+                  <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <DisplayedServersList
-              activeServerIds={activeServerIds}
-              servers={servers}
-              selectedServerIds={displayedServerIds}
-              onChange={setDisplayedServerIds}
-              isEditingOrder={isEditingOrder}
-              onReorder={reorderServers}
-            />
+            <View style={styles.chipRow}>
+              {STATUS_OPTIONS.map((opt) => {
+                const selected = selectedStatuses.includes(opt.value)
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => onChangeStatuses(toggleStatus(selectedStatuses, opt.value))}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    testID={`status-toggle-${opt.value}`}
+                  >
+                    <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
           </View>
-        ) : null}
 
-        {/* Reset */}
-        <TouchableOpacity
-          style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
-          onPress={handleReset}
-          disabled={atDefault}
-        >
-          <Text style={[styles.resetText, atDefault && styles.resetTextDisabled]}>
-            {t('filter.resetDefaults')}
-          </Text>
-        </TouchableOpacity>
-      </BottomSheetScrollView>
+          {/* Servers */}
+          {showServerFilter ? (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
+                {activeServerIds.length >= 2 ? (
+                  <TouchableOpacity
+                    onPress={() => setIsEditingOrder((v) => !v)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={isEditingOrder ? t('filter.lockOrder') : t('filter.editOrder')}
+                    accessibilityState={{ selected: isEditingOrder }}
+                    testID="server-order-toggle"
+                  >
+                    {isEditingOrder
+                      ? <LockSimpleOpen size={18} color={dark.text.accent} />
+                      : <LockSimple size={18} color={dark.text.secondary} />
+                    }
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <DisplayedServersList
+                activeServerIds={activeServerIds}
+                servers={servers}
+                selectedServerIds={displayedServerIds}
+                onChange={setDisplayedServerIds}
+                isEditingOrder={isEditingOrder}
+                onReorder={reorderServers}
+              />
+            </View>
+          ) : null}
+
+          {/* Reset */}
+          <TouchableOpacity
+            style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
+            onPress={handleReset}
+            disabled={atDefault}
+          >
+            <Text style={[styles.resetText, atDefault && styles.resetTextDisabled]}>
+              {t('filter.resetDefaults')}
+            </Text>
+          </TouchableOpacity>
+        </NestableScrollContainer>
+      ) : (
+        <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{t('filter.filterSort')}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
+              <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* View */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('filter.view')}</Text>
+            <View style={styles.chipRow}>
+              {LAYOUT_OPTIONS.map(({ value, label, Icon }) => {
+                const selected = sessionsLayout === value
+                return (
+                  <TouchableOpacity
+                    key={value}
+                    onPress={() => setSessionsLayout(value)}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Icon size={14} color={selected ? dark.text.primary : dark.text.secondary} />
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+
+          {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
+          {sessionsLayout !== 'tree' ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
+              <View style={styles.chipRow}>
+                {SORT_BY_OPTIONS.map((opt) => {
+                  const selected = sortBy === opt.value
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      onPress={() => onChangeSortBy(opt.value)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      testID={`sort-option-${opt.value}`}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Order — hidden for Tree layout */}
+          {sessionsLayout !== 'tree' ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
+              <View style={styles.chipRow}>
+                {SORT_ORDER_OPTIONS.map((opt) => {
+                  const selected = sortOrder === opt.value
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      onPress={() => onChangeSortOrder(opt.value)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      testID={`sort-order-${opt.value}`}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Status */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
+              <View style={styles.quickRow}>
+                <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses(ALL_STATUSES)}>
+                  <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses([])}>
+                  <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.chipRow}>
+              {STATUS_OPTIONS.map((opt) => {
+                const selected = selectedStatuses.includes(opt.value)
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => onChangeStatuses(toggleStatus(selectedStatuses, opt.value))}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    testID={`status-toggle-${opt.value}`}
+                  >
+                    <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+
+          {/* Servers */}
+          {showServerFilter ? (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
+                {activeServerIds.length >= 2 ? (
+                  <TouchableOpacity
+                    onPress={() => setIsEditingOrder((v) => !v)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={isEditingOrder ? t('filter.lockOrder') : t('filter.editOrder')}
+                    accessibilityState={{ selected: isEditingOrder }}
+                    testID="server-order-toggle"
+                  >
+                    {isEditingOrder
+                      ? <LockSimpleOpen size={18} color={dark.text.accent} />
+                      : <LockSimple size={18} color={dark.text.secondary} />
+                    }
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <DisplayedServersList
+                activeServerIds={activeServerIds}
+                servers={servers}
+                selectedServerIds={displayedServerIds}
+                onChange={setDisplayedServerIds}
+                isEditingOrder={isEditingOrder}
+                onReorder={reorderServers}
+              />
+            </View>
+          ) : null}
+
+          {/* Reset */}
+          <TouchableOpacity
+            style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
+            onPress={handleReset}
+            disabled={atDefault}
+          >
+            <Text style={[styles.resetText, atDefault && styles.resetTextDisabled]}>
+              {t('filter.resetDefaults')}
+            </Text>
+          </TouchableOpacity>
+        </BottomSheetScrollView>
+      )}
     </BottomSheet>
   )
 }

@@ -8,7 +8,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
+import { NestableDraggableFlatList, RenderItemParams } from 'react-native-draggable-flatlist'
 import { DotsSixVertical } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
@@ -111,7 +111,7 @@ export function DisplayedServersList({
 
     return (
       <View style={styles.container}>
-        <DraggableFlatList
+        <NestableDraggableFlatList
           data={data}
           keyExtractor={(s) => s.id}
           renderItem={({ item, drag, isActive, getIndex }: RenderItemParams<ServerConfig>) => (
