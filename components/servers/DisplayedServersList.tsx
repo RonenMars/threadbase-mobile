@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native'
 import Animated, {
+  cancelAnimation,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
@@ -42,6 +43,7 @@ function JigglingRow({ server, index, drag, isActive, isEditingOrder }: Jiggling
   const rotation = useSharedValue(0)
 
   useEffect(() => {
+    cancelAnimation(rotation)
     if (isEditingOrder) {
       const delay = index * 40
       const timer = setTimeout(() => {
@@ -65,7 +67,7 @@ function JigglingRow({ server, index, drag, isActive, isEditingOrder }: Jiggling
   }))
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={[animatedStyle, styles.jigglingRowWrapper]}>
       <TouchableOpacity
         onLongPress={drag}
         disabled={isActive}
@@ -112,17 +114,16 @@ export function DisplayedServersList({
         <DraggableFlatList
           data={data}
           keyExtractor={(s) => s.id}
-          renderItem={({ item, drag, isActive }: RenderItemParams<ServerConfig>) => (
+          renderItem={({ item, drag, isActive, getIndex }: RenderItemParams<ServerConfig>) => (
             <JigglingRow
               server={item}
-              index={data.indexOf(item)}
+              index={getIndex() ?? 0}
               drag={drag}
               isActive={isActive}
               isEditingOrder={isEditingOrder}
             />
           )}
           onDragEnd={({ data: reordered }) => onReorder?.(reordered.map((s) => s.id))}
-          containerStyle={styles.draggableContainer}
         />
       </View>
     )
@@ -181,8 +182,8 @@ const styles = StyleSheet.create({
   container: {
     gap: spacing.sm,
   },
-  draggableContainer: {
-    gap: spacing.sm,
+  jigglingRowWrapper: {
+    marginBottom: spacing.sm,
   },
   quickRow: {
     flexDirection: 'row',

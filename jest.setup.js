@@ -121,7 +121,7 @@ jest.mock('react-native-draggable-flatlist', () => {
         View,
         { testID: 'draggable-flatlist' },
         data.map((item, index) =>
-          renderItem({ item, index, drag: jest.fn(), isActive: false })
+          renderItem({ item, index, drag: jest.fn(), isActive: false, getIndex: () => index })
         )
       ),
   }
