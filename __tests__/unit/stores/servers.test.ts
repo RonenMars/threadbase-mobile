@@ -185,3 +185,39 @@ describe('editServer', () => {
     expect(result).toEqual({ error: 'duplicate' })
   })
 })
+
+// ── reorderServers ─────────────────────────────────────────────────────────
+
+describe('reorderServers', () => {
+  function seedTwoServers() {
+    const a = { id: 'srv_a', url: 'http://a.local:7070', apiKey: 'key-a', isConnected: false, serverInfo: null, connectionError: null }
+    const b = { id: 'srv_b', url: 'http://b.local:7070', apiKey: 'key-b', isConnected: false, serverInfo: null, connectionError: null }
+    useServersStore.setState({
+      servers: { srv_a: a, srv_b: b },
+      activeServerIds: ['srv_a', 'srv_b'],
+      displayedServerIds: ['srv_a', 'srv_b'],
+      isLoading: false,
+    })
+  }
+
+  it('reorders activeServerIds to the provided order', () => {
+    seedTwoServers()
+    useServersStore.getState().reorderServers(['srv_b', 'srv_a'])
+    expect(useServersStore.getState().activeServerIds).toEqual(['srv_b', 'srv_a'])
+  })
+
+  it('does not change displayedServerIds membership', () => {
+    seedTwoServers()
+    useServersStore.getState().reorderServers(['srv_b', 'srv_a'])
+    const { displayedServerIds } = useServersStore.getState()
+    expect(displayedServerIds).toContain('srv_a')
+    expect(displayedServerIds).toContain('srv_b')
+  })
+
+  it('calls persistServerList (SecureStore.setItemAsync)', () => {
+    const SecureStore = require('expo-secure-store')
+    seedTwoServers()
+    useServersStore.getState().reorderServers(['srv_b', 'srv_a'])
+    expect(SecureStore.setItemAsync).toHaveBeenCalled()
+  })
+})

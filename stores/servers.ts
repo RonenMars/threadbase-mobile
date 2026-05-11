@@ -38,6 +38,7 @@ interface ServersStore {
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
   getServer: (serverId: string) => ServerConfig | undefined
+  reorderServers: (orderedIds: string[]) => void
 
   // Compat helpers used during migration from connection.ts consumers
   /** First server's URL, or fallback. */
@@ -160,6 +161,13 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const displayedServerIds = toValidUniqueIds(ids, state.activeServerIds)
       persistServerList(state.servers, state.activeServerIds, displayedServerIds)
       return { displayedServerIds }
+    })
+  },
+
+  reorderServers: (orderedIds: string[]) => {
+    set((state) => {
+      persistServerList(state.servers, orderedIds, state.displayedServerIds)
+      return { activeServerIds: orderedIds }
     })
   },
 
