@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render } from '@testing-library/react-native'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import type { ServerConfig } from '@/types/api'
 
@@ -62,7 +62,7 @@ describe('DisplayedServersList — edit order mode', () => {
   })
 
   it('does not render quick-action buttons when isEditingOrder is true', () => {
-    const { queryByText } = render(
+    const { queryByTestId } = render(
       <DisplayedServersList
         activeServerIds={activeServerIds}
         servers={servers}
@@ -73,7 +73,6 @@ describe('DisplayedServersList — edit order mode', () => {
         showQuickActions
       />
     )
-    // Quick action buttons should be hidden in edit mode
-    expect(queryByText(/all/i)).toBeNull()
+    expect(queryByTestId('quick-actions')).toBeNull()
   })
 })

@@ -132,7 +132,7 @@ export function DisplayedServersList({
   return (
     <View style={styles.container}>
       {showQuickActions ? (
-        <View style={styles.quickRow}>
+        <View style={styles.quickRow} testID="quick-actions">
           <TouchableOpacity style={styles.quickButton} onPress={() => onChange(activeServerIds)}>
             <Text style={styles.quickButtonText}>{t('displayedServers.all')}</Text>
           </TouchableOpacity>
