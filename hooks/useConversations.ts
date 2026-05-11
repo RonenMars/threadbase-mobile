@@ -146,6 +146,7 @@ interface RawContentBlock {
 interface RawMessage {
   /** Stable index in the full filtered message list (for pagination + React keys). */
   message_index?: number
+  uuid?: string | null
   role: string
   timestamp: string
   text: string
@@ -156,6 +157,7 @@ interface RawMessage {
   parent_uuid?: string | null
   permission_mode?: string | null
   is_sidechain?: boolean
+  is_tool_result?: boolean
   attachment?: Record<string, unknown> | null
 }
 
@@ -213,6 +215,7 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
   const idx = m.message_index ?? fallbackIndex
   return {
     id: `${convId}-${idx}`,
+    uuid: m.uuid,
     role: m.role as 'user' | 'assistant',
     content,
     timestamp: m.timestamp,
@@ -220,6 +223,7 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
     parent_uuid: m.parent_uuid,
     permission_mode: m.permission_mode,
     is_sidechain: m.is_sidechain,
+    is_tool_result: m.is_tool_result,
     attachment: m.attachment,
   }
 }

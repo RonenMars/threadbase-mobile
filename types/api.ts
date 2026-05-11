@@ -89,6 +89,7 @@ export interface ConversationDetail extends Conversation {
 
 export interface Message {
   id: string
+  uuid?: string | null
   role: 'user' | 'assistant'
   content: MessageContent[]
   timestamp: string
@@ -97,6 +98,7 @@ export interface Message {
   parent_uuid?: string | null
   permission_mode?: string | null
   is_sidechain?: boolean
+  is_tool_result?: boolean
   attachment?: Record<string, unknown> | null
 }
 
