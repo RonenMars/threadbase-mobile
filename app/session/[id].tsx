@@ -435,10 +435,18 @@ export default function SessionDetailScreen() {
 
   useEffect(() => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
-    if (session?.ptyAttached === false && session?.status === 'idle' && isUuid) {
+    // Only redirect to the conversation view if the session actually produced
+    // messages. Idle PTYs with zero prompts never wrote a JSONL file, so
+    // /api/conversations/:id 404s on them.
+    if (
+      session?.ptyAttached === false &&
+      session?.status === 'idle' &&
+      (session?.promptCount ?? 0) > 0 &&
+      isUuid
+    ) {
       router.replace(`/conversation/${id}?server=${serverId}`)
     }
-  }, [session?.ptyAttached, session?.status, id, serverId, router])
+  }, [session?.ptyAttached, session?.status, session?.promptCount, id, serverId, router])
 
   // Track whether Claude has reached its first interactive prompt for THIS
   // session id. The streamer reports `waiting_input` once the prompt marker
