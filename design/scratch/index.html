@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threadbase — Conversation list redesign · Preview cards</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 40px; background: var(--tb-ink-0); color: var(--tb-fg-0); font-family: var(--font-sans); min-height: 100vh; }
+  h1 { font: 600 24px/1.2 var(--font-sans); margin: 0 0 8px; }
+  p.lead { font: 400 14px/1.5 var(--font-sans); color: var(--tb-fg-2); margin: 0 0 32px; max-width: 720px; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 980px; }
+  a.card {
+    display: block;
+    padding: 24px;
+    background: var(--tb-ink-2);
+    border: 1px solid var(--tb-ink-5);
+    border-radius: 12px;
+    color: var(--tb-fg-0);
+    text-decoration: none;
+    transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  }
+  a.card:hover { background: var(--tb-ink-3); border-color: var(--tb-ink-6); }
+  .card .num { font: 600 11px/1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--tb-blue-400); }
+  .card h2 { font: 600 18px/1.3 var(--font-sans); margin: 8px 0 6px; }
+  .card p { font: 400 13px/1.5 var(--font-sans); color: var(--tb-fg-2); margin: 0; }
+</style>
+</head>
+<body>
+  <h1>Conversation list redesign — preview cards</h1>
+  <p class="lead">Two open questions from the plan, rendered side-by-side so you can pick. Each page shows three 390px mobile frames (v1 vs v2 vs v2-expanded where relevant).</p>
+  <div class="card-grid">
+    <a class="card" href="./conversation-preview-sheet.html">
+      <div class="num">Decision · 1</div>
+      <h2>Conversation preview sheet</h2>
+      <p>Long-press on a list row. v1 keeps today's action sheet (no peek). v2 adds a half-height "Preview last 10 messages" bottom sheet that pins the ConversationListItem on top, scrolls messages, and sticks footer actions.</p>
+    </a>
+    <a class="card" href="./time-bucket-pills.html">
+      <div class="num">Decision · 2</div>
+      <h2>Time-bucket pills</h2>
+      <p>A horizontal pill row (All / Today / 7d / 30d / Custom) above the list. v1 keeps the search bar alone. v2 ships them in two surfaces — hub drill and global search results.</p>
+    </a>
+  </div>
+</body>
+</html>
