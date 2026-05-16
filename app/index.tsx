@@ -34,6 +34,7 @@ import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
+import { clientLog } from '@/lib/clientLog'
 import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
@@ -66,6 +67,16 @@ export default function ProjectsHub() {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
+
+  useEffect(() => {
+    clientLog.info('hub.mount', 'ProjectsHub mounted', {
+      activeServerIdsLen: activeServerIds.length,
+      displayedServerIdsLen: displayedServerIds.length,
+      activeIds: activeServerIds,
+      displayedIds: displayedServerIds,
+      sessionsLayout,
+    })
+  }, [])
 
   // Connection status
   const [connectedCount, setConnectedCount] = useState(0)

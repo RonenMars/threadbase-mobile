@@ -3,6 +3,9 @@ node_modules/
 dist/
 build/
 npm-debug.*
+
+# Local ship build logs and audit artifacts — large + ephemeral
+logs/
 *.jks
 *.p8
 *.p12

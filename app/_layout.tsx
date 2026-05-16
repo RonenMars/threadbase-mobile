@@ -30,6 +30,10 @@ import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
+import { installClientLogCapture, clientLog } from '@/lib/clientLog'
+
+installClientLogCapture()
+clientLog.info('boot', 'app module loaded')
 
 SplashScreen.preventAutoHideAsync()
 
