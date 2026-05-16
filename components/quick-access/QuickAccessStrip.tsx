@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import {
@@ -11,6 +11,7 @@ import { useRecentSessions, usePopularProjects } from '@/hooks/useQuickAccess'
 import { QuickAccessChip, type ChipItem, type QuickAccessTab } from './QuickAccessChip'
 import { QuickAccessActionSheet } from './QuickAccessActionSheet'
 import { dark, font, spacing } from '@/constants/theme'
+import { clientLog } from '@/lib/clientLog'
 
 const INITIAL_CHIPS = 4
 const LOAD_MORE_STEP = 4
@@ -18,6 +19,7 @@ const LOAD_MORE_STEP = 4
 export function QuickAccessStrip() {
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const {
     favorites, ignoredRecents, ignoredPopular,
     stripCollapsed, favoritesEnabled, recentsEnabled, popularEnabled,
@@ -35,9 +37,79 @@ export function QuickAccessStrip() {
     setVisibleCount(INITIAL_CHIPS)
   }
 
-  const firstServerId = activeServerIds[0] ?? ''
-  const { data: recentsData } = useRecentSessions(firstServerId)
-  const { data: popularData } = usePopularProjects(firstServerId)
+  // Fan out across user-displayed servers (or fall back to all active servers
+  // when the user hasn't trimmed the list — keeps single-server users working
+  // out of the box).
+  const queriedServerIds = useMemo(
+    () => (displayedServerIds.length > 0 ? displayedServerIds : activeServerIds),
+    [displayedServerIds, activeServerIds],
+  )
+  const firstServerId = queriedServerIds[0] ?? ''
+  const recentsQuery = useRecentSessions(queriedServerIds)
+  const popularQuery = usePopularProjects(queriedServerIds)
+  const recentsData = recentsQuery.data
+  const popularData = popularQuery.data
+
+  // Mount once
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (mounted.current) return
+    mounted.current = true
+    clientLog.info('strip.mount', 'QuickAccessStrip mounted', {
+      queriedServerIds,
+      queriedServerIdsCount: queriedServerIds.length,
+      activeServerIdsCount: activeServerIds.length,
+      displayedServerIdsCount: displayedServerIds.length,
+      favoritesEnabled,
+      recentsEnabled,
+      popularEnabled,
+      stripCollapsed,
+      favoritesCount: favorites.length,
+    })
+  }, [])
+
+  // Track every render's key state
+  useEffect(() => {
+    clientLog.info('strip.render', 'state snapshot', {
+      queriedServerIdsLen: queriedServerIds.length,
+      activeServerIdsLen: activeServerIds.length,
+      displayedServerIdsLen: displayedServerIds.length,
+      recentsStatus: recentsQuery.status,
+      recentsFetchStatus: recentsQuery.fetchStatus,
+      recentsPerServerErrors: recentsQuery.perServerErrors,
+      recentsError: recentsQuery.error ? String(recentsQuery.error) : null,
+      recentsSessions: recentsData?.sessions?.length ?? null,
+      popularStatus: popularQuery.status,
+      popularFetchStatus: popularQuery.fetchStatus,
+      popularPerServerErrors: popularQuery.perServerErrors,
+      popularError: popularQuery.error ? String(popularQuery.error) : null,
+      popularProjects: popularData?.projects?.length ?? null,
+      favoritesEnabled,
+      recentsEnabled,
+      popularEnabled,
+      stripCollapsed,
+      currentTab,
+    })
+  }, [
+    queriedServerIds.length,
+    activeServerIds.length,
+    displayedServerIds.length,
+    recentsQuery.status,
+    recentsQuery.fetchStatus,
+    recentsQuery.perServerErrors,
+    recentsQuery.error,
+    recentsData?.sessions?.length,
+    popularQuery.status,
+    popularQuery.fetchStatus,
+    popularQuery.perServerErrors,
+    popularQuery.error,
+    popularData?.projects?.length,
+    favoritesEnabled,
+    recentsEnabled,
+    popularEnabled,
+    stripCollapsed,
+    currentTab,
+  ])
 
   const enabledTabs = useMemo((): QuickAccessTab[] => {
     const tabs: QuickAccessTab[] = []
@@ -179,23 +251,34 @@ export function QuickAccessStrip() {
 
       {!stripCollapsed && (
         <View style={styles.chipsContainer}>
-          <View style={styles.chips}>
-            {visibleItems.map((item) => (
-              <QuickAccessChip
-                key={item.id}
-                item={item}
-                tab={effectiveTab}
-                editMode={editMode}
-                onPress={() => handleChipPress(item)}
-                onDelete={() => handleDelete(item)}
-              />
-            ))}
-            {remaining > 0 && (
-              <Pressable style={styles.loadMoreChip} onPress={() => setVisibleCount((v) => v + LOAD_MORE_STEP)}>
-                <Text style={styles.loadMoreText}>+ {loadMoreCount} more</Text>
-              </Pressable>
-            )}
-          </View>
+          {visibleItems.length === 0
+            ? renderEmptyState({
+                tab: effectiveTab,
+                hasServers: queriedServerIds.length > 0,
+                recentsQuery,
+                popularQuery,
+                onOpenSettings: () => router.push('/settings' as any),
+              })
+            : (
+              <View style={styles.chips}>
+                {visibleItems.map((item) => (
+                  <QuickAccessChip
+                    key={item.id}
+                    item={item}
+                    tab={effectiveTab}
+                    editMode={editMode}
+                    onPress={() => handleChipPress(item)}
+                    onDelete={() => handleDelete(item)}
+                  />
+                ))}
+                {remaining > 0 && (
+                  <Pressable style={styles.loadMoreChip} onPress={() => setVisibleCount((v) => v + LOAD_MORE_STEP)}>
+                    <Text style={styles.loadMoreText}>+ {loadMoreCount} more</Text>
+                  </Pressable>
+                )}
+              </View>
+            )
+          }
         </View>
       )}
 
@@ -210,6 +293,48 @@ export function QuickAccessStrip() {
       />
     </View>
   )
+}
+
+type QueryShape = {
+  status: 'pending' | 'success' | 'error'
+  fetchStatus: 'fetching' | 'idle'
+  refetch: () => void
+  perServerErrors: number
+}
+
+function renderEmptyState({
+  tab, hasServers, recentsQuery, popularQuery, onOpenSettings,
+}: {
+  tab: QuickAccessTab
+  hasServers: boolean
+  recentsQuery: QueryShape
+  popularQuery: QueryShape
+  onOpenSettings: () => void
+}) {
+  if (tab === 'favorites') {
+    return <Text style={styles.emptyText}>No favorites yet — long-press an item to pin it.</Text>
+  }
+
+  const q = tab === 'recents' ? recentsQuery : popularQuery
+
+  if (!hasServers) {
+    return (
+      <Pressable onPress={onOpenSettings} hitSlop={8}>
+        <Text style={styles.emptyTextLink}>Pair a server to see {tab}.</Text>
+      </Pressable>
+    )
+  }
+  if (q.status === 'pending' && q.fetchStatus === 'fetching') {
+    return <Text style={styles.emptyText}>Loading…</Text>
+  }
+  if (q.status === 'error') {
+    return (
+      <Pressable onPress={q.refetch} hitSlop={8}>
+        <Text style={styles.emptyTextLink}>Couldn't load — tap to retry.</Text>
+      </Pressable>
+    )
+  }
+  return <Text style={styles.emptyText}>Nothing yet.</Text>
 }
 
 const styles = StyleSheet.create({
@@ -248,4 +373,6 @@ const styles = StyleSheet.create({
     borderColor: dark.border,
   },
   loadMoreText: { color: dark.text.secondary, fontSize: font.xs },
+  emptyText: { color: dark.text.secondary, fontSize: font.xs, paddingVertical: 2 },
+  emptyTextLink: { color: dark.text.accent, fontSize: font.xs, paddingVertical: 2 },
 })
