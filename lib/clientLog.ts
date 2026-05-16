@@ -71,6 +71,10 @@ export function clog(
   msg: string,
   fields?: Record<string, unknown>,
 ) {
+  // No-op in production builds. clientLog is a development diagnostic; shipping
+  // every console call + every QuickAccess render over the wire from TestFlight
+  // is bandwidth, battery, and streamer-disk cost for no debugging value.
+  if (!__DEV__) return
   BUFFER.push({
     level,
     msg,
@@ -100,6 +104,9 @@ function safeStringify(v: unknown): string {
 
 export function installClientLogCapture() {
   if (installed) return
+  // Skip the console.* hijack entirely in production — RN's console pipeline
+  // should stay untouched in release builds where we don't watch logs anyway.
+  if (!__DEV__) return
   installed = true
 
   const origLog = console.log
