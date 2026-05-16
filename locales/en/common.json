@@ -32,5 +32,9 @@
     "top": "↑ Top",
     "bottom": "↓ Bottom",
     "backArrow": "‹ Back"
+  },
+  "time": {
+    "now": "now",
+    "yesterday": "Yesterday"
   }
 }

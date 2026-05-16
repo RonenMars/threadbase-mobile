@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
 import type { ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
+import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
 
@@ -19,6 +20,8 @@ interface PersistedServer {
   url: string
   label?: string
   connectionError?: string
+  color?: string
+  symbol?: string
 }
 
 interface ServersStore {
@@ -63,6 +66,8 @@ async function persistServerList(
       url: servers[id].url,
       label: servers[id].label,
       connectionError: servers[id].connectionError ?? undefined,
+      color: servers[id].color,
+      symbol: servers[id].symbol,
     }))
   const payload = {
     list,
@@ -116,6 +121,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     const id = serverIdFromUrl(normalised)
     await SecureStore.setItemAsync(secureKeyForServer(id), apiKey)
 
+    const usedColors = activeServerIds.map((sid) => servers[sid]?.color)
+    const color = pickNextServerColor(usedColors)
+
     const config: ServerConfig = {
       id,
       url: normalised,
@@ -124,6 +132,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       isConnected: false,
       serverInfo: null,
       connectionError: null,
+      color,
     }
 
     set((state) => {
@@ -311,6 +320,10 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
         for (const entry of list) {
           const apiKey = (await SecureStore.getItemAsync(secureKeyForServer(entry.id))) ?? ''
+          // Auto-assign a color for legacy entries that predate the field.
+          const color = entry.color ?? pickNextServerColor(
+            activeServerIds.map((sid) => servers[sid]?.color),
+          )
           servers[entry.id] = {
             id: entry.id,
             url: entry.url,
@@ -319,6 +332,8 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             isConnected: false,
             serverInfo: null,
             connectionError: entry.connectionError ?? null,
+            color,
+            symbol: entry.symbol,
           }
           activeServerIds.push(entry.id)
         }
@@ -351,6 +366,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           isConnected: false,
           serverInfo: null,
           connectionError: null,
+          color: pickNextServerColor([]),
         }
 
         const servers = { [id]: config }

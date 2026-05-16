@@ -13,6 +13,14 @@ function isValidThemeId(v: unknown): v is ThemeId {
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
 const ASYNC_KEY_SETTINGS = 'threadbase_settings'
 
+export type RowPreviewMode = 'first' | 'last' | 'auto' | 'off'
+export type RowDensity = 'comfortable' | 'compact'
+export type RowPathDisplay = 'smart' | 'full' | 'last-segment'
+export type RowServerIndicator = 'auto' | 'always' | 'never'
+export type RowServerChipVariant = 'label' | 'letter' | 'symbol'
+export type RowTitleSource = 'title' | 'first' | 'last'
+export type RowPreviewModalCount = 5 | 10 | 20
+
 interface SettingsStore {
   colorScheme: ThemeId
   completedSessionFadeMs: number
@@ -23,6 +31,14 @@ interface SettingsStore {
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
+  // Conversation row settings (Conversation list redesign §13).
+  rowTitleSource: RowTitleSource
+  rowPreviewMode: RowPreviewMode
+  rowDensity: RowDensity
+  rowPathDisplay: RowPathDisplay
+  rowServerIndicator: RowServerIndicator
+  rowServerChipVariant: RowServerChipVariant
+  rowPreviewModalCount: RowPreviewModalCount
   setColorScheme: (scheme: ThemeId) => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
@@ -32,6 +48,13 @@ interface SettingsStore {
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
   setLocale: (locale: string) => void
+  setRowTitleSource: (v: RowTitleSource) => void
+  setRowPreviewMode: (v: RowPreviewMode) => void
+  setRowDensity: (v: RowDensity) => void
+  setRowPathDisplay: (v: RowPathDisplay) => void
+  setRowServerIndicator: (v: RowServerIndicator) => void
+  setRowServerChipVariant: (v: RowServerChipVariant) => void
+  setRowPreviewModalCount: (v: RowPreviewModalCount) => void
   askOnCreate: boolean
   askOnExit: boolean
   autoNameFromMessage: boolean
@@ -62,6 +85,13 @@ interface PersistedSettings {
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
+  rowTitleSource: RowTitleSource
+  rowPreviewMode: RowPreviewMode
+  rowDensity: RowDensity
+  rowPathDisplay: RowPathDisplay
+  rowServerIndicator: RowServerIndicator
+  rowServerChipVariant: RowServerChipVariant
+  rowPreviewModalCount: RowPreviewModalCount
   askOnCreate: boolean
   askOnExit: boolean
   autoNameFromMessage: boolean
@@ -83,6 +113,15 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   autoNameFromMessage: true,
   aiGeneratedNames: false,
 
+  // Conversation row defaults (locked in plan §13).
+  rowTitleSource: 'title',
+  rowPreviewMode: 'auto',
+  rowDensity: 'comfortable',
+  rowPathDisplay: 'smart',
+  rowServerIndicator: 'auto',
+  rowServerChipVariant: 'label',
+  rowPreviewModalCount: 10,
+
   setColorScheme: (colorScheme) => set({ colorScheme }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
   setTerminalMaxLines: (terminalMaxLines) => set({ terminalMaxLines }),
@@ -99,6 +138,13 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAskOnExit: (askOnExit) => set({ askOnExit }),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
+  setRowTitleSource: (rowTitleSource) => set({ rowTitleSource }),
+  setRowPreviewMode: (rowPreviewMode) => set({ rowPreviewMode }),
+  setRowDensity: (rowDensity) => set({ rowDensity }),
+  setRowPathDisplay: (rowPathDisplay) => set({ rowPathDisplay }),
+  setRowServerIndicator: (rowServerIndicator) => set({ rowServerIndicator }),
+  setRowServerChipVariant: (rowServerChipVariant) => set({ rowServerChipVariant }),
+  setRowPreviewModalCount: (rowPreviewModalCount) => set({ rowPreviewModalCount }),
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
@@ -118,6 +164,13 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         askOnExit: parsed.askOnExit ?? state.askOnExit,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
+        rowTitleSource: parsed.rowTitleSource ?? state.rowTitleSource,
+        rowPreviewMode: parsed.rowPreviewMode ?? state.rowPreviewMode,
+        rowDensity: parsed.rowDensity ?? state.rowDensity,
+        rowPathDisplay: parsed.rowPathDisplay ?? state.rowPathDisplay,
+        rowServerIndicator: parsed.rowServerIndicator ?? state.rowServerIndicator,
+        rowServerChipVariant: parsed.rowServerChipVariant ?? state.rowServerChipVariant,
+        rowPreviewModalCount: parsed.rowPreviewModalCount ?? state.rowPreviewModalCount,
       }))
     } catch {
       // storage unavailable or corrupted — ignore
@@ -138,6 +191,13 @@ useSettingsStore.subscribe((state) => {
     askOnExit: state.askOnExit,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
+    rowTitleSource: state.rowTitleSource,
+    rowPreviewMode: state.rowPreviewMode,
+    rowDensity: state.rowDensity,
+    rowPathDisplay: state.rowPathDisplay,
+    rowServerIndicator: state.rowServerIndicator,
+    rowServerChipVariant: state.rowServerChipVariant,
+    rowPreviewModalCount: state.rowPreviewModalCount,
   }
   AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload)).catch(() => {})
 })

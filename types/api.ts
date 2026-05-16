@@ -187,6 +187,10 @@ export interface ServerConfig {
   isConnected: boolean
   serverInfo: ServerInfo | null
   connectionError: string | null
+  /** Hex color assigned to this server for the multi-server identity strip + chip. */
+  color?: string
+  /** Optional Phosphor icon name used by the 'symbol' chip variant. */
+  symbol?: string
 }
 
 export interface MultiSession extends Session {
