@@ -1,19 +1,20 @@
 import { useCallback } from 'react'
-import { View, Text, TouchableOpacity, Platform, Alert, ActionSheetIOS } from 'react-native'
+import { Platform, Alert, ActionSheetIOS } from 'react-native'
 import { useRouter } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import * as Haptics from 'expo-haptics'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { dark } from '@/constants/theme'
-import { LiveDot } from '@/components/sessions/LiveDot'
-import { dateLabel, formatElapsed } from './hubUtils'
-import { styles } from './SessionRow.styles'
+import { useServersStore } from '@/stores/servers'
+import { useSessionNamesStore } from '@/stores/sessionNames'
+import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { formatElapsed } from './hubUtils'
 import type { SessionRowProps } from './types'
 
-export function SessionRow({ session, multipleToday }: SessionRowProps) {
-  const { t } = useTranslation('sessions')
+export function SessionRow({ session }: SessionRowProps) {
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
+  const activeServerCount = useServersStore((s) => s.activeServerIds.length)
+  const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
+  const sessionName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -49,35 +50,29 @@ export function SessionRow({ session, multipleToday }: SessionRowProps) {
     }
   }, [session, cancelSession])
 
-  const label = dateLabel(session.startedAt, multipleToday)
-  const branch = session.branch || 'no git'
-  const elapsed = formatElapsed(session.elapsedMs)
-  const prompts = session.promptCount
   const isLive = session.status === 'running' || session.status === 'waiting_input'
-  // Brand colour for the row's leading dot. Amber = live, blue = idle.
-  // Mirrors SessionCard, SessionStatusBadge, and TreeRow so the same
-  // session reads identically in every view.
-  const dotColor = isLive ? dark.status.waiting : dark.text.accent
+  const branchAndElapsed = [session.branch || 'no git', formatElapsed(session.elapsedMs)].join(' · ')
+  const titleSuffix = sessionName?.trim() || branchAndElapsed
+  const promptCountLabel = `${session.promptCount} prompt${session.promptCount === 1 ? '' : 's'}`
 
   return (
-    <TouchableOpacity
+    <ConversationListItem
+      title={titleSuffix}
+      timestamp={session.completedAt ?? session.startedAt}
+      messageCount={session.promptCount}
+      branch={session.branch}
+      live={isLive}
+      lastOutput={session.lastOutput || null}
+      preview={promptCountLabel}
+      serverLabel={session.serverLabel}
+      serverColor={serverColor}
+      activeServerCount={activeServerCount}
+      density="compact"
+      leading="dot"
+      previewMode="none"
       onPress={handlePress}
       onLongPress={handleLongPress}
-      activeOpacity={0.75}
-      style={styles.row}
       testID={`session-row-${session.id}`}
-    >
-      <LiveDot live={isLive} color={dotColor} size={6} />
-      <View style={styles.rowContent}>
-        <Text style={styles.rowPrimary} numberOfLines={1}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          {branch} · {elapsed} · {t('hub.prompts', { count: prompts })}
-        </Text>
-        {session.serverLabel ? (
-          <Text style={styles.serverLabel} numberOfLines={1}>{session.serverLabel}</Text>
-        ) : null}
-      </View>
-      <Text style={styles.rowDate}>{label}</Text>
-    </TouchableOpacity>
+    />
   )
 }

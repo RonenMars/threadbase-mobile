@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { FlatList, View, Text, TextInput, TouchableOpacity, SectionList, RefreshControl } from 'react-native'
+import { FlatList, View, Text, TextInput, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -9,6 +9,7 @@ import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { useServersStore } from '@/stores/servers'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
+import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { dark } from '@/constants/theme'
 import { isMultiSession } from './types'
 import { styles } from './ProjectHubList.styles'
@@ -106,25 +107,54 @@ export function ProjectHubList({
     return result
   }, [debouncedQuery, conversations, sessions])
 
+  const activeServerCount = activeServerIds.length
+
   const renderSearchResultItem = useCallback(
     ({ item }: { item: MultiConversation | MultiSession }) => {
-      const lastSegment = item.projectPath?.split('/').filter(Boolean).pop() ?? ''
-      if (isMultiSession(item)) {
+      const isSession = isMultiSession(item)
+      const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
+      if (isSession) {
+        const isLive = item.status === 'running' || item.status === 'waiting_input'
         return (
-          <TouchableOpacity style={styles.resultRow} onPress={() => handleSessionPress(item)} activeOpacity={0.7}>
-            <Text style={styles.resultTitle} numberOfLines={1}>{item.projectName}</Text>
-            {lastSegment ? <Text style={styles.resultSubtitle} numberOfLines={1}>{lastSegment}</Text> : null}
-          </TouchableOpacity>
+          <ConversationListItem
+            title={item.projectName}
+            path={item.projectPath}
+            timestamp={item.completedAt ?? item.startedAt}
+            branch={item.branch}
+            messageCount={item.promptCount}
+            live={isLive}
+            lastOutput={item.lastOutput || null}
+            serverLabel={item.serverLabel}
+            serverColor={serverColor}
+            activeServerCount={activeServerCount}
+            density="comfortable"
+            leading="avatar"
+            highlight={debouncedQuery}
+            onPress={() => handleSessionPress(item)}
+          />
         )
       }
       return (
-        <TouchableOpacity style={styles.resultRow} onPress={() => handleConversationPress(item)} activeOpacity={0.7}>
-          <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
-          {lastSegment ? <Text style={styles.resultSubtitle} numberOfLines={1}>{lastSegment}</Text> : null}
-        </TouchableOpacity>
+        <ConversationListItem
+          title={item.title}
+          path={item.projectPath}
+          timestamp={item.lastMessage?.timestamp ?? item.lastActivity}
+          messageCount={item.messageCount}
+          branch={item.branch}
+          firstMessage={item.firstMessage}
+          lastMessage={item.lastMessage}
+          preview={item.preview}
+          serverLabel={item.serverLabel}
+          serverColor={serverColor}
+          activeServerCount={activeServerCount}
+          density="comfortable"
+          leading="avatar"
+          highlight={debouncedQuery}
+          onPress={() => handleConversationPress(item)}
+        />
       )
     },
-    [handleConversationPress, handleSessionPress],
+    [handleConversationPress, handleSessionPress, servers, activeServerCount, debouncedQuery],
   )
 
   const renderSectionHeader = useCallback(

@@ -27,12 +27,10 @@ export interface ProjectHubCardProps {
 
 export interface SessionRowProps {
   session: MultiSession
-  multipleToday: boolean
 }
 
 export interface ConvRowProps {
   conv: MultiConversation
-  multipleToday: boolean
 }
 
 export function isMultiSession(item: MultiConversation | MultiSession): item is MultiSession {

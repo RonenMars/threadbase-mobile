@@ -4,12 +4,13 @@ import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } f
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/settings'
-import { FolderSimple } from 'phosphor-react-native'
 import { dark } from '@/constants/theme'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
 import { ConvRow } from './ConvRow'
 import { Card } from '@/components/ui/Card'
+import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
+import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { styles } from './ProjectHubCard.styles'
 import type { ProjectHubCardProps } from './types'
 import type { MultiSession } from '@/types/api'
@@ -46,9 +47,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
     encodedPath
 
   const todaySessionCount = group.sessions.filter((s) => isToday(s.startedAt)).length
-  const multipleTodaySessions = todaySessionCount > 1
   const todayConvCount = group.conversations.filter((c) => isToday(c.lastActivity)).length
-  const multipleTodayConvs = todayConvCount > 1
 
   // Derive the project's lifecycle colour the same way SessionCard does.
   // Amber spine when any session is live; blue spine when sessions exist
@@ -62,6 +61,29 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
     if (group.sessions.length > 0) return { color: dark.text.accent, opacity: 0.55 }
     return null
   }, [group.sessions])
+
+  // Header content — smart path display + activity summary.
+  // `projectName` is just the trailing segment derived from the path, so the
+  // path IS the identity. We show parent muted (left-truncated) + suffix bold.
+  const pathRendered = useMemo(
+    () => pathDisplay(group.projectPath, { mode: 'smart' }),
+    [group.projectPath],
+  )
+
+  const activitySummary = useMemo(() => {
+    const liveCount = group.sessions.filter(
+      (s) => s.status === 'running' || s.status === 'waiting_input',
+    ).length
+    const todayCount = todaySessionCount + todayConvCount
+    const lastActivity = group.latestActivityMs > 0
+      ? formatListTime(group.latestActivityMs)
+      : null
+    const pieces: string[] = []
+    if (liveCount > 0) pieces.push(`${liveCount} live`)
+    if (todayCount > 0) pieces.push(`${todayCount} today`)
+    if (lastActivity) pieces.push(`last ${lastActivity}`)
+    return pieces.join(' · ')
+  }, [group.sessions, group.latestActivityMs, todaySessionCount, todayConvCount])
 
   return (
     <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
@@ -79,8 +101,17 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
 
         <View style={styles.spineRowBody}>
           <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={styles.header}>
-            <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
-            <Text style={styles.projectName} numberOfLines={1}>{group.projectName}</Text>
+            <View style={styles.headerBody}>
+              {pathRendered.parent ? (
+                <Text style={styles.headerParent} numberOfLines={1}>{pathRendered.parent}</Text>
+              ) : null}
+              <Text style={styles.headerSuffix} numberOfLines={1}>
+                {pathRendered.suffix || group.projectName}
+              </Text>
+              {activitySummary ? (
+                <Text style={styles.headerActivity} numberOfLines={1}>{activitySummary}</Text>
+              ) : null}
+            </View>
             <Text style={styles.countBadge}>
               {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
             </Text>
@@ -95,12 +126,12 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                 ...group.sessions.map((s) => ({
                   key: `s-${s.serverId}::${s.id}`,
                   ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
-                  node: <SessionRow key={`${s.serverId}::${s.id}`} session={s} multipleToday={multipleTodaySessions} />,
+                  node: <SessionRow key={`${s.serverId}::${s.id}`} session={s} />,
                 })),
                 ...group.conversations.map((c) => ({
                   key: `c-${c.serverId}::${c.id}`,
                   ms: Date.parse(c.lastActivity) || 0,
-                  node: <ConvRow key={`${c.serverId}::${c.id}`} conv={c} multipleToday={multipleTodayConvs} />,
+                  node: <ConvRow key={`${c.serverId}::${c.id}`} conv={c} />,
                 })),
               ]
                 .sort((a, b) => b.ms - a.ms)
@@ -115,7 +146,6 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                     <SessionRow
                       key={`${session.serverId}::${session.id}`}
                       session={session}
-                      multipleToday={multipleTodaySessions}
                     />
                   ))}
                 </View>
@@ -128,7 +158,6 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                     <ConvRow
                       key={`${conv.serverId}::${conv.id}`}
                       conv={conv}
-                      multipleToday={multipleTodayConvs}
                     />
                   ))}
                   {convCount > 5 && (

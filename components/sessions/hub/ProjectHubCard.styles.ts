@@ -21,9 +21,29 @@ export const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
+  },
+  headerBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  headerParent: {
+    color: dark.text.secondary,
+    fontSize: font.xs - 1,
+    fontWeight: '500',
+  },
+  headerSuffix: {
+    color: dark.text.primary,
+    fontSize: font.lg,
+    fontWeight: '600',
+    lineHeight: font.lg + 4,
+  },
+  headerActivity: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
   },
   projectName: {
     flex: 1,
