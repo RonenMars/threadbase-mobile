@@ -1,7 +1,7 @@
 import React from 'react'
-import { Pressable, Text, View, StyleSheet } from 'react-native'
+import { Platform, Pressable, Text, StyleSheet } from 'react-native'
 import { Folder, Lightning, X } from 'phosphor-react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { dark, font } from '@/constants/theme'
 
 export type QuickAccessTab = 'favorites' | 'recents' | 'popular'
 
@@ -43,7 +43,14 @@ export function QuickAccessChip({ item, tab, editMode, onPress, onDelete }: Prop
         // use the same lightning icon to match SessionCard branding.
         <Lightning size={13} color={isPinned ? dark.text.accent : dark.text.secondary} />
       )}
-      <Text style={[styles.label, isPinned && styles.labelPinned]} numberOfLines={1}>
+      <Text
+        style={[
+          styles.label,
+          item.type === 'dir' && styles.labelMono,
+          isPinned && styles.labelPinned,
+        ]}
+        numberOfLines={1}
+      >
         {item.label}
       </Text>
       {item.sessionCount !== undefined && (
@@ -63,22 +70,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minHeight: 28,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: 'rgba(99,179,255,0.18)',
     backgroundColor: dark.bg.card,
   },
   chipPinned: {
     borderColor: dark.text.accent,
-    backgroundColor: 'rgba(28,100,242,0.08)',
+    backgroundColor: 'rgba(99,179,255,0.10)',
   },
   chipPressed: { opacity: 0.65 },
   label: {
     color: dark.text.secondary,
     fontSize: font.xs,
-    maxWidth: 120,
+    maxWidth: 140,
+  },
+  labelMono: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: font.xs - 1,
   },
   labelPinned: { color: dark.text.accent },
   count: {

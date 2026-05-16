@@ -1,0 +1,180 @@
+import React, { useRef, useMemo, useEffect, useCallback } from 'react'
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet } from 'react-native'
+import BottomSheet from '@gorhom/bottom-sheet'
+import { useRouter } from 'expo-router'
+import { dark, font, radius, spacing } from '@/constants/theme'
+import { useConversation } from '@/hooks/useConversations'
+import { useSettingsStore } from '@/stores/settings'
+import { MessageBubble } from '@/components/conversation/MessageBubble'
+import { ConversationListItem } from './ConversationListItem'
+
+interface Props {
+  /** Pass null/undefined to hide. The sheet opens when this is set. */
+  target:
+    | null
+    | {
+        kind: 'conversation' | 'session'
+        id: string
+        serverId: string
+        title?: string | null
+        path?: string | null
+        timestamp?: string | number | Date | null
+        branch?: string | null
+        messageCount?: number
+        live?: boolean
+        serverLabel?: string | null
+      }
+  onClose: () => void
+  onPin?: () => void
+  isPinned?: boolean
+}
+
+const SNAP_POINTS = ['60%', '90%']
+
+export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: Props) {
+  const sheetRef = useRef<BottomSheet>(null)
+  const router = useRouter()
+  const messageCount = useSettingsStore((s) => s.rowPreviewModalCount)
+
+  // Only fetch when we have a real conversation target.
+  const enabled = target?.kind === 'conversation'
+  const { data, isLoading } = useConversation(
+    enabled ? target!.serverId : '',
+    enabled ? target!.id : '',
+  )
+
+  useEffect(() => {
+    if (target) sheetRef.current?.snapToIndex(0)
+    else sheetRef.current?.close()
+  }, [target])
+
+  const lastMessages = useMemo(() => {
+    if (!data?.messages) return []
+    return data.messages.slice(-messageCount)
+  }, [data?.messages, messageCount])
+
+  const handleOpen = useCallback(() => {
+    if (!target) return
+    const url = target.kind === 'session'
+      ? `/session/${target.id}?server=${target.serverId}`
+      : `/conversation/${target.id}?server=${target.serverId}`
+    sheetRef.current?.close()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.push(url as any)
+  }, [target, router])
+
+  if (!target) return null
+
+  return (
+    <BottomSheet
+      ref={sheetRef}
+      index={-1}
+      snapPoints={SNAP_POINTS}
+      enablePanDownToClose
+      onClose={onClose}
+      backgroundStyle={{ backgroundColor: dark.bg.card }}
+      handleIndicatorStyle={{ backgroundColor: dark.border }}
+    >
+      <View style={styles.pinned}>
+        <ConversationListItem
+          title={target.title ?? undefined}
+          path={target.path ?? undefined}
+          timestamp={target.timestamp}
+          branch={target.branch}
+          messageCount={target.messageCount}
+          live={target.live}
+          serverLabel={target.serverLabel}
+          density="compact"
+          leading="dot"
+          previewMode="none"
+        />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.messages}>
+        {target.kind === 'session' ? (
+          <Text style={styles.placeholder}>
+            Live session preview not available — open the session to see the live terminal.
+          </Text>
+        ) : isLoading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={dark.text.secondary} />
+          </View>
+        ) : lastMessages.length === 0 ? (
+          <Text style={styles.placeholder}>No messages yet.</Text>
+        ) : (
+          lastMessages.map((m) => <MessageBubble key={m.id} message={m} />)
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.primary} onPress={handleOpen} activeOpacity={0.75}>
+          <Text style={styles.primaryLabel}>
+            {target.kind === 'session' ? 'Open session' : 'Open conversation'}
+          </Text>
+        </TouchableOpacity>
+        {onPin ? (
+          <TouchableOpacity style={styles.ghost} onPress={onPin} activeOpacity={0.75}>
+            <Text style={styles.ghostLabel}>{isPinned ? 'Unpin' : 'Pin'}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    </BottomSheet>
+  )
+}
+
+const styles = StyleSheet.create({
+  pinned: {
+    borderBottomWidth: 1,
+    borderBottomColor: dark.border,
+  },
+  messages: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  loading: {
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+  },
+  placeholder: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    paddingVertical: spacing.md,
+    textAlign: 'center',
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: dark.border,
+    backgroundColor: dark.bg.card,
+  },
+  primary: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: dark.text.accent,
+    alignItems: 'center',
+  },
+  primaryLabel: {
+    color: dark.bg.primary,
+    fontWeight: '600',
+    fontSize: font.base,
+  },
+  ghost: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    alignItems: 'center',
+  },
+  ghostLabel: {
+    color: dark.text.primary,
+    fontWeight: '500',
+    fontSize: font.base,
+  },
+})

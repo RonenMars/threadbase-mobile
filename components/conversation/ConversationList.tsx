@@ -14,114 +14,69 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { ServerBadge } from '@/components/servers/ServerBadge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { dark, font, radius, spacing } from '@/constants/theme'
-import { FolderSimple } from 'phosphor-react-native'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MultiConversation } from '@/types/api'
 
 const CONV_SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `conv-sk-${i}`)
-const MAX_PREVIEW_LENGTH = 80
 
 function ConversationRowSkeleton() {
   return (
-    <View style={styles.row}>
-      <View style={styles.rowMain}>
-        <SkeletonBox height={16} width="70%" borderRadius={radius.sm} />
-        <SkeletonBox height={12} width="45%" borderRadius={radius.sm} style={styles.skLine} />
-        <SkeletonBox height={12} width="92%" borderRadius={radius.sm} style={styles.skLine} />
-        <View style={[styles.meta, styles.skMeta]}>
-          <SkeletonBox height={10} width={64} borderRadius={radius.sm} />
-          <SkeletonBox height={10} width={52} borderRadius={radius.sm} />
-        </View>
-      </View>
-      <View style={styles.rowRight}>
-        <SkeletonBox height={11} width={44} borderRadius={radius.sm} />
-        <SkeletonBox height={11} width={40} borderRadius={radius.sm} />
-      </View>
+    <View style={styles.skeletonRow}>
+      <SkeletonBox height={16} width="70%" borderRadius={radius.sm} />
+      <SkeletonBox height={12} width="92%" borderRadius={radius.sm} style={styles.skLine} />
+      <SkeletonBox height={10} width={120} borderRadius={radius.sm} style={styles.skLine} />
     </View>
   )
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffDays = Math.floor(diffMs / 86400000)
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return `${diffDays}d ago`
-  return d.toLocaleDateString()
-}
-
-const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-function formatMessageTime(iso: string): string {
-  const d = new Date(iso)
-  const mon = SHORT_MONTHS[d.getMonth()]
-  const day = d.getDate()
-  const h = d.getHours()
-  const m = d.getMinutes().toString().padStart(2, '0')
-  return `${mon} ${day}, ${h}:${m}`
-}
-
 interface RowProps {
   conversation: MultiConversation
-  showServerBadge: boolean
+  activeServerCount: number
+  siblings: readonly string[]
+  highlight?: string
 }
 
-const ConversationRow = React.memo(function ConversationRow({ conversation: c, showServerBadge }: RowProps) {
-  const { t } = useTranslation('conversation')
+const ConversationRow = React.memo(function ConversationRow({
+  conversation: c,
+  activeServerCount,
+  siblings,
+  highlight,
+}: RowProps) {
   const router = useRouter()
-  const displayPref = useSettingsStore((s) => s.historyMessageDisplay)
-  const msg = displayPref === 'last' ? c.lastMessage ?? c.firstMessage : c.firstMessage ?? c.lastMessage
-  const previewText = (msg?.text ?? c.preview)?.replace(/\s+/g, ' ').trim()
+  const legacyPreview = useSettingsStore((s) => s.historyMessageDisplay)
+  const density = useSettingsStore((s) => s.rowDensity)
+  const pathMode = useSettingsStore((s) => s.rowPathDisplay)
+  const serverIndicator = useSettingsStore((s) => s.rowServerIndicator)
+  const chipVariant = useSettingsStore((s) => s.rowServerChipVariant)
+  const serverColor = useServersStore((s) => (c.serverId ? s.servers[c.serverId]?.color : undefined))
+
   return (
-    <TouchableOpacity
-      style={styles.row}
+    <ConversationListItem
+      title={c.title}
+      path={c.projectPath}
+      siblings={siblings}
+      timestamp={c.lastMessage?.timestamp ?? c.lastActivity}
+      messageCount={c.messageCount}
+      branch={c.branch}
+      firstMessage={c.firstMessage}
+      lastMessage={c.lastMessage}
+      preview={c.preview}
+      serverLabel={c.serverLabel}
+      serverColor={serverColor}
+      activeServerCount={activeServerCount}
+      previewMode={legacyPreview === 'last' ? 'last' : 'first'}
+      density={density}
+      pathDisplayMode={pathMode}
+      showServer={serverIndicator}
+      serverChipVariant={chipVariant}
+      highlight={highlight}
       onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
-      accessibilityLabel={`Conversation: ${c.title}`}
-      accessibilityRole="button"
-    >
-      <View style={styles.rowMain}>
-        <View style={styles.titleRow}>
-          <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
-          <Text style={styles.title} numberOfLines={1}>{c.title}</Text>
-        </View>
-        {c.sessionName ? (
-          <Text style={styles.sessionName} numberOfLines={1}>{c.sessionName}</Text>
-        ) : null}
-        {previewText ? (
-          <Text style={styles.messagePreview} numberOfLines={1}>
-            {msg?.timestamp ? `${formatMessageTime(msg.timestamp)} · ` : ''}
-            {previewText.length > MAX_PREVIEW_LENGTH
-              ? `${previewText.slice(0, MAX_PREVIEW_LENGTH)}...`
-              : previewText}
-          </Text>
-        ) : null}
-        <View style={styles.meta}>
-          <Text style={styles.metaText}>{c.projectPath.split('/').pop()}</Text>
-          {c.branch ? (
-            <View style={styles.branchBadge}>
-              <Text style={styles.branchText}>{c.branch}</Text>
-            </View>
-          ) : null}
-          {showServerBadge ? (
-            <ServerBadge serverId={c.serverId} label={c.serverLabel} />
-          ) : null}
-        </View>
-      </View>
-      <View style={styles.rowRight}>
-        <Text style={styles.date}>{formatDate(c.lastActivity)}</Text>
-        <Text style={styles.metaText}>{t('list.msgs', { count: c.messageCount })}</Text>
-        {c.totalTokens ? (
-          <Text style={styles.metaText}>{t('list.tokens', { count: parseFloat((c.totalTokens / 1000).toFixed(1)) })}</Text>
-        ) : null}
-      </View>
-    </TouchableOpacity>
+    />
   )
 })
 
@@ -158,9 +113,13 @@ export function ConversationList({
   loadingProgress = null,
 }: Props) {
   const { t } = useTranslation(['conversation', 'common'])
-  const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+  const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
+  const siblings = useMemo(
+    () => conversations.map((c) => c.projectPath).filter(Boolean),
+    [conversations],
+  )
   const listRef = useRef<FlatList>(null)
   const prevScrollY = useRef(0)
   const showTopVal = useSharedValue(0)
@@ -196,9 +155,14 @@ export function ConversationList({
       typeof item === 'string' ? (
         <ConversationRowSkeleton />
       ) : (
-        <ConversationRow conversation={item} showServerBadge={multipleServers} />
+        <ConversationRow
+          conversation={item}
+          activeServerCount={activeServerCount}
+          siblings={siblings}
+          highlight={searchQuery}
+        />
       ),
-    [multipleServers],
+    [activeServerCount, siblings, searchQuery],
   )
 
   const refreshControl = useMemo(
@@ -286,7 +250,6 @@ export function ConversationList({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   skLine: { marginTop: spacing.xs },
-  skMeta: { marginTop: spacing.xs },
   listFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -316,62 +279,11 @@ const styles = StyleSheet.create({
     fontSize: font.base,
     paddingVertical: spacing.sm,
   },
-  row: {
-    flexDirection: 'row',
+  skeletonRow: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    minHeight: 44,
-    gap: spacing.md,
-  },
-  rowMain: { flex: 1, gap: spacing.xs },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    minHeight: 64,
     gap: spacing.xs,
-  },
-  title: {
-    flex: 1,
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  sessionName: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  messagePreview: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontStyle: 'italic',
-  },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    overflow: 'hidden',
-  },
-  metaText: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  branchBadge: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.xs,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  branchText: {
-    color: dark.text.secondary,
-    fontSize: 10,
-  },
-  rowRight: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  date: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
   },
   separator: {
     height: 1,

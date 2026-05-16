@@ -5,7 +5,9 @@ import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { SessionStatusBadge } from './SessionStatusBadge'
 import { MachineBadge } from './MachineBadge'
-import { ServerBadge } from '@/components/servers/ServerBadge'
+import { ServerChip } from '@/components/sessions/shared/ServerChip'
+import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { Badge } from '@/components/ui/Badge'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { FolderSimple } from 'phosphor-react-native'
@@ -38,6 +40,7 @@ export function SessionCard({ session }: Props) {
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
+  const serverColor = useServersStore((s) => s.servers[session.serverId]?.color) ?? SERVER_COLOR_DEFAULT
   const customName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
   const displayName = customName ?? session.projectName
   const compoundId = `${session.serverId}::${session.id}`
@@ -45,11 +48,15 @@ export function SessionCard({ session }: Props) {
   if (isNew) _animatedIds.add(compoundId)
 
   const isLive = session.status === 'running' || session.status === 'waiting_input'
-  // Brand thread spine: amber for live (running / waiting_input), blue for
-  // idle (still a "thread", just not actively producing output). The spine
-  // is a structural column — the row's left edge IS the thread, echoing
-  // the brand mark. Not a decorative side-stripe border.
-  const spineColor = isLive ? dark.status.waiting : dark.text.accent
+  // Brand thread spine: amber for live (running / waiting_input), then the
+  // server's assigned identity color when multi-server (so you can see at a
+  // glance which server the card came from), then brand blue for idle.
+  // Echoes the brand mark; not a decorative side-stripe border.
+  const spineColor = isLive
+    ? dark.status.waiting
+    : multipleServers
+      ? serverColor
+      : dark.text.accent
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -97,6 +104,8 @@ export function SessionCard({ session }: Props) {
 
   const elapsedLabel = formatElapsed(session.elapsedMs)
   const promptsLabel = t('card.prompts', { count: session.promptCount })
+  const lastActivityTs = session.completedAt ?? session.startedAt
+  const timeLabel = lastActivityTs ? formatListTime(lastActivityTs) : null
 
   return (
     <Animated.View entering={isNew ? FadeInDown : undefined} style={styles.cardWrap}>
@@ -120,9 +129,14 @@ export function SessionCard({ session }: Props) {
               <View style={styles.titleMeta}>
                 {session.branch ? <Badge label={session.branch} /> : null}
                 {session.machineName ? <MachineBadge machineName={session.machineName} /> : null}
-                {multipleServers ? (
-                  <ServerBadge serverId={session.serverId} label={session.serverLabel} />
+                {multipleServers && session.serverLabel ? (
+                  <ServerChip
+                    label={session.serverLabel}
+                    color={serverColor}
+                    variant="label"
+                  />
                 ) : null}
+                {timeLabel ? <Text style={styles.timeLabel}>{timeLabel}</Text> : null}
               </View>
             </View>
 
@@ -190,6 +204,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  timeLabel: {
+    color: dark.text.secondary,
+    fontSize: font.xs,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
   },
   statusRow: {
     flexDirection: 'row',
