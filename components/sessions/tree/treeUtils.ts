@@ -1,4 +1,5 @@
 import { dark } from '@/constants/theme'
+import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { TreeNode, FlatNode } from './types'
 
@@ -123,7 +124,7 @@ export function toMs(iso: string | undefined): number {
   return isNaN(ms) ? 0 : ms
 }
 
-export function latestActivityLabel(node: TreeNode): string {
+export function latestActivityMs(node: TreeNode): number {
   let latest = 0
   for (const s of node.sessions) {
     const ms = s.completedAt
@@ -135,15 +136,13 @@ export function latestActivityLabel(node: TreeNode): string {
     const ms = toMs(c.lastActivity)
     if (ms > latest) latest = ms
   }
+  return latest
+}
+
+export function latestActivityLabel(node: TreeNode): string {
+  const latest = latestActivityMs(node)
   if (latest === 0) return ''
-  const now = Date.now()
-  const diff = now - latest
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
+  return formatListTime(latest)
 }
 
 export function activeSessionColor(node: TreeNode): string | null {

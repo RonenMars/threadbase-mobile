@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, FlatList, SectionList } from 'react-nativ
 import { useRouter } from 'expo-router'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
-import { latestActivityLabel } from './treeUtils'
 import { DrillRow } from './DrillRow'
 import { styles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
@@ -21,15 +20,19 @@ export function DrillView({ node, onBack }: Props) {
   const sessionItems: DrillItem[] = node.sessions.map((s) => ({
     key: `session:${s.serverId}::${s.id}`,
     label: getSessionName(s.serverId, s.id) ?? s.projectName ?? s.projectPath,
-    time: latestActivityLabel(node),
+    timestamp: s.completedAt ?? s.startedAt,
     status: s.status,
+    serverId: s.serverId,
+    serverLabel: s.serverLabel,
     onPress: () => router.push(`/session/${s.id}?server=${s.serverId}`),
   }))
 
   const conversationItems: DrillItem[] = node.conversations.map((c) => ({
     key: `conversation:${c.serverId}::${c.id}`,
     label: c.title || c.projectPath,
-    time: latestActivityLabel(node),
+    timestamp: c.lastMessage?.timestamp ?? c.lastActivity,
+    serverId: c.serverId,
+    serverLabel: c.serverLabel,
     onPress: () => router.push(`/conversation/${c.id}?server=${c.serverId}`),
   }))
 

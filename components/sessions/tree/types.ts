@@ -30,8 +30,11 @@ export interface ServerTree {
 export type DrillItem = {
   key: string
   label: string
-  time: string
+  /** Raw timestamp — the row formats it via formatListTime. */
+  timestamp: string | number | null
   status?: string
+  serverId?: string
+  serverLabel?: string
   onPress: () => void
 }
 

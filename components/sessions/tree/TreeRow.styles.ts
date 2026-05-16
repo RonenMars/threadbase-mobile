@@ -10,6 +10,14 @@ export const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: dark.border,
     minHeight: 44,
+    position: 'relative',
+  },
+  gutter: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: 'rgba(99,179,255,0.08)',
   },
   iconSlot: {
     width: 20,
@@ -64,6 +72,9 @@ export const styles = StyleSheet.create({
   time: {
     fontSize: font.xs,
     color: dark.text.secondary,
+    minWidth: 44,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
   },
   chatIcon: {
     marginRight: 4,

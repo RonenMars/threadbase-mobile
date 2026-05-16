@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
-import { Text, View, TextInput, FlatList, SectionList, TouchableOpacity, RefreshControl } from 'react-native'
+import { Text, View, TextInput, FlatList, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -9,6 +9,8 @@ import { DrillView } from './DrillView'
 import { ServerRootRow } from './ServerRootRow'
 import { ServerHeaderRow } from './ServerHeaderRow'
 import { EmptyState } from '../../ui/EmptyState'
+import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { useServersStore } from '@/stores/servers'
 import { styles } from './TreeSessionsList.styles'
 import { searchStyles } from '../SearchStyles'
 import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './types'
@@ -56,28 +58,57 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     return result
   }, [debouncedQuery, conversations, sessions])
 
+  const activeServerCount = useServersStore((s) => s.activeServerIds.length)
+  const servers = useServersStore((s) => s.servers)
+
   const renderSearchItem = useCallback(
     ({ item }: { item: MultiConversation | MultiSession }) => {
-      const lastSegment = item.projectPath?.split('/').filter(Boolean).pop() ?? ''
       const isSession = 'status' in item
-      const title = isSession ? (item as MultiSession).projectName : (item as MultiConversation).title
-      const onPress = isSession
-        ? () => {
-            const s = item as MultiSession
-            router.push(`/session/${s.id}?server=${s.serverId}`)
-          }
-        : () => {
-            const c = item as MultiConversation
-            router.push(`/conversation/${c.id}?server=${c.serverId}`)
-          }
+      const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
+      if (isSession) {
+        const s = item as MultiSession
+        const isLive = s.status === 'running' || s.status === 'waiting_input'
+        return (
+          <ConversationListItem
+            title={s.projectName}
+            path={s.projectPath}
+            timestamp={s.completedAt ?? s.startedAt}
+            branch={s.branch}
+            messageCount={s.promptCount}
+            live={isLive}
+            lastOutput={s.lastOutput || null}
+            serverLabel={s.serverLabel}
+            serverColor={serverColor}
+            activeServerCount={activeServerCount}
+            density="comfortable"
+            leading="avatar"
+            highlight={debouncedQuery}
+            onPress={() => router.push(`/session/${s.id}?server=${s.serverId}`)}
+          />
+        )
+      }
+      const c = item as MultiConversation
       return (
-        <TouchableOpacity style={searchStyles.resultRow} onPress={onPress} activeOpacity={0.7}>
-          <Text style={searchStyles.resultTitle} numberOfLines={1}>{title}</Text>
-          {lastSegment ? <Text style={searchStyles.resultSubtitle} numberOfLines={1}>{lastSegment}</Text> : null}
-        </TouchableOpacity>
+        <ConversationListItem
+          title={c.title}
+          path={c.projectPath}
+          timestamp={c.lastMessage?.timestamp ?? c.lastActivity}
+          messageCount={c.messageCount}
+          branch={c.branch}
+          firstMessage={c.firstMessage}
+          lastMessage={c.lastMessage}
+          preview={c.preview}
+          serverLabel={c.serverLabel}
+          serverColor={serverColor}
+          activeServerCount={activeServerCount}
+          density="comfortable"
+          leading="avatar"
+          highlight={debouncedQuery}
+          onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
+        />
       )
     },
-    [router],
+    [router, servers, activeServerCount, debouncedQuery],
   )
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null)

@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Pressable } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
-import { spacing } from '@/constants/theme'
+import { ChatCircle } from 'phosphor-react-native'
+import { dark, spacing } from '@/constants/theme'
 import { activeSessionColor, hasLiveSession, latestActivityLabel } from './treeUtils'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { styles } from './TreeRow.styles'
@@ -32,12 +32,25 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
     }
   }
 
+  const indentLevels = Math.max(0, depth - depthOffset)
+
   return (
     <TouchableOpacity
-      style={[styles.row, { paddingLeft: spacing.md + Math.max(0, depth - depthOffset) * 16 }]}
+      style={[
+        styles.row,
+        { paddingLeft: spacing.md + indentLevels * 16 },
+      ]}
       onPress={handlePress}
       activeOpacity={0.65}
     >
+      {/* Depth gutters — 1px hairlines per indent level. The blue-tinted tone
+         makes the hierarchy traceable without adding chrome. */}
+      {Array.from({ length: indentLevels }).map((_, i) => (
+        <View
+          key={`gutter-${i}`}
+          style={[styles.gutter, { left: spacing.md + i * 16 + 8 }]}
+        />
+      ))}
       <View style={styles.iconSlot}>
         {hasChildren ? (
           <Text style={[styles.chevron, isExpanded && styles.chevronOpen]}>›</Text>
@@ -72,9 +85,11 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
             hitSlop={6}
             style={styles.chatIcon}
           >
-            <Svg width={14} height={14} viewBox="0 0 16 16" fill="#2e7d4f">
-              <Path d="M14 1H2C1.45 1 1 1.45 1 2v8c0 .55.45 1 1 1h2v3l3-3h7c.55 0 1-.45 1-1V2c0-.55-.45-1-1-1z" />
-            </Svg>
+            <ChatCircle
+              size={14}
+              weight="fill"
+              color={`${dark.text.accent}cc`}
+            />
           </Pressable>
         )}
         {node.totalCount > 0 && (

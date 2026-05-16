@@ -1,8 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import { dark } from '@/constants/theme'
-import { STATUS_COLOR } from './treeUtils'
-import { LiveDot } from '@/components/sessions/LiveDot'
-import { styles } from './DrillRow.styles'
+import { useServersStore } from '@/stores/servers'
+import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { DrillItem } from './types'
 
 interface Props {
@@ -10,23 +7,24 @@ interface Props {
 }
 
 export function DrillRow({ item }: Props) {
-  const dotColor = item.status
-    ? (STATUS_COLOR[item.status] ?? dark.text.secondary)
-    : dark.text.secondary
   const isLive = item.status === 'running' || item.status === 'waiting_input'
+  const activeServerCount = useServersStore((s) => s.activeServerIds.length)
+  const serverColor = useServersStore((s) => (item.serverId ? s.servers[item.serverId]?.color : undefined))
 
   return (
-    <TouchableOpacity style={styles.drillRow} onPress={item.onPress} activeOpacity={0.65}>
-      <LiveDot live={isLive} color={dotColor} size={8} />
-      <View style={styles.drillContent}>
-        <Text style={styles.drillLabel} numberOfLines={1}>{item.label}</Text>
-        {item.status ? (
-          <Text style={[styles.drillStatus, { color: STATUS_COLOR[item.status] ?? dark.text.secondary }]}>
-            {item.status.replace('_', ' ')}
-          </Text>
-        ) : null}
-      </View>
-      <Text style={styles.drillTime}>{item.time}</Text>
-    </TouchableOpacity>
+    <ConversationListItem
+      title={item.label}
+      timestamp={item.timestamp ?? undefined}
+      live={isLive}
+      serverLabel={item.serverLabel}
+      serverColor={serverColor}
+      activeServerCount={activeServerCount}
+      density="compact"
+      leading="dot"
+      previewMode="none"
+      showCount={false}
+      showBranch={false}
+      onPress={item.onPress}
+    />
   )
 }
