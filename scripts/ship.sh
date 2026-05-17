@@ -106,13 +106,17 @@ echo "▸ [6/$TOTAL_STEPS] Check build number against TestFlight"
 echo "▸ [7/$TOTAL_STEPS] Archive and upload"
 "$SCRIPT_DIR/archive-and-upload.sh"
 
-# Resolve bundle id for polling
+# Resolve bundle id + build number for polling. The buildNumber pin prevents
+# the script from latching onto the previous VALID build during the 30–120s
+# Apple-side indexing window after a fresh upload.
 BUNDLE_ID="${BUNDLE_ID_OVERRIDE:-$(jq -r '.expo.ios.bundleIdentifier' app.json)}"
 [[ -n "$BUNDLE_ID" && "$BUNDLE_ID" != "null" ]] || { echo "Could not resolve bundleId" >&2; exit 1; }
+BUILD_NUMBER=$(jq -r '.expo.ios.buildNumber' app.json)
+[[ -n "$BUILD_NUMBER" && "$BUILD_NUMBER" != "null" ]] || { echo "Could not resolve buildNumber" >&2; exit 1; }
 
 # 8. Wait until VALID (or timeout — bounded by poll-build.sh kill switches)
-echo "▸ [8/$TOTAL_STEPS] Wait for App Store Connect processing"
-"$SCRIPT_DIR/poll-build.sh" "$BUNDLE_ID" --watch --timeout 1800 --interval 30
+echo "▸ [8/$TOTAL_STEPS] Wait for App Store Connect processing (build $BUILD_NUMBER)"
+"$SCRIPT_DIR/poll-build.sh" "$BUNDLE_ID" --build-version "$BUILD_NUMBER" --watch --timeout 1800 --interval 30
 
 if [[ "$TARGET" == "testflight" ]]; then
   echo

@@ -2,10 +2,17 @@
 # Poll App Store Connect for the latest build's processing state.
 #
 # Usage:
-#   ./scripts/poll-build.sh <bundle-id> [--watch] [--timeout SECS] [--interval SECS]
+#   ./scripts/poll-build.sh <bundle-id> [--build-version N] [--watch] [--timeout SECS] [--interval SECS]
 #
 # Defaults:
 #   --watch off (single-shot)   --timeout 1800   --interval 30
+#
+# --build-version pins the script to a specific buildNumber. When set, the
+# script reports terminal state for THAT build only — if it isn't visible in
+# ASC yet (30–120s Apple-side lag after upload), the script keeps polling
+# instead of returning the previous build's stale VALID. Without it, the
+# script reports on whatever build is currently the latest by uploadedDate,
+# which is racy right after an upload.
 #
 # The --timeout cap *always* applies, including in --watch mode. There is
 # no "loop forever" option by design. --timeout is hard-capped at 1800
@@ -33,7 +40,8 @@ set -euo pipefail
 # ───── usage ─────
 usage() {
   cat >&2 <<EOF
-Usage: $0 <bundle-id> [--watch] [--timeout SECS] [--interval SECS]
+Usage: $0 <bundle-id> [--build-version N] [--watch] [--timeout SECS] [--interval SECS]
+  --build-version  pin to a specific buildNumber (recommended right after upload)
   --watch          loop until VALID/INVALID/EXPIRED (default: single-shot)
   --timeout SECS   wall-clock timeout (default 1800)
   --interval SECS  poll interval (default 30)
@@ -49,16 +57,22 @@ WATCH=false
 TIMEOUT=1800
 INTERVAL=30
 MAX_FAIL=5
+BUILD_VERSION=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --watch)    WATCH=true; shift ;;
-    --timeout)  TIMEOUT="${2:?--timeout needs a value}"; shift 2 ;;
-    --interval) INTERVAL="${2:?--interval needs a value}"; shift 2 ;;
-    -h|--help)  usage ;;
+    --watch)         WATCH=true; shift ;;
+    --build-version) BUILD_VERSION="${2:?--build-version needs a value}"; shift 2 ;;
+    --timeout)       TIMEOUT="${2:?--timeout needs a value}"; shift 2 ;;
+    --interval)      INTERVAL="${2:?--interval needs a value}"; shift 2 ;;
+    -h|--help)       usage ;;
     *) echo "Unknown arg: $1" >&2; usage ;;
   esac
 done
+
+if [[ -n "$BUILD_VERSION" ]]; then
+  [[ "$BUILD_VERSION" =~ ^[0-9]+$ ]] || { echo "--build-version must be a positive integer" >&2; exit 2; }
+fi
 
 # Sanity-check numeric args
 TIMEOUT_HARD_MAX=1800   # 30 min — enforced; the script will refuse longer values
@@ -148,6 +162,17 @@ latest_build_json() {
     --data-urlencode "limit=1"
 }
 
+# Fetch the build matching a specific version (buildNumber). Apple may not have
+# indexed a freshly-uploaded build yet — in that case the response is empty
+# and the caller should keep polling rather than fall back to "latest".
+build_by_version_json() {
+  local app_id="$1" version="$2"
+  api_get "$API/builds" \
+    --data-urlencode "filter[app]=$app_id" \
+    --data-urlencode "filter[version]=$version" \
+    --data-urlencode "limit=1"
+}
+
 # ───── main ─────
 refresh_jwt
 
@@ -171,15 +196,26 @@ while :; do
   fi
 
   refresh_jwt
+  line=""   # reset per iteration so the post-fetch check can't read a stale value
 
-  if json=$(latest_build_json "$APP_ID" 2>/dev/null); then
+  if [[ -n "$BUILD_VERSION" ]]; then
+    fetch_json=$(build_by_version_json "$APP_ID" "$BUILD_VERSION" 2>/dev/null) && FETCH_OK=1 || FETCH_OK=0
+  else
+    fetch_json=$(latest_build_json "$APP_ID" 2>/dev/null) && FETCH_OK=1 || FETCH_OK=0
+  fi
+
+  if (( FETCH_OK == 1 )); then
     FAIL=0
-    line=$(echo "$json" | jq -r '
+    line=$(echo "$fetch_json" | jq -r '
       .data[0]
       | "\(.id)|\(.attributes.version)|\(.attributes.processingState)|\(.attributes.uploadedDate)|\(.attributes.expired)"
     ')
     if [[ -z "$line" || "$line" == "null|null|null|null|null" ]]; then
-      echo "[$(date +%H:%M)] no build visible yet"
+      if [[ -n "$BUILD_VERSION" ]]; then
+        echo "[$(date +%H:%M)] build $BUILD_VERSION not visible in ASC yet — Apple lag, keep waiting"
+      else
+        echo "[$(date +%H:%M)] no build visible yet"
+      fi
     else
       IFS='|' read -r BUILD_ID VER STATE UPLOADED EXPIRED <<<"$line"
       printf '[%s] build %s  %-12s uploaded %s\n' \
@@ -207,7 +243,16 @@ while :; do
     fi
   fi
 
-  $WATCH || exit 0   # single-shot mode
+  # Single-shot mode: exit unless we're version-pinned AND still waiting for the
+  # build to appear. Returning 0 with "not visible yet" would mask the very bug
+  # this script is designed to prevent; treat as "still pending" → exit 4.
+  if ! $WATCH; then
+    if [[ -n "$BUILD_VERSION" && ( -z "$line" || "$line" == "null|null|null|null|null" ) ]]; then
+      echo "[poll-build] single-shot: build $BUILD_VERSION not yet visible. Re-run with --watch or wait and try again." >&2
+      exit 4
+    fi
+    exit 0
+  fi
 
   # Kill switch #3: iteration cap
   ITER=$((ITER + 1))
