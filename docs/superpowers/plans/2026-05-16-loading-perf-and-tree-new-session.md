@@ -10,18 +10,30 @@ Captures four open bugs + one feature surfaced after the conversation-list redes
 
 ## Bugs
 
-### Bug 1 — Conversation open: add loader (with min 1.2s) to prevent flicker
+### Bug 1 — Conversation open: add loader (with min 1.2s) to prevent flicker — 🚧 IN PROGRESS (brainstorm paused 2026-05-18)
 
 **Symptom:** Tapping a conversation transitions instantly when cached, then re-renders once data resolves — perceived as a flicker.
 
-**Direction:**
-- Show a loading state on the conversation screen on mount whenever data isn't already hydrated.
-- Enforce a minimum display time of ~1.2s so fast cache hits don't flash the spinner in and out.
-- Centralize the min-display-time helper so we can reuse it for Bug 2.
+**Root cause confirmed:** Conversations are persisted via React Query's AsyncStorage persister (`PERSISTED_QUERY_ROOTS` includes `conversation`), so on return visits `isPending` is false on mount, the FlatList mounts with messages, then `onContentSizeChange` fires → triggers `scrollToBottom(false)` → visible jump.
 
-**Open questions:**
-- Should the 1.2s floor also apply when the cache hit is synchronous? (Probably yes — flicker is the whole point.)
-- Where does this live — `app/conversation/[id].tsx` (loader gate) or inside the conversation hook?
+**Design decisions (locked in during 2026-05-18 brainstorm):**
+- Scope: loader masks **both** fetch and initial scroll-to-bottom layout
+- Visual: reuse existing `MessageSkeletonRow` (10 rows)
+- Helper: new `hooks/useMinDisplayTime.ts` — pure hook, takes `(isReady, minMs=1200, resetKey?)`, returns `isGated`
+- Reset: on `id` route-param change (via `resetKey`)
+- Errors bypass the floor — show error view immediately
+- Ready signal: `data !== undefined` AND first `onContentSizeChange` has fired
+- Pagination: gate lifts after first page rendered+laid out; existing `ProgressBar` handles older-page backfill
+- Integration: Approach A — single combined `isGated` boolean in `app/conversation/[id].tsx`
+
+**Outstanding before implementation:**
+- Approve hook API (Section 2)
+- Present Section 3 (integration spec in `[id].tsx`)
+- Write spec doc to `docs/superpowers/specs/2026-05-18-conversation-loader-min-display-design.md`
+- User reviews spec
+- Invoke writing-plans
+
+**Pickup notes:** Full design state at `docs/superpowers/todos/2026-05-18-conversation-loader-bug1.md`.
 
 ---
 
@@ -76,6 +88,26 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 3. **`maintainVisibleContentPosition` + pinned anchor.** Use FlatList's `maintainVisibleContentPosition` with the last message as the anchor; let RN keep it pinned through layout passes instead of re-scrolling. Tradeoff: iOS-friendly, Android support has been spotty historically — needs a check on current RN version.
 
 **Recommendation:** start with (2) — lowest blast radius, doesn't restructure the list. Fall back to (1) if (2) still flickers on cold loads.
+
+---
+
+### Bug 5 — Multi-attachment send produces no output (filed 2026-05-18, not diagnosed)
+
+**Symptom:** Start a new session, send a message with 2 attachments — the UI never shows a response.
+
+**Suspected cause:** Today's send-message path is built for a single attachment; the 2-attachment case either fails the send silently, succeeds server-side but doesn't deliver, or arrives but is rejected by a renderer assumption. Adjacent to Feature 3 (multi-file attachments per message) — likely the same code paths.
+
+**Diagnosis order when picked up:**
+1. Inspect the network payload — does send-message ship 2 attachments at all?
+2. Check streamer logs — did the turn get stored / did the assistant respond?
+3. Check session WS stream — did the assistant turn arrive client-side?
+4. Trace message-content reducer / renderer for any single-attachment assumption
+
+**Files to start with (to verify):**
+- Message composer / attachment picker
+- Send-message handler in `hooks/` or `services/`
+- streamer send-message endpoint
+- Session WS stream subscriber
 
 ---
 
@@ -168,11 +200,12 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 
 ## Sequencing suggestion
 
-1. **Bug 3** (Quick Access) — small, isolated, unblocks a visibly broken feature.
-2. **Bug 1** (conversation loader) — establishes the min-display-time helper.
+1. ~~**Bug 3** (Quick Access)~~ ✅ shipped 2026-05-16
+2. **Bug 1** (conversation loader) — 🚧 in progress; establishes the min-display-time helper.
 3. **Bug 2a** (Hub loader) — reuses the helper from Bug 1.
 4. **Bug 2b** (Hub long-list perf) — needs profiling first; biggest win.
 5. **Bug 4** (scroll-to-end) — spike solution 2, fall back to 1.
-6. **Feature 2** (Export button relocation) — small, isolated UI move; good warm-up.
-7. **Feature 1** (Tree drilled-dir new-session path) — ship without A/B first, then add the prompt + experiment.
-8. **Feature 3** (multi-file attachments) — larger; split into its own plan doc when picked up.
+6. **Bug 5** (multi-attachment no output) — diagnose first; may collapse into Feature 3.
+7. **Feature 2** (Export button relocation) — small, isolated UI move; good warm-up.
+8. **Feature 1** (Tree drilled-dir new-session path) — ship without A/B first, then add the prompt + experiment.
+9. **Feature 3** (multi-file attachments) — larger; split into its own plan doc when picked up.
