@@ -107,6 +107,20 @@ class WSClient {
     this._setStatus('disconnected')
   }
 
+  // Force a fresh connection, bypassing the exponential backoff used by
+  // automatic reconnects. Use this when the app returns to foreground after
+  // iOS suspended JS execution — the socket may look open from the JS side
+  // but is in fact dead, and we can't wait 1–30s for the next backoff tick.
+  forceReconnect() {
+    if (!this.url) return
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.reconnectAttempt = 0
+    this._doConnect()
+  }
+
   send(msg: unknown) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(msg))
@@ -170,6 +184,12 @@ class WSClientManager {
 
   getClient(serverId: string): WSClient | undefined {
     return this.clients.get(serverId)
+  }
+
+  // Force-reconnect a single server's WS client. No-op if the server has no
+  // client yet (e.g. user hasn't paired). Skips reconnect backoff.
+  forceReconnect(serverId: string) {
+    this.clients.get(serverId)?.forceReconnect()
   }
 
   /** Register a handler across ALL active (and future) clients for a given message type. */

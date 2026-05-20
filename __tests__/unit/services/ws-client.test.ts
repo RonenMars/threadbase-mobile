@@ -186,3 +186,43 @@ describe('WSClient – send', () => {
     expect(() => wsClient.send({ type: 'ping' })).not.toThrow()
   })
 })
+
+describe('WSClient – forceReconnect', () => {
+  it('opens a new socket immediately, bypassing backoff', () => {
+    wsClient.connect('http://test.local', 'key')
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+    const firstSocket = mockSocket
+
+    wsClient.forceReconnect()
+
+    // A second WebSocket instance was constructed right away, not after a delay.
+    expect(MockWebSocket).toHaveBeenCalledTimes(2)
+    expect(mockSocket).not.toBe(firstSocket)
+    // The first socket was explicitly closed during the reconnect.
+    expect(firstSocket.close).toHaveBeenCalled()
+  })
+
+  it('does not throw when called with no prior connect', () => {
+    // The shared `wsClient` singleton retains `this.url` across the test's
+    // beforeEach `disconnect()`, so we cannot directly exercise the "no url"
+    // branch here. The manager-level wrapper covers that case via the
+    // missing-client check; this asserts the call itself is safe.
+    expect(() => wsClient.forceReconnect()).not.toThrow()
+  })
+
+  it('clears any pending reconnect timer', () => {
+    wsClient.connect('http://test.local', 'key')
+    // Trigger an error to schedule a backoff reconnect.
+    mockSocket.onerror!()
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+
+    wsClient.forceReconnect()
+    // The forced reconnect happened immediately.
+    expect(MockWebSocket).toHaveBeenCalledTimes(2)
+
+    // Advancing past the longest backoff window must not produce another
+    // connect — forceReconnect should have cancelled the scheduled timer.
+    jest.advanceTimersByTime(60_000)
+    expect(MockWebSocket).toHaveBeenCalledTimes(2)
+  })
+})

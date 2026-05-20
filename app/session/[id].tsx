@@ -11,7 +11,9 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  AppState,
 } from 'react-native'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import Animated, {
@@ -407,6 +409,23 @@ export default function SessionDetailScreen() {
   const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
   const { lines, isStreaming, isLoadingHistory, recordSentInput } = useTerminalStream(serverId, id, skipLiveStream)
   const { sendInput, cancelSession } = useSessionActions(serverId, id)
+
+  // When the app returns from background, iOS may have torn down the WS
+  // connection without firing onclose, and the streamer may have restarted
+  // (deploy, crash-loop) while we were suspended — leaving the on-screen
+  // session/terminal frozen at its last cached state. Force a WS reconnect
+  // and invalidate the cached queries so the screen rehydrates from server.
+  const qc = useQueryClient()
+  useEffect(() => {
+    if (!serverId || !id || isPending) return
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') return
+      wsManager.forceReconnect(serverId)
+      qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+      qc.invalidateQueries({ queryKey: ['terminal-output', serverId, id] })
+    })
+    return () => sub.remove()
+  }, [serverId, id, isPending, qc])
 
   const setDraft = useDraftsStore((s) => s.setDraft)
   const clearDraft = useDraftsStore((s) => s.clearDraft)
