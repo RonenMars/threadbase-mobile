@@ -91,6 +91,25 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 
 ---
 
+### Bug 6 — Conversation list content hidden under bottom action bar (filed 2026-05-20, not diagnosed)
+
+**Symptom:** When scrolled to the end of an existing conversation (Historical view), the last message visible above the bottom action bar (Export + Resume Session) is not actually the last message. Dragging the list upward with a finger reveals more messages tucked behind the bottom bar. Releasing the finger snaps the list back to the original position, so the hidden content becomes inaccessible without a sustained drag.
+
+**Suspected cause:** The FlatList's bottom inset / `contentContainerStyle.paddingBottom` doesn't account for the bottom action bar's height. The list believes its content ends at the visible bottom edge, but real content extends under the bar. Because there's no over-scroll commit (rubber-band only), the release snaps back.
+
+**Likely fixes to evaluate:**
+1. Add `paddingBottom` to `contentContainerStyle` equal to the bottom-bar height (+ safe-area).
+2. Use `contentInset` / `contentInsetAdjustmentBehavior` to reserve space below the list.
+3. Measure the bottom bar with `onLayout` and feed its height into the list's bottom padding (handles font-scale and locale changes).
+
+**Files likely involved:**
+- `app/conversation/[id].tsx` — FlatList + bottom-bar layout
+- Whichever component renders the Export + Resume Session row at the bottom of the Historical view
+
+**Related:** Bug 4 (scroll-to-end jumpy) is about scroll *animation*, not visible content offset — keep them separate.
+
+---
+
 ### Bug 5 — Multi-attachment send produces no output (filed 2026-05-18, not diagnosed)
 
 **Symptom:** Start a new session, send a message with 2 attachments — the UI never shows a response.
@@ -205,7 +224,8 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 3. **Bug 2a** (Hub loader) — reuses the helper from Bug 1.
 4. **Bug 2b** (Hub long-list perf) — needs profiling first; biggest win.
 5. **Bug 4** (scroll-to-end) — spike solution 2, fall back to 1.
-6. **Bug 5** (multi-attachment no output) — diagnose first; may collapse into Feature 3.
-7. **Feature 2** (Export button relocation) — small, isolated UI move; good warm-up.
-8. **Feature 1** (Tree drilled-dir new-session path) — ship without A/B first, then add the prompt + experiment.
-9. **Feature 3** (multi-file attachments) — larger; split into its own plan doc when picked up.
+6. **Bug 6** (bottom-bar overlap) — small layout fix; can be done alongside Bug 4 since both touch the same screen.
+7. **Bug 5** (multi-attachment no output) — diagnose first; may collapse into Feature 3.
+8. **Feature 2** (Export button relocation) — small, isolated UI move; good warm-up. Note: relocating Export out of the bottom bar may interact with Bug 6's fix — sequence accordingly.
+9. **Feature 1** (Tree drilled-dir new-session path) — ship without A/B first, then add the prompt + experiment.
+10. **Feature 3** (multi-file attachments) — larger; split into its own plan doc when picked up.
