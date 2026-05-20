@@ -27,6 +27,7 @@ import { ThinkingCard } from '@/components/conversation/ThinkingCard'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { useConversation } from '@/hooks/useConversations'
+import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { invalidateProjectChats } from '@/hooks/useProjectChats'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
@@ -114,13 +115,26 @@ export default function ConversationDetailScreen() {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
+  const [firstLayoutDone, setFirstLayoutDone] = useState(false)
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   const pulseAnim = useRef(new Animated.Value(1)).current
+
+  const isReady = conversation !== undefined && firstLayoutDone
+  const isGated = useMinDisplayTime(isReady, 1200, id)
 
   useEffect(() => {
     hasInitialScrolled.current = false
     hasStartedAutoScroll.current = false
+    setFirstLayoutDone(false)
   }, [id])
+
+  // Empty conversations may never fire onContentSizeChange — flip immediately
+  // so we don't sit under a skeleton for an empty state.
+  useEffect(() => {
+    if (conversation && conversation.messages.length === 0) {
+      setFirstLayoutDone(true)
+    }
+  }, [conversation])
 
   useEffect(() => {
     if (!conversation || hasStartedAutoScroll.current) return
@@ -142,9 +156,10 @@ export default function ConversationDetailScreen() {
 
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     contentHeightRef.current = h
+    if (!firstLayoutDone) setFirstLayoutDone(true)
     if (hasInitialScrolled.current) return
     scrollToBottom(false)
-  }, [scrollToBottom])
+  }, [scrollToBottom, firstLayoutDone])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
@@ -244,7 +259,23 @@ export default function ConversationDetailScreen() {
     </Pressable>
   )
 
-  if (isLoading) {
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenHeader right={infoButton} />
+        <View style={styles.centered}>
+          <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
+          <Text style={styles.errorMessage}>{error.message}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+            <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Cold load (no cached data yet) — render skeleton-only screen; gate handles the rest below.
+  if (isLoading && !conversation) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader right={infoButton} />
@@ -261,21 +292,6 @@ export default function ConversationDetailScreen() {
     )
   }
 
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScreenHeader right={infoButton} />
-        <View style={styles.centered}>
-          <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
-          <Text style={styles.errorMessage}>{error.message}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-            <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    )
-  }
-
   if (!conversation) return null
 
   const hasMessages = conversation.messages.length > 0
@@ -285,6 +301,18 @@ export default function ConversationDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={conversation.title} right={infoButton} />
       <View style={styles.inner}>
+      {isGated ? (
+        <View style={styles.skeletonOverlay} pointerEvents="none">
+          <FlatList
+            data={MESSAGE_SKELETON_KEYS}
+            keyExtractor={(k) => k}
+            renderItem={renderSkeletonItem}
+            contentContainerStyle={styles.listContent}
+            scrollEnabled={false}
+          />
+          {showSlowLoadingMsg ? <SlowLoadingBanner onAbort={() => router.back()} /> : null}
+        </View>
+      ) : null}
       {isLoadingMessages && totalMessages > 0 ? (
         <ProgressBar
           loaded={loadedMessages}
@@ -387,6 +415,15 @@ export default function ConversationDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
   inner: { flex: 1 },
+  skeletonOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: dark.bg.primary,
+    zIndex: 10,
+  },
   listWrapper: { flex: 1 },
   listContent: { paddingTop: spacing.md, paddingBottom: spacing.lg },
   headerLoading: {

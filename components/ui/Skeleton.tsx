@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { Animated, type DimensionValue, type ViewStyle } from 'react-native'
-import { radius } from '@/constants/theme'
+import { dark, radius } from '@/constants/theme'
 
 type SkeletonBoxProps = {
   width?: DimensionValue
@@ -25,8 +25,7 @@ export function SkeletonBox({ width = '100%', height = 14, borderRadius: br = ra
 
   return (
     <Animated.View
-      className="bg-border"
-      style={[{ width, height, borderRadius: br, opacity: anim }, style]}
+      style={[{ width, height, borderRadius: br, backgroundColor: dark.border, opacity: anim }, style]}
     />
   )
 }
