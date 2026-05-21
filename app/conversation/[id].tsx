@@ -109,7 +109,7 @@ export default function ConversationDetailScreen() {
   } = useConversation(serverId, id)
   const listRef = useRef<FlatList<Message>>(null)
   const hasInitialScrolled = useRef(false)
-  const hasStartedAutoScroll = useRef(false)
+  const initialScrollSettleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevScrollY = useRef(0)
   const contentHeightRef = useRef(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -124,8 +124,11 @@ export default function ConversationDetailScreen() {
 
   useEffect(() => {
     hasInitialScrolled.current = false
-    hasStartedAutoScroll.current = false
     setFirstLayoutDone(false)
+    if (initialScrollSettleRef.current) {
+      clearTimeout(initialScrollSettleRef.current)
+      initialScrollSettleRef.current = null
+    }
   }, [id])
 
   // Empty conversations may never fire onContentSizeChange — flip immediately
@@ -136,30 +139,45 @@ export default function ConversationDetailScreen() {
     }
   }, [conversation])
 
-  useEffect(() => {
-    if (!conversation || hasStartedAutoScroll.current) return
-    hasStartedAutoScroll.current = true
-    const t = setTimeout(() => { hasInitialScrolled.current = true }, 600)
-    return () => clearTimeout(t)
-  }, [conversation])
-
-  // Auto-fetch all older message pages upfront
-  useEffect(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage()
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
   const scrollToBottom = useCallback((animated: boolean) => {
-    listRef.current?.scrollToOffset({ offset: contentHeightRef.current, animated })
+    listRef.current?.scrollToEnd({ animated })
   }, [])
 
+  // While we're in the "initial scroll" window, every time content grows we
+  // re-fire scrollToEnd — RN's scrollToEnd targets the current bottom and the
+  // bottom keeps moving as lazy rows lay out. We mark the initial scroll
+  // complete after 300ms of no size changes (content has settled).
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     contentHeightRef.current = h
     if (!firstLayoutDone) setFirstLayoutDone(true)
     if (hasInitialScrolled.current) return
     scrollToBottom(false)
+    if (initialScrollSettleRef.current) clearTimeout(initialScrollSettleRef.current)
+    initialScrollSettleRef.current = setTimeout(() => {
+      // Final animated scroll — same code path as the Bottom button. The
+      // animation re-targets as any last rows finish laying out.
+      scrollToBottom(true)
+      hasInitialScrolled.current = true
+      initialScrollSettleRef.current = null
+    }, 400)
   }, [scrollToBottom, firstLayoutDone])
+
+  // After the Bug-1 skeleton lifts, kick off the initial scroll-to-bottom.
+  // The handleContentSizeChange loop above keeps re-firing it as content
+  // grows until it settles.
+  useEffect(() => {
+    if (isGated) return
+    scrollToBottom(false)
+  }, [isGated, scrollToBottom])
+
+  // User touched the list — stop the auto-scroll loop immediately.
+  const handleScrollBeginDrag = useCallback(() => {
+    hasInitialScrolled.current = true
+    if (initialScrollSettleRef.current) {
+      clearTimeout(initialScrollSettleRef.current)
+      initialScrollSettleRef.current = null
+    }
+  }, [])
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
@@ -330,7 +348,9 @@ export default function ConversationDetailScreen() {
             contentContainerStyle={styles.listContent}
             onContentSizeChange={handleContentSizeChange}
             onScroll={handleScroll}
+            onScrollBeginDrag={handleScrollBeginDrag}
             scrollEventThrottle={100}
+            maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
             ListHeaderComponent={
               isFetchingNextPage ? (
                 <View style={styles.headerLoading}>
