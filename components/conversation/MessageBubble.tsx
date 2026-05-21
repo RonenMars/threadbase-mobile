@@ -6,30 +6,23 @@ import { dark, font, radius, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
 
 const MAX_COLLAPSED_LINES = 10
+const MAX_COLLAPSED_CHARS = 600
 
 interface Props {
   message: Message
 }
 
+function decodeEntities(s: string) {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+}
+
 function TextContent({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const lines = text.split('\n')
-  const shouldCollapse = lines.length > MAX_COLLAPSED_LINES
-
-  const displayed = shouldCollapse && !expanded
-    ? lines.slice(0, MAX_COLLAPSED_LINES).join('\n') + '\n...'
-    : text
-
-  return (
-    <View>
-      <Text style={styles.messageText} selectable>{displayed}</Text>
-      {shouldCollapse ? (
-        <TouchableOpacity onPress={() => setExpanded((v) => !v)}>
-          <Text style={styles.expandBtn}>{expanded ? 'Show less' : `Show all ${lines.length} lines`}</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
-  )
+  return <Text style={styles.messageText} selectable>{text}</Text>
 }
 
 const MAX_CODE_LINES = 20
@@ -66,21 +59,49 @@ function CodeBlock({ code }: { code: string }) {
   )
 }
 
+function TextBlockBody({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const decoded = decodeEntities(text)
+  const lines = decoded.split('\n')
+  const shouldCollapse =
+    lines.length > MAX_COLLAPSED_LINES || decoded.length > MAX_COLLAPSED_CHARS
+
+  let displayed: string
+  if (shouldCollapse && !expanded) {
+    const byLines = lines.slice(0, MAX_COLLAPSED_LINES).join('\n')
+    displayed =
+      (byLines.length > MAX_COLLAPSED_CHARS
+        ? byLines.slice(0, MAX_COLLAPSED_CHARS)
+        : byLines) + '\n...'
+  } else {
+    displayed = decoded
+  }
+
+  const parts = displayed.split(/(```[\s\S]*?```)/g)
+
+  return (
+    <View style={styles.gap}>
+      {parts.map((part, i) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const code = part.slice(3, -3).replace(/^\w+\n/, '')
+          return <CodeBlock key={i} code={code} />
+        }
+        return <TextContent key={i} text={part} />
+      })}
+      {shouldCollapse ? (
+        <TouchableOpacity onPress={() => setExpanded((v) => !v)}>
+          <Text style={styles.expandBtn}>
+            {expanded ? 'Show less' : `Show all ${lines.length} lines`}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  )
+}
+
 function ContentBlock({ block }: { block: MessageContent }) {
   if (block.type === 'text') {
-    // Parse inline code blocks
-    const parts = block.text.split(/(```[\s\S]*?```)/g)
-    return (
-      <View style={styles.gap}>
-        {parts.map((part, i) => {
-          if (part.startsWith('```') && part.endsWith('```')) {
-            const code = part.slice(3, -3).replace(/^\w+\n/, '')
-            return <CodeBlock key={i} code={code} />
-          }
-          return <TextContent key={i} text={part} />
-        })}
-      </View>
-    )
+    return <TextBlockBody text={block.text} />
   }
   if (block.type === 'tool_use') {
     return (
