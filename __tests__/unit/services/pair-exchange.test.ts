@@ -9,12 +9,13 @@ import {
 
 describe('parsePairUri', () => {
   it('parses a well-formed pair URI', () => {
+    const futureExp = Math.floor(Date.now() / 1000) + 180
     const out = parsePairUri(
-      'threadbase://pair?url=https%3A%2F%2Fexample.test&token=pt_abc&exp=1700000000',
+      `threadbase://pair?url=https%3A%2F%2Fexample.test&token=pt_abc&exp=${futureExp}`,
     )
     expect(out.url).toBe('https://example.test')
     expect(out.token).toBe('pt_abc')
-    expect(out.exp).toBe(1700000000)
+    expect(out.exp).toBe(futureExp)
   })
 
   it('returns undefined exp when missing', () => {
@@ -35,12 +36,35 @@ describe('parsePairUri', () => {
       PairUriError,
     )
   })
+
+  it('rejects expired pair QR', () => {
+    let caught: unknown
+    try {
+      parsePairUri('threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&exp=1')
+    } catch (err) {
+      caught = err
+    }
+    expect(caught).toBeInstanceOf(PairUriError)
+    expect((caught as PairUriError).code).toBe('expired')
+  })
+
+  it('rejects non-http(s) server URLs', () => {
+    let caught: unknown
+    try {
+      parsePairUri('threadbase://pair?url=javascript%3Aalert(1)&token=pt_x')
+    } catch (err) {
+      caught = err
+    }
+    expect(caught).toBeInstanceOf(PairUriError)
+    expect((caught as PairUriError).code).toBe('bad-server-url')
+  })
 })
 
 describe('exchangeToken', () => {
   const realFetch = global.fetch
   afterEach(() => {
     global.fetch = realFetch
+    jest.useRealTimers()
   })
 
   it('round-trips a sealed api key', async () => {
@@ -108,5 +132,33 @@ describe('exchangeToken', () => {
     await expect(
       exchangeToken({ url: 'https://example.test', token: 'pt_x' }),
     ).rejects.toBeInstanceOf(PairExchangeError)
+  })
+
+  it('times out hung requests', async () => {
+    jest.useFakeTimers()
+    global.fetch = jest.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const err = new Error('Aborted')
+            err.name = 'AbortError'
+            reject(err)
+          })
+        }),
+    ) as typeof fetch
+
+    const pending = exchangeToken({ url: 'https://example.test', token: 'pt_x' })
+    const assertion = expect(pending).rejects.toMatchObject({
+      kind: 'network',
+      message: 'Request timed out',
+    })
+    await jest.advanceTimersByTimeAsync(15_001)
+    await assertion
+  })
+
+  it('rejects non-http(s) server URLs', async () => {
+    await expect(
+      exchangeToken({ url: 'javascript:alert(1)', token: 'pt_x' }),
+    ).rejects.toMatchObject({ code: 'bad-server-url' })
   })
 })

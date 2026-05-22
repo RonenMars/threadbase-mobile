@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import {
   exchangeToken,
@@ -26,15 +27,30 @@ interface Props {
 
 type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 
+function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
+  if (err instanceof PairUriError) {
+    return t(`scanner.errors.uri.${err.code}`)
+  }
+  if (err instanceof PairExchangeError) {
+    if (err.kind === 'network' || err.kind === 'server') {
+      return t(`scanner.errors.exchange.${err.kind}`, { message: err.message })
+    }
+    return t(`scanner.errors.exchange.${err.kind}`)
+  }
+  return t('scanner.errors.generic')
+}
+
 export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
   const [permission, requestPermission] = useCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
+  const [scanEnabled, setScanEnabled] = useState(true)
   const handledRef = useRef(false)
 
   const reset = useCallback(() => {
     handledRef.current = false
+    setScanEnabled(true)
     setPhase('scanning')
     setError(null)
   }, [])
@@ -44,41 +60,32 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
     onClose()
   }, [onClose, reset])
 
+  useEffect(() => {
+    if (visible) reset()
+  }, [visible, reset])
+
   const handleScanned = useCallback(
     async ({ data }: { data: string }) => {
-      if (handledRef.current) return
+      if (!scanEnabled || handledRef.current) return
       handledRef.current = true
+      setScanEnabled(false)
       setPhase('exchanging')
       try {
         const parsed = parsePairUri(data)
         const result = await exchangeToken({ url: parsed.url, token: parsed.token })
+        reset()
         onSuccess(result)
+        onClose()
       } catch (err) {
-        if (err instanceof PairUriError) {
-          setError("That QR doesn't look like a Threadbase pair code.")
-        } else if (err instanceof PairExchangeError) {
-          if (err.kind === 'token') {
-            setError('Pair token rejected — generate a fresh QR on your server.')
-          } else if (err.kind === 'rate-limited') {
-            setError('Too many attempts. Wait a minute and try again.')
-          } else if (err.kind === 'network') {
-            setError(`Could not reach the server: ${err.message}`)
-          } else if (err.kind === 'decrypt') {
-            setError('Server response could not be decrypted.')
-          } else {
-            setError(err.message)
-          }
-        } else {
-          setError('Pairing failed.')
-        }
+        setError(resolveErrorMessage(err, t))
         setPhase('error')
       }
     },
-    [onSuccess],
+    [onClose, onSuccess, reset, scanEnabled, t],
   )
 
   const showCamera =
-    phase === 'scanning' && permission?.granted && visible
+    phase === 'scanning' && permission?.granted && visible && scanEnabled
 
   // Decide which screen state to show.
   let body: React.ReactNode
