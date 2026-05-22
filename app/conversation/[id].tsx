@@ -14,6 +14,7 @@ import {
   Animated,
   type ListRenderItemInfo,
 } from 'react-native'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { InfoIcon } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -54,7 +55,7 @@ function renderContent(block: MessageContent, index: number) {
   return null
 }
 
-function MessageItem({ message }: { message: Message }) {
+function MessageItemInner({ message }: { message: Message }) {
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
@@ -78,13 +79,23 @@ function MessageItem({ message }: { message: Message }) {
 
   if (message.content.length === 0) return null
   return (
-    <>
+    <View>
       {message.has_images ? (
         <Text style={styles.imageBadge}>📎 Contains image</Text>
       ) : null}
       <MessageBubble message={message} />
-    </>
+    </View>
   )
+}
+
+// FlashList recycles cell instances. Without a per-message key on the inner
+// subtree, child useState (ToolCard.expanded, MessageBubble.TextBlockBody
+// expanded, ThinkingCard.expanded, DiffViewer.expanded) carries from the
+// previous message into the new one — producing visual overlap during scroll.
+// Keying the inner tree by message id forces React to remount when the cell
+// is reassigned, dropping the stale state.
+function MessageItem({ message }: { message: Message }) {
+  return <MessageItemInner key={message.id} message={message} />
 }
 
 export default function ConversationDetailScreen() {
@@ -107,8 +118,9 @@ export default function ConversationDetailScreen() {
     totalMessages,
     loadedMessages,
   } = useConversation(serverId, id)
-  const listRef = useRef<FlatList<Message>>(null)
+  const listRef = useRef<FlashListRef<Message>>(null)
   const hasInitialScrolled = useRef(false)
+  const userHasScrolled = useRef(false)
   const initialScrollSettleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevScrollY = useRef(0)
   const contentHeightRef = useRef(0)
@@ -119,17 +131,31 @@ export default function ConversationDetailScreen() {
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   const pulseAnim = useRef(new Animated.Value(1)).current
 
-  const isReady = conversation !== undefined && firstLayoutDone
-  const isGated = useMinDisplayTime(isReady, 1200, id)
+  // Two-phase skeleton timing:
+  //  Phase 1: 0.8s floor before treating the screen as ready
+  //  Phase 2: +0.8s buffer after the auto-scroll settles, so the final scroll
+  //           lands fully behind the skeleton before it lifts
+  const [postScrollDelayDone, setPostScrollDelayDone] = useState(false)
+  const isReady = conversation !== undefined && firstLayoutDone && postScrollDelayDone
+  const isGated = useMinDisplayTime(isReady, 800, id)
 
   useEffect(() => {
     hasInitialScrolled.current = false
+    userHasScrolled.current = false
     setFirstLayoutDone(false)
+    setPostScrollDelayDone(false)
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
     }
   }, [id])
+
+  // Phase-2 buffer: hold the skeleton 0.8s after the scroll settles.
+  useEffect(() => {
+    if (!firstLayoutDone) return
+    const t = setTimeout(() => setPostScrollDelayDone(true), 800)
+    return () => clearTimeout(t)
+  }, [firstLayoutDone])
 
   // Empty conversations may never fire onContentSizeChange — flip immediately
   // so we don't sit under a skeleton for an empty state.
@@ -143,36 +169,30 @@ export default function ConversationDetailScreen() {
     listRef.current?.scrollToEnd({ animated })
   }, [])
 
-  // While we're in the "initial scroll" window, every time content grows we
-  // re-fire scrollToEnd — RN's scrollToEnd targets the current bottom and the
-  // bottom keeps moving as lazy rows lay out. We mark the initial scroll
-  // complete after 300ms of no size changes (content has settled).
+  // Keep re-pinning to the bottom every time content grows, until the user
+  // actually drags. scrollToEnd targets the current bottom and the bottom
+  // keeps moving as lazy rows / tool cards / images finish laying out. After
+  // 400ms of no size changes we treat the initial scroll as "settled" and
+  // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts — but we keep
+  // auto-anchoring to the bottom for any late layout deltas, so the list
+  // doesn't sit parked above the true end.
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     contentHeightRef.current = h
-    if (!firstLayoutDone) setFirstLayoutDone(true)
-    if (hasInitialScrolled.current) return
+    if (userHasScrolled.current) return
     scrollToBottom(false)
     if (initialScrollSettleRef.current) clearTimeout(initialScrollSettleRef.current)
     initialScrollSettleRef.current = setTimeout(() => {
-      // Final animated scroll — same code path as the Bottom button. The
-      // animation re-targets as any last rows finish laying out.
       scrollToBottom(true)
       hasInitialScrolled.current = true
       initialScrollSettleRef.current = null
+      setFirstLayoutDone(true)
     }, 400)
-  }, [scrollToBottom, firstLayoutDone])
-
-  // After the Bug-1 skeleton lifts, kick off the initial scroll-to-bottom.
-  // The handleContentSizeChange loop above keeps re-firing it as content
-  // grows until it settles.
-  useEffect(() => {
-    if (isGated) return
-    scrollToBottom(false)
-  }, [isGated, scrollToBottom])
+  }, [scrollToBottom])
 
   // User touched the list — stop the auto-scroll loop immediately.
   const handleScrollBeginDrag = useCallback(() => {
     hasInitialScrolled.current = true
+    userHasScrolled.current = true
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
@@ -188,11 +208,22 @@ export default function ConversationDetailScreen() {
     const distFromBottom = contentSize.height - y - layoutMeasurement.height
     setShowScrollBottom(distFromBottom > 100)
 
-    // Load older messages when scrolled near the top
-    if (y < 200 && hasNextPage && !isFetchingNextPage) {
+    // Only backfill older pages when the user has actively scrolled into the
+    // top region of a list that is *also* not at its bottom — guards against
+    // short pages where the natural resting y is < 200 and would otherwise
+    // auto-trigger backfill from the bottom on mount.
+    const nearTop = y < 200
+    const nearBottom = distFromBottom < 200
+    if (
+      userHasScrolled.current &&
+      nearTop &&
+      !nearBottom &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
       void fetchNextPage()
     }
-  }, [id, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const queryClient = useQueryClient()
 
@@ -261,6 +292,17 @@ export default function ConversationDetailScreen() {
   const renderItem = useCallback(({ item }: { item: Message }) => (
     <MessageItem message={item} />
   ), [])
+
+  // Distinguish row shapes so FlashList only recycles cells of the same kind.
+  // Without this, a recycled cell from a tool-card row can leak its previous
+  // content under a new text-bubble row, causing visible overlap during scroll.
+  const getItemType = useCallback((item: Message) => {
+    const hasToolOrDiff = item.content.some(
+      (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
+    )
+    if (hasToolOrDiff) return 'tool'
+    return item.role === 'user' ? 'user' : 'assistant'
+  }, [])
 
   const renderSkeletonItem = useCallback(({ index }: ListRenderItemInfo<string>) => (
     <MessageSkeletonRow index={index} />
@@ -340,17 +382,17 @@ export default function ConversationDetailScreen() {
       ) : null}
       {hasMessages ? (
         <View style={styles.listWrapper}>
-          <FlatList
+          <FlashList
             ref={listRef}
             data={conversation.messages}
             keyExtractor={(m) => m.id}
             renderItem={renderItem}
+            getItemType={getItemType}
             contentContainerStyle={styles.listContent}
             onContentSizeChange={handleContentSizeChange}
             onScroll={handleScroll}
             onScrollBeginDrag={handleScrollBeginDrag}
             scrollEventThrottle={100}
-            maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
             ListHeaderComponent={
               isFetchingNextPage ? (
                 <View style={styles.headerLoading}>
