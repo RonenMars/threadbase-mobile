@@ -63,12 +63,12 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             onPress={() => removeFromQueue.mutate(item.id)}
             style={styles.removeBtn}
           >
-            <Text style={styles.removeBtnText}>✕</Text>
+            <Text style={styles.removeBtnText}>{t('promptQueue.remove')}</Text>
           </TouchableOpacity>
         ) : null}
       </TouchableOpacity>
     ),
-    [removeFromQueue]
+    [removeFromQueue, t]
   )
 
   if (!visible) return null

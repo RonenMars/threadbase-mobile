@@ -59,29 +59,32 @@ export function AddServerScreen({ isAddingServer }: Props) {
     })
   }, [isAddingServer, navigation])
 
-  function applyAddAction(
-    action: 'add' | 'replace' | 'keep',
-    addedServerId: string,
-    rememberChoice: boolean,
-  ): void {
-    switch (action) {
-      case 'add':
-        setDisplayedServerIds(Array.from(new Set([...displayedServerIds, addedServerId])))
-        break
-      case 'replace':
-        setDisplayedServerIds([addedServerId])
-        break
-      case 'keep':
-        break
-    }
+  const applyAddAction = useCallback(
+    (
+      action: 'add' | 'replace' | 'keep',
+      addedServerId: string,
+      rememberChoice: boolean,
+    ): void => {
+      switch (action) {
+        case 'add':
+          setDisplayedServerIds(Array.from(new Set([...displayedServerIds, addedServerId])))
+          break
+        case 'replace':
+          setDisplayedServerIds([addedServerId])
+          break
+        case 'keep':
+          break
+      }
 
-    if (rememberChoice) {
-      setAddServerAction(action)
-    }
+      if (rememberChoice) {
+        setAddServerAction(action)
+      }
 
-    setNewServerId(null)
-    router.replace('/')
-  }
+      setNewServerId(null)
+      router.replace('/')
+    },
+    [displayedServerIds, setDisplayedServerIds, setAddServerAction, router],
+  )
 
   const connectWith = useCallback(
     async ({ url, apiKey: keyArg, label: labelArg }: { url: string; apiKey: string; label?: string }) => {
@@ -273,10 +276,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.hint}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          Run <Text style={styles.code}>cch serve --tunnel --qr</Text> on your Mac to get a QR-scannable URL.
-        </Text>
+        <Text style={styles.hint}>{t('servers:form.hint')}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
       <AddServerActionSheet

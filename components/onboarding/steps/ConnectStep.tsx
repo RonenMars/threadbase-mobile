@@ -90,11 +90,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           activeOpacity={0.85}
         >
           <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
-          <Text style={styles.modeCardBody}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            Run <Text style={{ color: colors.fg2 }}>tb pair</Text> on your server to print a QR.
-            Fastest, no typing.
-          </Text>
+          <Text style={styles.modeCardBody}>{t('connect.scanQrBody')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -227,8 +223,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
                 entering={FadeIn.duration(200)}
                 style={[styles.logLine, { color: colors.green400, marginTop: 4 }]}
               >
-                {/* eslint-disable-next-line i18next/no-literal-string */}
-                ✓ ready
+                {t('connect.ready')}
               </Animated.Text>
             )}
           </View>

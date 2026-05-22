@@ -77,9 +77,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       }
     })
     return () => cancelAnimationFrame(handle)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- segments is read but intentionally
-    // excluded: this effect should only fire on auth-state changes (activeServerIds/isLoading),
-    // not on every tab switch. Reading segments from the closure is correct here.
+    // segments/router intentionally omitted: effect should only fire on
+    // auth-state changes (activeServerIds/isLoading), not on every tab switch.
+    // Reading from the closure is correct here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, isLoading, mode, navState?.key])
 
   // Wire WebSocket for all servers
@@ -135,6 +136,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubStatus()
       wsManager.disconnectAll()
     }
+    // router from expo-router is a stable singleton; setConnected is a stable
+    // Zustand setter. Wiring is intentionally scoped to activeServerIds changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds])
 
   // Handle notification taps

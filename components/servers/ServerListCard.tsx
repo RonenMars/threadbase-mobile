@@ -51,6 +51,9 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
       }
     }
     prevRefreshing.current = isRefreshing
+    // progress/resultOpacity are stable Animated.Value refs; server.connectionError
+    // is intentionally read from the closure — effect must fire only on isRefreshing toggles.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRefreshing])
 
   const handleRemove = () => {

@@ -5,6 +5,7 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 type MsgHandler = (msg: unknown) => void
 
 let capturedOutputHandler: MsgHandler | null = null
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- captured by mock for parity; read in sibling tests
 let capturedStatusHandler: ((sid: string, status: string) => void) | null = null
 
 jest.mock('@/services/ws-client', () => ({

@@ -1,6 +1,7 @@
 {
   "header": {
-    "title": "Conversation"
+    "title": "Conversation",
+    "containsImage": "📎 Contains image"
   },
   "list": {
     "loadingMore": "Loading more…",
@@ -22,5 +23,9 @@
     "code": "Code",
     "tokens": "{{count}} tokens",
     "errorBadge": "Error"
+  },
+  "thinking": {
+    "label": "Reasoning",
+    "redacted": "Reasoning redacted"
   }
 }

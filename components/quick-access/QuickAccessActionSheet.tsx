@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native'
 import { ArrowRight, FolderOpen, Star, X } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, spacing } from '@/constants/theme'
 import type { ChipItem } from './QuickAccessChip'
 
@@ -17,6 +18,7 @@ interface Props {
 export function QuickAccessActionSheet({
   item, isFavorite, onClose, onNewSession, onBrowse, onOpenSession, onTogglePin,
 }: Props) {
+  const { t } = useTranslation('shared')
   if (!item) return null
 
   return (
@@ -29,28 +31,28 @@ export function QuickAccessActionSheet({
           <>
             <Pressable style={styles.row} onPress={onNewSession}>
               <ArrowRight size={18} color={dark.text.accent} />
-              <Text style={[styles.rowText, styles.rowTextPrimary]}>New Session here</Text>
+              <Text style={[styles.rowText, styles.rowTextPrimary]}>{t('quickAccess.newSessionHere')}</Text>
             </Pressable>
             <Pressable style={styles.row} onPress={onBrowse}>
               <FolderOpen size={18} color={dark.text.secondary} />
-              <Text style={styles.rowText}>Browse directory</Text>
+              <Text style={styles.rowText}>{t('quickAccess.browseDirectory')}</Text>
             </Pressable>
           </>
         ) : (
           <Pressable style={styles.row} onPress={onOpenSession}>
             <ArrowRight size={18} color={dark.text.accent} />
-            <Text style={[styles.rowText, styles.rowTextPrimary]}>Open session</Text>
+            <Text style={[styles.rowText, styles.rowTextPrimary]}>{t('quickAccess.openSession')}</Text>
           </Pressable>
         )}
 
         <Pressable style={styles.row} onPress={onTogglePin}>
           <Star size={18} color={dark.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />
-          <Text style={styles.rowText}>{isFavorite ? 'Unpin from Favorites' : 'Pin to Favorites'}</Text>
+          <Text style={styles.rowText}>{isFavorite ? t('quickAccess.unpinFromFavorites') : t('quickAccess.pinToFavorites')}</Text>
         </Pressable>
 
         <Pressable style={[styles.row, styles.rowCancel]} onPress={onClose}>
           <X size={18} color={dark.status.failed} />
-          <Text style={[styles.rowText, styles.rowTextCancel]}>Cancel</Text>
+          <Text style={[styles.rowText, styles.rowTextCancel]}>{t('quickAccess.cancel')}</Text>
         </Pressable>
       </View>
     </Modal>

@@ -37,7 +37,7 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [visible])
+  }, [visible, onClose, respondToPlan])
 
   if (!visible) return null
 

@@ -31,32 +31,45 @@
     "headline": "Connect a runtime.",
     "modeBlurb": "Pick how you want to hand the server its keys.",
     "scanQr": "Scan QR",
-    "scanQrBody": "Run <1>tb pair</1> on your server to print a QR. Fastest, no typing.",
+    "scanQrBody": "Run tb pair on your server to print a QR. Fastest, no typing.",
     "pasteCredentials": "Paste credentials",
     "pasteCredentialsBody": "Enter a server URL and API key by hand.",
     "qrEyebrow": "> 02 / PAIR · QR",
     "qrHeadline": "Scan to pair.",
-    "step1": "<0>1.</0> On your server, run <1>tb pair</1>. A QR will print to the terminal.",
-    "step2": "<0>2.</0> Tap <1>Open camera</1> below. Threadbase will ask permission to use the camera — that's only used to read the QR.",
+    "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
+    "step2": "2. Tap Open camera below. Threadbase will ask permission to use the camera — that's only used to read the QR.",
     "openCamera": "Open camera",
-    "pairMyLaptop": "Pair my laptop"
+    "pairMyLaptop": "Pair my laptop",
+    "ready": "✓ ready",
+    "footnote": "// On your desktop, run tb token --new to mint one."
   },
   "tour": {
     "eyebrow": "> 04 / TOUR",
+    "eyebrowProgress": "> 04 / TOUR · {{current}}/{{total}}",
     "dropIn": "Drop me in",
     "nextConcept": "Next concept"
   },
   "valueProp": {
     "eyebrow": "// APPEARANCE",
+    "eyebrowWhy": "> 01 / WHY",
+    "headline": "Your laptop is the runtime. Your phone is the cockpit.",
+    "headlineMain": "Your laptop is the runtime.",
+    "headlineMuted": "Your phone is the cockpit.",
     "headlineAccent": "vibe.",
     "body": "Threadbase keeps your agents alive on the box that has the GPU, the keys, and the file tree — and gives you a calm surface to drive them from anywhere.",
-    "cta": "Pair my laptop"
+    "cta": "Pair my laptop",
+    "labelYou": "YOU",
+    "labelPrompts": "prompts ▸",
+    "labelStdout": "◂ stdout",
+    "labelClaudeRun": "claude run"
   },
   "notifications": {
     "allowTitle": "Push notifications",
     "continue": "Continue"
   },
   "theme": {
-    "eyebrow": "// APPEARANCE"
+    "eyebrow": "// APPEARANCE",
+    "headlineLine1": "Pick your",
+    "body": "Choose a color theme. You can always change it later in Settings."
   }
 }

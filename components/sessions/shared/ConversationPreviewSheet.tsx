@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useEffect, useCallback } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet } from 'react-native'
 import BottomSheet from '@gorhom/bottom-sheet'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { useConversation } from '@/hooks/useConversations'
 import { useSettingsStore } from '@/stores/settings'
@@ -32,6 +33,7 @@ interface Props {
 const SNAP_POINTS = ['60%', '90%']
 
 export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: Props) {
+  const { t } = useTranslation('sessions')
   const sheetRef = useRef<BottomSheet>(null)
   const router = useRouter()
   const messageCount = useSettingsStore((s) => s.rowPreviewModalCount)
@@ -92,15 +94,13 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
 
       <ScrollView contentContainerStyle={styles.messages}>
         {target.kind === 'session' ? (
-          <Text style={styles.placeholder}>
-            Live session preview not available — open the session to see the live terminal.
-          </Text>
+          <Text style={styles.placeholder}>{t('preview.liveUnavailable')}</Text>
         ) : isLoading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={dark.text.secondary} />
           </View>
         ) : lastMessages.length === 0 ? (
-          <Text style={styles.placeholder}>No messages yet.</Text>
+          <Text style={styles.placeholder}>{t('preview.noMessages')}</Text>
         ) : (
           lastMessages.map((m) => <MessageBubble key={m.id} message={m} />)
         )}
@@ -109,12 +109,12 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
       <View style={styles.footer}>
         <TouchableOpacity style={styles.primary} onPress={handleOpen} activeOpacity={0.75}>
           <Text style={styles.primaryLabel}>
-            {target.kind === 'session' ? 'Open session' : 'Open conversation'}
+            {target.kind === 'session' ? t('preview.openSession') : t('preview.openConversation')}
           </Text>
         </TouchableOpacity>
         {onPin ? (
           <TouchableOpacity style={styles.ghost} onPress={onPin} activeOpacity={0.75}>
-            <Text style={styles.ghostLabel}>{isPinned ? 'Unpin' : 'Pin'}</Text>
+            <Text style={styles.ghostLabel}>{isPinned ? t('preview.unpin') : t('preview.pin')}</Text>
           </TouchableOpacity>
         ) : null}
       </View>

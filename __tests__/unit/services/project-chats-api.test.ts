@@ -1,5 +1,4 @@
 import { listProjectChats } from '@/services/project-chats-api'
-import { NotFoundError } from '@/services/api-client'
 
 jest.mock('@/stores/servers', () => ({
   useServersStore: {

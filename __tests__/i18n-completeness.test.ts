@@ -5,8 +5,10 @@ import enSettings from '../locales/en/settings.json';
 import enServers from '../locales/en/servers.json';
 import enOnboarding from '../locales/en/onboarding.json';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- scaffolding for second-locale completeness test (see below)
 const enResources = { enCommon, enSessions, enTerminal, enSettings, enServers, enOnboarding };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- scaffolding for second-locale completeness test
 function getAllKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   return Object.entries(obj).flatMap(([k, v]) => {
     const key = prefix ? `${prefix}.${k}` : k;

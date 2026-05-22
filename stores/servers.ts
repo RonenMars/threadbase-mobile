@@ -248,7 +248,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     patch: { url: string; apiKey: string; label?: string },
   ): Promise<void | { error: 'duplicate' }> => {
     const normalised = patch.url.replace(/\/+$/, '')
-    const { servers, activeServerIds, displayedServerIds } = get()
+    const { servers, activeServerIds } = get()
 
     // Duplicate check: same URL+key as any OTHER server
     for (const id of activeServerIds) {

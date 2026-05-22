@@ -11,7 +11,6 @@ import SettingsScreen from '@/app/settings'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import * as SecureStore from 'expo-secure-store'
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider>{ui}</ThemeProvider>)

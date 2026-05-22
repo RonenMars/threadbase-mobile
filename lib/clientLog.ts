@@ -75,6 +75,10 @@ export function clog(
   // every console call + every QuickAccess render over the wire from TestFlight
   // is bandwidth, battery, and streamer-disk cost for no debugging value.
   if (!__DEV__) return
+  // No-op under Jest: scheduling a 1500ms flush timer makes the worker emit
+  // `console.warn` after the test has finished, which trips Jest's
+  // "Cannot log after tests are done" guard and fails CI.
+  if (process.env.JEST_WORKER_ID !== undefined) return
   BUFFER.push({
     level,
     msg,

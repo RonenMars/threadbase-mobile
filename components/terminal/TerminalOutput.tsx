@@ -39,19 +39,21 @@ const LINE_STYLE: Record<LineType, { color: string; bg?: string }> = {
   'default': { color: '#e6edf3' },
 }
 
-const DividerRow = memo(({ text }: { text: string }) => (
-  <View style={styles.dividerRow}>
-    <Text style={styles.dividerLabel}>YOU</Text>
-    <Text style={styles.dividerText} numberOfLines={1}>{text}</Text>
-  </View>
-))
+const DividerRow = memo(function DividerRow({ text }: { text: string }) {
+  return (
+    <View style={styles.dividerRow}>
+      <Text style={styles.dividerLabel}>YOU</Text>
+      <Text style={styles.dividerText} numberOfLines={1}>{text}</Text>
+    </View>
+  )
+})
 
 interface LineRowProps {
   line: string
   index: number
 }
 
-const LineRow = memo(({ line, index }: LineRowProps) => {
+const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
   const clean = stripAnsi(line)
   const type = classifyLine(clean)
   const style = LINE_STYLE[type]
