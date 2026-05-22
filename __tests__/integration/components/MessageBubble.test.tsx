@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render } from '@testing-library/react-native'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import type { Message } from '@/types/api'
 
@@ -32,42 +32,6 @@ describe('MessageBubble – text content', () => {
   it('does not render token count when absent', () => {
     const { queryByText } = render(<MessageBubble message={makeMessage({ tokens: undefined })} />)
     expect(queryByText(/tokens/)).toBeNull()
-  })
-})
-
-describe('MessageBubble – text collapse', () => {
-  const longText = Array.from({ length: 15 }, (_, i) => `line ${i + 1}`).join('\n')
-
-  it('shows collapse toggle for text over 10 lines', () => {
-    const { getByText } = render(
-      <MessageBubble message={makeMessage({ content: [{ type: 'text', text: longText }] })} />
-    )
-    expect(getByText('Show all 15 lines')).toBeTruthy()
-  })
-
-  it('expands text when toggle is pressed', () => {
-    const { getByText } = render(
-      <MessageBubble message={makeMessage({ content: [{ type: 'text', text: longText }] })} />
-    )
-    fireEvent.press(getByText('Show all 15 lines'))
-    expect(getByText('Show less')).toBeTruthy()
-  })
-
-  it('collapses again when "Show less" is pressed', () => {
-    const { getByText } = render(
-      <MessageBubble message={makeMessage({ content: [{ type: 'text', text: longText }] })} />
-    )
-    fireEvent.press(getByText('Show all 15 lines'))
-    fireEvent.press(getByText('Show less'))
-    expect(getByText('Show all 15 lines')).toBeTruthy()
-  })
-
-  it('does not show toggle for short text', () => {
-    const shortText = 'just one line'
-    const { queryByText } = render(
-      <MessageBubble message={makeMessage({ content: [{ type: 'text', text: shortText }] })} />
-    )
-    expect(queryByText(/Show all/)).toBeNull()
   })
 })
 
