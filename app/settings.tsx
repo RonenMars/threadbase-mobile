@@ -83,7 +83,7 @@ function ThemePicker({
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
-  const themeIds = Object.keys(THEMES) as Array<Exclude<ThemeId, 'system'>>
+  const themeIds = Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]
 
   return (
     <View style={s.themeGrid}>
@@ -334,13 +334,13 @@ await refreshServerInfo(serverId)
         <SectionHeader title="Session Naming" />
         <View style={s.card}>
           <SettingsRow label="Ask for name on session start" value={askOnCreate} onValueChange={setAskOnCreate} />
-          <Text style={s.rowNote}>Show a prompt to name the session when you start a new one.</Text>
+          <Text style={s.rowNote}>{t('sessionNaming.askOnCreateNote')}</Text>
           <SettingsRow label="Ask for name on exit" value={askOnExit} onValueChange={setAskOnExit} />
-          <Text style={s.rowNote}>Suggest naming the session when you leave it, if it hasn{"'"}t been named yet. Suppressed when the creation prompt is disabled.</Text>
+          <Text style={s.rowNote}>{t('sessionNaming.askOnExitNote')}</Text>
           <SettingsRow label="Auto-name from first message" value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
-          <Text style={s.rowNote}>Set the session name from the first words of your first message. No AI, no tokens.</Text>
+          <Text style={s.rowNote}>{t('sessionNaming.autoNameNote')}</Text>
           <SettingsRow label="AI-generated session names" value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
-          <Text style={s.rowNote}>Use an AI model to generate a meaningful name. Uses tokens from your configured API key.</Text>
+          <Text style={s.rowNote}>{t('sessionNaming.aiGeneratedNote')}</Text>
         </View>
 
         <SectionHeader title={t('section.history')} />

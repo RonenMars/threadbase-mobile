@@ -78,6 +78,9 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       return
     }
     feedHistory(raw)
+    // feedHistory is a local closure that only reads refs + maxLines; keying on
+    // [historyQuery.data, maxLines] captures all behavioural inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyQuery.data, maxLines])
 
   useEffect(() => {
@@ -188,6 +191,9 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       clearTimeout(idleTimer)
       if (fallbackTimer) clearTimeout(fallbackTimer)
     }
+    // feedHistory is a local closure that only reads refs + maxLines (already
+    // in deps); excluding it avoids re-subscribing on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverId, sessionId, maxLines, skipLiveStream])
 
   const clear = useCallback(() => {

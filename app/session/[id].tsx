@@ -15,7 +15,6 @@ import {
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import i18n from '@/lib/i18n'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -134,6 +133,9 @@ function WakingUpOverlay({ phrase }: { phrase: string }) {
       -1,
       false,
     ))
+    // Reanimated SharedValues are stable refs — including them here would cause
+    // the animation to restart on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const emojiStyle = useAnimatedStyle(() => ({
@@ -408,7 +410,7 @@ export default function SessionDetailScreen() {
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
   const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
   const { lines, isStreaming, isLoadingHistory, recordSentInput } = useTerminalStream(serverId, id, skipLiveStream)
-  const { sendInput, cancelSession } = useSessionActions(serverId, id)
+  const { sendInput } = useSessionActions(serverId, id)
 
   // When the app returns from background, iOS may have torn down the WS
   // connection without firing onclose, and the streamer may have restarted
@@ -491,48 +493,6 @@ export default function SessionDetailScreen() {
     })
   }, [serverId, id, hydrateDrafts])
 
-  if (isPending) {
-    return <PendingSessionScreen serverId={serverId} pendingId={id!} />
-  }
-
-  if (
-    session &&
-    session.ptyAttached === false &&
-    (session.status === 'running' || session.status === 'waiting_input')
-  ) {
-    return <DiscoveredSessionScreen serverId={serverId} sessionId={id!} />
-  }
-
-  const isStoppable =
-    session?.ptyAttached === true &&
-    (session?.status === 'running' || session?.status === 'waiting_input')
-
-  const handleStop = () => {
-    Alert.alert(
-      'Stop Claude Code?',
-      'This terminates the running claude process for this session.',
-      [
-        { text: i18n.t('common:button.cancel'), style: 'cancel' },
-        {
-          text: 'Stop',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
-            cancelSession.mutate(undefined, {
-              onSuccess: () => router.back(),
-              onError: (err) => {
-                Alert.alert(
-                  'Failed to stop',
-                  err instanceof Error ? err.message : 'Unknown error',
-                )
-              },
-            })
-          },
-        },
-      ],
-    )
-  }
-
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
     const client = wsManager.getClient(serverId)
@@ -544,6 +504,18 @@ export default function SessionDetailScreen() {
       }
     })
   }, [serverId, id])
+
+  if (isPending) {
+    return <PendingSessionScreen serverId={serverId} pendingId={id!} />
+  }
+
+  if (
+    session &&
+    session.ptyAttached === false &&
+    (session.status === 'running' || session.status === 'waiting_input')
+  ) {
+    return <DiscoveredSessionScreen serverId={serverId} sessionId={id!} />
+  }
 
   const handleInputChange = (text: string) => {
     setInputText(text)
@@ -777,12 +749,11 @@ export default function SessionDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']} testID="session-detail-screen">
+    <SafeAreaView style={styles.container} edges={['top']} testID="session-detail-screen">
       <ScreenHeader title={sessionName} right={headerRight} onBack={handleBack} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom : 0}
       >
         {session ? (
           <View style={styles.statusBar}>
@@ -824,7 +795,7 @@ export default function SessionDetailScreen() {
         </View>
 
         {showInputBar ? (
-          <View style={styles.inputArea}>
+          <View style={[styles.inputArea, { paddingBottom: spacing.sm + insets.bottom }]}>
             {sendInput.isError ? (
               <Text style={styles.sendError} numberOfLines={2}>
                 {sendInput.error instanceof Error

@@ -3,10 +3,12 @@ import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, DotsSixVertical, Folder, Lightning, Trash } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { dark, font, spacing } from '@/constants/theme'
 
 export default function ManageFavoritesScreen() {
+  const { t } = useTranslation('sessions')
   const router = useRouter()
   const { favorites, unpinItem } = useQuickAccessStore()
 
@@ -15,15 +17,15 @@ export default function ManageFavoritesScreen() {
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
           <ArrowLeft size={20} color={dark.text.accent} />
-          <Text style={styles.backLabel}>Back</Text>
+          <Text style={styles.backLabel}>{t('manageFavorites.back')}</Text>
         </Pressable>
-        <Text style={styles.title}>Manage Favorites</Text>
+        <Text style={styles.title}>{t('manageFavorites.title')}</Text>
       </View>
 
       {favorites.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>No favorites pinned yet.</Text>
-          <Text style={styles.emptySubText}>Tap a chip in the strip and choose "Pin to Favorites".</Text>
+          <Text style={styles.emptyText}>{t('manageFavorites.empty')}</Text>
+          <Text style={styles.emptySubText}>{t('manageFavorites.emptySub')}</Text>
         </View>
       ) : (
         <FlatList

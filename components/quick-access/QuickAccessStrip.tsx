@@ -5,6 +5,8 @@ import {
   Star, ClockCounterClockwise, Fire,
   CaretUp, CaretDown, GearSix, PencilSimple, Check,
 } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useServersStore } from '@/stores/servers'
 import { useRecentSessions, usePopularProjects } from '@/hooks/useQuickAccess'
@@ -17,6 +19,7 @@ const INITIAL_CHIPS = 4
 const LOAD_MORE_STEP = 4
 
 export function QuickAccessStrip() {
+  const { t } = useTranslation('shared')
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -66,6 +69,8 @@ export function QuickAccessStrip() {
       stripCollapsed,
       favoritesCount: favorites.length,
     })
+    // Mount-only diagnostic log — captures initial snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Track every render's key state
@@ -253,6 +258,7 @@ export function QuickAccessStrip() {
         <View style={styles.chipsContainer}>
           {visibleItems.length === 0
             ? renderEmptyState({
+                t,
                 tab: effectiveTab,
                 hasServers: queriedServerIds.length > 0,
                 recentsQuery,
@@ -273,7 +279,7 @@ export function QuickAccessStrip() {
                 ))}
                 {remaining > 0 && (
                   <Pressable style={styles.loadMoreChip} onPress={() => setVisibleCount((v) => v + LOAD_MORE_STEP)}>
-                    <Text style={styles.loadMoreText}>+ {loadMoreCount} more</Text>
+                    <Text style={styles.loadMoreText}>{t('quickAccess.loadMore', { count: loadMoreCount })}</Text>
                   </Pressable>
                 )}
               </View>
@@ -303,8 +309,9 @@ type QueryShape = {
 }
 
 function renderEmptyState({
-  tab, hasServers, recentsQuery, popularQuery, onOpenSettings,
+  t, tab, hasServers, recentsQuery, popularQuery, onOpenSettings,
 }: {
+  t: TFunction<'shared'>
   tab: QuickAccessTab
   hasServers: boolean
   recentsQuery: QueryShape
@@ -312,7 +319,7 @@ function renderEmptyState({
   onOpenSettings: () => void
 }) {
   if (tab === 'favorites') {
-    return <Text style={styles.emptyText}>No favorites yet — long-press an item to pin it.</Text>
+    return <Text style={styles.emptyText}>{t('quickAccess.emptyFavorites')}</Text>
   }
 
   const q = tab === 'recents' ? recentsQuery : popularQuery
@@ -320,21 +327,21 @@ function renderEmptyState({
   if (!hasServers) {
     return (
       <Pressable onPress={onOpenSettings} hitSlop={8}>
-        <Text style={styles.emptyTextLink}>Pair a server to see {tab}.</Text>
+        <Text style={styles.emptyTextLink}>{t('quickAccess.pairServer', { tab })}</Text>
       </Pressable>
     )
   }
   if (q.status === 'pending' && q.fetchStatus === 'fetching') {
-    return <Text style={styles.emptyText}>Loading…</Text>
+    return <Text style={styles.emptyText}>{t('quickAccess.loading')}</Text>
   }
   if (q.status === 'error') {
     return (
       <Pressable onPress={q.refetch} hitSlop={8}>
-        <Text style={styles.emptyTextLink}>Couldn't load — tap to retry.</Text>
+        <Text style={styles.emptyTextLink}>{t('quickAccess.loadFailed')}</Text>
       </Pressable>
     )
   }
-  return <Text style={styles.emptyText}>Nothing yet.</Text>
+  return <Text style={styles.emptyText}>{t('quickAccess.nothing')}</Text>
 }
 
 const styles = StyleSheet.create({

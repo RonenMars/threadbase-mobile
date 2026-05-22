@@ -19,7 +19,7 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   nord: 'Nord',
 }
 
-const THEME_IDS = Object.keys(THEMES) as Array<Exclude<ThemeId, 'system'>>
+const THEME_IDS = Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]
 
 export function ThemeStep({ onNext }: Props) {
   const { t } = useTranslation('onboarding')
@@ -39,15 +39,10 @@ export function ThemeStep({ onNext }: Props) {
       <View style={styles.center}>
         <Text style={styles.eyebrow}>{t('theme.eyebrow')}</Text>
         <Text style={styles.headline}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          Pick your{'\n'}
-          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {t('theme.headlineLine1')}{'\n'}
           <Text style={styles.headlineAccent}>{t('valueProp.headlineAccent')}</Text>
         </Text>
-        <Text style={styles.body}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          Choose a color theme. You can always change it later in Settings.
-        </Text>
+        <Text style={styles.body}>{t('theme.body')}</Text>
 
         <View style={styles.grid}>
           {THEME_IDS.map((id) => {

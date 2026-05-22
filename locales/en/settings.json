@@ -50,5 +50,11 @@
   "help": {
     "restartOnboarding": "Restart onboarding",
     "helpSupport": "Help & Support"
+  },
+  "sessionNaming": {
+    "askOnCreateNote": "Show a prompt to name the session when you start a new one.",
+    "askOnExitNote": "Suggest naming the session when you leave it, if it hasn't been named yet. Suppressed when the creation prompt is disabled.",
+    "autoNameNote": "Set the session name from the first words of your first message. No AI, no tokens.",
+    "aiGeneratedNote": "Use an AI model to generate a meaningful name. Uses tokens from your configured API key."
   }
 }

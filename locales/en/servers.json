@@ -28,7 +28,8 @@
     "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "Label (optional)",
     "serverUrl": "Server URL",
-    "apiKey": "API Key"
+    "apiKey": "API Key",
+    "hint": "Run cch serve --tunnel --qr on your Mac to get a QR-scannable URL."
   },
   "manage": {
     "title": "Servers",

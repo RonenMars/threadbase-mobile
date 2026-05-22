@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { NestableScrollContainer } from 'react-native-draggable-flatlist'
 import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen } from 'phosphor-react-native'

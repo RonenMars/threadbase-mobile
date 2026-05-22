@@ -39,7 +39,6 @@ const P1_DURATION = 700   // vertical line draw
 const P2_START = 700      // when thread lines begin
 const P2_STAGGER = 220    // gap between each line
 const P2_LINE_DUR = 400   // each line draw duration
-const P2_NODE_DUR = 350   // each node pop duration
 const P3_START = 2000    // text fade-up
 const P3_DURATION = 500  // text animation duration
 const P4_START = 2500    // vertical line exit
@@ -213,6 +212,8 @@ function ThreadLine({
       delay,
       withSpring(1, { damping: 12, stiffness: 200 })
     )
+    // Mount-only animation; SharedValues are stable refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const lineStyle = useAnimatedStyle(() => ({
@@ -416,6 +417,9 @@ export function SplashAnimation({ onComplete }: Props) {
         }
       })
     )
+    // Mount-only animation sequence; SharedValues are stable refs and
+    // onComplete is captured once for the splash lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const vLineStyle = useAnimatedStyle(() => ({

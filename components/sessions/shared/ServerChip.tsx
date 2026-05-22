@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { Text, Pressable, StyleSheet } from 'react-native'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import { SERVER_COLOR_DEFAULT, initialsFor } from './serverPalette'
 

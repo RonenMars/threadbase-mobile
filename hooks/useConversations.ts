@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
