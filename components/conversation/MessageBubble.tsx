@@ -1,17 +1,15 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
-import { useRecyclingState } from '@shopify/flash-list'
+import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
+import { Highlight, themes, type Language } from 'prism-react-renderer'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
 
-const MAX_COLLAPSED_LINES = 10
-const MAX_COLLAPSED_CHARS = 600
-
 interface Props {
   message: Message
-  /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
+  /** Reserved for parity with other cards; MessageBubble no longer caches expanded state. */
   recycleKey?: string
 }
 
@@ -30,83 +28,164 @@ function TextContent({ text }: { text: string }) {
 
 
 
-const MAX_CODE_LINES = 20
+const CODE_THEME = themes.oneDark
 
-function CodeBlock({ code, recycleKey }: { code: string; recycleKey?: string }) {
-  const { t } = useTranslation('conversation')
-  const [expanded, setExpanded] = useRecyclingState(false, [recycleKey, code.length])
-  const copy = () => Clipboard.setStringAsync(code)
+function DiffLines({ code }: { code: string }) {
   const lines = code.split('\n')
-  const shouldCollapse = lines.length > MAX_CODE_LINES
-  const displayed = shouldCollapse && !expanded
-    ? lines.slice(0, MAX_CODE_LINES).join('\n')
-    : code
+  return (
+    <>
+      {lines.map((line, i) => {
+        const isAdd = line.startsWith('+')
+        const isDel = line.startsWith('-')
+        const lineStyle = isAdd ? styles.diffAdd : isDel ? styles.diffDel : undefined
+        return (
+          <View key={i} style={[styles.codeLine, lineStyle]}>
+            <Text style={styles.codeToken} selectable>{line.length === 0 ? ' ' : line}</Text>
+          </View>
+        )
+      })}
+    </>
+  )
+}
+
+function CodeBlock({ code, language }: { code: string; language: Language }) {
+  const { t } = useTranslation('conversation')
+  const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+  }, [])
+  const copy = async () => {
+    await Clipboard.setStringAsync(code)
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setCopied(true)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 1500)
+  }
 
   return (
     <View style={styles.codeBlock}>
       <View style={styles.codeHeader}>
         <Text style={styles.codeHeaderText}>{t('message.code')}</Text>
         <TouchableOpacity onPress={copy} style={styles.codeCopyBtn}>
-          <Text style={styles.codeCopyText}>{t('action.copyCode')}</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 1, maxHeight: 300 }}>
-        <Text style={styles.codeText} selectable>{displayed}</Text>
-      </ScrollView>
-      {shouldCollapse ? (
-        <TouchableOpacity onPress={() => setExpanded((v) => !v)} style={styles.codeExpandBtn}>
-          <Text style={styles.codeExpandText}>
-            {expanded ? 'Show less' : `Show all ${lines.length} lines`}
+          <Text style={styles.codeCopyText}>
+            {copied ? t('action.copiedCode') : t('action.copyCode')}
           </Text>
         </TouchableOpacity>
-      ) : null}
+      </View>
+      <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
+        {language === 'diff' ? (
+          <DiffLines code={code} />
+        ) : (
+          <Highlight code={code} language={language} theme={CODE_THEME}>
+            {({ tokens, getLineProps, getTokenProps }) => (
+              <>
+                {tokens.map((line, lineIdx) => {
+                  const { style: lineStyle } = getLineProps({ line })
+                  return (
+                    <View key={lineIdx} style={[styles.codeLine, lineStyle as object]}>
+                      {line.map((token, tokenIdx) => {
+                        const { style: tokenStyle, children } = getTokenProps({ token })
+                        return (
+                          <Text
+                            key={tokenIdx}
+                            style={[styles.codeToken, tokenStyle as object]}
+                            selectable
+                          >
+                            {children}
+                          </Text>
+                        )
+                      })}
+                    </View>
+                  )
+                })}
+              </>
+            )}
+          </Highlight>
+        )}
+      </View>
     </View>
   )
 }
 
-function TextBlockBody({ text, recycleKey }: { text: string; recycleKey?: string }) {
-  const [expanded, setExpanded] = useRecyclingState(false, [recycleKey, text.length])
+// Map fence tag aliases to Prism grammar names (Prism uses 'js' not 'javascript' etc.).
+const LANGUAGE_ALIASES: Record<string, Language> = {
+  javascript: 'js',
+  typescript: 'tsx',
+  ts: 'tsx',
+  shell: 'bash',
+  sh: 'bash',
+  zsh: 'bash',
+  yml: 'yaml',
+  py: 'python',
+  rb: 'ruby',
+  rs: 'rust',
+  golang: 'go',
+}
+
+// Bare fences (no language tag) get a best-guess from a tiny heuristic. Order
+// matters: most specific patterns first, generic fallback last. 'clike' is
+// Prism's generic C-family grammar and catches strings/keywords/numbers in
+// most curly-brace languages we don't explicitly detect.
+function guessLanguage(code: string): Language {
+  const head = code.slice(0, 200)
+  // bash: a command at start, possibly preceded by `$ ` prompts or `VAR=value` env assignments.
+  if (/^\s*(\$\s+)?(\w+=\S+\s+)*(cd|ls|cat|echo|grep|sed|awk|find|git|npm|npx|yarn|pnpm|brew|sudo|curl|wget|mkdir|rm|mv|cp|chmod|chown|export|source|kill|ps|lsof|tail|head|less|more|tree|jq|docker)\b/m.test(head)) return 'bash'
+  // diff: standard header forms, OR a mix of '+' AND '-' prefixed lines (so
+  // markdown bullet lists with only '-' don't get misclassified).
+  if (/^\s*(diff --git|@@|[-+]{3}\s)/m.test(head)) return 'diff'
+  const hasPlusLine = /^\+ /m.test(head)
+  const hasMinusLine = /^- /m.test(head)
+  if (hasPlusLine && hasMinusLine) return 'diff'
+  if (/^\s*\{[\s\S]*"[\w-]+"\s*:/m.test(head)) return 'json'
+  if (/^\s*<\?xml|^\s*<!DOCTYPE|^\s*<[a-zA-Z]+[\s>]/m.test(head)) return 'markup'
+  if (/^\s*(import\s.+\sfrom\s|export\s+(default\s+)?(function|const|class|interface|type)\s|interface\s+\w+|type\s+\w+\s*=)/m.test(head)) return 'tsx'
+  if (/=>|const\s+\w+\s*=|function\s+\w+\s*\(/m.test(head)) return 'tsx'
+  if (/^\s*(def|class|import|from)\s+\w+/m.test(head) && /:\s*$/m.test(head)) return 'python'
+  if (/^\s*#\s|^\s*\*\s|^\s*\d+\.\s|^\s*```/m.test(head)) return 'markdown'
+  return 'clike'
+}
+
+function parseLanguage(rawLang: string | undefined, code: string): Language {
+  if (!rawLang) return guessLanguage(code)
+  const normalized = rawLang.toLowerCase()
+  return LANGUAGE_ALIASES[normalized] ?? (normalized as Language)
+}
+
+function TextBlockBody({ text }: { text: string }) {
   const decoded = decodeEntities(text)
-  const lines = decoded.split('\n')
-  const shouldCollapse =
-    lines.length > MAX_COLLAPSED_LINES || decoded.length > MAX_COLLAPSED_CHARS
-
-  let displayed: string
-  if (shouldCollapse && !expanded) {
-    const byLines = lines.slice(0, MAX_COLLAPSED_LINES).join('\n')
-    displayed =
-      (byLines.length > MAX_COLLAPSED_CHARS
-        ? byLines.slice(0, MAX_COLLAPSED_CHARS)
-        : byLines) + '\n...'
-  } else {
-    displayed = decoded
-  }
-
-  const parts = displayed.split(/(```[\s\S]*?```)/g)
+  const parts = decoded.split(/(```[\s\S]*?```)/g)
 
   return (
     <View style={styles.gap}>
       {parts.map((part, i) => {
         if (part.startsWith('```') && part.endsWith('```')) {
-          const code = part.slice(3, -3).replace(/^\w+\n/, '')
-          return <CodeBlock key={i} code={code} recycleKey={recycleKey} />
+          const inner = part.slice(3, -3)
+          const langMatch = inner.match(/^(\w+)\n/)
+          const rawCode = langMatch ? inner.slice(langMatch[0].length) : inner
+          // Strip the leading/trailing newlines that fence syntax introduces;
+          // preserve any blank lines that are part of the actual code body.
+          const code = rawCode.replace(/^\n+/, '').replace(/\n+$/, '')
+          const language = parseLanguage(langMatch?.[1], code)
+          return <CodeBlock key={i} code={code} language={language} />
         }
-        return <TextContent key={i} text={part} />
+        // Trim a single newline on each side that touches a fenced sibling so
+        // the visual gap around CodeBlocks doesn't double up with the fence
+        // syntax's own newlines. Blank lines elsewhere in the prose are kept.
+        const prevIsFence = i > 0 && parts[i - 1].startsWith('```') && parts[i - 1].endsWith('```')
+        const nextIsFence = i < parts.length - 1 && parts[i + 1].startsWith('```') && parts[i + 1].endsWith('```')
+        let text = part
+        if (prevIsFence) text = text.replace(/^\n/, '')
+        if (nextIsFence) text = text.replace(/\n$/, '')
+        return <TextContent key={i} text={text} />
       })}
-      {shouldCollapse ? (
-        <TouchableOpacity onPress={() => setExpanded((v) => !v)}>
-          <Text style={styles.expandBtn}>
-            {expanded ? 'Show less' : `Show all ${lines.length} lines`}
-          </Text>
-        </TouchableOpacity>
-      ) : null}
     </View>
   )
 }
 
-function ContentBlock({ block, recycleKey }: { block: MessageContent; recycleKey?: string }) {
+function ContentBlock({ block }: { block: MessageContent }) {
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} recycleKey={recycleKey} />
+    return <TextBlockBody text={block.text} />
   }
   if (block.type === 'tool_use') {
     return (
@@ -118,7 +197,7 @@ function ContentBlock({ block, recycleKey }: { block: MessageContent; recycleKey
   return null
 }
 
-export function MessageBubble({ message, recycleKey }: Props) {
+export function MessageBubble({ message }: Props) {
   const { t } = useTranslation('conversation')
   const isUser = message.role === 'user'
 
@@ -126,7 +205,7 @@ export function MessageBubble({ message, recycleKey }: Props) {
     <View style={[styles.container, isUser ? styles.containerUser : styles.containerAssistant]}>
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} recycleKey={recycleKey} />
+          <ContentBlock key={i} block={block} />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
@@ -166,15 +245,11 @@ const styles = StyleSheet.create({
     fontSize: font.base,
     lineHeight: 22,
   },
-  expandBtn: {
-    color: dark.text.accent,
-    fontSize: font.sm,
-    marginTop: spacing.xs,
-  },
   codeBlock: {
     backgroundColor: dark.bg.primary,
     borderRadius: radius.sm,
     overflow: 'hidden',
+    marginVertical: spacing.xs,
   },
   codeHeader: {
     flexDirection: 'row',
@@ -196,21 +271,25 @@ const styles = StyleSheet.create({
     color: dark.text.accent,
     fontSize: font.xs,
   },
-  codeText: {
-    color: '#e6edf3',
-    fontFamily: 'monospace',
-    fontSize: font.xs,
-    padding: spacing.sm,
-  },
-  codeExpandBtn: {
+  codeBody: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: '#1c2128',
+    paddingVertical: 6,
   },
-  codeExpandText: {
-    color: dark.text.accent,
-    fontSize: font.xs,
+  codeLine: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  codeToken: {
+    fontFamily: 'monospace',
+    fontSize: font.sm,
+    fontWeight: '600',
+    color: dark.text.primary,
+  },
+  diffAdd: {
+    backgroundColor: 'rgba(46, 160, 67, 0.18)',
+  },
+  diffDel: {
+    backgroundColor: 'rgba(248, 81, 73, 0.18)',
   },
   toolTag: {
     backgroundColor: `${dark.text.accent}20`,
