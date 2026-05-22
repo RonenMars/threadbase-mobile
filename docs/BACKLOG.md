@@ -24,10 +24,12 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 10 | Conversation: show "Top" button only when scrolling up | Open |
 | Bug 11 | Conversation: move "Bottom" button to bottom-right; show only when not at bottom | Open |
 | Bug 12 | MessageBubble bleed + code-fence collapse cut | ✅ DONE 2026-05-22 (cdf0303, d3aec11, f58d74d, 1a020fb) |
+| Bug 13 | New session: name modal flashes open then auto-closes before user can type | Open — not diagnosed |
+| Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | Open — not diagnosed |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
-**Suggested next-up order:** Bug 7 → Bug 9 (same file, ship together) → Bug 8 → Bug 10 + Bug 11 (same file, same scroll handler) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
+**Suggested next-up order:** Bug 13 + Bug 14 (both on the browse → session handoff, likely overlap — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → Bug 10 + Bug 11 (same file, same scroll handler) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
 
 ---
 
@@ -394,6 +396,105 @@ Quick scan of `FlatList` / `FlashList` / `SectionList` / inline `.map` over serv
 - Issue 1 and Issue 2 compound: on cold launch with `tmp` open by default (if "remember open accordions" is ever added), the user would see the cached-flash AND a 9 s expand stall back-to-back. Fix Issue 1 first if we want to address scope-creep risk for Issue 2 verification (the cached flash currently masks how slow the cold-launch render path *actually* is).
 - Reuse `useMinDisplayTime` / `SessionsLoadingOverlay` — don't invent new patterns.
 - Do **not** preemptively wrap every `.map` in a FlashList. Only the Hub accordion has measured stalls; the table above is for documentation, not a TODO list.
+
+---
+
+## Bug 13 — New session: name modal flashes open then auto-closes before user can type
+
+**Filed:** 2026-05-23 — not diagnosed.
+
+**Symptom:** From the browse screen, pick a path and tap **Start session**. The "Name this session?" modal (`NameSessionModal`, `mode="create"`) opens for a fraction of a second and then closes on its own. The user is navigated straight to `/session/[id]` without any chance to type a name or tap Skip / Start / Don't ask again.
+
+**Expected:** Modal stays open until the user taps Save (with a non-empty name), taps Skip, or taps Don't ask me again. Only then does navigation to the session screen happen.
+
+**Where to start looking:**
+
+- `app/browse.tsx:177-201` — `handleStartSession` calls `startSession.mutate(...)`. On success it gates on the `askOnCreate` setting: when **true** it calls `setPendingSession({...})` (which renders the modal); when **false** it goes straight to `router.dismiss()` + `router.push(/session/...)`.
+- `app/browse.tsx:389-409` — the modal is rendered as `{pendingSession ? <NameSessionModal ... /> : null}`. Both `onSave` and `onSkip` already call `router.dismiss()` + `router.push(...)` themselves, which is the *intended* close path.
+- `components/sessions/NameSessionModal.tsx` — confirmed inert on mount: the `useEffect` at `:27-32` only resets local state when `visible` becomes true; it does **not** auto-fire `onSave` / `onSkip`.
+- `stores/settings.ts` — `askOnCreate` flag. Default is true (verify); the "Don't ask me again" checkbox flips it off via `setAskOnCreate(false)` at `app/browse.tsx:406-409`.
+
+**Top suspects (in order):**
+
+1. **`askOnCreate` is stuck `false`.** If the user (or a previous bug) ever toggled "Don't ask me again", the modal branch is skipped entirely — `handleStartSession` falls through to the immediate `router.push` path. The "flash" the user perceives might actually be a transient render (e.g. a brief mount during the cleanup of `pendingSession === null` → `pendingSession === {...}` → `null` again, or the modal appearing on the *previous* session creation). Verify by:
+   - `console.log(askOnCreate)` inside `handleStartSession`.
+   - Inspect `stores/settings.ts` persisted state on the device (or clear app data and repro).
+   - If this is the cause, the bug is mis-categorized: it's "Don't ask me again is sticky and there's no UI to re-enable it" → fix by exposing a toggle in Settings (likely already exists — verify).
+
+2. **`router.dismiss()` is fired by the parent route while the modal is mounted as a child of `browse.tsx`.** The modal is rendered *inside* the browse screen tree, not at the root. If something — e.g. the underlying `startSession.mutate` success handler, a focus listener, a parent layout effect — dismisses the browse route after `setPendingSession` runs, the modal unmounts before the user can interact. Verify by:
+   - Add `console.log('browse: unmount')` to a `useEffect` cleanup in `browse.tsx`.
+   - Add `console.log('modal: render', { visible, pendingSession })` in the JSX.
+   - Compare timestamps: does browse unmount within ~100 ms of the modal becoming visible?
+   - Likely fix: hoist `NameSessionModal` rendering up to `_layout.tsx` (or a sibling route), so the modal survives `router.dismiss()` of the browse screen. Or delay `router.dismiss()` until *after* `onSave` / `onSkip` fire.
+
+3. **`startSession.mutate` resolves twice** — first with a stale `onSuccess` (perhaps a retried mutation or a duplicate event from the WS layer), where the second invocation lands in the no-`askOnCreate` branch and pushes to `/session` while the modal from the first invocation is still mounting. Verify by counting `onSuccess` callbacks.
+
+4. **Keyboard / focus race on autoFocus.** `NameSessionModal`'s `<TextInput autoFocus />` (`NameSessionModal.tsx:69`) requests the keyboard immediately. On some iOS versions, an autoFocus-triggered keyboard appearance can race with the parent `KeyboardAvoidingView` and produce a layout pass that looks like a "flash". Unlikely to be the close-itself cause, but worth a screen recording to confirm whether the modal *visually* closes vs. is occluded by a keyboard transition.
+
+**Repro steps to capture on pickup:**
+
+1. Fresh install or `xcrun simctl uninstall booted dev.threadbase.mobile` → reinstall.
+2. Pair a server, complete onboarding.
+3. From Hub: tap **+** / **New session** (whichever entry lands on `/browse`).
+4. Drill into a directory.
+5. Tap **Start session**.
+6. Observe whether modal stays open. Record the screen if possible.
+7. If modal does *not* stay open, check Settings → "Ask on create" (or equivalent) — is it on?
+
+**Files likely involved:**
+
+- `app/browse.tsx:177-201, 389-409`
+- `components/sessions/NameSessionModal.tsx`
+- `stores/settings.ts` (the `askOnCreate` flag + its persistence)
+- `hooks/useStartSession.ts` (or wherever the `startSession` mutation lives — check what `onSuccess` semantics it has, including retries)
+- `app/_layout.tsx` (if hoisting the modal up the tree becomes the fix)
+
+**Related:** Same modal is reused on session exit (`app/session/[id].tsx:931`, `mode="exit"`). Worth checking whether the exit-modal variant has the same auto-close symptom — if yes, the root cause is in `NameSessionModal` itself (suspect 4); if no, it's specific to the browse → session creation handoff (suspects 1, 2, or 3). Also closely related to [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit) — both bugs sit on the browse → session handoff and may share root cause.
+
+---
+
+## Bug 14 — After starting new session, file browser stays in stack and re-shows on exit
+
+**Filed:** 2026-05-23 — not diagnosed.
+
+**Symptom:** Start a new session from `/browse` (pick a path, tap **Start session**, get into `/session/[id]`). Later, when the user exits the session (back gesture / Resume Session back navigation / etc.), instead of landing on the Hub (`/`), they land back on the file browser modal — which by then is a stale view of a directory they've already moved past.
+
+**Expected:** The browse modal should be fully dismissed at the moment session creation succeeds. Exiting the session should land the user on the Hub, never on the browser.
+
+**Why it likely happens:** Browse is registered as a modal in the navigator (`app/_layout.tsx:186-193`, `presentation: 'modal'`). The four "session created → navigate" sites in `app/browse.tsx` all call:
+
+```ts
+router.dismiss()
+router.push(`/session/${id}?...`)
+```
+
+…in that order (`browse.tsx:191-193, 217-219, 397-398, 403-404`). On Expo Router's stack, this sequence is fragile:
+
+- `router.dismiss()` on a `presentation: 'modal'` route pops the modal off the stack, but the call is asynchronous (it queues a transition).
+- `router.push(...)` fired in the same tick may end up pushed onto the stack *before* the dismiss settles, leaving the stack as `[Hub, Browse, Session]` or `[Hub, Session, Browse]` depending on order resolution. Either way, browse is still in the back stack.
+- When the user later exits Session, the default back behavior pops the top of the stack → lands on Browse instead of Hub.
+
+**Likely fixes to evaluate (pick after verifying the stack state):**
+
+1. **Replace, don't dismiss-then-push.** Use `router.replace(...)` for the session destination instead of `dismiss()` + `push()`. `replace` swaps the top of the stack atomically, so the modal route is replaced by the session route in one operation.
+   - Caveat: `replace` from a *modal* route may leave the modal-presentation wrapper around the session screen, which is wrong UX for a full-screen session. Verify on iOS — if it does, use approach (2).
+2. **`router.dismissAll()` + `router.push()`** — fully clear the modal stack first, then navigate to the session. Safer than `dismiss()` if anything else can be sitting above browse.
+3. **Await the dismiss before pushing.** Use `setTimeout(() => router.push(...), 0)` after `router.dismiss()` so the dismiss commits first. Hacky but cheapest if (1) and (2) don't behave correctly.
+4. **Navigate, then dismiss.** Flip the order: `router.push('/session/...')` first, then `router.dismiss()` to remove browse from underneath. May produce a brief visual artifact (push transition over a still-present modal) but guarantees the back-stack is clean.
+
+**Recommendation:** start with (1). It's the idiomatic Expo Router pattern for "this screen's job is done, swap me out." If iOS keeps the modal chrome around the session screen, fall back to (2).
+
+**Verify before fixing:**
+
+- Add a log in `app/_layout.tsx` (or a `useFocusEffect`/`usePathname` listener) that prints the current pathname on each navigation. Repro the bug and capture the exact sequence of pathnames the stack reports during create + exit.
+- Inspect `router.canGoBack()` / `router.getState()` on the session screen right after mount — if `routes` contains `browse`, that confirms the stack is dirty.
+
+**Files involved:**
+
+- `app/browse.tsx:177-201, 203-229, 389-409` — the four "session created → navigate" sites that all share the same `dismiss()` + `push()` pattern. Fix in one place; refactor into a `navigateToNewSession(session)` helper to prevent drift.
+- `app/_layout.tsx:186-193` — browse's modal registration; no change expected, but worth re-reading to be sure modal presentation isn't compounding the stack issue.
+
+**Related:** [Bug 13](#bug-13--new-session-name-modal-flashes-open-then-auto-closes-before-user-can-type) sits on the same handoff. If Bug 13's root cause turns out to be suspect 2 ("parent route dismissed while modal is mounted"), Bug 14 and Bug 13 are the same underlying bug seen from two angles — fix one and verify the other.
 
 ---
 
