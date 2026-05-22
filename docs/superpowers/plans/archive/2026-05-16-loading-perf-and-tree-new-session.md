@@ -1,3 +1,7 @@
+> **Archived 2026-05-22.** This file has been moved to the archive. Active backlog/roadmap now lives in [`docs/BACKLOG.md`](../../../BACKLOG.md) and [`docs/ROADMAP.md`](../../../ROADMAP.md). The contents below are preserved verbatim for historical reference.
+
+---
+
 # Loading UX, Hub-list perf, Quick Access, scroll-to-end, Tree new-session path
 
 **Date:** 2026-05-16
@@ -38,6 +42,8 @@ Captures four open bugs + one feature surfaced after the conversation-list redes
 ---
 
 ### Bug 2 — Hub tree node open: add loader AND fix long-list render stall
+
+> **2026-05-22 update:** Reproduced on iPhone 17 sim with `tmp` (1,266 convs → >9 s stall) and `tb-mobile` (166 convs → several seconds). Smoking gun confirmed at `components/sessions/hub/ProjectHubCard.tsx:121-178` (inline `.map` over full dataset in `mergeChats` branch). Also surfaced a related cold-launch flash issue (cached storage paints, then server data overwrites). Both written up in `docs/superpowers/plans/2026-05-22-hub-cached-flash-and-long-list-perf.md` — that doc supersedes 2b for picking up.
 
 Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 
@@ -107,6 +113,69 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 - Whichever component renders the Export + Resume Session row at the bottom of the Historical view
 
 **Related:** Bug 4 (scroll-to-end jumpy) is about scroll *animation*, not visible content offset — keep them separate.
+
+---
+
+### Bug 7 — Quick Access strip: default-collapsed + tab reorder + hide when fully empty (filed 2026-05-22)
+
+Three small UX tweaks reported together. They share a file (`components/quick-access/QuickAccessStrip.tsx`) and a store (`stores/quickAccess.ts`), so handle as one ticket.
+
+**7a. On app load, show the strip collapsed.**
+- Today the persisted default is `stripCollapsed: false` (`stores/quickAccess.ts:88`). Flip it to `true`.
+- Migration: existing users have their preference persisted via the partializer (`stores/quickAccess.ts:154`). Don't force-collapse them — only change the default for fresh installs. If we want every user to see the new default once, bump the persist key or add a one-shot migration; otherwise leave persisted state alone.
+- Verify the collapse chevron in `QuickAccessStrip.tsx:243-248` still works the same way once the initial state flips.
+
+**7b. Hide the strip entirely when there's nothing to show.**
+- Condition: `favorites.length === 0` AND `recents.length === 0` AND `popular.length === 0` AND every queried server reports 0 conversations.
+- Today the strip only short-circuits when *all three tabs are disabled* (`QuickAccessStrip.tsx:154` → `if (enabledTabs.length === 0) return null`). That doesn't help a brand-new user who hasn't pinned anything yet — they still see an empty strip with three empty tabs and "No favorites yet — long-press an item to pin it."
+- Add a second short-circuit: compute `nothingToShow = favorites.length === 0 && (recentsData?.sessions?.length ?? 0) === 0 && (popularData?.projects?.length ?? 0) === 0 && totalConversationsAcrossServers === 0`. Return `null` when true.
+- `totalConversationsAcrossServers` needs sourcing — likely the same multi-server fan-out that powers the Hub list (`hooks/useEagerConversations`, see `app/index.tsx:19`). Don't trigger an extra network call just for this gate; reuse whatever's already in the cache.
+- Edge case: while data is still loading on cold launch, **don't** hide the strip yet — that would cause a layout reflow once recents/popular resolve. Only hide once at least one of the queries has settled and reported zero. (Or just key the hide check off `favorites.length === 0 && hasZeroServerConversations` — favorites are local-only and synchronous, conversations come from cache.)
+
+**7c. Reorder tabs: Recents, Popular, Favorites (currently Favorites, Recents, Popular).**
+- Two places to update:
+  1. `TAB_DEFS` array in `QuickAccessStrip.tsx:211-215` — reorder.
+  2. `enabledTabs` builder at `QuickAccessStrip.tsx:114-120` — reorder the `if` branches so the default `effectiveTab` (`enabledTabs[0]`) becomes `recents` instead of `favorites`.
+- The store currently defaults `currentTab` (local state, not persisted) to `'favorites'` (`QuickAccessStrip.tsx:29`). After the reorder, change this initial state to `'recents'` so the tab on first paint matches the new visual order.
+- Side effect: the "gear" icon for managing favorites is gated on `effectiveTab === 'favorites'` (`QuickAccessStrip.tsx:232-236`). It will now appear only when the user actively switches to Favorites — fine, but verify it still hits.
+
+**Files likely involved:**
+- `components/quick-access/QuickAccessStrip.tsx`
+- `stores/quickAccess.ts` (default `stripCollapsed`, possibly a migration)
+- `hooks/useQuickAccess.ts` (for the "total conversations" signal — verify there's already a query result we can reuse before adding anything)
+
+---
+
+### Bug 8 — Manage Favorites: remove duplicate top bar + add "browse to favorite" CTA on empty (filed 2026-05-22)
+
+**8a. Remove the duplicate top bar.**
+- Screenshot shows two stacked top bars: the system Stack header (`< manage-favorites`) AND the screen's own custom header (`← Back  Manage Favorites`). Both are rendering.
+- Root cause: `app/_layout.tsx:178-204` declares `Stack.Screen` for `index`, `onboarding`, `session/[id]`, `conversation/[id]`, `browse`, `settings`, `project/[id]` — but **not** `manage-favorites`. So the route falls back to the default Stack header (which uses the filename as title) AND `app/manage-favorites.tsx:15-21` renders its own in-screen header.
+- Two clean fixes — pick one:
+  1. **Keep system header, delete in-screen header.** Add `<Stack.Screen name="manage-favorites" options={{ title: 'Manage Favorites', headerShown: true }} />` in `app/_layout.tsx`, then delete the `<View style={styles.header}>` block + its styles from `app/manage-favorites.tsx:15-21,54-65`. Consistent with `settings` and `project/[id]`.
+  2. **Keep in-screen header, hide system header.** Add `<Stack.Screen name="manage-favorites" options={{ headerShown: false }} />` and leave the screen as-is. Consistent with `session/[id]` and `conversation/[id]`.
+- **Recommendation: (1)** — Settings already uses the system header (`app/_layout.tsx:190-193`); Manage Favorites is the same kind of secondary nav surface. Matching settings keeps the back gesture and title behavior identical without custom code.
+
+**8b. Empty state CTA: "Add to favorites".**
+- When `favorites.length === 0` AND any queried server has > 0 conversations (i.e. there *is* something the user could favorite), the empty state currently shows static copy (`app/manage-favorites.tsx:23-27`): *"No favorites pinned yet. Tap a chip in the strip and choose 'Pin to Favorites'."*
+- Replace with a primary button: **"Add to favorites"** that navigates somewhere the user can pick an item.
+- **Open question for pickup:** where should the button go? Options:
+  1. `/browse` (the project directory picker — `app/browse.tsx`) — lets the user pick a folder, then "Pin to Favorites" from there. Requires browse to support pinning in addition to "Start new session". Bigger lift.
+  2. Back to the Hub (`/`) with the Quick Access strip auto-expanded and switched to a tab the user can pin from — but they have nothing in any tab yet either, so this doesn't help.
+  3. A new dedicated "pick something to favorite" screen showing recents + popular + a project picker. Cleanest UX, most code.
+  - Recommendation: defer the destination decision until brainstorm. The simplest stub that unblocks the feature is to route to the Hub with the strip expanded; refine after seeing how it feels.
+- Empty-state branching:
+  - `favorites empty + all servers 0 conversations` → keep the current "long-press a chip" copy (there's nothing to favorite anyway). Or hide this entire screen entry point upstream — see Bug 7b for the parallel case in the strip.
+  - `favorites empty + any server has conversations` → show the CTA button.
+  - `favorites non-empty` → render the existing FlatList (`app/manage-favorites.tsx:29-46`), no change.
+
+**Files likely involved:**
+- `app/_layout.tsx` — add `Stack.Screen name="manage-favorites"`
+- `app/manage-favorites.tsx` — delete in-screen header (or hide system one), branch the empty state, add CTA
+- `app/browse.tsx` (only if (1) is chosen as the CTA destination)
+- `hooks/useConversations.ts` / `hooks/useQuickAccess.ts` — for the "any server has conversations" signal (reuse what Bug 7b lands on; don't query twice)
+
+**Related:** Bug 7b uses the same "has any conversations across servers" check. Land them together so the signal lives in one hook.
 
 ---
 
