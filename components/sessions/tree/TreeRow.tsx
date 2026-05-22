@@ -95,7 +95,9 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
         {node.totalCount > 0 && (
           <View style={[styles.badge, accentColor ? { backgroundColor: accentColor + '22' } : null]}>
             <Text style={[styles.badgeText, accentColor ? { color: accentColor } : null]}>
-              {node.totalCount}
+              {hasChildren && isExpanded
+                ? `${node.directCount}/${node.totalCount}`
+                : node.totalCount}
             </Text>
           </View>
         )}

@@ -33,6 +33,7 @@ export function buildTree(
     sessions: [],
     conversations: [],
     totalCount: 0,
+    directCount: 0,
   }
 
   function ensurePath(parts: string[]): TreeNode {
@@ -48,6 +49,7 @@ export function buildTree(
           sessions: [],
           conversations: [],
           totalCount: 0,
+          directCount: 0,
         })
       }
       cur = cur.children.get(part)!
@@ -66,10 +68,12 @@ export function buildTree(
   }
 
   function calcTotals(node: TreeNode): number {
-    let count = node.sessions.length + node.conversations.length
+    const direct = node.sessions.length + node.conversations.length
+    let count = direct
     for (const child of node.children.values()) {
       count += calcTotals(child)
     }
+    node.directCount = direct
     node.totalCount = count
     return count
   }

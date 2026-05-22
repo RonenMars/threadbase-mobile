@@ -7,6 +7,7 @@ export interface TreeNode {
   sessions: MultiSession[]
   conversations: MultiConversation[]
   totalCount: number
+  directCount: number
 }
 
 export interface FlatNode {
