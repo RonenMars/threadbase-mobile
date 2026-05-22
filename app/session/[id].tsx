@@ -25,7 +25,7 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple } from 'phosphor-react-native'
@@ -438,6 +438,7 @@ export default function SessionDetailScreen() {
   const [attachments, setAttachments] = useState<UploadedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
+  const insets = useSafeAreaInsets()
   const [infoVisible, setInfoVisible] = useState(false)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
@@ -781,6 +782,7 @@ export default function SessionDetailScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom : 0}
       >
         {session ? (
           <View style={styles.statusBar}>
