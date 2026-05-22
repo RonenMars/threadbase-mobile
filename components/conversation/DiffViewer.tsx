@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import * as Clipboard from 'expo-clipboard'
+import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { DiffHunk } from '@/types/api'
@@ -13,6 +14,8 @@ interface Props {
   filename: string
   hunks: DiffHunk[]
   language?: string
+  /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
+  recycleKey?: string
 }
 
 function countChanges(hunks: DiffHunk[]): { added: number; removed: number } {
@@ -39,10 +42,13 @@ function toPatch(filename: string, hunks: DiffHunk[]): string {
   return lines.join('\n')
 }
 
-export function DiffViewer({ filename, hunks, language }: Props) {
+export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
   const totalLines = hunks.reduce((acc, h) => acc + h.lines.length, 0)
-  const [expanded, setExpanded] = useState(totalLines <= COLLAPSE_THRESHOLD)
+  const [expanded, setExpanded] = useRecyclingState(
+    totalLines <= COLLAPSE_THRESHOLD,
+    [recycleKey, totalLines],
+  )
   const { added, removed } = countChanges(hunks)
   const scale = useSharedValue(1)
 

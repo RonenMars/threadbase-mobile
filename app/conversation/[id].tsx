@@ -42,20 +42,24 @@ import type { Message, MessageContent } from '@/types/api'
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
 
-function renderContent(block: MessageContent, index: number) {
+function renderContent(block: MessageContent, index: number, recycleKey: string) {
   if (block.type === 'thinking') {
-    return <ThinkingCard key={index} block={block} />
+    return <ThinkingCard key={index} block={block} recycleKey={recycleKey} />
   }
   if (block.type === 'tool_use' || block.type === 'tool_result') {
-    return <ToolCard key={index} block={block} />
+    return <ToolCard key={index} block={block} recycleKey={recycleKey} />
   }
   if (block.type === 'diff') {
-    return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} />
+    return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
   }
   return null
 }
 
-function MessageItemInner({ message }: { message: Message }) {
+// FlashList recycles cell instances, which would otherwise carry useState
+// across messages (ToolCard / ThinkingCard / DiffViewer / MessageBubble each
+// own `expanded` state). Threading the message id as `recycleKey` lets each
+// child use `useRecyclingState` to reset its state when the cell is reassigned.
+function MessageItem({ message }: { message: Message }) {
   const { t } = useTranslation('conversation')
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
@@ -70,9 +74,15 @@ function MessageItemInner({ message }: { message: Message }) {
         {message.content.map((block, i) => {
           if (block.type === 'text') {
             if (!block.text.trim()) return null
-            return <MessageBubble key={i} message={{ ...message, content: [block] }} />
+            return (
+              <MessageBubble
+                key={i}
+                message={{ ...message, content: [block] }}
+                recycleKey={message.id}
+              />
+            )
           }
-          return renderContent(block, i)
+          return renderContent(block, i, message.id)
         })}
       </View>
     )
@@ -84,19 +94,9 @@ function MessageItemInner({ message }: { message: Message }) {
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
-      <MessageBubble message={message} />
+      <MessageBubble message={message} recycleKey={message.id} />
     </View>
   )
-}
-
-// FlashList recycles cell instances. Without a per-message key on the inner
-// subtree, child useState (ToolCard.expanded, MessageBubble.TextBlockBody
-// expanded, ThinkingCard.expanded, DiffViewer.expanded) carries from the
-// previous message into the new one — producing visual overlap during scroll.
-// Keying the inner tree by message id forces React to remount when the cell
-// is reassigned, dropping the stale state.
-function MessageItem({ message }: { message: Message }) {
-  return <MessageItemInner key={message.id} message={message} />
 }
 
 export default function ConversationDetailScreen() {
@@ -394,6 +394,10 @@ export default function ConversationDetailScreen() {
             onScroll={handleScroll}
             onScrollBeginDrag={handleScrollBeginDrag}
             scrollEventThrottle={100}
+            maintainVisibleContentPosition={{
+              autoscrollToBottomThreshold: 0.2,
+              startRenderingFromBottom: true,
+            }}
             ListHeaderComponent={
               isFetchingNextPage ? (
                 <View style={styles.headerLoading}>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useRecyclingState } from '@shopify/flash-list'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { MessageContent } from '@/types/api'
 
@@ -8,11 +9,13 @@ type ThinkingBlock = Extract<MessageContent, { type: 'thinking' }>
 
 interface Props {
   block: ThinkingBlock
+  /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
+  recycleKey?: string
 }
 
-export function ThinkingCard({ block }: Props) {
+export function ThinkingCard({ block, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
   const isRedacted = !block.thinking && !!block.signature
 
   return (

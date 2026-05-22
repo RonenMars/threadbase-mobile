@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
+import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
@@ -10,6 +11,8 @@ const MAX_COLLAPSED_CHARS = 600
 
 interface Props {
   message: Message
+  /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
+  recycleKey?: string
 }
 
 function decodeEntities(s: string) {
@@ -25,11 +28,13 @@ function TextContent({ text }: { text: string }) {
   return <Text style={styles.messageText} selectable>{text}</Text>
 }
 
+
+
 const MAX_CODE_LINES = 20
 
-function CodeBlock({ code }: { code: string }) {
+function CodeBlock({ code, recycleKey }: { code: string; recycleKey?: string }) {
   const { t } = useTranslation('conversation')
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useRecyclingState(false, [recycleKey, code.length])
   const copy = () => Clipboard.setStringAsync(code)
   const lines = code.split('\n')
   const shouldCollapse = lines.length > MAX_CODE_LINES
@@ -59,8 +64,8 @@ function CodeBlock({ code }: { code: string }) {
   )
 }
 
-function TextBlockBody({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false)
+function TextBlockBody({ text, recycleKey }: { text: string; recycleKey?: string }) {
+  const [expanded, setExpanded] = useRecyclingState(false, [recycleKey, text.length])
   const decoded = decodeEntities(text)
   const lines = decoded.split('\n')
   const shouldCollapse =
@@ -84,7 +89,7 @@ function TextBlockBody({ text }: { text: string }) {
       {parts.map((part, i) => {
         if (part.startsWith('```') && part.endsWith('```')) {
           const code = part.slice(3, -3).replace(/^\w+\n/, '')
-          return <CodeBlock key={i} code={code} />
+          return <CodeBlock key={i} code={code} recycleKey={recycleKey} />
         }
         return <TextContent key={i} text={part} />
       })}
@@ -99,9 +104,9 @@ function TextBlockBody({ text }: { text: string }) {
   )
 }
 
-function ContentBlock({ block }: { block: MessageContent }) {
+function ContentBlock({ block, recycleKey }: { block: MessageContent; recycleKey?: string }) {
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} />
+    return <TextBlockBody text={block.text} recycleKey={recycleKey} />
   }
   if (block.type === 'tool_use') {
     return (
@@ -113,7 +118,7 @@ function ContentBlock({ block }: { block: MessageContent }) {
   return null
 }
 
-export function MessageBubble({ message }: Props) {
+export function MessageBubble({ message, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
   const isUser = message.role === 'user'
 
@@ -121,7 +126,7 @@ export function MessageBubble({ message }: Props) {
     <View style={[styles.container, isUser ? styles.containerUser : styles.containerAssistant]}>
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} />
+          <ContentBlock key={i} block={block} recycleKey={recycleKey} />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
