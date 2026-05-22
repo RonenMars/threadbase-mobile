@@ -23,6 +23,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 9 | Quick Access: hide Edit pencil when strip is collapsed | Open |
 | Bug 10 | Conversation: show "Top" button only when scrolling up | Open |
 | Bug 11 | Conversation: move "Bottom" button to bottom-right; show only when not at bottom | Open |
+| Bug 12 | MessageBubble bleed + code-fence collapse cut | ✅ DONE 2026-05-22 (cdf0303, d3aec11, f58d74d, 1a020fb) |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
@@ -445,3 +446,29 @@ Kept here for traceability — once a bug is fixed, its full entry stays so futu
 **Fix shipped (commit message `fix(bug-4): land conversation at true end + maintain position on older-page backfill`):** Two-part fix — settle-detect + `maintainVisibleContentPosition` + `onScrollBeginDrag` tracking on the FlatList, plus a 400 ms delayed animated final scroll after layout settles. Lands correctly at bottom on 268-msg conversation; "Bottom" button jumps to end without recursive backfill.
 
 Related precursor work in commits `c829908` (cap conversation bubble height with whole-text collapse + entity decode) and the FlatList margin → padding pass (margins under-reported `contentSize` by ~640 pt across 80 rows).
+
+### Bug 12 — MessageBubble bleed + code-fence collapse cut ✅ DONE 2026-05-22 (commits cdf0303, d3aec11, f58d74d, 1a020fb)
+
+**Filed in-session** (not previously in this backlog). Two related problems in `components/conversation/MessageBubble.tsx`:
+
+- **Bubble bleed:** assistant bubbles whose text contained a fenced code block painted their dark background ~150–250 pt past the visible content, masking subsequent FlashList rows. The bubble's outer `<View>` measured itself 244 pt taller than its children's `onLayout`-reported heights summed.
+- **Code-fence collapse cut:** the `MAX_COLLAPSED_LINES = 10` / `MAX_COLLAPSED_CHARS = 600` truncation cut messages mid-fence, leaving an unclosed ` ``` ` rendering as plain text and the actual code block invisible until the user tapped "Show all N lines."
+
+**Diagnosis:** Spent ~3 hours instrumenting every layer with `onLayout` logs (bubble → wrapper → each child → CodeBlock subviews). Ruled out FlashList row-height cache, `useRecyclingState` toggle, Text intrinsic-vs-glyph measurement, gap interactions, recycling pollution. The 244 pt phantom is real and reproducible but invisible to RN's JS layer. Smoking gun: removing `<CodeBlock>` from the rendered tree eliminated the phantom; the only structurally unusual element inside it was `<ScrollView horizontal>` wrapping a `<Text>` in a column-flex parent. Likely a native-layer `UIScrollView` intrinsic-content-size interaction we never pinned exactly.
+
+**Fix shipped:**
+- Replaced hand-rolled CodeBlock (header + horizontal ScrollView + plain Text) with [`prism-react-renderer`](https://github.com/FormidableLabs/prism-react-renderer) rendering each line as a wrapped-row View of token Texts. No horizontal scroll — long lines wrap. Theme `themes.oneDark`.
+- Added language detection: explicit fence tag → `LANGUAGE_ALIASES` table; bare fences → `guessLanguage(code)` heuristic (bash → diff → json → markup → tsx → python → markdown → clike fallback).
+- Added `DiffLines` component for diff rendering (Prism doesn't ship the `diff` grammar in prism-react-renderer's bundle): `+ ` lines on subtle green tint, `- ` lines on subtle red tint.
+- Copy button: added `expo-haptics` light impact + "Copy" → "Copied" label flip for 1.5 s.
+- **Removed all text/code expand-collapse** (`MAX_COLLAPSED_LINES`, `MAX_COLLAPSED_CHARS`, `MAX_CODE_LINES`, the `useRecyclingState`-backed `expanded` state in both `TextBlockBody` and `CodeBlock`, related styles). Eliminates the mid-fence truncation bug structurally. Tradeoff: long messages render as taller FlashList cells; FlashList v2 + MVCP handles them.
+- Jest mock for `@shopify/flash-list` extended to expose `useRecyclingState` + `useLayoutState` as `React.useState` stubs (unblocked 22 pre-existing ToolCard / MessageBubble test failures).
+
+**Lessons captured:** Three entries under [docs/lessons/](./lessons/):
+- [`2026-05-22-bubble-bleed-horizontal-scrollview.md`](./lessons/2026-05-22-bubble-bleed-horizontal-scrollview.md) — never wrap `<Text>` in `<ScrollView horizontal>` inside a column-flex parent on iOS RN.
+- [`2026-05-22-flashlist-jest-mock-hooks.md`](./lessons/2026-05-22-flashlist-jest-mock-hooks.md) — FlashList v2 hooks must be stubbed alongside `FlashList` in the Jest mock.
+- [`2026-05-22-message-bubble-codeblock-refactor.md`](./lessons/2026-05-22-message-bubble-codeblock-refactor.md) — what shipped and why.
+
+Full brainstorm record (with measurement tables + 7 ruled-out hypotheses) at [`docs/superpowers/plans/2026-05-22-flashlist-bubble-bleed-brainstorm.md`](./superpowers/plans/2026-05-22-flashlist-bubble-bleed-brainstorm.md).
+
+Tests post-fix: 476 passing, 2 skipped pre-existing, 0 failing (was 22 failing at session start).
