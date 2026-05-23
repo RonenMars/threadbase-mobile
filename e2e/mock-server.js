@@ -5,7 +5,12 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 
-const PORT = parseInt(process.env.MOCK_PORT ?? '7071', 10)
+// Comma-separated list of ports; first is primary, additional ports serve the
+// same fixtures so e2e flows can pair multiple servers.
+const PORTS = (process.env.MOCK_PORTS ?? process.env.MOCK_PORT ?? '7071')
+  .split(',')
+  .map((p) => parseInt(p.trim(), 10))
+  .filter((p) => Number.isFinite(p))
 const FIXTURES = path.join(__dirname, 'fixtures')
 
 function readFixture(name) {
@@ -17,9 +22,14 @@ function json(res, status, body) {
   res.end(typeof body === 'string' ? body : JSON.stringify(body))
 }
 
-const server = http.createServer((req, res) => {
+function makeHandler() {
+  return (req, res) => handleRequest(req, res)
+}
+
+function handleRequest(req, res) {
   const method = req.method
-  const url = new URL(req.url, `http://localhost:${PORT}`)
+  const host = req.headers.host ?? 'localhost'
+  const url = new URL(req.url, `http://${host}`)
   const p = url.pathname
 
   console.log(`${method} ${p}`)
@@ -109,8 +119,11 @@ const server = http.createServer((req, res) => {
   }
 
   json(res, 404, { error: 'Not found' })
-})
+}
 
-server.listen(PORT, () => {
-  console.log(`Mock server listening on http://localhost:${PORT}`)
-})
+for (const port of PORTS) {
+  const server = http.createServer(makeHandler())
+  server.listen(port, () => {
+    console.log(`Mock server listening on http://localhost:${port}`)
+  })
+}
