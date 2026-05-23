@@ -85,7 +85,10 @@ const DEFAULTS: PersistedState = {
   favorites: [],
   ignoredRecents: [],
   ignoredPopular: [],
-  stripCollapsed: false,
+  // Fresh installs start collapsed (Bug 7a). Existing users keep their
+  // persisted preference — `hydrate` reads `parsed.stripCollapsed ?? s.stripCollapsed`,
+  // so a previously-saved `false` is honored.
+  stripCollapsed: true,
   favoritesEnabled: true,
   recentsEnabled: true,
   popularEnabled: true,

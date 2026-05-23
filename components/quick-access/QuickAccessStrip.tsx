@@ -29,7 +29,7 @@ export function QuickAccessStrip() {
     setStripCollapsed, pinItem, unpinItem, ignoreRecent, ignorePopular,
   } = useQuickAccessStore()
 
-  const [currentTab, setCurrentTab] = useState<QuickAccessTab>('favorites')
+  const [currentTab, setCurrentTab] = useState<QuickAccessTab>('recents')
   const [editMode, setEditMode] = useState(false)
   const [visibleCount, setVisibleCount] = useState(INITIAL_CHIPS)
   const [activeItem, setActiveItem] = useState<ChipItem | null>(null)
@@ -118,15 +118,15 @@ export function QuickAccessStrip() {
 
   const enabledTabs = useMemo((): QuickAccessTab[] => {
     const tabs: QuickAccessTab[] = []
-    if (favoritesEnabled) tabs.push('favorites')
     if (recentsEnabled) tabs.push('recents')
     if (popularEnabled) tabs.push('popular')
+    if (favoritesEnabled) tabs.push('favorites')
     return tabs
   }, [favoritesEnabled, recentsEnabled, popularEnabled])
 
   const effectiveTab: QuickAccessTab = enabledTabs.includes(currentTab)
     ? currentTab
-    : (enabledTabs[0] ?? 'favorites')
+    : (enabledTabs[0] ?? 'recents')
 
   const allItems = useMemo((): ChipItem[] => {
     if (effectiveTab === 'favorites') {
@@ -157,6 +157,21 @@ export function QuickAccessStrip() {
   const loadMoreCount = Math.min(LOAD_MORE_STEP, remaining)
 
   if (enabledTabs.length === 0) return null
+
+  // Bug 7b — hide the entire strip when there's nothing to show. We reuse the
+  // recents + popular queries already in flight (no extra network call) as a
+  // proxy for "any queried server has conversations": popular returns one entry
+  // per project with conversations, recents returns recent sessions. Both
+  // returning zero from a *settled* (success) query means the user has nothing
+  // to surface here. During the initial loading window the queries are still
+  // 'pending', so we leave the strip visible to avoid a reflow once data lands.
+  const recentsSettledEmpty =
+    recentsQuery.status === 'success' && (recentsData?.sessions?.length ?? 0) === 0
+  const popularSettledEmpty =
+    popularQuery.status === 'success' && (popularData?.projects?.length ?? 0) === 0
+  const nothingToShow =
+    favorites.length === 0 && recentsSettledEmpty && popularSettledEmpty
+  if (nothingToShow) return null
 
   const isFavorite = (item: ChipItem) => favorites.some((f) => f.id === item.id)
 
@@ -214,9 +229,9 @@ export function QuickAccessStrip() {
   }
 
   const TAB_DEFS: { key: QuickAccessTab; label: string; Icon: React.ComponentType<any> }[] = [
-    { key: 'favorites', label: 'Favorites', Icon: Star },
     { key: 'recents',   label: 'Recents',   Icon: ClockCounterClockwise },
     { key: 'popular',   label: 'Popular',   Icon: Fire },
+    { key: 'favorites', label: 'Favorites', Icon: Star },
   ]
 
   return (
@@ -234,18 +249,32 @@ export function QuickAccessStrip() {
         ))}
 
         <View style={styles.tabRight}>
-          {effectiveTab === 'favorites' && (
+          {/* Bug 9 — hide gear + pencil when collapsed. Neither is actionable
+              on a row that just shows tab labels. */}
+          {!stripCollapsed && effectiveTab === 'favorites' && (
             <Pressable style={styles.iconBtn} onPress={() => router.push('/manage-favorites' as any)} hitSlop={8}>
               <GearSix size={16} color={dark.text.secondary} />
             </Pressable>
           )}
-          <Pressable style={styles.iconBtn} onPress={() => setEditMode((v) => !v)} hitSlop={8}>
-            {editMode
-              ? <Check size={16} color={dark.text.accent} />
-              : <PencilSimple size={16} color={dark.text.secondary} />
-            }
-          </Pressable>
-          <Pressable style={styles.iconBtn} onPress={() => setStripCollapsed(!stripCollapsed)} hitSlop={8}>
+          {!stripCollapsed && (
+            <Pressable style={styles.iconBtn} onPress={() => setEditMode((v) => !v)} hitSlop={8}>
+              {editMode
+                ? <Check size={16} color={dark.text.accent} />
+                : <PencilSimple size={16} color={dark.text.secondary} />
+              }
+            </Pressable>
+          )}
+          <Pressable
+            style={styles.iconBtn}
+            onPress={() => {
+              const next = !stripCollapsed
+              // Bug 9 — reset edit mode when collapsing so the strip doesn't
+              // come back expanded into a half-active edit state.
+              if (next) setEditMode(false)
+              setStripCollapsed(next)
+            }}
+            hitSlop={8}
+          >
             {stripCollapsed
               ? <CaretDown size={16} color={dark.text.accent} />
               : <CaretUp size={16} color={dark.text.accent} />
