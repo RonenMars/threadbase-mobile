@@ -60,15 +60,18 @@ function renderContent(block: MessageContent, index: number, recycleKey: string)
 // across messages (ToolCard / ThinkingCard / DiffViewer / MessageBubble each
 // own `expanded` state). Threading the message id as `recycleKey` lets each
 // child use `useRecyclingState` to reset its state when the cell is reassigned.
-function MessageItem({ message }: { message: Message }) {
+function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
   const { t } = useTranslation('conversation')
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
+  // Bug 6 e2e: tag the final row so the Maestro flow can assert the last
+  // message lands above (not behind) the Export + Resume action bar.
+  const lastTestId = isLast ? 'conversation-last-message' : undefined
 
   if (hasToolOrDiff) {
     return (
-      <View style={styles.toolContainer}>
+      <View style={styles.toolContainer} testID={lastTestId}>
         {message.has_images ? (
           <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
         ) : null}
@@ -91,7 +94,7 @@ function MessageItem({ message }: { message: Message }) {
 
   if (message.content.length === 0) return null
   return (
-    <View>
+    <View testID={lastTestId}>
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
@@ -336,9 +339,12 @@ export default function ConversationDetailScreen() {
     await Share.share({ message: md })
   }, [conversation])
 
-  const renderItem = useCallback(({ item }: { item: Message }) => (
-    <MessageItem message={item} />
-  ), [])
+  const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => (
+    <MessageItem
+      message={item}
+      isLast={index === (conversation?.messages.length ?? 0) - 1}
+    />
+  ), [conversation?.messages.length])
 
   const handleFooterLayout = useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height
@@ -489,7 +495,7 @@ export default function ConversationDetailScreen() {
         </View>
       )}
 
-      <View style={styles.footer} onLayout={handleFooterLayout}>
+      <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
           <Text style={styles.shareBtnText}>{t('action.export')}</Text>
         </TouchableOpacity>
