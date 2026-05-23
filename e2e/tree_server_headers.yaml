@@ -1,0 +1,68 @@
+# Maestro E2E — Tree view server-header rows
+# Verifies that the tree-view session list emits a `server-header-<id>` row
+# above each server's section when 2+ servers are paired, and emits no header
+# when only 1 server is paired.
+#
+# Tree layout is the app default, so no layout switching is required.
+#
+# Requires: e2e/mock-server.js running on BOTH 7071 and 7072
+#   (start with `MOCK_PORTS=7071,7072 node e2e/mock-server.js`).
+# Usage: maestro test e2e/tree_server_headers.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# === Single-server case: only the onboarding-paired server is active ===
+# Tree view is the default layout. With exactly 1 server, no server-header
+# row should render. serverIdFromUrl('http://localhost:7071') = 'srv_ure6x8'.
+- assertNotVisible:
+    id: "server-header-srv_ure6x8"
+
+# === Multi-server case: pair a second mock server on :7072 ===
+# Deep-link straight into the add-server screen (avoids the settings UI,
+# which has no testIDs on the server modal).
+- openLink: "threadbase://onboarding?mode=add"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-server-url-input"
+    timeout: 8000
+
+- tapOn:
+    id: "onboarding-server-url-input"
+
+- eraseText: 100
+
+- inputText: "localhost:7072"
+
+- tapOn:
+    id: "onboarding-api-key-input"
+
+- inputText: "mock-key-456"
+
+# Tap the "Connect" button — no testID, target by visible label.
+- tapOn: "Connect"
+
+# iOS may show the "Save Password?" system dialog after secureTextEntry input.
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+
+# After pairing succeeds the screen routes back to the hub.
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+# Both server-header rows should now render (one per paired server).
+# serverIdFromUrl('http://localhost:7072') = 'srv_ure6x9'.
+- extendedWaitUntil:
+    visible:
+      id: "server-header-srv_ure6x8"
+    timeout: 8000
+
+- assertVisible:
+    id: "server-header-srv_ure6x9"
