@@ -1,0 +1,15 @@
+# Maestro E2E — Launch flow
+# Smoke test: app launches and reaches the hub.
+# On first run, walks the onboarding carousel. On subsequent runs the app
+# already has paired credentials in SecureStore (clearState does NOT wipe
+# Keychain) and lands on the hub directly. Both paths are handled by setup.
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/launch.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"

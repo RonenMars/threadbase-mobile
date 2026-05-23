@@ -75,6 +75,13 @@ const server = http.createServer((req, res) => {
     })
   }
 
+  // Stub profiles endpoint — used by useTBPair during onboarding handshake
+  // in production builds. Returning 200 with an empty profile is enough for
+  // the pair flow to advance past `handshake` into `paired`.
+  if (method === 'GET' && p === '/api/profiles') {
+    return json(res, 200, { profiles: [] })
+  }
+
   // Stub conversations count
   if (method === 'GET' && p === '/api/conversations/count') {
     return json(res, 200, { count: 2 })
