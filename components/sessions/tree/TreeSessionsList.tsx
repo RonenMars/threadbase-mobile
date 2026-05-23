@@ -254,6 +254,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
             if (item.kind === 'server-header') {
               return (
                 <ServerHeaderRow
+                  serverId={item.serverId}
                   serverLabel={item.serverLabel}
                   totalCount={item.totalCount}
                 />

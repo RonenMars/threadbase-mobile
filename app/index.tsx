@@ -534,7 +534,7 @@ function MergedClassicList({
         }}
         renderItem={({ item }) => {
           if (item.kind === 'header') {
-            return <ServerHeaderRow serverLabel={item.serverLabel} totalCount={item.totalCount} />
+            return <ServerHeaderRow serverId={item.serverId} serverLabel={item.serverLabel} totalCount={item.totalCount} />
           }
           if (item.kind === 'liveHeader') {
             return <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
