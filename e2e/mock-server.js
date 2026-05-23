@@ -52,6 +52,22 @@ const server = http.createServer((req, res) => {
     return json(res, 200, readFixture('conversations.json'))
   }
 
+  // Conversation detail — bug6 fixture has 30 messages to force vertical
+  // scroll past the bottom action bar (Export + Resume).
+  const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
+  if (method === 'GET' && conversationMatch) {
+    if (conversationMatch[1] === 'conv-many-messages') {
+      return json(res, 200, readFixture('conversation-detail-many.json'))
+    }
+    // Unknown conversations get an empty body — the screen renders the
+    // empty-state copy in that case.
+    return json(res, 200, {
+      meta: { id: conversationMatch[1], project_name: 'Empty conversation' },
+      messages: [],
+      message_pagination: { total: 0, before_index: -1, from_index: 0, has_more_older: false, next_before_index: null },
+    })
+  }
+
   const sessionMatch = p.match(/^\/api\/sessions\/([^/]+)$/)
   if (method === 'GET' && sessionMatch) {
     if (sessionMatch[1] === 'session-missing-path') {

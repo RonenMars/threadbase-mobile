@@ -1,0 +1,411 @@
+{
+  "meta": {
+    "id": "conv-many-messages",
+    "profile_id": "default",
+    "project_name": "Bug 6 e2e fixture",
+    "project_path": "/home/user/bug6-fixture",
+    "last_updated_at": "2026-05-20T10:29:00.000Z",
+    "message_count": 30,
+    "git_branch": "main",
+    "last_prompt": "Final question"
+  },
+  "messages": [
+    {
+      "message_index": 0,
+      "uuid": "uuid-0",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:00.000Z",
+      "text": "Question 1: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 1: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 1,
+      "uuid": "uuid-1",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:00.000Z",
+      "text": "Answer 2: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 2: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 2,
+      "uuid": "uuid-2",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:00.000Z",
+      "text": "Question 3: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 3: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 3,
+      "uuid": "uuid-3",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:03:00.000Z",
+      "text": "Answer 4: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 4: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 4,
+      "uuid": "uuid-4",
+      "role": "user",
+      "timestamp": "2026-05-20T10:04:00.000Z",
+      "text": "Question 5: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 5: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 5,
+      "uuid": "uuid-5",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:05:00.000Z",
+      "text": "Answer 6: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 6: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 6,
+      "uuid": "uuid-6",
+      "role": "user",
+      "timestamp": "2026-05-20T10:06:00.000Z",
+      "text": "Question 7: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 7: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 7,
+      "uuid": "uuid-7",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:07:00.000Z",
+      "text": "Answer 8: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 8: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 8,
+      "uuid": "uuid-8",
+      "role": "user",
+      "timestamp": "2026-05-20T10:08:00.000Z",
+      "text": "Question 9: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 9: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 9,
+      "uuid": "uuid-9",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:09:00.000Z",
+      "text": "Answer 10: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 10: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 10,
+      "uuid": "uuid-10",
+      "role": "user",
+      "timestamp": "2026-05-20T10:10:00.000Z",
+      "text": "Question 11: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 11: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 11,
+      "uuid": "uuid-11",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:11:00.000Z",
+      "text": "Answer 12: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 12: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 12,
+      "uuid": "uuid-12",
+      "role": "user",
+      "timestamp": "2026-05-20T10:12:00.000Z",
+      "text": "Question 13: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 13: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 13,
+      "uuid": "uuid-13",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:13:00.000Z",
+      "text": "Answer 14: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 14: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 14,
+      "uuid": "uuid-14",
+      "role": "user",
+      "timestamp": "2026-05-20T10:14:00.000Z",
+      "text": "Question 15: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 15: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 15,
+      "uuid": "uuid-15",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:15:00.000Z",
+      "text": "Answer 16: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 16: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 16,
+      "uuid": "uuid-16",
+      "role": "user",
+      "timestamp": "2026-05-20T10:16:00.000Z",
+      "text": "Question 17: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 17: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 17,
+      "uuid": "uuid-17",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:17:00.000Z",
+      "text": "Answer 18: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 18: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 18,
+      "uuid": "uuid-18",
+      "role": "user",
+      "timestamp": "2026-05-20T10:18:00.000Z",
+      "text": "Question 19: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 19: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 19,
+      "uuid": "uuid-19",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:19:00.000Z",
+      "text": "Answer 20: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 20: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 20,
+      "uuid": "uuid-20",
+      "role": "user",
+      "timestamp": "2026-05-20T10:20:00.000Z",
+      "text": "Question 21: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 21: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 21,
+      "uuid": "uuid-21",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:21:00.000Z",
+      "text": "Answer 22: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 22: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 22,
+      "uuid": "uuid-22",
+      "role": "user",
+      "timestamp": "2026-05-20T10:22:00.000Z",
+      "text": "Question 23: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 23: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 23,
+      "uuid": "uuid-23",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:23:00.000Z",
+      "text": "Answer 24: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 24: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 24,
+      "uuid": "uuid-24",
+      "role": "user",
+      "timestamp": "2026-05-20T10:24:00.000Z",
+      "text": "Question 25: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 25: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 25,
+      "uuid": "uuid-25",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:25:00.000Z",
+      "text": "Answer 26: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 26: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 26,
+      "uuid": "uuid-26",
+      "role": "user",
+      "timestamp": "2026-05-20T10:26:00.000Z",
+      "text": "Question 27: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 27: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 27,
+      "uuid": "uuid-27",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:27:00.000Z",
+      "text": "Answer 28: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer 28: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    },
+    {
+      "message_index": 28,
+      "uuid": "uuid-28",
+      "role": "user",
+      "timestamp": "2026-05-20T10:28:00.000Z",
+      "text": "Question 29: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question 29: tell me more about how the conversation list scrolls when there are many messages. Make this question long enough to fill multiple lines so the layout actually scrolls."
+        }
+      ]
+    },
+    {
+      "message_index": 29,
+      "uuid": "uuid-29",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:29:00.000Z",
+      "text": "Answer 30: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons.",
+      "content": [
+        {
+          "type": "text",
+          "text": "FINAL_MESSAGE_MARKER Answer 30: the conversation list scrolls vertically with FlashList. It reserves padding at the bottom equal to the action bar height so the last message stays visible above the Export and Resume buttons."
+        }
+      ]
+    }
+  ],
+  "message_pagination": {
+    "total": 30,
+    "before_index": -1,
+    "from_index": 0,
+    "has_more_older": false,
+    "next_before_index": null
+  }
+}
