@@ -96,7 +96,9 @@ export function ThemeStep({ onNext }: Props) {
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton onPress={onNext}>{t('notifications.continue')}</PrimaryButton>
+        <PrimaryButton testID="onboarding-theme-cta" onPress={onNext}>
+          {t('notifications.continue')}
+        </PrimaryButton>
       </View>
     </View>
   )

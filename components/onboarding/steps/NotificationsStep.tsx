@@ -143,7 +143,7 @@ export function NotificationsStep({ onNext }: Props) {
 
       <View style={styles.flex} />
 
-      <PrimaryButton onPress={onNext}>
+      <PrimaryButton testID="onboarding-notifications-cta" onPress={onNext}>
         {/* eslint-disable-next-line i18next/no-literal-string */}
         {enabled ? 'Continue' : "Skip — I'll watch the kanban"}
       </PrimaryButton>

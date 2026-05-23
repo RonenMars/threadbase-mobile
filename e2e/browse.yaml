@@ -1,0 +1,28 @@
+# Maestro E2E — Browse flow
+# Smoke test: from the hub, verify core navigation surface is mounted and
+# tappable (filter/sort button, new-session FAB).
+#
+# This intentionally does NOT navigate into a session detail. The project
+# group rows on the hub are React Native TouchableOpacity components whose
+# `testID` does not surface to iOS accessibility (it gets eaten by the
+# automatic a11y aggregation of nested <Text> children). Driving them
+# requires either an Android run, a refactor to wrap with View+accessible,
+# or coordinate-based taps — see e2e/README.md "Future work".
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/browse.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Hub chrome is mounted
+- assertVisible:
+    id: "hub-screen"
+
+# Filter & sort sheet opens
+- tapOn:
+    id: "filter-sort-button"
+
+- assertVisible:
+    id: "filter-sort-sheet"

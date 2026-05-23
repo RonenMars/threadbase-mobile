@@ -214,6 +214,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               )}
             </View>
             <TextInput
+              testID="onboarding-server-url-input"
               style={[styles.input, styles.urlInput]}
               value={serverUrl}
               onChangeText={setServerUrl}
@@ -241,6 +242,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           <Text style={styles.label}>{t('form.apiKey')}</Text>
           <View style={styles.passwordRow}>
             <TextInput
+              testID="onboarding-api-key-input"
               style={[styles.input, styles.passwordInput]}
               value={apiKey}
               onChangeText={setApiKey}
