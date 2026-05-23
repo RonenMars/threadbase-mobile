@@ -17,6 +17,19 @@ A companion mobile app for monitoring and controlling [Claude Code](https://clau
 
 ---
 
+## Roadmap & Backlog
+
+Forward-looking and in-progress work lives in two living docs:
+
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** — planned features (15 entries — original five plus a multi-agent / multi-project orchestration cluster: Mission Control, cross-session search, Live Activities, scheduled prompts, tagging, saved views, snippets, workspace sync, voice prompts, split view) plus an index of historical shipped features with links to their archived implementation plans.
+- **[docs/BACKLOG.md](docs/BACKLOG.md)** — open bug tickets with file pointers, recommended fixes, and a suggested next-up order. Shipped bugs stay listed for traceability.
+- **[docs/IDEAS.md](docs/IDEAS.md)** — staging ground for unprioritized feature ideas before they're promoted into ROADMAP.
+- **[docs/lessons/](docs/lessons/)** — hard-won findings from working on tb-mobile (root causes, platform gotchas, recurring traps). Add an entry whenever a non-obvious problem cost real time to diagnose.
+
+Historical implementation plans (one per shipped feature) are archived under [`docs/superpowers/plans/archive/`](docs/superpowers/plans/archive/) — useful when revisiting an area.
+
+---
+
 ## Tech Stack
 
 | Category | Technology |

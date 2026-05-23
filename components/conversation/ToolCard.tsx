@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { MessageContent } from '@/types/api'
@@ -19,11 +20,13 @@ type ToolResult = Extract<MessageContent, { type: 'tool_result' }>
 
 interface Props {
   block: ToolUse | ToolResult
+  /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
+  recycleKey?: string
 }
 
-export function ToolCard({ block }: Props) {
+export function ToolCard({ block, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
 
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
   const icon = TOOL_ICONS[toolName] ?? TOOL_ICONS.default

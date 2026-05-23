@@ -80,6 +80,11 @@ jest.mock('@shopify/flash-list', () => {
   return {
     __esModule: true,
     FlashList: React.forwardRef((props, ref) => React.createElement(FlatList, { ...props, ref })),
+    // Stubs for FlashList v2 hooks consumers (ToolCard, ThinkingCard, DiffViewer).
+    // Both reduce to plain React.useState under test: dep-based reset and
+    // layout notifications don't apply to a FlatList-based mock.
+    useRecyclingState: (initial) => React.useState(typeof initial === 'function' ? initial() : initial),
+    useLayoutState: (initial) => React.useState(typeof initial === 'function' ? initial() : initial),
   }
 })
 

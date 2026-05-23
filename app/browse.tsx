@@ -174,6 +174,23 @@ export default function BrowseScreen() {
     )
   }, [currentPath, newFolderName, createDir])
 
+  // Bug 14 fix: dismiss the entire modal stack first, then push the session
+  // route. The previous `router.dismiss()` + `router.push()` pattern raced —
+  // dismiss is async on modal-presentation routes, so the push could land
+  // before dismiss settled, leaving `browse` in the back stack. dismissAll()
+  // is a single deterministic clear, eliminating the race.
+  // Also fixes Bug 13: by the time this runs (from onSave/onSkip), the modal
+  // has already been unmounted via `setPendingSession(null)`, so the parent
+  // route teardown can no longer race with a still-mounted modal.
+  const navigateToNewSession = useCallback(
+    (session: { id: string; projectId?: string; projectPath?: string | null }) => {
+      router.dismissAll()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.push(buildSessionRoute(session, serverId ?? '') as any)
+    },
+    [router, serverId],
+  )
+
   const handleStartSession = useCallback(() => {
     const displayName = currentPath ? currentPath.split('/').pop() : '~'
     startSession.mutate(
@@ -188,9 +205,7 @@ export default function BrowseScreen() {
               projectPath: session.projectPath,
             })
           } else {
-            router.dismiss()
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            router.push(buildSessionRoute(session, serverId ?? '') as any)
+            navigateToNewSession(session)
           }
         },
         onError: (err) => {
@@ -198,7 +213,7 @@ export default function BrowseScreen() {
         },
       },
     )
-  }, [currentPath, serverId, startSession, router, askOnCreate])
+  }, [currentPath, serverId, startSession, askOnCreate, navigateToNewSession])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
@@ -214,9 +229,7 @@ export default function BrowseScreen() {
                 projectPath: session.projectPath,
               })
             } else {
-              router.dismiss()
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              router.push(buildSessionRoute(session, serverId ?? '') as any)
+              navigateToNewSession(session)
             }
           },
           onError: (err) => {
@@ -225,7 +238,7 @@ export default function BrowseScreen() {
         },
       )
     },
-    [serverId, startSession, router, askOnCreate],
+    [serverId, startSession, askOnCreate, navigateToNewSession],
   )
 
   const renderItem = useCallback(
@@ -394,14 +407,12 @@ export default function BrowseScreen() {
             renameSession.mutate({ sessionId: pendingSession.id, name })
             const dest = pendingSession
             setPendingSession(null)
-            router.dismiss()
-            router.push(`/session/${dest.id}?server=${dest.serverId}${dest.projectId ? `&projectId=${dest.projectId}` : ''}${dest.projectPath ? `&projectPath=${encodeURIComponent(dest.projectPath)}` : ''}`)
+            navigateToNewSession(dest)
           }}
           onSkip={() => {
             const dest = pendingSession
             setPendingSession(null)
-            router.dismiss()
-            router.push(`/session/${dest.id}?server=${dest.serverId}${dest.projectId ? `&projectId=${dest.projectId}` : ''}${dest.projectPath ? `&projectPath=${encodeURIComponent(dest.projectPath)}` : ''}`)
+            navigateToNewSession(dest)
           }}
           onDontAskAgain={() => {
             setAskOnCreate(false)

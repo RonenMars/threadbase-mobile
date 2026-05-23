@@ -92,9 +92,8 @@
     "unpin": "Unpin"
   },
   "manageFavorites": {
-    "back": "Back",
-    "title": "Manage Favorites",
     "empty": "No favorites pinned yet.",
-    "emptySub": "Tap a chip in the strip and choose \"Pin to Favorites\"."
+    "emptySub": "Tap a chip in the strip and choose \"Pin to Favorites\".",
+    "addToFavorites": "Add to favorites"
   }
 }

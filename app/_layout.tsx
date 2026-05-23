@@ -196,6 +196,10 @@ function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
         options={{ title: 'Settings', headerShown: true }}
       />
       <Stack.Screen
+        name="manage-favorites"
+        options={{ title: 'Manage Favorites', headerShown: true }}
+      />
+      <Stack.Screen
         name="project/[id]"
         options={({ route }) => {
           const params = route.params as { id?: string; path?: string }

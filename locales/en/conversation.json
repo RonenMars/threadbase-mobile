@@ -17,7 +17,9 @@
     "export": "Export",
     "copyPatch": "Copy patch",
     "showAllLines": "Show all {{count}} lines",
-    "copyCode": "Copy"
+    "copyCode": "Copy",
+    "copiedCode": "Copied",
+    "scrollToBottom": "Scroll to bottom"
   },
   "message": {
     "code": "Code",

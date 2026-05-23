@@ -7,6 +7,21 @@
     "exchanging": "Exchanging pair token…",
     "errorTitle": "Pairing failed",
     "tryAgain": "Try again",
-    "reticleHint": "Point at the QR shown by your server"
+    "reticleHint": "Point at the QR shown by your server",
+    "errors": {
+      "generic": "Pairing failed.",
+      "uri": {
+        "invalid": "That QR doesn't look like a Threadbase pair code.",
+        "expired": "This pair QR has expired. Run tb pair on your server again.",
+        "bad-server-url": "The server URL in this QR is not valid."
+      },
+      "exchange": {
+        "token": "Pair token rejected — generate a fresh QR on your server.",
+        "rate-limited": "Too many attempts. Wait a minute and try again.",
+        "network": "Could not reach the server: {{message}}",
+        "decrypt": "Server response could not be decrypted.",
+        "server": "{{message}}"
+      }
+    }
   }
 }

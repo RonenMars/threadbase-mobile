@@ -14,10 +14,14 @@ export interface ExchangeResult {
   machineName: string | null
 }
 
+export type PairUriErrorCode = 'invalid' | 'expired' | 'bad-server-url'
+
 export class PairUriError extends Error {
-  constructor(message: string) {
+  readonly code: PairUriErrorCode
+  constructor(code: PairUriErrorCode, message: string) {
     super(message)
     this.name = 'PairUriError'
+    this.code = code
   }
 }
 
@@ -30,27 +34,50 @@ export class PairExchangeError extends Error {
   }
 }
 
+const PAIR_EXCHANGE_TIMEOUT_MS = 15_000
+
 export function parsePairUri(raw: string): PairUri {
   let parsed: URL
   try {
     parsed = new URL(raw)
   } catch {
-    throw new PairUriError('Not a URL')
+    throw new PairUriError('invalid', 'Not a URL')
   }
   if (parsed.protocol !== 'threadbase:') {
-    throw new PairUriError(`Unexpected scheme: ${parsed.protocol}`)
+    throw new PairUriError('invalid', `Unexpected scheme: ${parsed.protocol}`)
   }
   if (parsed.host !== 'pair' && parsed.pathname.replace(/^\/+/, '') !== 'pair') {
-    throw new PairUriError('Expected threadbase://pair?...')
+    throw new PairUriError('invalid', 'Expected threadbase://pair?...')
   }
   const url = parsed.searchParams.get('url')
   const token = parsed.searchParams.get('token')
   if (!url || !token) {
-    throw new PairUriError('Missing url or token in pair URI')
+    throw new PairUriError('invalid', 'Missing url or token in pair URI')
   }
+  assertHttpServerUrl(url)
   const expRaw = parsed.searchParams.get('exp')
   const exp = expRaw ? Number.parseInt(expRaw, 10) : undefined
-  return { url, token, exp: Number.isFinite(exp) ? (exp as number) : undefined }
+  const parsedExp = Number.isFinite(exp) ? (exp as number) : undefined
+  assertNotExpired(parsedExp)
+  return { url, token, exp: parsedExp }
+}
+
+function assertHttpServerUrl(raw: string): void {
+  let server: URL
+  try {
+    server = new URL(raw)
+  } catch {
+    throw new PairUriError('bad-server-url', 'Invalid server URL in pair QR')
+  }
+  if (server.protocol !== 'http:' && server.protocol !== 'https:') {
+    throw new PairUriError('bad-server-url', 'Server URL must use http or https')
+  }
+}
+
+function assertNotExpired(exp?: number): void {
+  if (exp != null && Date.now() / 1000 > exp) {
+    throw new PairUriError('expired', 'Pair QR expired')
+  }
 }
 
 export async function exchangeToken({
@@ -60,9 +87,13 @@ export async function exchangeToken({
   url: string
   token: string
 }): Promise<ExchangeResult> {
+  assertHttpServerUrl(url)
   const trimmedUrl = url.replace(/\/$/, '')
   const recipient = nacl.box.keyPair()
   const clientPublicKey = naclUtil.encodeBase64(recipient.publicKey)
+
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => timeoutController.abort(), PAIR_EXCHANGE_TIMEOUT_MS)
 
   let res: Response
   try {
@@ -70,10 +101,16 @@ export async function exchangeToken({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, clientPublicKey }),
+      signal: timeoutController.signal,
     })
   } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new PairExchangeError('network', 'Request timed out')
+    }
     const message = err instanceof Error ? err.message : 'Network error'
     throw new PairExchangeError('network', message)
+  } finally {
+    clearTimeout(timeoutId)
   }
 
   if (res.status === 429) {
@@ -114,8 +151,11 @@ export async function exchangeToken({
     throw new PairExchangeError('decrypt', 'Could not decrypt sealed api key')
   }
 
+  const resolvedUrl = body.publicUrl ?? trimmedUrl
+  assertHttpServerUrl(resolvedUrl)
+
   return {
-    url: body.publicUrl ?? trimmedUrl,
+    url: resolvedUrl,
     apiKey: naclUtil.encodeUTF8(plain),
     publicUrl: body.publicUrl ?? null,
     machineName: body.machineName ?? null,
