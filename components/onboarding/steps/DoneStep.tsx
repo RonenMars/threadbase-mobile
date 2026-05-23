@@ -118,7 +118,7 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
         </View>
       </View>
 
-      <PrimaryButton onPress={onEnter} showIcon={false}>
+      <PrimaryButton testID="onboarding-done-cta" onPress={onEnter} showIcon={false}>
         {paired ? 'Enter Threadbase' : 'Enter without pairing'}
       </PrimaryButton>
       <View style={{ height: 14 }} />

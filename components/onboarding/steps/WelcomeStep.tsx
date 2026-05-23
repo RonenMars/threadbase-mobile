@@ -59,7 +59,9 @@ export function WelcomeStep({ onNext }: Props) {
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton onPress={onNext}>{t('welcome.cta')}</PrimaryButton>
+        <PrimaryButton testID="onboarding-welcome-cta" onPress={onNext}>
+          {t('welcome.cta')}
+        </PrimaryButton>
       </View>
     </View>
   )

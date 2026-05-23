@@ -139,7 +139,7 @@ export function ValuePropStep({ onNext }: Props) {
 
       <View style={styles.flex} />
 
-      <PrimaryButton onPress={onNext}>{t('valueProp.cta')}</PrimaryButton>
+      <PrimaryButton testID="onboarding-valueprop-cta" onPress={onNext}>{t('valueProp.cta')}</PrimaryButton>
       <View style={{ height: 14 }} />
     </View>
   )

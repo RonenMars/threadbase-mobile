@@ -86,9 +86,13 @@ export function TourStep({ onDone }: Props) {
       </View>
 
       {isLast ? (
-        <PrimaryButton onPress={onDone}>{t('tour.dropIn')}</PrimaryButton>
+        <PrimaryButton testID="onboarding-tour-cta" onPress={onDone}>
+          {t('tour.dropIn')}
+        </PrimaryButton>
       ) : (
-        <PrimaryButton onPress={() => setN(n + 1)}>{t('tour.nextConcept')}</PrimaryButton>
+        <PrimaryButton testID="onboarding-tour-cta" onPress={() => setN(n + 1)}>
+          {t('tour.nextConcept')}
+        </PrimaryButton>
       )}
       <View style={{ height: 14 }} />
     </View>

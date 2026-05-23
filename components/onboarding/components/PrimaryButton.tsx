@@ -8,13 +8,15 @@ interface Props {
   onPress?: () => void
   disabled?: boolean
   showIcon?: boolean
+  testID?: string
 }
 
-export function PrimaryButton({ children, onPress, disabled, showIcon = true }: Props) {
+export function PrimaryButton({ children, onPress, disabled, showIcon = true, testID }: Props) {
   const bg = disabled ? colors.ink3 : colors.blue500
   const fg = disabled ? colors.fg3 : '#0a1424'
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled}
       style={[styles.btn, { backgroundColor: bg }, !disabled && styles.shadow]}

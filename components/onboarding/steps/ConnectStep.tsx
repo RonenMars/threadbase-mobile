@@ -33,7 +33,7 @@ function colorForKind(k: PairLogKind): string {
 
 export function ConnectStep({ onPaired, onAdvance }: Props) {
   const { t } = useTranslation('onboarding')
-  const [url, setUrl] = useState('https://threadbase.local:7331')
+  const [url, setUrl] = useState('')
   const [token, setToken] = useState('')
   const [mode, setMode] = useState<Mode>('choose')
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -94,6 +94,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="onboarding-connect-paste-card"
           style={styles.modeCard}
           onPress={() => setMode('manual')}
           activeOpacity={0.85}
@@ -172,6 +173,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <View style={styles.inputRow}>
           <Text style={styles.prompt}>›</Text>
           <TextInput
+            testID="onboarding-connect-url-input"
             value={url}
             onChangeText={setUrl}
             spellCheck={false}
@@ -180,6 +182,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             keyboardType="url"
             style={styles.input}
             editable={!busy}
+            placeholder="https://threadbase.local:7331"
             placeholderTextColor={colors.fg4}
           />
         </View>
@@ -189,6 +192,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <View style={styles.inputRow}>
           <Text style={styles.prompt}>›</Text>
           <TextInput
+            testID="onboarding-connect-token-input"
             value={token}
             onChangeText={setToken}
             spellCheck={false}
@@ -242,7 +246,11 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
       <View style={styles.flex} />
 
-      <PrimaryButton onPress={handleConnect} disabled={!valid || busy}>
+      <PrimaryButton
+        testID="onboarding-connect-handshake-cta"
+        onPress={handleConnect}
+        disabled={!valid || busy}
+      >
         {ctaLabel}
       </PrimaryButton>
       <View style={{ height: 14 }} />
