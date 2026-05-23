@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { MessageContent } from '@/types/api'
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function ThinkingCard({ block }: Props) {
+  const { t } = useTranslation('conversation')
   const [expanded, setExpanded] = useState(false)
   const isRedacted = !block.thinking && !!block.signature
 
@@ -20,13 +22,13 @@ export function ThinkingCard({ block }: Props) {
         onPress={() => setExpanded((v) => !v)}
         accessibilityLabel={expanded ? 'Collapse reasoning' : 'Expand reasoning'}
       >
-        <Text style={styles.label}>Reasoning</Text>
+        <Text style={styles.label}>{t('thinking.label')}</Text>
         <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
       </TouchableOpacity>
       {expanded ? (
         <View style={styles.body}>
           {isRedacted ? (
-            <Text style={styles.redacted}>Reasoning redacted</Text>
+            <Text style={styles.redacted}>{t('thinking.redacted')}</Text>
           ) : (
             <Text style={styles.content}>{block.thinking}</Text>
           )}

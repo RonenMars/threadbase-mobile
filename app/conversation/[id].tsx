@@ -56,6 +56,7 @@ function renderContent(block: MessageContent, index: number) {
 }
 
 function MessageItemInner({ message }: { message: Message }) {
+  const { t } = useTranslation('conversation')
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
@@ -64,7 +65,7 @@ function MessageItemInner({ message }: { message: Message }) {
     return (
       <View style={styles.toolContainer}>
         {message.has_images ? (
-          <Text style={styles.imageBadge}>📎 Contains image</Text>
+          <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
         ) : null}
         {message.content.map((block, i) => {
           if (block.type === 'text') {
@@ -81,7 +82,7 @@ function MessageItemInner({ message }: { message: Message }) {
   return (
     <View>
       {message.has_images ? (
-        <Text style={styles.imageBadge}>📎 Contains image</Text>
+        <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
       <MessageBubble message={message} />
     </View>

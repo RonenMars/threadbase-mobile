@@ -57,7 +57,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
       setIsDirty(false)
       setShowApiKey(false)
     }
-  }, [visible, serverId])
+  }, [visible, serverId, server])
 
   function markDirty() {
     if (!isDirty) setIsDirty(true)

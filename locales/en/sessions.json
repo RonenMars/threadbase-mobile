@@ -76,5 +76,25 @@
     "headerLive_other": "LIVE · {{count}}",
     "headerIdle_one": "IDLE · {{count}}",
     "headerIdle_other": "IDLE · {{count}}"
+  },
+  "rename": {
+    "title": "Rename session",
+    "placeholder": "Session name",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "preview": {
+    "liveUnavailable": "Live session preview not available — open the session to see the live terminal.",
+    "noMessages": "No messages yet.",
+    "openSession": "Open session",
+    "openConversation": "Open conversation",
+    "pin": "Pin",
+    "unpin": "Unpin"
+  },
+  "manageFavorites": {
+    "back": "Back",
+    "title": "Manage Favorites",
+    "empty": "No favorites pinned yet.",
+    "emptySub": "Tap a chip in the strip and choose \"Pin to Favorites\"."
   }
 }

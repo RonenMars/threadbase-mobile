@@ -10,5 +10,19 @@
   },
   "app": {
     "title": "Threadbase"
+  },
+  "quickAccess": {
+    "newSessionHere": "New Session here",
+    "browseDirectory": "Browse directory",
+    "openSession": "Open session",
+    "unpinFromFavorites": "Unpin from Favorites",
+    "pinToFavorites": "Pin to Favorites",
+    "cancel": "Cancel",
+    "loadMore": "+ {{count}} more",
+    "emptyFavorites": "No favorites yet — long-press an item to pin it.",
+    "pairServer": "Pair a server to see {{tab}}.",
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load — tap to retry.",
+    "nothing": "Nothing yet."
   }
 }

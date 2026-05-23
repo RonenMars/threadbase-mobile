@@ -18,6 +18,8 @@ export function ProgressBar({ loaded, total, label, isCounting = false }: Props)
       duration: 200,
       useNativeDriver: false,
     }).start()
+    // animWidth is a stable Animated.Value ref from useRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress])
 
   return (

@@ -56,8 +56,10 @@ export function TourStep({ onDone }: Props) {
     <View style={styles.root}>
       <View style={styles.eyebrowRow}>
         <Text style={styles.eyebrow}>
-          {'>'} 04 / TOUR · {String(n + 1).padStart(2, '0')}/
-          {String(CONCEPTS.length).padStart(2, '0')}
+          {t('tour.eyebrowProgress', {
+            current: String(n + 1).padStart(2, '0'),
+            total: String(CONCEPTS.length).padStart(2, '0'),
+          })}
         </Text>
         <Text style={styles.tag}>{concept.tag}</Text>
       </View>

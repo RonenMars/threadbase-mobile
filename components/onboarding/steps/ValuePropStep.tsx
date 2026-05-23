@@ -70,10 +70,8 @@ export function ValuePropStep({ onNext }: Props) {
       <Text style={styles.eyebrow}>{'>'} 01 / WHY</Text>
 
       <Text style={styles.headline}>
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        Your laptop is the runtime.{' '}
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.headlineMuted}>Your phone is the cockpit.</Text>
+        {t('valueProp.headlineMain')}{' '}
+        <Text style={styles.headlineMuted}>{t('valueProp.headlineMuted')}</Text>
       </Text>
 
       <View style={styles.diagram}>
@@ -110,14 +108,12 @@ export function ValuePropStep({ onNext }: Props) {
             </Svg>
             <View style={[styles.connectorLabel, styles.connectorLabelTop]}>
               <Text style={[styles.connectorLabelText, { color: colors.blue400 }]}>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
-                prompts ▸
+                {t('valueProp.labelPrompts')}
               </Text>
             </View>
             <View style={[styles.connectorLabel, styles.connectorLabelBottom]}>
               <Text style={[styles.connectorLabelText, { color: colors.amber400 }]}>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
-                ◂ stdout
+                {t('valueProp.labelStdout')}
               </Text>
             </View>
           </View>

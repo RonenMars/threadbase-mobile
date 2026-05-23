@@ -6,7 +6,7 @@ declare module 'react-test-renderer' {
     interface ReactTestRendererJSON {
       type: string
       props: Record<string, unknown>
-      children: null | Array<string | ReactTestRendererJSON>
+      children: null | (string | ReactTestRendererJSON)[]
     }
 
     interface ReactTestRenderer {
@@ -19,7 +19,7 @@ declare module 'react-test-renderer' {
     interface ReactTestInstance {
       type: unknown
       props: Record<string, unknown>
-      children: Array<ReactTestInstance | string>
+      children: (ReactTestInstance | string)[]
       findAllByType(type: unknown): ReactTestInstance[]
     }
 

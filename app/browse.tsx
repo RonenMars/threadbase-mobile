@@ -129,7 +129,7 @@ export default function BrowseScreen() {
           )
         : undefined,
     })
-  }, [currentPath, navigation, goBack])
+  }, [currentPath, navigation, goBack, t])
 
   // Swipe from left edge to go back
   const swipeBack = Gesture.Pan()

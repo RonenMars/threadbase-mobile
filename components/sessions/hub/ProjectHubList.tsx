@@ -166,17 +166,6 @@ export function ProjectHubList({
     [],
   )
 
-  const renderGroup = useCallback(
-    ({ item }: { item: ProjectGroup }) => (
-      <ProjectHubCard
-        group={item}
-        isOpen={openIds.has(item.projectId)}
-        onToggle={() => toggleOpen(item.projectId)}
-      />
-    ),
-    [openIds, toggleOpen],
-  )
-
   const showSearch = searchOpen && debouncedQuery.length > 0
 
   type HubFlatItem =

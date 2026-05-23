@@ -14,7 +14,7 @@ import {
   RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter, useFocusEffect } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
@@ -76,6 +76,8 @@ export default function ProjectsHub() {
       displayedIds: displayedServerIds,
       sessionsLayout,
     })
+    // Mount-only diagnostic — captures the initial snapshot, must not re-fire on changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Connection status
@@ -503,7 +505,7 @@ function MergedClassicList({
         </Text>
       </TouchableOpacity>
     ),
-    [router],
+    [router, t],
   )
 
   return (
