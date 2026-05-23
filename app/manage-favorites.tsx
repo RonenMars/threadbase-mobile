@@ -1,31 +1,48 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { ArrowLeft, DotsSixVertical, Folder, Lightning, Trash } from 'phosphor-react-native'
+import { DotsSixVertical, Folder, Lightning, Trash } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { useQuickAccessStore } from '@/stores/quickAccess'
-import { dark, font, spacing } from '@/constants/theme'
+import { dark, font, radius, spacing } from '@/constants/theme'
+import type { MultiConversation } from '@/types/api'
 
 export default function ManageFavoritesScreen() {
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const { favorites, unpinItem } = useQuickAccessStore()
+  const queryClient = useQueryClient()
+
+  // Peek at the React Query cache populated by the Hub's useEagerConversations.
+  // No network call: just read whatever is already there. If the Hub hasn't
+  // been visited this session, the cache will be empty and we fall back to
+  // the static "long-press a chip" copy — which is the right thing to show.
+  const hasAnyConversations = useMemo(() => {
+    const entries = queryClient.getQueriesData<MultiConversation[]>({
+      queryKey: ['conversations-eager'],
+    })
+    return entries.some(([, data]) => Array.isArray(data) && data.length > 0)
+  }, [queryClient])
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
-          <ArrowLeft size={20} color={dark.text.accent} />
-          <Text style={styles.backLabel}>{t('manageFavorites.back')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{t('manageFavorites.title')}</Text>
-      </View>
-
+    <SafeAreaView style={styles.container} edges={[]}>
       {favorites.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>{t('manageFavorites.empty')}</Text>
-          <Text style={styles.emptySubText}>{t('manageFavorites.emptySub')}</Text>
+          {hasAnyConversations ? (
+            <Pressable
+              onPress={() => router.push('/')}
+              style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed]}
+            >
+              <Text style={styles.primaryBtnText}>{t('manageFavorites.addToFavorites')}</Text>
+            </Pressable>
+          ) : (
+            <>
+              <Text style={styles.emptyText}>{t('manageFavorites.empty')}</Text>
+              <Text style={styles.emptySubText}>{t('manageFavorites.emptySub')}</Text>
+            </>
+          )}
         </View>
       ) : (
         <FlatList
@@ -53,18 +70,6 @@ export default function ManageFavoritesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dark.bg.primary },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderColor: dark.border,
-    gap: spacing.sm,
-  },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backLabel: { color: dark.text.accent, fontSize: font.base },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '700', flex: 1 },
   list: { padding: spacing.sm },
   row: {
     flexDirection: 'row',
@@ -83,4 +88,12 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   emptyText: { color: dark.text.primary, fontSize: font.base, fontWeight: '600', marginBottom: spacing.xs },
   emptySubText: { color: dark.text.secondary, fontSize: font.sm, textAlign: 'center' },
+  primaryBtn: {
+    backgroundColor: dark.text.accent,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  primaryBtnPressed: { opacity: 0.7 },
+  primaryBtnText: { color: '#fff', fontSize: font.base, fontWeight: '700' },
 })
