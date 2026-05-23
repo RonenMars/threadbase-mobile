@@ -73,6 +73,7 @@ function JigglingRow({ server, index, drag, isActive, isEditingOrder }: Jiggling
         disabled={isActive}
         style={[styles.row, isActive && styles.rowActive]}
         activeOpacity={0.8}
+        testID={`server-row-${server.id}`}
       >
         <View style={styles.serverInfo}>
           <Text style={styles.serverLabel} numberOfLines={1}>
