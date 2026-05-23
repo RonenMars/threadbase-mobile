@@ -41,7 +41,7 @@ const LINE_STYLE: Record<LineType, { color: string; bg?: string }> = {
 
 const DividerRow = memo(function DividerRow({ text }: { text: string }) {
   return (
-    <View style={styles.dividerRow}>
+    <View style={styles.dividerRow} testID="divider-row">
       <Text style={styles.dividerLabel}>YOU</Text>
       <Text style={styles.dividerText} numberOfLines={1}>{text}</Text>
     </View>
@@ -59,7 +59,10 @@ const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
   const style = LINE_STYLE[type]
 
   return (
-    <View style={[styles.lineRow, style.bg ? { backgroundColor: style.bg } : undefined]}>
+    <View
+      style={[styles.lineRow, style.bg ? { backgroundColor: style.bg } : undefined]}
+      testID="terminal-line-row"
+    >
       <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
       <Text style={[styles.lineText, { color: style.color }]} selectable>{clean}</Text>
     </View>

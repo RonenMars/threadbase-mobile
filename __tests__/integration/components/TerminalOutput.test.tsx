@@ -115,4 +115,37 @@ describe('TerminalOutput – divider rows', () => {
     // Line number "1" should not appear — divider has no gutter
     expect(queryByText('1')).toBeNull()
   })
+
+  it('renders DividerRow with testID for divider entries', () => {
+    const lines: TerminalLine[] = [
+      { __divider: true, text: 'sent text' },
+    ]
+    const { queryAllByTestId } = render(
+      <TerminalOutput lines={lines} isStreaming={false} />
+    )
+    expect(queryAllByTestId('divider-row')).toHaveLength(1)
+    expect(queryAllByTestId('terminal-line-row')).toHaveLength(0)
+  })
+
+  it('renders LineRow with testID for string entries', () => {
+    const lines: TerminalLine[] = ['hello', 'world']
+    const { queryAllByTestId } = render(
+      <TerminalOutput lines={lines} isStreaming={false} />
+    )
+    expect(queryAllByTestId('terminal-line-row')).toHaveLength(2)
+    expect(queryAllByTestId('divider-row')).toHaveLength(0)
+  })
+
+  it('renders both DividerRow and LineRow for mixed entries', () => {
+    const lines: TerminalLine[] = [
+      'first',
+      { __divider: true, text: 'YOU said this' },
+      'second',
+    ]
+    const { queryAllByTestId } = render(
+      <TerminalOutput lines={lines} isStreaming={false} />
+    )
+    expect(queryAllByTestId('terminal-line-row')).toHaveLength(2)
+    expect(queryAllByTestId('divider-row')).toHaveLength(1)
+  })
 })
