@@ -16,6 +16,7 @@ jest.mock('expo-router', () => ({
     back: jest.fn(),
     navigate: jest.fn(),
     dismiss: jest.fn(),
+    dismissAll: jest.fn(),
   }),
   useLocalSearchParams: () => ({ server: mockServerParam.current }),
   useGlobalSearchParams: () => ({}),
