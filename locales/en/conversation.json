@@ -18,7 +18,8 @@
     "copyPatch": "Copy patch",
     "showAllLines": "Show all {{count}} lines",
     "copyCode": "Copy",
-    "copiedCode": "Copied"
+    "copiedCode": "Copied",
+    "scrollToBottom": "Scroll to bottom"
   },
   "message": {
     "code": "Code",

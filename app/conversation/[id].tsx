@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -12,10 +12,11 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Animated,
+  type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { InfoIcon } from 'phosphor-react-native'
+import { CaretDown, InfoIcon } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
@@ -125,10 +126,18 @@ export default function ConversationDetailScreen() {
   const initialScrollSettleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevScrollY = useRef(0)
   const contentHeightRef = useRef(0)
+  // Bug 10: hold the Top button visible for ~600ms after the last upward
+  // scroll frame so single-pixel downward decel jitter doesn't flicker it.
+  const lastUpwardAtRef = useRef(0)
+  const scrollTopHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
   const [firstLayoutDone, setFirstLayoutDone] = useState(false)
+  // Bug 6: measure the bottom action bar so the list's paddingBottom matches
+  // its height. The outer SafeAreaView already reserves the bottom inset, so
+  // we only feed bar height here (no additional safe-area math).
+  const [footerHeight, setFooterHeight] = useState(0)
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   const pulseAnim = useRef(new Animated.Value(1)).current
 
@@ -149,7 +158,23 @@ export default function ConversationDetailScreen() {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
     }
+    if (scrollTopHideTimerRef.current) {
+      clearTimeout(scrollTopHideTimerRef.current)
+      scrollTopHideTimerRef.current = null
+    }
+    lastUpwardAtRef.current = 0
   }, [id])
+
+  // Clean up the Bug 10 hide timer on unmount so we don't fire a setState
+  // after the screen has been popped from the stack.
+  useEffect(() => {
+    return () => {
+      if (scrollTopHideTimerRef.current) {
+        clearTimeout(scrollTopHideTimerRef.current)
+        scrollTopHideTimerRef.current = null
+      }
+    }
+  }, [])
 
   // Phase-2 buffer: hold the skeleton 0.8s after the scroll settles.
   useEffect(() => {
@@ -205,7 +230,28 @@ export default function ConversationDetailScreen() {
     const y = contentOffset.y
     const scrollingUp = y < prevScrollY.current
     prevScrollY.current = y
-    setShowScrollTop(scrollingUp && y > 100)
+
+    // Bug 10: keep the Top button visible for ~600ms after the most recent
+    // upward frame, so decel jitter doesn't flicker it off mid-gesture.
+    // Also suppress when near the top (no point offering "scroll to top").
+    const HOLD_MS = 600
+    if (scrollingUp) lastUpwardAtRef.current = Date.now()
+    const sinceUpward = Date.now() - lastUpwardAtRef.current
+    const shouldShowTop = sinceUpward < HOLD_MS && y > 100 && y >= 200
+    setShowScrollTop(shouldShowTop)
+    if (scrollTopHideTimerRef.current) {
+      clearTimeout(scrollTopHideTimerRef.current)
+      scrollTopHideTimerRef.current = null
+    }
+    if (shouldShowTop) {
+      // Re-evaluate visibility once the hold window expires so the button
+      // hides even without another scroll event.
+      scrollTopHideTimerRef.current = setTimeout(() => {
+        setShowScrollTop(false)
+        scrollTopHideTimerRef.current = null
+      }, HOLD_MS - sinceUpward)
+    }
+
     const distFromBottom = contentSize.height - y - layoutMeasurement.height
     setShowScrollBottom(distFromBottom > 100)
 
@@ -293,6 +339,16 @@ export default function ConversationDetailScreen() {
   const renderItem = useCallback(({ item }: { item: Message }) => (
     <MessageItem message={item} />
   ), [])
+
+  const handleFooterLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height
+    setFooterHeight((prev) => (Math.abs(prev - h) > 0.5 ? h : prev))
+  }, [])
+
+  const listContentStyle = useMemo(
+    () => [styles.listContent, { paddingBottom: footerHeight + spacing.lg }],
+    [footerHeight],
+  )
 
   // Distinguish row shapes so FlashList only recycles cells of the same kind.
   // Without this, a recycled cell from a tool-card row can leak its previous
@@ -389,7 +445,7 @@ export default function ConversationDetailScreen() {
             keyExtractor={(m) => m.id}
             renderItem={renderItem}
             getItemType={getItemType}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={listContentStyle}
             onContentSizeChange={handleContentSizeChange}
             onScroll={handleScroll}
             onScrollBeginDrag={handleScrollBeginDrag}
@@ -417,11 +473,13 @@ export default function ConversationDetailScreen() {
           ) : null}
           {showScrollBottom ? (
             <TouchableOpacity
-              style={[styles.scrollBtn, styles.scrollBtnBottom]}
+              style={styles.scrollBtnBottom}
               onPress={() => scrollToBottom(true)}
-              accessibilityLabel="Scroll to bottom"
+              accessibilityLabel={t('action.scrollToBottom')}
+              accessibilityRole="button"
+              activeOpacity={0.75}
             >
-              <Text style={styles.scrollBtnText}>{t('common:nav.bottom')}</Text>
+              <CaretDown size={20} color="#fff" weight="bold" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -431,7 +489,7 @@ export default function ConversationDetailScreen() {
         </View>
       )}
 
-      <View style={styles.footer}>
+      <View style={styles.footer} onLayout={handleFooterLayout}>
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
           <Text style={styles.shareBtnText}>{t('action.export')}</Text>
         </TouchableOpacity>
@@ -507,7 +565,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   scrollBtnTop: { top: spacing.md },
-  scrollBtnBottom: { bottom: spacing.md },
+  // Bug 11: circular FAB-style bottom-right button. Sits inside the
+  // listWrapper, which ends at the top of the footer bar, so `spacing.md`
+  // already clears the Export + Resume row.
+  scrollBtnBottom: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: dark.text.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   scrollBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
   toolContainer: { paddingHorizontal: spacing.md, gap: spacing.xs, marginVertical: spacing.xs },
   imageBadge: { color: dark.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
