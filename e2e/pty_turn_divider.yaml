@@ -1,0 +1,41 @@
+# Maestro E2E — PTY Turn Divider smoke
+# Verifies the PTY session screen mounts the terminal output container
+# and the compose input area. The injected "YOU →" divider rows are NOT
+# asserted here because the mock server does not support WebSocket
+# upgrades (see e2e/README.md → "What it does NOT cover"); driving the
+# real divider injection requires a real backend that streams
+# terminal_output frames. The testIDs `terminal-output`, `divider-row`,
+# and `terminal-line-row` are wired so a future real-backend flow can
+# extend this YAML to assert divider injection without re-instrumenting.
+#
+# Strategy: openLink with the threadbase:// deep link targets the
+# session/[id] route directly, bypassing the hub project-row tap
+# (which is undrivable on iOS — see e2e/README.md "Known limits").
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/pty_turn_divider.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Hub chrome is mounted
+- assertVisible:
+    id: "hub-screen"
+
+# Deep-link into the PTY session (ptyAttached: true in fixtures/sessions.json)
+- openLink: "threadbase:///session/session-abc123"
+
+# Session detail screen is mounted
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+# Terminal output container is mounted
+- assertVisible:
+    id: "terminal-output"
+
+# Compose input is present
+- assertVisible:
+    id: "message-input"
