@@ -10,6 +10,8 @@ import { ServerRootRow } from './ServerRootRow'
 import { ServerHeaderRow } from './ServerHeaderRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
+import { SessionCard } from '@/components/sessions/SessionCard'
 import { useServersStore } from '@/stores/servers'
 import { styles } from './TreeSessionsList.styles'
 import { searchStyles } from '../SearchStyles'
@@ -149,8 +151,22 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
 
   const effectiveExpandedPaths = useMemo(() => {
     const merged = new Set(expandedPaths)
+    // Auto-expand the single-root case as before.
     for (const { singleRootPath } of serverTrees) {
       if (singleRootPath) merged.add(singleRootPath)
+    }
+    // Auto-expand the dominant top-level child when one root holds an
+    // overwhelming majority of items (e.g. /Users/<me>/* on a personal Mac).
+    // Without this, all live sessions sit collapsed under that root and the
+    // hub looks empty even when it isn't. Threshold of 80% balances "obvious
+    // dominant root" against "two roots of comparable size".
+    for (const { tree } of serverTrees) {
+      if (tree.totalCount === 0 || tree.children.size <= 1) continue
+      for (const child of tree.children.values()) {
+        if (child.totalCount / tree.totalCount >= 0.8) {
+          merged.add(child.fullPath)
+        }
+      }
     }
     return merged
   }, [expandedPaths, serverTrees])
@@ -189,6 +205,26 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
   const handleSelectLeaf = useCallback((node: TreeNode, serverId: string) => {
     setSelectedDrill({ node, serverId })
   }, [])
+
+  // Surface sessions above the tree so live + recently-used sessions remain
+  // visible regardless of where they nest under the path tree (otherwise a
+  // user with everything under /Users/<me>/... sees a collapsed root and
+  // wonders where their sessions went). Computed before any conditional return
+  // to keep hook order stable.
+  const liveSessionsBlock = useMemo(() => {
+    if (sessions.length === 0) return null
+    const hasLive = sessions.some(
+      (s) => s.status === 'running' || s.status === 'waiting_input',
+    )
+    return (
+      <View style={{ marginBottom: 4 }}>
+        <LiveSessionsHeader count={sessions.length} hasLive={hasLive} />
+        {sessions.map((s) => (
+          <SessionCard key={`${s.serverId}::${s.id}`} session={s} />
+        ))}
+      </View>
+    )
+  }, [sessions])
 
   if (selectedDrill && !searchOpen) {
     return (
@@ -289,6 +325,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
             />
           }
           contentContainerStyle={flatItems.length === 0 ? styles.emptyContainer : styles.listContent}
+          ListHeaderComponent={liveSessionsBlock}
           ListEmptyComponent={
             <Text style={styles.emptyText}>{t('list.emptyProjects')}</Text>
           }
