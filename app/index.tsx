@@ -223,7 +223,7 @@ export default function ProjectsHub() {
   const browseHref = (serverId: string, path?: string) => {
     const params = new URLSearchParams({ server: serverId })
     if (path) params.set('path', path)
-    return `/browse?${params.toString()}`
+    return `/browse?${params.toString()}` as `/browse?${string}`
   }
 
   const handleFABPress = () => {
