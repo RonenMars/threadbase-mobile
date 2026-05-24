@@ -61,6 +61,7 @@ interface RawProjectChatItem {
 }
 
 interface RawListProjectChatsResponse {
+  projectChats?: RawProjectChatItem[]
   items?: RawProjectChatItem[]
   last_conversation_id?: string | null
   lastConversationId?: string | null
@@ -146,7 +147,7 @@ function normalizeResponse(
     }
   }
   return {
-    items: (raw.items ?? [])
+    items: (raw.projectChats ?? raw.items ?? [])
       .map((it) => normalizeItem(it, serverId, serverLabel))
       .filter((x): x is ProjectChat => x !== null),
     lastConversationId: raw.lastConversationId ?? raw.last_conversation_id ?? null,

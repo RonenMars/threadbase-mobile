@@ -35,7 +35,35 @@ beforeEach(() => {
 })
 
 describe('listProjectChats', () => {
-  it('unwraps the items envelope', async () => {
+  it('unwraps the projectChats envelope sent by the streamer', async () => {
+    mockFetch.mockResolvedValueOnce(
+      ok({
+        projectChats: [
+          {
+            type: 'session',
+            id: 's1',
+            projectId: 'p1',
+            projectPath: '/foo',
+            title: 'Foo',
+            latestMessageAt: '2026-05-06T10:00:00Z',
+            status: 'active',
+            source: 'session-store',
+          },
+        ],
+      }),
+    )
+
+    const resp = await listProjectChats({ serverId: 'srv_test' })
+
+    expect(resp.items).toHaveLength(1)
+    expect(resp.items[0]).toMatchObject({
+      type: 'session',
+      id: 's1',
+      projectId: 'p1',
+    })
+  })
+
+  it('unwraps the legacy items envelope', async () => {
     mockFetch.mockResolvedValueOnce(
       ok({
         items: [
