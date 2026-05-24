@@ -19,10 +19,20 @@ appId: com.ronenmars.threadbase
 - assertNotVisible:
     id: "server-header-srv_ure6x8"
 
+# Visual: single-server tree — no headers.
+- takeScreenshot: e2e/_artifacts/screenshots/tree-headers-01-single-server.png
+
 # === Multi-server case: pair a second mock server on :7072 ===
 # Deep-link straight into the add-server screen (avoids the settings UI,
 # which has no testIDs on the server modal).
 - openLink: "threadbase://onboarding?mode=add"
+
+# iOS shows a "Open in Threadbase?" system confirmation for incoming deeplinks.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
 
 - extendedWaitUntil:
     visible:
@@ -66,3 +76,6 @@ appId: com.ronenmars.threadbase
 
 - assertVisible:
     id: "server-header-srv_ure6x9"
+
+# Visual: multi-server tree — both headers rendered.
+- takeScreenshot: e2e/_artifacts/screenshots/tree-headers-02-multi-server.png
