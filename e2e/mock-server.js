@@ -52,6 +52,11 @@ const server = http.createServer((req, res) => {
     return json(res, 200, readFixture('conversations.json'))
   }
 
+  const conversationDetailMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
+  if (method === 'GET' && conversationDetailMatch) {
+    return json(res, 200, readFixture('conversation-detail.json'))
+  }
+
   const sessionMatch = p.match(/^\/api\/sessions\/([^/]+)$/)
   if (method === 'GET' && sessionMatch) {
     if (sessionMatch[1] === 'session-missing-path') {
