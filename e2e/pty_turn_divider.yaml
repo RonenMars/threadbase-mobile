@@ -26,6 +26,13 @@ appId: com.ronenmars.threadbase
 # Deep-link into the PTY session (ptyAttached: true in fixtures/sessions.json)
 - openLink: "threadbase:///session/session-abc123"
 
+# iOS shows a "Open in Threadbase?" system confirmation for incoming deeplinks.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
 # Session detail screen is mounted
 - extendedWaitUntil:
     visible:
@@ -39,3 +46,6 @@ appId: com.ronenmars.threadbase
 # Compose input is present
 - assertVisible:
     id: "message-input"
+
+# Visual: PTY session detail screen with terminal output + compose input.
+- takeScreenshot: e2e/_artifacts/screenshots/pty-divider-01-session-detail.png
