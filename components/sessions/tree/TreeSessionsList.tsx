@@ -111,7 +111,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     [router, servers, activeServerCount, debouncedQuery],
   )
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
-  const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null)
+  const [selectedDrill, setSelectedDrill] = useState<{ node: TreeNode; serverId: string } | null>(null)
 
   const serverTrees = useMemo((): ServerTree[] => {
     const serverIds: string[] = []
@@ -186,15 +186,16 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     })
   }, [serverTrees])
 
-  const handleSelectLeaf = useCallback((node: TreeNode) => {
-    setSelectedNode(node)
+  const handleSelectLeaf = useCallback((node: TreeNode, serverId: string) => {
+    setSelectedDrill({ node, serverId })
   }, [])
 
-  if (selectedNode && !searchOpen) {
+  if (selectedDrill && !searchOpen) {
     return (
       <DrillView
-        node={selectedNode}
-        onBack={() => setSelectedNode(null)}
+        node={selectedDrill.node}
+        serverId={selectedDrill.serverId}
+        onBack={() => setSelectedDrill(null)}
       />
     )
   }
@@ -265,7 +266,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
                 <ServerRootRow
                   node={item.node}
                   serverLabel={item.serverLabel}
-                  onSelectLeaf={handleSelectLeaf}
+                  onSelectLeaf={(node) => handleSelectLeaf(node, item.serverId)}
                 />
               )
             }
@@ -276,7 +277,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
                 depthOffset={item.depthOffset}
                 isExpanded={effectiveExpandedPaths.has(item.node.fullPath)}
                 onToggle={handleToggle}
-                onSelectLeaf={handleSelectLeaf}
+                onSelectLeaf={(node) => handleSelectLeaf(node, item.serverId)}
               />
             )
           }}
