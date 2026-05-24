@@ -16,7 +16,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { CaretDown, InfoIcon } from 'phosphor-react-native'
+import { CaretDown, ExportIcon, InfoIcon } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
@@ -496,9 +496,6 @@ export default function ConversationDetailScreen() {
       )}
 
       <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
-        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-          <Text style={styles.shareBtnText}>{t('action.export')}</Text>
-        </TouchableOpacity>
         <View style={styles.resumeWrapper}>
           {resumeSession.isError ? (
             <Text style={styles.resumeError} numberOfLines={2}>
@@ -525,6 +522,12 @@ export default function ConversationDetailScreen() {
         visible={infoVisible}
         onClose={() => setInfoVisible(false)}
         title="Conversation Info"
+        action={{
+          icon: ExportIcon,
+          accessibilityLabel: t('action.export'),
+          onPress: handleShare,
+          testID: 'export-action',
+        }}
         fields={[
           { label: 'ID', value: conversation.id },
           { label: 'Title', value: conversation.title },
@@ -573,7 +576,7 @@ const styles = StyleSheet.create({
   scrollBtnTop: { top: spacing.md },
   // Bug 11: circular FAB-style bottom-right button. Sits inside the
   // listWrapper, which ends at the top of the footer bar, so `spacing.md`
-  // already clears the Export + Resume row.
+  // already clears the Resume Session row.
   scrollBtnBottom: {
     position: 'absolute',
     right: spacing.md,
@@ -609,17 +612,6 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     textAlign: 'center',
   },
-  shareBtn: {
-    backgroundColor: dark.bg.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: dark.border,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shareBtnText: { color: dark.text.primary, fontSize: font.base },
   resumeBtn: {
     backgroundColor: dark.text.accent,
     borderRadius: 10,
