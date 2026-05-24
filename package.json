@@ -11,7 +11,7 @@
     "test:unit": "jest --ci --testPathPattern='__tests__/unit'",
     "test:integration": "jest --ci --testPathPattern='__tests__/integration'",
     "test:e2e": "jest --ci --testPathPattern='__tests__/e2e'",
-    "test:e2e:mock": "node e2e/check-sim.js && (MOCK_PORTS=7071,7072 node e2e/mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/launch.yaml e2e/browse.yaml e2e/bug6_bottom_bar_inset.yaml e2e/pty_turn_divider.yaml e2e/feat1_tree_drill_new_session.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
+    "test:e2e:mock": "node e2e/check-sim.js && (MOCK_PORTS=7071,7072 node e2e/mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/launch.yaml e2e/browse.yaml e2e/bug6_bottom_bar_inset.yaml e2e/pty_turn_divider.yaml e2e/feat1_tree_drill_new_session.yaml e2e/feat2_export_in_info_shelf.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },

@@ -62,15 +62,20 @@ function handleRequest(req, res) {
     return json(res, 200, readFixture('conversations.json'))
   }
 
-  // Conversation detail — bug6 fixture has 30 messages to force vertical
-  // scroll past the bottom action bar (Export + Resume).
+  // Conversation detail.
+  // - bug6 fixture (`conversation-detail-many.json`) has 30 messages to force
+  //   vertical scroll past the bottom action bar.
+  // - feat2 fixture (`conversation-detail.json`) is a minimal payload for the
+  //   export-in-info-shelf flow.
+  // - Unknown ids get an empty body — the screen renders the empty-state copy.
   const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
   if (method === 'GET' && conversationMatch) {
     if (conversationMatch[1] === 'conv-many-messages') {
       return json(res, 200, readFixture('conversation-detail-many.json'))
     }
-    // Unknown conversations get an empty body — the screen renders the
-    // empty-state copy in that case.
+    if (conversationMatch[1] === 'conv-111') {
+      return json(res, 200, readFixture('conversation-detail.json'))
+    }
     return json(res, 200, {
       meta: { id: conversationMatch[1], project_name: 'Empty conversation' },
       messages: [],
