@@ -92,6 +92,13 @@ const server = http.createServer((req, res) => {
     return json(res, 200, { count: 3 })
   }
 
+  // Stub browse — returns no subdirectories regardless of `path`. The Maestro
+  // flow only needs the breadcrumb row to render the requested cwd; it does
+  // not exercise directory navigation.
+  if (method === 'GET' && p === '/api/browse') {
+    return json(res, 200, { directories: [] })
+  }
+
   json(res, 404, { error: 'Not found' })
 })
 

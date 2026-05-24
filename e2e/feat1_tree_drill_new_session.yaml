@@ -1,0 +1,42 @@
+# Maestro E2E — Feature 1: tree drill pre-fills new-session cwd
+# Flow:
+#   1. Land on the hub (TreeView is the default sessionsLayout).
+#   2. Drill into a project leaf row.
+#   3. Tap the FAB to start a new session.
+#   4. Assert the browse screen opened with cwd pre-filled to the drilled path.
+#
+# Without this feature the FAB pushes /browse?server=<id> with no path, and
+# the breadcrumb would render only `~`. With the feature the breadcrumb
+# container testID becomes `browse-cwd-/home/user/my-project`.
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/feat1_tree_drill_new_session.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Hub chrome is mounted (TreeView is the default layout).
+- assertVisible:
+    id: "hub-screen"
+
+# Drill into the my-project leaf row in the tree. Fixture has three sessions
+# under /home/user/my-project so it is rendered as a leaf in the compacted
+# tree.
+- tapOn: "my-project"
+
+# DrillView mounts with a testID that encodes the drilled cwd. This is the
+# signal the FAB will read from the treeDrill store.
+- assertVisible:
+    id: "drill-cwd-/home/user/my-project"
+
+# Tap the FAB to start a new session.
+- tapOn:
+    id: "fab-new-session"
+
+# The browse screen mounts with the cwd pre-filled. Without the feature this
+# would be `browse-cwd-~` (the server default).
+- extendedWaitUntil:
+    visible:
+      id: "browse-cwd-/home/user/my-project"
+    timeout: 5000
