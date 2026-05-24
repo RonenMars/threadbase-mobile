@@ -1,21 +1,35 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, Text, TouchableOpacity, FlatList, SectionList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useTreeDrillStore } from '@/stores/treeDrill'
 import { DrillRow } from './DrillRow'
 import { styles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
 
 interface Props {
   node: TreeNode
+  serverId: string
   onBack: () => void
 }
 
-export function DrillView({ node, onBack }: Props) {
+export function DrillView({ node, serverId, onBack }: Props) {
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)
+  const setCurrentDrill = useTreeDrillStore((s) => s.setCurrent)
+
+  // Publish "current drill directory" while this view is mounted so the FAB
+  // (rendered by app/index) can pre-fill the new-session flow with the same
+  // path on the same server. Cleared on unmount so a back-out reverts to the
+  // server default behaviour.
+  useEffect(() => {
+    setCurrentDrill({ serverId, path: node.fullPath })
+    return () => {
+      setCurrentDrill(null)
+    }
+  }, [serverId, node.fullPath, setCurrentDrill])
 
   const sessionItems: DrillItem[] = node.sessions.map((s) => ({
     key: `session:${s.serverId}::${s.id}`,
@@ -46,7 +60,7 @@ export function DrillView({ node, onBack }: Props) {
   if (mergeChats) {
     const allItems = [...sessionItems, ...conversationItems]
     return (
-      <View style={styles.drill}>
+      <View style={styles.drill} testID={`drill-cwd-${node.fullPath}`}>
         {backRow}
         <FlatList
           data={allItems}
@@ -64,7 +78,7 @@ export function DrillView({ node, onBack }: Props) {
   ]
 
   return (
-    <View style={styles.drill}>
+    <View style={styles.drill} testID={`drill-cwd-${node.fullPath}`}>
       {backRow}
       <SectionList
         sections={sections}

@@ -53,8 +53,11 @@ function buildSessionRoute(
 export default function BrowseScreen() {
   const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
-  const { server: serverId } = useLocalSearchParams<{ server: string }>()
-  const [currentPath, setCurrentPath] = useState('')
+  const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
+  // Pre-fill cwd when the caller passes ?path=... (TreeView drill → FAB).
+  // `useLocalSearchParams` always returns a string for declared keys, so an
+  // omitted `path` arrives as undefined; we coalesce to '' (server default).
+  const [currentPath, setCurrentPath] = useState(initialPath ?? '')
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
@@ -266,7 +269,7 @@ export default function BrowseScreen() {
     <GestureDetector gesture={swipeBack}>
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Breadcrumbs */}
-      <View style={styles.breadcrumbs}>
+      <View style={styles.breadcrumbs} testID={`browse-cwd-${currentPath || '~'}`}>
         <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)}>
           <Text style={[styles.crumb, currentPath === '' && styles.crumbActive]}>~</Text>
         </TouchableOpacity>
