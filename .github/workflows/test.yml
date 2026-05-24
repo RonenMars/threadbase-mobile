@@ -128,7 +128,7 @@ jobs:
   e2e-maestro:
     name: E2E maestro (iOS)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
