@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, memo, useEffect } from 'react'
+import React, { useRef, useCallback, memo, useMemo, useEffect } from 'react'
 import {
   FlatList,
   Text,
@@ -125,16 +125,27 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
     return <LineRow line={item as string} index={index} />
   }, [])
 
+  // Stable keys by content + per-content occurrence. Positional keys broke
+  // memoisation: every WS frame's `.slice(-maxLines)` shifted indices, so
+  // FlatList unmounted and remounted every row instead of reusing them.
+  // Computed once per `lines` change so FlatList can call keyExtractor in any order.
+  const keys = useMemo(() => {
+    const counts = new Map<string, number>()
+    return lines.map((item) => {
+      const text = typeof item === 'string' ? `t:${item}` : `d:${item.text}`
+      const c = counts.get(text) ?? 0
+      counts.set(text, c + 1)
+      return `${text}#${c}`
+    })
+  }, [lines])
+  const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
+
   return (
     <View style={styles.container}>
       <FlatList
         ref={listRef}
         data={lines}
-        keyExtractor={(item, i) =>
-          typeof item !== 'string' && item.__divider
-            ? `d-${i}`
-            : String(i)
-        }
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         onScroll={handleScroll}
         scrollEventThrottle={100}
