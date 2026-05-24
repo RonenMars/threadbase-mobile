@@ -23,21 +23,29 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
   const [editedPrompt, setEditedPrompt] = useState('')
   const [secondsLeft, setSecondsLeft] = useState(Math.floor(AUTO_PROCEED_TIMEOUT_MS / 1000))
 
+  // Route `respondToPlan` (a React Query mutation — new reference every render)
+  // and `onClose` through refs so the 1Hz interval isn't torn down and rebuilt
+  // every render. Effect depends only on `visible`.
+  const respondRef = useRef(respondToPlan)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { respondRef.current = respondToPlan })
+  useEffect(() => { onCloseRef.current = onClose })
+
   useEffect(() => {
     if (!visible) return
     const interval = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
           clearInterval(interval)
-          respondToPlan.mutate({ action: 'proceed' })
-          onClose()
+          respondRef.current.mutate({ action: 'proceed' })
+          onCloseRef.current()
           return 0
         }
         return s - 1
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [visible, onClose, respondToPlan])
+  }, [visible])
 
   if (!visible) return null
 
