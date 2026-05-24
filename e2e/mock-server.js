@@ -5,7 +5,12 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 
-const PORT = parseInt(process.env.MOCK_PORT ?? '7071', 10)
+// Comma-separated list of ports; first is primary, additional ports serve the
+// same fixtures so e2e flows can pair multiple servers.
+const PORTS = (process.env.MOCK_PORTS ?? process.env.MOCK_PORT ?? '7071')
+  .split(',')
+  .map((p) => parseInt(p.trim(), 10))
+  .filter((p) => Number.isFinite(p))
 const FIXTURES = path.join(__dirname, 'fixtures')
 
 function readFixture(name) {
@@ -17,9 +22,14 @@ function json(res, status, body) {
   res.end(typeof body === 'string' ? body : JSON.stringify(body))
 }
 
-const server = http.createServer((req, res) => {
+function makeHandler() {
+  return (req, res) => handleRequest(req, res)
+}
+
+function handleRequest(req, res) {
   const method = req.method
-  const url = new URL(req.url, `http://localhost:${PORT}`)
+  const host = req.headers.host ?? 'localhost'
+  const url = new URL(req.url, `http://${host}`)
   const p = url.pathname
 
   console.log(`${method} ${p}`)
@@ -50,6 +60,27 @@ const server = http.createServer((req, res) => {
 
   if (method === 'GET' && p === '/api/conversations') {
     return json(res, 200, readFixture('conversations.json'))
+  }
+
+  // Conversation detail.
+  // - bug6 fixture (`conversation-detail-many.json`) has 30 messages to force
+  //   vertical scroll past the bottom action bar.
+  // - feat2 fixture (`conversation-detail.json`) is a minimal payload for the
+  //   export-in-info-shelf flow.
+  // - Unknown ids get an empty body — the screen renders the empty-state copy.
+  const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
+  if (method === 'GET' && conversationMatch) {
+    if (conversationMatch[1] === 'conv-many-messages') {
+      return json(res, 200, readFixture('conversation-detail-many.json'))
+    }
+    if (conversationMatch[1] === 'conv-111') {
+      return json(res, 200, readFixture('conversation-detail.json'))
+    }
+    return json(res, 200, {
+      meta: { id: conversationMatch[1], project_name: 'Empty conversation' },
+      messages: [],
+      message_pagination: { total: 0, before_index: -1, from_index: 0, has_more_older: false, next_before_index: null },
+    })
   }
 
   const sessionMatch = p.match(/^\/api\/sessions\/([^/]+)$/)
@@ -92,9 +123,19 @@ const server = http.createServer((req, res) => {
     return json(res, 200, { count: 3 })
   }
 
-  json(res, 404, { error: 'Not found' })
-})
+  // Stub browse — returns no subdirectories regardless of `path`. The Maestro
+  // flow only needs the breadcrumb row to render the requested cwd; it does
+  // not exercise directory navigation.
+  if (method === 'GET' && p === '/api/browse') {
+    return json(res, 200, { directories: [] })
+  }
 
-server.listen(PORT, () => {
-  console.log(`Mock server listening on http://localhost:${PORT}`)
-})
+  json(res, 404, { error: 'Not found' })
+}
+
+for (const port of PORTS) {
+  const server = http.createServer(makeHandler())
+  server.listen(port, () => {
+    console.log(`Mock server listening on http://localhost:${port}`)
+  })
+}

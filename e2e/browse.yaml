@@ -26,3 +26,5 @@ appId: com.ronenmars.threadbase
 
 - assertVisible:
     id: "filter-sort-sheet"
+
+- takeScreenshot: e2e/_artifacts/screenshots/browse-01-filter-sort-sheet

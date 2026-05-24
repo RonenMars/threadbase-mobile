@@ -34,6 +34,7 @@ export function FAB({ onPress }: Props) {
       activeOpacity={0.75}
       accessibilityLabel="New session"
       accessibilityRole="button"
+      testID="fab-new-session"
       style={[styles.fab, { bottom: 24 + insets.bottom }]}
     >
       {/* glow halo */}

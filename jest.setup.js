@@ -39,6 +39,23 @@ jest.mock('expo-clipboard', () => ({
   getStringAsync: jest.fn().mockResolvedValue(''),
 }))
 
+// ─── expo-camera ─────────────────────────────────────────────────────────────
+// The real `useCameraPermissions` hook resolves its initial status
+// asynchronously, which fires a setState after Jest tears the test down and
+// floods CI logs with "update to PairScannerModal was not wrapped in act(...)"
+// warnings. Returning a synchronous granted-permission tuple avoids the
+// post-teardown setState entirely.
+jest.mock('expo-camera', () => {
+  const React = require('react')
+  return {
+    CameraView: ({ children }) => React.createElement('CameraView', null, children),
+    useCameraPermissions: () => [
+      { granted: true, canAskAgain: true, status: 'granted' },
+      jest.fn().mockResolvedValue({ granted: true, canAskAgain: true, status: 'granted' }),
+    ],
+  }
+})
+
 // ─── expo-secure-store ───────────────────────────────────────────────────────
 jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn().mockResolvedValue(undefined),

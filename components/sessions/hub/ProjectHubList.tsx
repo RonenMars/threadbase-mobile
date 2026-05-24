@@ -227,6 +227,7 @@ export function ProjectHubList({
             if (item.kind === 'header') {
               return (
                 <ServerHeaderRow
+                  serverId={item.serverId}
                   serverLabel={item.serverLabel}
                   totalCount={item.totalCount}
                 />

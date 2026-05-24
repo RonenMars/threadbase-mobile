@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native'
-import { X, Copy, Check } from 'phosphor-react-native'
+import { X, Copy, Check, type IconProps } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
 import { dark, font, spacing } from '@/constants/theme'
 
@@ -17,14 +17,22 @@ export interface InfoField {
   value: string | null | undefined
 }
 
+export interface InfoModalAction {
+  icon: React.ComponentType<IconProps>
+  accessibilityLabel: string
+  onPress: () => void
+  testID?: string
+}
+
 interface Props {
   visible: boolean
   onClose: () => void
   title: string
   fields: InfoField[]
+  action?: InfoModalAction
 }
 
-export function InfoModal({ visible, onClose, title, fields }: Props) {
+export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
 
   const handleCopy = async (label: string, value: string) => {
@@ -39,9 +47,21 @@ export function InfoModal({ visible, onClose, title, fields }: Props) {
       <View style={styles.sheet}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Close">
-            <X size={22} color={dark.text.secondary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            {action ? (
+              <TouchableOpacity
+                onPress={action.onPress}
+                hitSlop={8}
+                accessibilityLabel={action.accessibilityLabel}
+                testID={action.testID}
+              >
+                <action.icon size={22} color={dark.text.secondary} />
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Close">
+              <X size={22} color={dark.text.secondary} />
+            </TouchableOpacity>
+          </View>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           {fields.map(({ label, value }) => {
@@ -100,6 +120,11 @@ const styles = StyleSheet.create({
     color: dark.text.primary,
     fontSize: font.base,
     fontWeight: '600',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   scroll: { flexGrow: 0 },
   scrollContent: { paddingBottom: spacing.xl },

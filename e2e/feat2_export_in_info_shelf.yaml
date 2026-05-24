@@ -1,0 +1,45 @@
+# Maestro E2E — Feature 2: Export action moved into the info shelf
+#
+# Verifies that on the Historical (conversation) screen:
+#  1. The bottom bar contains only the Resume Session primary action,
+#     i.e. no plain "Export" button next to it.
+#  2. The Export action lives inside the info-shelf (InfoModal) header,
+#     reachable via the header info icon, and is identified by
+#     testID="export-action".
+#
+# Driving the hub → conversation row tap from Maestro is brittle on iOS
+# (see e2e/browse.yaml — TouchableOpacity testIDs are eaten by the
+# accessibility aggregation of nested <Text>). We side-step that by deep
+# linking to the conversation route via the threadbase:// scheme; the
+# mock server returns conversation-detail.json for /api/conversations/:id.
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/feat2_export_in_info_shelf.yaml
+#        (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Open the conversation detail via deep link. expo-router maps the path
+# segment to app/conversation/[id].tsx; with no server query param the
+# screen falls back to the first active server (set by setup.yaml).
+- openLink: "threadbase://conversation/conv-111"
+
+# Conversation screen renders the in-list scroll button OR the footer's
+# Resume Session button — assert the latter to confirm we are on the
+# conversation route.
+- assertVisible: "Resume Session"
+
+# Export must NOT be a bottom-bar sibling of Resume Session anymore.
+- assertNotVisible:
+    text: "Export"
+
+# Open the info shelf (InfoModal) via the header info icon.
+- tapOn:
+    accessibilityText: "Conversation info"
+
+# Inside the shelf the Export action is present as an icon with
+# testID="export-action".
+- assertVisible:
+    id: "export-action"

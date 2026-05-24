@@ -16,7 +16,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { CaretDown, InfoIcon } from 'phosphor-react-native'
+import { CaretDown, ExportIcon, InfoIcon } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
@@ -60,15 +60,18 @@ function renderContent(block: MessageContent, index: number, recycleKey: string)
 // across messages (ToolCard / ThinkingCard / DiffViewer / MessageBubble each
 // own `expanded` state). Threading the message id as `recycleKey` lets each
 // child use `useRecyclingState` to reset its state when the cell is reassigned.
-function MessageItem({ message }: { message: Message }) {
+function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
   const { t } = useTranslation('conversation')
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
+  // Bug 6 e2e: tag the final row so the Maestro flow can assert the last
+  // message lands above (not behind) the Export + Resume action bar.
+  const lastTestId = isLast ? 'conversation-last-message' : undefined
 
   if (hasToolOrDiff) {
     return (
-      <View style={styles.toolContainer}>
+      <View style={styles.toolContainer} testID={lastTestId}>
         {message.has_images ? (
           <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
         ) : null}
@@ -91,7 +94,7 @@ function MessageItem({ message }: { message: Message }) {
 
   if (message.content.length === 0) return null
   return (
-    <View>
+    <View testID={lastTestId}>
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
@@ -336,9 +339,12 @@ export default function ConversationDetailScreen() {
     await Share.share({ message: md })
   }, [conversation])
 
-  const renderItem = useCallback(({ item }: { item: Message }) => (
-    <MessageItem message={item} />
-  ), [])
+  const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => (
+    <MessageItem
+      message={item}
+      isLast={index === (conversation?.messages.length ?? 0) - 1}
+    />
+  ), [conversation?.messages.length])
 
   const handleFooterLayout = useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height
@@ -489,10 +495,7 @@ export default function ConversationDetailScreen() {
         </View>
       )}
 
-      <View style={styles.footer} onLayout={handleFooterLayout}>
-        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-          <Text style={styles.shareBtnText}>{t('action.export')}</Text>
-        </TouchableOpacity>
+      <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
         <View style={styles.resumeWrapper}>
           {resumeSession.isError ? (
             <Text style={styles.resumeError} numberOfLines={2}>
@@ -519,6 +522,12 @@ export default function ConversationDetailScreen() {
         visible={infoVisible}
         onClose={() => setInfoVisible(false)}
         title="Conversation Info"
+        action={{
+          icon: ExportIcon,
+          accessibilityLabel: t('action.export'),
+          onPress: handleShare,
+          testID: 'export-action',
+        }}
         fields={[
           { label: 'ID', value: conversation.id },
           { label: 'Title', value: conversation.title },
@@ -567,7 +576,7 @@ const styles = StyleSheet.create({
   scrollBtnTop: { top: spacing.md },
   // Bug 11: circular FAB-style bottom-right button. Sits inside the
   // listWrapper, which ends at the top of the footer bar, so `spacing.md`
-  // already clears the Export + Resume row.
+  // already clears the Resume Session row.
   scrollBtnBottom: {
     position: 'absolute',
     right: spacing.md,
@@ -603,17 +612,6 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     textAlign: 'center',
   },
-  shareBtn: {
-    backgroundColor: dark.bg.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: dark.border,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shareBtnText: { color: dark.text.primary, fontSize: font.base },
   resumeBtn: {
     backgroundColor: dark.text.accent,
     borderRadius: 10,

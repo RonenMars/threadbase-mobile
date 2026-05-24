@@ -6,6 +6,9 @@ npm-debug.*
 
 # Local ship build logs and audit artifacts — large + ephemeral
 logs/
+
+# Maestro E2E run artifacts (per-step screenshots, debug bundles, view trees)
+e2e/_artifacts/
 *.jks
 *.p8
 *.p12

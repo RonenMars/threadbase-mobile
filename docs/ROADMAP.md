@@ -27,6 +27,11 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) |
 | Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) |
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
+| Feature 16 — Native mini-form for Claude Code interactive prompts | Planned (mobile-native, cross-repo) |
+| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
+| Feature 18 — Upgrade to Expo SDK 56 | Planned (platform/deps) |
+| Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
+| Feature 20 — Visual regression gate on Maestro screenshots | Planned (CI/quality, follow-on to Feature 17) |
 
 **Suggested order for the original 5:** **Feature 2** (small UI move, isolated) → **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 1** (Tree drilled-dir path) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger). Feature 2 may need to coordinate with [Bug 6](./BACKLOG.md#bug-6--conversation-list-content-hidden-under-bottom-action-bar) since both touch the bottom action bar.
 
@@ -535,6 +540,215 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 - Composer: "Send later" affordance next to the send button
 
 **Related:** Feature 13 (Mission Control) is the natural "see what your scheduled prompts did" surface.
+
+---
+
+### Feature 16 — Native mini-form for Claude Code interactive prompts
+
+**Filed:** 2026-05-23.
+
+**Goal:** When Claude Code emits an interactive question (numbered selection list, single-choice radio-style, or multi-select checkbox), surface it in the app as a native form (tappable options + submit) instead of letting it render as raw text inside the PTY scrollback that the user has to scroll to and type a number into.
+
+**Why:** On a phone, typing numbers into the chat input to answer a question that's buried somewhere above in tool output is awkward and error-prone. This is the single widest gap between Claude Code's TTY-native UX and what a touch-native client should feel like.
+
+**Direction:**
+- Detection: most likely streamer-side. `tb-streamer` parses the prompt out of the PTY stream and emits a structured WS event (`{ type: 'prompt', shape: 'single'|'multi', options: [...], promptId }`). Keeps mobile rendering dumb; lets detection logic be hot-fixed without a mobile rebuild.
+- Mobile: subscribe to the new WS event, render a `<PromptForm>` (radio for single-choice, checkbox for multi) overlay or sibling to the chat input when active. Submit via WS / sibling REST.
+- PTY view: while a form is active, hide or de-emphasize the duplicate prompt text in scrollback so there's no "two places to answer" confusion.
+- Fallback: if the detected shape doesn't match a known form (e.g. free-text follow-up), leave the PTY text visible — never block the user.
+
+**Open questions:**
+- Detection approach — regex vs. structured marker from `tb-streamer` vs. cooperation from Claude Code itself (env-flag-gated structured stdout, OSC escape). Plan stub recommends streamer-side WS event but the call should be made against the upstream landscape at pickup time.
+- Multi-select submission is the hard part — Claude Code's multi-select TUI uses cursor keys + space + enter, which doesn't replay cleanly via stdin. Validate feasibility before committing to the multi-select variant; the single-choice form can ship independently.
+- How to mask the duplicate PTY lines without breaking terminal cursor alignment.
+- Cancel/dismiss behavior (background app, swipe form away, streamer-side timeout).
+
+**Scope:** ~1 week mobile + ~1 week streamer for single-choice. Multi-select is gated on upstream support and may need to be deferred.
+
+**Files likely involved:**
+- `tb-streamer`: new prompt-detector module + WS event type + stdin-injection endpoint accepting `{ promptId, answer }`
+- `tb-mobile`: new `components/session/PromptForm.tsx`, session-detail Zustand slice for `activePrompt`, WS handler wiring
+- Session-detail screen integration above the chat input
+
+**Plan stub:** [`superpowers/plans/2026-05-23-claude-code-prompt-miniform.md`](./superpowers/plans/2026-05-23-claude-code-prompt-miniform.md)
+
+---
+
+### Feature 17 — Expand Maestro E2E coverage to high-value flows
+
+**Filed:** 2026-05-23.
+
+**Goal:** Grow the Maestro smoke suite (`launch.yaml` + `browse.yaml`, ~30–60s, hub-only) into coverage of the flows most likely to regress in day-to-day work.
+
+**Why:** Current suite proves the app boots to the hub and the filter/sort sheet opens. Session detail navigation, chat send, attachments, settings, and keyboard-avoidance are all uncovered — and several of these have been the source of recent bugs (multi-attachment Bug 5, the 2026-05-22 keyboard-avoidance fix).
+
+**Priority order (P0 → P3):**
+- **P0 — unblockers**
+  1. Fix project-row testID a11y so Maestro can tap into a session detail (`e2e/README.md` "Known limits" #1). Wrap row in a `<View accessible testID>` instead of relying on `TouchableOpacity` prop forwarding.
+  2. Add the mock endpoints currently 404ing (`/api/sessions/names`, `/api/projects/popular`, `/api/conversations/count`, `POST /api/push/register`) so the hub error banner stops obscuring elements.
+- **P1 — regression coverage for recent fixes**
+  3. Keyboard-avoidance flow on the chat input (guards the 2026-05-22 fix).
+  4. Onboarding end-to-end on a freshly erased sim (`xcrun simctl erase` in CI before the run).
+  5. Session rename flow.
+- **P2 — needs mock work**
+  6. Minimal `/ws` WebSocket fake in `e2e/mock-server.js` (frame-replay from a fixture). Unlocks `chat_send.yaml`.
+  7. Single-attachment send flow.
+  8. Multi-attachment send flow — currently expected to fail ([Bug 5](./BACKLOG.md) territory); use as a watchdog test that flips green when the bug is fixed.
+- **P3 — broader UX**
+  9. Settings: theme toggle.
+  10. Settings: language switch + RTL spot-check.
+  11. Filter/sort *application* (not just sheet open).
+
+**Open questions:**
+- Pay the cost of erasing the sim once per CI run for the onboarding flow, or gate behind an env flag?
+- Attachment + WS flows in `test:e2e:mock` (slower smoke) or a separate `test:e2e:full` job?
+- Also run the suite on Android — Maestro's `testID` handling is better there per `e2e/README.md`.
+
+**TestIDs likely needed (preliminary):**
+- `project-row-<projectId>` on the hub's project group row
+- `session-detail-back`, `session-detail-rename-cta`, `session-rename-input`, `session-rename-confirm`
+- `chat-input`, `chat-send-cta`, `chat-attachment-cta`, `chat-message-<index>`
+- `settings-screen`, `settings-theme-toggle`, `settings-language-select`
+- A keyboard-spacer anchor for asserting input visibility above the keyboard
+
+**Files likely involved:**
+- `e2e/mock-server.js` — endpoint additions + `/ws` fake
+- `e2e/*.yaml` — new flow files per priority item
+- `components/sessions/hub/ProjectHubCard.tsx` (or row component) — testID a11y fix
+- Misc source files for the testIDs above
+- `e2e/README.md` — document each new flow and its testIDs
+
+**Plan stub:** [`superpowers/plans/2026-05-23-e2e-expansion.md`](./superpowers/plans/2026-05-23-e2e-expansion.md)
+
+**Related:** the open "GitHub Actions: Tests + E2E" CI item — pairs naturally with this so the expanded suite runs on every push.
+
+---
+
+### Feature 18 — Upgrade to Expo SDK 56
+
+**Filed:** 2026-05-23.
+
+**Goal:** Move the app from Expo SDK 55 → 56 on a `chore/expo-56-upgrade` branch, with the full Jest + Maestro suites green, a clean `expo-doctor`, and a TestFlight archive dry-run via `/expo-local-ship`.
+
+**Why:** Keep the toolchain current with the canary work we eventually want to absorb (SDK 56 routes/router-typing, RN 0.85, React 19.2.3). A prior 55→56 attempt was rolled back on 2026-05-06 — treat SDK 56 as still potentially fragile and prefer waiting for a patch release (`~56.0.5`+) before starting.
+
+**Procedure:** Full step-by-step lives in the standalone brief [`docs/upgrade-to-expo-56.md`](./upgrade-to-expo-56.md) — 5 phases (discover/report → bump → code fixes → native rebuild + sim smoke → ship dry-run → PR). The brief is self-contained and is the source of truth; this entry is the pointer.
+
+**Acceptance criteria** (copied from the brief so the roadmap entry is self-contained):
+- `npm run typecheck` exits 0
+- `npm run lint` ≤ `main` baseline (43 errors / 46 warnings)
+- `npm run test:ci` exits 0
+- `npm run test:e2e:mock` exits 0
+- App launches cleanly on iPhone 17 Pro / iOS 26.4 simulator
+- App launches cleanly on iOS 17.x simulator
+- `expo-doctor` exits 0
+- No new TS2345 / TS2322 from `t('ns:key')` cross-namespace usage
+- iOS Release build succeeds via `npx expo run:ios --configuration Release --device <udid>`
+- TestFlight archive via `/expo-local-ship` succeeds (no actual ship)
+- PR opened with before/after dep version table
+
+**Risk notes:**
+- Prior 55→56 attempt rolled back 2026-05-06 — inspect that branch's history before redoing from scratch.
+- iOS-26 Hermes path was a crash source 54→55; re-test on iOS 26.x after upgrade.
+- `ship.sh` step-2 `npm install` corrupts Watchman/Metro mid-ship — reset Watchman before any ship dry-run.
+
+**Out of scope:** NativeWind v4→v5, react-native-screens@5, expo-updates re-enablement, Zustand/Router refactors. See the brief's "Things explicitly NOT in scope" section.
+
+**Plan stub:** [`superpowers/plans/2026-05-23-expo-56-upgrade.md`](./superpowers/plans/2026-05-23-expo-56-upgrade.md)
+
+---
+
+### Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle
+
+**Filed:** 2026-05-24.
+
+**Goal:** While Claude is still mid-turn (streaming a response, running a tool, "thinking"), let the user keep typing and tap a recolored send button that **queues** the message instead of either disabling the input or trying to interrupt. The moment Claude finishes the current turn, the queued message is auto-sent.
+
+**Why:** Today the user has to wait until the turn fully settles before they can compose the next message — or worse, they type ahead and the send action is ambiguous (does it interrupt? buffer? get lost on a re-render?). A queue affordance with explicit visual state turns the dead time during a long turn into productive typing time. This is one of the most common "mobile orchestration" moments — you read the partial output, react, and want to fire the follow-up the instant the agent is free.
+
+**Direction:**
+
+- **Visual state of the send button.**
+  - Idle (no in-flight turn): current accent color, current Phosphor icon (`PaperPlaneTilt` or whatever's in use), label "Send".
+  - In-flight (Claude is mid-turn): swap to a distinct **marine / teal** tint (pick something clearly different from both the idle accent *and* the disabled gray) and swap the icon to a queue affordance (Phosphor `Plus`, `PlusCircle`, `Stack`, or `ListPlus` — see plan stub for the final pick). Optionally a small badge with the count of queued messages (`1`, `2`, …) when more than one is staged.
+  - Per project icon rule: no emojis — Phosphor only.
+- **Behavior on tap.**
+  - Idle: send immediately, as today.
+  - In-flight: push the typed text into a queue (FIFO). Clear the composer. Optionally light haptic to confirm the queue.
+- **Flush on idle.**
+  - Listen for the "turn finished" signal (whatever existing WS event / state slice currently flips `isThinking` → false in the session-detail screen). On the falling edge, dequeue the next message and send it as a real send.
+  - If multiple messages are queued, send them one at a time, waiting for the next idle window between each — OR merge them into a single message with a separator (e.g. blank-line join). Decide on pickup; FIFO-one-at-a-time is the conservative default.
+- **Queue management.**
+  - Show the queued messages somewhere visible (e.g. a small chip strip above the composer, or pinned above the latest assistant turn) so the user can see what's about to fire.
+  - Allow per-item cancel (tap chip → remove) and reorder (long-press → drag) only if it's cheap; otherwise FIFO-locked is fine for v1.
+- **Edge cases.**
+  - User backgrounds the app with a queue pending → on resume, replay state, don't lose messages.
+  - User leaves the session screen entirely → queue is cleared (it's per-session ephemeral state). Confirm; the alternative is per-session-persisted queue, which feels surprising.
+  - Turn errors out mid-flight → don't auto-fire the queue. Surface "queue paused — turn failed, [Send] to fire `<n>` queued messages" affordance.
+  - Streaming abort (user taps Stop) → same as error: pause the queue, let the user explicitly resume or cancel.
+
+**Open questions:**
+
+- **Single-vs-multi-message flush.** If two messages are queued, do we (a) send them one-at-a-time across two turns, (b) merge into one message before sending, or (c) let the user pick per-queue? (a) is simplest and most faithful to what the user typed; (b) avoids creating turns the user didn't explicitly ask for; (c) is overkill for v1.
+- **Where does the queue live?** Per-session ephemeral state in the session-detail screen (lost on unmount) vs. a small slice on a Zustand store (`stores/queue.ts`?) keyed by `sessionId` (survives unmount). The latter handles "user briefly navigates away and back" but adds persistence surface area. Probably ephemeral for v1.
+- **"Thinking" detection.** What's the canonical signal today? Verify against `hooks/useSession.ts` / WS handler / VirtualTerminal idle detector before designing the trigger. The PTY turn-divider (shipped 2026-05-02) already has an idle-detect heuristic — reuse if applicable.
+- **Visual treatment of the queued chips.** Above the composer (in-line with the input) vs. floating above the bottom-bar vs. inline with the assistant turn as "queued: <preview>". First option is most discoverable; pick after seeing the composer layout.
+- **Stop/Abort interaction.** If the user taps Stop on the current turn while there's a queue, does that also flush the queue? Almost certainly yes — they're explicitly bailing out — but confirm.
+
+**Files likely involved (to verify):**
+
+- The composer component (TBD location — likely under `components/conversation/` or `app/session/[id].tsx`).
+- The send-message handler / hook (currently in `hooks/` or `services/api-client.ts`).
+- Whatever currently exposes `isThinking` / "turn in flight" state to the composer.
+- A new `stores/queue.ts` (or local state on the session screen) for the queued messages.
+- A small queue-chip-strip component above the composer if we go with the inline-strip UX.
+
+**Coordination:**
+- Related to [Feature 16](#feature-16--native-mini-form-for-claude-code-interactive-prompts): both touch the moment a turn is in flight, and both involve the composer area. If 16 lands first, account for the prompt-form taking precedence over the queue UI when a structured prompt is active.
+- Related to [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) only loosely — queueing is independent of attachments — but verify that a queued message with attachments fires the same code path on auto-send.
+
+**Scope:** ~3–5 days client-side, no streamer change required. Single-message-at-a-time flush is a smaller, safer v1; multi-message merge / reorder is v2.
+
+---
+
+### Feature 20 — Visual regression gate on Maestro screenshots
+
+**Filed:** 2026-05-24. **Depends on:** [Feature 17 — Expand Maestro E2E coverage to high-value flows](#feature-17--expand-maestro-e2e-coverage-to-high-value-flows). Pick up once the Maestro suite is stable in CI and the screenshot set has settled.
+
+**Goal:** Turn the per-flow `takeScreenshot` checkpoints already wired into the Maestro suite into a real regression gate — each CI run diffs the captured screenshot against a committed baseline and fails the build (or surfaces a PR comment) on visual drift.
+
+**Why:** The current setup *captures* screenshots but doesn't *compare* them. Layout regressions like Bug 6 (last message hidden behind action bar) are exactly the class of bug pixel diffs catch reliably — and the screenshots are already produced on every CI run, so the marginal cost of adding a comparator is small.
+
+**Direction (decide on pickup):**
+
+1. **Option A — `pixelmatch` + baselines committed to the repo (lowest friction).** Add `e2e/compare-screenshots.js` (~50 lines) that loads each `e2e/_artifacts/screenshots/*.png` and diffs against `e2e/_baselines/*.png` using `pixelmatch` + `pngjs`. New script `npm run test:e2e:regression` runs the Maestro suite then the comparator. CI invokes it on push-to-main. Baselines are captured from a clean CI run and committed.
+2. **Option B — Maestro Cloud (zero friction, paid + vendor-locked).** Swap `maestro test` for `maestro cloud` in the CI job. Maestro Cloud handles the baseline storage + diff UI. Costs above the free tier; requires uploading the build to mobile.dev.
+3. **Option C — Reg-Suit / Loki (open-source visual regression toolchain).** Adds an S3 (or gh-pages) bucket for baseline hosting + a PR-comment diff gallery. More polish for non-engineer reviewers; one more moving part in CI.
+
+**Recommendation:** Start with Option A. Graduate to B or C if (a) false-positive thrash from antialiasing / font hinting becomes unmanageable, (b) the screenshot set grows past ~20 frames, or (c) designers want a UI to triage diffs.
+
+**Open questions:**
+
+- **Capture baselines locally or in CI?** Local sims (iOS 26.1 today) and the CI macOS runner (whatever Apple ships on `macos-14`) may not pixel-match. Capturing baselines inside CI avoids the cross-environment drift problem. First-time setup: merge an empty-baseline PR, let the CI run produce screenshots, download the `maestro-artifacts` artifact, copy into `e2e/_baselines/`, commit, re-run.
+- **Crop status bar + home indicator before diffing?** They change between sim versions / clock ticks and reliably trigger false positives. Crop a 20px top + 20px bottom band before comparison, or use Maestro's `takeScreenshot` with a region argument if 2.x supports it.
+- **Threshold per flow.** A global `0.5%` pixel diff threshold may be too strict for `pty-divider-01-session-detail.png` (terminal contents shift slightly) and too loose for `bug6-01-last-message-above-bar.png` (overlap is a 200pt regression, easy to detect). Per-flow override map.
+- **Update workflow.** When a UI change *intentionally* changes a screenshot, the PR author needs a one-command way to update the baseline (`npm run test:e2e:regression -- --update`). Treat baselines as code: reviewed in the diff, not auto-committed.
+- **CI cost.** Option A adds ~5 seconds to the existing macOS Maestro job — negligible. B and C add network round trips + paid quota.
+
+**Files likely involved (to verify):**
+
+- `e2e/compare-screenshots.js` (new) — the comparator.
+- `e2e/_baselines/` (new directory) — committed PNGs.
+- `package.json` — new `test:e2e:regression` script + `pixelmatch` + `pngjs` devDependencies.
+- `.github/workflows/test.yml` — invoke regression after the existing Maestro step in the `e2e-maestro` job.
+- `e2e/README.md` — document how to update baselines after intentional UI changes.
+
+**Coordination:**
+
+- Don't start until Feature 17 (the broader E2E expansion) has settled — the screenshot set should be stable before baselines are committed. Otherwise every Feature 17 PR churns the baselines.
+- Land separately from the existing "Maestro in CI" work — that lives on `combo-a-e2e-runs` and treats Maestro as a smoke gate; this is the regression-detection layer on top.
+
+**Scope:** ~half a day for Option A + initial baselines + one round of false-positive tuning. More if the baselines need cropping logic or per-flow threshold overrides.
 
 ---
 

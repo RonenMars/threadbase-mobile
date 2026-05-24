@@ -19,6 +19,7 @@ import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useFetchSessionNames } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
@@ -212,10 +213,27 @@ export default function ProjectsHub() {
   }, [visibleSessions, conversations])
 
   // FAB
+  // When the user is drilled into a directory in TreeView, the drill store
+  // holds { serverId, path } and we pre-fill the browse screen's cwd with
+  // that path on the same server — bypassing the multi-server picker even if
+  // multiple servers are active, because the user's intent is clearly that
+  // server's directory.
+  const currentDrill = useTreeDrillStore((s) => s.current)
+
+  const browseHref = (serverId: string, path?: string) => {
+    const params = new URLSearchParams({ server: serverId })
+    if (path) params.set('path', path)
+    return `/browse?${params.toString()}` as `/browse?${string}`
+  }
+
   const handleFABPress = () => {
     if (activeServerIds.length === 0) return
+    if (currentDrill && activeServerIds.includes(currentDrill.serverId)) {
+      router.push(browseHref(currentDrill.serverId, currentDrill.path))
+      return
+    }
     if (activeServerIds.length === 1) {
-      router.push(`/browse?server=${activeServerIds[0]}`)
+      router.push(browseHref(activeServerIds[0]))
       return
     }
     setPickerVisible(true)
@@ -223,7 +241,7 @@ export default function ProjectsHub() {
 
   const startSessionOn = (serverId: string) => {
     setPickerVisible(false)
-    router.push(`/browse?server=${serverId}`)
+    router.push(browseHref(serverId))
   }
 
   return (
@@ -534,7 +552,7 @@ function MergedClassicList({
         }}
         renderItem={({ item }) => {
           if (item.kind === 'header') {
-            return <ServerHeaderRow serverLabel={item.serverLabel} totalCount={item.totalCount} />
+            return <ServerHeaderRow serverId={item.serverId} serverLabel={item.serverLabel} totalCount={item.totalCount} />
           }
           if (item.kind === 'liveHeader') {
             return <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
