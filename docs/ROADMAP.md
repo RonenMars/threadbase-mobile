@@ -30,6 +30,8 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 16 — Native mini-form for Claude Code interactive prompts | Planned (mobile-native, cross-repo) |
 | Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
 | Feature 18 — Upgrade to Expo SDK 56 | Planned (platform/deps) |
+| Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
+| Feature 20 — Visual regression gate on Maestro screenshots | Planned (CI/quality, follow-on to Feature 17) |
 
 **Suggested order for the original 5:** **Feature 2** (small UI move, isolated) → **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 1** (Tree drilled-dir path) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger). Feature 2 may need to coordinate with [Bug 6](./BACKLOG.md#bug-6--conversation-list-content-hidden-under-bottom-action-bar) since both touch the bottom action bar.
 
@@ -653,6 +655,100 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 **Out of scope:** NativeWind v4→v5, react-native-screens@5, expo-updates re-enablement, Zustand/Router refactors. See the brief's "Things explicitly NOT in scope" section.
 
 **Plan stub:** [`superpowers/plans/2026-05-23-expo-56-upgrade.md`](./superpowers/plans/2026-05-23-expo-56-upgrade.md)
+
+---
+
+### Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle
+
+**Filed:** 2026-05-24.
+
+**Goal:** While Claude is still mid-turn (streaming a response, running a tool, "thinking"), let the user keep typing and tap a recolored send button that **queues** the message instead of either disabling the input or trying to interrupt. The moment Claude finishes the current turn, the queued message is auto-sent.
+
+**Why:** Today the user has to wait until the turn fully settles before they can compose the next message — or worse, they type ahead and the send action is ambiguous (does it interrupt? buffer? get lost on a re-render?). A queue affordance with explicit visual state turns the dead time during a long turn into productive typing time. This is one of the most common "mobile orchestration" moments — you read the partial output, react, and want to fire the follow-up the instant the agent is free.
+
+**Direction:**
+
+- **Visual state of the send button.**
+  - Idle (no in-flight turn): current accent color, current Phosphor icon (`PaperPlaneTilt` or whatever's in use), label "Send".
+  - In-flight (Claude is mid-turn): swap to a distinct **marine / teal** tint (pick something clearly different from both the idle accent *and* the disabled gray) and swap the icon to a queue affordance (Phosphor `Plus`, `PlusCircle`, `Stack`, or `ListPlus` — see plan stub for the final pick). Optionally a small badge with the count of queued messages (`1`, `2`, …) when more than one is staged.
+  - Per project icon rule: no emojis — Phosphor only.
+- **Behavior on tap.**
+  - Idle: send immediately, as today.
+  - In-flight: push the typed text into a queue (FIFO). Clear the composer. Optionally light haptic to confirm the queue.
+- **Flush on idle.**
+  - Listen for the "turn finished" signal (whatever existing WS event / state slice currently flips `isThinking` → false in the session-detail screen). On the falling edge, dequeue the next message and send it as a real send.
+  - If multiple messages are queued, send them one at a time, waiting for the next idle window between each — OR merge them into a single message with a separator (e.g. blank-line join). Decide on pickup; FIFO-one-at-a-time is the conservative default.
+- **Queue management.**
+  - Show the queued messages somewhere visible (e.g. a small chip strip above the composer, or pinned above the latest assistant turn) so the user can see what's about to fire.
+  - Allow per-item cancel (tap chip → remove) and reorder (long-press → drag) only if it's cheap; otherwise FIFO-locked is fine for v1.
+- **Edge cases.**
+  - User backgrounds the app with a queue pending → on resume, replay state, don't lose messages.
+  - User leaves the session screen entirely → queue is cleared (it's per-session ephemeral state). Confirm; the alternative is per-session-persisted queue, which feels surprising.
+  - Turn errors out mid-flight → don't auto-fire the queue. Surface "queue paused — turn failed, [Send] to fire `<n>` queued messages" affordance.
+  - Streaming abort (user taps Stop) → same as error: pause the queue, let the user explicitly resume or cancel.
+
+**Open questions:**
+
+- **Single-vs-multi-message flush.** If two messages are queued, do we (a) send them one-at-a-time across two turns, (b) merge into one message before sending, or (c) let the user pick per-queue? (a) is simplest and most faithful to what the user typed; (b) avoids creating turns the user didn't explicitly ask for; (c) is overkill for v1.
+- **Where does the queue live?** Per-session ephemeral state in the session-detail screen (lost on unmount) vs. a small slice on a Zustand store (`stores/queue.ts`?) keyed by `sessionId` (survives unmount). The latter handles "user briefly navigates away and back" but adds persistence surface area. Probably ephemeral for v1.
+- **"Thinking" detection.** What's the canonical signal today? Verify against `hooks/useSession.ts` / WS handler / VirtualTerminal idle detector before designing the trigger. The PTY turn-divider (shipped 2026-05-02) already has an idle-detect heuristic — reuse if applicable.
+- **Visual treatment of the queued chips.** Above the composer (in-line with the input) vs. floating above the bottom-bar vs. inline with the assistant turn as "queued: <preview>". First option is most discoverable; pick after seeing the composer layout.
+- **Stop/Abort interaction.** If the user taps Stop on the current turn while there's a queue, does that also flush the queue? Almost certainly yes — they're explicitly bailing out — but confirm.
+
+**Files likely involved (to verify):**
+
+- The composer component (TBD location — likely under `components/conversation/` or `app/session/[id].tsx`).
+- The send-message handler / hook (currently in `hooks/` or `services/api-client.ts`).
+- Whatever currently exposes `isThinking` / "turn in flight" state to the composer.
+- A new `stores/queue.ts` (or local state on the session screen) for the queued messages.
+- A small queue-chip-strip component above the composer if we go with the inline-strip UX.
+
+**Coordination:**
+- Related to [Feature 16](#feature-16--native-mini-form-for-claude-code-interactive-prompts): both touch the moment a turn is in flight, and both involve the composer area. If 16 lands first, account for the prompt-form taking precedence over the queue UI when a structured prompt is active.
+- Related to [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) only loosely — queueing is independent of attachments — but verify that a queued message with attachments fires the same code path on auto-send.
+
+**Scope:** ~3–5 days client-side, no streamer change required. Single-message-at-a-time flush is a smaller, safer v1; multi-message merge / reorder is v2.
+
+---
+
+### Feature 20 — Visual regression gate on Maestro screenshots
+
+**Filed:** 2026-05-24. **Depends on:** [Feature 17 — Expand Maestro E2E coverage to high-value flows](#feature-17--expand-maestro-e2e-coverage-to-high-value-flows). Pick up once the Maestro suite is stable in CI and the screenshot set has settled.
+
+**Goal:** Turn the per-flow `takeScreenshot` checkpoints already wired into the Maestro suite into a real regression gate — each CI run diffs the captured screenshot against a committed baseline and fails the build (or surfaces a PR comment) on visual drift.
+
+**Why:** The current setup *captures* screenshots but doesn't *compare* them. Layout regressions like Bug 6 (last message hidden behind action bar) are exactly the class of bug pixel diffs catch reliably — and the screenshots are already produced on every CI run, so the marginal cost of adding a comparator is small.
+
+**Direction (decide on pickup):**
+
+1. **Option A — `pixelmatch` + baselines committed to the repo (lowest friction).** Add `e2e/compare-screenshots.js` (~50 lines) that loads each `e2e/_artifacts/screenshots/*.png` and diffs against `e2e/_baselines/*.png` using `pixelmatch` + `pngjs`. New script `npm run test:e2e:regression` runs the Maestro suite then the comparator. CI invokes it on push-to-main. Baselines are captured from a clean CI run and committed.
+2. **Option B — Maestro Cloud (zero friction, paid + vendor-locked).** Swap `maestro test` for `maestro cloud` in the CI job. Maestro Cloud handles the baseline storage + diff UI. Costs above the free tier; requires uploading the build to mobile.dev.
+3. **Option C — Reg-Suit / Loki (open-source visual regression toolchain).** Adds an S3 (or gh-pages) bucket for baseline hosting + a PR-comment diff gallery. More polish for non-engineer reviewers; one more moving part in CI.
+
+**Recommendation:** Start with Option A. Graduate to B or C if (a) false-positive thrash from antialiasing / font hinting becomes unmanageable, (b) the screenshot set grows past ~20 frames, or (c) designers want a UI to triage diffs.
+
+**Open questions:**
+
+- **Capture baselines locally or in CI?** Local sims (iOS 26.1 today) and the CI macOS runner (whatever Apple ships on `macos-14`) may not pixel-match. Capturing baselines inside CI avoids the cross-environment drift problem. First-time setup: merge an empty-baseline PR, let the CI run produce screenshots, download the `maestro-artifacts` artifact, copy into `e2e/_baselines/`, commit, re-run.
+- **Crop status bar + home indicator before diffing?** They change between sim versions / clock ticks and reliably trigger false positives. Crop a 20px top + 20px bottom band before comparison, or use Maestro's `takeScreenshot` with a region argument if 2.x supports it.
+- **Threshold per flow.** A global `0.5%` pixel diff threshold may be too strict for `pty-divider-01-session-detail.png` (terminal contents shift slightly) and too loose for `bug6-01-last-message-above-bar.png` (overlap is a 200pt regression, easy to detect). Per-flow override map.
+- **Update workflow.** When a UI change *intentionally* changes a screenshot, the PR author needs a one-command way to update the baseline (`npm run test:e2e:regression -- --update`). Treat baselines as code: reviewed in the diff, not auto-committed.
+- **CI cost.** Option A adds ~5 seconds to the existing macOS Maestro job — negligible. B and C add network round trips + paid quota.
+
+**Files likely involved (to verify):**
+
+- `e2e/compare-screenshots.js` (new) — the comparator.
+- `e2e/_baselines/` (new directory) — committed PNGs.
+- `package.json` — new `test:e2e:regression` script + `pixelmatch` + `pngjs` devDependencies.
+- `.github/workflows/test.yml` — invoke regression after the existing Maestro step in the `e2e-maestro` job.
+- `e2e/README.md` — document how to update baselines after intentional UI changes.
+
+**Coordination:**
+
+- Don't start until Feature 17 (the broader E2E expansion) has settled — the screenshot set should be stable before baselines are committed. Otherwise every Feature 17 PR churns the baselines.
+- Land separately from the existing "Maestro in CI" work — that lives on `combo-a-e2e-runs` and treats Maestro as a smoke gate; this is the regression-detection layer on top.
+
+**Scope:** ~half a day for Option A + initial baselines + one round of false-positive tuning. More if the baselines need cropping logic or per-flow threshold overrides.
 
 ---
 

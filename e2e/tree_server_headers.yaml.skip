@@ -20,7 +20,7 @@ appId: com.ronenmars.threadbase
     id: "server-header-srv_ure6x8"
 
 # Visual: single-server tree — no headers.
-- takeScreenshot: e2e/_artifacts/screenshots/tree-headers-01-single-server.png
+- takeScreenshot: e2e/_artifacts/screenshots/tree-headers-01-single-server
 
 # === Multi-server case: pair a second mock server on :7072 ===
 # Deep-link straight into the add-server screen (avoids the settings UI,
@@ -78,4 +78,4 @@ appId: com.ronenmars.threadbase
     id: "server-header-srv_ure6x9"
 
 # Visual: multi-server tree — both headers rendered.
-- takeScreenshot: e2e/_artifacts/screenshots/tree-headers-02-multi-server.png
+- takeScreenshot: e2e/_artifacts/screenshots/tree-headers-02-multi-server

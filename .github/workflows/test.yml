@@ -116,3 +116,63 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+  # ── Maestro E2E (iOS sim, push to main only) ─────────────────────────────────
+  # Runs only on push to main (not PRs) because the macOS runner + iOS app
+  # build is ~15 minutes and ~$3/run. PRs rely on the unit/integration/Jest
+  # E2E jobs above; Maestro acts as a post-merge regression gate.
+  #
+  # Only `github.event_name` and `github.ref` are interpolated here. Both are
+  # GitHub-controlled context values, not user input — no command-injection
+  # surface in the `run:` steps below.
+  e2e-maestro:
+    name: E2E maestro (iOS)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Boot iOS simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
+          echo "Booting simulator: $DEVICE"
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+
+      - name: Build and install iOS app (Release)
+        run: |
+          npx expo prebuild --platform ios --non-interactive
+          xcodebuild \
+            -workspace ios/Threadbase.xcworkspace \
+            -scheme Threadbase \
+            -configuration Release \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -derivedDataPath build/ios-ci \
+            build
+          APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
+          xcrun simctl install booted "$APP_PATH"
+
+      - name: Run Maestro E2E suite
+        run: npm run test:e2e:mock
+
+      - name: Upload Maestro artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-artifacts
+          path: e2e/_artifacts/
+          retention-days: 7

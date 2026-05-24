@@ -26,10 +26,13 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 12 | MessageBubble bleed + code-fence collapse cut | ✅ DONE 2026-05-22 (cdf0303, d3aec11, f58d74d, 1a020fb) |
 | Bug 13 | New session: name modal flashes open then auto-closes before user can type | Open — not diagnosed |
 | Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | Open — not diagnosed |
+| Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
+| Bug 16 | Back from never-typed-in new session leaves an empty session alive | Open — not diagnosed |
+| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
-**Suggested next-up order:** Bug 13 + Bug 14 (both on the browse → session handoff, likely overlap — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → Bug 10 + Bug 11 (same file, same scroll handler) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
+**Suggested next-up order:** Bug 13 + Bug 14 + Bug 15 + Bug 16 (all on the browse → start-session → PTY → back handoff, likely shared root cause — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → **Bug 17 → Bug 10 + Bug 11** (same conversation FlashList; smooth-scroll fix may change at-bottom detection the scroll-button bugs rely on) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
 
 ---
 
@@ -495,6 +498,167 @@ router.push(`/session/${id}?...`)
 - `app/_layout.tsx:186-193` — browse's modal registration; no change expected, but worth re-reading to be sure modal presentation isn't compounding the stack issue.
 
 **Related:** [Bug 13](#bug-13--new-session-name-modal-flashes-open-then-auto-closes-before-user-can-type) sits on the same handoff. If Bug 13's root cause turns out to be suspect 2 ("parent route dismissed while modal is mounted"), Bug 14 and Bug 13 are the same underlying bug seen from two angles — fix one and verify the other.
+
+---
+
+## Bug 15 — After new-session back, file browser is interaction-locked (only close works)
+
+**Filed:** 2026-05-24 — not diagnosed.
+
+**Symptom:** Start a new session from `/browse` (pick a path, tap **Start session**). The PTY opens at `/session/[id]`. Tap **back**. The browse modal re-appears (the same surface flagged in [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit)), but in this stale state **none of the rows respond to taps** — drill-in is dead, "Start session" is dead, the up-directory affordance is dead. The only control that still works is **close** (dismiss the modal entirely).
+
+**Expected:** The browse modal should be fully dismissed at the moment **Start session** is tapped (i.e. as soon as session creation kicks off), not after the PTY mounts. The user should never land back on browse via the back gesture; back from the PTY should go to the Hub.
+
+**Why it likely happens:** Same root cause family as Bug 14 — browse is presented as a modal (`app/_layout.tsx:186-193`, `presentation: 'modal'`) and the create-session flow calls `router.dismiss()` + `router.push('/session/...')` in the same tick. When the user backs out of the session, the still-on-stack browse re-presents; but its component state (mutation in flight / mounted-but-stale handlers / pending modal state from Bug 13) leaves it in a frozen mode where only the modal chrome's close gesture survives.
+
+**Likely fix direction:** Dismiss the browse modal **immediately on Start-session tap** — before navigating to the session, before the mutation resolves. The current flow waits for `startSession.mutate(...).onSuccess` before dismissing (`app/browse.tsx:177-201, 203-229, 389-409`), which keeps browse mounted during the entire create+navigate window. Move the dismiss to fire *synchronously* with the tap, then navigate from a layout sibling once the mutation resolves (e.g. via a top-level pending-session signal, similar to how the name modal is hoisted in Bug 13's suspect 2).
+
+**Files likely involved:**
+
+- `app/browse.tsx:177-201, 203-229, 389-409` — Start-session handlers
+- `app/_layout.tsx:186-193` — browse modal registration
+- Whichever pending-session/launch-session state shape we land on for Bug 13's hoist
+
+**Related:** [Bug 13](#bug-13--new-session-name-modal-flashes-open-then-auto-closes-before-user-can-type), [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit), and [Bug 16](#bug-16--back-from-never-typed-in-new-session-leaves-an-empty-session-alive) all live on the same browse → start-session → PTY → back handoff. Likely one root cause behind multiple symptoms — investigate together.
+
+---
+
+## Bug 16 — Back from never-typed-in new session leaves an empty session alive
+
+**Filed:** 2026-05-24 — not diagnosed.
+
+**Symptom:** From `/browse`, pick a path and tap **Start session**. The PTY opens at `/session/[id]`. **Without typing anything**, tap **back**. The session is left running on the streamer — it now shows up in the Hub / Recents as a brand-new but empty session. The user clearly abandoned it (no prompt sent, no PTY input), so keeping it around is just noise.
+
+**Expected:** If the user exits a freshly-created session before sending any input, the session should be killed (or never registered as a Hub-visible session in the first place). Hub / Recents should not show empty placeholder sessions the user immediately walked away from.
+
+**Heuristic to use:** "User never used it" = the back exit fires before any of these happens:
+
+- User types into the PTY composer (any non-empty input).
+- User sends a prompt (`messageCount === 0` is the cleanest signal).
+- User triggers any tool / action that mutates the session state.
+
+If all of the above are still empty at exit time, the session is a discard.
+
+**Likely fix direction (pick after diagnosis):**
+
+1. **Lazy session creation.** Don't create the session on `/browse` **Start session** tap — just navigate to the PTY with the path + intent. Create the session on the first send (or first keystroke). Cleanest but bigger refactor; touches whatever lives in `hooks/useStartSession.ts` + the streamer-side session lifecycle.
+2. **Eager create + on-exit cleanup.** Keep today's eager-create path, but on the session screen's unmount handler check `messageCount === 0 && composerEmpty`. If both, fire a delete-session call before unmounting. Smaller change, but introduces an async delete on a back gesture which can race — needs care to not leave orphans if the delete fails.
+3. **Tombstone empties in the Hub list.** Render empties with `pending` styling and a `Resume / Discard` swipe. UX cop-out — the empties still pile up server-side, just hidden client-side. Not recommended unless (1) and (2) are blocked.
+
+**Recommendation:** start with (1) if the streamer side supports "session = path + intent until first input", else (2) with a careful guard. Confirm with brainstorm before picking.
+
+**Files likely involved:**
+
+- `app/browse.tsx:177-201` — `handleStartSession` (the eager-create call site)
+- `hooks/useStartSession.ts` (or wherever the session-create mutation lives)
+- `app/session/[id].tsx` — the unmount / back handler that needs the "discard if empty" hook
+- Streamer-side session lifecycle (delete-session endpoint + behavior on the local-streamer)
+
+**Related:** [Bug 13](#bug-13--new-session-name-modal-flashes-open-then-auto-closes-before-user-can-type), [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit), [Bug 15](#bug-15--after-new-session-back-file-browser-is-interaction-locked-only-close-works). All four sit on the same browse → start-session → PTY → back lifecycle. Worth a single brainstorm pass to design the whole flow rather than patching each symptom independently.
+
+---
+
+## Bug 17 — Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth
+
+**Filed:** 2026-05-24 — not diagnosed.
+
+**Symptom (two surfaces, likely shared root cause):**
+
+1. **Streaming chat output.** While Claude is mid-turn and the assistant message is growing, the auto-scroll-to-bottom jerks — the list snaps in discrete jumps with each chunk of streamed tokens instead of riding the growing content smoothly. Particularly visible during fast streams or when the assistant emits multiple message parts in quick succession.
+2. **Re-connecting to a session.** Opening (or re-opening) an existing session whose latest activity is below the fold causes the scroll to flash through intermediate positions before settling at the bottom — same jumpy quality, different trigger.
+
+**Expected:** Both transitions should be visually smooth. The streaming case should feel like the list is *riding* the growing content (no perceptible step). The re-connect case should either land at the correct position on first paint (no animation), or animate once, decisively, to the destination.
+
+**Suspected cause (to verify):**
+
+- The chat list is a `FlashList` (`app/conversation/[id].tsx:385` per Bug 4 history). Bug 4 fixed the cold-open scroll-to-end jump with `maintainVisibleContentPosition` + a settle-detect + 400 ms delayed final animated scroll. That patch is good for the *initial* open but does not specifically address mid-stream auto-scroll while content height keeps changing.
+- During streaming, `onContentSizeChange` fires for every chunk. If the auto-scroll handler re-invokes `scrollToEnd({ animated: true })` per chunk, the animations stack and look jumpy. The fix is usually either: (a) animate only on idle-edge with a debounced settle, (b) use `scrollToEnd({ animated: false })` while a turn is streaming and animate only at the boundary, or (c) lock the list to "bottom" via `maintainVisibleContentPosition` so the scroll position is anchored and natively follows the growing content (no JS-side scroll calls at all during stream).
+- For the re-connect case, suspect a similar stacking: hydrate from React Query cache → first paint scrolls to a remembered position → server-side refresh resolves with more messages → another scroll → final settle. Each step is "correct" individually but they're not coalesced.
+
+**Diagnosis order when picked up:**
+
+1. Add `console.log` (or a `useRef` counter) on every `scrollToIndex` / `scrollToOffset` / `scrollToEnd` invocation in `app/conversation/[id].tsx`. Reproduce both symptoms and count how many fire per visible jump. Confirms or denies the stacking hypothesis.
+2. Inspect the auto-scroll handler tied to `onContentSizeChange` (or whichever effect drives "stick to bottom"). Is it gating on "already at / near the bottom" before firing? If not, scroll calls fire even when the user scrolled up to read history.
+3. Try `maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: 100 }}` (or the FlashList equivalent) and see if the list auto-rides the growing content without explicit `scrollToEnd` calls during the stream.
+4. For re-connect: log the sequence of cache-hydrate / server-data paints and see which one wins the final scroll. Consider gating the scroll on a single "first settle" rather than each layout pass.
+
+**Likely fixes to evaluate (pick after diagnosis):**
+
+1. **Anchor-to-bottom via `maintainVisibleContentPosition`.** Let RN/FlashList keep the bottom edge stable as content grows. Remove all per-chunk scroll calls during a turn. Most likely fix.
+2. **Debounced animated scroll.** Coalesce `onContentSizeChange` into one `scrollToEnd({ animated: true })` per ~150 ms window, with `animated: false` between debounce windows. Cheaper but still feels like JS-driven scroll.
+3. **Animate only at turn-end.** During stream, no animation (instant snap). When `isThinking` flips false, fire one animated final scroll. Visual quality depends on how often the user is already at-bottom vs. caught-up.
+4. **For re-connect specifically:** delay the first auto-scroll until the second-paint settles (cache + first server refresh both resolved), then animate once.
+
+**Recommendation:** (1) is the textbook RN/FlashList answer for "list anchored to bottom that grows". Start there; fall back to (3) if MVCP misbehaves with the existing turn-divider injection / message-edit edge cases.
+
+**Side notes:**
+
+- This bug touches the same `handleScroll` / scroll-button cluster as [Bug 10](#bug-10--conversation-show-top-button-only-when-scrolling-up) and [Bug 11](#bug-11--conversation-move-bottom-button-to-bottom-right-floating-show-only-when-not-at-bottom). Land Bug 17 *before* Bug 10/11 if possible — the smooth-scroll fix may change the at-bottom detection logic those bugs rely on.
+- Related to [Bug 4 (✅ shipped)](#bug-4--long-conversation-scroll-to-end-flickery--jumpy): Bug 4 fixed cold-open landing; Bug 17 is the streaming + re-connect variant of the same scroll-coalescing problem. Reuse the same MVCP + settle-detect primitives if possible.
+
+**Files likely involved:**
+
+- `app/conversation/[id].tsx` — the chat FlashList, `handleScroll`, auto-scroll-to-bottom effects, turn-divider injection, `maintainVisibleContentPosition` settings
+- `hooks/useSession.ts` or whichever hook owns `isThinking` / streaming state (for the "animate only on turn-end" variant)
+- `services/query-client.ts:92` — persisted conversation root (re-connect path hydrates from here first)
+
+---
+
+## Bug 18 — Maestro flow `server_drag_reorder.yaml.skip` crashes the app at the `swipe` step
+
+**Filed:** 2026-05-24. **Status:** flow skipped in `test:e2e:mock` (renamed to `.yaml.skip`) so CI can stay green. Re-include by renaming back to `.yaml` once fixed.
+
+**Symptom:** The flow runs `setup.yaml`, taps the filter-sort button, then the conditional `runFlow` enters the multi-server branch even on a single-server fixture. The first `swipe` against `id: "drag-handle-srv_a"` causes the app to crash within ~4 s. Maestro log: *"App crashed or stopped while executing flow, please check diagnostic logs: ~/Library/Logs/DiagnosticReports directory"*.
+
+**Root-cause hypothesis (unverified):**
+
+1. **Most likely — branch-guard misfires.** The `when: visible: { id: "server-order-toggle" }` gate is supposed to skip the multi-server commands when only one server is paired (the default after `setup.yaml`). Maestro 2.x may evaluate `visible` more leniently than expected (or the toggle has different `testID` resolution on single-server now), so the `runFlow` enters the branch and tries to drag a `drag-handle-srv_a` row that doesn't exist. The crash is whatever React Native does when a missing-element `swipe` runs on `DraggableFlatList`.
+2. **Less likely — `swipe` API misuse.** The flow uses Maestro 2.x's `swipe: { direction: DOWN, from: { id: ... } }` form (replacing the deprecated `dragAndDrop: { from, to }`). The 2.0.10 docs say this works, but it's possible the from-element resolution is brittle on RN.
+
+**Steps to fix:**
+
+1. Add a `MOCK_SERVERS=srv_a,srv_b` env var to `e2e/mock-server.js` and seed `setup.yaml` to pair both, so the multi-server branch has the rows it expects.
+2. Add explicit `assertVisible: { id: "drag-handle-srv_a" }` *before* the `swipe`, so the flow fails the assertion (clean Maestro failure) instead of crashing the app (opaque "app stopped" error).
+3. Verify Maestro 2.0.10's `swipe` syntax against [the official 2.x reference](https://maestro.mobile.dev/api-reference/commands/swipe) — confirm `from: { id }` is the right invocation.
+4. If single-server should still be tested, fall through to the `notVisible` branch and assert the toggle is hidden (already in the flow).
+
+**Re-enable:** `git mv e2e/server_drag_reorder.yaml.skip e2e/server_drag_reorder.yaml` and add the file back to the `maestro test` arglist in `package.json` → `test:e2e:mock`.
+
+**Files likely involved:**
+
+- `e2e/server_drag_reorder.yaml.skip` — the flow
+- `e2e/setup.yaml` — server-pairing seed
+- `e2e/mock-server.js` — multi-server fixture support
+- `components/servers/DisplayedServersList.tsx` — drag-handle testID emission
+
+---
+
+## Bug 19 — Maestro flow `tree_server_headers.yaml.skip` can't return to hub after pairing second server
+
+**Filed:** 2026-05-24. **Status:** flow skipped in `test:e2e:mock` (renamed to `.yaml.skip`). Re-include by renaming back to `.yaml` once fixed.
+
+**Symptom:** The flow's single-server assertions pass (`tree-headers-01-single-server.png` is captured cleanly). It then deeplinks to `threadbase://onboarding?mode=add` to pair a second mock server on `:7072`. After filling the URL + key and tapping "Connect", the assertion `extendedWaitUntil: visible: { id: "hub-screen" }, timeout: 8000` fails with *"Assertion is false: id: hub-screen is visible"* after the full 8s timeout (run took 45s total because of upstream retries). The multi-server screenshot (`tree-headers-02-multi-server.png`) never gets taken.
+
+**Root-cause hypothesis (unverified):**
+
+1. **Most likely — second-server pairing never completes.** The mock on `:7072` may not respond to whatever the add-server flow needs (e.g. `/api/profiles` for the pair handshake, or the `POST /api/pair` endpoint). The "Connect" button stays in its busy state and the screen never routes back to the hub. Verify by tailing the `:7072` access log during the run.
+2. **Less likely — onboarding deeplink param drops back to single-server.** `threadbase://onboarding?mode=add` opens the add-server screen, but on iOS the deeplink confirmation dialog ("Open in Threadbase?") may dismiss before the `mode=add` param is read, so the user lands on the full onboarding carousel instead. Compare deeplink-handler logic in `app/_layout.tsx` against what the YAML expects.
+
+**Steps to fix:**
+
+1. Tail mock server stdout while running the flow manually — confirm `:7072` actually receives the pair requests, and that they return whatever the app's pair-exchange logic expects (URL validation, profile shape, etc.).
+2. If `:7072` is responding 200s correctly, instrument the app's pair-success handler to verify it's calling `router.replace('/')` or equivalent after the second server is added.
+3. If the deeplink param is being dropped, add a one-time `assertVisible: { id: "onboarding-add-server-screen" }` (or whatever the testID is for the add-server-only carousel slide) immediately after the deeplink to confirm the flow is on the right screen.
+4. Increase `extendedWaitUntil` timeout to 15s as a last resort — the pair handshake involves multiple round trips and 8s may be too tight under macOS sim load.
+
+**Re-enable:** `git mv e2e/tree_server_headers.yaml.skip e2e/tree_server_headers.yaml` and add the file back to the `maestro test` arglist in `package.json` → `test:e2e:mock`.
+
+**Files likely involved:**
+
+- `e2e/tree_server_headers.yaml.skip` — the flow
+- `e2e/mock-server.js` — the `:7072` second-server bind + `/api/profiles` + pair endpoints
+- `services/pair-exchange.ts` — second-server pair-success handler
+- `app/_layout.tsx` — deeplink routing for `threadbase://onboarding?mode=add`
 
 ---
 

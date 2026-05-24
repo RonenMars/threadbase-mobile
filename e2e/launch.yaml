@@ -13,3 +13,5 @@ appId: com.ronenmars.threadbase
 
 - assertVisible:
     id: "hub-screen"
+
+- takeScreenshot: e2e/_artifacts/screenshots/launch-01-hub

@@ -60,7 +60,7 @@ appId: com.ronenmars.threadbase
           id: "server-toggle-srv_a"
 
       # Visual: edit-mode entered, drag handles + hidden toggles visible.
-      - takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-01-edit-mode.png
+      - takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-01-edit-mode
 
       # Drag srv_a's row down past srv_b (swaps their order).
       # Maestro 2.x swipe takes direction+element, not from/to elements.
@@ -71,7 +71,7 @@ appId: com.ronenmars.threadbase
           duration: 800
 
       # Visual: rows post-drag — verifies the drop actually animated.
-      - takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-02-after-drop.png
+      - takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-02-after-drop
 
       # Exit edit-order mode (lock again)
       - tapOn:

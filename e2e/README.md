@@ -129,6 +129,10 @@ The suite was written/migrated against Maestro 2.0.10. Notable 2.x changes vs ol
 
 Maestro writes screenshots + a UI hierarchy dump to `~/.maestro/tests/<timestamp>/` on every failure. The HTML report (`ai-report-*.html`) is the most useful starting point.
 
+`npm run test:e2e:mock` also passes `--debug-output e2e/_artifacts/debug`, so every run (success or failure) drops a full debug bundle into the repo-relative `e2e/_artifacts/debug/` directory: per-command screenshots, view hierarchies, Maestro logs, device logs. The directory is git-ignored (`e2e/_artifacts/`).
+
+Each flow additionally calls `takeScreenshot` at human-meaningful states (e.g. last message above the bottom bar, drag completed, multi-server tree headers rendered). Those go to `e2e/_artifacts/screenshots/<flow>-<step>.png` and serve as a visual baseline you can eyeball when debugging or update intentionally on UI changes.
+
 To run a single flow with verbose output:
 
 ```bash

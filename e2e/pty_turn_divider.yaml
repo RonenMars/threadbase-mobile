@@ -48,4 +48,4 @@ appId: com.ronenmars.threadbase
     id: "message-input"
 
 # Visual: PTY session detail screen with terminal output + compose input.
-- takeScreenshot: e2e/_artifacts/screenshots/pty-divider-01-session-detail.png
+- takeScreenshot: e2e/_artifacts/screenshots/pty-divider-01-session-detail
