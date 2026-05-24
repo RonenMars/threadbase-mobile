@@ -662,6 +662,44 @@ If all of the above are still empty at exit time, the session is a discard.
 
 ---
 
+## Cleanup TODO
+
+Loose ends from the 2026-05-24 / 2026-05-25 worktree + branch cleanup session. Not bugs — just leftover state to resolve when convenient.
+
+### Locked agent worktrees in `.claude/worktrees/`
+
+- `.claude/worktrees/agent-a084388f0807eeb1f` (branch `worktree-agent-a084388f0807eeb1f`)
+- `.claude/worktrees/agent-ab537bd9ae7054ebf` (branch `worktree-agent-ab537bd9ae7054ebf`)
+
+Both branches point at `3acbd6c` (already on main). The worktrees are git-locked with reason `claude agent agent-<id> (pid 7526)`. That pid was alive at cleanup time (a separate `claude --dangerously-skip-permissions --chrome` session on `ttys025`).
+
+**Fix:** once that session is closed, run
+
+```sh
+git worktree remove -f -f .claude/worktrees/agent-a084388f0807eeb1f
+git worktree remove -f -f .claude/worktrees/agent-ab537bd9ae7054ebf
+git branch -D worktree-agent-a084388f0807eeb1f worktree-agent-ab537bd9ae7054ebf
+```
+
+Don't force-remove while pid 7526 is still alive — the other session may try to write there.
+
+### Uncommitted e2e + research changes on `main`
+
+Working-tree changes from prior agent sessions, left untouched during the cleanup:
+
+- `e2e/pagination-classic.yaml` (modified) — replaces unreliable `- back` swipe-from-edge with `- tapOn: "Back"` chevron + bumps hub-screen timeout 5 s → 10 s. Looks correct; needs a smoke run before committing.
+- `e2e/pagination-hub.yaml` (modified) — same `back` → `tapOn: "Back"` + timeout bump fix. Ship alongside `pagination-classic.yaml`.
+- `e2e/diagnose-local-sessions.yaml` (new, untracked) — diagnostic Maestro flow that pairs against the local streamer instead of the mock; written to investigate the "sessions are not displayed at all" report from 2026-05-24. The session-rendering issue is resolved, so decide whether to keep this as a permanent diagnostic flow or delete.
+- `docs/research/2026-05-24-threadbase-competitive-landscape.md` (new, untracked) — competitive-landscape research doc. Independent of the e2e changes; review and commit to `docs/research/` if it stays relevant.
+
+**Suggested split:** one commit for the two e2e fixes (they share a fix + rationale), one commit for the research doc, one decision on the diagnostic flow.
+
+### TestFlight build with the conversation-load fix
+
+Commit `36c504d` (`fix(conversation): drop redundant skeleton timers, shorten layout quiet window`) is on `main` and pushed, but the latest TestFlight build (103, `d45e1a0` `chore(ios): bump build number to 103`) was cut **before** the fix. The user reported the bug from build 103; a new TestFlight build is needed to verify the fix on-device. Bump build number + run the EAS submit flow when ready.
+
+---
+
 ## Sequencing
 
 Suggested next-up order (revise as profiling results come in):
