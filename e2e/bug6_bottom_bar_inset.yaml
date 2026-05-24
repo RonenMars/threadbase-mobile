@@ -61,4 +61,4 @@ appId: com.ronenmars.threadbase
 # Visual proof: the last message sits above the bottom action bar. If Bug 6
 # ever regresses, the diff between this screenshot and a known-good frame
 # will surface the overlap immediately.
-- takeScreenshot: e2e/_artifacts/screenshots/bug6-01-last-message-above-bar
+- takeScreenshot: e2e/_artifacts/screenshots/bug6-01-last-message-above-bar.png
