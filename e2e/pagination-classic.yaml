@@ -1,0 +1,125 @@
+# Pagination e2e — classic view.
+#
+# Boots the app paired against the pagination mock server on :7072 (346
+# conversations), switches to classic view via the settings page, then scrolls
+# the conversation list deep enough to verify high-index conversations become
+# visible. The harness wrapper (scripts/run-pagination-e2e.sh) checks the
+# mock's request log to assert pagination ran end-to-end.
+#
+# Requires: pagination mock running on http://localhost:7072.
+
+appId: com.ronenmars.threadbase
+---
+# Reset the mock's request log so this flow's assertions don't see prior runs.
+- runScript: scripts/reset-pagination-mock.js
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# Onboarding — paste credentials, paired to the pagination mock.
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      - tapOn:
+          id: "onboarding-welcome-cta"
+      - tapOn:
+          id: "onboarding-theme-cta"
+      - tapOn:
+          id: "onboarding-valueprop-cta"
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:7072"
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "mock-key-pagination"
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 10000
+      - tapOn:
+          id: "onboarding-notifications-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+
+# Switch layout to classic via Settings.
+# The cog button uses accessibilityLabel "Settings" (no testID).
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Classic"
+    timeout: 5000
+- tapOn: "Classic"
+# Navigate back to the hub. expo-router stack pops via the iOS system back
+# gesture (swipe from left edge) or the back chevron — `back` command handles
+# both consistently.
+- back
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 5000
+
+# Wait for the conversation list to materialise — "Conversation #0" is the
+# most recent in the mock and should appear at the top of the list.
+- extendedWaitUntil:
+    visible: "Conversation #0"
+    timeout: 15000
+
+- takeScreenshot: e2e/_artifacts/pagination-classic-01-top
+
+# Scroll to a mid-list item. Page boundaries: 50, 100, 150, 200, 250, 300.
+# Conversation #100 sits past page 2 (offset=50, page 2 covers items 50-99,
+# #100 is the first item of page 3). scrollUntilVisible swipes until found.
+- scrollUntilVisible:
+    element: "Conversation #100"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 30
+
+- takeScreenshot: e2e/_artifacts/pagination-classic-02-mid
+
+# Scroll deeper. Conversation #250 sits inside page 6 (offset=250).
+- scrollUntilVisible:
+    element: "Conversation #250"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 30
+
+- takeScreenshot: e2e/_artifacts/pagination-classic-03-deep
+
+# Final assertion — the very last conversation #345 should be reachable
+# (page 7, offset=300, items 300-345).
+- scrollUntilVisible:
+    element: "Conversation #345"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 30
+
+- takeScreenshot: e2e/_artifacts/pagination-classic-04-last

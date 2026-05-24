@@ -1,0 +1,147 @@
+# Pagination e2e — hub view.
+#
+# Same boot sequence as pagination-classic but ends in the hub layout. Hub
+# groups conversations by project, so the visible rows are project names
+# (one row per project, with aggregated counts) rather than per-conversation.
+# The mock spreads 346 conversations across 5 projects (alpha/beta/gamma/
+# delta/epsilon-service), so all 5 should be reachable as distinct rows.
+#
+# Requires: pagination mock running on http://localhost:7072.
+
+appId: com.ronenmars.threadbase
+---
+- runScript: scripts/reset-pagination-mock.js
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      - tapOn:
+          id: "onboarding-welcome-cta"
+      - tapOn:
+          id: "onboarding-theme-cta"
+      - tapOn:
+          id: "onboarding-valueprop-cta"
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:7072"
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "mock-key-pagination"
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 10000
+      - tapOn:
+          id: "onboarding-notifications-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+
+# Switch to hub layout.
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Hub"
+    timeout: 5000
+- tapOn: "Hub"
+- back
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 5000
+
+# Hub renders one row per project. Wait for the first project row.
+- extendedWaitUntil:
+    visible: "alpha-service"
+    timeout: 15000
+
+- takeScreenshot: e2e/_artifacts/pagination-hub-01-top
+
+# Verify all 5 projects appear by scrolling until each becomes visible.
+# Each project should be reachable; the mock spread conversations evenly
+# (~69-70 per project) so even short scrolls find them.
+- scrollUntilVisible:
+    element: "beta-app"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+
+- scrollUntilVisible:
+    element: "gamma-cli"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+
+- scrollUntilVisible:
+    element: "delta-web"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+
+- scrollUntilVisible:
+    element: "epsilon-mobile"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+
+- takeScreenshot: e2e/_artifacts/pagination-hub-02-all-projects
+
+# Drill into the project with the most conversations to confirm pagination
+# propagated all the way through. alpha-service has 70 conversations (every
+# 5th of the 346). Tapping the row drills into the project's conversation
+# list, which is where pagination is exercised.
+- tapOn: "alpha-service"
+
+# Inside the project view, find a high-index conversation. alpha-service holds
+# conv-0000, conv-0005, conv-0010, ... conv-0345 (every 5th item from the
+# generator), so #100 sits at index ~20 within the project list — reachable
+# by scrolling a few times.
+- extendedWaitUntil:
+    visible: "Conversation #0"
+    timeout: 10000
+
+- takeScreenshot: e2e/_artifacts/pagination-hub-03-project-top
+
+- scrollUntilVisible:
+    element: "Conversation #100"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 30
+
+- scrollUntilVisible:
+    element: "Conversation #345"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 30
+
+- takeScreenshot: e2e/_artifacts/pagination-hub-04-project-deep
