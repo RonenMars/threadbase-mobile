@@ -144,19 +144,16 @@ export default function ConversationDetailScreen() {
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   const pulseAnim = useRef(new Animated.Value(1)).current
 
-  // Two-phase skeleton timing:
-  //  Phase 1: 0.8s floor before treating the screen as ready
-  //  Phase 2: +0.8s buffer after the auto-scroll settles, so the final scroll
-  //           lands fully behind the skeleton before it lifts
-  const [postScrollDelayDone, setPostScrollDelayDone] = useState(false)
-  const isReady = conversation !== undefined && firstLayoutDone && postScrollDelayDone
+  // Skeleton stays up until the network fetch lands AND the FlashList has
+  // stopped resizing (handleContentSizeChange settles). The 800 ms
+  // useMinDisplayTime floor below is the anti-flicker mechanism from bug-1.
+  const isReady = conversation !== undefined && firstLayoutDone
   const isGated = useMinDisplayTime(isReady, 800, id)
 
   useEffect(() => {
     hasInitialScrolled.current = false
     userHasScrolled.current = false
     setFirstLayoutDone(false)
-    setPostScrollDelayDone(false)
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
@@ -179,13 +176,6 @@ export default function ConversationDetailScreen() {
     }
   }, [])
 
-  // Phase-2 buffer: hold the skeleton 0.8s after the scroll settles.
-  useEffect(() => {
-    if (!firstLayoutDone) return
-    const t = setTimeout(() => setPostScrollDelayDone(true), 800)
-    return () => clearTimeout(t)
-  }, [firstLayoutDone])
-
   // Empty conversations may never fire onContentSizeChange — flip immediately
   // so we don't sit under a skeleton for an empty state.
   useEffect(() => {
@@ -201,7 +191,7 @@ export default function ConversationDetailScreen() {
   // Keep re-pinning to the bottom every time content grows, until the user
   // actually drags. scrollToEnd targets the current bottom and the bottom
   // keeps moving as lazy rows / tool cards / images finish laying out. After
-  // 400ms of no size changes we treat the initial scroll as "settled" and
+  // 150ms of no size changes we treat the initial scroll as "settled" and
   // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts — but we keep
   // auto-anchoring to the bottom for any late layout deltas, so the list
   // doesn't sit parked above the true end.
@@ -215,7 +205,7 @@ export default function ConversationDetailScreen() {
       hasInitialScrolled.current = true
       initialScrollSettleRef.current = null
       setFirstLayoutDone(true)
-    }, 400)
+    }, 150)
   }, [scrollToBottom])
 
   // User touched the list — stop the auto-scroll loop immediately.
