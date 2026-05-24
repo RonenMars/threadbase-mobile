@@ -39,15 +39,6 @@ const LINE_STYLE: Record<LineType, { color: string; bg?: string }> = {
   'default': { color: '#e6edf3' },
 }
 
-const DividerRow = memo(function DividerRow({ text }: { text: string }) {
-  return (
-    <View style={styles.dividerRow} testID="divider-row">
-      <Text style={styles.dividerLabel}>YOU</Text>
-      <Text style={styles.dividerText} numberOfLines={1}>{text}</Text>
-    </View>
-  )
-})
-
 interface LineRowProps {
   line: string
   index: number
@@ -134,10 +125,7 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   }, [scrollToBottom, showJumpButtonVal])
 
   const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
-    if (typeof item !== 'string' && item.__divider) {
-      return <DividerRow text={item.text} />
-    }
-    return <LineRow line={item as string} index={index} />
+    return <LineRow line={item} index={index} />
   }, [])
 
   // Stable keys by content + per-content occurrence. Positional keys broke
@@ -147,10 +135,9 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const keys = useMemo(() => {
     const counts = new Map<string, number>()
     return lines.map((item) => {
-      const text = typeof item === 'string' ? `t:${item}` : `d:${item.text}`
-      const c = counts.get(text) ?? 0
-      counts.set(text, c + 1)
-      return `${text}#${c}`
+      const c = counts.get(item) ?? 0
+      counts.set(item, c + 1)
+      return `${item}#${c}`
     })
   }, [lines])
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
@@ -265,29 +252,5 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 12,
     fontWeight: '500',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(31, 111, 235, 0.10)',
-    borderLeftWidth: 3,
-    borderLeftColor: '#58a6ff',
-    marginVertical: 2,
-  },
-  dividerLabel: {
-    color: '#58a6ff',
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: 'monospace',
-    letterSpacing: 0.6,
-  },
-  dividerText: {
-    color: '#cdd9e5',
-    fontSize: 12,
-    fontFamily: 'monospace',
-    flex: 1,
   },
 })

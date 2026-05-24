@@ -409,7 +409,7 @@ export default function SessionDetailScreen() {
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
   const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
-  const { lines, isStreaming, isLoadingHistory, recordSentInput } = useTerminalStream(serverId, id, skipLiveStream)
+  const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id, skipLiveStream)
   const { sendInput } = useSessionActions(serverId, id)
 
   // When the app returns from background, iOS may have torn down the WS
@@ -539,7 +539,6 @@ export default function SessionDetailScreen() {
         return
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      recordSentInput(payload)
       sendInput.mutate(payload, {
         onError: (err) =>
           Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
@@ -556,7 +555,6 @@ export default function SessionDetailScreen() {
       return
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    recordSentInput(payload)
     sendInput.mutate(payload, {
       onError: (err) =>
         Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
@@ -593,7 +591,6 @@ export default function SessionDetailScreen() {
       }
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    recordSentInput(payload)
     sendInput.mutate(payload, {
       onError: (err) =>
         Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
@@ -754,6 +751,7 @@ export default function SessionDetailScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 52 : 0}
       >
         {session ? (
           <View style={styles.statusBar}>

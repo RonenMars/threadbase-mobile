@@ -1,12 +1,8 @@
-# Maestro E2E — PTY Turn Divider smoke
+# Maestro E2E — PTY session smoke
 # Verifies the PTY session screen mounts the terminal output container
-# and the compose input area. The injected "YOU →" divider rows are NOT
-# asserted here because the mock server does not support WebSocket
-# upgrades (see e2e/README.md → "What it does NOT cover"); driving the
-# real divider injection requires a real backend that streams
-# terminal_output frames. The testIDs `terminal-output`, `divider-row`,
-# and `terminal-line-row` are wired so a future real-backend flow can
-# extend this YAML to assert divider injection without re-instrumenting.
+# and the compose input area. (Filename kept for npm script + ROADMAP
+# compatibility; previously asserted "YOU →" divider rows that have
+# since been removed in favour of showing terminal output as-is.)
 #
 # Strategy: openLink with the threadbase:// deep link targets the
 # session/[id] route directly, bypassing the hub project-row tap

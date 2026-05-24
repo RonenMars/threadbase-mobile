@@ -5,9 +5,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
 
-export type TerminalLine =
-  | string
-  | { __divider: true; text: string }
+export type TerminalLine = string
 
 interface TerminalHistoryResponse {
   output?: string
@@ -23,7 +21,6 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const [lines, setLines] = useState<TerminalLine[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const vtRef = useRef(new VirtualTerminal())
-  const pendingDividersRef = useRef<string[]>([])
   // Track whether terminal_replay has been received to avoid firing the HTTP fallback
   const replayReceivedRef = useRef(false)
   // Track whether history has been fed (from replay or HTTP) to avoid double-feeding
@@ -55,7 +52,6 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     if (historyFedRef.current) return
     historyFedRef.current = true
     vtRef.current.reset()
-    pendingDividersRef.current = []
     setLines([])
     vtRef.current.feed(raw)
     const visible = vtRef.current.getLines()
@@ -86,7 +82,6 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   useEffect(() => {
     // Reset state when sessionId changes
     vtRef.current.reset()
-    pendingDividersRef.current = []
     replayReceivedRef.current = false
     historyFedRef.current = false
     setLines([])
@@ -138,31 +133,10 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
         setIsStreaming(true)
         vtRef.current.feed(msg.data)
-        setLines((prev) => {
-          const existingDividers = prev.filter(
-            (l): l is { __divider: true; text: string } =>
-              typeof l !== 'string' && (l as { __divider: boolean }).__divider
-          )
-          const newDividers: TerminalLine[] = pendingDividersRef.current.map(
-            (text) => ({ __divider: true as const, text })
-          )
-          pendingDividersRef.current = []
-          const vtLines = vtRef.current.getLines()
-          return [...existingDividers, ...newDividers, ...vtLines].slice(-maxLines)
-        })
+        setLines(vtRef.current.getLines().slice(-maxLines))
 
         clearTimeout(idleTimer)
-        idleTimer = setTimeout(() => {
-          // Flush any pending dividers before marking idle
-          if (pendingDividersRef.current.length > 0) {
-            const dividers: TerminalLine[] = pendingDividersRef.current.map(
-              (text) => ({ __divider: true as const, text })
-            )
-            pendingDividersRef.current = []
-            setLines((prev) => [...prev, ...dividers])
-          }
-          setIsStreaming(false)
-        }, 1500)
+        idleTimer = setTimeout(() => setIsStreaming(false), 1500)
       })
     }
 
@@ -198,13 +172,8 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
   const clear = useCallback(() => {
     vtRef.current.reset()
-    pendingDividersRef.current = []
     setLines([])
   }, [])
 
-  const recordSentInput = useCallback((text: string) => {
-    pendingDividersRef.current.push(text)
-  }, [])
-
-  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear, recordSentInput }
+  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear }
 }
