@@ -27,6 +27,9 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) |
 | Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) |
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
+| Feature 16 — Native mini-form for Claude Code interactive prompts | Planned (mobile-native, cross-repo) |
+| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
+| Feature 18 — Upgrade to Expo SDK 56 | Planned (platform/deps) |
 
 **Suggested order for the original 5:** **Feature 2** (small UI move, isolated) → **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 1** (Tree drilled-dir path) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger). Feature 2 may need to coordinate with [Bug 6](./BACKLOG.md#bug-6--conversation-list-content-hidden-under-bottom-action-bar) since both touch the bottom action bar.
 
@@ -535,6 +538,121 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 - Composer: "Send later" affordance next to the send button
 
 **Related:** Feature 13 (Mission Control) is the natural "see what your scheduled prompts did" surface.
+
+---
+
+### Feature 16 — Native mini-form for Claude Code interactive prompts
+
+**Filed:** 2026-05-23.
+
+**Goal:** When Claude Code emits an interactive question (numbered selection list, single-choice radio-style, or multi-select checkbox), surface it in the app as a native form (tappable options + submit) instead of letting it render as raw text inside the PTY scrollback that the user has to scroll to and type a number into.
+
+**Why:** On a phone, typing numbers into the chat input to answer a question that's buried somewhere above in tool output is awkward and error-prone. This is the single widest gap between Claude Code's TTY-native UX and what a touch-native client should feel like.
+
+**Direction:**
+- Detection: most likely streamer-side. `tb-streamer` parses the prompt out of the PTY stream and emits a structured WS event (`{ type: 'prompt', shape: 'single'|'multi', options: [...], promptId }`). Keeps mobile rendering dumb; lets detection logic be hot-fixed without a mobile rebuild.
+- Mobile: subscribe to the new WS event, render a `<PromptForm>` (radio for single-choice, checkbox for multi) overlay or sibling to the chat input when active. Submit via WS / sibling REST.
+- PTY view: while a form is active, hide or de-emphasize the duplicate prompt text in scrollback so there's no "two places to answer" confusion.
+- Fallback: if the detected shape doesn't match a known form (e.g. free-text follow-up), leave the PTY text visible — never block the user.
+
+**Open questions:**
+- Detection approach — regex vs. structured marker from `tb-streamer` vs. cooperation from Claude Code itself (env-flag-gated structured stdout, OSC escape). Plan stub recommends streamer-side WS event but the call should be made against the upstream landscape at pickup time.
+- Multi-select submission is the hard part — Claude Code's multi-select TUI uses cursor keys + space + enter, which doesn't replay cleanly via stdin. Validate feasibility before committing to the multi-select variant; the single-choice form can ship independently.
+- How to mask the duplicate PTY lines without breaking terminal cursor alignment.
+- Cancel/dismiss behavior (background app, swipe form away, streamer-side timeout).
+
+**Scope:** ~1 week mobile + ~1 week streamer for single-choice. Multi-select is gated on upstream support and may need to be deferred.
+
+**Files likely involved:**
+- `tb-streamer`: new prompt-detector module + WS event type + stdin-injection endpoint accepting `{ promptId, answer }`
+- `tb-mobile`: new `components/session/PromptForm.tsx`, session-detail Zustand slice for `activePrompt`, WS handler wiring
+- Session-detail screen integration above the chat input
+
+**Plan stub:** [`superpowers/plans/2026-05-23-claude-code-prompt-miniform.md`](./superpowers/plans/2026-05-23-claude-code-prompt-miniform.md)
+
+---
+
+### Feature 17 — Expand Maestro E2E coverage to high-value flows
+
+**Filed:** 2026-05-23.
+
+**Goal:** Grow the Maestro smoke suite (`launch.yaml` + `browse.yaml`, ~30–60s, hub-only) into coverage of the flows most likely to regress in day-to-day work.
+
+**Why:** Current suite proves the app boots to the hub and the filter/sort sheet opens. Session detail navigation, chat send, attachments, settings, and keyboard-avoidance are all uncovered — and several of these have been the source of recent bugs (multi-attachment Bug 5, the 2026-05-22 keyboard-avoidance fix).
+
+**Priority order (P0 → P3):**
+- **P0 — unblockers**
+  1. Fix project-row testID a11y so Maestro can tap into a session detail (`e2e/README.md` "Known limits" #1). Wrap row in a `<View accessible testID>` instead of relying on `TouchableOpacity` prop forwarding.
+  2. Add the mock endpoints currently 404ing (`/api/sessions/names`, `/api/projects/popular`, `/api/conversations/count`, `POST /api/push/register`) so the hub error banner stops obscuring elements.
+- **P1 — regression coverage for recent fixes**
+  3. Keyboard-avoidance flow on the chat input (guards the 2026-05-22 fix).
+  4. Onboarding end-to-end on a freshly erased sim (`xcrun simctl erase` in CI before the run).
+  5. Session rename flow.
+- **P2 — needs mock work**
+  6. Minimal `/ws` WebSocket fake in `e2e/mock-server.js` (frame-replay from a fixture). Unlocks `chat_send.yaml`.
+  7. Single-attachment send flow.
+  8. Multi-attachment send flow — currently expected to fail ([Bug 5](./BACKLOG.md) territory); use as a watchdog test that flips green when the bug is fixed.
+- **P3 — broader UX**
+  9. Settings: theme toggle.
+  10. Settings: language switch + RTL spot-check.
+  11. Filter/sort *application* (not just sheet open).
+
+**Open questions:**
+- Pay the cost of erasing the sim once per CI run for the onboarding flow, or gate behind an env flag?
+- Attachment + WS flows in `test:e2e:mock` (slower smoke) or a separate `test:e2e:full` job?
+- Also run the suite on Android — Maestro's `testID` handling is better there per `e2e/README.md`.
+
+**TestIDs likely needed (preliminary):**
+- `project-row-<projectId>` on the hub's project group row
+- `session-detail-back`, `session-detail-rename-cta`, `session-rename-input`, `session-rename-confirm`
+- `chat-input`, `chat-send-cta`, `chat-attachment-cta`, `chat-message-<index>`
+- `settings-screen`, `settings-theme-toggle`, `settings-language-select`
+- A keyboard-spacer anchor for asserting input visibility above the keyboard
+
+**Files likely involved:**
+- `e2e/mock-server.js` — endpoint additions + `/ws` fake
+- `e2e/*.yaml` — new flow files per priority item
+- `components/sessions/hub/ProjectHubCard.tsx` (or row component) — testID a11y fix
+- Misc source files for the testIDs above
+- `e2e/README.md` — document each new flow and its testIDs
+
+**Plan stub:** [`superpowers/plans/2026-05-23-e2e-expansion.md`](./superpowers/plans/2026-05-23-e2e-expansion.md)
+
+**Related:** the open "GitHub Actions: Tests + E2E" CI item — pairs naturally with this so the expanded suite runs on every push.
+
+---
+
+### Feature 18 — Upgrade to Expo SDK 56
+
+**Filed:** 2026-05-23.
+
+**Goal:** Move the app from Expo SDK 55 → 56 on a `chore/expo-56-upgrade` branch, with the full Jest + Maestro suites green, a clean `expo-doctor`, and a TestFlight archive dry-run via `/expo-local-ship`.
+
+**Why:** Keep the toolchain current with the canary work we eventually want to absorb (SDK 56 routes/router-typing, RN 0.85, React 19.2.3). A prior 55→56 attempt was rolled back on 2026-05-06 — treat SDK 56 as still potentially fragile and prefer waiting for a patch release (`~56.0.5`+) before starting.
+
+**Procedure:** Full step-by-step lives in the standalone brief [`docs/upgrade-to-expo-56.md`](./upgrade-to-expo-56.md) — 5 phases (discover/report → bump → code fixes → native rebuild + sim smoke → ship dry-run → PR). The brief is self-contained and is the source of truth; this entry is the pointer.
+
+**Acceptance criteria** (copied from the brief so the roadmap entry is self-contained):
+- `npm run typecheck` exits 0
+- `npm run lint` ≤ `main` baseline (43 errors / 46 warnings)
+- `npm run test:ci` exits 0
+- `npm run test:e2e:mock` exits 0
+- App launches cleanly on iPhone 17 Pro / iOS 26.4 simulator
+- App launches cleanly on iOS 17.x simulator
+- `expo-doctor` exits 0
+- No new TS2345 / TS2322 from `t('ns:key')` cross-namespace usage
+- iOS Release build succeeds via `npx expo run:ios --configuration Release --device <udid>`
+- TestFlight archive via `/expo-local-ship` succeeds (no actual ship)
+- PR opened with before/after dep version table
+
+**Risk notes:**
+- Prior 55→56 attempt rolled back 2026-05-06 — inspect that branch's history before redoing from scratch.
+- iOS-26 Hermes path was a crash source 54→55; re-test on iOS 26.x after upgrade.
+- `ship.sh` step-2 `npm install` corrupts Watchman/Metro mid-ship — reset Watchman before any ship dry-run.
+
+**Out of scope:** NativeWind v4→v5, react-native-screens@5, expo-updates re-enablement, Zustand/Router refactors. See the brief's "Things explicitly NOT in scope" section.
+
+**Plan stub:** [`superpowers/plans/2026-05-23-expo-56-upgrade.md`](./superpowers/plans/2026-05-23-expo-56-upgrade.md)
 
 ---
 
