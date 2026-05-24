@@ -53,18 +53,33 @@ interface LineRowProps {
   index: number
 }
 
-const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
+// Gutter renders the line number. Split out + memoised on `index` only so
+// `LineText` (the heavier ANSI-strip + styled <Text>) doesn't re-render when
+// only the position changes — which happens on every WS frame.
+const LineGutter = memo(function LineGutter({ index }: { index: number }) {
+  return <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
+})
+
+const LineText = memo(function LineText({ line }: { line: string }) {
   const clean = stripAnsi(line)
   const type = classifyLine(clean)
   const style = LINE_STYLE[type]
+  return <Text style={[styles.lineText, { color: style.color }]} selectable>{clean}</Text>
+})
 
+// Background colour and the diff/tool classification depend on `line` content,
+// not `index`. Compute once and memoise on `line` so position shifts don't
+// force a reclassify; the outer wrapper stays cheap (only `index` changes).
+const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
+  const type = classifyLine(stripAnsi(line))
+  const bg = LINE_STYLE[type].bg
   return (
     <View
-      style={[styles.lineRow, style.bg ? { backgroundColor: style.bg } : undefined]}
+      style={[styles.lineRow, bg ? { backgroundColor: bg } : undefined]}
       testID="terminal-line-row"
     >
-      <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
-      <Text style={[styles.lineText, { color: style.color }]} selectable>{clean}</Text>
+      <LineGutter index={index} />
+      <LineText line={line} />
     </View>
   )
 })
