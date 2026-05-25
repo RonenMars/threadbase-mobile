@@ -76,15 +76,15 @@ appId: com.ronenmars.threadbase
     visible: "Classic"
     timeout: 5000
 - tapOn: "Classic"
-# Navigate back to the hub. expo-router stack pops via the iOS system back
-# gesture (swipe from left edge) or the back chevron — `back` command handles
-# both consistently.
-- back
+# Navigate back to the hub. Maestro's `back` command (swipe-from-edge) is
+# unreliable in iOS 26 sims; the expo-router Stack header chevron has the
+# accessibility label "Back".
+- tapOn: "Back"
 
 - extendedWaitUntil:
     visible:
       id: "hub-screen"
-    timeout: 5000
+    timeout: 10000
 
 # Wait for the conversation list to materialise — "Conversation #0" is the
 # most recent in the mock and should appear at the top of the list.
