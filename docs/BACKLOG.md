@@ -42,6 +42,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 28 | Pull-to-refresh modal: show IP+port when server has no name | Open |
 | Bug 29 | Quick Access: open only on tab click; remove the right-side chevron | Open |
 | Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | Open — needs spec |
+| Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
@@ -903,6 +904,39 @@ Once the spec is approved, the implementation is bounded: store + read API + wri
 - New `hooks/useFavorites.ts` + Zustand slice + persistence
 - `components/sessions/quickAccess/FavoritesTab.tsx` (already exists as a UI shell; needs data wiring)
 - Whatever row component owns the "Add to favorites" tap
+
+---
+
+## Bug 31 — Settings theme change doesn't apply colors across the whole app
+
+**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+
+**Symptom:** Changing the theme from Settings updates some surfaces but leaves others on the previous palette. The change needs to be validated across every screen, not just the one currently visible.
+
+**Validation checklist (sweep on each theme switch):**
+
+- Hub: project cards, tree rows, accordion chevrons, section headers
+- Conversation screen: MessageBubble (user + assistant), CodeBlock (Prism theme), DiffLines tints, Top/Bottom buttons, input area, attachment chips
+- Quick Access strip: tab pills, row backgrounds, empty/loading states
+- Onboarding carousel + ConnectStep + NotificationsStep
+- Settings itself (including any nested screens — favorites manager, server detail, API key editors)
+- Modals: new-session name modal, file browser, error banners, pull-to-refresh sheet
+- System chrome: status bar style, nav bar tint, splash background, keyboard appearance
+
+**Likely causes to look at:**
+
+- Hard-coded color literals (`#RRGGBB` / `rgb(...)`) instead of theme tokens — grep candidates
+- NativeWind class strings that don't pick up the theme variant (e.g. `bg-white` vs `bg-background`)
+- Components that captured the theme into a `useMemo` / closure without including the theme value in its dependency list
+- Direct imports from a static palette module rather than the live theme context/store
+
+**Action item:** before fixing, do a single audit pass: switch theme, screenshot every top-level screen + modal, list the off-palette surfaces. Then group the fix by root cause (hard-coded literals vs missing dep arrays vs static imports) rather than screen-by-screen.
+
+**Files to start with (to verify):**
+
+- Theme provider / store (Zustand slice or context for the active theme)
+- `tailwind.config.js` and any `themes/` or `theme/` module
+- High-traffic components: `MessageBubble`, `ProjectHubCard`, `QuickAccessStrip`, onboarding steps
 
 ---
 
