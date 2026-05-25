@@ -41,8 +41,10 @@ export function SortSheet({
   const [draftOrder, setDraftOrder] = useState<SortOrder>(sortOrder)
 
   useEffect(() => {
-    setDraftBy(sortBy)
-    setDraftOrder(sortOrder)
+    queueMicrotask(() => {
+      setDraftBy(sortBy)
+      setDraftOrder(sortOrder)
+    })
   }, [sortBy, sortOrder, visible])
 
   const renderBackdrop = useCallback(

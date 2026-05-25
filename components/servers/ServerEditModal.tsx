@@ -44,18 +44,20 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   // Pre-fill fields when opening
   useEffect(() => {
     if (visible) {
-      if (server) {
-        setLabel(server.label ?? '')
-        setUrl(server.url)
-        setApiKey(server.apiKey)
-      } else {
-        setLabel('')
-        setUrl('')
-        setApiKey('')
-      }
-      setError(null)
-      setIsDirty(false)
-      setShowApiKey(false)
+      queueMicrotask(() => {
+        if (server) {
+          setLabel(server.label ?? '')
+          setUrl(server.url)
+          setApiKey(server.apiKey)
+        } else {
+          setLabel('')
+          setUrl('')
+          setApiKey('')
+        }
+        setError(null)
+        setIsDirty(false)
+        setShowApiKey(false)
+      })
     }
   }, [visible, serverId, server])
 

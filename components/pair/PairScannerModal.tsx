@@ -61,7 +61,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   }, [onClose, reset])
 
   useEffect(() => {
-    if (visible) reset()
+    if (visible) queueMicrotask(reset)
   }, [visible, reset])
 
   const handleScanned = useCallback(

@@ -57,15 +57,15 @@ export function ServerFilterSheet({
   const [draftSort, setDraftSort] = useState<SortType>(sortType ?? 'lastActivity')
 
   useEffect(() => {
-    setDraftIds(displayedServerIds)
+    queueMicrotask(() => setDraftIds(displayedServerIds))
   }, [displayedServerIds, visible])
 
   useEffect(() => {
-    if (selectedStatuses) setDraftStatuses(selectedStatuses)
+    if (selectedStatuses) queueMicrotask(() => setDraftStatuses(selectedStatuses))
   }, [selectedStatuses, visible])
 
   useEffect(() => {
-    if (sortType) setDraftSort(sortType)
+    if (sortType) queueMicrotask(() => setDraftSort(sortType))
   }, [sortType, visible])
 
   const renderBackdrop = useCallback(

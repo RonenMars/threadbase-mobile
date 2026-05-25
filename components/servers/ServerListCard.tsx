@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated, Easing } from 'react-native'
 import { Trash, PencilSimple, ArrowsClockwise, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -19,9 +19,9 @@ const REFRESH_TIMEOUT_MS = 12000
 
 export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefresh, onViewError }: Props) {
   const { t } = useTranslation('servers')
-  const progress = useRef(new Animated.Value(1)).current
+  const progress = useMemo(() => new Animated.Value(1), [])
   const progressAnim = useRef<Animated.CompositeAnimation | null>(null)
-  const resultOpacity = useRef(new Animated.Value(0)).current
+  const resultOpacity = useMemo(() => new Animated.Value(0), [])
   const [resultColor, setResultColor] = useState<string>(dark.status.running)
   const [showBottomLine, setShowBottomLine] = useState(false)
   const prevRefreshing = useRef(false)

@@ -27,7 +27,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
 
   // Reset arg whenever a new command is shown
   useEffect(() => {
-    if (command) setArg('')
+    if (command) queueMicrotask(() => setArg(''))
     // Effect keyed on command.id; the full `command` is read from the closure
     // intentionally and should not re-trigger when only its other fields change.
     // eslint-disable-next-line react-hooks/exhaustive-deps

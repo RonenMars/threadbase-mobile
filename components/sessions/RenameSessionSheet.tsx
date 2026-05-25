@@ -16,7 +16,7 @@ export function RenameSessionSheet({ currentName, onSave, onClose }: Props) {
   const [name, setName] = useState(currentName)
 
   useEffect(() => {
-    setName(currentName)
+    queueMicrotask(() => setName(currentName))
   }, [currentName])
 
   const handleSave = useCallback(() => {

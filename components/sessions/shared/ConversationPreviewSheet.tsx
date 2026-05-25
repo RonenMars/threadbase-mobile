@@ -50,10 +50,11 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
     else sheetRef.current?.close()
   }, [target])
 
+  const messages = data?.messages
   const lastMessages = useMemo(() => {
-    if (!data?.messages) return []
-    return data.messages.slice(-messageCount)
-  }, [data?.messages, messageCount])
+    if (!messages) return []
+    return messages.slice(-messageCount)
+  }, [messages, messageCount])
 
   const handleOpen = useCallback(() => {
     if (!target) return

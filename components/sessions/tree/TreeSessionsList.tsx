@@ -26,7 +26,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
   const inputRef = useRef<TextInput>(null)
 
   useEffect(() => {
-    if (!searchOpen) setSearchQuery('')
+    if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
   }, [searchOpen])
 
   const searchSections = useMemo(() => {

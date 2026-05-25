@@ -26,8 +26,10 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onSkip, o
 
   useEffect(() => {
     if (visible) {
-      setName('')
-      setDontAsk(false)
+      queueMicrotask(() => {
+        setName('')
+        setDontAsk(false)
+      })
     }
   }, [visible])
 

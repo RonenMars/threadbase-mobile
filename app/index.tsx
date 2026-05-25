@@ -125,7 +125,7 @@ export default function ProjectsHub() {
   const { data: convSearchData } = useConversationSearch(debouncedConvSearch)
 
   useEffect(() => {
-    if (!searchOpen) setClassicConvSearch('')
+    if (!searchOpen) queueMicrotask(() => setClassicConvSearch(''))
   }, [searchOpen])
 
   // Sessions data — sort + status filter are now server-side. Per-server

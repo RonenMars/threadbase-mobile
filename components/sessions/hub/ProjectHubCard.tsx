@@ -30,7 +30,10 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
     const next = isOpen ? 0 : 1
     chevronProgress.value = withTiming(next, { duration: 200 })
     onToggle()
-  }, [isOpen, onToggle, chevronProgress])
+    // chevronProgress is a Reanimated shared value (stable across renders);
+    // omitting it avoids the react-hooks/immutability flag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, onToggle])
 
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 180])}deg` }],
