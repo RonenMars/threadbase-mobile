@@ -24,10 +24,10 @@ export function useMinDisplayTime(
       timerRef.current = null
     }
     if (minMs <= 0) {
-      setFloorElapsed(true)
+      queueMicrotask(() => setFloorElapsed(true))
       return
     }
-    setFloorElapsed(false)
+    queueMicrotask(() => setFloorElapsed(false))
     timerRef.current = setTimeout(() => {
       setFloorElapsed(true)
       timerRef.current = null

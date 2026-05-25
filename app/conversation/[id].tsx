@@ -142,7 +142,9 @@ export default function ConversationDetailScreen() {
   // we only feed bar height here (no additional safe-area math).
   const [footerHeight, setFooterHeight] = useState(0)
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
-  const pulseAnim = useRef(new Animated.Value(1)).current
+  // useState's lazy initializer creates the Animated.Value once at mount
+  // without touching ref.current during render (which React 19 flags).
+  const [pulseAnim] = useState(() => new Animated.Value(1))
 
   // Skeleton stays up until the network fetch lands AND the FlashList has
   // stopped resizing (handleContentSizeChange settles). The 800 ms
@@ -153,7 +155,7 @@ export default function ConversationDetailScreen() {
   useEffect(() => {
     hasInitialScrolled.current = false
     userHasScrolled.current = false
-    setFirstLayoutDone(false)
+    queueMicrotask(() => setFirstLayoutDone(false))
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
@@ -180,7 +182,7 @@ export default function ConversationDetailScreen() {
   // so we don't sit under a skeleton for an empty state.
   useEffect(() => {
     if (conversation && conversation.messages.length === 0) {
-      setFirstLayoutDone(true)
+      queueMicrotask(() => setFirstLayoutDone(true))
     }
   }, [conversation])
 

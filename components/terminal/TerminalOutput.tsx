@@ -5,10 +5,14 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
 } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  runOnUI,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
@@ -85,10 +89,13 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
   const listRef = useRef<FlatList>(null)
   const showJumpButtonVal = useSharedValue(0)
   const showTopButtonVal = useSharedValue(0)
-  const isAtBottomRef = useRef(true)
+  // isAtBottom + prevScrollY are now shared values so the worklet scroll
+  // handler can mutate them on the UI thread. JS callbacks read them via
+  // `.value` which works cross-thread.
+  const isAtBottomVal = useSharedValue(1)
+  const prevScrollY = useSharedValue(0)
   const isStreamingRef = useRef(isStreaming)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const prevScrollY = useRef(0)
   const contentHeightRef = useRef(0)
 
   useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
@@ -103,17 +110,17 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
     pointerEvents: showTopButtonVal.value > 0 ? 'auto' : 'none',
   }))
 
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
+  const handleScroll = useAnimatedScrollHandler((e) => {
+    const { layoutMeasurement, contentOffset, contentSize } = e
     const y = contentOffset.y
-    const scrollingUp = y < prevScrollY.current
-    prevScrollY.current = y
+    const scrollingUp = y < prevScrollY.value
+    prevScrollY.value = y
     const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
     const atBottom = distanceFromBottom < 50
-    isAtBottomRef.current = atBottom
+    isAtBottomVal.value = atBottom ? 1 : 0
     showJumpButtonVal.value = atBottom ? 0 : 1
     showTopButtonVal.value = scrollingUp && y > 100 ? 1 : 0
-  }, [showJumpButtonVal, showTopButtonVal])
+  })
 
   const scrollToBottom = useCallback((animated: boolean) => {
     listRef.current?.scrollToOffset({ offset: contentHeightRef.current, animated })
@@ -121,7 +128,10 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
 
   const jumpToBottom = useCallback(() => {
     scrollToBottom(true)
-    showJumpButtonVal.value = 0
+    runOnUI(() => {
+      'worklet'
+      showJumpButtonVal.value = 0
+    })()
   }, [scrollToBottom, showJumpButtonVal])
 
   const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
@@ -144,22 +154,27 @@ export function TerminalOutput({ lines, isStreaming }: Props) {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         data={lines}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onScroll={handleScroll}
         scrollEventThrottle={100}
-        onScrollBeginDrag={() => { isAtBottomRef.current = false }}
+        onScrollBeginDrag={() => {
+          runOnUI(() => {
+            'worklet'
+            isAtBottomVal.value = 0
+          })()
+        }}
         onContentSizeChange={(_w, h) => {
           contentHeightRef.current = h
           if (isStreamingRef.current) return
-          if (!isAtBottomRef.current) return
+          if (isAtBottomVal.value === 0) return
           if (scrollTimerRef.current !== null) clearTimeout(scrollTimerRef.current)
           scrollTimerRef.current = setTimeout(() => {
             scrollTimerRef.current = null
-            if (isAtBottomRef.current) scrollToBottom(false)
+            if (isAtBottomVal.value === 1) scrollToBottom(false)
           }, 0)
         }}
         initialNumToRender={40}

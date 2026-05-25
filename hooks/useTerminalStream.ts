@@ -84,8 +84,10 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     vtRef.current.reset()
     replayReceivedRef.current = false
     historyFedRef.current = false
-    setLines([])
-    setHttpFallbackEnabled(false)
+    queueMicrotask(() => {
+      setLines([])
+      setHttpFallbackEnabled(false)
+    })
   }, [serverId, sessionId])
 
   useEffect(() => {
