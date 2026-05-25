@@ -141,6 +141,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Select Xcode 26
+        # Expo SDK 56's expo-modules-jsi Package.swift requires swift-tools 6.2,
+        # which ships with Xcode 26. The macos-15 runner defaults to Xcode 16.4
+        # (Swift 6.1) and rejects the package with "Could not resolve package
+        # dependencies: package 'apple' is using Swift tools version 6.2.0".
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+
       - name: Install Maestro CLI
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
