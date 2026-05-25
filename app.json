@@ -7,9 +7,6 @@
     "scheme": "threadbase",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "backgroundColor": "#0d1117"
-    },
     "platforms": [
       "ios",
       "android"
@@ -54,7 +51,14 @@
       ],
       "expo-secure-store",
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0d1117"
+        }
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,
