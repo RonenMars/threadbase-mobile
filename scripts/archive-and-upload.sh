@@ -17,6 +17,16 @@ ARCHIVE_PATH="${ARCHIVE_PATH:-build/Threadbase.xcarchive}"
 
 mkdir -p build
 
+# Workaround for React Compiler + Metro graph-optimization crash during the
+# expo-updates archive bundle step. babel-plugin-react-compiler 1.0.0 writes
+# Symbol() into Babel Node.loc, which fails v8.structuredClone when Metro
+# ships the AST across worker IPC under tree shaking — surfaces as
+# "Unexpected end of MessagePack data" in expo-updates' createManifestForBuildAsync.
+# Tracked: expo/expo#39431, facebook/react#36327. Remove this export when
+# either babel-plugin-react-compiler ships a fix or @expo/metro-config lands
+# the AST sanitizer (expo/expo#42258).
+export EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=false
+
 xcodebuild \
   -workspace "${WORKSPACE}" \
   -scheme "${SCHEME}" \
