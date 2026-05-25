@@ -25,7 +25,11 @@ mkdir -p build
 # Tracked: expo/expo#39431, facebook/react#36327. Remove this export when
 # either babel-plugin-react-compiler ships a fix or @expo/metro-config lands
 # the AST sanitizer (expo/expo#42258).
-export EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=false
+#
+# 2026-05-25: TEMPORARILY DISABLED to test whether upstream fix has landed.
+# If archive succeeds → remove this block + the comment entirely.
+# If archive fails with "Unexpected end of MessagePack data" → restore the export.
+# export EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=false
 
 xcodebuild \
   -workspace "${WORKSPACE}" \
