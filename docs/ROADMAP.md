@@ -27,7 +27,7 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) |
 | Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) |
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
-| Feature 16 — Native mini-form for Claude Code interactive prompts | Planned (mobile-native, cross-repo) |
+| Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) |
 | Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
 | Feature 18 — Upgrade to Expo SDK 56 | Planned (platform/deps) |
 | Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
@@ -543,32 +543,43 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ---
 
-### Feature 16 — Native mini-form for Claude Code interactive prompts
+### Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms
 
-**Filed:** 2026-05-23.
+**Filed:** 2026-05-23. **Expanded:** 2026-05-25.
 
-**Goal:** When Claude Code emits an interactive question (numbered selection list, single-choice radio-style, or multi-select checkbox), surface it in the app as a native form (tappable options + submit) instead of letting it render as raw text inside the PTY scrollback that the user has to scroll to and type a number into.
+**Goal:** Add a per-session **Sync mode** that switches the message-rendering source from the PTY stream to Claude Code's own JSONL session file (tailed by `tb-streamer`). In sync mode, each appended JSONL record renders as a typed bubble (`MessageBubble` for user/assistant, `ToolCard` / `ThinkingCard` for tool blocks, **`PromptForm`** for detected interactive prompts — radio for single-choice, checkbox for multi-select). PTY mode stays the default and is unchanged.
 
-**Why:** On a phone, typing numbers into the chat input to answer a question that's buried somewhere above in tool output is awkward and error-prone. This is the single widest gap between Claude Code's TTY-native UX and what a touch-native client should feel like.
+**Why:** Two problems collapse into one solution. (1) On a phone, typing numbers into the chat input to answer a Claude Code interactive question that's buried above in tool output is awkward and error-prone — this is the widest gap between Claude Code's TTY-native UX and what a touch-native client should feel. (2) Parsing prompts (or anything else) out of the PTY byte stream is fragile across Claude Code versions and ANSI variations. The JSONL Claude Code already writes to `~/.claude/projects/<project>/<session>.jsonl` is structured, append-only, and reliable — using it as the source of truth lets us render bubbles + structured forms without ever parsing terminal bytes.
 
 **Direction:**
-- Detection: most likely streamer-side. `tb-streamer` parses the prompt out of the PTY stream and emits a structured WS event (`{ type: 'prompt', shape: 'single'|'multi', options: [...], promptId }`). Keeps mobile rendering dumb; lets detection logic be hot-fixed without a mobile rebuild.
-- Mobile: subscribe to the new WS event, render a `<PromptForm>` (radio for single-choice, checkbox for multi) overlay or sibling to the chat input when active. Submit via WS / sibling REST.
-- PTY view: while a form is active, hide or de-emphasize the duplicate prompt text in scrollback so there's no "two places to answer" confusion.
-- Fallback: if the detected shape doesn't match a known form (e.g. free-text follow-up), leave the PTY text visible — never block the user.
+- **Source:** `tb-streamer` tails the per-session `.jsonl` file under `~/.claude/projects/<project>/` (fs.watch / chokidar), parses each appended NDJSON line, emits typed WS events: `jsonl.message`, `jsonl.tool_use`, `jsonl.tool_result`, `jsonl.prompt` (the last carries `{ shape: 'single' | 'multi', options, promptId }`). Prompt detection runs against the **structured assistant message content**, not PTY bytes.
+- **Mobile rendering:** new `SyncModeMessageList` (FlashList of bubbles fed by `jsonl.*` events), sibling to the existing `ChatScrollback`. Per-session "Stream / Sync" toggle persisted in the session store.
+- **Incremental render:** JSONL is append-only, so bubbles render as records land mid-turn. Layout-refresh + autoscroll-to-bottom are coalesced via a small `useDebouncedAutoscroll(targetRef, deps, ~120ms)` hook so partial writes don't visually jump.
+- **Prompt form:** new `components/session/PromptForm.tsx` — radio list for single-choice, checkbox list for multi-select, "Submit" button. Submission goes through the existing streamer stdin-injection endpoint with `{ promptId, answer }`; the streamer translates to whatever keystrokes Claude Code's TUI expects.
+- **Fallback:** unknown prompt shapes (free-text follow-ups, novel formats) render as a plain bubble — never block the user.
 
 **Open questions:**
-- Detection approach — regex vs. structured marker from `tb-streamer` vs. cooperation from Claude Code itself (env-flag-gated structured stdout, OSC escape). Plan stub recommends streamer-side WS event but the call should be made against the upstream landscape at pickup time.
-- Multi-select submission is the hard part — Claude Code's multi-select TUI uses cursor keys + space + enter, which doesn't replay cleanly via stdin. Validate feasibility before committing to the multi-select variant; the single-choice form can ship independently.
-- How to mask the duplicate PTY lines without breaking terminal cursor alignment.
-- Cancel/dismiss behavior (background app, swipe form away, streamer-side timeout).
+- **Mode coexistence.** Can a session toggle between Stream and Sync live, or is mode locked at session start? Affects whether `ChatScrollback` stays mounted in sync mode.
+- **Sync-on for an already-running session.** Backfill bubbles from the full JSONL on toggle, or only render records appended from "now" forward?
+- **JSONL discovery.** How does the streamer correlate a `tb-streamer` session with the right `.jsonl` file? Likely PID + cwd, but needs validation against Claude Code's actual session-file naming.
+- **Prompt detection details.** Does Claude Code's JSONL carry option metadata for interactive prompts, or does the streamer still need to parse option text out of the assistant message body? Determines how robust single vs. multi-select detection can be.
+- **Multi-select submission.** Claude Code's multi-select TUI uses cursor keys + space + enter — replaying that via stdin isn't clean. Single-choice can ship first; multi-select submit may be gated on upstream cooperation.
 
-**Scope:** ~1 week mobile + ~1 week streamer for single-choice. Multi-select is gated on upstream support and may need to be deferred.
+**Scope:** ~1 week mobile (`SyncModeMessageList` + debounced-autoscroll hook + `PromptForm` + toggle + Zustand slice) + ~1 week streamer (JSONL tailer + typed WS events + session-file correlation + prompt detection on structured content). Multi-select submission may slip to a follow-on.
 
 **Files likely involved:**
-- `tb-streamer`: new prompt-detector module + WS event type + stdin-injection endpoint accepting `{ promptId, answer }`
-- `tb-mobile`: new `components/session/PromptForm.tsx`, session-detail Zustand slice for `activePrompt`, WS handler wiring
-- Session-detail screen integration above the chat input
+- `tb-streamer`: new JSONL tailer module, WS event types (`jsonl.message` / `jsonl.tool_use` / `jsonl.tool_result` / `jsonl.prompt`), stdin-injection endpoint accepting `{ promptId, answer }`
+- `tb-mobile`: new `components/session/SyncModeMessageList.tsx`, `components/session/PromptForm.tsx`, `hooks/useDebouncedAutoscroll.ts`, session-detail Zustand slice for `activePrompt` + render-mode, header toggle chip, WS handler wiring
+
+**Acceptance criteria (preliminary):**
+- [ ] Per-session "Sync mode" toggle persists and survives app restart
+- [ ] In sync mode, a completed turn renders as bubbles sourced from the JSONL (not PTY)
+- [ ] Bubbles render incrementally as JSONL records land mid-turn
+- [ ] Autoscroll-on-new-message is debounced (~120ms); mid-turn writes don't cause visible jumps
+- [ ] Single-choice interactive prompts render as a `PromptForm` (radio) and submit correctly
+- [ ] Multi-choice prompts at minimum render (submit may be gated on upstream support)
+- [ ] Unknown prompt shapes fall back to a plain bubble with no errors
+- [ ] PTY mode is unchanged and remains the default
 
 **Plan stub:** [`superpowers/plans/2026-05-23-claude-code-prompt-miniform.md`](./superpowers/plans/2026-05-23-claude-code-prompt-miniform.md)
 
