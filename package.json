@@ -18,7 +18,6 @@
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.13",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-navigation/elements": "^2.9.18",
     "@shopify/flash-list": "2.0.2",
     "@tanstack/query-async-storage-persister": "^5.100.9",
     "@tanstack/react-query": "^5.100.9",
