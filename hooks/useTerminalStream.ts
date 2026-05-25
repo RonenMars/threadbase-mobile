@@ -20,7 +20,10 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<TerminalLine[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
-  const vtRef = useRef(new VirtualTerminal())
+  const vtRef = useRef<VirtualTerminal | null>(null)
+  if (vtRef.current === null) {
+    vtRef.current = new VirtualTerminal()
+  }
   // Track whether terminal_replay has been received to avoid firing the HTTP fallback
   const replayReceivedRef = useRef(false)
   // Track whether history has been fed (from replay or HTTP) to avoid double-feeding
@@ -51,10 +54,10 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   function feedHistory(raw: string) {
     if (historyFedRef.current) return
     historyFedRef.current = true
-    vtRef.current.reset()
+    vtRef.current!.reset()
     setLines([])
-    vtRef.current.feed(raw)
-    const visible = vtRef.current.getLines()
+    vtRef.current!.feed(raw)
+    const visible = vtRef.current!.getLines()
     setLines(visible.slice(-maxLines))
   }
 
@@ -81,7 +84,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
   useEffect(() => {
     // Reset state when sessionId changes
-    vtRef.current.reset()
+    vtRef.current!.reset()
     replayReceivedRef.current = false
     historyFedRef.current = false
     queueMicrotask(() => {
@@ -134,8 +137,8 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
         if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
 
         setIsStreaming(true)
-        vtRef.current.feed(msg.data)
-        setLines(vtRef.current.getLines().slice(-maxLines))
+        vtRef.current!.feed(msg.data)
+        setLines(vtRef.current!.getLines().slice(-maxLines))
 
         clearTimeout(idleTimer)
         idleTimer = setTimeout(() => setIsStreaming(false), 1500)
@@ -173,7 +176,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   }, [serverId, sessionId, maxLines, skipLiveStream])
 
   const clear = useCallback(() => {
-    vtRef.current.reset()
+    vtRef.current!.reset()
     setLines([])
   }, [])
 
