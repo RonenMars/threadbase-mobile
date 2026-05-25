@@ -19,7 +19,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 5 | Multi-attachment send produces no output | Open — not diagnosed |
 | Bug 6 | Conversation list content hidden under bottom action bar | Open — not diagnosed |
 | Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | Open |
-| Bug 8 | Manage Favorites: duplicate top bar + "add to favorites" CTA on empty | Open |
+| Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | Open |
 | Bug 9 | Quick Access: hide Edit pencil when strip is collapsed | Open |
 | Bug 10 | Conversation: show "Top" button only when scrolling up | Open |
 | Bug 11 | Conversation: move "Bottom" button to bottom-right; show only when not at bottom | Open |
@@ -29,6 +29,20 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
 | Bug 16 | Back from never-typed-in new session leaves an empty session alive | Open — not diagnosed |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
+| Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Open — flow skipped |
+| Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
+| Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
+| Bug 21 | "Open Session" from Recents lands on "Session not found" | Open — not diagnosed |
+| Bug 22 | Settings QR-scanner button is a no-op on the UI layer | Open — not diagnosed |
+| Bug 23 | Popular → "New Session here" errors "Unable to load directories" | Open — not diagnosed |
+| Bug 24 | Popular error text is black on black (almost invisible) | Open (visual — consult /impeccable) |
+| Bug 25 | ➜ Moved to ROADMAP as [Feature 22](./ROADMAP.md#feature-22--settings-button-on-the-filter--sort-bar-parity-with-sidebar) | Moved 2026-05-25 |
+| Bug 26 | Hide Quick Access Edit pencil when the active tab is empty | Open |
+| Bug 27 | ➜ Moved to ROADMAP as [Feature 23](./ROADMAP.md#feature-23--onboarding-optional-server-name-slide-before-the-qr-scan) | Moved 2026-05-25 |
+| Bug 28 | Pull-to-refresh modal: show IP+port when server has no name | Open |
+| Bug 29 | Quick Access: open only on tab click; remove the right-side chevron | Open |
+| Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | Open — needs spec |
+| Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
@@ -137,15 +151,15 @@ Three small UX tweaks reported together. They share a file (`components/quick-ac
 - `stores/quickAccess.ts` (default `stripCollapsed`, possibly a migration)
 - `hooks/useQuickAccess.ts` (for the "total conversations" signal — verify there's already a query result we can reuse before adding anything)
 
-**Related:** Bug 7b and Bug 8b both need a "any-server-has-conversations" check — land them together so the signal lives in one hook.
+**Related:** Bug 7b and [Feature 24](./ROADMAP.md#feature-24--manage-favorites-add-to-favorites-empty-state-cta) (previously Bug 8b, now in ROADMAP) both need a "any-server-has-conversations" check — land the signal in one hook so both can reuse it.
 
 ---
 
-## Bug 8 — Manage Favorites: duplicate top bar + empty-state CTA
+## Bug 8 — Manage Favorites: duplicate top bar
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Note:** 2026-05-25 — the original 8b ("Add to favorites" empty-state CTA) was reclassified as a feature and moved to ROADMAP as [Feature 24](./ROADMAP.md#feature-24--manage-favorites-add-to-favorites-empty-state-cta). What remains below is the original 8a bugfix.
 
-**8a. Remove the duplicate top bar.**
+**Remove the duplicate top bar.**
 - Screenshot shows two stacked top bars: the system Stack header (`< manage-favorites`) AND the screen's own custom header (`← Back  Manage Favorites`). Both are rendering.
 - Root cause: `app/_layout.tsx:178-204` declares `Stack.Screen` for `index`, `onboarding`, `session/[id]`, `conversation/[id]`, `browse`, `settings`, `project/[id]` — but **not** `manage-favorites`. So the route falls back to the default Stack header (which uses the filename as title) AND `app/manage-favorites.tsx:15-21` renders its own in-screen header.
 - Two clean fixes — pick one:
@@ -153,24 +167,9 @@ Three small UX tweaks reported together. They share a file (`components/quick-ac
   2. **Keep in-screen header, hide system header.** Add `<Stack.Screen name="manage-favorites" options={{ headerShown: false }} />` and leave the screen as-is. Consistent with `session/[id]` and `conversation/[id]`.
 - **Recommendation: (1)** — Settings already uses the system header (`app/_layout.tsx:190-193`); Manage Favorites is the same kind of secondary nav surface. Matching settings keeps the back gesture and title behavior identical without custom code.
 
-**8b. Empty state CTA: "Add to favorites".**
-- When `favorites.length === 0` AND any queried server has > 0 conversations (i.e. there *is* something the user could favorite), the empty state currently shows static copy (`app/manage-favorites.tsx:23-27`): *"No favorites pinned yet. Tap a chip in the strip and choose 'Pin to Favorites'."*
-- Replace with a primary button: **"Add to favorites"** that navigates somewhere the user can pick an item.
-- **Open question for pickup:** where should the button go? Options:
-  1. `/browse` (the project directory picker — `app/browse.tsx`) — lets the user pick a folder, then "Pin to Favorites" from there. Requires browse to support pinning in addition to "Start new session". Bigger lift.
-  2. Back to the Hub (`/`) with the Quick Access strip auto-expanded and switched to a tab the user can pin from — but they have nothing in any tab yet either, so this doesn't help.
-  3. A new dedicated "pick something to favorite" screen showing recents + popular + a project picker. Cleanest UX, most code.
-  - Recommendation: defer the destination decision until brainstorm. The simplest stub that unblocks the feature is to route to the Hub with the strip expanded; refine after seeing how it feels.
-- Empty-state branching:
-  - `favorites empty + all servers 0 conversations` → keep the current "long-press a chip" copy (there's nothing to favorite anyway). Or hide this entire screen entry point upstream — see Bug 7b for the parallel case in the strip.
-  - `favorites empty + any server has conversations` → show the CTA button.
-  - `favorites non-empty` → render the existing FlatList (`app/manage-favorites.tsx:29-46`), no change.
-
 **Files likely involved:**
 - `app/_layout.tsx` — add `Stack.Screen name="manage-favorites"`
-- `app/manage-favorites.tsx` — delete in-screen header (or hide system one), branch the empty state, add CTA
-- `app/browse.tsx` (only if (1) is chosen as the CTA destination)
-- `hooks/useConversations.ts` / `hooks/useQuickAccess.ts` — for the "any server has conversations" signal (reuse what Bug 7b lands on; don't query twice)
+- `app/manage-favorites.tsx` — delete in-screen header (or hide system one)
 
 ---
 
@@ -503,9 +502,9 @@ router.push(`/session/${id}?...`)
 
 ## Bug 15 — After new-session back, file browser is interaction-locked (only close works)
 
-**Filed:** 2026-05-24 — not diagnosed.
+**Filed:** 2026-05-24 — not diagnosed. **Re-repro 2026-05-25** added top-left chevron + recent-directories details.
 
-**Symptom:** Start a new session from `/browse` (pick a path, tap **Start session**). The PTY opens at `/session/[id]`. Tap **back**. The browse modal re-appears (the same surface flagged in [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit)), but in this stale state **none of the rows respond to taps** — drill-in is dead, "Start session" is dead, the up-directory affordance is dead. The only control that still works is **close** (dismiss the modal entirely).
+**Symptom:** Start a new session from `/browse` (pick a path, tap **Start session**). The PTY opens at `/session/[id]`. Tap **back**. The browse modal re-appears (the same surface flagged in [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit)), but in this stale state **almost nothing inside the modal responds to taps** — directory rows, the recent-directories list, "Start session", and the up-directory affordance are all dead. The **top-left back chevron** is *visually* active but only walks the directory tree inside the modal; it never dismisses the modal. The only control that actually exits the modal is the **drag-down-to-close** gesture on the modal title bar.
 
 **Expected:** The browse modal should be fully dismissed at the moment **Start session** is tapped (i.e. as soon as session creation kicks off), not after the PTY mounts. The user should never land back on browse via the back gesture; back from the PTY should go to the Hub.
 
@@ -700,18 +699,268 @@ Commit `36c504d` (`fix(conversation): drop redundant skeleton timers, shorten la
 
 ---
 
+## Bug 20 — New session from tree-view (with path completion) errors on "Path"
+
+**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+
+**Symptom:** From the Hub tree view, starting a new session with the path-completion field populated returns an error referencing the path. Repro path: Hub → drill into a project node → "New session here" (or equivalent) → submit → error.
+
+**Hypotheses (unverified):**
+
+1. **Most likely — path normalization mismatch.** The tree-view passes a path with a trailing slash, escaped characters, or `~`-expansion the streamer's `start-session` endpoint doesn't accept. Compare against the working path format the Hub root + Recents use.
+2. **Less likely — projectId vs. projectPath confusion.** Post the [[project-projectchat-migration]] work, the tree-view may still emit `projectPath` where the new contract expects `projectId`, and the server rejects it with a path-shaped error.
+
+**Steps to investigate:**
+
+1. Reproduce on iPhone 17 sim with the local mock; capture the exact error string and the request body sent by the app.
+2. Diff the request body against the body sent by the working "New session" path from the project header.
+3. Patch whichever end (mobile encode or streamer accept) is wrong.
+
+**Files likely involved:**
+
+- `components/sessions/hub/ProjectHubTree*.tsx` (or wherever the tree's "new session here" handler lives)
+- `services/sessions.ts` (or the start-session client call site)
+- `app/(modals)/new-session.tsx`
+
+---
+
+## Bug 21 — "Open Session" from Recents lands on "Session not found"
+
+**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+
+**Symptom:** Tapping "Open Session" from a Recents row routes to the session detail screen, which immediately shows "Session not found".
+
+**Hypotheses (unverified):**
+
+1. **Most likely — stale Recents row points to a session the server no longer has.** Recents is locally cached; if the streamer-side session was pruned, the row remains and produces a 404 on lookup. Need to filter Recents against `/sessions` on hub load, or evict on 404.
+2. **Less likely — id format mismatch.** Recents writes a different id shape than `/sessions/:id` accepts (e.g. `projectPath:sessionId` vs. just `sessionId`).
+
+**Steps to investigate:**
+
+1. Capture which `id` is sent in the navigation params vs. what `/sessions/:id` returns.
+2. If it's the stale-row case: filter Recents on hub load by intersecting with the live `/sessions` list, and evict on the first 404 hit.
+3. If it's the format mismatch case: align the Recents writer with the session lookup contract.
+
+**Files likely involved:**
+
+- `hooks/useRecents.ts` (or wherever the Recents store lives)
+- `app/conversation/[id].tsx` (the "Session not found" branch)
+- Mock-server `/sessions/:id` handler in `e2e/mock-server.js` may also need updating to repro
+
+---
+
+## Bug 22 — Settings QR-scanner button is a no-op on the UI layer
+
+**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+
+**Symptom:** Tapping the QR scanner button on the Settings screen produces no UI reaction at all (no navigation, no permission prompt, no log).
+
+**Hypothesis:** The button's `onPress` is unwired (renamed component, dropped handler during a refactor) or the handler navigates to a route that doesn't exist anymore. Easy to confirm by grepping for the button's testID.
+
+**Steps to fix:**
+
+1. Locate the button in `app/(tabs)/settings.tsx` (or the settings screen file); confirm `onPress`.
+2. If unwired, route to the same QR-scan screen onboarding uses.
+3. If routed but broken, check the destination route exists.
+4. Add a Maestro testID + a `settings_qr_scanner.yaml` flow asserting the scanner screen mounts.
+
+**Files likely involved:**
+
+- `app/(tabs)/settings.tsx`
+- `components/onboarding/QrScanScreen.tsx` (or the equivalent reused for the settings entry point)
+
+---
+
+## Bug 23 — Popular → "New Session here" errors "Unable to load directories"
+
+**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+
+**Symptom:** From the Popular Quick Access tab, tapping "New Session here" on a project shows: *"Unable to Load directories. Check that the server is running and reachable"* — even when the server is reachable (other tabs work).
+
+**Hypotheses (unverified):**
+
+1. **Most likely — Popular passes a project shape that lacks the server context the directory-list call needs.** Popular's payload may carry a denormalized project identifier without the `serverId`/`serverUrl` that the file-browser fetch requires; the call then hits an undefined endpoint and the error message is the generic "server unreachable" fallback.
+2. **Less likely — directory-list endpoint genuinely missing from the mock/server for the Popular path.**
+
+**Steps to investigate:**
+
+1. Repro and capture the actual network request the file browser fires from the Popular entry point.
+2. Compare against the request from the Recents and Hub entry points (which work).
+3. Patch the Popular handler to pass the same fields, or normalize at the store level so all three entry points produce identical requests.
+4. While in there: replace the misleading "server unreachable" message with the actual failure reason (see Bug 24 for the visual side).
+
+**Files likely involved:**
+
+- `components/sessions/quickAccess/PopularTab.tsx` (or the Popular row's "new session here" handler)
+- `services/files.ts` / `hooks/useDirectoryList.ts` (or wherever the directory fetch lives)
+
+---
+
+## Bug 24 — Popular error text is black-on-black (almost invisible)
+
+**Filed:** 2026-05-25. **Status:** Open — visual; **consult [/impeccable](../README.md) skill** for the error-state design.
+
+**Symptom:** The error surfaced by [Bug 23](#bug-23--popular--new-session-here-errors-unable-to-load-directories) (and likely other Popular-tab errors) renders in black text on the Popular tab's black background — visible only on close inspection. UX-wise the error effectively doesn't exist.
+
+**Direction:**
+
+- Apply the project's standard error-state pattern (icon + colored text + actionable message). The `/impeccable` skill should drive the actual visual — don't ship something ad-hoc.
+- Should match how errors surface in Recents and Favorites (look for an existing `ErrorState` / `EmptyState` component before adding a new one).
+- Pair with Bug 23: while fixing the root cause of the error, also fix how the error displays.
+
+**Files likely involved:**
+
+- `components/sessions/quickAccess/PopularTab.tsx`
+- Any shared `ErrorState` component under `components/common/` — reuse if it exists
+
+---
+
+## Bug 25 — ➜ Moved to ROADMAP
+
+**Moved:** 2026-05-25 — reclassified as a feature (pure additive UI, no broken behavior). See [Feature 22 — Settings button on the Filter & Sort bar](./ROADMAP.md#feature-22--settings-button-on-the-filter--sort-bar-parity-with-sidebar).
+
+---
+
+## Bug 26 — Hide Quick Access Edit pencil when the active tab is empty
+
+**Filed:** 2026-05-25. **Status:** Open. **Related:** [Bug 7](#bug-7--quick-access-strip-default-collapsed--tab-reorder--hide-when-fully-empty), [Bug 9](#bug-9--quick-access-hide-edit-pencil-when-strip-is-collapsed).
+
+**Symptom:** The Quick Access strip's "Edit" pencil icon is shown even when the currently-selected tab (Recents / Popular / Favorites) has no items. Editing an empty set is meaningless and clutters the UI.
+
+**Direction:**
+
+- Hide the pencil when the active tab's item list is empty. Restore it as soon as the tab has at least one item, or when switching to a non-empty tab.
+- Bundle with Bug 9's "hide when strip is collapsed" rule — same file, same conditional.
+
+**Files likely involved:**
+
+- `components/sessions/quickAccess/QuickAccessStrip.tsx` (the pencil's render condition)
+
+---
+
+## Bug 27 — ➜ Moved to ROADMAP
+
+**Moved:** 2026-05-25 — reclassified as a feature (net-new onboarding step, not a fix). See [Feature 23 — Onboarding: optional server-name slide before the QR scan](./ROADMAP.md#feature-23--onboarding-optional-server-name-slide-before-the-qr-scan).
+
+---
+
+## Bug 28 — Pull-to-refresh modal: show IP+port when server has no name
+
+**Filed:** 2026-05-25. **Status:** Open. **Related:** [Feature 23 — onboarding server-name slide](./ROADMAP.md#feature-23--onboarding-optional-server-name-slide-before-the-qr-scan).
+
+**Symptom:** The drag-to-refresh progress modal labels the server by name. For servers without a name (paired before the [Feature 23](./ROADMAP.md#feature-23--onboarding-optional-server-name-slide-before-the-qr-scan) prompt existed, or "Skip" was tapped, or named via a path that didn't capture a label), the label is blank or "Unknown" — unhelpful when reconciling which server is refreshing.
+
+**Direction:**
+
+- If `server.name` is present, render as today.
+- If empty, render `host:port` (e.g. `192.168.1.42:7071`) as the fallback label.
+- Same fallback should apply anywhere else a server is referenced by name in the UI — audit for consistency.
+
+**Files likely involved:**
+
+- `components/sessions/hub/PullToRefreshModal.tsx` (or the actual file name for the progress modal)
+- Possibly a shared `serverDisplayName(server)` helper to centralize the fallback
+
+---
+
+## Bug 29 — Quick Access: open only on tab click; remove the right-side chevron
+
+**Filed:** 2026-05-25. **Status:** Open. **Related:** [Bug 7](#bug-7--quick-access-strip-default-collapsed--tab-reorder--hide-when-fully-empty).
+
+**Symptom (UX):** Two ways to expand the Quick Access strip exist today — tapping a tab and tapping the chevron on the right. The chevron is redundant and clutters the strip; users discover the tap-the-tab interaction immediately.
+
+**Direction:**
+
+- Remove the chevron icon and its tap target.
+- Wire the strip's expand/collapse purely to tab taps. Tapping the already-active tab while expanded collapses; tapping a different tab while expanded switches.
+- Verify against [Bug 7](#bug-7--quick-access-strip-default-collapsed--tab-reorder--hide-when-fully-empty)'s default-collapsed behavior — these interact.
+
+**Files likely involved:**
+
+- `components/sessions/quickAccess/QuickAccessStrip.tsx`
+- `components/sessions/quickAccess/QuickAccessTabs.tsx` (or wherever the tab onPress lives)
+
+---
+
+## Bug 30 — Add-to-favorites is non-functional — needs spec from Claude Code
+
+**Filed:** 2026-05-25. **Status:** Open — **needs spec before implementation**.
+
+**Symptom:** Tapping "Add to favorites" on a project / session row appears to do nothing (item never shows up in the Favorites tab). The feature exists in the UI but isn't wired through.
+
+**Why this is filed as "needs spec":** before implementing, Claude Code should produce a spec under `docs/superpowers/specs/YYYY-MM-DD-favorites-design.md` covering:
+
+- **Scope of "favorite":** is the favorite a project, a session, or both? Affects the schema.
+- **Storage:** local (Zustand + SecureStore + SQLite, matching session naming) or server-side via streamer? Local is simpler but loses cross-device parity (which arrives with [Feature 11](./ROADMAP.md#feature-11--workspace-sync-across-devices-via-streamer)).
+- **Display contract:** what does the Favorites tab in Quick Access render — same row shape as Recents, or a dedicated card?
+- **Add/remove affordance:** star toggle on the row, long-press menu, or both?
+- **Empty state:** consistent with Bug 26 (no pencil) and the existing Quick Access empty patterns.
+- **Sync interaction:** does favoriting at the project level imply all that project's sessions, or only the row tapped?
+
+Once the spec is approved, the implementation is bounded: store + read API + write API + the Quick Access tab's new data source + add/remove affordance on the row.
+
+**Files likely involved (post-spec):**
+
+- New `hooks/useFavorites.ts` + Zustand slice + persistence
+- `components/sessions/quickAccess/FavoritesTab.tsx` (already exists as a UI shell; needs data wiring)
+- Whatever row component owns the "Add to favorites" tap
+
+---
+
+## Bug 31 — Settings theme change doesn't apply colors across the whole app
+
+**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+
+**Symptom:** Changing the theme from Settings updates some surfaces but leaves others on the previous palette. The change needs to be validated across every screen, not just the one currently visible.
+
+**Validation checklist (sweep on each theme switch):**
+
+- Hub: project cards, tree rows, accordion chevrons, section headers
+- Conversation screen: MessageBubble (user + assistant), CodeBlock (Prism theme), DiffLines tints, Top/Bottom buttons, input area, attachment chips
+- Quick Access strip: tab pills, row backgrounds, empty/loading states
+- Onboarding carousel + ConnectStep + NotificationsStep
+- Settings itself (including any nested screens — favorites manager, server detail, API key editors)
+- Modals: new-session name modal, file browser, error banners, pull-to-refresh sheet
+- System chrome: status bar style, nav bar tint, splash background, keyboard appearance
+
+**Likely causes to look at:**
+
+- Hard-coded color literals (`#RRGGBB` / `rgb(...)`) instead of theme tokens — grep candidates
+- NativeWind class strings that don't pick up the theme variant (e.g. `bg-white` vs `bg-background`)
+- Components that captured the theme into a `useMemo` / closure without including the theme value in its dependency list
+- Direct imports from a static palette module rather than the live theme context/store
+
+**Action item:** before fixing, do a single audit pass: switch theme, screenshot every top-level screen + modal, list the off-palette surfaces. Then group the fix by root cause (hard-coded literals vs missing dep arrays vs static imports) rather than screen-by-screen.
+
+**Files to start with (to verify):**
+
+- Theme provider / store (Zustand slice or context for the active theme)
+- `tailwind.config.js` and any `themes/` or `theme/` module
+- High-traffic components: `MessageBubble`, `ProjectHubCard`, `QuickAccessStrip`, onboarding steps
+
+---
+
 ## Sequencing
 
 Suggested next-up order (revise as profiling results come in):
 
 1. **Bug 7** (Quick Access UX trio) — small, contained; ships a few hours of fixes that visibly improve cold launch.
 2. **Bug 9** (hide pencil when collapsed) — pair with Bug 7 in the same PR, same file.
-3. **Bug 8** (Manage Favorites) — same author session; reuses the "any server has conversations" signal from Bug 7b.
+3. **Bug 8** (Manage Favorites duplicate top bar — now header-only after 8b was promoted to [Feature 24](./ROADMAP.md#feature-24--manage-favorites-add-to-favorites-empty-state-cta)) — tiny `Stack.Screen` config fix; pair with anything that touches `app/_layout.tsx`.
 4. **Bug 10 + Bug 11** (conversation Top/Bottom buttons) — both live in the same `handleScroll` callback at `app/conversation/[id].tsx:202-209`. Land together. Consider folding [Bug 6](#bug-6--conversation-list-content-hidden-under-bottom-action-bar) (bottom-bar overlap) into the same screen pass since all three touch the same view.
 5. **Issue 1** (cold-launch cached flash) — reuses the existing `useMinDisplayTime` helper; small.
 6. **Issue 2** (Hub accordion stall) — needs profiling first; biggest perceived-perf win.
 7. **Bug 6** (bottom-bar overlap) — small layout fix; can be paired with Bug 10 + Bug 11 + Feature 2 (Export relocation) since all four touch the conversation screen.
 8. **Bug 5** (multi-attachment no output) — diagnose first; may collapse into Feature 3 (multi-file attachments).
+
+**Bugs 20–30 (filed 2026-05-25), grouped by area for batching:**
+
+- **Quick Access trio (Bug 26, 29):** same file as Bug 7 + Bug 9 + Bug 30's Favorites wiring — land them together to avoid touching `QuickAccessStrip.tsx` four separate times.
+- **Onboarding name + display ([Feature 23](./ROADMAP.md#feature-23--onboarding-optional-server-name-slide-before-the-qr-scan) + Bug 28):** ship as a pair — Bug 28's IP+port fallback is only well-tested once Feature 23 makes naming optional.
+- **Settings entry points (Bug 22 + [Feature 22](./ROADMAP.md#feature-22--settings-button-on-the-filter--sort-bar-parity-with-sidebar)):** Bug 22 (QR no-op) is a regression fix, do first; Feature 22 (Settings button on Filter & Sort bar) is a small additive UI change, easy follow-up.
+- **Popular tab (Bug 23 + Bug 24):** ship together — fixing the root cause (23) and the way the error displays (24) belong in one PR; consult `/impeccable` for 24's visual.
+- **Session/tree errors (Bug 20, 21):** investigate in parallel — both touch session-id / path encoding across the app↔streamer boundary and may share a root cause.
+- **Bug 30 (Favorites)** is **spec-gated** — do not start implementation until the design doc lands under `docs/superpowers/specs/`.
 
 ---
 

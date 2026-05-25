@@ -8,10 +8,13 @@ import {
   RefreshControl,
   ActivityIndicator,
   FlatList,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
 } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -121,7 +124,7 @@ export function ConversationList({
     [conversations],
   )
   const listRef = useRef<FlatList>(null)
-  const prevScrollY = useRef(0)
+  const prevScrollY = useSharedValue(0)
   const showTopVal = useSharedValue(0)
   const showBottomVal = useSharedValue(0)
 
@@ -134,15 +137,15 @@ export function ConversationList({
     pointerEvents: showBottomVal.value > 0 ? 'auto' : 'none',
   }))
 
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent
+  const handleScroll = useAnimatedScrollHandler((e) => {
+    const { layoutMeasurement, contentOffset, contentSize } = e
     const y = contentOffset.y
-    const scrollingUp = y < prevScrollY.current
-    prevScrollY.current = y
+    const scrollingUp = y < prevScrollY.value
+    prevScrollY.value = y
     const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
     showTopVal.value = !scrollingUp && y > 120 ? 1 : 0
     showBottomVal.value = scrollingUp && distanceFromBottom > 120 ? 1 : 0
-  }, [showTopVal, showBottomVal])
+  })
 
   const keyExtractor = useCallback(
     (item: MultiConversation | string) =>
@@ -203,7 +206,7 @@ export function ConversationList({
         />
       ) : null}
 
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         data={listData}
         keyExtractor={keyExtractor}

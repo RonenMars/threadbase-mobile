@@ -7,16 +7,13 @@
     "scheme": "threadbase",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "backgroundColor": "#0d1117"
-    },
     "platforms": [
       "ios",
       "android"
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "103",
+      "buildNumber": "106",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
@@ -54,10 +51,26 @@
       ],
       "expo-secure-store",
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0d1117"
+        }
+      ],
+      "expo-status-bar",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "reactCompiler": true
     },
     "extra": {
       "router": {

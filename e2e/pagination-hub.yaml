@@ -73,12 +73,14 @@ appId: com.ronenmars.threadbase
     visible: "Hub"
     timeout: 5000
 - tapOn: "Hub"
-- back
+# Maestro's `back` (swipe-from-edge) is unreliable on iOS 26 sims; use the
+# expo-router Stack header chevron, exposed via accessibilityLabel "Back".
+- tapOn: "Back"
 
 - extendedWaitUntil:
     visible:
       id: "hub-screen"
-    timeout: 5000
+    timeout: 10000
 
 # Hub renders one row per project. Wait for the first project row.
 - extendedWaitUntil:

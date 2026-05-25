@@ -1,0 +1,101 @@
+# Diagnostic flow — pair against the LOCAL streamer (not the mock) and
+# observe whether sessions appear in the hub.
+#
+# Hypothesis: the user reports "sessions are not displayed at all" but
+# /api/sessions and /project-chats both return 3 sessions when called
+# directly. This flow exercises the real client → real server path so we
+# can see what actually renders.
+#
+# Requires: local streamer running on http://localhost:8766
+# Usage:    maestro test e2e/diagnose-local-sessions.yaml
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# If onboarding shows up, walk through it pointing at the LOCAL streamer.
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      # Welcome
+      - tapOn:
+          id: "onboarding-welcome-cta"
+
+      # Theme
+      - tapOn:
+          id: "onboarding-theme-cta"
+
+      # Value prop
+      - tapOn:
+          id: "onboarding-valueprop-cta"
+
+      # Connect — paste credentials, fill local URL + token, handshake
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:8766"
+
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "tb_df11da2b8b037fd61d82349d182a87b6"
+
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+
+      # iOS may show "Save Password?" after secureTextEntry input
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      # Notifications — wait for handshake to advance, then skip
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 10000
+
+      - tapOn:
+          id: "onboarding-notifications-cta"
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      # Tour
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-tour-cta"
+      - tapOn:
+          id: "onboarding-tour-cta"
+
+      # Done
+      - tapOn:
+          id: "onboarding-done-cta"
+
+# Land on hub
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+
+- takeScreenshot: e2e/_artifacts/diagnose-local-01-hub-landing
+
+# Give the queries time to settle
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/diagnose-local-02-after-settle
+
+# Try scrolling to see if there's content below the fold
+- scroll
+- takeScreenshot: e2e/_artifacts/diagnose-local-03-after-scroll

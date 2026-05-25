@@ -27,11 +27,15 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) |
 | Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) |
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
-| Feature 16 — Native mini-form for Claude Code interactive prompts | Planned (mobile-native, cross-repo) |
+| Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) |
 | Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
 | Feature 18 — Upgrade to Expo SDK 56 | Planned (platform/deps) |
 | Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
 | Feature 20 — Visual regression gate on Maestro screenshots | Planned (CI/quality, follow-on to Feature 17) |
+| Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows | Planned (UX consistency) |
+| Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar) | Planned (small UX) |
+| Feature 23 — Onboarding: optional server-name slide before the QR scan | Planned (onboarding UX) |
+| Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA | Planned (depends on Bug 30 spec) |
 
 **Suggested order for the original 5:** **Feature 2** (small UI move, isolated) → **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 1** (Tree drilled-dir path) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger). Feature 2 may need to coordinate with [Bug 6](./BACKLOG.md#bug-6--conversation-list-content-hidden-under-bottom-action-bar) since both touch the bottom action bar.
 
@@ -543,32 +547,43 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ---
 
-### Feature 16 — Native mini-form for Claude Code interactive prompts
+### Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms
 
-**Filed:** 2026-05-23.
+**Filed:** 2026-05-23. **Expanded:** 2026-05-25.
 
-**Goal:** When Claude Code emits an interactive question (numbered selection list, single-choice radio-style, or multi-select checkbox), surface it in the app as a native form (tappable options + submit) instead of letting it render as raw text inside the PTY scrollback that the user has to scroll to and type a number into.
+**Goal:** Add a per-session **Sync mode** that switches the message-rendering source from the PTY stream to Claude Code's own JSONL session file (tailed by `tb-streamer`). In sync mode, each appended JSONL record renders as a typed bubble (`MessageBubble` for user/assistant, `ToolCard` / `ThinkingCard` for tool blocks, **`PromptForm`** for detected interactive prompts — radio for single-choice, checkbox for multi-select). PTY mode stays the default and is unchanged.
 
-**Why:** On a phone, typing numbers into the chat input to answer a question that's buried somewhere above in tool output is awkward and error-prone. This is the single widest gap between Claude Code's TTY-native UX and what a touch-native client should feel like.
+**Why:** Two problems collapse into one solution. (1) On a phone, typing numbers into the chat input to answer a Claude Code interactive question that's buried above in tool output is awkward and error-prone — this is the widest gap between Claude Code's TTY-native UX and what a touch-native client should feel. (2) Parsing prompts (or anything else) out of the PTY byte stream is fragile across Claude Code versions and ANSI variations. The JSONL Claude Code already writes to `~/.claude/projects/<project>/<session>.jsonl` is structured, append-only, and reliable — using it as the source of truth lets us render bubbles + structured forms without ever parsing terminal bytes.
 
 **Direction:**
-- Detection: most likely streamer-side. `tb-streamer` parses the prompt out of the PTY stream and emits a structured WS event (`{ type: 'prompt', shape: 'single'|'multi', options: [...], promptId }`). Keeps mobile rendering dumb; lets detection logic be hot-fixed without a mobile rebuild.
-- Mobile: subscribe to the new WS event, render a `<PromptForm>` (radio for single-choice, checkbox for multi) overlay or sibling to the chat input when active. Submit via WS / sibling REST.
-- PTY view: while a form is active, hide or de-emphasize the duplicate prompt text in scrollback so there's no "two places to answer" confusion.
-- Fallback: if the detected shape doesn't match a known form (e.g. free-text follow-up), leave the PTY text visible — never block the user.
+- **Source:** `tb-streamer` tails the per-session `.jsonl` file under `~/.claude/projects/<project>/` (fs.watch / chokidar), parses each appended NDJSON line, emits typed WS events: `jsonl.message`, `jsonl.tool_use`, `jsonl.tool_result`, `jsonl.prompt` (the last carries `{ shape: 'single' | 'multi', options, promptId }`). Prompt detection runs against the **structured assistant message content**, not PTY bytes.
+- **Mobile rendering:** new `SyncModeMessageList` (FlashList of bubbles fed by `jsonl.*` events), sibling to the existing `ChatScrollback`. Per-session "Stream / Sync" toggle persisted in the session store.
+- **Incremental render:** JSONL is append-only, so bubbles render as records land mid-turn. Layout-refresh + autoscroll-to-bottom are coalesced via a small `useDebouncedAutoscroll(targetRef, deps, ~120ms)` hook so partial writes don't visually jump.
+- **Prompt form:** new `components/session/PromptForm.tsx` — radio list for single-choice, checkbox list for multi-select, "Submit" button. Submission goes through the existing streamer stdin-injection endpoint with `{ promptId, answer }`; the streamer translates to whatever keystrokes Claude Code's TUI expects.
+- **Fallback:** unknown prompt shapes (free-text follow-ups, novel formats) render as a plain bubble — never block the user.
 
 **Open questions:**
-- Detection approach — regex vs. structured marker from `tb-streamer` vs. cooperation from Claude Code itself (env-flag-gated structured stdout, OSC escape). Plan stub recommends streamer-side WS event but the call should be made against the upstream landscape at pickup time.
-- Multi-select submission is the hard part — Claude Code's multi-select TUI uses cursor keys + space + enter, which doesn't replay cleanly via stdin. Validate feasibility before committing to the multi-select variant; the single-choice form can ship independently.
-- How to mask the duplicate PTY lines without breaking terminal cursor alignment.
-- Cancel/dismiss behavior (background app, swipe form away, streamer-side timeout).
+- **Mode coexistence.** Can a session toggle between Stream and Sync live, or is mode locked at session start? Affects whether `ChatScrollback` stays mounted in sync mode.
+- **Sync-on for an already-running session.** Backfill bubbles from the full JSONL on toggle, or only render records appended from "now" forward?
+- **JSONL discovery.** How does the streamer correlate a `tb-streamer` session with the right `.jsonl` file? Likely PID + cwd, but needs validation against Claude Code's actual session-file naming.
+- **Prompt detection details.** Does Claude Code's JSONL carry option metadata for interactive prompts, or does the streamer still need to parse option text out of the assistant message body? Determines how robust single vs. multi-select detection can be.
+- **Multi-select submission.** Claude Code's multi-select TUI uses cursor keys + space + enter — replaying that via stdin isn't clean. Single-choice can ship first; multi-select submit may be gated on upstream cooperation.
 
-**Scope:** ~1 week mobile + ~1 week streamer for single-choice. Multi-select is gated on upstream support and may need to be deferred.
+**Scope:** ~1 week mobile (`SyncModeMessageList` + debounced-autoscroll hook + `PromptForm` + toggle + Zustand slice) + ~1 week streamer (JSONL tailer + typed WS events + session-file correlation + prompt detection on structured content). Multi-select submission may slip to a follow-on.
 
 **Files likely involved:**
-- `tb-streamer`: new prompt-detector module + WS event type + stdin-injection endpoint accepting `{ promptId, answer }`
-- `tb-mobile`: new `components/session/PromptForm.tsx`, session-detail Zustand slice for `activePrompt`, WS handler wiring
-- Session-detail screen integration above the chat input
+- `tb-streamer`: new JSONL tailer module, WS event types (`jsonl.message` / `jsonl.tool_use` / `jsonl.tool_result` / `jsonl.prompt`), stdin-injection endpoint accepting `{ promptId, answer }`
+- `tb-mobile`: new `components/session/SyncModeMessageList.tsx`, `components/session/PromptForm.tsx`, `hooks/useDebouncedAutoscroll.ts`, session-detail Zustand slice for `activePrompt` + render-mode, header toggle chip, WS handler wiring
+
+**Acceptance criteria (preliminary):**
+- [ ] Per-session "Sync mode" toggle persists and survives app restart
+- [ ] In sync mode, a completed turn renders as bubbles sourced from the JSONL (not PTY)
+- [ ] Bubbles render incrementally as JSONL records land mid-turn
+- [ ] Autoscroll-on-new-message is debounced (~120ms); mid-turn writes don't cause visible jumps
+- [ ] Single-choice interactive prompts render as a `PromptForm` (radio) and submit correctly
+- [ ] Multi-choice prompts at minimum render (submit may be gated on upstream support)
+- [ ] Unknown prompt shapes fall back to a plain bubble with no errors
+- [ ] PTY mode is unchanged and remains the default
 
 **Plan stub:** [`superpowers/plans/2026-05-23-claude-code-prompt-miniform.md`](./superpowers/plans/2026-05-23-claude-code-prompt-miniform.md)
 
@@ -749,6 +764,121 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 - Land separately from the existing "Maestro in CI" work — that lives on `combo-a-e2e-runs` and treats Maestro as a smoke gate; this is the regression-detection layer on top.
 
 **Scope:** ~half a day for Option A + initial baselines + one round of false-positive tuning. More if the baselines need cropping logic or per-flow threshold overrides.
+
+---
+
+### Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows
+
+**Filed:** 2026-05-25.
+
+**Goal:** When the user drills into a folder in Tree view, the conversation list should look and behave like the rows on Hub and Classic — same `SessionRow` content (path, last-activity time, short message preview, message count, server name + color dot). Today Tree's `DrillRow` only renders a thin row (server label + timestamp), which makes it harder to identify and rank conversations without opening them.
+
+**Why:** Hub and Classic already use a richer row, and users move freely between the three views. Asymmetric row content forces the user to re-learn each view; closing the gap removes a steady source of friction and reuses code we already trust.
+
+**Direction:**
+
+- `DrillRow` (`components/sessions/tree/DrillRow.tsx:17-24`) currently calls `SessionRow` with `previewMode="none"` and omits `messageCount` / `preview` / `path` / `previewPref` wiring. Switch it to mirror Hub's `ConvRow` (`components/sessions/hub/ConvRow.tsx:23-32`):
+  - `messageCount={item.messageCount}`
+  - `preview={item.preview}`
+  - `previewMode` honoring the user's `historyMessageDisplay` setting (first vs. last)
+  - whatever path field Hub exposes today (verify the source on `useTreeSessions` / `treeUtils` matches the shape Hub gets from `useConversations`)
+- If the data source feeding the drilled list (`useTreeSessions` or equivalent) doesn't carry `preview` / `messageCount` / `path` today, extend it to fetch the same fields Hub/Classic do — ideally from the same query layer so we don't get two divergent shapes.
+
+**Verify before coding:**
+
+- Confirm the conversation payload behind Tree drill view is the same `Conversation` type as Hub; if not, identify the gap and decide whether to widen the type or branch in the query layer.
+- Spot-check `SessionRow` doesn't assume `preview` is non-empty — drilled rows may be on truly empty conversations.
+
+**Open questions:**
+
+- **Row height parity.** Hub's `ConvRow` is taller than today's `DrillRow`. Tree drill view may render hundreds of rows per folder (overlaps with the perf concerns in [Bug 2](./BACKLOG.md#bug-2--hub-tree-node-open-loader--long-list-render-stall) / Issue 2) — verify FlashList row-height estimates still hold after the swap.
+- **Path display in drilled context.** When the user has already drilled into a folder, showing the full path on each row may be redundant. Decide whether to render the path relative to the drilled folder, hide it entirely inside drilled view, or keep it absolute for parity with Hub.
+- **Server name redundancy.** Drill view is server-scoped (you drilled from a server root); the server label + color dot on every row may be noise. Compare against Hub's behavior when grouping is server-scoped — if Hub hides the server label in that case, do the same here.
+
+**Files likely involved:**
+
+- `components/sessions/tree/DrillRow.tsx` — the swap.
+- `components/sessions/tree/types.ts` + the hook that feeds drilled rows — widen the shape if `preview` / `messageCount` are missing.
+- `components/sessions/hub/ConvRow.tsx` — reference, no change expected.
+- `components/sessions/shared/SessionRow.tsx` (or wherever the shared row lives) — verify the existing API covers the drilled case, otherwise extend.
+
+**Coordination:**
+
+- Watch interaction with [Bug 2](./BACKLOG.md#bug-2--hub-tree-node-open-loader--long-list-render-stall) / Issue 2 — taller rows + longer folders may make the accordion stall worse. Land Issue 2's perf work first if profiling shows the swap regresses scroll.
+- Once Tree rows match Hub/Classic, [Feature 1](#feature-1--tree-directory-view-pre-fill-new-session-path-with-current-directory) ("Create new session from drilled dir") becomes a more obvious affordance — the row already speaks the same language as Hub, so the new-session CTA can sit in the same row chrome.
+
+**Scope:** Small if the data is already there (~few hours: swap `DrillRow`'s props, re-test FlashList sizing, ship). Medium (~half a day) if `useTreeSessions` needs to be widened or merged with the Hub query layer.
+
+---
+
+### Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar)
+
+**Filed:** 2026-05-25 (promoted from BACKLOG Bug 25 on 2026-05-25 — pure additive UI, no broken behavior).
+
+**Goal:** Add a Settings icon button to the Hub's Filter & Sort bar so Settings is reachable without opening the sidebar.
+
+**Why:** The top sidebar has a Settings entry to the right of the "Threadbase" logo-text. The Filter & Sort bar on the Hub doesn't expose any way to reach Settings — opening the sidebar is the only path. Adding a button there closes a small but consistent paper-cut for users who live in the Hub.
+
+**Direction:** Place a Settings icon button in the Filter & Sort bar at the right edge, alongside the existing filter/sort controls. Reuse the icon + nav handler the sidebar uses so both stay in lockstep.
+
+**Files likely involved:**
+- The Filter & Sort bar component (likely `components/sessions/hub/FilterSortBar.tsx` — grep `Filter` / `Sort` under `components/sessions/`)
+- `components/sidebar/SidebarHeader.tsx` (source of the Settings entry to mirror)
+
+**Scope:** ~1 hour. Smallest possible additive change.
+
+---
+
+### Feature 23 — Onboarding: optional server-name slide before the QR scan
+
+**Filed:** 2026-05-25 (promoted from BACKLOG Bug 27 on 2026-05-25 — net-new onboarding step, not a fix). **Related:** [Feature 5 — Polish the onboarding flow](#feature-5--polish-the-onboarding-flow).
+
+**Goal:** Add an onboarding carousel slide before the QR-scan slide that asks "What's this server called?" — a single text input with a Skip affordance. Optional — empty submit is allowed and the user continues to the scanner regardless.
+
+**Why:** Server names matter the moment a user pairs more than one server (label in lists, in pull-to-refresh, etc.). Today the only way to set a name is after pairing, buried in Settings. Capturing it at pair time costs the user nothing if they Skip, and unlocks better UX downstream — including a clean fallback path that the `Bug 28` IP+port label depends on.
+
+**Direction:**
+- New `components/onboarding/ServerNameSlide.tsx` inserted into `OnboardingNavigator` immediately before the QR-scan slide.
+- One text input + "Skip" affordance. Empty submit treats the field as not provided.
+- If a name is provided, persist it on the server record at pair time (carry it into the `services/pair-exchange.ts` payload).
+- Don't gate the QR scan on filling the field.
+
+**Files likely involved:**
+- `components/onboarding/OnboardingNavigator.tsx`
+- New `components/onboarding/ServerNameSlide.tsx`
+- `services/pair-exchange.ts` (carry optional name into the pair payload)
+
+**Coordination:** Pairs with [Bug 28](./BACKLOG.md#bug-28--pull-to-refresh-modal-show-ipport-when-server-has-no-name) — once Bug 28's IP+port fallback is in, the Skip path is safely labeled everywhere a server name shows up. Ship Feature 23 → Bug 28 together if you can. Also consider folding into [Feature 5 — Polish the onboarding flow](#feature-5--polish-the-onboarding-flow) when its scope is defined; otherwise this stays standalone.
+
+**Scope:** ~half a day mobile (slide + persistence wiring + 1 Maestro flow update).
+
+---
+
+### Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA
+
+**Filed:** 2026-05-25 (promoted from BACKLOG Bug 8b on 2026-05-25 — Bug 8a's duplicate-header fix stays in BACKLOG; this half is net-new affordance, not a bugfix). **Depends on:** [Bug 30](./BACKLOG.md#bug-30--add-to-favorites-is-non-functional--needs-spec-from-claude-code) (Favorites system spec must land first — there's no point shipping a CTA that pins items if pinning doesn't work yet).
+
+**Goal:** When the Manage Favorites screen is empty *and* there is at least one conversation across paired servers (so there's actually something the user could favorite), replace the current static "long-press a chip to pin" copy with a primary "Add to favorites" button that navigates somewhere the user can pick an item to pin.
+
+**Why:** Today the empty state is informational only ("Tap a chip in the strip and choose 'Pin to Favorites'") — accurate but inert. New users have no Quick Access items to long-press anyway, so the instruction is a dead end. A CTA closes the loop.
+
+**Direction:**
+- Empty-state branching:
+  - `favorites empty + all servers report 0 conversations` → keep the current "long-press a chip" copy (genuinely nothing to favorite).
+  - `favorites empty + any server has conversations` → render an "Add to favorites" primary button.
+  - `favorites non-empty` → render the existing FlatList unchanged.
+- **CTA destination — open question for spec time.** Three candidates, all valid:
+  1. **`/browse`** (project directory picker — `app/browse.tsx`) — lets the user pick a folder, then "Pin to Favorites" from there. Requires browse to support pinning in addition to "Start new session".
+  2. **Back to the Hub** (`/`) with the Quick Access strip auto-expanded and switched to a tab the user can pin from. But if the user has nothing in any tab yet, this doesn't help — circular.
+  3. **A new dedicated "pick something to favorite" screen** showing recents + popular + a project picker. Cleanest UX, most code.
+- Tentative recommendation: defer the destination choice until the [Bug 30](./BACKLOG.md#bug-30--add-to-favorites-is-non-functional--needs-spec-from-claude-code) spec lands — it has to answer "what is a favorite?" before this can pick a sensible target.
+
+**Files likely involved:**
+- `app/manage-favorites.tsx` (branch the empty state, add the CTA)
+- `app/browse.tsx` (only if destination option 1 is chosen)
+- `hooks/useConversations.ts` / `hooks/useQuickAccess.ts` — reuse the "any server has conversations" signal that [Bug 7](./BACKLOG.md#bug-7--quick-access-strip-default-collapsed--tab-reorder--hide-when-fully-empty)b lands on; don't query twice.
+
+**Scope:** ~half a day once Bug 30's spec is approved and the destination is decided. The empty-state branching itself is small.
 
 ---
 

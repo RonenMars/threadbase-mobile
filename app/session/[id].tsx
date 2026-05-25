@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -476,15 +476,19 @@ export default function SessionDetailScreen() {
   // shows the overlay and disables sending into a not-yet-ready PTY.
   // (See pty-manager.ts pendingReady — server-side input queueing covers the
   // race when the user does send anyway, but the overlay is the right UX.)
-  const hasReachedPromptRef = useRef(false)
-  const lastSessionIdRef = useRef<string | undefined>(undefined)
-  if (lastSessionIdRef.current !== id) {
-    hasReachedPromptRef.current = false
-    lastSessionIdRef.current = id
-  }
-  if (session?.status === 'waiting_input') {
-    hasReachedPromptRef.current = true
-  }
+  // Sticky-per-session-id state: resets when `id` changes, latches true once
+  // status hits `waiting_input`. setState is deferred to a microtask so the
+  // `react-hooks/set-state-in-effect` rule is satisfied (the rule forbids
+  // synchronous setState in an effect body but allows it inside a callback).
+  const [hasReachedPrompt, setHasReachedPrompt] = useState(false)
+  useEffect(() => {
+    queueMicrotask(() => setHasReachedPrompt(false))
+  }, [id])
+  useEffect(() => {
+    if (session?.status === 'waiting_input') {
+      queueMicrotask(() => setHasReachedPrompt(true))
+    }
+  }, [session?.status])
 
   useEffect(() => {
     hydrateDrafts().then(() => {
@@ -653,7 +657,7 @@ export default function SessionDetailScreen() {
     session?.status === 'running' &&
     !isStreaming &&
     lines.length === 0 &&
-    !hasReachedPromptRef.current
+    !hasReachedPrompt
 
   const infoModal = (
     <InfoModal

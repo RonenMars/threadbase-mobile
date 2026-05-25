@@ -191,8 +191,10 @@ jest.mock('expo-constants', () => ({
   },
 }))
 
-// ─── @react-navigation/elements (useHeaderHeight escape hatch) ───────────────
-jest.mock('@react-navigation/elements', () => ({
+// ─── expo-router/react-navigation (useHeaderHeight escape hatch) ─────────────
+// SDK 56: useHeaderHeight moved here from @react-navigation/elements (which is
+// no longer a direct dep). See app usage at components/servers/AddServerScreen.tsx.
+jest.mock('expo-router/react-navigation', () => ({
   useHeaderHeight: () => 44,
 }))
 

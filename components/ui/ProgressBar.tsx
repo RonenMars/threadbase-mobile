@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, Animated } from 'react-native'
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function ProgressBar({ loaded, total, label, isCounting = false }: Props) {
-  const animWidth = useRef(new Animated.Value(0)).current
+  const [animWidth] = useState(() => new Animated.Value(0))
   const progress = total > 0 ? Math.min(loaded / total, 1) : 0
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function ProgressBar({ loaded, total, label, isCounting = false }: Props)
       duration: 200,
       useNativeDriver: false,
     }).start()
-    // animWidth is a stable Animated.Value ref from useRef.
+    // animWidth is a stable Animated.Value from useState lazy init.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress])
 

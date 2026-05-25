@@ -15,21 +15,31 @@ export function useMinDisplayTime(
   minMs: number = 1200,
   resetKey?: string | number,
 ): boolean {
-  const [floorElapsed, setFloorElapsed] = useState(minMs <= 0)
+  // Synchronous re-gate when resetKey changes — store the last key alongside
+  // the floorElapsed flag so we can detect a change during render and reset
+  // without setState-in-effect (which would defer the re-gate by one render).
+  const [state, setState] = useState<{ key: string | number | undefined; floorElapsed: boolean }>(() => ({
+    key: resetKey,
+    floorElapsed: minMs <= 0,
+  }))
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Detect resetKey change during render — this is the React-blessed pattern
+  // for "reset state when a key changes" (see https://react.dev/reference/react/useState#storing-information-from-previous-renders).
+  let floorElapsed = state.floorElapsed
+  if (state.key !== resetKey) {
+    floorElapsed = minMs <= 0
+    setState({ key: resetKey, floorElapsed })
+  }
 
   useEffect(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
     }
-    if (minMs <= 0) {
-      setFloorElapsed(true)
-      return
-    }
-    setFloorElapsed(false)
+    if (minMs <= 0) return
     timerRef.current = setTimeout(() => {
-      setFloorElapsed(true)
+      setState((s) => ({ ...s, floorElapsed: true }))
       timerRef.current = null
     }, minMs)
     return () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as SecureStore from 'expo-secure-store'
 import { useServersStore } from '@/stores/servers'
@@ -53,7 +53,7 @@ function derivePort(url: string): string {
 export function OnboardingNavigator({ onDone }: Props) {
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<1 | -1 | 0>(0)
-  const pairedRef = useRef<PairResult | null>(null)
+  const [paired, setPaired] = useState<PairResult | null>(null)
   const addServer = useServersStore((s) => s.addServer)
 
   const goto = useCallback((next: number) => {
@@ -85,11 +85,10 @@ export function OnboardingNavigator({ onDone }: Props) {
   }, [goto])
 
   const handlePaired = useCallback((result: PairResult) => {
-    pairedRef.current = result
+    setPaired(result)
   }, [])
 
   const handleEnter = useCallback(async () => {
-    const paired = pairedRef.current
     try {
       if (paired) {
         await addServer(paired.url, paired.apiKey)
@@ -102,9 +101,7 @@ export function OnboardingNavigator({ onDone }: Props) {
     } finally {
       onDone()
     }
-  }, [addServer, onDone])
-
-  const paired = pairedRef.current
+  }, [addServer, onDone, paired])
 
   return (
     <OnboardingShell

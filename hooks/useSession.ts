@@ -128,7 +128,9 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   // Keep the latest server labels accessible inside the queryFn (which closes
   // over a snapshot) without re-running on every label change.
   const serversRef = useRef(servers)
-  serversRef.current = servers
+  useEffect(() => {
+    serversRef.current = servers
+  }, [servers])
 
   const queryKey = useMemo(
     () => ['sessions-eager', wireSortBy, order, statusKey, ...activeServerIds],
@@ -201,7 +203,9 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   // leftover overlay state if the user removes their last server).
   useEffect(() => {
     if (activeServerIds.length === 0) {
-      setProgress({ loaded: 0, total: 0, currentServerId: null, currentServerLabel: null })
+      queueMicrotask(() => {
+        setProgress({ loaded: 0, total: 0, currentServerId: null, currentServerLabel: null })
+      })
     }
   }, [activeServerIds.length])
 

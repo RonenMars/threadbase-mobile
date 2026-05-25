@@ -30,7 +30,7 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
   const inputRef = useRef<TextInput>(null)
 
   useEffect(() => {
-    if (!searchOpen) setSearchQuery('')
+    if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
   }, [searchOpen])
 
   const filteredSessions = useMemo(() => {

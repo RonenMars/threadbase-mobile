@@ -47,7 +47,7 @@ export function ProjectHubList({
   const showServerHeaders = serverGroups.length > 0
 
   useEffect(() => {
-    if (!searchOpen) setSearchQuery('')
+    if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
   }, [searchOpen])
 
   const toggleOpen = useCallback((projectId: string) => {

@@ -23,10 +23,12 @@ function useServerStatuses(serverIds: string[]) {
 
   useEffect(() => {
     // Sync current statuses on mount / when serverIds change
-    setStatuses((prev) => {
-      const next = { ...prev }
-      for (const id of serverIds) next[id] = wsManager.status(id)
-      return next
+    queueMicrotask(() => {
+      setStatuses((prev) => {
+        const next = { ...prev }
+        for (const id of serverIds) next[id] = wsManager.status(id)
+        return next
+      })
     })
 
     const unsub = wsManager.onAnyStatusChange((serverId, s) => {

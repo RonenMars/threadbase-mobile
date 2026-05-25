@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
@@ -361,7 +361,9 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
   const servers = useServersStore((s) => s.servers)
 
   const serversRef = useRef(servers)
-  serversRef.current = servers
+  useEffect(() => {
+    serversRef.current = servers
+  }, [servers])
 
   const [progress, setProgress] = useState<EagerConversationsProgress>({ loaded: 0, total: 0 })
 

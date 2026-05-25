@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Animated, Easing, StyleSheet, View, Text } from 'react-native'
 import { CircleNotch } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +15,7 @@ const SPIN_DURATION_MS = 900
 
 export function SessionsLoadingOverlay({ visible, loaded, total, serverLabel }: Props) {
   const { t } = useTranslation('sessions')
-  const spin = useRef(new Animated.Value(0)).current
+  const [spin] = useState(() => new Animated.Value(0))
 
   useEffect(() => {
     if (!visible) return
