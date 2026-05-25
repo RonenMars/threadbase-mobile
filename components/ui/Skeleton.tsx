@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Animated, type DimensionValue, type ViewStyle } from 'react-native'
 import { dark, radius } from '@/constants/theme'
 
@@ -10,7 +10,7 @@ type SkeletonBoxProps = {
 }
 
 export function SkeletonBox({ width = '100%', height = 14, borderRadius: br = radius.sm, style }: SkeletonBoxProps) {
-  const anim = useRef(new Animated.Value(0.4)).current
+  const [anim] = useState(() => new Animated.Value(0.4))
 
   useEffect(() => {
     const loop = Animated.loop(

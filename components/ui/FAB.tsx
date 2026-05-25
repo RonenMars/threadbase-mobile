@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { Plus } from 'phosphor-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -9,7 +9,7 @@ interface Props {
 
 export function FAB({ onPress }: Props) {
   const insets = useSafeAreaInsets()
-  const glowAnim = useRef(new Animated.Value(0.45)).current
+  const [glowAnim] = useState(() => new Animated.Value(0.45))
 
   useEffect(() => {
     Animated.loop(
