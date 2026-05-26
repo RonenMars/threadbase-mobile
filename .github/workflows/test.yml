@@ -183,7 +183,24 @@ jobs:
           xcrun simctl install booted "$APP_PATH"
 
       - name: Run Maestro E2E suite
-        run: npm run test:e2e:mock
+        run: |
+          mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
+          npm run test:e2e:mock
+
+      - name: Capture sim screenshot + Maestro session dir on failure
+        if: failure()
+        run: |
+          # Snapshot the booted sim so we have at least one image even if
+          # Maestro wrote no per-flow debug output to e2e/_artifacts/debug.
+          xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
+          # Maestro defaults to writing test session output under
+          # ~/.maestro/tests/<timestamp>/. Copy the most recent session into
+          # the artifact dir so commands JSON + hierarchy snapshots survive.
+          LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
+          if [ -n "$LATEST" ]; then
+            mkdir -p e2e/_artifacts/maestro-session
+            cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
+          fi
 
       - name: Upload Maestro artifacts on failure
         if: failure()
@@ -192,3 +209,4 @@ jobs:
           name: maestro-artifacts
           path: e2e/_artifacts/
           retention-days: 7
+          if-no-files-found: warn
