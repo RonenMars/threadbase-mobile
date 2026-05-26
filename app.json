@@ -19,6 +19,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.",
         "NSPhotoLibraryUsageDescription": "Used to attach photos from your library to your Claude Code sessions.",
+        "NSMicrophoneUsageDescription": "Threadbase needs the microphone to dictate prompts.",
+        "NSSpeechRecognitionUsageDescription": "Threadbase converts your speech to text on-device.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
