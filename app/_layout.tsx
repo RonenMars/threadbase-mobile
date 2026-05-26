@@ -173,6 +173,8 @@ function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
             onPress={() => router.back()}
             hitSlop={16}
             style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
+            accessibilityLabel="Back"
+            testID="header-back"
           >
             <CaretLeft size={28} color={(typeof tintColor === 'string' ? tintColor : undefined) ?? theme.text.primary} />
           </Pressable>

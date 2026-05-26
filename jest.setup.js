@@ -198,5 +198,15 @@ jest.mock('expo-router/react-navigation', () => ({
   useHeaderHeight: () => 44,
 }))
 
+// ─── expo-speech-recognition ─────────────────────────────────────────────────
+jest.mock('expo-speech-recognition', () => ({
+  ExpoSpeechRecognitionModule: {
+    requestPermissionsAsync: jest.fn(),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+  useSpeechRecognitionEvent: jest.fn(),
+}))
+
 // ─── WebSocket global (for ws-client tests) ──────────────────────────────────
 global.WebSocket = global.WebSocket || class {}

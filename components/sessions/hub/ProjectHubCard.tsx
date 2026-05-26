@@ -103,7 +103,13 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
         )}
 
         <View style={styles.spineRowBody}>
-          <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={styles.header}>
+          <TouchableOpacity
+            onPress={handleToggle}
+            activeOpacity={0.75}
+            style={styles.header}
+            accessibilityLabel={group.projectName}
+            testID={`hub-project-${group.projectName}`}
+          >
             <View style={styles.headerBody}>
               {pathRendered.parent ? (
                 <Text style={styles.headerParent} numberOfLines={1}>{pathRendered.parent}</Text>

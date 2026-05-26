@@ -50,6 +50,13 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Threadbase needs the microphone to dictate prompts.",
+          "speechRecognitionPermission": "Threadbase converts your speech to text on-device."
+        }
+      ],
       "expo-font",
       "expo-localization",
       [

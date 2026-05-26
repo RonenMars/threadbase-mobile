@@ -1,0 +1,57 @@
+# Maestro E2E — voice dictation mic toggle
+# Verifies the mic button is mounted in the compose row and toggles
+# between idle and listening icons. The simulator cannot produce real
+# transcription, so this asserts the UI state machine only.
+#
+# Strategy: deep-link to a PTY session (matches pty_turn_divider.yaml)
+# so the message-input row is rendered before tapping the mic.
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/voice_dictation.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Hub chrome is mounted
+- assertVisible:
+    id: "hub-screen"
+
+# Deep-link into a PTY session (ptyAttached: true in fixtures/sessions.json)
+- openLink: "threadbase:///session/session-abc123"
+
+# iOS shows a "Open in Threadbase?" system confirmation for incoming deeplinks.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+# Session detail screen is mounted
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+# Compose input + mic are present
+- assertVisible:
+    id: "message-input"
+- assertVisible:
+    id: "message-input-mic"
+
+# Tap mic to start dictation
+- tapOn:
+    id: "message-input-mic"
+
+# Compose input is still visible; mic button remains tappable
+- assertVisible:
+    id: "message-input"
+- assertVisible:
+    id: "message-input-mic"
+
+# Tap mic again to toggle off
+- tapOn:
+    id: "message-input-mic"
+
+- assertVisible:
+    id: "message-input-mic"

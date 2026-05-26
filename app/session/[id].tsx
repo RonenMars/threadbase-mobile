@@ -27,7 +27,7 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple } from 'phosphor-react-native'
+import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple, Microphone, MicrophoneSlash } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -35,6 +35,7 @@ import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useVoiceInput } from '@/hooks/useVoiceInput'
 import { wsManager } from '@/services/ws-client'
 import {
   pickFromCamera,
@@ -434,6 +435,10 @@ export default function SessionDetailScreen() {
   const hydrateDrafts = useDraftsStore((s) => s.hydrate)
 
   const [inputText, setInputText] = useState('')
+  const voice = useVoiceInput({
+    onTranscript: (text) => setInputText(text),
+    contextualStrings: ['React', 'TypeScript', 'useEffect', 'Expo', 'TSX', 'Claude'],
+  })
   const [queueVisible, setQueueVisible] = useState(false)
   const [planVisible, setPlanVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
@@ -624,6 +629,17 @@ export default function SessionDetailScreen() {
       { text: 'Choose from Library', onPress: () => runUpload('library') },
       { text: 'Cancel', style: 'cancel' },
     ])
+  }
+
+  const handleToggleMic = async () => {
+    if (voice.listening) return voice.stop()
+    try {
+      await voice.start()
+    } catch (err) {
+      if (err instanceof Error && err.message === 'PERMISSION_DENIED') {
+        Alert.alert(t('voice.permissionDeniedTitle'), t('voice.permissionDeniedBody'))
+      }
+    }
   }
 
   const removeAttachment = (attachmentId: string) => {
@@ -844,6 +860,20 @@ export default function SessionDetailScreen() {
                   <ActivityIndicator size="small" color={dark.text.primary} />
                 ) : (
                   <Paperclip size={26} color={dark.text.primary} />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="message-input-mic"
+                style={[styles.attachBtn, isWakingUp && styles.sendBtnDisabled]}
+                onPress={handleToggleMic}
+                disabled={isWakingUp}
+                accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
+                hitSlop={8}
+              >
+                {voice.listening ? (
+                  <MicrophoneSlash size={26} color={dark.status.failed} />
+                ) : (
+                  <Microphone size={26} color={dark.text.primary} />
                 )}
               </TouchableOpacity>
               <TextInput

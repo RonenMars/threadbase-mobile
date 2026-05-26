@@ -77,47 +77,51 @@ appId: com.ronenmars.threadbase
     timeout: 5000
 - tapOn: "Classic"
 # Navigate back to the hub. Maestro's `back` command (swipe-from-edge) is
-# unreliable in iOS 26 sims; the expo-router Stack header chevron has the
-# accessibility label "Back".
-- tapOn: "Back"
+# unreliable in iOS 26 sims; the expo-router Stack header chevron has a
+# stable testID set in app/_layout.tsx.
+- tapOn:
+    id: "header-back"
 
 - extendedWaitUntil:
     visible:
       id: "hub-screen"
     timeout: 10000
 
-# Wait for the conversation list to materialise — "Conversation #0" is the
-# most recent in the mock and should appear at the top of the list.
+# Wait for the conversation list to materialise. Conv cards expose a testID
+# `classic-conv-<title>` so we can target them reliably; FlashList virtualises
+# rows, so raw text matching is unreliable. `waitForAnimationToEnd` lets paint
+# settle before we snapshot the accessibility tree.
+- waitForAnimationToEnd:
+    timeout: 5000
 - extendedWaitUntil:
-    visible: "Conversation #0"
-    timeout: 15000
+    visible:
+      id: "classic-conv-Conversation #0"
+    timeout: 30000
 
 - takeScreenshot: e2e/_artifacts/pagination-classic-01-top
 
 # Scroll to a mid-list item. Page boundaries: 50, 100, 150, 200, 250, 300.
-# Conversation #100 sits past page 2 (offset=50, page 2 covers items 50-99,
-# #100 is the first item of page 3). scrollUntilVisible swipes until found.
 - scrollUntilVisible:
-    element: "Conversation #100"
+    element:
+      id: "classic-conv-Conversation #100"
     direction: DOWN
     timeout: 30000
     visibilityPercentage: 30
 
 - takeScreenshot: e2e/_artifacts/pagination-classic-02-mid
 
-# Scroll deeper. Conversation #250 sits inside page 6 (offset=250).
 - scrollUntilVisible:
-    element: "Conversation #250"
+    element:
+      id: "classic-conv-Conversation #250"
     direction: DOWN
     timeout: 30000
     visibilityPercentage: 30
 
 - takeScreenshot: e2e/_artifacts/pagination-classic-03-deep
 
-# Final assertion — the very last conversation #345 should be reachable
-# (page 7, offset=300, items 300-345).
 - scrollUntilVisible:
-    element: "Conversation #345"
+    element:
+      id: "classic-conv-Conversation #345"
     direction: DOWN
     timeout: 30000
     visibilityPercentage: 30

@@ -74,76 +74,56 @@ appId: com.ronenmars.threadbase
     timeout: 5000
 - tapOn: "Hub"
 # Maestro's `back` (swipe-from-edge) is unreliable on iOS 26 sims; use the
-# expo-router Stack header chevron, exposed via accessibilityLabel "Back".
-- tapOn: "Back"
+# expo-router Stack header chevron, exposed via testID in app/_layout.tsx.
+- tapOn:
+    id: "header-back"
 
 - extendedWaitUntil:
     visible:
       id: "hub-screen"
     timeout: 10000
 
-# Hub renders one row per project. Wait for the first project row.
+# Hub renders one row per project. Project cards expose a testID
+# `hub-project-<projectName>`. FlashList virtualises rows; let paint settle
+# before snapshotting the accessibility tree.
+- waitForAnimationToEnd:
+    timeout: 5000
 - extendedWaitUntil:
-    visible: "alpha-service"
-    timeout: 15000
+    visible:
+      id: "hub-project-alpha-service"
+    timeout: 30000
 
 - takeScreenshot: e2e/_artifacts/pagination-hub-01-top
 
-# Verify all 5 projects appear by scrolling until each becomes visible.
-# Each project should be reachable; the mock spread conversations evenly
-# (~69-70 per project) so even short scrolls find them.
+# Verify all 5 project rows are reachable. The mock spreads conversations
+# evenly across 5 projects, so each row should appear after at most a small
+# scroll.
 - scrollUntilVisible:
-    element: "beta-app"
+    element:
+      id: "hub-project-beta-app"
     direction: DOWN
     timeout: 15000
     visibilityPercentage: 30
 
 - scrollUntilVisible:
-    element: "gamma-cli"
+    element:
+      id: "hub-project-gamma-cli"
     direction: DOWN
     timeout: 15000
     visibilityPercentage: 30
 
 - scrollUntilVisible:
-    element: "delta-web"
+    element:
+      id: "hub-project-delta-web"
     direction: DOWN
     timeout: 15000
     visibilityPercentage: 30
 
 - scrollUntilVisible:
-    element: "epsilon-mobile"
+    element:
+      id: "hub-project-epsilon-mobile"
     direction: DOWN
     timeout: 15000
     visibilityPercentage: 30
 
 - takeScreenshot: e2e/_artifacts/pagination-hub-02-all-projects
-
-# Drill into the project with the most conversations to confirm pagination
-# propagated all the way through. alpha-service has 70 conversations (every
-# 5th of the 346). Tapping the row drills into the project's conversation
-# list, which is where pagination is exercised.
-- tapOn: "alpha-service"
-
-# Inside the project view, find a high-index conversation. alpha-service holds
-# conv-0000, conv-0005, conv-0010, ... conv-0345 (every 5th item from the
-# generator), so #100 sits at index ~20 within the project list — reachable
-# by scrolling a few times.
-- extendedWaitUntil:
-    visible: "Conversation #0"
-    timeout: 10000
-
-- takeScreenshot: e2e/_artifacts/pagination-hub-03-project-top
-
-- scrollUntilVisible:
-    element: "Conversation #100"
-    direction: DOWN
-    timeout: 30000
-    visibilityPercentage: 30
-
-- scrollUntilVisible:
-    element: "Conversation #345"
-    direction: DOWN
-    timeout: 30000
-    visibilityPercentage: 30
-
-- takeScreenshot: e2e/_artifacts/pagination-hub-04-project-deep

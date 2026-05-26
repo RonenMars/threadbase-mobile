@@ -8,6 +8,12 @@
     "cancel": "Cancel Session",
     "more": "More"
   },
+  "voice": {
+    "start": "Start dictation",
+    "stop": "Stop dictation",
+    "permissionDeniedTitle": "Microphone permission denied",
+    "permissionDeniedBody": "Threadbase needs microphone access to dictate prompts. Enable it in Settings."
+  },
   "dialog": {
     "cancelTitle": "Cancel Session",
     "cancelMessage": "Are you sure you want to cancel this session?",

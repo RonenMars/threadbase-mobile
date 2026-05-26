@@ -508,6 +508,8 @@ function MergedClassicList({
         style={styles.convCard}
         activeOpacity={0.75}
         onPress={() => router.push(`/conversation/${item.id}?server=${item.serverId}`)}
+        accessibilityLabel={item.title || item.projectPath}
+        testID={`classic-conv-${item.title || item.id}`}
       >
         <View style={styles.convCardTitleRow}>
           <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
