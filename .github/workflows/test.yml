@@ -129,7 +129,7 @@ jobs:
     name: E2E maestro (iOS)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -140,6 +140,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Restore iOS DerivedData cache
+        uses: actions/cache@v4
+        with:
+          path: build/ios-ci
+          key: ios-derived-v1-${{ runner.os }}-xcode26.3-${{ hashFiles('package-lock.json', 'app.json') }}
+          restore-keys: |
+            ios-derived-v1-${{ runner.os }}-xcode26.3-${{ hashFiles('package-lock.json') }}-
+            ios-derived-v1-${{ runner.os }}-xcode26.3-
 
       - name: Select Xcode 26
         # Expo SDK 56's expo-modules-jsi Package.swift requires swift-tools 6.2,
