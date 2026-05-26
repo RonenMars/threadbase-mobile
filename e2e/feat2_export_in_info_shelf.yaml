@@ -36,8 +36,11 @@ appId: com.ronenmars.threadbase
     text: "Export"
 
 # Open the info shelf (InfoModal) via the header info icon.
-- tapOn:
-    accessibilityText: "Conversation info"
+# The icon has accessibilityLabel="Conversation info" (see
+# app/conversation/[id].tsx). Maestro matches accessibility labels via
+# the short-form `tapOn: "<text>"` selector — same pattern used for
+# "Settings" and "Back" in pagination-*.yaml.
+- tapOn: "Conversation info"
 
 # Inside the shelf the Export action is present as an icon with
 # testID="export-action".
