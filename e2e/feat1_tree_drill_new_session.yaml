@@ -22,8 +22,11 @@ appId: com.ronenmars.threadbase
 
 # Drill into the my-project leaf row in the tree. Fixture has three sessions
 # under /home/user/my-project so it is rendered as a leaf in the compacted
-# tree.
-- tapOn: "my-project"
+# tree. We target by testID because the LIVE strip above the tree renders
+# additional rows whose project header also reads "my-project" — a plain
+# text match would be ambiguous.
+- tapOn:
+    id: "tree-row-/home/user/my-project"
 
 # DrillView mounts with a testID that encodes the drilled cwd. This is the
 # signal the FAB will read from the treeDrill store.

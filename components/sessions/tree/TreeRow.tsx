@@ -36,6 +36,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
 
   return (
     <TouchableOpacity
+      testID={`tree-row-${node.fullPath}`}
       style={[
         styles.row,
         { paddingLeft: spacing.md + indentLevels * 16 },
