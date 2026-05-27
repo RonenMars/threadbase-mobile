@@ -659,20 +659,16 @@ export default function SessionDetailScreen() {
     (session.status === 'waiting_input' || session.status === 'running') &&
     !noAttachEmptyPlaceholder
 
-  // "Waking up" = running PTY, no streaming yet, no terminal lines yet, AND
-  // Claude has never reported waiting_input for THIS session id. The added
-  // hasReachedPromptRef clause is defensive: once Claude has been at its
-  // prompt at least once on this mount, never re-show the overlay even if
-  // lines momentarily empties (e.g., terminal cleared). Cases this hook
-  // does NOT cover (where the overlay won't show even though Claude isn't
-  // really ready): partial-banner streams that push lines > 0 before the
-  // prompt marker fires. That residual gap is harmless because the streamer
-  // queues input in pendingReady (pty-manager.ts) and flushes it once the
-  // prompt is reached.
+  // "Waking up" = PTY status is running and Claude has never reported
+  // waiting_input for THIS session id on this mount. hasReachedPrompt latches
+  // true the first time waiting_input arrives and resets on id change. The
+  // overlay must NOT depend on lines.length: on resume Claude emits banner /
+  // restored conversation chunks before reaching the prompt, and the user must
+  // not be able to send input until status === 'waiting_input' — otherwise
+  // the input lands in Claude's boot UI and is swallowed (the "dot bug").
   const isWakingUp =
     session?.status === 'running' &&
     !isStreaming &&
-    lines.length === 0 &&
     !hasReachedPrompt
 
   const infoModal = (
