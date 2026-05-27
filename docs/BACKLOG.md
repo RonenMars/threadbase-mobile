@@ -43,7 +43,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 29 | Quick Access: open only on tab click; remove the right-side chevron | Open |
 | Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | Open — needs spec |
 | Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
-| Bug 32 | One unavailable server hides conversations from all servers (Hub + search) | Open — root cause known |
+| Bug 32 | One unavailable server hides conversations from all servers (Hub + search) | ✅ DONE 2026-05-27 (1ec1686) |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
@@ -941,9 +941,20 @@ Once the spec is approved, the implementation is bounded: store + read API + wri
 
 ---
 
-## Bug 32 — One unavailable server hides conversations from all servers (Hub + search)
+## Bug 32 — One unavailable server hides conversations from all servers (Hub + search) ✅ DONE 2026-05-27 (commit 1ec1686)
 
-**Filed:** 2026-05-27. **Status:** Open — root cause known, not yet fixed.
+**Filed:** 2026-05-27. **Status:** Shipped 2026-05-27.
+
+**Fix shipped:**
+- `hooks/useConversations.ts` — `Promise.all` → `Promise.allSettled` in `useConversations` (Hub list), `useConversationSearch` (cross-session search), and the per-server sequential drain in `useEagerConversations`. Fulfilled servers' conversations merge as before; rejected servers route to a new per-server fetch-status store. If every server fails, the query still surfaces as an error (single-server install behaviour preserved). Caller-initiated aborts still propagate cleanly.
+- `stores/serverFetchStatus.ts` (new) — Zustand store keyed by serverId with `{ status: 'ok' | 'error', error?, lastCheckedAt }`. Tiny — recordSuccess clears prior failures.
+- `app/index.tsx` — Hub header dot AND-combines WS connection status with HTTP fetch status; one failing server flips green → amber.
+- `components/servers/ServerStatusModal.tsx` — per-server row now shows "Unreachable"/"Fetch failed" with the error message when a fetch has failed.
+- Tests: 9 new (5 for the 3 hooks, 4 for the store). Suite 493/495 passing (was 484).
+
+---
+
+## Bug 32 — Original report (for historical context)
 
 **Symptom:** When the user has multiple servers paired and one of them is unreachable (host down, network unreachable, request times out, returns a 5xx), the Hub renders **zero conversations** — not just zero for the failing server. Conversations from the healthy servers disappear too. The cross-session search behaves the same way: one failing server suppresses results from all servers.
 
