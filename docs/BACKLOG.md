@@ -21,8 +21,8 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | Open |
 | Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | Open |
 | Bug 9 | Quick Access: hide Edit pencil when strip is collapsed | Open |
-| Bug 10 | Conversation: show "Top" button only when scrolling up | Open |
-| Bug 11 | Conversation: move "Bottom" button to bottom-right; show only when not at bottom | Open |
+| Bug 10 | Conversation: show "Top" button only when scrolling up | ✅ DONE 2026-05-24 (384790c) |
+| Bug 11 | Conversation: move "Bottom" button to bottom-right; show only when not at bottom | ✅ DONE 2026-05-24 (384790c) |
 | Bug 12 | MessageBubble bleed + code-fence collapse cut | ✅ DONE 2026-05-22 (cdf0303, d3aec11, f58d74d, 1a020fb) |
 | Bug 13 | New session: name modal flashes open then auto-closes before user can type | Open — not diagnosed |
 | Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | Open — not diagnosed |
@@ -205,9 +205,9 @@ Wrap in `{!stripCollapsed && ( ... )}`, or compute a `showEdit = !stripCollapsed
 
 ---
 
-## Bug 10 — Conversation: show "Top" button only when scrolling up
+## Bug 10 — Conversation: show "Top" button only when scrolling up ✅ DONE 2026-05-24 (commit 384790c)
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Shipped:** 2026-05-24 (in commit `384790c`, merged via #4 / #11). Implementation matches recommendation (1) — hold-on-recent-upward-motion with a 600 ms hide window plus a `y >= 200` near-top suppression. See `app/conversation/[id].tsx` `handleScroll` for the current behavior.
 
 **Symptom:** Today the "Top" floating button (centered, top of the conversation view) appears whenever scroll position `y > 100` AND the previous scroll delta was upward. The intent is right but the implementation flickers: as soon as the user releases their finger and the scroll decelerates *downward by a single pixel*, the button disappears. So it pops in and out during natural scroll-to-read motion instead of staying available while the user is actively trying to go up.
 
@@ -236,9 +236,9 @@ setShowScrollTop(scrollingUp && y > 100)
 
 ---
 
-## Bug 11 — Conversation: move "Bottom" button to bottom-right floating, show only when not at bottom
+## Bug 11 — Conversation: move "Bottom" button to bottom-right floating, show only when not at bottom ✅ DONE 2026-05-24 (commit 384790c)
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Shipped:** 2026-05-24 (in commit `384790c`, merged via #4 / #11). Bottom button is now a circular 40×40 FAB anchored bottom-right inside the list wrapper (clears the Resume bar), uses Phosphor `CaretDown`, and keeps the `distFromBottom > 100` visibility gate. See `app/conversation/[id].tsx` `scrollBtnBottom`.
 
 **Symptom:** The "Bottom" button currently floats at the **center** of the screen near the bottom edge (`scrollBtnBottom: { bottom: spacing.md }` + `alignSelf: 'center'` at `app/conversation/[id].tsx:500-509`). Center placement collides visually with the read flow — the user's eye is in the middle of the screen reading text, and the button sits there too. Standard mobile chat-UI convention is a **bottom-right** floating action button (FAB-style), out of the reading column.
 
