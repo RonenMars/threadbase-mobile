@@ -28,7 +28,11 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-valueprop-cta"
 
-      # Step 4 / CONNECT — paste credentials, fill URL + token, handshake
+      # Step 4 / SERVER NAME (Feature 23) — optional, skip for the smoke flow
+      - tapOn:
+          id: "onboarding-server-name-skip"
+
+      # Step 5 / CONNECT — paste credentials, fill URL + token, handshake
       - tapOn:
           id: "onboarding-connect-paste-card"
 
