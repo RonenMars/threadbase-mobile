@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import {
   Star, ClockCounterClockwise, Fire,
-  CaretUp, CaretDown, GearSix, PencilSimple, Check,
+  GearSix, PencilSimple, Check,
 } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -34,8 +34,22 @@ export function QuickAccessStrip() {
   const [visibleCount, setVisibleCount] = useState(INITIAL_CHIPS)
   const [activeItem, setActiveItem] = useState<ChipItem | null>(null)
 
+  // Bug 29 — tab tap drives expand/collapse. Tapping the active tab while
+  // expanded collapses the strip; tapping a different tab while expanded
+  // switches without collapsing; tapping any tab while collapsed expands it
+  // and selects that tab. The chevron toggle was removed in favor of this.
   const handleTabSwitch = (tab: QuickAccessTab) => {
-    setCurrentTab(tab)
+    if (stripCollapsed) {
+      setStripCollapsed(false)
+      setCurrentTab(tab)
+    } else if (tab === effectiveTab) {
+      // Bug 9 — reset edit mode on collapse so we don't re-expand mid-edit.
+      setEditMode(false)
+      setStripCollapsed(true)
+      return
+    } else {
+      setCurrentTab(tab)
+    }
     setEditMode(false)
     setVisibleCount(INITIAL_CHIPS)
   }
@@ -266,22 +280,6 @@ export function QuickAccessStrip() {
               }
             </Pressable>
           )}
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => {
-              const next = !stripCollapsed
-              // Bug 9 — reset edit mode when collapsing so the strip doesn't
-              // come back expanded into a half-active edit state.
-              if (next) setEditMode(false)
-              setStripCollapsed(next)
-            }}
-            hitSlop={8}
-          >
-            {stripCollapsed
-              ? <CaretDown size={16} color={dark.text.accent} />
-              : <CaretUp size={16} color={dark.text.accent} />
-            }
-          </Pressable>
         </View>
       </View>
 
