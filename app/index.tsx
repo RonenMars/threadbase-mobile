@@ -312,6 +312,17 @@ export default function ProjectsHub() {
             <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
           </Pressable>
+          {/* Feature 22: Settings entry on the Filter & Sort bar — parity with
+              the sidebar's Gear next to the brand. */}
+          <Pressable
+            testID="filter-sort-settings-btn"
+            onPress={() => router.push('/settings')}
+            hitSlop={8}
+            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
+            accessibilityLabel={t('settings:header.title')}
+          >
+            <Gear size={20} color={dark.text.secondary} />
+          </Pressable>
         </View>
       </View>
 
