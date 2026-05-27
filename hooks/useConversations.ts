@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration } from '@/types/api'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
@@ -76,10 +77,16 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
 
+  const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
+  const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
+
   return useInfiniteQuery({
     queryKey: ['conversations', filter, refreshEpoch, ...displayedServerIds],
     queryFn: async ({ pageParam = 0 }): Promise<MultiConversationPage> => {
-      const results = await Promise.all(
+      // Bug 32: use allSettled so one unreachable server doesn't blank the Hub.
+      // Rejected results update the per-server fetch-status store, which the
+      // header dot + ServerStatusModal read to surface partial failure.
+      const settled = await Promise.allSettled(
         displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
           const params = new URLSearchParams()
@@ -99,10 +106,33 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
         })
       )
 
-      // Merge conversations from all servers, tag with serverId
+      const fulfilled: { serverId: string; page: ConversationPage }[] = []
+      const failedServers: string[] = []
+      settled.forEach((result, idx) => {
+        const serverId = displayedServerIds[idx]
+        if (result.status === 'fulfilled') {
+          fulfilled.push(result.value)
+          recordSuccess(serverId)
+        } else {
+          failedServers.push(serverId)
+          recordFailure(serverId, result.reason)
+        }
+      })
+
+      // Single-server install (or every server failed): surface as a query
+      // error — Hub renders its existing error/empty state, matching the
+      // pre-fix behaviour for that case.
+      if (fulfilled.length === 0 && failedServers.length > 0) {
+        const firstReject = settled.find(
+          (r): r is PromiseRejectedResult => r.status === 'rejected',
+        )
+        throw firstReject?.reason ?? new Error('All servers failed')
+      }
+
+      // Merge conversations from all fulfilled servers, tag with serverId.
       const merged: MultiConversation[] = []
       let anyHasMore = false
-      for (const { serverId, page } of results) {
+      for (const { serverId, page } of fulfilled) {
         const label = servers[serverId]?.label
         for (const conv of page.conversations) {
           merged.push({ ...conv, serverId, serverLabel: label })
@@ -366,6 +396,8 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
   }, [servers])
 
   const [progress, setProgress] = useState<EagerConversationsProgress>({ loaded: 0, total: 0 })
+  const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
+  const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
 
   const queryKey = useMemo(
     () => ['conversations-eager', filter, refreshEpoch, ...displayedServerIds],
@@ -379,27 +411,46 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
       const merged: MultiConversation[] = []
       let runningLoaded = 0
       let runningTotal = 0
+      let fulfilledCount = 0
+      let lastFailure: unknown = null
 
       for (const serverId of displayedServerIds) {
         const label = serversRef.current[serverId]?.label
         const baselineLoaded = runningLoaded
         const baselineTotal = runningTotal
-        const items = await fetchAllConversationPagesForServer(
-          serverId,
-          label,
-          filter,
-          refreshEpoch,
-          (loadedSoFar, totalSoFar) => {
-            setProgress({
-              loaded: baselineLoaded + loadedSoFar,
-              total: baselineTotal + totalSoFar,
-            })
-          },
-          signal,
-        )
-        runningLoaded += items.length
-        runningTotal += items.length
-        merged.push(...items)
+        // Bug 32: a single bad server must not abort the whole drain. Catch
+        // here, record the failure in the per-server store, and move on so
+        // healthy servers' conversations still reach the UI.
+        try {
+          const items = await fetchAllConversationPagesForServer(
+            serverId,
+            label,
+            filter,
+            refreshEpoch,
+            (loadedSoFar, totalSoFar) => {
+              setProgress({
+                loaded: baselineLoaded + loadedSoFar,
+                total: baselineTotal + totalSoFar,
+              })
+            },
+            signal,
+          )
+          runningLoaded += items.length
+          runningTotal += items.length
+          merged.push(...items)
+          fulfilledCount++
+          recordSuccess(serverId)
+        } catch (err) {
+          // Caller-initiated abort (unmount, refresh) must propagate so the
+          // query is cancelled cleanly.
+          if (signal?.aborted) throw err
+          lastFailure = err
+          recordFailure(serverId, err)
+        }
+      }
+
+      if (fulfilledCount === 0 && displayedServerIds.length > 0) {
+        throw lastFailure ?? new Error('All servers failed')
       }
 
       merged.sort(sortByLastMessageDesc)
@@ -428,11 +479,15 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
 export function useConversationSearch(query: string) {
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
+  const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
+  const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
 
   return useQuery({
     queryKey: ['conversations', 'search', query, ...displayedServerIds],
     queryFn: async () => {
-      const results = await Promise.all(
+      // Bug 32: allSettled — one failing server shouldn't suppress matches
+      // from healthy servers.
+      const settled = await Promise.allSettled(
         displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
           const raw = await api.get<RawSessionMeta[]>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
@@ -441,11 +496,27 @@ export function useConversationSearch(query: string) {
       )
 
       const merged: MultiConversation[] = []
-      for (const { serverId, page } of results) {
-        const label = servers[serverId]?.label
-        for (const conv of page.conversations) {
-          merged.push({ ...conv, serverId, serverLabel: label })
+      let anyFulfilled = false
+      settled.forEach((result, idx) => {
+        const serverId = displayedServerIds[idx]
+        if (result.status === 'fulfilled') {
+          anyFulfilled = true
+          recordSuccess(serverId)
+          const { page } = result.value
+          const label = servers[serverId]?.label
+          for (const conv of page.conversations) {
+            merged.push({ ...conv, serverId, serverLabel: label })
+          }
+        } else {
+          recordFailure(serverId, result.reason)
         }
+      })
+
+      if (!anyFulfilled && displayedServerIds.length > 0) {
+        const firstReject = settled.find(
+          (r): r is PromiseRejectedResult => r.status === 'rejected',
+        )
+        throw firstReject?.reason ?? new Error('All servers failed')
       }
 
       merged.sort(sortByLastMessageDesc)

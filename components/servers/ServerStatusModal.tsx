@@ -4,6 +4,7 @@ import { Cloud, ListDashes } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore, type ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import { ServersManageModal } from '@/components/servers/ServersManageModal'
 import { dark, font, radius, spacing } from '@/constants/theme'
 
@@ -44,21 +45,32 @@ function StatusRow({
   label,
   url,
   status,
+  fetchStatus,
 }: {
   label: string
   url: string
   status: WSStatus
+  fetchStatus?: ServerFetchStatusEntry
 }) {
   const isConnected = status === 'connected'
   const isConnecting = status === 'connecting'
+  // Fetch-status defaults to ok when we haven't seen a request yet — only flip
+  // bad once a real failure has been recorded by useConversations.
+  const fetchFailed = fetchStatus?.status === 'error'
 
-  const dotColor = isConnected
+  const healthy = isConnected && !fetchFailed
+  const dotColor = healthy
     ? dark.status.running
-    : isConnecting
+    : isConnecting && !fetchFailed
       ? dark.status.waiting
       : dark.status.failed
 
-  const statusLabel = isConnected ? 'Connected' : isConnecting ? 'Connecting…' : 'Disconnected'
+  let statusLabel: string
+  if (fetchFailed && !isConnected) statusLabel = 'Unreachable'
+  else if (fetchFailed) statusLabel = 'Fetch failed'
+  else if (isConnected) statusLabel = 'Connected'
+  else if (isConnecting) statusLabel = 'Connecting…'
+  else statusLabel = 'Disconnected'
 
   return (
     <View style={styles.row}>
@@ -69,6 +81,11 @@ function StatusRow({
         <Text style={styles.serverUrl} numberOfLines={1}>
           {url}
         </Text>
+        {fetchFailed && fetchStatus?.error ? (
+          <Text style={styles.errorDetail} numberOfLines={2}>
+            {fetchStatus.error}
+          </Text>
+        ) : null}
       </View>
       <View style={styles.rowRight}>
         <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
@@ -83,6 +100,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
   const statuses = useServerStatuses(activeServerIds)
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const [manageOpen, setManageOpen] = useState(false)
 
   if (!visible) return null
@@ -125,6 +143,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
                   label={server.label || new URL(server.url).hostname}
                   url={server.url}
                   status={statuses[id] ?? 'disconnected'}
+                  fetchStatus={fetchStatuses[id]}
                 />
               )
             })
@@ -187,6 +206,11 @@ const styles = StyleSheet.create({
   serverUrl: {
     color: dark.text.secondary,
     fontSize: font.xs,
+  },
+  errorDetail: {
+    color: dark.status.failed,
+    fontSize: font.xs,
+    marginTop: 2,
   },
   rowRight: {
     flexDirection: 'row',
