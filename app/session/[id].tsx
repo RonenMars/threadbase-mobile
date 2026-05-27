@@ -767,7 +767,6 @@ export default function SessionDetailScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 52 : 0}
       >
         {session ? (
           <View style={styles.statusBar}>
