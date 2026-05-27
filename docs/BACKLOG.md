@@ -17,7 +17,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 3 | Quick Access strip never loads items | ✅ DONE 2026-05-16 (eea502d) |
 | Bug 4 | Long conversation: scroll-to-end flickery / jumpy | ✅ DONE 2026-05-22 (78218fb) |
 | Bug 5 | Multi-attachment send produces no output | Open — not diagnosed |
-| Bug 6 | Conversation list content hidden under bottom action bar | Open — not diagnosed |
+| Bug 6 | Conversation list content hidden under bottom action bar | ✅ DONE 2026-05-24 (PR #11, commit 9835ecf) |
 | Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | Open |
 | Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | Open |
 | Bug 9 | Quick Access: hide Edit pencil when strip is collapsed | Open |
@@ -29,7 +29,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
 | Bug 16 | Back from never-typed-in new session leaves an empty session alive | Open — not diagnosed |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
-| Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Open — flow skipped |
+| Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), needs CI re-wiring + `.skip` removal |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
 | Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
 | Bug 21 | "Open Session" from Recents lands on "Session not found" | Open — not diagnosed |
@@ -101,11 +101,11 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 
 ---
 
-## Bug 6 — Conversation list content hidden under bottom action bar
+## Bug 6 — Conversation list content hidden under bottom action bar ✅ DONE 2026-05-24 (PR #11, commit 9835ecf)
 
-**Filed:** 2026-05-20 — not diagnosed.
+**Filed:** 2026-05-20. **Shipped:** 2026-05-24 in PR #11 (commit `9835ecf`). The conversation FlatList now measures the bottom action bar via `onLayout` and feeds its height into `contentContainerStyle.paddingBottom` (see `app/conversation/[id].tsx:140-141`). Maestro flow `e2e/bug6_bottom_bar_inset.yaml` is wired into `npm run test:e2e:mock` and guards against regressions. Entry kept below for traceability.
 
-**Symptom:** When scrolled to the end of an existing conversation (Historical view), the last message visible above the bottom action bar (Export + Resume Session) is not actually the last message. Dragging the list upward with a finger reveals more messages tucked behind the bottom bar. Releasing the finger snaps the list back to the original position, so the hidden content becomes inaccessible without a sustained drag.
+**Symptom (original):** When scrolled to the end of an existing conversation (Historical view), the last message visible above the bottom action bar (Export + Resume Session) is not actually the last message. Dragging the list upward with a finger reveals more messages tucked behind the bottom bar. Releasing the finger snaps the list back to the original position, so the hidden content becomes inaccessible without a sustained drag.
 
 **Suspected cause:** The FlatList's bottom inset / `contentContainerStyle.paddingBottom` doesn't account for the bottom action bar's height. The list believes its content ends at the visible bottom edge, but real content extends under the bar. Because there's no over-scroll commit (rubber-band only), the release snaps back.
 
@@ -606,7 +606,7 @@ If all of the above are still empty at exit time, the session is a discard.
 
 ## Bug 18 — Maestro flow `server_drag_reorder.yaml.skip` crashes the app at the `swipe` step
 
-**Filed:** 2026-05-24. **Status:** flow skipped in `test:e2e:mock` (renamed to `.yaml.skip`) so CI can stay green. Re-include by renaming back to `.yaml` once fixed.
+**Filed:** 2026-05-24. **Status:** **Partial.** A working flow was recreated as `e2e/server_drag_reorder.yaml` (commit `cd6d753`, `test(e2e): add server drag-reorder maestro flow`), but the old `e2e/server_drag_reorder.yaml.skip` is still in the tree and the new flow is not yet in the `npm run test:e2e:mock` arglist in `package.json`. Remaining work: (1) verify `server_drag_reorder.yaml` passes locally against the mock fixture, (2) add it to the `maestro test ...` arglist alongside the other flows, (3) `git rm e2e/server_drag_reorder.yaml.skip`.
 
 **Symptom:** The flow runs `setup.yaml`, taps the filter-sort button, then the conditional `runFlow` enters the multi-server branch even on a single-server fixture. The first `swipe` against `id: "drag-handle-srv_a"` causes the app to crash within ~4 s. Maestro log: *"App crashed or stopped while executing flow, please check diagnostic logs: ~/Library/Logs/DiagnosticReports directory"*.
 
@@ -760,14 +760,14 @@ Commit `36c504d` (`fix(conversation): drop redundant skeleton timers, shorten la
 
 **Steps to fix:**
 
-1. Locate the button in `app/(tabs)/settings.tsx` (or the settings screen file); confirm `onPress`.
+1. Locate the button in `app/settings.tsx` (or the settings screen file); confirm `onPress`.
 2. If unwired, route to the same QR-scan screen onboarding uses.
 3. If routed but broken, check the destination route exists.
 4. Add a Maestro testID + a `settings_qr_scanner.yaml` flow asserting the scanner screen mounts.
 
 **Files likely involved:**
 
-- `app/(tabs)/settings.tsx`
+- `app/settings.tsx`
 - `components/onboarding/QrScanScreen.tsx` (or the equivalent reused for the settings entry point)
 
 ---

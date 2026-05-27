@@ -12,8 +12,8 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 
 | Feature | Status |
 |---|---|
-| Feature 1 — Tree directory view: pre-fill new-session path with current directory | Planned |
-| Feature 2 — Move Export button from Historical session bottom bar into the info shelf | Planned |
+| Feature 1 — Tree directory view: pre-fill new-session path with current directory | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
+| Feature 2 — Move Export button from Historical session bottom bar into the info shelf | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
 | Feature 3 — Attach multiple files to a single message | Planned (larger — split into its own plan when picked up) |
 | Feature 4 — Auto-deploy to App Store + Google Play | Planned (CI/release infra) |
 | Feature 5 — Polish the onboarding flow | Planned (scope to be defined) |
@@ -29,79 +29,26 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
 | Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) |
 | Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
-| Feature 18 — Upgrade to Expo SDK 56 | Planned (platform/deps) |
+| Feature 18 — Upgrade to Expo SDK 56 | ✅ Shipped 2026-05-25 (TestFlight build 104; React Compiler re-enabled in 106) |
 | Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
 | Feature 20 — Visual regression gate on Maestro screenshots | Planned (CI/quality, follow-on to Feature 17) |
 | Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows | Planned (UX consistency) |
 | Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar) | Planned (small UX) |
 | Feature 23 — Onboarding: optional server-name slide before the QR scan | Planned (onboarding UX) |
 | Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA | Planned (depends on Bug 30 spec) |
+| Feature 25 — Clear react-hooks v5 lint warnings (React Compiler prereq) | Planned (platform/quality, RC prereq) |
+| Feature 26 — Verify SDK 56 precompiled XCFrameworks are active in Maestro CI | Planned (CI/perf, quick win) |
+| Feature 27 — Adopt EAS precompiled community libs for iOS build time | Planned (platform/perf, EAS-only) |
+| Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion | Planned (platform/perf, depends on Feature 25) |
+| Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned (platform/deps, low-priority) |
 
-**Suggested order for the original 5:** **Feature 2** (small UI move, isolated) → **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 1** (Tree drilled-dir path) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger). Feature 2 may need to coordinate with [Bug 6](./BACKLOG.md#bug-6--conversation-list-content-hidden-under-bottom-action-bar) since both touch the bottom action bar.
+**Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
 **Suggested order for the orchestration cluster (6–15):** **Feature 13 Mission Control** (biggest daily-orchestration unlock, no native modules, reuses existing infra) → **Feature 6 Cross-session search** (already half-shipped at `hooks/useConversations.ts:431`; finishing it changes what the app is for) → **Feature 12 Live Activities** (highest mobile-native ceiling) → **Feature 15 Scheduled prompts** (strong async-teammate unlock if streamer cron is cheap) → **Feature 7 Tagging** → **Feature 8 Saved views** (builds on 7) → **Feature 10 Snippets** → **Feature 11 Workspace sync** (only after 7/8/10 exist and are worth syncing) → **Feature 14 Voice** (great but possibly overkill before #6 and #13 settle the workflow) → **Feature 9 Split view** (fun but iPad-coded; deprioritize if primary device is iPhone).
 
 ---
 
 ## Planned
-
-### Feature 1 — Tree directory view: pre-fill new-session path with current directory
-
-**Goal:** When the user has drilled into a directory in `TreeView` but hasn't opened a session yet, the "Create new session" button should pre-configure the new-session request with that directory's path on the active server.
-
-**Core behavior:**
-- Track "current drill directory" while the user is inside `DrillView` / `TreeSessionsList`.
-- On "Create new session" tap from that state, pass `{ serverId, cwd: <currentDirPath> }` to the new-session flow instead of using the server default.
-
-**Optional sub-feature A — Confirm with the user:**
-- Before creating, show a sheet/modal: *"Create new session in `<path>` on `<server>`?"* with Confirm / Change path.
-- Keeps the user in control if they drilled in just to browse.
-
-**Optional sub-feature B — A/B test the confirmation:**
-- If we add the confirmation (A), gate it behind an A/B flag:
-  - **Variant A:** auto-use the drilled path, no prompt.
-  - **Variant B:** prompt every time.
-- Measure: new-session creation rate, session-abandon rate (created → never sent a message), edit-path rate.
-
-**Open questions:**
-- Where does "current drill directory" live? `stores/` (Zustand) vs. local state on `DrillView`. A store entry is cheaper if the new-session button is rendered outside `DrillView`.
-- A/B test infra — do we have a feature-flag mechanism yet, or do we need to design one first? (If not, ship without B and revisit.)
-- What's the fallback when the drilled path doesn't exist on the server? (Permission error, deleted dir, etc.)
-
-**Files likely involved:**
-- `components/sessions/tree/DrillView.tsx`
-- `components/sessions/tree/TreeSessionsList.tsx`
-- `app/index.tsx` or wherever the "Create new session" CTA lives
-- `stores/servers.ts` or a new `stores/newSession.ts`
-- streamer: new-session endpoint (verify it accepts `cwd`)
-
----
-
-### Feature 2 — Move Export button from Historical session bottom bar into the info shelf
-
-**Goal:** Declutter the Historical session view's **bottom bar** (where it currently sits next to the Resume Session button) by relocating the Export action into the existing info shelf inside the same screen.
-
-**Direction:**
-- Identify the current Export entry point in the Historical session view's bottom bar (next to Resume Session) and the info-shelf component it should live in.
-- Move the trigger; keep the same export handler and behavior — no functional change, only placement.
-- **Form factor in the shelf:** consider rendering Export as an **icon** (e.g. Phosphor `Export` / `Share`) instead of, or in addition to, a full button. An icon-only treatment fits the shelf's compact density; an icon + label combo is a middle-ground if discoverability is a concern. Pick after seeing the shelf's existing action style.
-- Confirm the shelf's visual hierarchy still reads well after adding the action (it may need an action row / divider).
-
-**Open questions:**
-- Is the "info shelf" the metadata panel inside the Historical session screen, or a separate slide-up sheet? Confirm the exact component before editing.
-- Icon-only vs. icon + label vs. full button — match whatever pattern the shelf already uses for other actions.
-- Should the bottom bar retain any export affordance (e.g. for power users) or be fully removed? Default: fully removed — that's the point of the move; Resume Session stays as the sole bottom-bar primary.
-- Any analytics event tied to the current Export button that needs its source label updated?
-
-**Files likely involved (to verify):**
-- `app/conversation/[id].tsx` or the Historical session screen route
-- The bottom-bar component that currently hosts Resume Session + Export
-- The info-shelf component rendered inside that screen
-- Export handler (likely in a hook or `lib/`)
-
-**Coordination:** Bug 6 ([BACKLOG.md](./BACKLOG.md#bug-6--conversation-list-content-hidden-under-bottom-action-bar)) is on the same screen — sequence them together so the bottom-bar layout only gets touched once.
-
----
 
 ### Feature 3 — Attach multiple files to a single message
 
@@ -641,35 +588,7 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ### Feature 18 — Upgrade to Expo SDK 56
 
-**Filed:** 2026-05-23.
-
-**Goal:** Move the app from Expo SDK 55 → 56 on a `chore/expo-56-upgrade` branch, with the full Jest + Maestro suites green, a clean `expo-doctor`, and a TestFlight archive dry-run via `/expo-local-ship`.
-
-**Why:** Keep the toolchain current with the canary work we eventually want to absorb (SDK 56 routes/router-typing, RN 0.85, React 19.2.3). A prior 55→56 attempt was rolled back on 2026-05-06 — treat SDK 56 as still potentially fragile and prefer waiting for a patch release (`~56.0.5`+) before starting.
-
-**Procedure:** Full step-by-step lives in the standalone brief [`docs/upgrade-to-expo-56.md`](./upgrade-to-expo-56.md) — 5 phases (discover/report → bump → code fixes → native rebuild + sim smoke → ship dry-run → PR). The brief is self-contained and is the source of truth; this entry is the pointer.
-
-**Acceptance criteria** (copied from the brief so the roadmap entry is self-contained):
-- `npm run typecheck` exits 0
-- `npm run lint` ≤ `main` baseline (43 errors / 46 warnings)
-- `npm run test:ci` exits 0
-- `npm run test:e2e:mock` exits 0
-- App launches cleanly on iPhone 17 Pro / iOS 26.4 simulator
-- App launches cleanly on iOS 17.x simulator
-- `expo-doctor` exits 0
-- No new TS2345 / TS2322 from `t('ns:key')` cross-namespace usage
-- iOS Release build succeeds via `npx expo run:ios --configuration Release --device <udid>`
-- TestFlight archive via `/expo-local-ship` succeeds (no actual ship)
-- PR opened with before/after dep version table
-
-**Risk notes:**
-- Prior 55→56 attempt rolled back 2026-05-06 — inspect that branch's history before redoing from scratch.
-- iOS-26 Hermes path was a crash source 54→55; re-test on iOS 26.x after upgrade.
-- `ship.sh` step-2 `npm install` corrupts Watchman/Metro mid-ship — reset Watchman before any ship dry-run.
-
-**Out of scope:** NativeWind v4→v5, react-native-screens@5, expo-updates re-enablement, Zustand/Router refactors. See the brief's "Things explicitly NOT in scope" section.
-
-**Plan stub:** [`superpowers/plans/2026-05-23-expo-56-upgrade.md`](./superpowers/plans/2026-05-23-expo-56-upgrade.md)
+✅ **Shipped 2026-05-25** (TestFlight build 104, React Compiler re-enabled in build 106). See the [Shipped](#shipped) table for the row. The Features 25–29 below capture the follow-on opportunities the SDK 56 + React Compiler landing unlocked.
 
 ---
 
@@ -882,6 +801,141 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ---
 
+### Feature 25 — Clear react-hooks v5 lint warnings (React Compiler prereq)
+
+**Filed:** 2026-05-27.
+
+**Goal:** Drive the `eslint-plugin-react-hooks` v5 warning count to zero so React Compiler (already enabled in `app.json` `experiments.reactCompiler: true`) operates on code that actually follows the Rules of React. Without this, RC's automatic memoization can silently produce wrong outputs in the cases where it skips compilation.
+
+**Why:** The SDK 56 upgrade brought `eslint-plugin-react-hooks` v5, which surfaced ~100 pre-existing rule violations the v4 plugin didn't flag: 74 refs-in-render, 19 set-state-in-effect, 6 immutability, 1 preserve-manual-memoization, 1 exhaustive-deps. These are not just style — they are the exact patterns RC's safety bailout uses to decide whether to compile a component. Components that fail the rules get skipped, and the worst case is partial compilation across a render tree where memoization correctness depends on every level. Cleaning them up is the prereq for Feature 28 (memoization deletion audit) and for getting the full RC perf payoff Meta reports (up to 12% load, 2.5× interaction speed).
+
+**Direction:**
+- Pick up the in-flight parallel-agent cleanup (batches A/C clean as of 2026-05-19; B/D in progress). Resume B/D, then re-baseline the count on `main`.
+- Triage by category, not by file — refs-in-render and set-state-in-effect each have a small set of canonical fixes; doing them as a sweep is cheaper than file-by-file.
+- For each fix, run `npm run test:ci` to make sure the rewrite is behavior-preserving (a `setState` inside `useEffect` removed without thought is a real semantic change).
+- Final state: `npm run lint` shows zero `react-hooks/*` warnings; baseline in `main` updated accordingly.
+
+**Acceptance criteria:**
+- `npm run lint` shows zero `react-hooks/*` rule violations.
+- `npm run test:ci` exits 0 (476+ tests).
+- `npm run test:e2e:mock` exits 0.
+- App still launches and renders the Hub on iPhone 17 Pro physical device after the cleanup branch lands.
+
+**Files likely involved:** spread across the 40 files currently using manual memoization patterns; concentrated in `components/sessions/hub/*`, `components/sessions/tree/*`, `app/conversation/[id].tsx`, `contexts/ThemeContext.tsx`.
+
+**Out of scope:** Deleting now-redundant `useMemo`/`useCallback` calls (that's Feature 28). Touching pre-existing dead code or refactoring unrelated patterns.
+
+**Scope:** ~1–2 days depending on how much the B/D batches already covered.
+
+---
+
+### Feature 26 — Verify SDK 56 precompiled XCFrameworks are active in Maestro CI
+
+**Filed:** 2026-05-27.
+
+**Goal:** Confirm that SDK 56's precompiled XCFrameworks (default-on, ~16% iOS build time savings) are actually in effect for both local `expo-local-ship` and the Maestro CI workflow. The optimization is "default-on" — but only if `EXPO_USE_PRECOMPILED_MODULES` isn't explicitly set to `0` anywhere.
+
+**Why:** Maestro CI's iOS build is currently 35 min cold / target 5–10 min warm with DerivedData cache. A free ~16% on top of that is worth the half-hour audit. SDK 56 also enables an additional ~20% EAS-side precompile of community libs (`react-native-reanimated`, `react-native-screens`) but that's covered separately in Feature 27.
+
+**Direction:**
+- Grep `scripts/`, `.github/workflows/`, `eas.json`, and any `.env*` files for `EXPO_USE_PRECOMPILED_MODULES`. If it's set to `0` anywhere, decide whether the reason still applies; otherwise remove the override.
+- Look at the next clean Maestro CI run's iOS build log and confirm the `xcodebuild` lines reference `.xcframework` paths for the prebuilt Expo modules (Expo logs a line like "Using prebuilt XCFramework for ExpoModulesCore" on cache hit).
+- Compare median clean build time before/after over 3 consecutive CI runs.
+
+**Acceptance criteria:**
+- No `EXPO_USE_PRECOMPILED_MODULES=0` anywhere in the repo.
+- Maestro CI log shows prebuilt XCFramework usage on a clean build.
+- Build time delta documented in the CI workflow comment or this entry.
+
+**Files likely involved:** `.github/workflows/maestro.yml` (or whichever workflow runs the iOS build), `scripts/archive-and-upload.sh`, any `.env*` referenced by `expo-local-ship`.
+
+**Scope:** ~half a day, mostly waiting for CI runs.
+
+---
+
+### Feature 27 — Adopt EAS precompiled community libs for iOS build time
+
+**Filed:** 2026-05-27.
+
+**Goal:** If/when the iOS pipeline moves to EAS (Feature 4 candidate path 1 or 3), pick up SDK 56's additional ~20% EAS-side precompile of community libraries — specifically `react-native-reanimated@4.3.1` and `react-native-screens@4.25.2`, both of which we depend on.
+
+**Why:** The numbers compound: SDK 56 prebuilt XCFrameworks save ~16% on every iOS build (Feature 26), and EAS-side community precompile saves another ~20% on top of that. Cumulatively ~33% off cold iOS build time. Only realizable if iOS builds run on EAS, so this is gated on whatever Feature 4 ("Auto-deploy to App Store + Google Play") decides about EAS vs. self-hosted macOS runners.
+
+**Direction:**
+- Decide as part of Feature 4 whether iOS goes through EAS.
+- If yes, confirm `eas.json` profile doesn't disable precompile (`EXPO_USE_PRECOMPILED_MODULES=0` as an EAS env var).
+- Measure: pick a single iOS profile, run `eas build` twice (once with precompile, once without via the env override), compare times, document.
+- Watch for breakage on minor reanimated/screens version bumps — the precompiled artifacts are version-locked.
+
+**Acceptance criteria:**
+- iOS EAS profile uses precompile (no override).
+- Median EAS iOS build time measured and documented.
+- Falls back gracefully if a future reanimated/screens bump misses the precompile cache.
+
+**Out of scope:** Local builds (Feature 26 covers those). Android (different toolchain).
+
+**Scope:** ~half a day of measurement once Feature 4 picks the iOS pipeline.
+
+**Depends on:** [Feature 4](#feature-4--auto-deploy-to-app-store--google-play) iOS pipeline decision.
+
+---
+
+### Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion
+
+**Filed:** 2026-05-27.
+
+**Goal:** With React Compiler enabled and the lint baseline clean (Feature 25), audit the ~40 files currently using manual memoization and delete the calls RC now handles automatically. The deletion reduces code surface, removes a class of dependency-array bugs, and lets RC do its full job (it can memoize conditional paths that manual hooks can't).
+
+**Why:** Manual memoization is a hand-maintained substitute for what RC now does at build time. Every `useMemo`/`useCallback` is a place where the dependency array can go stale, where a refactor silently breaks memoization, or where the cost of the memoization machinery exceeds the saved work. Particularly relevant for the Hub perf backlog (Issues 1 + 2 in BACKLOG.md) — `ProjectHubCard`'s inline `.map` is exactly the shape RC targets. Meta reports 20–30% render-time reduction internally post-RC; some of that comes from deleting now-redundant manual hooks, not just from RC's own work.
+
+**Direction:**
+- Cannot start until [Feature 25](#feature-25--clear-react-hooks-v5-lint-warnings-react-compiler-prereq) is green — RC bails out on components that violate Rules of React, and a "delete the manual memo" change on a component RC skipped would regress perf, not improve it.
+- Sweep the 40 known files (see hot list below) in a single branch, one component at a time.
+- For each deletion: keep the manual hook only if either (a) the value is referentially compared in a downstream `useEffect` dep array where reference identity matters (RC's auto-memo gives a new reference per call), or (b) profiling shows RC didn't actually compile the component (use `babel-plugin-react-compiler`'s feedback output).
+- Verify with React DevTools profiler before/after on Hub cold-launch + accordion expand — those are the documented stalls.
+
+**Acceptance criteria:**
+- Manual `useMemo`/`useCallback`/`React.memo` count drops measurably (e.g. by half or more).
+- Hub cold-launch and accordion-expand profiles improve (concrete numbers TBD on pickup; baseline lives in `project_2026_05_22_hub_perf_backlog.md`).
+- `npm run test:ci` and `npm run test:e2e:mock` stay green.
+- No new visual regressions on the iPhone 17 Pro dev device.
+
+**Hot list (concentration of manual memoization, by memory):** `components/sessions/hub/ProjectHubCard.tsx`, `components/sessions/hub/useProjectGroups.ts`, `components/sessions/hub/useServerGroups.ts`, `components/sessions/hub/SessionRow.tsx`, `components/sessions/hub/ConvRow.tsx`, `components/sessions/tree/TreeSessionsList.tsx`, `components/sessions/shared/ConversationListItem.tsx`, `components/terminal/TerminalOutput.tsx`, `contexts/ThemeContext.tsx`, `app/conversation/[id].tsx`, `app/project/[id].tsx`.
+
+**Depends on:** [Feature 25](#feature-25--clear-react-hooks-v5-lint-warnings-react-compiler-prereq).
+
+**Scope:** ~2–3 days; the audit dominates over the deletion.
+
+---
+
+### Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement
+
+**Filed:** 2026-05-27.
+
+**Goal:** Time-boxed spike to evaluate replacing `@gorhom/bottom-sheet@^5.2.13` (used in ~6 sheets) with the Expo SDK 56 drop-in `BottomSheet` primitive shipped under stable Expo UI. Decide go/no-go on a full migration.
+
+**Why:** SDK 56 ships Expo-maintained drop-in replacements for several common community deps, including `@gorhom/bottom-sheet`. Adopting it removes a community dep, consolidates on Expo's release cycle, and (per the SDK 56 changelog) is intended to be a no-API-change swap. But "drop-in" claims for sheet libraries are historically optimistic — gesture handling, snap points, and keyboard behavior have plenty of edge cases. Worth a one-day spike to find out, not a roadmap-blocking migration.
+
+**Direction:**
+- Pick the simplest sheet first (e.g. `SortSheet.tsx` — pure list, no keyboard, no animation chaining).
+- Swap the import, run on iPhone 17 Pro, run the Maestro flow that hits it.
+- Document any behavior delta: snap-point math, gesture overlap with parent scroll, keyboard-avoidance, dismiss-on-backdrop.
+- If trivial → file a follow-on Feature for the remaining 5 sheets. If gnarly → close this and stay on gorhom.
+
+**Acceptance criteria:**
+- A written assessment in this entry (or its plan stub): "drop-in is real for our use cases — swap all 6" OR "drop-in has caveats X/Y/Z — stay on gorhom for now."
+- One sheet migrated in a throwaway branch to back the assessment with code, even if we don't merge it.
+
+**Files likely involved (for the spike):** `components/servers/SortSheet.tsx` and whichever Maestro flow exercises sort.
+
+**Sheet inventory (for the follow-on, if we go forward):** `components/sessions/RenameSessionSheet.tsx`, `components/sessions/shared/ConversationPreviewSheet.tsx`, `components/queue/PromptQueueSheet.tsx`, `components/queue/PlanPreviewSheet.tsx`, `components/servers/AddServerActionSheet.tsx`, `components/servers/FilterSortSheet.tsx`, `components/servers/SortSheet.tsx`, `components/servers/NewSessionServerPicker.tsx`, `components/servers/ServerFilterSheet.tsx`.
+
+**Scope:** ~1 day for the spike. Migration of the remaining sheets would be ~half a day if drop-in checks out.
+
+**Priority:** Low — current `@gorhom/bottom-sheet` works. Pick up only when an iOS-26 or SDK-57 incompatibility forces the hand, or as filler during a slow week.
+
+---
+
 ## Shipped
 
 Historical implementation plans archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/). Each was the source of truth for that feature's build sequence at the time it shipped — useful when revisiting the area, but not active work.
@@ -903,6 +957,9 @@ Historical implementation plans archived under [`superpowers/plans/archive/`](./
 | 2026-05-02 | **Session naming** — user-visible session names via 4 touchpoints (creation modal, auto-name from first message, inline rename, on-exit prompt); Zustand + SecureStore ↔ streamer SQLite. | [archive/2026-05-02-session-naming.md](./superpowers/plans/archive/2026-05-02-session-naming.md) |
 | 2026-05-02 | **Theming system** — 5-theme picker (Dark, Light, Dracula, Catppuccin Mocha, Nord) with CSS custom properties + NativeWind. | [archive/2026-05-02-theming-system.md](./superpowers/plans/archive/2026-05-02-theming-system.md) |
 | 2026-05-11 | **Server drag-and-drop reordering** — iOS-style jiggle animation; accessible from the Filter & Sort sheet. | [archive/2026-05-11-server-drag-reorder.md](./superpowers/plans/archive/2026-05-11-server-drag-reorder.md) |
+| 2026-05-24 | **Feature 1 — Tree directory view: pre-fill new-session path** — drilled-dir path passed through to new-session flow; Maestro flow `feat1_tree_drill_new_session.yaml` covers it. | PR #11, commit 9835ecf |
+| 2026-05-24 | **Feature 2 — Export button moved from bottom bar to info shelf** — declutters the historical session bottom bar; Maestro flow `feat2_export_in_info_shelf.yaml` covers it. | PR #11, commit 9835ecf |
+| 2026-05-25 | **Feature 18 — Upgrade to Expo SDK 56** — RN 0.85.3, React 19.2.3, TS 6.0.3, iOS 16.4 deployment target, React Compiler enabled. TestFlight build 104 shipped; React Compiler / Metro MessagePack workaround removed in build 106 after upstream fix. | [upgrade-to-expo-56.md](./upgrade-to-expo-56.md) |
 
 Recent bug-only backlog docs (no new features) also archived for traceability:
 
