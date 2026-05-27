@@ -43,10 +43,11 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 29 | Quick Access: open only on tab click; remove the right-side chevron | Open |
 | Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | Open — needs spec |
 | Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
+| Bug 32 | One unavailable server hides conversations from all servers (Hub + search) | Open — root cause known |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
-**Suggested next-up order:** Bug 13 + Bug 14 + Bug 15 + Bug 16 (all on the browse → start-session → PTY → back handoff, likely shared root cause — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → **Bug 17 → Bug 10 + Bug 11** (same conversation FlashList; smooth-scroll fix may change at-bottom detection the scroll-button bugs rely on) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
+**Suggested next-up order:** **Bug 32** (one bad server hides everything — mechanical `Promise.allSettled` fix, ship standalone) → Bug 13 + Bug 14 + Bug 15 + Bug 16 (all on the browse → start-session → PTY → back handoff, likely shared root cause — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → **Bug 17 → Bug 10 + Bug 11** (same conversation FlashList; smooth-scroll fix may change at-bottom detection the scroll-button bugs rely on) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
 
 ---
 
@@ -940,6 +941,46 @@ Once the spec is approved, the implementation is bounded: store + read API + wri
 
 ---
 
+## Bug 32 — One unavailable server hides conversations from all servers (Hub + search)
+
+**Filed:** 2026-05-27. **Status:** Open — root cause known, not yet fixed.
+
+**Symptom:** When the user has multiple servers paired and one of them is unreachable (host down, network unreachable, request times out, returns a 5xx), the Hub renders **zero conversations** — not just zero for the failing server. Conversations from the healthy servers disappear too. The cross-session search behaves the same way: one failing server suppresses results from all servers.
+
+**Why it happens:** Both fan-out queries use `Promise.all` over `displayedServerIds`. A single rejected promise rejects the whole batch, which causes the `useInfiniteQuery` / `useQuery` `queryFn` to throw, and react-query renders the error/empty state instead of the partial results.
+
+- `hooks/useConversations.ts:82` — Hub list (`useConversations`)
+- `hooks/useConversations.ts:435` — cross-session search (`useConversationSearch`)
+
+The codebase already uses the correct pattern elsewhere — `services/push.ts:47` does `Promise.allSettled` for the same shape — so this is a missed-pattern bug, not a design question.
+
+**Proposed direction:**
+
+- Swap `Promise.all` → `Promise.allSettled` in both call sites.
+- Keep `fulfilled` results, merge them as today.
+- For `rejected` results, surface a per-server error rather than hiding everything. The Hub design spec at `docs/superpowers/specs/2026-04-30-projects-hub-redesign.md:72` already calls for a connection dot (green=all, amber=partial, red=none) — that's the natural place to expose partial failure. A red/amber dot + tooltip listing the offline server(s) is probably enough; a dismissible inline banner is the next step up if we want it to be obvious.
+- Decide what `hasMore` means when one server failed. Probably: `anyHasMore` only counts fulfilled pages, and a refresh retries the failed servers.
+- Search has no pagination, so the fix there is mechanical: drop failing servers, return whatever returned.
+
+**Verify before fixing:**
+
+- Reproduce: pair two servers, kill one (turn off the host, or block its port), open the Hub, confirm zero conversations render. Confirm cross-session search behaves the same.
+- After fix: same setup should render the healthy server's conversations with a visible "1/2 servers connected" indicator.
+- Regression: single-server install must behave identically to today (a single failing server is still a full failure — the Hub should show its existing error/empty state, not silently render nothing).
+
+**Files likely involved:**
+
+- `hooks/useConversations.ts` — primary fix site (lines 82 + 435)
+- The Hub header / connection-dot component (per the redesign spec) — surface the partial-failure state
+- Possibly `services/api.ts` (or wherever `createApiForServer` lives) — confirm what kind of rejection a network failure produces (so the `allSettled` reason has enough info for the UI)
+
+**Out of scope for this bug:**
+
+- Retry / backoff per server (separate concern).
+- Caching last-known-good per server so they survive a hard offline (worth considering but a bigger design change).
+
+---
+
 ## Sequencing
 
 Suggested next-up order (revise as profiling results come in):
@@ -961,6 +1002,7 @@ Suggested next-up order (revise as profiling results come in):
 - **Popular tab (Bug 23 + Bug 24):** ship together — fixing the root cause (23) and the way the error displays (24) belong in one PR; consult `/impeccable` for 24's visual.
 - **Session/tree errors (Bug 20, 21):** investigate in parallel — both touch session-id / path encoding across the app↔streamer boundary and may share a root cause.
 - **Bug 30 (Favorites)** is **spec-gated** — do not start implementation until the design doc lands under `docs/superpowers/specs/`.
+- **Bug 32 (one unavailable server hides everything):** small, isolated, mechanical fix (`Promise.all` → `Promise.allSettled` in two spots in `hooks/useConversations.ts`). High-impact for multi-server users — anyone with even one flaky server currently sees an empty Hub. Land standalone, ahead of the larger UX bug clusters.
 
 ---
 
