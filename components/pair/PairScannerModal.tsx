@@ -158,7 +158,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <View style={styles.root}>
+      <View style={styles.root} testID="pair-scanner-modal">
         {body}
         <TouchableOpacity style={styles.closeBtn} onPress={handleClose} accessibilityLabel="Close">
           <Text style={styles.closeText}>×</Text>

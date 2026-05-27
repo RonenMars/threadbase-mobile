@@ -1,0 +1,40 @@
+# Maestro E2E — Bug 22: Settings → Scan QR button
+# Verifies the Settings "Scan QR to add server" button is wired and mounts
+# the camera-based pair scanner modal (was a no-op before the Bug 22 fix).
+#
+# We don't drive the scanner with a fake QR — that requires an iOS
+# permission grant and a generated QR image. The smoke check is that the
+# button exists, is tappable, and the scanner UI appears.
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/settings_qr_scanner.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Hub is mounted — open Settings via the Gear in the header.
+- assertVisible:
+    id: "hub-screen"
+
+- tapOn:
+    id: "hub-settings-btn"
+
+# Confirm we're in Settings by locating the Scan QR button, then tap it.
+- extendedWaitUntil:
+    visible:
+      id: "settings-scan-qr-btn"
+    timeout: 4000
+
+- tapOn:
+    id: "settings-scan-qr-btn"
+
+# The PairScannerModal mounts. iOS may show the camera-permission prompt
+# (handled by the modal itself); either way the modal root with the
+# `pair-scanner-modal` testID is on screen.
+- extendedWaitUntil:
+    visible:
+      id: "pair-scanner-modal"
+    timeout: 6000
+
+- takeScreenshot: e2e/_artifacts/screenshots/settings-qr-scanner

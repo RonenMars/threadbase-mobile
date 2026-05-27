@@ -271,6 +271,7 @@ export default function ProjectsHub() {
           <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
           <Text style={styles.headerTitle}>{t('shared:app.title')}</Text>
           <Pressable
+            testID="hub-settings-btn"
             onPress={() => router.push('/settings')}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}

@@ -23,6 +23,10 @@ import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
+import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { wsManager } from '@/services/ws-client'
+import type { ExchangeResult } from '@/services/pair-exchange'
+import { QrCode } from 'phosphor-react-native'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -118,7 +122,7 @@ export default function SettingsScreen() {
   const theme = useTheme()
   const { t } = useTranslation('settings')
   const router = useRouter()
-  const { servers, activeServerIds, displayedServerIds, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
+  const { servers, activeServerIds, displayedServerIds, addServer, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
     notifications,
     setNotifications,
@@ -155,6 +159,7 @@ export default function SettingsScreen() {
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
+  const [qrScannerOpen, setQrScannerOpen] = useState(false)
 
   const handleTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
@@ -187,6 +192,18 @@ await refreshServerInfo(serverId)
     setIsPullRefreshing(true)
     await Promise.all(activeServerIds.map((id) => handleRefreshServer(id)))
     setIsPullRefreshing(false)
+  }
+
+  // Bug 22: a top-level Settings entry to the QR scanner so users don't have
+  // to open the "+ Add server" modal first. Reuses the same pair-exchange
+  // flow as the onboarding ConnectStep.
+  const handleScanQrSuccess = async (result: ExchangeResult) => {
+    setQrScannerOpen(false)
+    const label = result.machineName?.trim() || undefined
+    const addResult = await addServer(result.url, result.apiKey, label)
+    if (typeof addResult === 'string') {
+      wsManager.connect(addResult, result.url, result.apiKey)
+    }
   }
 
   const s = useMemo(() => styles(theme), [theme])
@@ -268,6 +285,15 @@ await refreshServerInfo(serverId)
           onPress={() => setEditServerId('new')}
         >
           <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="settings-scan-qr-btn"
+          style={s.scanQrBtn}
+          onPress={() => setQrScannerOpen(true)}
+          accessibilityLabel={t('servers.scanQr')}
+        >
+          <QrCode size={18} color={theme.text.accent} />
+          <Text style={s.scanQrText}>{t('servers.scanQr')}</Text>
         </TouchableOpacity>
 
         <SectionHeader title={t('section.displayedServers')} />
@@ -478,6 +504,12 @@ await refreshServerInfo(serverId)
         serverId={editServerId === 'new' ? null : editServerId}
         onClose={() => setEditServerId(null)}
       />
+
+      <PairScannerModal
+        visible={qrScannerOpen}
+        onClose={() => setQrScannerOpen(false)}
+        onSuccess={handleScanQrSuccess}
+      />
     </SafeAreaView>
   )
 }
@@ -547,6 +579,24 @@ function styles(theme: ReturnType<typeof useTheme>) {
       justifyContent: 'center',
     },
     addServerText: {
+      color: theme.text.accent,
+      fontSize: font.base,
+      fontWeight: '500',
+    },
+    scanQrBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: spacing.md,
+      minHeight: 44,
+      marginTop: spacing.xs,
+    },
+    scanQrText: {
       color: theme.text.accent,
       fontSize: font.base,
       fontWeight: '500',
