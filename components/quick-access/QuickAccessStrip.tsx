@@ -162,6 +162,10 @@ export function QuickAccessStrip() {
         type: 'dir' as const,
         id: p.path,
         label: p.path,
+        // Bug 23 — carry the origin serverId so `handleNewSession` routes
+        // to the server that actually has this project (not the first
+        // queried server).
+        serverId: p.serverId,
         sessionCount: p.sessionCount,
       }))
   }, [effectiveTab, favorites, recentsData, popularData, ignoredRecents, ignoredPopular, firstServerId])

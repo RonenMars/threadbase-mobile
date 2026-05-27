@@ -322,7 +322,14 @@ export default function BrowseScreen() {
             subtitle="Set browseRoot on your server to enable file browsing."
           />
         ) : isError ? (
-          <EmptyState title="Unable to load directories" subtitle="Check that the server is running and reachable." />
+          // Bug 23 — surface the actual failure (server name, status code,
+          // or network error) instead of the misleading generic
+          // "server unreachable" copy, which also fires when the request
+          // was routed to the wrong server.
+          <EmptyState
+            title="Unable to load directories"
+            subtitle={error instanceof Error && error.message ? error.message : 'Unknown error'}
+          />
         ) : data?.directories.length === 0 ? (
           <EmptyState title="Empty directory" subtitle="No subdirectories here." />
         ) : (

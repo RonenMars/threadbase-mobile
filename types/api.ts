@@ -210,6 +210,16 @@ export interface PopularProject {
 }
 
 /**
+ * Popular project tagged with the server it came from. Mirrors `MultiSession`:
+ * the multi-server aggregate in `usePopularProjects` needs each project to
+ * remember its origin server so downstream taps (e.g. Popular → "New Session
+ * here") route to the correct server's directory-list endpoint.
+ */
+export interface MultiPopularProject extends PopularProject {
+  serverId: string
+}
+
+/**
  * Deterministic server ID derived from the URL.
  * Normalises the URL (lowercase host, strip trailing slash) then produces a
  * short alphanumeric hash so the same server always maps to the same key.
