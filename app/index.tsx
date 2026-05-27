@@ -31,6 +31,7 @@ import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
@@ -81,24 +82,40 @@ export default function ProjectsHub() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Connection status
-  const [connectedCount, setConnectedCount] = useState(0)
+  // Connection status — a server is "healthy" only if WS is connected AND its
+  // last HTTP fetch (Hub list, search, eager pagination) didn't fail. Either
+  // signal flipping bad will degrade the dot from green to amber/red.
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+  const [wsConnectedCount, setWsConnectedCount] = useState(0)
   useEffect(() => {
     const updateCount = () => {
       let count = 0
       for (const id of activeServerIds) {
         if (wsManager.status(id) === 'connected') count++
       }
-      setConnectedCount(count)
+      setWsConnectedCount(count)
     }
     updateCount()
     const unsub = wsManager.onAnyStatusChange(() => updateCount())
     return unsub
   }, [activeServerIds])
 
+  const healthyCount = useMemo(() => {
+    let n = 0
+    for (const id of activeServerIds) {
+      const wsOk = wsManager.status(id) === 'connected'
+      const fetchOk = (fetchStatuses[id]?.status ?? 'ok') === 'ok'
+      if (wsOk && fetchOk) n++
+    }
+    return n
+    // wsConnectedCount is the trigger for ws status changes — without it,
+    // useMemo won't recompute when ws flips connected/disconnected.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeServerIds, fetchStatuses, wsConnectedCount])
+
   const serverCount = activeServerIds.length
-  const allConnected = connectedCount === serverCount && serverCount > 0
-  const someConnected = connectedCount > 0
+  const allConnected = healthyCount === serverCount && serverCount > 0
+  const someConnected = healthyCount > 0
 
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
