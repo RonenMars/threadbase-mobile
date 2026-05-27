@@ -256,7 +256,9 @@ export function QuickAccessStrip() {
               <GearSix size={16} color={dark.text.secondary} />
             </Pressable>
           )}
-          {!stripCollapsed && (
+          {/* Bug 26 — also hide the pencil when the active tab is empty:
+              editing an empty set is meaningless. */}
+          {!stripCollapsed && allItems.length > 0 && (
             <Pressable style={styles.iconBtn} onPress={() => setEditMode((v) => !v)} hitSlop={8}>
               {editMode
                 ? <Check size={16} color={dark.text.accent} />
