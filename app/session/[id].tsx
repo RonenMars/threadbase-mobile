@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ActivityIndicator,
   Alert,
@@ -446,6 +447,18 @@ export default function SessionDetailScreen() {
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
   const insets = useSafeAreaInsets()
+  // While the keyboard is open it covers the home-indicator area, so the
+  // input's safe-area bottom padding would otherwise leave a dead gap above
+  // the keyboard. Collapse it to 0 when the keyboard is visible.
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true))
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false))
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
   const [infoVisible, setInfoVisible] = useState(false)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
@@ -762,12 +775,12 @@ export default function SessionDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']} testID="session-detail-screen">
-      <ScreenHeader title={sessionName} right={headerRight} onBack={handleBack} />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <SafeAreaView style={styles.flex} edges={['top']} testID="session-detail-screen">
+        <ScreenHeader title={sessionName} right={headerRight} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
             <SessionStatusBadge status={session.status} isRefetching={isStreaming} />
@@ -808,7 +821,7 @@ export default function SessionDetailScreen() {
         </View>
 
         {showInputBar ? (
-          <View style={[styles.inputArea, { paddingBottom: spacing.sm + insets.bottom }]}>
+          <View style={[styles.inputArea, { paddingBottom: spacing.sm + (keyboardVisible ? 0 : insets.bottom) }]}>
             {sendInput.isError ? (
               <Text style={styles.sendError} numberOfLines={2}>
                 {sendInput.error instanceof Error
@@ -900,7 +913,7 @@ export default function SessionDetailScreen() {
             </View>
           </View>
         ) : null}
-      </KeyboardAvoidingView>
+      </SafeAreaView>
 
       {session ? (
         <PromptQueueSheet
@@ -972,7 +985,7 @@ export default function SessionDetailScreen() {
           }}
         />
       ) : null}
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   )
 }
 

@@ -1,0 +1,61 @@
+# Maestro E2E — keyboard layout repro on the session input bar.
+# Reproduces the reported regression: when the keyboard opens on the
+# session screen, the input bar should sit flush ABOVE the keyboard.
+# Symptoms under investigation: input hidden behind keyboard / too high.
+#
+# The session-waiting fixture has status "waiting_input" and
+# ptyAttached:true, so showInputBar is true AND isWakingUp is false
+# (the input is enabled), letting the keyboard actually open.
+#
+# Requires: mock server on localhost:7071, app installed on a booted sim.
+# Usage: maestro test e2e/keyboard_session_input.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# Deeplink straight into the waiting_input mock session.
+- openLink: "threadbase://session/session-waiting"
+
+# iOS shows an "Open in Threadbase?" confirmation for incoming deeplinks.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+# Input bar should be mounted (running + ptyAttached session).
+- extendedWaitUntil:
+    visible:
+      id: "message-input"
+    timeout: 8000
+
+# Baseline: input bar visible, keyboard closed.
+- takeScreenshot: e2e/_artifacts/screenshots/keyboard-01-before.png
+
+# Raise the keyboard by focusing the input.
+- tapOn:
+    id: "message-input"
+
+# Give the keyboard time to fully animate up.
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# The critical frame: input bar must be flush above the keyboard.
+- takeScreenshot: e2e/_artifacts/screenshots/keyboard-02-keyboard-up.png
+
+# Type something so the input is unambiguous in the screenshot.
+- inputText: "hello"
+
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: e2e/_artifacts/screenshots/keyboard-03-with-text.png
