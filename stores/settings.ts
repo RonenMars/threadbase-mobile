@@ -55,12 +55,8 @@ interface SettingsStore {
   setRowServerIndicator: (v: RowServerIndicator) => void
   setRowServerChipVariant: (v: RowServerChipVariant) => void
   setRowPreviewModalCount: (v: RowPreviewModalCount) => void
-  askOnCreate: boolean
-  askOnExit: boolean
   autoNameFromMessage: boolean
   aiGeneratedNames: boolean
-  setAskOnCreate: (v: boolean) => void
-  setAskOnExit: (v: boolean) => void
   setAutoNameFromMessage: (v: boolean) => void
   setAiGeneratedNames: (v: boolean) => void
   hydrate: () => Promise<void>
@@ -92,8 +88,6 @@ interface PersistedSettings {
   rowServerIndicator: RowServerIndicator
   rowServerChipVariant: RowServerChipVariant
   rowPreviewModalCount: RowPreviewModalCount
-  askOnCreate: boolean
-  askOnExit: boolean
   autoNameFromMessage: boolean
   aiGeneratedNames: boolean
 }
@@ -108,8 +102,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionsLayout: 'tree',
   mergeChats: true,
   locale: 'en',
-  askOnCreate: true,
-  askOnExit: true,
   autoNameFromMessage: true,
   aiGeneratedNames: false,
 
@@ -134,8 +126,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setMergeChats: (mergeChats) => set({ mergeChats }),
   setLocale: (locale) => set({ locale }),
-  setAskOnCreate: (askOnCreate) => set({ askOnCreate }),
-  setAskOnExit: (askOnExit) => set({ askOnExit }),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   setRowTitleSource: (rowTitleSource) => set({ rowTitleSource }),
@@ -160,8 +150,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
         mergeChats: parsed.mergeChats ?? state.mergeChats,
         locale: parsed.locale ?? state.locale,
-        askOnCreate: parsed.askOnCreate ?? state.askOnCreate,
-        askOnExit: parsed.askOnExit ?? state.askOnExit,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
         rowTitleSource: parsed.rowTitleSource ?? state.rowTitleSource,
@@ -187,8 +175,6 @@ useSettingsStore.subscribe((state) => {
     sessionsLayout: state.sessionsLayout,
     mergeChats: state.mergeChats,
     locale: state.locale,
-    askOnCreate: state.askOnCreate,
-    askOnExit: state.askOnExit,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
     rowTitleSource: state.rowTitleSource,

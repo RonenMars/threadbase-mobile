@@ -53,7 +53,6 @@ import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { RenameSessionSheet } from '@/components/sessions/RenameSessionSheet'
-import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
@@ -463,15 +462,11 @@ export default function SessionDetailScreen() {
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
-  const [exitModalVisible, setExitModalVisible] = useState(false)
 
   const getName = useSessionNamesStore((s) => s.getName)
-  const getOrigin = useSessionNamesStore((s) => s.getOrigin)
-  const { askOnExit, setAskOnExit, autoNameFromMessage } = useSettingsStore()
+  const { autoNameFromMessage } = useSettingsStore()
   const renameSession = useRenameSession(serverId)
-
   const sessionName = getName(serverId, id) ?? session?.projectName
-  const sessionOrigin = getOrigin(serverId, id)
 
   useEffect(() => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
@@ -767,11 +762,7 @@ export default function SessionDetailScreen() {
   )
 
   const handleBack = () => {
-    if (askOnExit && sessionOrigin !== 'manual') {
-      setExitModalVisible(true)
-    } else {
-      router.back()
-    }
+    router.back()
   }
 
   return (
@@ -966,25 +957,6 @@ export default function SessionDetailScreen() {
         />
       ) : null}
 
-      {exitModalVisible ? (
-        <NameSessionModal
-          visible
-          mode="exit"
-          currentName={sessionName}
-          onSave={(name) => {
-            renameSession.mutate({ sessionId: id, name })
-            setExitModalVisible(false)
-            router.back()
-          }}
-          onSkip={() => {
-            setExitModalVisible(false)
-            router.back()
-          }}
-          onDontAskAgain={() => {
-            setAskOnExit(false)
-          }}
-        />
-      ) : null}
     </KeyboardAvoidingView>
   )
 }

@@ -23,9 +23,6 @@ import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { dark, font, radius, spacing } from '@/constants/theme'
-import { NameSessionModal } from '@/components/sessions/NameSessionModal'
-import { useRenameSession } from '@/hooks/useSessionName'
-import { useSettingsStore } from '@/stores/settings'
 
 const MAX_RECENT_DIRS = 8
 
@@ -62,14 +59,6 @@ export default function BrowseScreen() {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
-  const [pendingSession, setPendingSession] = useState<{
-    id: string
-    serverId: string
-    projectId?: string
-    projectPath?: string
-  } | null>(null)
-  const { askOnCreate, setAskOnCreate, setAskOnExit } = useSettingsStore()
-  const renameSession = useRenameSession(serverId ?? '')
 
   const { data: allSessions = [] } = useSessions()
   const recentDirs = useMemo<RecentDir[]>(() => {
@@ -213,23 +202,14 @@ export default function BrowseScreen() {
       { path: currentPath, projectName: displayName },
       {
         onSuccess: (session) => {
-          if (askOnCreate) {
-            setPendingSession({
-              id: session.id,
-              serverId: serverId ?? '',
-              projectId: session.projectId,
-              projectPath: session.projectPath,
-            })
-          } else {
-            navigateToNewSession(session)
-          }
+          navigateToNewSession(session)
         },
         onError: (err) => {
           Alert.alert('Failed to start session', err.message)
         },
       },
     )
-  }, [currentPath, serverId, startSession, askOnCreate, navigateToNewSession])
+  }, [currentPath, startSession, navigateToNewSession])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
@@ -237,16 +217,7 @@ export default function BrowseScreen() {
         { path: dir.path, projectName: dir.name },
         {
           onSuccess: (session) => {
-            if (askOnCreate) {
-              setPendingSession({
-                id: session.id,
-                serverId: serverId ?? '',
-                projectId: session.projectId,
-                projectPath: session.projectPath,
-              })
-            } else {
-              navigateToNewSession(session)
-            }
+            navigateToNewSession(session)
           },
           onError: (err) => {
             Alert.alert('Failed to start session', err.message)
@@ -254,7 +225,7 @@ export default function BrowseScreen() {
         },
       )
     },
-    [serverId, startSession, askOnCreate, navigateToNewSession],
+    [startSession, navigateToNewSession],
   )
 
   const renderItem = useCallback(
@@ -415,27 +386,6 @@ export default function BrowseScreen() {
         </View>
       )}
       {isBrowseSlow ? <BrowseSlowBanner onAbort={() => router.back()} /> : null}
-      {pendingSession ? (
-        <NameSessionModal
-          visible
-          mode="create"
-          onSave={(name) => {
-            renameSession.mutate({ sessionId: pendingSession.id, name })
-            const dest = pendingSession
-            setPendingSession(null)
-            navigateToNewSession(dest)
-          }}
-          onSkip={() => {
-            const dest = pendingSession
-            setPendingSession(null)
-            navigateToNewSession(dest)
-          }}
-          onDontAskAgain={() => {
-            setAskOnCreate(false)
-            setAskOnExit(false)
-          }}
-        />
-      ) : null}
     </SafeAreaView>
     </GestureDetector>
   )
