@@ -177,11 +177,13 @@ export default function BrowseScreen() {
     )
   }, [currentPath, newFolderName, createDir])
 
-  // Bug 14 fix: dismiss the entire modal stack first, then push the session
-  // route. The previous `router.dismiss()` + `router.push()` pattern raced —
-  // dismiss is async on modal-presentation routes, so the push could land
-  // before dismiss settled, leaving `browse` in the back stack. dismissAll()
-  // is a single deterministic clear, eliminating the race.
+  // Bug 14 fix: dismiss the entire modal stack first, then replace browse
+  // with the session route. The previous `router.dismiss()` + `router.push()`
+  // pattern raced — dismiss is async on modal-presentation routes, so the
+  // push could land before dismiss settled, leaving `browse` in the back
+  // stack. dismissAll() is a single deterministic clear; replace() then
+  // swaps browse off the stack so back-from-session goes to hub, not back
+  // into the directories tree.
   // Also fixes Bug 13: by the time this runs (from onSave/onSkip), the modal
   // has already been unmounted via `setPendingSession(null)`, so the parent
   // route teardown can no longer race with a still-mounted modal.
@@ -189,7 +191,7 @@ export default function BrowseScreen() {
     (session: { id: string; projectId?: string; projectPath?: string | null }) => {
       router.dismissAll()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push(buildSessionRoute(session, serverId ?? '') as any)
+      router.replace(buildSessionRoute(session, serverId ?? '') as any)
     },
     [router, serverId],
   )
