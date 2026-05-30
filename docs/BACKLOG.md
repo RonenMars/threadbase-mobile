@@ -44,6 +44,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | Open — needs spec |
 | Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
 | Bug 32 | One unavailable server hides conversations from all servers (Hub + search) | ✅ DONE 2026-05-27 (1ec1686) |
+| Bug 33 | Browse→session navigation: simplify the transitionEnd dismiss-then-push dance | Open — investigation |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 
@@ -1077,3 +1078,46 @@ Related precursor work in commits `c829908` (cap conversation bubble height with
 Full brainstorm record (with measurement tables + 7 ruled-out hypotheses) at [`docs/superpowers/plans/2026-05-22-flashlist-bubble-bleed-brainstorm.md`](./superpowers/plans/2026-05-22-flashlist-bubble-bleed-brainstorm.md).
 
 Tests post-fix: 476 passing, 2 skipped pre-existing, 0 failing (was 22 failing at session start).
+
+---
+
+## Bug 33 — Browse→session navigation: simplify the transitionEnd dismiss-then-push dance
+
+**Filed:** 2026-05-31. **Status:** Open — investigation. Not a regression; the current dance works (shipped in build 118 via commit `c07f394`).
+
+**Background:** `app/browse.tsx` is a `presentation: 'modal'` Stack.Screen. A naive `router.push(session)` from inside it leaves browse mounted underneath the new session route — pulling the session screen down reveals browse behind it (the "modal bleed-through" symptom). The working fix in `navigateToNewSession`:
+
+```ts
+router.back()  // start dismissing browse modal
+navigation.addListener('transitionEnd', e => {
+  if (!e.data.closing) return
+  unsubscribe()
+  router.push(target)  // push session on the now-clean parent stack
+})
+```
+
+**Why this entry exists:** the dance has several moving parts — listener subscription, `closing` filter, self-unsubscribe, casts around `useNavigation()`'s typing. Some of those may be redundant on iOS modal dismiss. Worth a short, careful audit to find the minimum sufficient form.
+
+**Things worth trying (one at a time, each must be verified on a physical iPhone with the pull-down gesture):**
+
+1. **Drop the `closing` filter** — does the first `transitionEnd` we see always coincide with the dismiss, or do we get an extra `transitionEnd` from the *present*-side transition? If we only ever subscribe after `router.back()` is called, the present-side event should be in the past.
+2. **Drop the self-unsubscribe** — `addListener` returns an unsubscribe fn; if the browse screen unmounts when the dismiss completes, the closure is released anyway. May be belt-and-braces.
+3. **Try `router.replace` instead of `router.back()` + `router.push`** — does Expo Router v56 (post react-navigation decoupling) handle replace-from-modal correctly when the target lives on the parent stack? We tried this earlier (commit `299d2d5`) and it did NOT work, but conditions have changed (the name-modal mid-dismiss confounder is gone). Worth retesting now that it's the only variable.
+4. **Try `router.dismiss()` then `router.push()` on the same tick** — synchronous, no listener. Routing queue may serialize correctly. We tried this earlier too — also failed under the old setup.
+5. **Investigate Expo Router v6 `<Modal>` `closeOnNavigation` prop** — see `feedback_sdk56_modal_closeOnNavigation` / [[browse-modal-bleed-root-cause]]. Not in 56.2.6 but available in newer 56.x patches. If we upgrade, the dance might collapse to a one-line `closeOnNavigation` flag.
+
+**Verification protocol (mandatory before declaring done):**
+1. Build a Release IPA, ship to TestFlight (foreground archive + upload).
+2. Install on a physical iPhone.
+3. Start a new session from Browse.
+4. Pull the session screen down. **Expected:** Hub visible behind, not Browse.
+5. Repeat from a fresh launch (no warm caches).
+
+**Files involved:**
+- `app/browse.tsx:169-197` — the dance
+- `app/_layout.tsx:188-195` — browse modal presentation
+- Memory: [[browse-modal-bleed-root-cause]] — why two contributors stacked, false-lead history
+
+**Out of scope:** removing `presentation: 'modal'` from browse (changes UX — drops the swipe-down dismiss gesture). Tracked separately if we decide to revisit the UX.
+
+---
