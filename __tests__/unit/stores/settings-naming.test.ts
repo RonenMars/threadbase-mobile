@@ -5,38 +5,18 @@ beforeEach(() => {
   ;(AsyncStorage.setItem as jest.Mock).mockClear()
   ;(AsyncStorage.getItem as jest.Mock).mockClear()
   useSettingsStore.setState({
-    askOnCreate: true,
-    askOnExit: true,
     autoNameFromMessage: true,
     aiGeneratedNames: false,
   } as any)
 })
 
 describe('SettingsStore – session naming flags', () => {
-  it('askOnCreate defaults to true', () => {
-    expect(useSettingsStore.getState().askOnCreate).toBe(true)
-  })
-
-  it('askOnExit defaults to true', () => {
-    expect(useSettingsStore.getState().askOnExit).toBe(true)
-  })
-
   it('autoNameFromMessage defaults to true', () => {
     expect(useSettingsStore.getState().autoNameFromMessage).toBe(true)
   })
 
   it('aiGeneratedNames defaults to false', () => {
     expect(useSettingsStore.getState().aiGeneratedNames).toBe(false)
-  })
-
-  it('setAskOnCreate updates flag', () => {
-    useSettingsStore.getState().setAskOnCreate(false)
-    expect(useSettingsStore.getState().askOnCreate).toBe(false)
-  })
-
-  it('setAskOnExit updates flag', () => {
-    useSettingsStore.getState().setAskOnExit(false)
-    expect(useSettingsStore.getState().askOnExit).toBe(false)
   })
 
   it('setAutoNameFromMessage updates flag', () => {

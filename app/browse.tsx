@@ -23,9 +23,6 @@ import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { dark, font, radius, spacing } from '@/constants/theme'
-import { NameSessionModal } from '@/components/sessions/NameSessionModal'
-import { useRenameSession } from '@/hooks/useSessionName'
-import { useSettingsStore } from '@/stores/settings'
 
 const MAX_RECENT_DIRS = 8
 
@@ -62,14 +59,6 @@ export default function BrowseScreen() {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
-  const [pendingSession, setPendingSession] = useState<{
-    id: string
-    serverId: string
-    projectId?: string
-    projectPath?: string
-  } | null>(null)
-  const { askOnCreate, setAskOnCreate, setAskOnExit } = useSettingsStore()
-  const renameSession = useRenameSession(serverId ?? '')
 
   const { data: allSessions = [] } = useSessions()
   const recentDirs = useMemo<RecentDir[]>(() => {
@@ -177,21 +166,31 @@ export default function BrowseScreen() {
     )
   }, [currentPath, newFolderName, createDir])
 
-  // Bug 14 fix: dismiss the entire modal stack first, then push the session
-  // route. The previous `router.dismiss()` + `router.push()` pattern raced —
-  // dismiss is async on modal-presentation routes, so the push could land
-  // before dismiss settled, leaving `browse` in the back stack. dismissAll()
-  // is a single deterministic clear, eliminating the race.
-  // Also fixes Bug 13: by the time this runs (from onSave/onSkip), the modal
-  // has already been unmounted via `setPendingSession(null)`, so the parent
-  // route teardown can no longer race with a still-mounted modal.
+  // Bug 14 fix: browse is presented as a modal (Stack.Screen
+  // presentation: 'modal'). Navigating from inside the still-presented
+  // modal — whether via push, replace, or dismissTo — leaves the modal
+  // envelope mounted underneath, so pulling down the new session screen
+  // reveals browse behind it. The framework-correct sequence is: dismiss
+  // the modal, wait for the dismiss animation to fully complete, then push
+  // the session route on the parent stack. native-stack emits
+  // `transitionEnd` with `data.closing === true` exactly when the modal
+  // teardown finishes — we listen for that one event and push then.
   const navigateToNewSession = useCallback(
     (session: { id: string; projectId?: string; projectPath?: string | null }) => {
-      router.dismissAll()
+      const target = buildSessionRoute(session, serverId ?? '')
+      // `transitionEnd` is a native-stack event; expo-router's useNavigation()
+      // returns a base navigation type that doesn't include it in its event
+      // map, hence the casts.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push(buildSessionRoute(session, serverId ?? '') as any)
+      const unsubscribe = (navigation as any).addListener('transitionEnd', (e: { data: { closing: boolean } }) => {
+        if (!e.data.closing) return
+        unsubscribe()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        router.push(target as any)
+      })
+      router.back()
     },
-    [router, serverId],
+    [router, navigation, serverId],
   )
 
   const handleStartSession = useCallback(() => {
@@ -200,23 +199,14 @@ export default function BrowseScreen() {
       { path: currentPath, projectName: displayName },
       {
         onSuccess: (session) => {
-          if (askOnCreate) {
-            setPendingSession({
-              id: session.id,
-              serverId: serverId ?? '',
-              projectId: session.projectId,
-              projectPath: session.projectPath,
-            })
-          } else {
-            navigateToNewSession(session)
-          }
+          navigateToNewSession(session)
         },
         onError: (err) => {
           Alert.alert('Failed to start session', err.message)
         },
       },
     )
-  }, [currentPath, serverId, startSession, askOnCreate, navigateToNewSession])
+  }, [currentPath, startSession, navigateToNewSession])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
@@ -224,16 +214,7 @@ export default function BrowseScreen() {
         { path: dir.path, projectName: dir.name },
         {
           onSuccess: (session) => {
-            if (askOnCreate) {
-              setPendingSession({
-                id: session.id,
-                serverId: serverId ?? '',
-                projectId: session.projectId,
-                projectPath: session.projectPath,
-              })
-            } else {
-              navigateToNewSession(session)
-            }
+            navigateToNewSession(session)
           },
           onError: (err) => {
             Alert.alert('Failed to start session', err.message)
@@ -241,7 +222,7 @@ export default function BrowseScreen() {
         },
       )
     },
-    [serverId, startSession, askOnCreate, navigateToNewSession],
+    [startSession, navigateToNewSession],
   )
 
   const renderItem = useCallback(
@@ -402,27 +383,6 @@ export default function BrowseScreen() {
         </View>
       )}
       {isBrowseSlow ? <BrowseSlowBanner onAbort={() => router.back()} /> : null}
-      {pendingSession ? (
-        <NameSessionModal
-          visible
-          mode="create"
-          onSave={(name) => {
-            renameSession.mutate({ sessionId: pendingSession.id, name })
-            const dest = pendingSession
-            setPendingSession(null)
-            navigateToNewSession(dest)
-          }}
-          onSkip={() => {
-            const dest = pendingSession
-            setPendingSession(null)
-            navigateToNewSession(dest)
-          }}
-          onDontAskAgain={() => {
-            setAskOnCreate(false)
-            setAskOnExit(false)
-          }}
-        />
-      ) : null}
     </SafeAreaView>
     </GestureDetector>
   )

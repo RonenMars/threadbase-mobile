@@ -132,10 +132,6 @@ export default function SettingsScreen() {
     setMergeChats,
     colorScheme,
     setColorScheme,
-    askOnCreate,
-    setAskOnCreate,
-    askOnExit,
-    setAskOnExit,
     autoNameFromMessage,
     setAutoNameFromMessage,
     aiGeneratedNames,
@@ -333,10 +329,6 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title="Session Naming" />
         <View style={s.card}>
-          <SettingsRow label="Ask for name on session start" value={askOnCreate} onValueChange={setAskOnCreate} />
-          <Text style={s.rowNote}>{t('sessionNaming.askOnCreateNote')}</Text>
-          <SettingsRow label="Ask for name on exit" value={askOnExit} onValueChange={setAskOnExit} />
-          <Text style={s.rowNote}>{t('sessionNaming.askOnExitNote')}</Text>
           <SettingsRow label="Auto-name from first message" value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
           <Text style={s.rowNote}>{t('sessionNaming.autoNameNote')}</Text>
           <SettingsRow label="AI-generated session names" value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />

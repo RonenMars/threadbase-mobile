@@ -88,6 +88,11 @@ function handleRequest(req, res) {
     if (sessionMatch[1] === 'session-missing-path') {
       return json(res, 200, readFixture('session-missing-path.json'))
     }
+    // waiting_input status enables the input bar without a live WS
+    // (used by the keyboard-layout e2e flow).
+    if (sessionMatch[1] === 'session-waiting') {
+      return json(res, 200, readFixture('session-waiting-input.json'))
+    }
     return json(res, 200, readFixture('session-detail.json'))
   }
 
