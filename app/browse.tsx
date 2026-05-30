@@ -166,12 +166,31 @@ export default function BrowseScreen() {
     )
   }, [currentPath, newFolderName, createDir])
 
+  // Bug 14 fix: browse is presented as a modal (Stack.Screen
+  // presentation: 'modal'). Navigating from inside the still-presented
+  // modal — whether via push, replace, or dismissTo — leaves the modal
+  // envelope mounted underneath, so pulling down the new session screen
+  // reveals browse behind it. The framework-correct sequence is: dismiss
+  // the modal, wait for the dismiss animation to fully complete, then push
+  // the session route on the parent stack. native-stack emits
+  // `transitionEnd` with `data.closing === true` exactly when the modal
+  // teardown finishes — we listen for that one event and push then.
   const navigateToNewSession = useCallback(
     (session: { id: string; projectId?: string; projectPath?: string | null }) => {
+      const target = buildSessionRoute(session, serverId ?? '')
+      // `transitionEnd` is a native-stack event; expo-router's useNavigation()
+      // returns a base navigation type that doesn't include it in its event
+      // map, hence the casts.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push(buildSessionRoute(session, serverId ?? '') as any)
+      const unsubscribe = (navigation as any).addListener('transitionEnd', (e: { data: { closing: boolean } }) => {
+        if (!e.data.closing) return
+        unsubscribe()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        router.push(target as any)
+      })
+      router.back()
     },
-    [router, serverId],
+    [router, navigation, serverId],
   )
 
   const handleStartSession = useCallback(() => {
