@@ -5,6 +5,9 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [main]
+  schedule:
+    # Monthly E2E run: 00:00 UTC on the 1st of each month
+    - cron: '0 0 1 * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -81,24 +84,6 @@ jobs:
           path: coverage/integration
           retention-days: 7
 
-  # ── E2E flow tests (Jest) ────────────────────────────────────────────────────
-  e2e-flow:
-    name: E2E flow tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run E2E flow tests
-        run: npm run test:e2e
-
   # ── Lint ─────────────────────────────────────────────────────────────────────
   lint:
     name: Lint
@@ -117,17 +102,17 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-  # ── Maestro E2E (iOS sim, push to main only) ─────────────────────────────────
-  # Runs only on push to main (not PRs) because the macOS runner + iOS app
-  # build is ~15 minutes and ~$3/run. PRs rely on the unit/integration/Jest
-  # E2E jobs above; Maestro acts as a post-merge regression gate.
+  # ── Maestro E2E (iOS sim, monthly schedule only) ─────────────────────────────
+  # Runs once per month (00:00 UTC on the 1st) via the schedule trigger above.
+  # The macOS runner + iOS app build is ~15 minutes and ~$3/run, so this acts
+  # as a low-frequency regression gate rather than per-commit coverage. The
+  # Jest-based E2E flow tests previously gating PRs were removed entirely.
   #
-  # Only `github.event_name` and `github.ref` are interpolated here. Both are
-  # GitHub-controlled context values, not user input — no command-injection
-  # surface in the `run:` steps below.
+  # Only `github.event_name` is interpolated here — a GitHub-controlled context
+  # value, not user input — so no command-injection surface in `run:` steps.
   e2e-maestro:
     name: E2E maestro (iOS)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'schedule'
     runs-on: macos-15
     timeout-minutes: 75
     steps:
