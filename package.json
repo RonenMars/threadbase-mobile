@@ -1,6 +1,17 @@
 {
   "name": "threadbase-mobile",
   "version": "1.0.0",
+  "description": "iOS + Android client for Threadbase — browse, resume, and manage Claude Code sessions on a remote tb-streamer instance.",
+  "license": "MIT",
+  "author": "Ronen Mars <ronenmars@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RonenMars/threadbase-mobile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RonenMars/threadbase-mobile/issues"
+  },
+  "homepage": "https://github.com/RonenMars/threadbase-mobile#readme",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
