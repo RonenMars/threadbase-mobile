@@ -73,5 +73,10 @@ platform :ios do
       api_key:                           api_key,
       skip_waiting_for_build_processing: true,
     )
+
+    # The build number we wrote into app.json was derived from ASC for this
+    # archive only — committing it would create noise that gets rewritten on
+    # the next ship. Drop the working-tree change so `git status` stays clean.
+    sh("git -C #{File.expand_path('..', __dir__)} restore app.json")
   end
 end

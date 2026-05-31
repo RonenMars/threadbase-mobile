@@ -127,12 +127,14 @@ submission — just bump the build number, archive, and upload to TestFlight.
 bundle exec fastlane beta
 ```
 
-After it finishes, commit the `app.json` bump:
+The lane writes the new build number into `app.json` to keep it in sync with
+the archive, then runs `git restore app.json` on the way out so your working
+tree stays clean. The value is derived from App Store Connect on every run —
+the next ship queries ASC again and writes a fresh number. There's nothing
+to commit.
 
-```bash
-git add app.json
-git commit -m "chore(ios): bump build number to <N>"
-```
+(`./scripts/ship.sh` does commit the bump, because its bash pipeline is built
+around it. That convention does not apply to the fastlane path.)
 
 To target multiple environments, drop additional files like
 `fastlane/.env.staging`, then `bundle exec fastlane beta --env staging`.
