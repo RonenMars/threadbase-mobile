@@ -23,9 +23,17 @@ def write_build_number_to_app_json(build_number)
   File.write(APP_JSON_PATH, JSON.pretty_generate(config) + "\n")
 end
 
+REPO_ROOT = File.expand_path("..", __dir__)
+
 platform :ios do
   desc "Build and upload a new TestFlight build. Build number = latest TestFlight + 1."
   lane :beta do
+    # Pre-ship checks (shared canonical policy — see .claude/skills/_shared/pre-ship-checks.md).
+    # Fail loud and cheap before ASC auth, archive, or upload time is spent:
+    #   - refuse if local main is behind origin/main (another machine pushed a bump)
+    #   - refuse if app.json has uncommitted edits (we shouldn't ship from a dirty tree)
+    sh("cd #{REPO_ROOT} && ./scripts/git-sync-check.sh")
+
     api_key = app_store_connect_api_key(
       key_id:       ENV.fetch("ASC_KEY_ID"),
       issuer_id:    ENV.fetch("ASC_ISSUER_ID"),
@@ -77,6 +85,6 @@ platform :ios do
     # The build number we wrote into app.json was derived from ASC for this
     # archive only — committing it would create noise that gets rewritten on
     # the next ship. Drop the working-tree change so `git status` stays clean.
-    sh("git -C #{File.expand_path('..', __dir__)} restore app.json")
+    sh("git -C #{REPO_ROOT} restore app.json")
   end
 end

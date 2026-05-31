@@ -80,14 +80,21 @@ submission — just bump the build number, archive, and upload to TestFlight.
 
 ### What it does
 
-1. Authenticate to App Store Connect via the API key (no Apple ID prompt, no 2FA).
-2. Read `expo.version` from `app.json` for the marketing version.
-3. Call `latest_testflight_build_number` for that marketing version and add 1.
-4. Write the new build number into `app.json` and into the on-disk `Info.plist`.
-5. `build_app` — archives the workspace and exports an App Store IPA.
-6. `upload_to_testflight` with `skip_waiting_for_build_processing: true` — the
+1. **Pre-ship checks** — `./scripts/git-sync-check.sh`. Refuses to ship if
+   local `main` is behind `origin/main`, or if `app.json` has uncommitted
+   edits. Shared canonical policy (see
+   [`.claude/skills/_shared/pre-ship-checks.md`](../.claude/skills/_shared/pre-ship-checks.md))
+   — mirrors what `ship.sh` enforces.
+2. Authenticate to App Store Connect via the API key (no Apple ID prompt, no 2FA).
+3. Read `expo.version` from `app.json` for the marketing version.
+4. Call `latest_testflight_build_number` for that marketing version and add 1.
+5. Write the new build number into `app.json` and into the on-disk `Info.plist`.
+6. `build_app` — archives the workspace and exports an App Store IPA.
+7. `upload_to_testflight` with `skip_waiting_for_build_processing: true` — the
    lane returns as soon as the upload completes; processing continues on
    Apple's side.
+8. **Restore `app.json`** — drops the working-tree change so `git status`
+   stays clean.
 
 ### One-time setup
 
