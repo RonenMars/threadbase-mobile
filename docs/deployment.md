@@ -74,6 +74,10 @@ try to hand-roll `.env.signing`.
 Vanilla fastlane setup. No 1Password integration, no polling, no App Store
 submission — just bump the build number, archive, and upload to TestFlight.
 
+> **Note:** `fastlane/README.md` is auto-generated from the `Fastfile` on every
+> fastlane run — it's just a lane index. The canonical setup docs are right
+> here in `docs/deployment.md`.
+
 ### What it does
 
 1. Authenticate to App Store Connect via the API key (no Apple ID prompt, no 2FA).
@@ -111,6 +115,8 @@ submission — just bump the build number, archive, and upload to TestFlight.
    - `APP_BUNDLE_ID` — must match `app.json` → `expo.ios.bundleIdentifier`
    - `APP_SCHEME` — your Xcode scheme name; also used to derive
      `ios/<scheme>.xcworkspace` and `ios/<scheme>/Info.plist`
+   - `APPLE_TEAM_ID` — Apple Developer Portal team id (used as `teamID` in the
+     export options so xcodebuild can sign the IPA)
    - `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH`
 
    Store the `.p8` outside the repo (e.g. `~/.appstoreconnect/`).
