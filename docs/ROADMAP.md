@@ -41,6 +41,7 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 27 — Adopt EAS precompiled community libs for iOS build time | Planned (platform/perf, EAS-only) |
 | Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion | Planned (platform/perf, depends on Feature 25) |
 | Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned (platform/deps, low-priority) |
+| Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned (platform/noise, low-priority) |
 
 **Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
@@ -933,6 +934,41 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 **Scope:** ~1 day for the spike. Migration of the remaining sheets would be ~half a day if drop-in checks out.
 
 **Priority:** Low — current `@gorhom/bottom-sheet` works. Pick up only when an iOS-26 or SDK-57 incompatibility forces the hand, or as filler during a slow week.
+
+---
+
+### Feature 30 — Build-time warning cleanup (ship-121 follow-ups)
+
+**Filed:** 2026-05-31 (observed during the build 121 archive — see commit `007d9a3`).
+
+**Goal:** Address three categories of low-priority build-time noise surfaced during recent TestFlight ships. None of these block users or shipping; they show up in the xcodebuild log and add cognitive load when scanning a build for real failures.
+
+**Direction:** Three independent sub-items, picked up opportunistically.
+
+- **Sub-item A — Swift Sendable warnings from third-party Expo modules.** Two warnings in node_modules during archive:
+  - `node_modules/expo-speech-recognition/ios/ExpoSpeechRecognizer.swift:1:1` — *add `@preconcurrency` to suppress `Sendable`-related warnings from module `AVFAudio`*.
+  - `node_modules/expo-secure-store/ios/SecureStoreExceptions.swift:15:22` — *class `SecAccessControlError` must restate inherited `@unchecked Sendable` conformance*.
+  These are upstream Expo modules — our code does not need to change. The fix path is to (a) check the latest published versions of `expo-speech-recognition` and `expo-secure-store` for a resolved release, then bump in `package.json`, or (b) file upstream issues / PRs if a fixed release does not exist yet. **Do not** patch our local `node_modules/` directly — that gets blown away on every `npm install` and creates ghost diffs nobody can find later.
+
+- **Sub-item B — Hermes / JS bundle "variable X not declared in anonymous function" warnings.** A long block of warnings of the form *"the variable `Promise` was not declared in anonymous function"*, *"the variable `URL` was not declared in anonymous arrow function"*, etc., emitted by xcodebuild against `Build/.../Release-iphoneos/main.jsbundle`. This is expected noise — xcodebuild's lint pass scanning the Hermes-generated JS bundle does not understand RN's runtime globals (`Promise`, `URL`, `fetch`, `performance`, `setTimeout`, `clearTimeout`, `Blob`, `FileReader`, `FormData`, `URLSearchParams`, `XMLHttpRequest`, `ErrorUtils`, `DOMException`, `TransformStream`, `TextDecoder`, `TextEncoder`, `Request`, `clearImmediate`, `requestAnimationFrame`, `ReadableStream`, `Headers`, `Image`, `cancelAnimationFrame`, `REACT_NAVIGATION_DEVTOOLS`, `Promise`, `setImmediate`, …). Likely harmless. The fix is to either (a) suppress the warning class in the Xcode build settings (cleaner log, slight risk of hiding a real issue some day), or (b) document this entry as "known noise, ignore" and leave the warnings in place. Verify with a sanity check that the warnings predate any recent Hermes-bundle issue before suppressing.
+
+- **Sub-item C — Fastlane self-update prompt (2.233.1).** The lane prints *"Please update using `bundle update fastlane`"* at the end of every run. Not blocking. Pick up when there is a quiet moment: bump `Gemfile.lock`, re-run the lane locally to confirm it still archives + uploads cleanly, commit. The fastlane release notes for 2.233.1 list improvements not relevant to our pipeline (deliver preview behaviour, App Store Connect locale additions, abbrev/base64 gem constraint relaxation), so there is no urgency.
+
+**Open questions:**
+
+- **Sub-item A.** Has a fixed release of `expo-speech-recognition` or `expo-secure-store` shipped since SDK 56? If not, is filing the upstream issue worth the round-trip, or do we wait for SDK 57 to bring fresh module versions?
+- **Sub-item B.** Is there a documented project-wide policy for suppressing `js-undefined-variable` lint warnings against generated bundles, or do we leave them visible as a tripwire for future Hermes/Metro breakage? (Leave them be unless they start hiding real signal.)
+- **Sub-item C.** Risk of a fastlane minor bump regressing the lane in subtle ways (export-options, codesigning behaviour). Mitigation: test locally before pushing the `Gemfile.lock` bump; do not bump immediately before a release window.
+
+**Acceptance criteria:**
+
+- **A:** Both warnings disappear from the next xcodebuild archive log on a clean DerivedData, OR an upstream issue is filed and linked from this entry.
+- **B:** Either the warnings are suppressed in build settings, or this entry is updated to mark them as *"intentionally tolerated noise"* with the rationale.
+- **C:** `bundle update fastlane` lands, `bundle exec fastlane beta` archives + uploads cleanly at least once after the bump.
+
+**Scope:** Each sub-item is independently picked up in <half a day. The whole entry is roughly a day of opportunistic cleanup.
+
+**Priority:** Low. None of these block users, gate releases, or risk regressing functionality if left alone.
 
 ---
 
