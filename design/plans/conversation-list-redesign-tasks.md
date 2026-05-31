@@ -68,8 +68,8 @@ These were called out in the main plan and remain follow-ups. None block shippin
 Launch command for the physical iPhone 17 Pro lives in [`docs/dev-on-iphone-17-pro.md`](../../docs/dev-on-iphone-17-pro.md). TL;DR:
 
 ```bash
-cd /Users/ronenmars/Desktop/dev/ai-tools/tb-mobile && \
-  EXPO_NO_WATCHMAN=1 npx expo run:ios --device "00008150-00115DEA1A40401C"
+cd <repo-root> && \
+  EXPO_NO_WATCHMAN=1 npx expo run:ios --device "<your-iphone-udid>"
 ```
 
 Expect on first launch:

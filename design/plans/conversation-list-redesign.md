@@ -42,7 +42,7 @@ Screenshots reveal a single root problem: **information density inversion**. The
 Concretely:
 
 1. **Hub drill (img 1)** — 16 rows all reading `apps/ios/Tabby`. The label is the same as the parent context. No preview. No message count. No `MachineBadge`. No way to differentiate one row from another except `23h ago` repeated.
-2. **Hub root (img 2)** — long absolute paths middle-truncated (`/Users/ronenmars/Desktop/dev/ai-tools/...`). The disambiguating segment is the part that gets hidden. The `FolderSimple` icon and a count badge are the only visual data.
+2. **Hub root (img 2)** — long absolute paths middle-truncated (`/Users/<name>/dev/ai-tools/...`). The disambiguating segment is the part that gets hidden. The `FolderSimple` icon and a count badge are the only visual data.
 3. **Tree (img 3)** — actually closest to the brand spec, but the green `<Svg fill="#2e7d4f">` chat icon at `TreeRow.tsx:75` is off-palette; depth indentation has no visible gutter.
 4. **Tree drill (img 4)** — same problem as hub drill, without even the folder icon.
 
@@ -463,7 +463,7 @@ All persisted in `stores/settings.ts`. Names mirror the data model so they're pr
 
 ## Landing-page recommendations (user feedback point 8)
 
-Read `/Users/ronenmars/Desktop/dev/ai-tools/threadbase/landing-page/DESIGN.md`. The landing page already uses `#63b3ff` / `#f08a24` / `#070b11` correctly. Aligning the mobile to the landing-page is a **mobile-side change**, not a landing-side change.
+Read `DESIGN.md` in the threadbase landing-page repo. The landing page already uses `#63b3ff` / `#f08a24` / `#070b11` correctly. Aligning the mobile to the landing-page is a **mobile-side change**, not a landing-side change.
 
 That said, the landing page's "Screenshots Section" (alternating image/text) is currently illustrative. We should **swap in the new mobile screens once shipped**, prioritized:
 

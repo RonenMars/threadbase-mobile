@@ -36,8 +36,8 @@ The format is the giveaway — the legacy UDID is **8 hex chars + dash + 16 hex 
 ### First install of a session (or after `npm install`, native module change, or `app.json` change)
 
 ```bash
-cd /Users/ronenmars/Desktop/dev/ai-tools/tb-mobile && \
-  EXPO_NO_WATCHMAN=1 npx expo run:ios --device "00008150-00115DEA1A40401C"
+cd <repo-root> && \
+  EXPO_NO_WATCHMAN=1 npx expo run:ios --device "<your-iphone-udid>"
 ```
 
 What happens:
@@ -60,7 +60,7 @@ Leave Metro running. Either:
 If the dev client is still on the phone:
 
 ```bash
-cd /Users/ronenmars/Desktop/dev/ai-tools/tb-mobile && \
+cd <repo-root> && \
   EXPO_NO_WATCHMAN=1 npx expo start --dev-client
 ```
 
@@ -75,7 +75,7 @@ Open the Threadbase dev-client app on the phone and tap the LAN URL the terminal
 | First launch: **"Untrusted Developer"** alert | iOS doesn't yet trust the signing cert | `Settings → General → VPN & Device Management → Apple Development: <Apple ID> → Trust` |
 | Metro complains about path resolution / fresh node_modules | Watchman TCC bug on this Mac | `EXPO_NO_WATCHMAN=1` (already on the command). Don't drop it. |
 | `Could not find device with UDID` | Phone unplugged / locked / not trusted | Plug back in, unlock, tap "Trust this computer" if prompted |
-| Bundle fails on different file names every run | Watchman cache out of sync | `watchman watch-del '/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile' && rm -rf $TMPDIR/metro-*` |
+| Bundle fails on different file names every run | Watchman cache out of sync | `watchman watch-del "$PWD" && rm -rf $TMPDIR/metro-*` |
 | Build phase missing after `node_modules` refresh | Pods drift | `cd ios && pod install && cd ..` |
 | Node version "incompatible with Expo SDK X" | Brew/asdf node version mismatch | Project Node engines need ≥22.13 or ≥24 for SDK 54+. Check `node -v`. |
 | Hermes crashes on iOS 26 | Old Hermes (0.12.x) | We're on SDK 55+ already (Hermes 0.14+). Don't downgrade. |

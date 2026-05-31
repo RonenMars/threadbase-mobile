@@ -4,7 +4,7 @@ I'm working on **tb-mobile** (Threadbase iOS, Expo SDK 55, RN 0.83.6, new archit
 
 ## Repo
 
-`/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile`
+`threadbase-mobile` (this repo)
 
 ## The bug
 
