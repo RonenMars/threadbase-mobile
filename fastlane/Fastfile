@@ -49,11 +49,24 @@ platform :ios do
     write_build_number_to_app_json(next_build)
     set_info_plist_value(path: INFO_PLIST_PATH, key: "CFBundleVersion", value: next_build.to_s)
 
+    # Pass ASC API key flags to xcodebuild so it can update provisioning profiles
+    # non-interactively during the export step. fastlane rejects the newer
+    # `app-store-connect` method name, so use the legacy `app-store` instead.
     build_app(
-      workspace:     XCWORKSPACE_PATH,
-      scheme:        SCHEME,
-      export_method: "app-store",
-      clean:         false,
+      workspace:      XCWORKSPACE_PATH,
+      scheme:         SCHEME,
+      export_method:  "app-store",
+      export_options: {
+        teamID:             ENV.fetch("APPLE_TEAM_ID"),
+        signingStyle:       "automatic",
+        uploadSymbols:      true,
+        stripSwiftSymbols:  true,
+      },
+      xcargs:         "-allowProvisioningUpdates " \
+                      "-authenticationKeyPath #{ENV.fetch('ASC_KEY_PATH')} " \
+                      "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')} " \
+                      "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}",
+      clean:          false,
     )
 
     upload_to_testflight(

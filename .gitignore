@@ -44,6 +44,11 @@ fastlane/screenshots/
 *.ipa
 *.dSYM.zip
 
+# Bundler local install
+vendor/bundle/
+.bundle/
+Gemfile.lock
+
 # Local Claude Code settings — user-specific permissions / preferences
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
