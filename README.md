@@ -108,7 +108,7 @@ tb-mobile/
 - **Node.js** ≥ 22.13 (Expo SDK 55 requires ≥ 22.13 or ≥ 24; v22.12 silently breaks Metro path resolution)
 - **Xcode** 16+ (iOS development)
 - **CocoaPods** (iOS native dependencies)
-- A running [Threadbase](https://github.com/your-org/threadbase) server with an API key
+- A running [tb-streamer](https://github.com/RonenMars/tb-streamer) server with an API key
 
 ---
 
@@ -331,3 +331,9 @@ Expo push tokens are registered at app launch and sent to each configured server
 Preferences (per type, quiet hours, badge count) are configured in **Settings → Notifications**.
 
 Notification deep links open directly to the relevant session: `/session/:id?server=:serverId`.
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 Ronen Mars.
