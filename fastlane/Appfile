@@ -1,0 +1,10 @@
+# All identifiers come from environment variables (see fastlane/.env.example).
+# Real values are never committed to this repo.
+
+app_identifier(ENV.fetch("APP_BUNDLE_ID"))
+
+# Optional — only needed if you fall back to interactive Apple ID auth
+# (the default ASC API key flow does not need these).
+apple_id(ENV["APPLE_ID"])         if ENV["APPLE_ID"]
+itc_team_id(ENV["ITC_TEAM_ID"])   if ENV["ITC_TEAM_ID"]
+team_id(ENV["APPLE_TEAM_ID"])     if ENV["APPLE_TEAM_ID"]

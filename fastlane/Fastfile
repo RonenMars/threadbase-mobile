@@ -1,0 +1,64 @@
+require "json"
+
+default_platform(:ios)
+
+# All app-specific identifiers come from environment variables. Fastlane
+# auto-loads `fastlane/.env` (and `fastlane/.env.<environment>` when invoked
+# with `--env <environment>`). See fastlane/.env.example for the full list.
+SCHEME           = ENV.fetch("APP_SCHEME")
+XCWORKSPACE_PATH = "ios/#{SCHEME}.xcworkspace"
+INFO_PLIST_PATH  = File.expand_path("../ios/#{SCHEME}/Info.plist", __dir__)
+APP_JSON_PATH    = File.expand_path("../app.json", __dir__)
+
+# Read expo.version from app.json (single source of truth for marketing version).
+def marketing_version_from_app_json
+  JSON.parse(File.read(APP_JSON_PATH)).dig("expo", "version")
+end
+
+# Write expo.ios.buildNumber back into app.json so the value survives the next
+# `expo prebuild`.
+def write_build_number_to_app_json(build_number)
+  config = JSON.parse(File.read(APP_JSON_PATH))
+  config["expo"]["ios"]["buildNumber"] = build_number.to_s
+  File.write(APP_JSON_PATH, JSON.pretty_generate(config) + "\n")
+end
+
+platform :ios do
+  desc "Build and upload a new TestFlight build. Build number = latest TestFlight + 1."
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id:       ENV.fetch("ASC_KEY_ID"),
+      issuer_id:    ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: ENV.fetch("ASC_KEY_PATH"),
+      in_house:     false,
+    )
+
+    version = marketing_version_from_app_json
+    UI.message("Marketing version (from app.json): #{version}")
+
+    latest = latest_testflight_build_number(
+      api_key:              api_key,
+      version:              version,
+      initial_build_number: 0,
+    )
+    next_build = latest.to_i + 1
+    UI.success("Latest TestFlight build: #{latest} -> next: #{next_build}")
+
+    # Persist in app.json (durable across prebuild) and in the on-disk
+    # Info.plist (used by this archive).
+    write_build_number_to_app_json(next_build)
+    set_info_plist_value(path: INFO_PLIST_PATH, key: "CFBundleVersion", value: next_build.to_s)
+
+    build_app(
+      workspace:     XCWORKSPACE_PATH,
+      scheme:        SCHEME,
+      export_method: "app-store",
+      clean:         false,
+    )
+
+    upload_to_testflight(
+      api_key:                           api_key,
+      skip_waiting_for_build_processing: true,
+    )
+  end
+end

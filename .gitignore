@@ -20,6 +20,9 @@ android/
 ios/
 .env.*
 .env
+# Keep committed templates — real env files stay ignored.
+!.env.example
+!fastlane/.env.example
 
 # macOS metadata
 .DS_Store
@@ -32,6 +35,14 @@ ios/
 
 # Local archives
 ThreadbaseMobile.zip
+
+# Fastlane build artifacts
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/
+fastlane/screenshots/
+*.ipa
+*.dSYM.zip
 
 # Local Claude Code settings — user-specific permissions / preferences
 .claude/settings.local.json
