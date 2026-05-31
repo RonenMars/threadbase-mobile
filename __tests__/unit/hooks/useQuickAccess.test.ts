@@ -35,15 +35,15 @@ describe('useRecentSessions', () => {
 })
 
 describe('usePopularProjects', () => {
-  it('fetches from /api/projects/popular', async () => {
+  it('fetches from /api/projects/popular and tags projects with serverId', async () => {
     mockGet.mockResolvedValue({ projects: [{ path: '~/app', name: 'app', sessionCount: 5 }], total: 1 })
     const { result } = renderHook(() => usePopularProjects(['srv1']), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.status).toBe('success'))
-    expect(result.current.data.projects[0].sessionCount).toBe(5)
+    expect(result.current.data.projects[0]).toMatchObject({ sessionCount: 5, serverId: 'srv1' })
     expect(mockGet).toHaveBeenCalledWith('/api/projects/popular?limit=20')
   })
 
-  it('dedups by path keeping highest sessionCount across servers', async () => {
+  it('dedups by path keeping highest sessionCount across servers — and preserves its serverId (Bug 23)', async () => {
     mockGet
       .mockResolvedValueOnce({ projects: [{ path: '~/app', name: 'app', sessionCount: 3 }], total: 1 })
       .mockResolvedValueOnce({ projects: [{ path: '~/app', name: 'app', sessionCount: 7 }], total: 1 })
@@ -52,6 +52,6 @@ describe('usePopularProjects', () => {
       { wrapper: createWrapper() },
     )
     await waitFor(() => expect(result.current.data.projects).toHaveLength(1))
-    expect(result.current.data.projects[0].sessionCount).toBe(7)
+    expect(result.current.data.projects[0]).toMatchObject({ sessionCount: 7, serverId: 'srvB' })
   })
 })

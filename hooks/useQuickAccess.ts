@@ -2,10 +2,10 @@ import { useQueries } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { createApiForServer } from '@/services/api-client'
 import { clientLog } from '@/lib/clientLog'
-import type { MultiSession, PopularProject } from '@/types/api'
+import type { MultiPopularProject, MultiSession, PopularProject } from '@/types/api'
 
 type RecentsResponse = { sessions: MultiSession[]; total: number }
-type PopularResponse = { projects: PopularProject[]; total: number }
+type PopularResponse = { projects: MultiPopularProject[]; total: number }
 
 type AggregateStatus = 'pending' | 'success' | 'error'
 
@@ -71,13 +71,22 @@ export function usePopularProjects(serverIds: string[], limit = 20): AggregateRe
       queryFn: async (): Promise<PopularResponse> => {
         clientLog.info('hook.usePopularProjects', 'queryFn START', { serverId })
         try {
-          const r = await createApiForServer(serverId).get<PopularResponse>(
+          const r = await createApiForServer(serverId).get<{ projects: PopularProject[]; total: number }>(
             `/api/projects/popular?limit=${limit}`,
           )
+          // Tag every project with its serverId so the merged list keeps the
+          // origin. Without this, downstream taps (Popular → "New Session
+          // here") fall back to `queriedServerIds[0]` and may hit the wrong
+          // server's `/api/browse`, surfacing "Unable to load directories"
+          // even when the originating server is reachable. (Bug 23.)
+          const tagged: PopularResponse = {
+            ...r,
+            projects: (r.projects ?? []).map((p) => ({ ...p, serverId })),
+          }
           clientLog.info('hook.usePopularProjects', 'queryFn OK', {
-            serverId, projects: r.projects?.length ?? 0,
+            serverId, projects: tagged.projects.length,
           })
-          return r
+          return tagged
         } catch (e) {
           clientLog.error('hook.usePopularProjects', 'queryFn ERROR', {
             serverId,
@@ -137,8 +146,10 @@ function aggregateRecents(queries: QueryLike<RecentsResponse>[]): AggregateResul
 function aggregatePopular(queries: QueryLike<PopularResponse>[]): AggregateResult<PopularResponse> {
   const successful = queries.filter((q) => q.status === 'success' && q.data)
   const merged = successful.flatMap((q) => q.data!.projects)
-  // Same path can appear on multiple servers — keep the highest-count occurrence.
-  const byPath = new Map<string, PopularProject>()
+  // Same path can appear on multiple servers — keep the highest-count
+  // occurrence. The retained entry's `serverId` carries through, so taps on
+  // this chip route back to the server that actually has that many sessions.
+  const byPath = new Map<string, MultiPopularProject>()
   for (const p of merged) {
     const existing = byPath.get(p.path)
     if (!existing || p.sessionCount > existing.sessionCount) byPath.set(p.path, p)
