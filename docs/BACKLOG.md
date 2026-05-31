@@ -911,9 +911,61 @@ Once the spec is approved, the implementation is bounded: store + read API + wri
 
 ## Bug 31 — Settings theme change doesn't apply colors across the whole app
 
-**Filed:** 2026-05-25. **Status:** Open — not diagnosed.
+**Filed:** 2026-05-25. **Audit:** 2026-05-31 (this entry). **Status:** Open — diagnosed; root cause is a codebase-wide pattern, not a single bug.
 
-**Symptom:** Changing the theme from Settings updates some surfaces but leaves others on the previous palette. The change needs to be validated across every screen, not just the one currently visible.
+### Audit findings (2026-05-31)
+
+Counted across `app/`, `components/`, `hooks/` (excluding `node_modules` and `.claude/`):
+
+| Signal | Count | Verdict |
+|---|---:|---|
+| `dark.(bg\|text\|fg\|accent\|border).…` references | **605** | ❌ hardcoded palette |
+| Hex / rgb / rgba color literals in styles | **67** | ❌ won't theme-switch |
+| `useTheme()` / `useThemeColors()` / `theme.colors.…` lookups | **8** | barely used |
+| NativeWind theme-token classes (`bg-bg-*`, `text-text-*`, `border-border`) | **5** | barely used |
+| Imports from `@/theme` or `@/theme/*` | **0** | the runtime-theme module path isn't wired |
+
+The infrastructure for theming is in place — `contexts/ThemeContext.tsx` exists with consumers in `app/_layout.tsx`, `app/settings.tsx`, `components/ui/Banner.tsx`; `constants/theme.ts` exports 5 palettes (`dark`, `light`, `dracula`, `catppuccin`, `nord`) plus a `THEMES` registry keyed by `ThemeId`; `tailwind.config.js` correctly maps NativeWind class names (`bg-bg-primary`, `text-text-primary`, `text-accent`, `border-border`, `bg-status-running`, etc.) to CSS variables (`var(--color-bg-primary)`).
+
+The infrastructure is just not being **used**. The vast majority of components do `import { dark } from '@/constants/theme'` and apply `dark.bg.primary` etc. directly as `StyleSheet` values, so a runtime theme switch is invisible to them.
+
+### The `StyleSheet.create` capture-at-import gotcha
+
+`StyleSheet.create({ container: { backgroundColor: dark.bg.primary } })` is evaluated **once, at module import time**, and captures the value of `dark.bg.primary` then and there. Re-importing or swapping the active theme later does nothing for these stylesheets — they hold the literal value, not a live lookup. The fix isn't "rename `dark` to `theme`" — it's a structural move from `StyleSheet.create` to either:
+
+- **NativeWind classes** (`className="bg-bg-primary text-text-primary"`) — preferred where layout allows, since they re-render against CSS variables for free.
+- **`useTheme()`-derived inline styles** — for cases where a stylesheet is hot enough that NativeWind's per-render cost matters or where dynamic values are needed (`style={{ backgroundColor: theme.bg.primary }}` inside a function component that calls `useTheme()`).
+
+### Migration scope (estimate)
+
+- **605 `dark.*` references** to migrate — each touches a `StyleSheet.create` or an inline style.
+- **67 hex/rgb literals** to convert to tokens. Some are intentional (status indicators, fixed brand colors); audit each.
+- The top-level routes are the biggest offenders. Confirmed direct `dark` imports in: `app/index.tsx`, `app/manage-favorites.tsx`, `app/project/[id].tsx`, `app/browse.tsx`, `app/conversation/[id].tsx`. Sweep `app/` first.
+- High-traffic components flagged in the original entry (`MessageBubble`, `ProjectHubCard`, `QuickAccessStrip`, onboarding steps) likely each have 20–50 references.
+
+### Recommended approach
+
+1. **Phase 1 — pilot on one screen** (suggest `app/settings.tsx` since it already has `useTheme` wiring): migrate every `dark.*` reference to NativeWind classes where layout allows, `useTheme()` otherwise. Validate against all 5 themes on simulator. Establishes the per-reference recipe.
+2. **Phase 2 — sweep `app/`**: same recipe across every top-level route. Test against all 5 themes after each route.
+3. **Phase 3 — sweep `components/`**: by directory (sessions/, quick-access/, onboarding/, conversation/, etc.). One PR per directory keeps the diff reviewable.
+4. **Phase 4 — hex/rgb literal audit**: review the 67 hits; replace or keep with justification.
+5. **Phase 5 — Banner / status-bar / nav chrome**: the system-chrome items in the original validation checklist.
+
+Don't try to do it all in one PR. The original "single audit pass" recommendation was right, but the *fix* needs to land incrementally so each phase can be tested against all 5 themes.
+
+### Why this stays solo (no parallel sets)
+
+Per the merge-order doc, Bug 31 conflicts with **everything** — every UI PR in flight will touch files this migration touches. Schedule when Waves 1 + 2 are merged and no other open UI PRs exist. Consider letting an agent do the full pass with a follow-up review pass rather than splitting across sets.
+
+### Test gates
+
+- Each phase: switch theme to each of the 5 palettes, screenshot every top-level screen + modal, confirm no surface stayed on the previous palette.
+- Jest: full suite must stay green. Existing snapshot tests may capture color literals — update them as theme tokens land.
+- Manual on-device check on iPhone 17 Pro (system-chrome behavior — status bar style, keyboard appearance — differs from simulator).
+
+---
+
+**Symptom (original report):** Changing the theme from Settings updates some surfaces but leaves others on the previous palette. The change needs to be validated across every screen, not just the one currently visible.
 
 **Validation checklist (sweep on each theme switch):**
 
