@@ -16,36 +16,26 @@ interface Props {
   mode: 'create' | 'exit'
   currentName?: string
   onSave: (name: string) => void
-  onSkip: () => void
-  onDontAskAgain: () => void
+  onCancel: () => void
 }
 
-export function NameSessionModal({ visible, mode, currentName, onSave, onSkip, onDontAskAgain }: Props) {
+export function NameSessionModal({ visible, mode, currentName, onSave, onCancel }: Props) {
   const [name, setName] = useState('')
-  const [dontAsk, setDontAsk] = useState(false)
 
   useEffect(() => {
     if (visible) {
       queueMicrotask(() => {
         setName('')
-        setDontAsk(false)
       })
     }
   }, [visible])
 
   const title = mode === 'create' ? 'Name this session?' : 'Name this session before you go?'
-  const skipLabel = mode === 'create' ? 'Skip' : 'Leave as is'
   const saveLabel = mode === 'create' ? 'Start' : 'Save'
-
-  function handleSkip() {
-    if (dontAsk) onDontAskAgain()
-    onSkip()
-  }
 
   function handleSave() {
     const trimmed = name.trim()
     if (!trimmed) return
-    if (dontAsk) onDontAskAgain()
     onSave(trimmed)
   }
 
@@ -74,20 +64,13 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onSkip, o
           />
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.75}>
-              <Text style={styles.skipLabel}>{skipLabel}</Text>
+            <TouchableOpacity style={styles.cancelButton} onPress={onCancel} activeOpacity={0.75}>
+              <Text style={styles.cancelLabel}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.75}>
               <Text style={styles.saveLabel}>{saveLabel}</Text>
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity style={styles.checkboxRow} onPress={() => setDontAsk((v) => !v)} activeOpacity={0.7}>
-            <View style={[styles.checkbox, dontAsk && styles.checkboxChecked]}>
-              {dontAsk ? <View style={styles.checkboxInner} /> : null}
-            </View>
-            <Text style={styles.checkboxLabel}>{"Don't ask me again"}</Text>
-          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -131,41 +114,12 @@ const styles = StyleSheet.create({
     color: dark.text.primary,
     fontSize: font.base,
   },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: radius.sm,
-    borderWidth: 1.5,
-    borderColor: dark.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    borderColor: dark.text.accent,
-    backgroundColor: dark.text.accent,
-  },
-  checkboxInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: dark.bg.card,
-  },
-  checkboxLabel: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-  },
   buttonRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
-  skipButton: {
+  cancelButton: {
     flex: 1,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
@@ -173,7 +127,7 @@ const styles = StyleSheet.create({
     borderColor: dark.border,
     alignItems: 'center',
   },
-  skipLabel: {
+  cancelLabel: {
     color: dark.text.secondary,
     fontSize: font.base,
     fontWeight: '500',

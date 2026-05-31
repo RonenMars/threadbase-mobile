@@ -52,7 +52,7 @@ import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
-import { RenameSessionSheet } from '@/components/sessions/RenameSessionSheet'
+import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
@@ -946,16 +946,16 @@ export default function SessionDetailScreen() {
 
       {infoModal}
 
-      {renameSheetVisible ? (
-        <RenameSessionSheet
-          currentName={sessionName ?? ''}
-          onSave={(name) => {
-            renameSession.mutate({ sessionId: id, name })
-            setRenameSheetVisible(false)
-          }}
-          onClose={() => setRenameSheetVisible(false)}
-        />
-      ) : null}
+      <NameSessionModal
+        visible={renameSheetVisible}
+        mode="exit"
+        currentName={sessionName ?? ''}
+        onSave={(name) => {
+          renameSession.mutate({ sessionId: id, name })
+          setRenameSheetVisible(false)
+        }}
+        onCancel={() => setRenameSheetVisible(false)}
+      />
 
     </KeyboardAvoidingView>
   )
