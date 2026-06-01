@@ -1,16 +1,12 @@
 {
   "name": "threadbase-demo-server",
   "private": true,
-  "version": "0.0.0",
-  "description": "Fly-hosted mock streamer for App Review and demos. See README.md.",
-  "main": "server.js",
+  "version": "1.0.0",
+  "description": "Public demo of Threadbase — runs a real @threadbase/streamer release against a curated seed corpus. See README.md.",
   "scripts": {
-    "start": "node server.js"
+    "deploy": "fly deploy"
   },
   "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "ws": "^8.18.0"
+    "node": ">=24"
   }
 }

@@ -1,7 +1,10 @@
-# fly.toml app configuration file generated for threadbase-demo on 2026-06-01T06:17:26+03:00
+# fly.toml app configuration file for threadbase-demo.
 #
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# As of 2026-06-01 this container runs the real @threadbase/streamer release
+# against a curated seed corpus (see Dockerfile + seed/). Memory bumped from
+# 256mb to 1gb to accommodate node-pty, better-sqlite3, and the conversation
+# scanner. /data is a persistent Fly volume so reviewer state survives auto-
+# stop / auto-start cycles.
 
 app = 'threadbase-demo'
 primary_region = 'iad'
@@ -16,6 +19,10 @@ primary_region = 'iad'
   auto_start_machines = true
   min_machines_running = 0
 
+[[mounts]]
+  source = 'demo_data'
+  destination = '/data'
+
 [[vm]]
   size = 'shared-cpu-1x'
-  memory = '256mb'
+  memory = '1gb'
