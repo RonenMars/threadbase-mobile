@@ -334,6 +334,47 @@ Notification deep links open directly to the relevant session: `/session/:id?ser
 
 ---
 
+## Privacy
+
+Threadbase is a thin client for self-hosted Threadbase streamers. It does not run any analytics, crash-reporting, or telemetry service of its own.
+
+**What stays on your device**
+
+- Server URLs and API keys (Keychain / Keystore via SecureStore)
+- Session display names, draft prompts, UI settings, quick-access list, React Query cache
+- All Claude Code session content fetched from your streamer
+
+**What leaves your device, and where it goes**
+
+| Data | Destination | Purpose |
+|------|-------------|---------|
+| Session content, prompts, files, status events | The Threadbase streamer URL you configured | Show your sessions in the app |
+| Expo push token (`ExponentPushToken[…]`) | (a) Expo's push relay; (b) every streamer you've paired with, via `POST /api/push/register` | Deliver session notifications |
+| Pairing handshake | The streamer URL encoded in the pair QR you scan | Exchange API key during setup |
+
+**What we do not collect**
+
+The app makes **no network calls to any developer-operated backend** — there is no Threadbase analytics server, no crash-reporting endpoint, no advertising or tracking SDK. Apart from the Expo push relay (used solely to deliver notifications you opted into) and the streamer URLs you yourself enter, the app talks to nothing.
+
+**Permissions used**
+
+| Permission | Why |
+|------------|-----|
+| Camera | Scan pairing QR codes; attach photos to sessions |
+| Photo library | Attach photos to sessions |
+| Microphone + speech recognition | Dictate prompts (speech-to-text is on-device) |
+| Notifications | Deliver session status alerts from your streamers |
+
+**Your control**
+
+- Remove a server in Settings to revoke its push token and stop all traffic to it
+- Disable notifications system-wide in iOS Settings → Threadbase
+- Uninstalling the app deletes every byte stored locally; nothing persists off-device
+
+A canonical web version of this notice is published at <https://threadbase.sh/privacy>.
+
+---
+
 ## License
 
 [MIT](LICENSE) © 2026 Ronen Mars.

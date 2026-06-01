@@ -1,0 +1,77 @@
+# Same as setup.yaml but points at the public demo server on Fly.
+# Use this when running screenshot or smoke flows against a fresh simulator
+# (e.g. iPad sims for App Store submission), real devices, or any context
+# where localhost:7071 is unreachable.
+# Demo server: https://threadbase-demo.fly.dev (serves e2e/fixtures content)
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      - tapOn:
+          id: "onboarding-welcome-cta"
+
+      - tapOn:
+          id: "onboarding-theme-cta"
+
+      - tapOn:
+          id: "onboarding-valueprop-cta"
+
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+
+      - tapOn:
+          id: "onboarding-connect-url-input"
+
+      - inputText: "https://threadbase-demo.fly.dev"
+
+      - tapOn:
+          id: "onboarding-connect-token-input"
+
+      - inputText: "demo-12345678"
+
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 12000
+
+      - tapOn:
+          id: "onboarding-notifications-cta"
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      - tapOn:
+          id: "onboarding-tour-cta"
+
+      - tapOn:
+          id: "onboarding-tour-cta"
+
+      - tapOn:
+          id: "onboarding-tour-cta"
+
+      - tapOn:
+          id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000

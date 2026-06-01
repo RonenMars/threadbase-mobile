@@ -1,0 +1,13 @@
+# App Store screenshot #1: hub view with sessions + projects.
+# Lands on the hub via setup-demo.yaml (pairs against the Fly demo server),
+# captures the hub screen as-is.
+# Output: e2e/_artifacts/screenshots/shots-01-hub.png
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup-demo.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- takeScreenshot: e2e/_artifacts/screenshots/shots-01-hub

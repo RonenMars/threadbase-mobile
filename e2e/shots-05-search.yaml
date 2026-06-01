@@ -1,0 +1,22 @@
+# App Store screenshot #5: search results view (the hero shot).
+# Opens the hub search bar, types a query, captures results.
+# Output: e2e/_artifacts/screenshots/shots-05-search.png
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup-demo.yaml
+
+- tapOn:
+    label: "Search"
+
+# Maestro doesn't expose accessibilityHint as a selector, but tapping the
+# Search button puts focus in the search input. Just type — input goes into
+# the focused field.
+- inputText: "Deploy"
+
+- extendedWaitUntil:
+    visible: "Deploy"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: e2e/_artifacts/screenshots/shots-05-search

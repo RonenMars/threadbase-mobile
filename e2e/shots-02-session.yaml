@@ -1,0 +1,17 @@
+# App Store screenshot #2: live session view with terminal output.
+# Taps the first session card via its composite accessibility label.
+# Output: e2e/_artifacts/screenshots/shots-02-session.png
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup-demo.yaml
+
+- tapOn:
+    text: "Session my-project, status waiting_input.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/shots-02-session

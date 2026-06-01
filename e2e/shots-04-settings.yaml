@@ -1,0 +1,17 @@
+# App Store screenshot #4: settings screen (multi-server, notification prefs).
+# Taps the gear icon in the hub header (accessibility label: "Settings").
+# Output: e2e/_artifacts/screenshots/shots-04-settings.png
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup-demo.yaml
+
+- tapOn:
+    label: "Settings"
+
+- extendedWaitUntil:
+    visible:
+      text: "Settings"
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/screenshots/shots-04-settings

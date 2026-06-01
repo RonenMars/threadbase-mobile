@@ -1,0 +1,21 @@
+# Same as shots-02-session but waits 8 seconds after navigation so the WS
+# terminal_replay has time to land + render. Diagnostic: if this shows
+# content but the no-wait version doesn't, the screenshot is firing before
+# the replay paints. If even this shows the loader, there's a deeper bug.
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup-demo.yaml
+
+- tapOn:
+    text: "Session my-project, status waiting_input.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+- waitForAnimationToEnd:
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/shots-02-session-waited

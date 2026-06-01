@@ -1,0 +1,32 @@
+[
+  {
+    "id": "conv-111",
+    "serverId": "server-one",
+    "serverLabel": "Local Dev",
+    "title": "Initial setup",
+    "projectPath": "/home/user/my-project",
+    "branch": "main",
+    "messageCount": 4,
+    "lastActivity": "2026-05-01T10:00:00.000Z"
+  },
+  {
+    "id": "conv-222",
+    "serverId": "server-one",
+    "serverLabel": "Local Dev",
+    "title": "Feature discussion",
+    "projectPath": "/home/user/my-project",
+    "branch": "feature/auth",
+    "messageCount": 2,
+    "lastActivity": "2026-05-01T09:00:00.000Z"
+  },
+  {
+    "id": "conv-333",
+    "serverId": "server-two",
+    "serverLabel": "Remote Dev",
+    "title": "Remote refactor",
+    "projectPath": "/home/user/other-project",
+    "branch": "main",
+    "messageCount": 5,
+    "lastActivity": "2026-05-01T11:30:00.000Z"
+  }
+]

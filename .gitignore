@@ -63,3 +63,13 @@ Gemfile.lock
 
 expo-env.d.ts
 # @end expo-cli
+# Local-only assets from App Store submission prep (PII / large)
+/screenshots/
+/screenshots-ipad/
+/.playwright-mcp/
+/threadbase-ai-site.png
+/threadbase-sh-live.png
+/uspto-threadbase.png
+
+# Local status notes that contain private credentials — do not commit
+/docs/app-store-submission-status-*.md
