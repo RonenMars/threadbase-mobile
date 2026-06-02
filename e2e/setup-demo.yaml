@@ -2,7 +2,9 @@
 # Use this when running screenshot or smoke flows against a fresh simulator
 # (e.g. iPad sims for App Store submission), real devices, or any context
 # where localhost:7071 is unreachable.
-# Demo server: https://threadbase-demo.fly.dev (real @threadbase/streamer + seed/ corpus, see demo-server/README.md)
+# Demo server: https://threadbase-demo.fly.dev — runs the real tb-streamer
+# against a curated seed corpus. Deploy machinery + fixtures live in the
+# tb-streamer repo at docker/ and demo-data/; see tb-streamer/docker/README.md.
 
 appId: com.ronenmars.threadbase
 ---
