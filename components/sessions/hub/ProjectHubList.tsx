@@ -117,6 +117,7 @@ export function ProjectHubList({
         const isLive = item.status === 'running' || item.status === 'waiting_input'
         return (
           <ConversationListItem
+            testID={`session-row-${item.id}`}
             title={item.projectName}
             path={item.projectPath}
             timestamp={item.completedAt ?? item.startedAt}
@@ -136,6 +137,7 @@ export function ProjectHubList({
       }
       return (
         <ConversationListItem
+          testID={`conversation-row-${item.id}`}
           title={item.title}
           path={item.projectPath}
           timestamp={item.lastMessage?.timestamp ?? item.lastActivity}

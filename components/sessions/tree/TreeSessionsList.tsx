@@ -72,6 +72,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
         const isLive = s.status === 'running' || s.status === 'waiting_input'
         return (
           <ConversationListItem
+            testID={`session-row-${s.id}`}
             title={s.projectName}
             path={s.projectPath}
             timestamp={s.completedAt ?? s.startedAt}
@@ -92,6 +93,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
       const c = item as MultiConversation
       return (
         <ConversationListItem
+          testID={`conversation-row-${c.id}`}
           title={c.title}
           path={c.projectPath}
           timestamp={c.lastMessage?.timestamp ?? c.lastActivity}

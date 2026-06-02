@@ -60,6 +60,7 @@ const ConversationRow = React.memo(function ConversationRow({
 
   return (
     <ConversationListItem
+      testID={`conversation-row-${c.id}`}
       title={c.title}
       path={c.projectPath}
       siblings={siblings}

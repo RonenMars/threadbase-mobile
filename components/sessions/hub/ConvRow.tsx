@@ -19,6 +19,7 @@ export function ConvRow({ conv }: ConvRowProps) {
 
   return (
     <ConversationListItem
+      testID={`conversation-row-${conv.id}`}
       title={conv.title}
       timestamp={conv.lastMessage?.timestamp ?? conv.lastActivity}
       messageCount={conv.messageCount}
