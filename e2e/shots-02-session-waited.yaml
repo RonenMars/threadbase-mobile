@@ -7,12 +7,27 @@ appId: com.ronenmars.threadbase
 ---
 - runFlow: setup-demo.yaml
 
+# Hub uses tree-view: drill into project, then tap its single session row.
 - tapOn:
-    text: "Session my-project, status waiting_input.*"
+    id: "tree-row-/home/demo/projects/threadbase-mobile"
 
 - extendedWaitUntil:
     visible:
-      id: "session-detail-screen"
+      id: "drill-cwd-/home/demo/projects/threadbase-mobile"
+    timeout: 5000
+
+# Demo conversation id for the threadbase-mobile replay. DrillRow derives its
+# testID from item.key as `conversation-row-<id>` (the demo seed exposes its
+# sessions as historical conversations because the PTY isn't attached).
+- tapOn:
+    id: "conversation-row-5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e"
+
+# Demo data only has finished conversations (no live PTY), so the row routes
+# to /conversation/<id> (replay view), not /session/<id>. The replay view
+# exposes `conversation-bottom-bar` rather than `session-detail-screen`.
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
     timeout: 8000
 
 - waitForAnimationToEnd:

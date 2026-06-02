@@ -41,11 +41,22 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-connect-handshake-cta"
 
-      - runFlow:
-          when:
-            visible: "Not Now"
-          commands:
-            - tapOn: "Not Now"
+      # iOS Keychain "Save Password?" sheet ALWAYS appears after the handshake
+      # because the API-key field is secureTextEntry. It's a SpringBoard system
+      # sheet outside the app's AX hierarchy, so text-based `tapOn: "Not Now"`
+      # cannot see it, and Maestro has no first-class handler (launchApp
+      # permissions only cover permission-grant alerts).
+      #
+      # Try tap-outside first (iOS 17+ relaxed some modal sheets to dismiss as
+      # cancel on backdrop tap). The 0%,0% corner is safe: top-left of the
+      # status bar, no tappable app elements there. If the sheet stays up, the
+      # extendedWaitUntil below will fail and we'll know to switch tactics.
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          point: "0%,0%"
+      - waitForAnimationToEnd:
+          timeout: 1500
 
       - extendedWaitUntil:
           visible:
