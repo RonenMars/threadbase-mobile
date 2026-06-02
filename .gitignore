@@ -73,3 +73,4 @@ expo-env.d.ts
 
 # Local status notes that contain private credentials — do not commit
 /docs/app-store-submission-status-*.md
+/docs/kickoff-homepc-validation.md
