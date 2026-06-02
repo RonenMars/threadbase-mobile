@@ -1,5 +1,5 @@
 {
-  "name": "mock-claude",
+  "name": "claude-code-stub",
   "version": "1.0.0",
   "private": true,
   "description": "Scripted stand-in for the `claude` binary inside the public demo container. Spawned by tb-streamer's PTYManager.",

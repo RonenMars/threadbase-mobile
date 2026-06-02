@@ -11,6 +11,18 @@ mkdir -p "${HOME}/.claude/projects" "${HOME}/.threadbase"
 # reviewer has paired and the streamer has rewritten its cache.
 cp -rn /seed/. "${HOME}/.claude/projects/"
 
+# The seed JSONLs reference cwd paths like /home/demo/projects/threadbase-mobile.
+# When a reviewer resumes a session, tb-streamer's PTYManager spawns claude with
+# cwd set to that projectPath — if the directory does not exist, the PTY exits
+# immediately with "chdir(2) failed: No such file or directory" and the session
+# screen shows the error instead of the claude-code-stub banner.
+# Create the referenced project directories so the chdir succeeds. The
+# directories are intentionally empty; claude-code-stub does not read from them.
+mkdir -p \
+    /home/demo/projects/threadbase-mobile \
+    /home/demo/projects/experiments \
+    /home/demo/projects/personal-website
+
 # Public demo accepts any non-empty Bearer key for parity with the prior mock
 # server (documented in the App Review notes). We still write a placeholder
 # api_key line so tb-streamer's loadOrCreateApiKey() does not generate a new

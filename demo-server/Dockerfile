@@ -44,9 +44,9 @@ COPY --from=builder /build /opt/tb-streamer
 
 # Scripted `claude` shim. tb-streamer's PTYManager spawns the binary named
 # `claude` on PATH, so we install ours there.
-COPY mock-claude/ /opt/mock-claude/
-RUN chmod +x /opt/mock-claude/claude.js \
-    && ln -s /opt/mock-claude/claude.js /usr/local/bin/claude
+COPY claude-code-stub/ /opt/claude-code-stub/
+RUN chmod +x /opt/claude-code-stub/claude.js \
+    && ln -s /opt/claude-code-stub/claude.js /usr/local/bin/claude
 
 # Seed corpus baked into the image. entrypoint.sh copies it into HOME at boot
 # (idempotently — Fly volumes persist state across deploys).

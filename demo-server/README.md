@@ -7,8 +7,8 @@ The container behind [`https://threadbase-demo.fly.dev`](https://threadbase-demo
 ```
 Fly machine (1gb, shared-cpu-1x, /data volume)
 ├── /opt/tb-streamer/                     real streamer release (Linux x64 tarball pinned in Dockerfile)
-├── /opt/mock-claude/claude.js            scripted PTY shim — no Anthropic API calls
-├── /usr/local/bin/claude → mock-claude/  the binary tb-streamer spawns per session
+├── /opt/claude-code-stub/claude.js            scripted PTY shim — no Anthropic API calls
+├── /usr/local/bin/claude → claude-code-stub/  the binary tb-streamer spawns per session
 ├── /seed/                                JSONL conversation corpus baked into the image
 └── /data/                                Fly volume, persists across deploys
     ├── .claude/projects/                 seeded from /seed at boot
@@ -21,7 +21,7 @@ The previous hand-rolled mock stubbed enough endpoints to pair, but it diverged 
 
 ### Why a fake `claude` binary?
 
-`tb-streamer`'s `PTYManager` spawns `claude` per session. Running the real Claude CLI would require an Anthropic API key on a public-internet machine — rejected (token spend, credential exposure, no rate limit per reviewer). The shim at `mock-claude/claude.js` prints the welcome banner + `❯` prompt + scripted replies on stdin. Reviewers see a live-looking terminal; typed input gets canned answers. No model is hit.
+`tb-streamer`'s `PTYManager` spawns `claude` per session. Running the real Claude CLI would require an Anthropic API key on a public-internet machine — rejected (token spend, credential exposure, no rate limit per reviewer). The shim at `claude-code-stub/claude.js` prints the welcome banner + `❯` prompt + scripted replies on stdin. Reviewers see a live-looking terminal; typed input gets canned answers. No model is hit.
 
 ## Seed corpus
 
@@ -81,3 +81,37 @@ fly deploy
 | Send arbitrary input to a session | partial — gets scripted replies, not real Claude |
 | Pair multiple servers | yes, but only this one is real |
 | Run real Claude Code | no — fake binary |
+
+## Troubleshooting
+
+### Session screen shows `chdir(2) failed.: No such file or directory`
+
+**When:** A reviewer (or Maestro flow) resumes a seeded conversation, the session screen loads, but the terminal pane shows only one line:
+
+```
+1  chdir(2) failed.: No such file or directory
+```
+
+Status reads `Idle  0s  0 prompts` instead of `● Active`.
+
+**Cause:** Every JSONL in `seed/` carries a `cwd` field — the absolute path of the project the conversation was recorded in (e.g. `/home/demo/projects/threadbase-mobile`). When the streamer's `PTYManager` spawns `claude` for a resumed session, it passes that path as the child process's working directory. If the directory does not exist on the container, the spawn fails immediately, the PTY exits, and the streamer broadcasts the chdir error as the session's terminal output.
+
+The directory must exist; it does not need to contain anything. `claude-code-stub` never reads from it.
+
+**Fix:** Add the new project path to the `mkdir -p` block in `entrypoint.sh`. Every `cwd` value referenced in `seed/*/*.jsonl` needs a matching `mkdir -p` line:
+
+```bash
+mkdir -p \
+    /home/demo/projects/threadbase-mobile \
+    /home/demo/projects/experiments \
+    /home/demo/projects/personal-website
+    # ← add your new path here
+```
+
+Redeploy with `fly deploy --remote-only` and the next session resume will succeed. The directories are persisted on the Fly volume after first boot, so this only matters when a new seed conversation is introduced.
+
+**How to find every cwd in the corpus:**
+
+```sh
+jq -r 'select(.cwd) | .cwd' seed/*/*.jsonl | sort -u
+```

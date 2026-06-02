@@ -34,7 +34,7 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-connect-token-input"
 
-      - inputText: "demo-12345678"
+      - inputText: "tb_public_demo_reviewer_key"
 
       - tapOn:
           id: "onboarding-connect-handshake-cta"
