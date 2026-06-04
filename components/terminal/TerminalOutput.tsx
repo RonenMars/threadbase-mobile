@@ -23,26 +23,6 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1b(\[[0-9;?]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[A-Z\\])/g, '')
 }
 
-/** Detect line type for styling */
-type LineType = 'tool' | 'diff-add' | 'diff-del' | 'diff-header' | 'default'
-
-function classifyLine(line: string): LineType {
-  const trimmed = line.trimStart()
-  if (/^[◻◼●◐◑◒◓🔧🪛📁]\s/.test(trimmed)) return 'tool'
-  if (/^[+]\s/.test(trimmed) && !trimmed.startsWith('+++')) return 'diff-add'
-  if (/^[-]\s/.test(trimmed) && !trimmed.startsWith('---')) return 'diff-del'
-  if (/^diff --git|^@@/.test(trimmed)) return 'diff-header'
-  return 'default'
-}
-
-const LINE_STYLE: Record<LineType, { color: string; bg?: string }> = {
-  'tool': { color: '#79c0ff' },
-  'diff-add': { color: '#7ee787', bg: 'rgba(46, 160, 67, 0.1)' },
-  'diff-del': { color: '#ff7b72', bg: 'rgba(248, 81, 73, 0.1)' },
-  'diff-header': { color: '#d2a8ff' },
-  'default': { color: '#e6edf3' },
-}
-
 interface LineRowProps {
   line: string
   index: number
@@ -57,20 +37,14 @@ const LineGutter = memo(function LineGutter({ index }: { index: number }) {
 
 const LineText = memo(function LineText({ line }: { line: string }) {
   const clean = stripAnsi(line)
-  const type = classifyLine(clean)
-  const style = LINE_STYLE[type]
-  return <Text style={[styles.lineText, { color: style.color }]} selectable>{clean}</Text>
+  return <Text style={styles.lineText} selectable>{clean}</Text>
 })
 
-// Background colour and the diff/tool classification depend on `line` content,
-// not `index`. Compute once and memoise on `line` so position shifts don't
-// force a reclassify; the outer wrapper stays cheap (only `index` changes).
+// Outer wrapper stays cheap (only `index` changes); LineText memoises on `line`.
 const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
-  const type = classifyLine(stripAnsi(line))
-  const bg = LINE_STYLE[type].bg
   return (
     <View
-      style={[styles.lineRow, bg ? { backgroundColor: bg } : undefined]}
+      style={styles.lineRow}
       testID="terminal-line-row"
     >
       <LineGutter index={index} />
