@@ -32,6 +32,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
 
   const title = mode === 'create' ? 'Name this session?' : 'Name this session before you go?'
   const saveLabel = mode === 'create' ? 'Start' : 'Save'
+  const cancelLabel = 'Cancel'
 
   function handleSave() {
     const trimmed = name.trim()
@@ -65,7 +66,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel} activeOpacity={0.75}>
-              <Text style={styles.cancelLabel}>Cancel</Text>
+              <Text style={styles.cancelLabel}>{cancelLabel}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.75}>
               <Text style={styles.saveLabel}>{saveLabel}</Text>

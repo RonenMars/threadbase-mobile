@@ -80,6 +80,7 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
     >
       <View style={styles.pinned}>
         <ConversationListItem
+          testID={`preview-row-${target.kind}-${target.id ?? 'unknown'}`}
           title={target.title ?? undefined}
           path={target.path ?? undefined}
           timestamp={target.timestamp}

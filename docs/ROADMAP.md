@@ -972,6 +972,50 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ---
 
+### Feature 31 — Reuse the Fly demo server as a stable backend for Maestro and visual regression tests
+
+**Filed:** 2026-06-01 (during App Store submission — see `demo-server/` and `https://threadbase-demo.fly.dev`).
+
+**Goal:** Promote the Fly-hosted demo server (currently spun up so Apple App Review reviewers can pair against a public Threadbase streamer) into a first-class CI/test fixture. Today `e2e/mock-server.js` runs only on localhost; the Fly deploy is a copy of it with the same fixtures. The duplication invites drift, and the Fly URL is a real piece of infra we already pay nothing for — we should put it to work.
+
+**Direction:**
+
+- **Sub-item A — Single source of truth for mock fixtures.** Decide between (a) keeping `demo-server/` as the deployable copy and writing a sync check (CI fails if `demo-server/server.js` or `demo-server/fixtures/` drift from `e2e/`), or (b) making `demo-server/` import from `e2e/` directly via relative path so there is literally one copy. Option (b) is simpler if Fly's Docker context can reach the parent `e2e/` directory (it can, but requires moving the Dockerfile up or using `--file`). Option (a) keeps the deploy directory self-contained.
+
+- **Sub-item B — Maestro flows runnable against either backend.** Today `setup.yaml` hardcodes `http://localhost:7071`; `setup-demo.yaml` hardcodes `https://threadbase-demo.fly.dev`. Add a third variant that reads the URL from a `MAESTRO_HOST_URL` env var (Maestro supports parameterized flows). Then a single `setup-paramd.yaml` works for both local CI runs (against `mock-server.js`) and remote/device runs (against Fly). Delete the dupes once the parameterized version is proven.
+
+- **Sub-item C — Visual regression test harness.** Now that we have a deterministic backend producing the same fixtures every time, we can checksum or diff screenshots between builds. Tooling options: `playwright-test` against the simulator via Maestro hooks; `reg-cli` / `pixelmatch` for image diffs; or roll a tiny `vitest`-based diff suite. Decision point: where do baseline images live (the repo? Git LFS? a separate bucket?), and what is the diff threshold before we fail CI.
+
+- **Sub-item D — Fly cost + reliability check.** Right now the demo server is on the free tier with `auto_stop_machines = "stop"` and `min_machines_running = 0`. That's fine for App Review (one or two reviewers paired against it across the review window). It would NOT be fine if Maestro CI hits it on every PR — cold starts add 5-10s per flow, and there is a per-minute machine-hour cap. Either bump `min_machines_running = 1` (and pay ~$2/mo), or accept the cold-start cost as part of test latency.
+
+**Open questions:**
+
+- Is anyone else likely to pair to `threadbase-demo.fly.dev` outside CI / App Review? If so, the load model changes and we may want auth (a rotating shared secret) rather than "accept any non-empty token."
+- For visual regression, do we care about pixel-perfect diffs (will catch font / kerning regressions but flake on simulator GPU non-determinism), or structural diffs only (less flaky but misses subtle layout shifts)?
+- Does fly.io's free-tier policy still cover this VM size in 2026? Worth confirming before betting CI on it.
+
+**Files likely involved:**
+
+- `demo-server/` — Dockerfile + fly.toml + server.js (already exists)
+- `e2e/setup.yaml`, `e2e/setup-demo.yaml` — collapse into one parameterized version
+- `e2e/shots-*.yaml` — refactor to use the parameterized setup
+- `.github/workflows/` — new visual regression job
+- A new `e2e/baselines/` (or LFS-backed equivalent) for reference images
+- `package.json` — possibly new `test:visual` script
+
+**Acceptance criteria:**
+
+- A single mock source-of-truth (no copies between `e2e/` and `demo-server/`).
+- One `setup-*.yaml` Maestro flow that works against both local and remote backends.
+- A documented baseline-screenshot workflow (how to record, how to update, how CI runs the diff).
+- A cost/reliability note in this repo explaining what Fly does (and does not) cover for CI.
+
+**Scope:** ~1-2 days for sub-items A and B (the deduplication + parameterization). Sub-item C (visual regression) is its own ~2-3 day project depending on tooling choice. Sub-item D is a 30-minute decision once we know the test cadence.
+
+**Priority:** Medium. Not gating any release, but the longer the two copies diverge the more painful the eventual merge. Worth picking up before we add more Maestro flows that depend on fixtures.
+
+---
+
 ## Shipped
 
 Historical implementation plans archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/). Each was the source of truth for that feature's build sequence at the time it shipped — useful when revisiting the area, but not active work.

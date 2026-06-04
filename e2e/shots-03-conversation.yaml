@@ -1,0 +1,17 @@
+# App Store screenshot #3: project drill-down with conversations list.
+# Taps a project tree row to drill into per-project history.
+# Output: e2e/_artifacts/screenshots/shots-03-conversation.png
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup-demo.yaml
+
+- tapOn:
+    id: "tree-row-/home/demo/projects/threadbase-mobile"
+
+- extendedWaitUntil:
+    visible:
+      id: "drill-cwd-/home/demo/projects/threadbase-mobile"
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/screenshots/shots-03-conversation
