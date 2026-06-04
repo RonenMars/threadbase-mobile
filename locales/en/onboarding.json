@@ -26,6 +26,15 @@
     "back": "Back",
     "skip": "Skip"
   },
+  "serverName": {
+    "eyebrow": "> 02 / NAME",
+    "headline": "Name your server.",
+    "body": "Optional. Pick a label you'll recognise in the Hub — like \"Work Mac\" or \"Home Server\". You can change it later in Settings.",
+    "fieldLabel": "Server name",
+    "placeholder": "e.g. Work Mac",
+    "cta": "Continue",
+    "skip": "Skip for now"
+  },
   "connect": {
     "eyebrow": "> 02 / PAIR",
     "headline": "Connect a runtime.",

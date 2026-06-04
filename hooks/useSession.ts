@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
+import { serverDisplayName } from '@/components/sessions/shared/serverDisplayName'
 import type {
   MultiSession,
   Session,
@@ -148,12 +149,17 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       let runningLoadedSoFar = 0
 
       for (const serverId of activeServerIds) {
-        const label = serversRef.current[serverId]?.label
+        const server = serversRef.current[serverId]
+        // Bug 28: when the user hasn't named the server (paired pre-Feature-23
+        // or tapped Skip), fall back to host:port so the progress modal still
+        // says *which* server it's fetching.
+        const displayLabel = serverDisplayName(server) || null
+        const label = server?.label
         setProgress((p) => ({
           loaded: runningLoadedSoFar,
           total: p.total,
           currentServerId: serverId,
-          currentServerLabel: label ?? null,
+          currentServerLabel: displayLabel,
         }))
 
         // Snapshot the running counters at the moment we kick off this
@@ -174,7 +180,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
               loaded: globalLoaded,
               total: globalTotal,
               currentServerId: serverId,
-              currentServerLabel: label ?? null,
+              currentServerLabel: displayLabel,
             })
           },
           signal,

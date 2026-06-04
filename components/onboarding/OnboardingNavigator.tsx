@@ -7,12 +7,13 @@ import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
 import { DoneStep } from './steps/DoneStep'
 import { NotificationsStep } from './steps/NotificationsStep'
+import { ServerNameStep } from './steps/ServerNameStep'
 import { ThemeStep } from './steps/ThemeStep'
 import { TourStep } from './steps/TourStep'
 import { ValuePropStep } from './steps/ValuePropStep'
 import { WelcomeStep } from './steps/WelcomeStep'
 
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 8
 export const ONBOARDED_KEY = 'threadbase_onboarded'
 const PAIRED_TOKEN_HASH_KEY = 'threadbase_paired_token_hash'
 
@@ -54,6 +55,10 @@ export function OnboardingNavigator({ onDone }: Props) {
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<1 | -1 | 0>(0)
   const [paired, setPaired] = useState<PairResult | null>(null)
+  // Feature 23: optional server label captured before the QR scan. Carried
+  // into `addServer` when the user completes onboarding so the label persists
+  // to the same store path as the post-pair Settings rename writes to.
+  const [pendingServerName, setPendingServerName] = useState('')
   const addServer = useServersStore((s) => s.addServer)
 
   const goto = useCallback((next: number) => {
@@ -91,7 +96,8 @@ export function OnboardingNavigator({ onDone }: Props) {
   const handleEnter = useCallback(async () => {
     try {
       if (paired) {
-        await addServer(paired.url, paired.apiKey)
+        const label = pendingServerName.trim() || undefined
+        await addServer(paired.url, paired.apiKey, label)
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,
           hashToken(paired.apiKey),
@@ -101,7 +107,12 @@ export function OnboardingNavigator({ onDone }: Props) {
     } finally {
       onDone()
     }
-  }, [addServer, onDone, paired])
+  }, [addServer, onDone, paired, pendingServerName])
+
+  const handleServerNameSubmit = useCallback((label: string) => {
+    setPendingServerName(label)
+    onNext()
+  }, [onNext])
 
   return (
     <OnboardingShell
@@ -116,11 +127,17 @@ export function OnboardingNavigator({ onDone }: Props) {
       {index === 1 && <ThemeStep onNext={onNext} />}
       {index === 2 && <ValuePropStep onNext={onNext} />}
       {index === 3 && (
+        <ServerNameStep
+          value={pendingServerName}
+          onSubmit={handleServerNameSubmit}
+        />
+      )}
+      {index === 4 && (
         <ConnectStep onPaired={handlePaired} onAdvance={onNext} />
       )}
-      {index === 4 && <NotificationsStep onNext={onNext} />}
-      {index === 5 && <TourStep onDone={onNext} />}
-      {index === 6 && (
+      {index === 5 && <NotificationsStep onNext={onNext} />}
+      {index === 6 && <TourStep onDone={onNext} />}
+      {index === 7 && (
         <DoneStep
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}

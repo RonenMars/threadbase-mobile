@@ -51,6 +51,9 @@
     "restartOnboarding": "Restart onboarding",
     "helpSupport": "Help & Support"
   },
+  "servers": {
+    "scanQr": "Scan QR to add server"
+  },
   "sessionNaming": {
     "askOnCreateNote": "Show a prompt to name the session when you start a new one.",
     "askOnExitNote": "Suggest naming the session when you leave it, if it hasn't been named yet. Suppressed when the creation prompt is disabled.",
