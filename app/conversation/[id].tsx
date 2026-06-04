@@ -195,12 +195,17 @@ export default function ConversationDetailScreen() {
   // actually drags. scrollToEnd targets the current bottom and the bottom
   // keeps moving as lazy rows / tool cards / images finish laying out. After
   // 150ms of no size changes we treat the initial scroll as "settled" and
-  // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts — but we keep
-  // auto-anchoring to the bottom for any late layout deltas, so the list
-  // doesn't sit parked above the true end.
+  // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts.
+  //
+  // Bug 17: once the initial scroll has settled, stop firing per-chunk
+  // scrollToEnd calls. FlashList's `maintainVisibleContentPosition`
+  // (`autoscrollToBottomThreshold: 0.2`) anchors the bottom natively as
+  // content grows during streaming or pagination, so JS-side scroll calls
+  // here just stack and produce visible jumps.
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     contentHeightRef.current = h
     if (userHasScrolled.current) return
+    if (hasInitialScrolled.current) return
     scrollToBottom(false)
     if (initialScrollSettleRef.current) clearTimeout(initialScrollSettleRef.current)
     initialScrollSettleRef.current = setTimeout(() => {
