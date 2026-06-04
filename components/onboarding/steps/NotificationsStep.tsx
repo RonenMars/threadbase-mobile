@@ -5,6 +5,8 @@ import * as Notifications from 'expo-notifications'
 import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
+import { registerPushTokenForAll } from '@/services/push'
+import { useServersStore } from '@/stores/servers'
 
 interface Props {
   onNext: () => void
@@ -47,6 +49,12 @@ export function NotificationsStep({ onNext }: Props) {
     try {
       const { granted } = await Notifications.requestPermissionsAsync()
       setEnabled(granted)
+      if (granted) {
+        const ids = useServersStore.getState().activeServerIds
+        if (ids.length > 0) {
+          void registerPushTokenForAll(ids).catch(() => {})
+        }
+      }
     } catch {
       // If the OS prompt is unavailable (e.g. simulator quirks), still flip
       // the visual state so the user can advance.

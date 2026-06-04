@@ -20,9 +20,14 @@ export async function requestPermissions(): Promise<boolean> {
   return result.granted
 }
 
+async function hasPermission(): Promise<boolean> {
+  const { granted } = await Notifications.getPermissionsAsync()
+  return granted
+}
+
 export async function registerPushToken(serverId: string): Promise<void> {
-  const granted = await requestPermissions()
-  if (!granted) return
+  // Never prompt from the registration path — onboarding owns the prompt.
+  if (!(await hasPermission())) return
 
   // Only works on physical devices; silently skip on simulators
   let token: string
