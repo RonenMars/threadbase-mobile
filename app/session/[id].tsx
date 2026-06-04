@@ -451,8 +451,10 @@ export default function SessionDetailScreen() {
   // the keyboard. Collapse it to 0 when the keyboard is visible.
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true))
-    const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false))
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+    const showSub = Keyboard.addListener(showEvt, () => setKeyboardVisible(true))
+    const hideSub = Keyboard.addListener(hideEvt, () => setKeyboardVisible(false))
     return () => {
       showSub.remove()
       hideSub.remove()
