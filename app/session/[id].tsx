@@ -768,7 +768,7 @@ export default function SessionDetailScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <SafeAreaView style={styles.flex} edges={['top']} testID="session-detail-screen">
         <ScreenHeader title={sessionName} right={headerRight} onBack={handleBack} />
