@@ -26,6 +26,7 @@
     },
     "android": {
       "package": "com.ronenmars.threadbase",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"
@@ -64,7 +65,8 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0d1117"
+          "backgroundColor": "#0d1117",
+          "image": "./assets/adaptive-icon.png"
         }
       ],
       "expo-status-bar",
@@ -75,7 +77,8 @@
             "deploymentTarget": "16.4"
           }
         }
-      ]
+      ],
+      "./plugins/withAndroidReleaseSigning"
     ],
     "experiments": {
       "typedRoutes": true,
