@@ -39,6 +39,7 @@ import { dark, font, spacing } from '@/constants/theme'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, MessageContent } from '@/types/api'
+import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
@@ -297,6 +298,7 @@ export default function ConversationDetailScreen() {
       if (result.projectId) params.set('projectId', result.projectId)
       if (result.projectPath) params.set('projectPath', result.projectPath)
       params.set('resumedFromConversationId', result.conversationId)
+      markNavigatedToSession(result.sessionId)
       router.push(`/session/${result.sessionId}?${params.toString()}`)
     },
   })

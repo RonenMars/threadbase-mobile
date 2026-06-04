@@ -31,6 +31,7 @@ import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
+import { shouldSkipAutoNav } from '@/lib/sessionNavGuard'
 
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
@@ -120,6 +121,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
+      if (shouldSkipAutoNav(msg.session.id)) return
       const serverParam = `?server=${msg.serverId}`
       router.push(`/session/${msg.session.id}${serverParam}`)
     })
