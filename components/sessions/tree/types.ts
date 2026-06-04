@@ -34,6 +34,9 @@ export type DrillItem = {
   /** Raw timestamp — the row formats it via formatListTime. */
   timestamp: string | number | null
   messageCount?: number
+  lastOutput?: string | null
+  firstMessage?: { text: string } | null
+  lastMessage?: { text: string } | null
   status?: string
   serverId?: string
   serverLabel?: string
