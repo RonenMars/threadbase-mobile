@@ -809,7 +809,9 @@ export default function SessionDetailScreen() {
               <TerminalOutput
                 lines={lines}
                 isStreaming={isStreaming}
-                onSendInput={session?.status === 'waiting_input' ? sendInput.mutate : undefined}
+                onSendInput={session?.status === 'waiting_input'
+                  ? (text) => sendInput.mutate(text, { onError: (err) => Alert.alert('Send failed', err instanceof Error ? err.message : String(err)) })
+                  : undefined}
               />
               {isLoadingHistory ? (
                 <View style={styles.historyLoader}>

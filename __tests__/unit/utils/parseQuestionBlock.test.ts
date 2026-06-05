@@ -98,4 +98,29 @@ describe('parseQuestionBlock', () => {
     const lines = ['? A question?', 'no options follow']
     expect(parseQuestionBlock(lines)).toBeNull()
   })
+
+  it('parses question and options wrapped in ANSI color codes', () => {
+    const ESC = '\x1b'
+    const lines = [
+      `${ESC}[32m? Do something?${ESC}[0m`,
+      `${ESC}[36m❯ yes please${ESC}[0m`,
+      `  no thanks`,
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result).not.toBeNull()
+    expect(result!.questionText).toBe('Do something?')
+    expect(result!.options).toEqual(['yes please', 'no thanks'])
+    expect(result!.selectedIndex).toBe(0)
+  })
+
+  it('stops at 4-space-indented lines (tool output), not treating them as options', () => {
+    const lines = [
+      '? Do something?',
+      '❯ Option A',
+      '  Option B',
+      '    deeper indented tool output',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result!.options).toEqual(['Option A', 'Option B'])
+  })
 })
