@@ -44,13 +44,24 @@ trap 'rm -f "$TMP_FILE"' EXIT
 OP_REF="op://${OP_PLAY_VAULT}/${OP_PLAY_ITEM}/${OP_PLAY_FIELD}"
 echo "fetching ${OP_REF}..." >&2
 
-if ! op read "$OP_REF" > "$TMP_FILE" 2>/dev/null; then
+RAW_FILE="$(mktemp)"
+trap 'rm -f "$TMP_FILE" "$RAW_FILE"' EXIT
+
+if ! op read "$OP_REF" > "$RAW_FILE" 2>/dev/null; then
   echo "error: failed to read $OP_REF — check vault/item names and that the field exists" >&2
   exit 1
 fi
 
-if ! jq -e 'has("type") and has("project_id") and has("private_key")' "$TMP_FILE" >/dev/null 2>&1; then
-  echo "error: fetched value does not look like a Google service-account JSON (missing required fields)" >&2
+# The 1Password field stores the SA JSON base64-encoded so newlines in the
+# private_key are preserved across copy-paste. Decode to TMP_FILE; if decode
+# fails, fall back to treating the field as raw JSON.
+if base64 -d -i "$RAW_FILE" > "$TMP_FILE" 2>/dev/null && \
+   jq -e 'has("type") and has("project_id") and has("private_key")' "$TMP_FILE" >/dev/null 2>&1; then
+  : # decoded JSON validated
+elif jq -e 'has("type") and has("project_id") and has("private_key")' "$RAW_FILE" >/dev/null 2>&1; then
+  cp "$RAW_FILE" "$TMP_FILE"
+else
+  echo "error: fetched value is neither valid base64-encoded nor raw Google service-account JSON" >&2
   exit 1
 fi
 

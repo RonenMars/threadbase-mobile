@@ -21,11 +21,13 @@ The repo ships **`.mcp.example.json`** as a template. Your real **`.mcp.json`** 
 
 1. Export the 1Password coordinates in your shell profile (`~/.zshrc` or `~/.bash_profile`):
    ```sh
-   export OP_PLAY_VAULT="Engineering"        # your vault name
-   export OP_PLAY_ITEM="Play Console SA"     # your item name
+   export OP_PLAY_VAULT="MyDevSecrets"
+   export OP_PLAY_ITEM="GOOGLE_APPLICATION_CREDENTIALS"
    # optional, defaults to "credential"
    # export OP_PLAY_FIELD="credential"
    ```
+
+   The fetch script accepts either raw service-account JSON or a base64-encoded version of it — base64 is useful when the 1Password field strips newlines.
 2. Reload your shell and run the fetch script:
    ```sh
    ./scripts/fetch-play-credentials.sh
