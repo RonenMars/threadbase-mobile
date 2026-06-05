@@ -53,6 +53,7 @@ Gemfile.lock
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+.worktrees/
 
 # Local planning notes and brainstorm working state — not part of the public surface
 .claude/plans/
