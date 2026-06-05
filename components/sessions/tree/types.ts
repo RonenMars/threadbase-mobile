@@ -37,6 +37,7 @@ export type DrillItem = {
   lastOutput?: string | null
   firstMessage?: { text: string } | null
   lastMessage?: { text: string } | null
+  branch?: string | null
   status?: string
   serverId?: string
   serverLabel?: string

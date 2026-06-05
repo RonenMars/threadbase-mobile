@@ -39,6 +39,7 @@ export function DrillRow({ item }: Props) {
       firstMessage={item.firstMessage}
       lastMessage={item.lastMessage}
       lastOutput={item.lastOutput}
+      branch={item.branch}
       live={isLive}
       serverLabel={item.serverLabel}
       serverColor={serverColor}
@@ -46,7 +47,6 @@ export function DrillRow({ item }: Props) {
       density="compact"
       leading="dot"
       previewMode={previewMode}
-      showBranch={false}
       onPress={item.onPress}
     />
   )
