@@ -1,4 +1,5 @@
 {
+  "_comment": "Template. Copy to .mcp.json (gitignored) and replace the GOOGLE_APPLICATION_CREDENTIALS placeholder with the absolute path printed by scripts/fetch-play-credentials.sh. See docs/google-play-mcp-setup.md.",
   "mcpServers": {
     "google-play-mcp": {
       "type": "stdio",
@@ -6,7 +7,9 @@
       "args": [
         "google-play-mcp"
       ],
-      "env": {}
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "<absolute-path-to-play-console-sa.json>"
+      }
     },
     "gradle": {
       "type": "stdio",

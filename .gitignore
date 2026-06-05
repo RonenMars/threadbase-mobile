@@ -7,6 +7,9 @@ npm-debug.*
 # Local scratchpad — brainstorm + restored stashes, never committed
 .scratch/
 
+# Real MCP config with developer-specific credential paths — see .mcp.example.json
+.mcp.json
+
 # Local ship build logs and audit artifacts — large + ephemeral
 logs/
 

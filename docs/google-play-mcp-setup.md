@@ -1,36 +1,67 @@
 # Google Play MCP — per-developer setup
 
-The `google-play-mcp` server in `.mcp.json` does NOT carry credentials. Each developer wires up their own Play Console service-account on their machine.
+The repo ships **`.mcp.example.json`** as a template. Your real **`.mcp.json`** is gitignored and contains the absolute path to your local copy of the Play Console service-account JSON. The credential itself lives in 1Password and is fetched on demand via `scripts/fetch-play-credentials.sh`.
 
 ## One-time setup
 
-1. Create a Play Console service account (or get one from the team) with the **minimum** roles needed — read-only release manager is sufficient for status checks; full release manager only if you ship from this machine.
-2. Download the JSON key and store it **outside** the repo, e.g.:
-   ```
-   ~/.config/gcloud/play-console-sa.json
-   chmod 600 ~/.config/gcloud/play-console-sa.json
-   ```
-3. Export the absolute path in your shell profile (`~/.zshrc` or `~/.bash_profile`):
+### Prerequisites
+
+- 1Password CLI installed and signed in:
+  ```sh
+  brew install --cask 1password-cli
+  op signin
+  ```
+- `jq` installed (used by the fetch script to validate the JSON):
+  ```sh
+  brew install jq
+  ```
+- The team's Play Console service-account JSON stored in your 1Password vault as a single-field item. Field name defaults to `credential`.
+
+### Steps
+
+1. Export the 1Password coordinates in your shell profile (`~/.zshrc` or `~/.bash_profile`):
    ```sh
-   export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/play-console-sa.json"
+   export OP_PLAY_VAULT="Engineering"        # your vault name
+   export OP_PLAY_ITEM="Play Console SA"     # your item name
+   # optional, defaults to "credential"
+   # export OP_PLAY_FIELD="credential"
    ```
-   Use the absolute `$HOME` form — Google's auth libraries do NOT expand `~` from `env` strings.
-4. Reload your shell, then restart Claude Code so the MCP child inherits the variable.
-
-## Why not commit the env into `.mcp.json`?
-
-- A repo-committed path means anyone with write access to the repo can silently redirect the MCP loader to read an arbitrary file on a teammate's machine.
-- Different machines have different home layouts; `~` is not expanded by Google's auth client libraries when the value comes in via `env`.
-- Service accounts should be per-developer / per-environment, not implicitly shared via the manifest.
+2. Reload your shell and run the fetch script:
+   ```sh
+   ./scripts/fetch-play-credentials.sh
+   ```
+   It will print the absolute path it wrote, e.g. `/Users/you/.config/threadbase/play-console-sa.json` (mode 600).
+3. Copy the template to your real config and paste that path in:
+   ```sh
+   cp .mcp.example.json .mcp.json
+   # edit .mcp.json — replace <absolute-path-to-play-console-sa.json>
+   # with the path the script printed
+   ```
+4. Restart Claude Code so the MCP child picks up the new config.
 
 ## Rotation
 
-If the key file is ever exposed (paste, screenshot, accidental commit), rotate via Play Console → Setup → API access → revoke the old key and download a new one. Update the local file; no repo change needed.
+When the key in 1Password rotates, re-run the fetch script — it overwrites the cached file in place. No edit to `.mcp.json` is needed because the path doesn't change.
+
+```sh
+./scripts/fetch-play-credentials.sh
+```
+
+If the key has been exposed (paste, screenshot, accidental commit), rotate via Play Console → Setup → API access → revoke the old key and upload the new one to the same 1Password item.
+
+## Why this design
+
+- **Credential never lives in git** — `.mcp.json` is gitignored; only `.mcp.example.json` is tracked.
+- **No repo write means no credential-path hijack** — a malicious PR cannot redirect your MCP loader to read an arbitrary file, because the path is in your local `.mcp.json`, not the committed template.
+- **1Password is the single source of truth** — rotations propagate to every developer via one `op` fetch, no Slack-and-DM flow.
+- **`~` is not expanded** by Google's auth libraries when the path comes through MCP `env`. The fetch script always writes to an absolute path under `$HOME/.config/threadbase/` so the value pasted into `.mcp.json` Just Works.
 
 ## Pinning the MCP server
 
-`.mcp.json` runs `uvx google-play-mcp` unpinned. To pin to a known-good version, replace the args with:
+`.mcp.example.json` runs `uvx google-play-mcp` unpinned. To pin to a known-good version, replace the args with:
+
 ```json
 "args": ["--from", "google-play-mcp==<X.Y.Z>", "google-play-mcp"]
 ```
+
 This is a per-team decision; pin once the upstream package settles on a stable release.
