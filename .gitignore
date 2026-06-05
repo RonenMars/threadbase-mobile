@@ -4,6 +4,9 @@ dist/
 build/
 npm-debug.*
 
+# Local scratchpad — brainstorm + restored stashes, never committed
+.scratch/
+
 # Local ship build logs and audit artifacts — large + ephemeral
 logs/
 
