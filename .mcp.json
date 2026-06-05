@@ -6,7 +6,9 @@
       "args": [
         "google-play-mcp"
       ],
-      "env": {}
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "~/.config/gcloud/play-console-sa.json"
+      }
     },
     "gradle": {
       "type": "stdio",
