@@ -806,7 +806,11 @@ export default function SessionDetailScreen() {
             </View>
           ) : (
             <>
-              <TerminalOutput lines={lines} isStreaming={isStreaming} />
+              <TerminalOutput
+                lines={lines}
+                isStreaming={isStreaming}
+                onSendInput={session?.status === 'waiting_input' ? sendInput.mutate : undefined}
+              />
               {isLoadingHistory ? (
                 <View style={styles.historyLoader}>
                   <ActivityIndicator color={dark.text.secondary} />
