@@ -20,7 +20,7 @@ set -euo pipefail
 
 : "${OP_PLAY_VAULT:?OP_PLAY_VAULT must be set (1Password vault name)}"
 : "${OP_PLAY_ITEM:?OP_PLAY_ITEM must be set (1Password item name)}"
-OP_PLAY_FIELD="${OP_PLAY_FIELD:-credential}"
+OP_PLAY_FIELD="${OP_PLAY_FIELD:-password}"
 
 if ! command -v op >/dev/null 2>&1; then
   echo "error: 1Password CLI (op) not found — install with 'brew install --cask 1password-cli'" >&2
@@ -28,7 +28,7 @@ if ! command -v op >/dev/null 2>&1; then
 fi
 
 if ! op account list >/dev/null 2>&1; then
-  echo "error: 1Password CLI not signed in — run 'op signin' first" >&2
+  echo "error: 1Password CLI not signed in — run: eval \$(op signin)" >&2
   exit 1
 fi
 
