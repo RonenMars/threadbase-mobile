@@ -1,16 +1,17 @@
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { colors, fonts } from '../theme'
 
 interface Props {
   title?: string
   children: React.ReactNode
+  style?: ViewStyle
 }
 
 // Reusable terminal-styled card: traffic-light header + monospace body.
-export function TerminalCard({ title = '~/threadbase pair', children }: Props) {
+export function TerminalCard({ title = '~/threadbase pair', children, style }: Props) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, style]}>
       <View style={styles.header}>
         <View style={[styles.dot, { backgroundColor: colors.red400 }]} />
         <View style={[styles.dot, { backgroundColor: colors.amber400 }]} />

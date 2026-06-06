@@ -10,12 +10,14 @@ import {
   View,
 } from 'react-native'
 import Animated, { FadeIn } from 'react-native-reanimated'
+import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
+import { TokenTooltip } from '../components/TokenTooltip'
 import { colors, fonts } from '../theme'
 
 type Mode = 'choose' | 'manual' | 'qr-explain'
@@ -31,6 +33,57 @@ function colorForKind(k: PairLogKind): string {
   if (k === 'err') return colors.red400
   return colors.fg3
 }
+
+function CopyableCommand({ command }: { command: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    void Clipboard.setStringAsync(command)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <TouchableOpacity
+      testID="copy-command-btn"
+      onPress={handleCopy}
+      style={copyStyles.row}
+      activeOpacity={0.7}
+    >
+      <Text style={copyStyles.command}>$ {command}</Text>
+      {/* eslint-disable-next-line i18next/no-literal-string */}
+      <Text style={copyStyles.badge}>{copied ? '✓ copied' : 'copy'}</Text>
+    </TouchableOpacity>
+  )
+}
+
+const copyStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.ink3,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: colors.ink5,
+  },
+  command: {
+    color: colors.fg1,
+    fontFamily: fonts.mono,
+    fontSize: 12.5,
+    fontWeight: '500',
+  },
+  badge: {
+    color: colors.blue400,
+    fontFamily: fonts.mono,
+    fontSize: 10.5,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+})
 
 export function ConnectStep({ onPaired, onAdvance }: Props) {
   const { t } = useTranslation('onboarding')
@@ -69,14 +122,6 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       },
     })
   }
-
-  const ctaLabel = phase === 'idle'
-    ? 'Open handshake'
-    : phase === 'ok'
-      ? 'Connected'
-      : phase === 'err'
-        ? 'Retry'
-        : '…handshake'
 
   if (mode === 'choose') {
     return (
@@ -168,9 +213,24 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={styles.linkText}>Scan a QR instead →</Text>
       </TouchableOpacity>
 
+      {/* Section 1: Desktop command */}
       <TerminalCard>
         {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.commandLabel}>$ tb pair --server</Text>
+        <Text style={styles.sectionLabel}>On your Mac</Text>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <Text style={styles.sectionHint}>Open Terminal and run:</Text>
+        <CopyableCommand command="tb token --new" />
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <Text style={[styles.sectionHint, { marginTop: 6 }]}>It prints a URL and a token — paste both below.</Text>
+      </TerminalCard>
+
+      {/* Section 2: Paste inputs */}
+      <TerminalCard style={{ marginTop: 10 }}>
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <Text style={styles.sectionLabel}>Paste from terminal</Text>
+
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <Text style={styles.fieldLabel}>Server URL</Text>
         <View style={styles.inputRow}>
           <Text style={styles.prompt}>›</Text>
           <TextInput
@@ -183,13 +243,16 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             keyboardType="url"
             style={styles.input}
             editable={!busy}
-            placeholder="https://threadbase.local:7331"
+            placeholder="https://your-mac-ip:7331"
             placeholderTextColor={colors.fg4}
           />
         </View>
 
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={[styles.commandLabel, { marginTop: 10 }]}>$ tb pair --token</Text>
+        <View style={[styles.fieldLabelRow, { marginTop: 10 }]}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <Text style={styles.fieldLabel}>Token</Text>
+          <TokenTooltip />
+        </View>
         <View style={styles.inputRow}>
           <Text style={styles.prompt}>›</Text>
           <TextInput
@@ -200,7 +263,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
             secureTextEntry
-            placeholder="paste from desktop"
+            placeholder="paste from terminal"
             placeholderTextColor={colors.fg4}
             style={styles.input}
             editable={!busy}
@@ -235,27 +298,6 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         )}
       </TerminalCard>
 
-      <View style={styles.footnote}>
-        <Text style={[styles.footnoteText, { color: colors.fg3 }]}>{'//'}</Text>
-        <Text style={styles.footnoteText}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          {' '}On your desktop, run{' '}
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <Text style={{ color: colors.fg2 }}>tb set-key [your-key]</Text>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          {' '}or scan the QR from{' '}
-          {/* eslint-disable i18next/no-literal-string */}
-          <Text
-            style={{ color: colors.fg2, textDecorationLine: 'underline' }}
-            onPress={() => Linking.openURL('https://github.com/RonenMars/threadbase-streamer#mobile-pairing')}
-          >
-            tb pair
-          </Text>
-          {/* eslint-enable i18next/no-literal-string */}
-          .
-        </Text>
-      </View>
-
       <View style={styles.flex} />
 
       <PrimaryButton
@@ -263,7 +305,14 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         onPress={handleConnect}
         disabled={!valid || busy}
       >
-        {ctaLabel}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {phase === 'idle'
+          ? 'Connect'
+          : phase === 'ok'
+            ? 'Connected'
+            : phase === 'err'
+              ? 'Retry'
+              : '…connecting'}
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </KeyboardAvoidingView>
@@ -290,12 +339,32 @@ const styles = StyleSheet.create({
     letterSpacing: -0.55,
     marginBottom: 14,
   },
-  commandLabel: {
+  sectionLabel: {
     color: colors.fg3,
     fontFamily: fonts.mono,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  sectionHint: {
+    color: colors.fg3,
+    fontFamily: fonts.sans,
     fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 18,
+    lineHeight: 17,
+  },
+  fieldLabel: {
+    color: colors.fg2,
+    fontFamily: fonts.mono,
+    fontSize: 11.5,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   inputRow: {
     flexDirection: 'row',
@@ -383,17 +452,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 12.5,
     fontWeight: '500',
-  },
-  footnote: {
-    flexDirection: 'row',
-    marginTop: 12,
-    gap: 6,
-  },
-  footnoteText: {
-    fontFamily: fonts.mono,
-    fontSize: 11.5,
-    lineHeight: 17,
-    color: colors.fg4,
   },
   flex: { flex: 1 },
 })
