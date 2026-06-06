@@ -186,3 +186,13 @@ describe('Onboarding – error handling', () => {
     expect(await findByText(/Could not reach the server/)).toBeTruthy()
   })
 })
+
+// ── First-launch flow ─────────────────────────────────────────────────────────
+
+describe('Onboarding – first-launch flow', () => {
+  it('TOTAL_STEPS is 4', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { TOTAL_STEPS } = require('@/components/onboarding/OnboardingNavigator')
+    expect(TOTAL_STEPS).toBe(4)
+  })
+})
