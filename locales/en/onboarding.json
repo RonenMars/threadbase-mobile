@@ -41,8 +41,8 @@
     "modeBlurb": "Pick how you want to hand the server its keys.",
     "scanQr": "Scan QR",
     "scanQrBody": "Run tb pair on your server to print a QR. Fastest, no typing.",
-    "pasteCredentials": "Paste credentials",
-    "pasteCredentialsBody": "Enter a server URL and API key by hand.",
+    "pasteCredentials": "Type / paste manually",
+    "pasteCredentialsBody": "Use a URL and token from tb token --new.",
     "qrEyebrow": "> 02 / PAIR · QR",
     "qrHeadline": "Scan to pair.",
     "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
@@ -74,6 +74,7 @@
   },
   "notifications": {
     "allowTitle": "Push notifications",
+    "body": "We'll ping you when a session finishes, hits an error, or needs a quick decision — so you don't have to keep the app open.",
     "continue": "Continue"
   },
   "theme": {

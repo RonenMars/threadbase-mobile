@@ -75,6 +75,7 @@ export function NotificationsStep({ onNext }: Props) {
       <Text style={styles.subhead}>
         Push fires on plan-ready, tool-confirms, and run failures. That&apos;s it.
       </Text>
+      <Text style={styles.body}>{t('notifications.body')}</Text>
 
       {/* Mock notification preview */}
       <View style={styles.preview}>
@@ -185,6 +186,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 13.5,
     lineHeight: 20,
+    marginBottom: 6,
+  },
+  body: {
+    color: colors.fg3,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
     marginBottom: 18,
   },
   preview: {
