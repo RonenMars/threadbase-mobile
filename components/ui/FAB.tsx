@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react'
-import { TouchableOpacity, StyleSheet, Animated } from 'react-native'
+import React, { forwardRef, useEffect, useState } from 'react'
+import { TouchableOpacity, StyleSheet, Animated, type View } from 'react-native'
 import { Plus } from 'phosphor-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface Props {
   onPress: () => void
+  onLayout?: () => void
 }
 
-export function FAB({ onPress }: Props) {
+export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, ref) {
   const insets = useSafeAreaInsets()
   const [glowAnim] = useState(() => new Animated.Value(0.45))
 
@@ -30,7 +31,9 @@ export function FAB({ onPress }: Props) {
 
   return (
     <TouchableOpacity
+      ref={ref}
       onPress={onPress}
+      onLayout={onLayout}
       activeOpacity={0.75}
       accessibilityLabel="New session"
       accessibilityRole="button"
@@ -42,7 +45,7 @@ export function FAB({ onPress }: Props) {
       <Plus size={22} color="#e6edf3" weight="bold" />
     </TouchableOpacity>
   )
-}
+})
 
 const FAB_SIZE = 56
 
