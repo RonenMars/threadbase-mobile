@@ -4,6 +4,7 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
 import { dark, font, radius, spacing } from '@/constants/theme'
+import { FirstShowBanner } from '@/components/tour/FirstShowBanner'
 
 interface Props {
   visible: boolean
@@ -29,6 +30,10 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>
+        <FirstShowBanner
+          storageKey="threadbase_tour_new_session"
+          text="Choose a project (directory on your Mac) and describe your task. Claude starts immediately."
+        />
         <Text style={styles.title}>{t('newSessionPicker.title')}</Text>
         <View style={styles.list}>
           {serverIds.map((id) => {
