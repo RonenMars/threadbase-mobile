@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import { QrCode } from 'phosphor-react-native'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 function addServerActionLabel(action: AddServerAction): string {
   switch (action) {
@@ -197,6 +198,14 @@ await refreshServerInfo(serverId)
   // Bug 22: a top-level Settings entry to the QR scanner so users don't have
   // to open the "+ Add server" modal first. Reuses the same pair-exchange
   // flow as the onboarding ConnectStep.
+  const handleRestartTour = useCallback(async () => {
+    await Promise.all([
+      AsyncStorage.removeItem('threadbase_tour_hub'),
+      AsyncStorage.removeItem('threadbase_tour_session'),
+      AsyncStorage.removeItem('threadbase_tour_new_session'),
+    ])
+  }, [])
+
   const handleScanQrSuccess = async (result: ExchangeResult) => {
     setQrScannerOpen(false)
     const label = result.machineName?.trim() || undefined
@@ -484,6 +493,15 @@ await refreshServerInfo(serverId)
         <View style={s.card}>
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="settings-restart-tour"
+            style={s.row}
+            onPress={handleRestartTour}
+          >
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <Text style={s.rowLabel}>Restart app tour</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>
