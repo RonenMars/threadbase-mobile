@@ -101,7 +101,8 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/.claude/"
+      "/.claude/",
+      "/.worktrees/"
     ],
     "setupFilesAfterEnv": [
       "./jest.setup.js"
