@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import {
+  Alert,
   View,
   Text,
   Switch,
@@ -204,6 +205,8 @@ await refreshServerInfo(serverId)
       AsyncStorage.removeItem('threadbase_tour_session'),
       AsyncStorage.removeItem('threadbase_tour_new_session'),
     ])
+    // eslint-disable-next-line i18next/no-literal-string
+    Alert.alert('Tour reset', 'The app tour will reappear next time you visit the Hub and session screens.')
   }, [])
 
   const handleScanQrSuccess = async (result: ExchangeResult) => {
