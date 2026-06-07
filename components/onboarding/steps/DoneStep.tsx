@@ -101,7 +101,7 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
         <Text style={styles.body}>
           {paired
             ? 'Your laptop is listening. Open a session whenever the mood strikes.'
-            : ‘Skip it for now — you can connect a runtime from Settings whenever you’re ready.’}
+            : "Skip it for now — you can connect a runtime from Settings whenever you’re ready."}
         </Text>
 
         <View style={styles.pill}>
