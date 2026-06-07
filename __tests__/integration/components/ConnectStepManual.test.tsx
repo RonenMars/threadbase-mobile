@@ -27,12 +27,12 @@ describe('ConnectStep – manual mode', () => {
     expect(getByText('On your Mac')).toBeTruthy()
   })
 
-  it('shows copyable tb token --new command in manual mode', () => {
+  it('shows copyable tb pair command in manual mode', () => {
     const { getByText } = render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
     fireEvent.press(getByText('Type / paste manually'))
-    expect(getByText(/tb token --new/)).toBeTruthy()
+    expect(getByText(/tb pair/)).toBeTruthy()
   })
 
   it('shows "Server URL" and "Token" field labels (not faux-shell labels)', () => {

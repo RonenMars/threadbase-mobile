@@ -213,7 +213,6 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={styles.linkText}>Scan a QR instead →</Text>
       </TouchableOpacity>
 
-      {/* Section 1: Desktop command */}
       <TerminalCard>
         {/* eslint-disable-next-line i18next/no-literal-string */}
         <Text style={styles.sectionLabel}>On your Mac</Text>
@@ -221,54 +220,44 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={styles.sectionHint}>Open Terminal and run:</Text>
         <CopyableCommand command="tb pair" />
         {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={[styles.sectionHint, { marginTop: 6 }]}>It prints a QR and a URL + token — paste both below.</Text>
+        <Text style={[styles.sectionHint, { marginTop: 6 }]}>It prints a URL + token — paste both below.</Text>
       </TerminalCard>
 
-      {/* Section 2: Paste inputs */}
-      <TerminalCard style={{ marginTop: 10 }}>
+      <View style={styles.form}>
         {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.sectionLabel}>Paste from terminal</Text>
+        <Text style={styles.formLabel}>Server URL</Text>
+        <TextInput
+          testID="onboarding-connect-url-input"
+          value={url}
+          onChangeText={setUrl}
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          style={styles.formInput}
+          editable={!busy}
+          placeholder="http://192.168.x.x:8766"
+          placeholderTextColor={colors.fg4}
+        />
 
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.fieldLabel}>Server URL</Text>
-        <View style={styles.inputRow}>
-          <Text style={styles.prompt}>›</Text>
-          <TextInput
-            testID="onboarding-connect-url-input"
-            value={url}
-            onChangeText={setUrl}
-            spellCheck={false}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            style={styles.input}
-            editable={!busy}
-            placeholder="http://192.168.x.x:8766"
-            placeholderTextColor={colors.fg4}
-          />
-        </View>
-
-        <View style={[styles.fieldLabelRow, { marginTop: 10 }]}>
+        <View style={styles.formLabelRow}>
           {/* eslint-disable-next-line i18next/no-literal-string */}
-          <Text style={styles.fieldLabel}>Token</Text>
+          <Text style={styles.formLabel}>Token</Text>
           <TokenTooltip />
         </View>
-        <View style={styles.inputRow}>
-          <Text style={styles.prompt}>›</Text>
-          <TextInput
-            testID="onboarding-connect-token-input"
-            value={token}
-            onChangeText={setToken}
-            spellCheck={false}
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            placeholder="paste from terminal"
-            placeholderTextColor={colors.fg4}
-            style={styles.input}
-            editable={!busy}
-          />
-        </View>
+        <TextInput
+          testID="onboarding-connect-token-input"
+          value={token}
+          onChangeText={setToken}
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+          placeholder="paste from terminal"
+          placeholderTextColor={colors.fg4}
+          style={styles.formInput}
+          editable={!busy}
+        />
 
         {log.length > 0 && (
           <View style={styles.logWrap}>
@@ -296,7 +285,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             )}
           </View>
         )}
-      </TerminalCard>
+      </View>
 
       <View style={styles.flex} />
 
@@ -354,38 +343,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
-  fieldLabel: {
-    color: colors.fg2,
-    fontFamily: fonts.mono,
-    fontSize: 11.5,
+  form: {
+    gap: 10,
+    marginTop: 16,
+  },
+  formLabel: {
+    color: colors.fg1,
+    fontFamily: fonts.sans,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  fieldLabelRow: {
+  formLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-  },
-  prompt: {
-    color: colors.blue400,
-    fontFamily: fonts.mono,
-    fontSize: 12.5,
-    fontWeight: '500',
-  },
-  input: {
-    flex: 1,
+  formInput: {
+    backgroundColor: colors.ink3,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.ink6,
     color: colors.fg0,
-    fontFamily: fonts.mono,
-    fontSize: 12.5,
-    fontWeight: '500',
-    padding: 0,
-    margin: 0,
+    fontFamily: fonts.sans,
+    fontSize: 17,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 56,
   },
   logWrap: {
     marginTop: 10,

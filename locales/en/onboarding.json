@@ -42,7 +42,7 @@
     "scanQr": "Scan QR",
     "scanQrBody": "Run tb pair on your server to print a QR. Fastest, no typing.",
     "pasteCredentials": "Type / paste manually",
-    "pasteCredentialsBody": "Use a URL and token from tb token --new.",
+    "pasteCredentialsBody": "Run tb pair on your server, then paste the URL and token.",
     "qrEyebrow": "> 02 / PAIR · QR",
     "qrHeadline": "Scan to pair.",
     "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
@@ -50,7 +50,7 @@
     "openCamera": "Open camera",
     "pairMyLaptop": "Pair my laptop",
     "ready": "✓ ready",
-    "footnote": "// On your desktop, run tb token --new to mint one."
+    "footnote": "// On your desktop, run tb pair to print a token."
   },
   "tour": {
     "eyebrow": "> 04 / TOUR",
