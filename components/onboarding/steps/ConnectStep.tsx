@@ -219,9 +219,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={styles.sectionLabel}>On your Mac</Text>
         {/* eslint-disable-next-line i18next/no-literal-string */}
         <Text style={styles.sectionHint}>Open Terminal and run:</Text>
-        <CopyableCommand command="tb token --new" />
+        <CopyableCommand command="tb pair" />
         {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={[styles.sectionHint, { marginTop: 6 }]}>It prints a URL and a token — paste both below.</Text>
+        <Text style={[styles.sectionHint, { marginTop: 6 }]}>It prints a QR and a URL + token — paste both below.</Text>
       </TerminalCard>
 
       {/* Section 2: Paste inputs */}
@@ -243,7 +243,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             keyboardType="url"
             style={styles.input}
             editable={!busy}
-            placeholder="https://your-mac-ip:7331"
+            placeholder="http://192.168.x.x:8766"
             placeholderTextColor={colors.fg4}
           />
         </View>
