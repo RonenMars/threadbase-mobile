@@ -44,7 +44,6 @@ import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
-import type { View } from 'react-native'
 
 const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
 
