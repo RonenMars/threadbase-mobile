@@ -17,7 +17,7 @@ import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
-import { TokenTooltip } from '../components/TokenTooltip'
+import { InfoTooltip } from '../components/InfoTooltip'
 import { colors, fonts } from '../theme'
 
 type Mode = 'choose' | 'manual' | 'qr-explain'
@@ -224,8 +224,17 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       </TerminalCard>
 
       <View style={styles.form}>
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.formLabel}>Server URL</Text>
+        <View style={styles.formLabelRow}>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <Text style={styles.formLabel}>Server URL</Text>
+          <InfoTooltip
+            linkLabel="Networking guide"
+            linkUrl="https://github.com/RonenMars/threadbase-streamer#networking"
+          >
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {'Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.'}
+          </InfoTooltip>
+        </View>
         <TextInput
           testID="onboarding-connect-url-input"
           value={url}
@@ -243,7 +252,13 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <View style={styles.formLabelRow}>
           {/* eslint-disable-next-line i18next/no-literal-string */}
           <Text style={styles.formLabel}>Token</Text>
-          <TokenTooltip />
+          <InfoTooltip
+            linkLabel="Pairing docs"
+            linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
+          >
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {'A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.'}
+          </InfoTooltip>
         </View>
         <TextInput
           testID="onboarding-connect-token-input"
