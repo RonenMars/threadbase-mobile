@@ -190,7 +190,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                   style={[styles.input, styles.apiKeyInput]}
                   value={apiKey}
                   onChangeText={(v) => { setApiKey(v); markDirty() }}
-                  placeholder="Enter THREADBASE_API_KEY"
+                  placeholder="Paste your API token here"
                   placeholderTextColor={dark.text.secondary}
                   secureTextEntry={!showApiKey}
                   autoCapitalize="none"

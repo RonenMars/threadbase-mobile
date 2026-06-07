@@ -50,12 +50,12 @@ describe('Onboarding – initial render', () => {
 
   it('shows Server URL input', () => {
     const { getByPlaceholderText } = render(<OnboardingScreen />)
-    expect(getByPlaceholderText('localhost:7070')).toBeTruthy()
+    expect(getByPlaceholderText('192.168.x.x:7070')).toBeTruthy()
   })
 
   it('shows API key input', () => {
     const { getByPlaceholderText } = render(<OnboardingScreen />)
-    expect(getByPlaceholderText('Enter THREADBASE_API_KEY')).toBeTruthy()
+    expect(getByPlaceholderText('Paste your API token here')).toBeTruthy()
   })
 
   it('shows Connect button', () => {
@@ -108,8 +108,8 @@ describe('Onboarding – successful connection', () => {
 
     const { getByText, getByPlaceholderText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.100:7070')
-    fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'valid-key')
+    fireEvent.changeText(getByPlaceholderText('192.168.x.x:7070'), '192.168.1.100:7070')
+    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'valid-key')
 
     await act(async () => {
       fireEvent.press(getByText('Connect'))
@@ -129,8 +129,8 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.1:7070')
-    fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'wrong-key')
+    fireEvent.changeText(getByPlaceholderText('192.168.x.x:7070'), '192.168.1.1:7070')
+    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'wrong-key')
 
     await act(async () => {
       fireEvent.press(getByText('Connect'))
@@ -145,8 +145,8 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.1:7070')
-    fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'some-key')
+    fireEvent.changeText(getByPlaceholderText('192.168.x.x:7070'), '192.168.1.1:7070')
+    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
 
     await act(async () => {
       fireEvent.press(getByText('Connect'))
@@ -161,7 +161,7 @@ describe('Onboarding – error handling', () => {
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
     // Keep default localhost URL, just add API key
-    fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'some-key')
+    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
 
     await act(async () => {
       fireEvent.press(getByText('Connect'))
@@ -175,8 +175,8 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('localhost:7070'), '192.168.1.1:7070')
-    fireEvent.changeText(getByPlaceholderText('Enter THREADBASE_API_KEY'), 'key')
+    fireEvent.changeText(getByPlaceholderText('192.168.x.x:7070'), '192.168.1.1:7070')
+    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'key')
 
     await act(async () => {
       fireEvent.press(getByText('Connect'))

@@ -218,7 +218,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.urlInput]}
               value={serverUrl}
               onChangeText={setServerUrl}
-              placeholder="localhost:7070"
+              placeholder="192.168.x.x:7070"
               placeholderTextColor={dark.text.secondary}
               autoCapitalize="none"
               autoCorrect={false}
@@ -232,7 +232,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
             style={styles.input}
             value={label}
             onChangeText={setLabel}
-            placeholder="e.g. Work Mac, Home Server"
+            placeholder="Work Mac, Home Server…"
             placeholderTextColor={dark.text.secondary}
             autoCapitalize="words"
             autoCorrect={false}
@@ -246,7 +246,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.passwordInput]}
               value={apiKey}
               onChangeText={setApiKey}
-              placeholder="Enter THREADBASE_API_KEY"
+              placeholder="Paste your API token here"
               placeholderTextColor={dark.text.secondary}
               secureTextEntry={__DEV__ ? false : !showApiKey}
               textContentType={__DEV__ ? 'none' : 'password'}
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     color: dark.text.secondary,
     fontSize: font.lg,
   },
-  form: { gap: spacing.sm, zIndex: 1 },
+  form: { gap: spacing.md, zIndex: 1 },
   urlRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -331,15 +331,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: dark.bg.card,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: dark.border,
     paddingHorizontal: spacing.md,
-    minHeight: 44,
+    minHeight: 56,
     gap: 4,
   },
   protocolText: {
     color: dark.text.primary,
-    fontSize: font.base,
+    fontSize: font.lg,
   },
   dropdownArrow: {
     color: dark.text.secondary,
@@ -370,10 +370,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   label: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '500',
-    marginBottom: 2,
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
   },
   labelRow: {
     flexDirection: 'row',
@@ -395,13 +395,13 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: dark.bg.card,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: dark.border,
     color: dark.text.primary,
-    fontSize: font.base,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
+    fontSize: font.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 56,
   },
   passwordRow: {
     flexDirection: 'row',
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { flex: 1 },
   showHideBtn: {
-    minHeight: 44,
+    minHeight: 56,
     paddingHorizontal: spacing.sm,
     justifyContent: 'center',
   },
