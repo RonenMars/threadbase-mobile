@@ -73,7 +73,7 @@ queryClient.getQueryCache().subscribe((event) => {
       const message = err instanceof Error ? err.message : 'An unexpected error occurred'
       const status =
         err && 'status' in (err as object) ? (err as { status: number }).status : undefined
-      store.pushError({ category, message, status })
+      setTimeout(() => store.pushError({ category, message, status }), 0)
     }
   }
 })
