@@ -33,7 +33,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
   const headerHeight = useHeaderHeight()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
   const { addServerAction, setAddServerAction } = useSettingsStore()
-  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
+  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:8766'
   const [protocol, setProtocol] = useState<'https' | 'http'>(
     defaultUrl.startsWith('https://') ? 'https' : 'http'
   )
@@ -122,7 +122,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           const usesLocalhost = /localhost|127\.0\.0\.1/.test(url)
           if (usesLocalhost) {
             setError(
-              "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:7070) or run: cch serve --tunnel --qr"
+              "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:8766) or run: tb serve --tunnel"
             )
           } else {
             setError('Could not reach the server. Is cch serve running?')
@@ -218,7 +218,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.urlInput]}
               value={serverUrl}
               onChangeText={setServerUrl}
-              placeholder="192.168.x.x:7070"
+              placeholder="192.168.x.x:8766"
               placeholderTextColor={dark.text.secondary}
               autoCapitalize="none"
               autoCorrect={false}
@@ -226,6 +226,8 @@ export function AddServerScreen({ isAddingServer }: Props) {
               returnKeyType="next"
             />
           </View>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <Text style={styles.urlHint}>LAN IP, hostname, or any URL (e.g. https://myserver.com)</Text>
 
           <Text style={styles.label}>{t('form.labelOptional')}</Text>
           <TextInput
@@ -402,6 +404,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     minHeight: 56,
+  },
+  urlHint: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    marginTop: -spacing.xs,
   },
   passwordRow: {
     flexDirection: 'row',

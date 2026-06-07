@@ -176,7 +176,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 style={styles.input}
                 value={url}
                 onChangeText={(v) => { setUrl(v); markDirty() }}
-                placeholder="http://192.168.1.10:7070"
+                placeholder="http://192.168.1.10:8766"
                 placeholderTextColor={dark.text.secondary}
                 autoCapitalize="none"
                 autoCorrect={false}
