@@ -33,7 +33,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
   const headerHeight = useHeaderHeight()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
   const { addServerAction, setAddServerAction } = useSettingsStore()
-  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:7070'
+  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:8766'
   const [protocol, setProtocol] = useState<'https' | 'http'>(
     defaultUrl.startsWith('https://') ? 'https' : 'http'
   )
@@ -122,7 +122,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           const usesLocalhost = /localhost|127\.0\.0\.1/.test(url)
           if (usesLocalhost) {
             setError(
-              "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:7070) or run: cch serve --tunnel --qr"
+              "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:8766) or run: tb serve --tunnel"
             )
           } else {
             setError('Could not reach the server. Is cch serve running?')
@@ -218,7 +218,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.urlInput]}
               value={serverUrl}
               onChangeText={setServerUrl}
-              placeholder="localhost:7070"
+              placeholder="192.168.x.x:8766"
               placeholderTextColor={dark.text.secondary}
               autoCapitalize="none"
               autoCorrect={false}
@@ -226,13 +226,15 @@ export function AddServerScreen({ isAddingServer }: Props) {
               returnKeyType="next"
             />
           </View>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <Text style={styles.urlHint}>LAN IP, hostname, or any URL (e.g. https://myserver.com)</Text>
 
           <Text style={styles.label}>{t('form.labelOptional')}</Text>
           <TextInput
             style={styles.input}
             value={label}
             onChangeText={setLabel}
-            placeholder="e.g. Work Mac, Home Server"
+            placeholder="Work Mac, Home Server…"
             placeholderTextColor={dark.text.secondary}
             autoCapitalize="words"
             autoCorrect={false}
@@ -246,7 +248,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.passwordInput]}
               value={apiKey}
               onChangeText={setApiKey}
-              placeholder="Enter THREADBASE_API_KEY"
+              placeholder="Paste your API token here"
               placeholderTextColor={dark.text.secondary}
               secureTextEntry={__DEV__ ? false : !showApiKey}
               textContentType={__DEV__ ? 'none' : 'password'}
@@ -319,7 +321,7 @@ const styles = StyleSheet.create({
     color: dark.text.secondary,
     fontSize: font.lg,
   },
-  form: { gap: spacing.sm, zIndex: 1 },
+  form: { gap: spacing.md, zIndex: 1 },
   urlRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -331,15 +333,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: dark.bg.card,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: dark.border,
     paddingHorizontal: spacing.md,
-    minHeight: 44,
+    minHeight: 56,
     gap: 4,
   },
   protocolText: {
     color: dark.text.primary,
-    fontSize: font.base,
+    fontSize: font.lg,
   },
   dropdownArrow: {
     color: dark.text.secondary,
@@ -370,10 +372,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   label: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '500',
-    marginBottom: 2,
+    color: dark.text.primary,
+    fontSize: font.base,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
   },
   labelRow: {
     flexDirection: 'row',
@@ -395,13 +397,18 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: dark.bg.card,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: dark.border,
     color: dark.text.primary,
-    fontSize: font.base,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
+    fontSize: font.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 56,
+  },
+  urlHint: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
+    marginTop: -spacing.xs,
   },
   passwordRow: {
     flexDirection: 'row',
@@ -410,7 +417,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { flex: 1 },
   showHideBtn: {
-    minHeight: 44,
+    minHeight: 56,
     paddingHorizontal: spacing.sm,
     justifyContent: 'center',
   },

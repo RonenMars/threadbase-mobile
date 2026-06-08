@@ -176,7 +176,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 style={styles.input}
                 value={url}
                 onChangeText={(v) => { setUrl(v); markDirty() }}
-                placeholder="http://192.168.1.10:7070"
+                placeholder="http://192.168.1.10:8766"
                 placeholderTextColor={dark.text.secondary}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -190,7 +190,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                   style={[styles.input, styles.apiKeyInput]}
                   value={apiKey}
                   onChangeText={(v) => { setApiKey(v); markDirty() }}
-                  placeholder="Enter THREADBASE_API_KEY"
+                  placeholder="Paste your API token here"
                   placeholderTextColor={dark.text.secondary}
                   secureTextEntry={!showApiKey}
                   autoCapitalize="none"
