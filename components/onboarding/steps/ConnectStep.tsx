@@ -244,13 +244,15 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           <Text style={{ color: colors.fg2 }}>tb set-key [your-key]</Text>
           {/* eslint-disable-next-line i18next/no-literal-string */}
           {' '}or scan the QR from{' '}
+          {/* eslint-disable i18next/no-literal-string */}
           <Text
             style={{ color: colors.fg2, textDecorationLine: 'underline' }}
             onPress={() => Linking.openURL('https://github.com/RonenMars/threadbase-streamer#mobile-pairing')}
           >
-            {/* eslint-disable-next-line i18next/no-literal-string */}
             tb pair
-          </Text>.
+          </Text>
+          {/* eslint-enable i18next/no-literal-string */}
+          .
         </Text>
       </View>
 
