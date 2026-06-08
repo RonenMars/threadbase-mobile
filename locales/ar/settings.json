@@ -1,0 +1,16 @@
+{
+  "title": "الإعدادات",
+  "theme": {
+    "label": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  },
+  "language": {
+    "label": "اللغة"
+  },
+  "notifications": {
+    "label": "الإشعارات",
+    "enable": "تمكين الإشعارات"
+  }
+}

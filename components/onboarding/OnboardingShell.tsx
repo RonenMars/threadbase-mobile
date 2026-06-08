@@ -7,6 +7,7 @@ import Svg, { Path } from 'react-native-svg'
 import { useTranslation } from 'react-i18next'
 import { PagerDots } from './components/PagerDots'
 import { colors, fonts } from './theme'
+import { flexRow } from '@/lib/rtl'
 
 interface Props {
   index: number
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink1,
   },
   chrome: {
-    flexDirection: 'row',
+    flexDirection: flexRow(),
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   chromeBtn: {
-    flexDirection: 'row',
+    flexDirection: flexRow(),
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
