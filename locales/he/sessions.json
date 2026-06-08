@@ -1,0 +1,99 @@
+{
+  "header": {
+    "title": "סשנים",
+    "history": "היסטוריה"
+  },
+  "search": {
+    "placeholder": "חפש סשנים ושיחות…"
+  },
+  "filter": {
+    "label": "סנן ומיין",
+    "all": "הכל",
+    "active": "פעיל",
+    "waiting": "ממתין",
+    "completed": "הושלם",
+    "failed": "נכשל"
+  },
+  "sort": {
+    "label": "מיון",
+    "newest": "החדש ביותר",
+    "oldest": "הישן ביותר",
+    "az": "א–ת"
+  },
+  "list": {
+    "sessionCount_one": "סשן אחד",
+    "sessionCount_other": "{{count}} סשנים",
+    "empty": "אין סשנים",
+    "emptySubtitle": "התחל סשן Claude Code כדי לראות אותו כאן",
+    "noResults": "אין תוצאות",
+    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
+    "emptyProjects": "עדיין אין פרויקטים"
+  },
+  "card": {
+    "status": {
+      "active": "פעיל",
+      "waiting": "ממתין לקלט",
+      "completed": "הסשן הושלם",
+      "failed": "הסשן נכשל",
+      "starting": "מתחיל…",
+      "stopping": "עוצר…"
+    },
+    "connectedTo": "{{server}}",
+    "copyId": "העתק מזהה סשן",
+    "sendInput": "שלח קלט",
+    "cancel": "בטל סשן",
+    "remove": "הסר סשן",
+    "viewError": "הצג שגיאת חיבור",
+    "prompts_one": "פרומפט אחד",
+    "prompts_other": "{{count}} פרומפטים"
+  },
+  "takeover": {
+    "prompt": "לקוח אחר שולט בסשן זה",
+    "takeControl": "קח שליטה",
+    "dismiss": "התעלם"
+  },
+  "directory": {
+    "empty": "תיקייה ריקה",
+    "loadFailed": "לא ניתן לטעון תיקיות",
+    "browsingNotConfigured": "גלישה לא מוגדרת"
+  },
+  "hub": {
+    "seeAll_one": "ראה את כל השיחה →",
+    "seeAll_other": "ראה את כל {{count}} השיחות →",
+    "msgs_one": "הודעה אחת",
+    "msgs_other": "{{count}} הודעות",
+    "prompts_one": "פרומפט אחד",
+    "prompts_other": "{{count}} פרומפטים"
+  },
+  "loading": {
+    "title": "טוען סשנים",
+    "progress": "{{loaded}} מתוך {{total}}",
+    "fetchingServer": "מושך {{server}}",
+    "fetchingNoLabel": "מושך"
+  },
+  "live": {
+    "headerLive_one": "חי · {{count}}",
+    "headerLive_other": "חי · {{count}}",
+    "headerIdle_one": "סרק · {{count}}",
+    "headerIdle_other": "סרק · {{count}}"
+  },
+  "rename": {
+    "title": "שנה שם סשן",
+    "placeholder": "שם סשן",
+    "cancel": "ביטול",
+    "save": "שמירה"
+  },
+  "preview": {
+    "liveUnavailable": "תצוגה מקדימה של סשן חי אינה זמינה — פתח את הסשן כדי לראות את הטרמינל החי.",
+    "noMessages": "עדיין אין הודעות.",
+    "openSession": "פתח סשן",
+    "openConversation": "פתח שיחה",
+    "pin": "נעץ",
+    "unpin": "בטל נעיצה"
+  },
+  "manageFavorites": {
+    "empty": "עדיין אין מועדפים.",
+    "emptySub": "הקש על שבב ברצועה ובחר \"נעץ למועדפים\".",
+    "addToFavorites": "הוסף למועדפים"
+  }
+}

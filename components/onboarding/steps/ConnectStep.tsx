@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {
   KeyboardAvoidingView,
-  Linking,
   Platform,
   StyleSheet,
   Text,

@@ -1,0 +1,16 @@
+{
+  "planPreview": {
+    "title": "תצוגה מקדימה של תוכנית",
+    "autoProceed": "המשך אוטומטי בעוד {{count}}s",
+    "proceed": "▶ המשך",
+    "editPrompt": "ערוך פרומפט",
+    "sendEdit": "שלח עריכה",
+    "cancel": "✕ ביטול"
+  },
+  "promptQueue": {
+    "title": "תור פרומפטים",
+    "pending_one": "אחד ממתין",
+    "pending_other": "{{count}} ממתינים",
+    "remove": "✕"
+  }
+}

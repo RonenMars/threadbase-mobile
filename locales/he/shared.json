@@ -1,0 +1,28 @@
+{
+  "commands": {
+    "title": "פקודות",
+    "empty": "אין פקודות התואמות ל-\"/{{query}}\"",
+    "argsBadge": "ארגומנטים",
+    "run": "הרץ /{{command}}"
+  },
+  "banner": {
+    "moreInfo": "מידע נוסף"
+  },
+  "app": {
+    "title": "Threadbase"
+  },
+  "quickAccess": {
+    "newSessionHere": "סשן חדש כאן",
+    "browseDirectory": "עיין בתיקייה",
+    "openSession": "פתח סשן",
+    "unpinFromFavorites": "בטל נעיצה ממועדפים",
+    "pinToFavorites": "נעץ למועדפים",
+    "cancel": "ביטול",
+    "loadMore": "+ {{count}} נוספים",
+    "emptyFavorites": "עדיין אין מועדפים — לחץ לחיצה ארוכה על פריט כדי לנעוץ אותו.",
+    "pairServer": "זווג שרת כדי לראות {{tab}}.",
+    "loading": "טוען…",
+    "loadFailed": "לא ניתן לטעון — הקש כדי לנסות שוב.",
+    "nothing": "עדיין כלום."
+  }
+}

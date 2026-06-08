@@ -1,0 +1,69 @@
+{
+  "header": {
+    "title": "הגדרות"
+  },
+  "section": {
+    "appearance": "מראה",
+    "servers": "שרתים",
+    "notifications": "התראות",
+    "about": "אודות",
+    "displayedServers": "שרתים מוצגים",
+    "history": "היסטוריה",
+    "help": "עזרה",
+    "language": "שפה"
+  },
+  "appearance": {
+    "theme": "ערכת נושא",
+    "dark": "כהה",
+    "light": "בהיר",
+    "system": "מערכת",
+    "layout": "פריסה",
+    "layoutTree": "עץ",
+    "layoutHub": "מרכז",
+    "layoutClassic": "קלאסי"
+  },
+  "notifications": {
+    "whenAddingServer": "בעת הוספת שרת חדש",
+    "waitingForInput": "ממתין לקלט",
+    "sessionCompleted": "הסשן הושלם",
+    "sessionFailed": "הסשן נכשל",
+    "diffReady": "Diff מוכן",
+    "showBadgeCount": "הצג תג ספירה",
+    "quietHours": "שעות שקט",
+    "sendTest": "שלח התראת בדיקה"
+  },
+  "notification": {
+    "testTitle": "התראת בדיקה",
+    "testBody": "התראות Threadbase עובדות!"
+  },
+  "addServer": {
+    "selectedAction": "פעולה נבחרת ביצירה",
+    "resetAction": "אפס לשאול בכל פעם"
+  },
+  "history": {
+    "messagePreview": "תצוגה מקדימה של הודעה",
+    "first": "ראשון",
+    "last": "אחרון"
+  },
+  "about": {
+    "subtitle": "מרכז בקרת סוכני AI"
+  },
+  "help": {
+    "restartOnboarding": "הפעל מחדש הדרכה",
+    "helpSupport": "עזרה ותמיכה"
+  },
+  "servers": {
+    "scanQr": "סרוק QR להוספת שרת"
+  },
+  "sessionNaming": {
+    "askOnCreateNote": "הצג בקשה לתת שם לסשן כאשר אתה מתחיל חדש.",
+    "askOnExitNote": "הצע לתת שם לסשן כאשר אתה עוזב אותו, אם עדיין לא נתת לו שם. מדוכא כאשר בקשת היצירה מושבתת.",
+    "autoNameNote": "הגדר את שם הסשן מהמילים הראשונות של ההודעה הראשונה שלך. בלי AI, בלי טוקנים.",
+    "aiGeneratedNote": "השתמש במודל AI כדי ליצור שם משמעותי. משתמש בטוקנים ממפתח ה-API המוגדר שלך."
+  },
+  "language": {
+    "label": "שפה",
+    "english": "English",
+    "hebrew": "עברית"
+  }
+}

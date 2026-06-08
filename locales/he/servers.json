@@ -1,0 +1,72 @@
+{
+  "header": {
+    "title": "שרתים"
+  },
+  "status": {
+    "connected": "מחובר",
+    "disconnected": "מנותק",
+    "connecting": "מתחבר…",
+    "error": "שגיאת חיבור"
+  },
+  "action": {
+    "add": "הוסף שרת",
+    "edit": "ערוך",
+    "remove": "הסר שרת",
+    "viewError": "הצג שגיאת חיבור",
+    "connect": "התחבר"
+  },
+  "dialog": {
+    "removeTitle": "הסר שרת",
+    "removeMessage": "האם אתה בטוח שברצונך להסיר את השרת הזה?",
+    "removeConfirm": "הסר",
+    "removeDismiss": "ביטול"
+  },
+  "form": {
+    "name": "שם",
+    "url": "URL",
+    "namePlaceholder": "השרת שלי",
+    "urlPlaceholder": "http://localhost:3000",
+    "labelOptional": "תווית (אופציונלי)",
+    "serverUrl": "כתובת שרת",
+    "apiKey": "מפתח API",
+    "hint": "הרץ cch serve --tunnel --qr על ה-Mac שלך כדי לקבל URL הניתן לסריקת QR."
+  },
+  "manage": {
+    "title": "שרתים",
+    "addServer": "+ הוסף שרת",
+    "empty": "עדיין לא נוספו שרתים."
+  },
+  "filter": {
+    "title": "מסננים",
+    "filterSort": "סנן ומיין",
+    "sortTitle": "מיון",
+    "view": "תצוגה",
+    "sortBy": "מיין לפי",
+    "order": "סדר",
+    "status": "סטטוס",
+    "servers": "שרתים",
+    "all": "הכל",
+    "none": "ללא",
+    "resetDefaults": "אפס לברירת מחדל",
+    "close": "✕",
+    "editOrder": "ערוך סדר",
+    "lockOrder": "נעל סדר"
+  },
+  "displayedServers": {
+    "all": "הכל",
+    "latestOnly": "האחרון בלבד",
+    "none": "ללא"
+  },
+  "newSessionPicker": {
+    "title": "התחל סשן על"
+  },
+  "addAction": {
+    "title": "העדפת תצוגת שרת חדש",
+    "subtitle": "איך שרתים מוצגים צריכים להתעדכן אחרי הוספה זו?",
+    "rememberChoice": "זכור את הבחירה הזו"
+  },
+  "statusModal": {
+    "title": "סטטוס שרת",
+    "close": "✕"
+  }
+}

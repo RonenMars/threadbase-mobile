@@ -150,6 +150,8 @@ export default function SettingsScreen() {
     setRowServerIndicator,
     rowServerChipVariant,
     setRowServerChipVariant,
+    locale,
+    setLocale,
   } = useSettingsStore()
   const {
     favoritesEnabled, setFavoritesEnabled,
@@ -234,6 +236,33 @@ await refreshServerInfo(serverId)
       >
         <SectionHeader title={t('section.appearance')} />
         <View style={s.card}>
+          <View style={s.row}>
+            <Text style={s.rowLabel}>{t('section.language')}</Text>
+            <View style={s.segmentedControl}>
+              <TouchableOpacity
+                style={[s.segmentBtn, locale === 'en' && s.segmentBtnActive]}
+                onPress={() => {
+                  setLocale('en');
+                  i18n.changeLanguage('en');
+                }}
+              >
+                <Text style={[s.segmentBtnText, locale === 'en' && s.segmentBtnTextActive]}>
+                  {t('language.english')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentBtn, locale === 'he' && s.segmentBtnActive]}
+                onPress={() => {
+                  setLocale('he');
+                  i18n.changeLanguage('he');
+                }}
+              >
+                <Text style={[s.segmentBtnText, locale === 'he' && s.segmentBtnTextActive]}>
+                  {t('language.hebrew')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('appearance.layout')}</Text>
             <View style={s.segmentedControl}>
