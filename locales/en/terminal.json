@@ -45,5 +45,8 @@
     "overtake": "Overtake",
     "prompts_one": "{{count}} prompt",
     "prompts_other": "{{count}} prompts"
+  },
+  "banner": {
+    "streamingInfo": "Tool calls and output stream here in real time. Type a follow-up below while Claude is still working."
   }
 }

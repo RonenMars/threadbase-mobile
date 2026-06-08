@@ -377,28 +377,28 @@ await refreshServerInfo(serverId)
           </TouchableOpacity>
         </View>
 
-        <SectionHeader title="Quick Access" />
+        <SectionHeader title={t('quickAccess.title')} />
         <SettingsRow
-          label="Favorites"
+          label={t('quickAccess.favorites')}
           value={favoritesEnabled}
           onValueChange={setFavoritesEnabled}
         />
         <SettingsRow
-          label="Recent Sessions"
+          label={t('quickAccess.recentSessions')}
           value={recentsEnabled}
           onValueChange={setRecentsEnabled}
         />
         <SettingsRow
-          label="Popular Projects"
+          label={t('quickAccess.popularProjects')}
           value={popularEnabled}
           onValueChange={setPopularEnabled}
         />
 
-        <SectionHeader title="Session Naming" />
+        <SectionHeader title={t('sessionNaming.title')} />
         <View style={s.card}>
-          <SettingsRow label="Auto-name from first message" value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
+          <SettingsRow label={t('sessionNaming.autoNameFromMessage')} value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
           <Text style={s.rowNote}>{t('sessionNaming.autoNameNote')}</Text>
-          <SettingsRow label="AI-generated session names" value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
+          <SettingsRow label={t('sessionNaming.aiGeneratedNames')} value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
           <Text style={s.rowNote}>{t('sessionNaming.aiGeneratedNote')}</Text>
         </View>
 
@@ -423,91 +423,89 @@ await refreshServerInfo(serverId)
           </View>
         </View>
 
-        {/* eslint-disable i18next/no-literal-string */}
-        <SectionHeader title="Conversation rows" />
+        <SectionHeader title={t('conversationRows.title')} />
         <View style={s.card}>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Density</Text>
+            <Text style={s.rowLabel}>{t('conversationRows.density')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, rowDensity === 'comfortable' && s.segmentBtnActive]}
                 onPress={() => setRowDensity('comfortable')}
               >
-                <Text style={[s.segmentBtnText, rowDensity === 'comfortable' && s.segmentBtnTextActive]}>Comfortable</Text>
+                <Text style={[s.segmentBtnText, rowDensity === 'comfortable' && s.segmentBtnTextActive]}>{t('conversationRows.comfortable')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowDensity === 'compact' && s.segmentBtnActive]}
                 onPress={() => setRowDensity('compact')}
               >
-                <Text style={[s.segmentBtnText, rowDensity === 'compact' && s.segmentBtnTextActive]}>Compact</Text>
+                <Text style={[s.segmentBtnText, rowDensity === 'compact' && s.segmentBtnTextActive]}>{t('conversationRows.compact')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Path display</Text>
+            <Text style={s.rowLabel}>{t('conversationRows.pathDisplay')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'smart' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('smart')}
               >
-                <Text style={[s.segmentBtnText, rowPathDisplay === 'smart' && s.segmentBtnTextActive]}>Smart</Text>
+                <Text style={[s.segmentBtnText, rowPathDisplay === 'smart' && s.segmentBtnTextActive]}>{t('conversationRows.smart')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'full' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('full')}
               >
-                <Text style={[s.segmentBtnText, rowPathDisplay === 'full' && s.segmentBtnTextActive]}>Full</Text>
+                <Text style={[s.segmentBtnText, rowPathDisplay === 'full' && s.segmentBtnTextActive]}>{t('conversationRows.full')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'last-segment' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('last-segment')}
               >
-                <Text style={[s.segmentBtnText, rowPathDisplay === 'last-segment' && s.segmentBtnTextActive]}>Last</Text>
+                <Text style={[s.segmentBtnText, rowPathDisplay === 'last-segment' && s.segmentBtnTextActive]}>{t('conversationRows.lastSegment')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Server indicator</Text>
+            <Text style={s.rowLabel}>{t('conversationRows.serverIndicator')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'auto' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('auto')}
               >
-                <Text style={[s.segmentBtnText, rowServerIndicator === 'auto' && s.segmentBtnTextActive]}>Auto</Text>
+                <Text style={[s.segmentBtnText, rowServerIndicator === 'auto' && s.segmentBtnTextActive]}>{t('conversationRows.auto')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'always' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('always')}
               >
-                <Text style={[s.segmentBtnText, rowServerIndicator === 'always' && s.segmentBtnTextActive]}>Always</Text>
+                <Text style={[s.segmentBtnText, rowServerIndicator === 'always' && s.segmentBtnTextActive]}>{t('conversationRows.always')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'never' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('never')}
               >
-                <Text style={[s.segmentBtnText, rowServerIndicator === 'never' && s.segmentBtnTextActive]}>Never</Text>
+                <Text style={[s.segmentBtnText, rowServerIndicator === 'never' && s.segmentBtnTextActive]}>{t('conversationRows.never')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Server chip style</Text>
+            <Text style={s.rowLabel}>{t('conversationRows.serverChipStyle')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerChipVariant === 'label' && s.segmentBtnActive]}
                 onPress={() => setRowServerChipVariant('label')}
               >
-                <Text style={[s.segmentBtnText, rowServerChipVariant === 'label' && s.segmentBtnTextActive]}>Label</Text>
+                <Text style={[s.segmentBtnText, rowServerChipVariant === 'label' && s.segmentBtnTextActive]}>{t('conversationRows.label')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerChipVariant === 'letter' && s.segmentBtnActive]}
                 onPress={() => setRowServerChipVariant('letter')}
               >
-                <Text style={[s.segmentBtnText, rowServerChipVariant === 'letter' && s.segmentBtnTextActive]}>Letter</Text>
+                <Text style={[s.segmentBtnText, rowServerChipVariant === 'letter' && s.segmentBtnTextActive]}>{t('conversationRows.letter')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-        {/* eslint-enable i18next/no-literal-string */}
 
         <SectionHeader title={t('section.about')} />
         <View style={s.card}>
@@ -532,8 +530,7 @@ await refreshServerInfo(serverId)
             style={s.row}
             onPress={handleRestartTour}
           >
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={s.rowLabel}>Restart app tour</Text>
+            <Text style={s.rowLabel}>{t('restartTour')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>

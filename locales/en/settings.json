@@ -56,14 +56,41 @@
     "scanQr": "Scan QR to add server"
   },
   "sessionNaming": {
+    "title": "Session Naming",
+    "autoNameFromMessage": "Auto-name from first message",
+    "aiGeneratedNames": "AI-generated session names",
     "askOnCreateNote": "Show a prompt to name the session when you start a new one.",
     "askOnExitNote": "Suggest naming the session when you leave it, if it hasn't been named yet. Suppressed when the creation prompt is disabled.",
     "autoNameNote": "Set the session name from the first words of your first message. No AI, no tokens.",
     "aiGeneratedNote": "Use an AI model to generate a meaningful name. Uses tokens from your configured API key."
   },
+  "quickAccess": {
+    "title": "Quick Access",
+    "favorites": "Favorites",
+    "recentSessions": "Recent Sessions",
+    "popularProjects": "Popular Projects"
+  },
   "language": {
     "label": "Language",
     "english": "English",
     "hebrew": "עברית"
-  }
+  },
+  "conversationRows": {
+    "title": "Conversation rows",
+    "density": "Density",
+    "pathDisplay": "Path display",
+    "serverIndicator": "Server indicator",
+    "serverChipStyle": "Server chip style",
+    "comfortable": "Comfortable",
+    "compact": "Compact",
+    "smart": "Smart",
+    "full": "Full",
+    "lastSegment": "Last",
+    "auto": "Auto",
+    "always": "Always",
+    "never": "Never",
+    "label": "Label",
+    "letter": "Letter"
+  },
+  "restartTour": "Restart app tour"
 }

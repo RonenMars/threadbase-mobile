@@ -45,5 +45,8 @@
     "overtake": "השתלט",
     "prompts_one": "פרומפט אחד",
     "prompts_other": "{{count}} פרומפטים"
+  },
+  "banner": {
+    "streamingInfo": "קריאות כלי ופלט זורמים כאן בזמן אמת. הקלד המשך למטה בזמן ש-Claude עדיין עובד."
   }
 }
