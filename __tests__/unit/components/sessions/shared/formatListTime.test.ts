@@ -48,50 +48,50 @@ describe('formatListTime', () => {
   })
 
   describe('yesterday', () => {
-    it('one minute before midnight yesterday → "Yesterday"', () => {
+    it('one minute before midnight yesterday → "Yesterday HH:mm"', () => {
       const lateYesterday = new Date(2026, 4, 14, 23, 59, 0).getTime()
-      expect(fmt(lateYesterday)).toBe('Yesterday')
+      expect(fmt(lateYesterday)).toBe('Yesterday 23:59')
     })
 
-    it('mid-day yesterday → "Yesterday"', () => {
+    it('mid-day yesterday → "Yesterday HH:mm"', () => {
       const yesterdayNoon = new Date(2026, 4, 14, 12, 0, 0).getTime()
-      expect(fmt(yesterdayNoon)).toBe('Yesterday')
+      expect(fmt(yesterdayNoon)).toBe('Yesterday 12:00')
     })
   })
 
-  describe('2-6 days ago → weekday short name', () => {
+  describe('2-6 days ago → weekday + time', () => {
     it('2 days ago (Wed 13 May)', () => {
       const wed = new Date(2026, 4, 13, 10, 0, 0).getTime()
-      expect(fmt(wed)).toBe('Wed')
+      expect(fmt(wed)).toBe('Wed 10:00')
     })
 
     it('6 days ago (Sat 9 May)', () => {
       const sixDaysAgo = new Date(2026, 4, 9, 10, 0, 0).getTime()
-      expect(fmt(sixDaysAgo)).toBe('Sat')
+      expect(fmt(sixDaysAgo)).toBe('Sat 10:00')
     })
   })
 
-  describe('older same year → D MMM', () => {
+  describe('older same year → D MMM + time', () => {
     it('7 days ago (boundary leaves weekday range)', () => {
       const sevenDaysAgo = new Date(2026, 4, 8, 10, 0, 0).getTime()
-      expect(fmt(sevenDaysAgo)).toBe('8 May')
+      expect(fmt(sevenDaysAgo)).toBe('8 May 10:00')
     })
 
     it('a few months earlier in the same year', () => {
       const earlier = new Date(2026, 0, 14, 10, 0, 0).getTime()
-      expect(fmt(earlier)).toBe('14 Jan')
+      expect(fmt(earlier)).toBe('14 Jan 10:00')
     })
   })
 
-  describe('previous year → D MMM YY', () => {
+  describe('previous year → D MMM YY + time', () => {
     it('last December', () => {
       const lastDec = new Date(2025, 11, 31, 10, 0, 0).getTime()
-      expect(fmt(lastDec)).toBe('31 Dec 25')
+      expect(fmt(lastDec)).toBe('31 Dec 25 10:00')
     })
 
     it('multiple years back', () => {
       const longAgo = new Date(2022, 2, 5, 10, 0, 0).getTime()
-      expect(fmt(longAgo)).toBe('5 Mar 22')
+      expect(fmt(longAgo)).toBe('5 Mar 22 10:00')
     })
   })
 
@@ -120,7 +120,7 @@ describe('formatListTime', () => {
           locale: 'en-GB',
           labels: { now: 'agora', yesterday: 'Ayer' },
         }),
-      ).toBe('Ayer')
+      ).toBe('Ayer 23:59')
 
       expect(
         formatListTime(NOW - 10_000, {
@@ -139,7 +139,7 @@ describe('formatListTime', () => {
       // wrap-around bug).
       const now = new Date(2026, 4, 15, 1, 0, 0).getTime()
       const yesterdayEvening = new Date(2026, 4, 14, 2, 0, 0).getTime()
-      expect(formatListTime(yesterdayEvening, { now, locale: 'en-GB' })).toBe('Yesterday')
+      expect(formatListTime(yesterdayEvening, { now, locale: 'en-GB' })).toBe('Yesterday 02:00')
     })
   })
 })

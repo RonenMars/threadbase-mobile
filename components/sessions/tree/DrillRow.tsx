@@ -31,6 +31,7 @@ export function DrillRow({ item }: Props) {
       testID={rowTestIDFromKey(item.key)}
       title={item.label}
       timestamp={item.timestamp ?? undefined}
+      messageCount={item.messageCount}
       live={isLive}
       serverLabel={item.serverLabel}
       serverColor={serverColor}
@@ -38,7 +39,6 @@ export function DrillRow({ item }: Props) {
       density="compact"
       leading="dot"
       previewMode="none"
-      showCount={false}
       showBranch={false}
       onPress={item.onPress}
     />

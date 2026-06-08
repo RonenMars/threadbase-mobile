@@ -1,5 +1,5 @@
-// Convention: same-day items show HH:mm, yesterday shows the word,
-// 2-6 days ago shows weekday, same year shows D MMM, older adds YY.
+// Convention: same-day items show HH:mm, all other items show the date label
+// followed by the time (e.g. "Yesterday 14:35", "Mon 09:07", "8 May 14:35").
 // See design/scratch/time-format-research.md for the cross-app analysis.
 
 export interface FormatListTimeOptions {
@@ -51,34 +51,37 @@ export function formatListTime(
 
   const days = dayDiff(ts, nowMs)
 
-  // Today: HH:mm.
-  if (days <= 0) {
-    return new Intl.DateTimeFormat(locale, {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(tsDate)
-  }
+  const timePart = new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(tsDate)
 
-  // Yesterday.
-  if (days === 1) return labels.yesterday
+  // Today: HH:mm only.
+  if (days <= 0) return timePart
 
-  // 2-6 days back: short weekday (Mon, Tue, …).
+  // Yesterday: "Yesterday HH:mm".
+  if (days === 1) return `${labels.yesterday} ${timePart}`
+
+  // 2-6 days back: "Mon HH:mm".
   if (days >= 2 && days <= 6) {
-    return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(tsDate)
+    const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(tsDate)
+    return `${weekday} ${timePart}`
   }
 
-  // Same calendar year: D MMM.
+  // Same calendar year: "D MMM HH:mm".
   if (tsDate.getFullYear() === nowDate.getFullYear()) {
-    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(tsDate)
+    const datePart = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(tsDate)
+    return `${datePart} ${timePart}`
   }
 
-  // Older: D MMM YY.
-  return new Intl.DateTimeFormat(locale, {
+  // Older: "D MMM YY HH:mm".
+  const datePart = new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
     year: '2-digit',
   }).format(tsDate)
+  return `${datePart} ${timePart}`
 }
 
 /**
