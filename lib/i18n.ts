@@ -16,6 +16,18 @@ import queue from '../locales/en/queue.json';
 import pair from '../locales/en/pair.json';
 import shared from '../locales/en/shared.json';
 
+import commonAr from '../locales/ar/common.json';
+import sessionsAr from '../locales/ar/sessions.json';
+import terminalAr from '../locales/ar/terminal.json';
+import settingsAr from '../locales/ar/settings.json';
+import serversAr from '../locales/ar/servers.json';
+import onboardingAr from '../locales/ar/onboarding.json';
+import conversationAr from '../locales/ar/conversation.json';
+import browseAr from '../locales/ar/browse.json';
+import queueAr from '../locales/ar/queue.json';
+import pairAr from '../locales/ar/pair.json';
+import sharedAr from '../locales/ar/shared.json';
+
 import './i18n.types';
 
 const locales = getLocales();
@@ -30,6 +42,19 @@ i18n.use(initReactI18next).init({
   defaultNS: 'common',
   resources: {
     en: { common, sessions, terminal, settings, servers, onboarding, conversation, browse, queue, pair, shared },
+    ar: {
+      common: commonAr,
+      sessions: sessionsAr,
+      terminal: terminalAr,
+      settings: settingsAr,
+      servers: serversAr,
+      onboarding: onboardingAr,
+      conversation: conversationAr,
+      browse: browseAr,
+      queue: queueAr,
+      pair: pairAr,
+      shared: sharedAr
+    },
   },
   interpolation: {
     escapeValue: false,
