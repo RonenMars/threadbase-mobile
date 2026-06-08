@@ -9,7 +9,8 @@
     "about": "About",
     "displayedServers": "Displayed Servers",
     "history": "History",
-    "help": "Help"
+    "help": "Help",
+    "language": "Language"
   },
   "appearance": {
     "theme": "Theme",
@@ -59,5 +60,10 @@
     "askOnExitNote": "Suggest naming the session when you leave it, if it hasn't been named yet. Suppressed when the creation prompt is disabled.",
     "autoNameNote": "Set the session name from the first words of your first message. No AI, no tokens.",
     "aiGeneratedNote": "Use an AI model to generate a meaningful name. Uses tokens from your configured API key."
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "hebrew": "עברית"
   }
 }
