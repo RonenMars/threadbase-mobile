@@ -18,12 +18,13 @@ export function TokenTooltip() {
       </TouchableOpacity>
       {visible && (
         <View testID="token-tooltip-body" style={styles.tooltip}>
+          {/* eslint-disable i18next/no-literal-string */}
           <Text style={styles.text}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
             A temporary API key. Run{' '}
             <Text style={styles.code}>tb token --new</Text>
             {' '}on your Mac to generate one.
           </Text>
+          {/* eslint-enable i18next/no-literal-string */}
           <TouchableOpacity onPress={() => setVisible(false)} hitSlop={8}>
             {/* eslint-disable-next-line i18next/no-literal-string */}
             <Text style={styles.dismiss}>Got it</Text>
