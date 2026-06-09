@@ -261,6 +261,17 @@ await refreshServerInfo(serverId)
                   {t('language.hebrew')}
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentBtn, locale === 'ar' && s.segmentBtnActive]}
+                onPress={() => {
+                  setLocale('ar');
+                  i18n.changeLanguage('ar');
+                }}
+              >
+                <Text style={[s.segmentBtnText, locale === 'ar' && s.segmentBtnTextActive]}>
+                  {t('language.arabic')}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>

@@ -73,7 +73,8 @@
   "language": {
     "label": "שפה",
     "english": "English",
-    "hebrew": "עברית"
+    "hebrew": "עברית",
+    "arabic": "العربية"
   },
   "conversationRows": {
     "title": "שורות שיחה",

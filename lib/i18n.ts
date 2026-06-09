@@ -28,6 +28,18 @@ import queue_he from '../locales/he/queue.json';
 import pair_he from '../locales/he/pair.json';
 import shared_he from '../locales/he/shared.json';
 
+import common_ar from '../locales/ar/common.json';
+import sessions_ar from '../locales/ar/sessions.json';
+import terminal_ar from '../locales/ar/terminal.json';
+import settings_ar from '../locales/ar/settings.json';
+import servers_ar from '../locales/ar/servers.json';
+import onboarding_ar from '../locales/ar/onboarding.json';
+import conversation_ar from '../locales/ar/conversation.json';
+import browse_ar from '../locales/ar/browse.json';
+import queue_ar from '../locales/ar/queue.json';
+import pair_ar from '../locales/ar/pair.json';
+import shared_ar from '../locales/ar/shared.json';
+
 import './i18n.types';
 
 const locales = getLocales();
@@ -40,6 +52,7 @@ i18n.use(initReactI18next).init({
   resources: {
     en: { common: common_en, sessions: sessions_en, terminal: terminal_en, settings: settings_en, servers: servers_en, onboarding: onboarding_en, conversation: conversation_en, browse: browse_en, queue: queue_en, pair: pair_en, shared: shared_en },
     he: { common: common_he, sessions: sessions_he, terminal: terminal_he, settings: settings_he, servers: servers_he, onboarding: onboarding_he, conversation: conversation_he, browse: browse_he, queue: queue_he, pair: pair_he, shared: shared_he },
+    ar: { common: common_ar, sessions: sessions_ar, terminal: terminal_ar, settings: settings_ar, servers: servers_ar, onboarding: onboarding_ar, conversation: conversation_ar, browse: browse_ar, queue: queue_ar, pair: pair_ar, shared: shared_ar },
   },
   interpolation: {
     escapeValue: false,
@@ -48,7 +61,7 @@ i18n.use(initReactI18next).init({
 
 // Update RTL based on current language
 i18n.on('languageChanged', (lng) => {
-  const isRTL = lng === 'he';
+  const isRTL = lng === 'he' || lng === 'ar';
   I18nManager.forceRTL(isRTL);
 });
 
