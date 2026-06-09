@@ -215,6 +215,13 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "fab-new-session"
 
+# Tap on "Sessions" tab to switch from History to Sessions view
+- tapOn:
+    text: "Sessions"
+
+# Wait for tab switch animation
+- waitForAnimationToEnd
+
 # Verify sessions are visible in the list
 # The session we created should be there at the top (most recent)
 
