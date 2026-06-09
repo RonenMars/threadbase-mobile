@@ -2,7 +2,7 @@
   "scanner": {
     "permissionTitle": "Camera access",
     "permissionBody": "Threadbase needs camera access to scan a pairing QR code shown by your server.",
-    "allowCamera": "Allow camera",
+    "allowCamera": "Continue",
     "permissionHint": "Camera access is disabled. Open Settings to enable it for Threadbase.",
     "exchanging": "Exchanging pair token…",
     "errorTitle": "Pairing failed",
