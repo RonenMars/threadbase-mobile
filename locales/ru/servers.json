@@ -1,0 +1,72 @@
+{
+  "header": {
+    "title": "Серверы"
+  },
+  "status": {
+    "connected": "Подключено",
+    "disconnected": "Отключено",
+    "connecting": "Подключение…",
+    "error": "Ошибка подключения"
+  },
+  "action": {
+    "add": "Добавить сервер",
+    "edit": "Изменить",
+    "remove": "Удалить сервер",
+    "viewError": "Показать ошибку подключения",
+    "connect": "Подключить"
+  },
+  "dialog": {
+    "removeTitle": "Удалить сервер",
+    "removeMessage": "Вы уверены, что хотите удалить этот сервер?",
+    "removeConfirm": "Удалить",
+    "removeDismiss": "Отмена"
+  },
+  "form": {
+    "name": "Имя",
+    "url": "URL",
+    "namePlaceholder": "Мой сервер",
+    "urlPlaceholder": "http://localhost:3000",
+    "labelOptional": "Метка (необязательно)",
+    "serverUrl": "URL сервера",
+    "apiKey": "API-ключ",
+    "hint": "Запустите cch serve --tunnel --qr на вашем Mac, чтобы получить URL с QR-кодом."
+  },
+  "manage": {
+    "title": "Серверы",
+    "addServer": "+ Добавить сервер",
+    "empty": "Серверы ещё не добавлены."
+  },
+  "filter": {
+    "title": "Фильтры",
+    "filterSort": "Фильтр и сортировка",
+    "sortTitle": "Сортировка",
+    "view": "Вид",
+    "sortBy": "Сортировать по",
+    "order": "Порядок",
+    "status": "Статус",
+    "servers": "Серверы",
+    "all": "Все",
+    "none": "Нет",
+    "resetDefaults": "Сбросить к умолчаниям",
+    "close": "✕",
+    "editOrder": "Изменить порядок",
+    "lockOrder": "Зафиксировать порядок"
+  },
+  "displayedServers": {
+    "all": "Все",
+    "latestOnly": "Только последний",
+    "none": "Нет"
+  },
+  "newSessionPicker": {
+    "title": "Начать сеанс на"
+  },
+  "addAction": {
+    "title": "Настройка отображения нового сервера",
+    "subtitle": "Как должны обновиться отображаемые серверы после этого добавления?",
+    "rememberChoice": "Запомнить этот выбор"
+  },
+  "statusModal": {
+    "title": "Статус сервера",
+    "close": "✕"
+  }
+}

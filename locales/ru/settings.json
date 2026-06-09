@@ -1,0 +1,98 @@
+{
+  "header": {
+    "title": "Настройки"
+  },
+  "section": {
+    "appearance": "Внешний вид",
+    "servers": "Серверы",
+    "notifications": "Уведомления",
+    "about": "О программе",
+    "displayedServers": "Отображаемые серверы",
+    "history": "История",
+    "help": "Помощь",
+    "language": "Язык"
+  },
+  "appearance": {
+    "theme": "Тема",
+    "dark": "Тёмная",
+    "light": "Светлая",
+    "system": "Системная",
+    "layout": "Макет",
+    "layoutTree": "Дерево",
+    "layoutHub": "Центр",
+    "layoutClassic": "Классический"
+  },
+  "notifications": {
+    "whenAddingServer": "При добавлении нового сервера",
+    "waitingForInput": "Ожидание ввода",
+    "sessionCompleted": "Сеанс завершён",
+    "sessionFailed": "Сеанс с ошибкой",
+    "diffReady": "Diff готов",
+    "showBadgeCount": "Показывать счётчик значков",
+    "quietHours": "Тихие часы",
+    "sendTest": "Отправить тестовое уведомление"
+  },
+  "notification": {
+    "testTitle": "Тестовое уведомление",
+    "testBody": "Уведомления Threadbase работают!"
+  },
+  "addServer": {
+    "selectedAction": "Выбранное действие при создании",
+    "resetAction": "Сбросить, чтобы спрашивать каждый раз"
+  },
+  "history": {
+    "messagePreview": "Предпросмотр сообщения",
+    "first": "Первое",
+    "last": "Последнее"
+  },
+  "about": {
+    "subtitle": "Центр управления AI-агентами"
+  },
+  "help": {
+    "restartOnboarding": "Перезапустить руководство",
+    "helpSupport": "Помощь и поддержка"
+  },
+  "servers": {
+    "scanQr": "Сканировать QR для добавления сервера"
+  },
+  "sessionNaming": {
+    "title": "Именование сеансов",
+    "autoNameFromMessage": "Автоназвание из первого сообщения",
+    "aiGeneratedNames": "Названия сеансов, созданные AI",
+    "askOnCreateNote": "Показать подсказку для именования сеанса при создании нового.",
+    "askOnExitNote": "Предложить именовать сеанс при выходе, если он ещё не был назван. Подавляется, когда подсказка создания отключена.",
+    "autoNameNote": "Установить имя сеанса из первых слов вашего первого сообщения. Без AI, без токенов.",
+    "aiGeneratedNote": "Использовать AI-модель для создания осмысленного имени. Использует токены из вашего настроенного API-ключа."
+  },
+  "quickAccess": {
+    "title": "Быстрый доступ",
+    "favorites": "Избранное",
+    "recentSessions": "Недавние сеансы",
+    "popularProjects": "Популярные проекты"
+  },
+  "language": {
+    "label": "Язык",
+    "english": "English",
+    "hebrew": "עברית",
+    "arabic": "العربية",
+    "russian": "Русский"
+  },
+  "conversationRows": {
+    "title": "Строки бесед",
+    "density": "Плотность",
+    "pathDisplay": "Отображение пути",
+    "serverIndicator": "Индикатор сервера",
+    "serverChipStyle": "Стиль метки сервера",
+    "comfortable": "Комфортная",
+    "compact": "Компактная",
+    "smart": "Умная",
+    "full": "Полный",
+    "lastSegment": "Последний",
+    "auto": "Авто",
+    "always": "Всегда",
+    "never": "Никогда",
+    "label": "Метка",
+    "letter": "Буква"
+  },
+  "restartTour": "Перезапустить обзор приложения"
+}

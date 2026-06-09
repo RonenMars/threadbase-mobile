@@ -1,0 +1,43 @@
+{
+  "commands": {
+    "title": "Команды",
+    "empty": "Нет команд, соответствующих \"/{{query}}\"",
+    "argsBadge": "аргументы",
+    "run": "Запустить /{{command}}"
+  },
+  "banner": {
+    "moreInfo": "Подробнее"
+  },
+  "app": {
+    "title": "Threadbase"
+  },
+  "quickAccess": {
+    "newSessionHere": "Новый сеанс здесь",
+    "browseDirectory": "Просмотреть директорию",
+    "openSession": "Открыть сеанс",
+    "unpinFromFavorites": "Открепить из избранного",
+    "pinToFavorites": "Закрепить в избранном",
+    "cancel": "Отмена",
+    "loadMore": "+ ещё {{count}}",
+    "emptyFavorites": "Избранное пусто — долгое нажатие на элемент, чтобы закрепить его.",
+    "pairServer": "Сопрягите сервер, чтобы увидеть {{tab}}.",
+    "loading": "Загрузка…",
+    "loadFailed": "Не удалось загрузить — нажмите для повтора.",
+    "nothing": "Пока ничего.",
+    "favorites": "Избранное",
+    "popular": "Популярное",
+    "recents": "Недавнее"
+  },
+  "conversationInfo": {
+    "title": "Информация о беседе",
+    "id": "ID",
+    "titleLabel": "НАЗВАНИЕ",
+    "projectPath": "ПУТЬ ПРОЕКТА",
+    "messageCount": "КОЛИЧЕСТВО СООБЩЕНИЙ",
+    "lastActivity": "ПОСЛЕДНЯЯ АКТИВНОСТЬ"
+  },
+  "session": {
+    "active": "Активен",
+    "gotIt": "Понятно"
+  }
+}

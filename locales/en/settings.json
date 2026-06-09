@@ -74,7 +74,8 @@
     "label": "Language",
     "english": "English",
     "hebrew": "עברית",
-    "arabic": "العربية"
+    "arabic": "العربية",
+    "russian": "Русский"
   },
   "conversationRows": {
     "title": "Conversation rows",
