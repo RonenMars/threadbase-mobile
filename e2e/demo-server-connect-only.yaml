@@ -103,6 +103,16 @@ appId: com.ronenmars.threadbase
 - waitForAnimationToEnd:
     timeout: 3000
 
+# Dismiss iOS password save dialog if it appears (can show here too)
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
 # Tap the "Enter Threadbase" button to complete onboarding
 - tapOn:
     id: "onboarding-done-cta"
