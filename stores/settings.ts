@@ -99,7 +99,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
-  sessionsLayout: 'tree',
+  sessionsLayout: 'classic',
   mergeChats: true,
   locale: 'en',
   autoNameFromMessage: true,
