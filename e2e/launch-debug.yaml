@@ -1,0 +1,40 @@
+appId: com.ronenmars.threadbase
+---
+# Launch Debug build and handle expo-dev-client menu
+# This assumes you have a local server in the dev menu
+
+- launchApp
+
+# Wait for dev menu to appear
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Look for your local server entry (adjust text to match your server name)
+# If you see "Enter URL manually", tap it and enter localhost:8081
+- runFlow:
+    when:
+      visible:
+        text: "Enter URL manually"
+    commands:
+      - tapOn:
+          text: "Enter URL manually"
+      - inputText: "exp://192.168.1.100:8081"  # Replace with your Mac's IP
+      - tapOn:
+          text: "Connect"
+      - waitForAnimationToEnd:
+          timeout: 10000
+
+# Or if your server is already in the list, tap it:
+- runFlow:
+    when:
+      visible:
+        text: "192.168.1.100:8081"  # Your server name
+    commands:
+      - tapOn:
+          text: "192.168.1.100:8081"
+      - waitForAnimationToEnd:
+          timeout: 10000
+
+# Now app should be loaded and ready for testing
+- assertVisible:
+    text: "Begin handshake"  # Your app's first screen

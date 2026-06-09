@@ -24,6 +24,7 @@ const _animatedIds = new Set<string>()
 
 interface Props {
   session: MultiSession
+  isFirstSession?: boolean
 }
 
 function formatElapsed(ms: number): string {
@@ -35,7 +36,7 @@ function formatElapsed(ms: number): string {
   return `${h}h ${m % 60}m`
 }
 
-export function SessionCard({ session }: Props) {
+export function SessionCard({ session, isFirstSession = false }: Props) {
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
@@ -110,6 +111,7 @@ export function SessionCard({ session }: Props) {
   return (
     <Animated.View entering={isNew ? FadeInDown : undefined} style={styles.cardWrap}>
       <TouchableOpacity
+        testID={isFirstSession ? "first-session-card" : undefined}
         onPress={handlePress}
         onLongPress={handleLongPress}
         activeOpacity={0.75}

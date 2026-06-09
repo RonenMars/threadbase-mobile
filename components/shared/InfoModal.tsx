@@ -58,7 +58,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
                 <action.icon size={22} color={dark.text.secondary} />
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Close">
+            <TouchableOpacity testID="info-modal-close-button" onPress={onClose} hitSlop={8} accessibilityLabel="Close">
               <X size={22} color={dark.text.secondary} />
             </TouchableOpacity>
           </View>

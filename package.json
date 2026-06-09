@@ -23,6 +23,11 @@
     "test:integration": "jest --ci --testPathPattern='__tests__/integration'",
     "test:e2e": "jest --ci --testPathPattern='__tests__/e2e'",
     "test:e2e:mock": "node e2e/check-sim.js && (MOCK_PORTS=7071,7072 node e2e/mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/launch.yaml e2e/browse.yaml e2e/bug6_bottom_bar_inset.yaml e2e/pty_turn_divider.yaml e2e/feat1_tree_drill_new_session.yaml e2e/feat2_export_in_info_shelf.yaml e2e/voice_dictation.yaml e2e/settings_qr_scanner.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
+    "test:e2e:demo": "node e2e/check-sim.js && node e2e/ensure-release-build.js && maestro test --format html --output e2e/_artifacts/demo-report --debug-output e2e/_artifacts/debug e2e/demo-server-connect-only.yaml",
+    "test:e2e:demo:watch": "node e2e/check-sim.js && node e2e/ensure-release-build.js && maestro test e2e/demo-server-connect-only.yaml",
+    "test:e2e:demo:debug": "node e2e/check-sim.js && echo '\n⚠️  Debug mode: manually tap your Metro server in the simulator, then press Enter to continue...' && read -p '' && maestro test e2e/demo-server-connect-only.yaml",
+    "test:e2e:demo:record": "node e2e/check-sim.js && node e2e/ensure-release-build.js && maestro record --local --format html --output e2e/_artifacts/demo-report --debug-output e2e/_artifacts/debug e2e/demo-server-connect-only.yaml",
+    "test:e2e:demo:record:watch": "node e2e/check-sim.js && node e2e/ensure-release-build.js && maestro record --local e2e/demo-server-connect-only.yaml",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },

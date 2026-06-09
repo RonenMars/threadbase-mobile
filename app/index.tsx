@@ -592,6 +592,11 @@ function MergedClassicList({
     return result
   }, [filteredItems, showServerHeaders, activeServerIds, servers])
 
+  // Find the index of the first session in the flat list
+  const firstSessionIndex = useMemo(() => {
+    return flatData.findIndex((item) => item.kind === 'session')
+  }, [flatData])
+
   const renderConvCard = useCallback(
     (item: MultiConversation) => (
       <TouchableOpacity
@@ -642,7 +647,7 @@ function MergedClassicList({
           if (item.kind === 'session') return `session:${item.item.serverId}::${item.item.id}`
           return `conversation:${item.item.serverId}::${item.item.id}`
         }}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           if (item.kind === 'header') {
             return <ServerHeaderRow serverId={item.serverId} serverLabel={item.serverLabel} totalCount={item.totalCount} />
           }
@@ -650,7 +655,7 @@ function MergedClassicList({
             return <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
           }
           if (item.kind === 'session') {
-            return <SessionCard session={item.item as MultiSession} />
+            return <SessionCard session={item.item as MultiSession} isFirstSession={index === firstSessionIndex} />
           }
           return renderConvCard(item.item as MultiConversation)
         }}
