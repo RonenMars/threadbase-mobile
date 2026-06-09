@@ -215,13 +215,7 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "fab-new-session"
 
-# Tap on "Sessions" tab to switch from History to Sessions view
-- tapOn:
-    text: "Sessions"
-
-# Wait for tab switch animation
-- waitForAnimationToEnd
-
+# With classic layout and mergeChats=false, we should be on Sessions tab by default
 # Verify sessions are visible in the list
 # The session we created should be there at the top (most recent)
 
