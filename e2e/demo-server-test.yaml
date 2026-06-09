@@ -1,0 +1,69 @@
+appId: com.ronenmars.threadbase
+---
+# Test demo server connection and basic session creation
+# Server: https://threadbase-demo.fly.dev
+# API Key: tb_public_demo_reviewer_key
+
+- launchApp:
+    clearState: true
+
+# Wait for onboarding screen to load
+- assertVisible:
+    text: "Welcome to Threadbase"
+    timeout: 10000
+
+# Look for the manual setup UI (server URL input should be visible)
+- assertVisible:
+    id: "onboarding-connect-url-input"
+
+# Enter server URL
+- tapOn:
+    id: "onboarding-connect-url-input"
+- inputText: "https://threadbase-demo.fly.dev"
+
+# Enter API key
+- tapOn:
+    id: "onboarding-connect-token-input"
+- inputText: "tb_public_demo_reviewer_key"
+
+# Tap Connect button
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+
+# Wait for connection to succeed and main screen to load
+- assertVisible:
+    text: "Conversations"
+    timeout: 15000
+
+# Should land on the main hub/conversations list
+# Create a new session by tapping the "New chat" or similar button
+- tapOn:
+    text: "New chat"
+    timeout: 5000
+
+# Wait for session screen to appear
+- assertVisible:
+    id: "session-detail-screen"
+    timeout: 10000
+
+# Type a message in the input
+- tapOn:
+    text: "Type a message"
+- inputText: "Hello from App Review test!"
+
+# Tap the send button (likely a paper plane icon or Send text)
+- tapOn:
+    text: "Send"
+    optional: true
+
+# Alternative: look for accessible send button if text doesn't work
+- tapOn:
+    accessibilityLabel: "Send message"
+    optional: true
+
+# Wait a moment for the message to appear
+- waitForAnimationToEnd
+
+# Verify we're still on the session screen (test passed if we got this far)
+- assertVisible:
+    id: "session-detail-screen"

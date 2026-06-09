@@ -226,10 +226,14 @@ export default function BrowseScreen() {
   )
 
   const renderItem = useCallback(
-    ({ item }: { item: { name: string } }) => {
+    ({ item, index }: { item: { name: string }; index: number }) => {
       const childPath = currentPath ? `${currentPath}/${item.name}` : item.name
       return (
-        <TouchableOpacity style={styles.row} onPress={() => navigateTo(childPath)}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => navigateTo(childPath)}
+          testID={index === 0 ? "browse-first-directory" : undefined}
+        >
           <Text style={styles.folderIcon}>📁</Text>
           <Text style={styles.dirName} numberOfLines={1}>
             {item.name}
