@@ -17,6 +17,7 @@ export function ScreenHeader({ title, right, onBack }: Props) {
   return (
     <View style={styles.bar}>
       <Pressable
+        testID="screen-header-back-button"
         onPress={onBack ?? (() => router.back())}
         hitSlop={16}
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}

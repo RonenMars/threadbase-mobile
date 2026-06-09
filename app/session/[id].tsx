@@ -737,6 +737,7 @@ export default function SessionDetailScreen() {
 
   const infoButton = (
     <Pressable
+      testID="session-info-button"
       onPress={() => setInfoVisible(true)}
       hitSlop={8}
       accessibilityLabel="Session info"
@@ -896,6 +897,7 @@ export default function SessionDetailScreen() {
                 editable={!isWakingUp}
               />
               <TouchableOpacity
+                testID="send-message-button"
                 style={[
                   styles.sendBtn,
                   (!inputText.trim() && attachments.length === 0 || isWakingUp) && styles.sendBtnDisabled,
