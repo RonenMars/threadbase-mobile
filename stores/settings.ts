@@ -100,7 +100,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
   sessionsLayout: 'classic',
-  mergeChats: false,
+  mergeChats: true,
   locale: 'en',
   autoNameFromMessage: true,
   aiGeneratedNames: false,
