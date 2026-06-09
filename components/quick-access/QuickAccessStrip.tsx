@@ -97,7 +97,7 @@ export function QuickAccessStrip() {
       recentsFetchStatus: recentsQuery.fetchStatus,
       recentsPerServerErrors: recentsQuery.perServerErrors,
       recentsError: recentsQuery.error ? String(recentsQuery.error) : null,
-      recentsSessions: recentsData?.sessions?.length ?? null,
+      recentsProjectChats: recentsData?.projectChats?.length ?? null,
       popularStatus: popularQuery.status,
       popularFetchStatus: popularQuery.fetchStatus,
       popularPerServerErrors: popularQuery.perServerErrors,
@@ -117,7 +117,7 @@ export function QuickAccessStrip() {
     recentsQuery.fetchStatus,
     recentsQuery.perServerErrors,
     recentsQuery.error,
-    recentsData?.sessions?.length,
+    recentsData?.projectChats?.length,
     popularQuery.status,
     popularQuery.fetchStatus,
     popularQuery.perServerErrors,
@@ -147,13 +147,15 @@ export function QuickAccessStrip() {
       return favorites.map((f) => ({ type: f.type, id: f.id, label: f.label, serverId: f.serverId }))
     }
     if (effectiveTab === 'recents') {
-      return (recentsData?.sessions ?? [])
-        .filter((s) => !ignoredRecents.includes(`${s.serverId ?? firstServerId}::${s.id}`))
-        .map((s) => ({
-          type: 'session' as const,
-          id: `${s.serverId ?? firstServerId}::${s.id}`,
-          label: s.projectName ?? s.projectPath ?? s.id,
-          serverId: s.serverId ?? firstServerId,
+      // ProjectChats can be either live sessions or historical conversations.
+      // Store the ProjectChat type on the chip so the tap handler can route correctly.
+      return (recentsData?.projectChats ?? [])
+        .filter((pc) => !ignoredRecents.includes(`${pc.serverId ?? firstServerId}::${pc.id}`))
+        .map((pc) => ({
+          type: pc.type, // 'session' or 'conversation'
+          id: `${pc.serverId ?? firstServerId}::${pc.id}`,
+          label: pc.title,
+          serverId: pc.serverId ?? firstServerId,
         }))
     }
     return (popularData?.projects ?? [])
@@ -184,7 +186,7 @@ export function QuickAccessStrip() {
   // to surface here. During the initial loading window the queries are still
   // 'pending', so we leave the strip visible to avoid a reflow once data lands.
   const recentsSettledEmpty =
-    recentsQuery.status === 'success' && (recentsData?.sessions?.length ?? 0) === 0
+    recentsQuery.status === 'success' && (recentsData?.projectChats?.length ?? 0) === 0
   const popularSettledEmpty =
     popularQuery.status === 'success' && (popularData?.projects?.length ?? 0) === 0
   const nothingToShow =
@@ -241,8 +243,17 @@ export function QuickAccessStrip() {
 
   const handleOpenSession = () => {
     if (!activeItem?.serverId) return
-    const [, sessionId] = activeItem.id.split('::')
-    router.push(`/session/${sessionId}?server=${activeItem.serverId}`)
+    const [, id] = activeItem.id.split('::')
+
+    // Route based on the ProjectChat type. Conversations go to the conversation
+    // detail view (message list), while sessions go to the terminal view.
+    // This fixes the bug where tapping a historical conversation from Recents
+    // tried to open it as a PTY session, showing "No terminal output".
+    if (activeItem.type === 'conversation') {
+      router.push(`/conversation/${id}?server=${activeItem.serverId}`)
+    } else {
+      router.push(`/session/${id}?server=${activeItem.serverId}`)
+    }
     setActiveItem(null)
   }
 
