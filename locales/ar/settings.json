@@ -11,7 +11,10 @@
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
-    "russian": "Русский"
+    "russian": "Русский",
+    "restartRequired": "إعادة التشغيل مطلوبة",
+    "restartMessage": "يتطلب التبديل بين لغات RTL و LTR إعادة تشغيل التطبيق لتطبيق تغييرات التخطيط.",
+    "restartNow": "أعد التشغيل الآن"
   },
   "notifications": {
     "label": "الإشعارات",

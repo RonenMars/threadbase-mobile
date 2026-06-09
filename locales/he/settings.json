@@ -75,7 +75,10 @@
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
-    "russian": "Русский"
+    "russian": "Русский",
+    "restartRequired": "נדרש אתחול",
+    "restartMessage": "שינוי בין שפות RTL ו-LTR דורש אתחול האפליקציה כדי להחיל את שינויי הפריסה.",
+    "restartNow": "אתחל עכשיו"
   },
   "conversationRows": {
     "title": "שורות שיחה",

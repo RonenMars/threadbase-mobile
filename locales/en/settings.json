@@ -75,7 +75,10 @@
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
-    "russian": "Русский"
+    "russian": "Русский",
+    "restartRequired": "Restart Required",
+    "restartMessage": "Changing between RTL and LTR languages requires restarting the app to apply the layout changes.",
+    "restartNow": "Restart Now"
   },
   "conversationRows": {
     "title": "Conversation rows",

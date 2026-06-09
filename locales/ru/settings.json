@@ -75,7 +75,10 @@
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
-    "russian": "Русский"
+    "russian": "Русский",
+    "restartRequired": "Требуется перезапуск",
+    "restartMessage": "Переключение между языками RTL и LTR требует перезапуска приложения для применения изменений макета.",
+    "restartNow": "Перезапустить сейчас"
   },
   "conversationRows": {
     "title": "Строки бесед",

@@ -10,11 +10,13 @@ import {
   Platform,
   RefreshControl,
   Linking,
+  I18nManager,
 } from 'react-native'
 import Constants from 'expo-constants'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
+import * as Updates from 'expo-updates'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { useServersStore } from '@/stores/servers'
@@ -211,6 +213,40 @@ await refreshServerInfo(serverId)
     Alert.alert('Tour reset', 'The app tour will reappear next time you visit the Hub and session screens.')
   }, [])
 
+  const handleLanguageChange = useCallback(async (newLocale: string) => {
+    const currentIsRTL = I18nManager.isRTL
+    const newIsRTL = newLocale === 'he' || newLocale === 'ar'
+
+    // If RTL direction is changing, we need to restart the app
+    if (currentIsRTL !== newIsRTL) {
+      Alert.alert(
+        i18n.t('settings:language.restartRequired'),
+        i18n.t('settings:language.restartMessage'),
+        [
+          {
+            text: i18n.t('common:button.cancel'),
+            style: 'cancel',
+          },
+          {
+            text: i18n.t('settings:language.restartNow'),
+            onPress: async () => {
+              setLocale(newLocale)
+              await i18n.changeLanguage(newLocale)
+              I18nManager.forceRTL(newIsRTL)
+              // Reload the app to apply RTL changes
+              await Updates.reloadAsync()
+            },
+          },
+        ],
+        { cancelable: false }
+      )
+    } else {
+      // Same direction, just change language without restart
+      setLocale(newLocale)
+      await i18n.changeLanguage(newLocale)
+    }
+  }, [setLocale])
+
   const handleScanQrSuccess = async (result: ExchangeResult) => {
     setQrScannerOpen(false)
     const label = result.machineName?.trim() || undefined
@@ -241,10 +277,7 @@ await refreshServerInfo(serverId)
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, locale === 'en' && s.segmentBtnActive]}
-                onPress={() => {
-                  setLocale('en');
-                  i18n.changeLanguage('en');
-                }}
+                onPress={() => handleLanguageChange('en')}
               >
                 <Text style={[s.segmentBtnText, locale === 'en' && s.segmentBtnTextActive]}>
                   {t('language.english')}
@@ -252,10 +285,7 @@ await refreshServerInfo(serverId)
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, locale === 'he' && s.segmentBtnActive]}
-                onPress={() => {
-                  setLocale('he');
-                  i18n.changeLanguage('he');
-                }}
+                onPress={() => handleLanguageChange('he')}
               >
                 <Text style={[s.segmentBtnText, locale === 'he' && s.segmentBtnTextActive]}>
                   {t('language.hebrew')}
@@ -263,10 +293,7 @@ await refreshServerInfo(serverId)
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, locale === 'ar' && s.segmentBtnActive]}
-                onPress={() => {
-                  setLocale('ar');
-                  i18n.changeLanguage('ar');
-                }}
+                onPress={() => handleLanguageChange('ar')}
               >
                 <Text style={[s.segmentBtnText, locale === 'ar' && s.segmentBtnTextActive]}>
                   {t('language.arabic')}
@@ -274,10 +301,7 @@ await refreshServerInfo(serverId)
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, locale === 'ru' && s.segmentBtnActive]}
-                onPress={() => {
-                  setLocale('ru');
-                  i18n.changeLanguage('ru');
-                }}
+                onPress={() => handleLanguageChange('ru')}
               >
                 <Text style={[s.segmentBtnText, locale === 'ru' && s.segmentBtnTextActive]}>
                   {t('language.russian')}
