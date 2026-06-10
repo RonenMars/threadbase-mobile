@@ -5,8 +5,10 @@ import * as Haptics from 'expo-haptics'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { formatElapsed } from './hubUtils'
+import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { SessionRowProps } from './types'
 
 export function SessionRow({ session }: SessionRowProps) {
@@ -50,6 +52,9 @@ export function SessionRow({ session }: SessionRowProps) {
     }
   }, [session, cancelSession])
 
+  const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
+  const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
+
   const isLive = session.status === 'running' || session.status === 'waiting_input'
   const branchAndElapsed = [session.branch || 'no git', formatElapsed(session.elapsedMs)].join(' · ')
   const titleSuffix = sessionName?.trim() || branchAndElapsed
@@ -69,7 +74,7 @@ export function SessionRow({ session }: SessionRowProps) {
       activeServerCount={activeServerCount}
       density="compact"
       leading="dot"
-      previewMode="none"
+      previewMode={previewMode}
       onPress={handlePress}
       onLongPress={handleLongPress}
       testID={`session-row-${session.id}`}
