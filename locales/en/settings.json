@@ -95,7 +95,11 @@
     "always": "Always",
     "never": "Never",
     "label": "Label",
-    "letter": "Letter"
+    "letter": "Letter",
+    "messagePreview": "Message preview",
+    "previewFirst": "First",
+    "previewLast": "Last",
+    "previewOff": "Off"
   },
   "restartTour": "Restart app tour"
 }

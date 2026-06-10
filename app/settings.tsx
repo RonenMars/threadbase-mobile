@@ -491,31 +491,31 @@ await refreshServerInfo(serverId)
             </View>
           </View>
           <View style={s.row}>
-            <Text style={s.rowLabel}>Message preview</Text>
+            <Text style={s.rowLabel}>{t('conversationRows.messagePreview')}</Text>
             <View style={s.segmentedControl}>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'first' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('first')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'first' && s.segmentBtnTextActive]}>First</Text>
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'first' && s.segmentBtnTextActive]}>{t('conversationRows.previewFirst')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'last' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('last')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'last' && s.segmentBtnTextActive]}>Last</Text>
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'last' && s.segmentBtnTextActive]}>{t('conversationRows.previewLast')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'auto' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('auto')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'auto' && s.segmentBtnTextActive]}>Auto</Text>
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'auto' && s.segmentBtnTextActive]}>{t('conversationRows.auto')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'off' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('off')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'off' && s.segmentBtnTextActive]}>Off</Text>
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'off' && s.segmentBtnTextActive]}>{t('conversationRows.previewOff')}</Text>
               </TouchableOpacity>
             </View>
           </View>
