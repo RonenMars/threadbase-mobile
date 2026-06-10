@@ -10,27 +10,27 @@ jest.mock('@/services/api-client', () => ({
 beforeEach(() => { mockGet.mockReset() })
 
 describe('useRecentSessions', () => {
-  it('fetches from /api/sessions/recents and tags sessions with serverId', async () => {
-    mockGet.mockResolvedValue({ sessions: [{ id: 's1', projectPath: '~/app' }], total: 1 })
+  it('fetches from /project-chats and tags items with serverId', async () => {
+    mockGet.mockResolvedValue({ items: [{ id: 's1', projectId: 'p1', title: '~/app', type: 'session' }] })
     const { result } = renderHook(() => useRecentSessions(['srv1']), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.status).toBe('success'))
-    expect(result.current.data.sessions).toHaveLength(1)
-    expect(result.current.data.sessions[0]).toMatchObject({ id: 's1', serverId: 'srv1' })
-    expect(mockGet).toHaveBeenCalledWith('/api/sessions/recents?limit=20')
+    expect(result.current.data.projectChats).toHaveLength(1)
+    expect(result.current.data.projectChats[0]).toMatchObject({ id: 's1', serverId: 'srv1' })
+    expect(mockGet).toHaveBeenCalledWith('/project-chats?limit=20')
   })
 
-  it('unions sessions across multiple servers', async () => {
+  it('unions project-chats across multiple servers, newest first', async () => {
     mockGet
-      .mockResolvedValueOnce({ sessions: [{ id: 's1', startedAt: '2026-05-16T10:00:00Z' }], total: 1 })
-      .mockResolvedValueOnce({ sessions: [{ id: 's2', startedAt: '2026-05-16T11:00:00Z' }], total: 1 })
+      .mockResolvedValueOnce({ items: [{ id: 's1', projectId: 'p1', title: 'a', type: 'session', latestMessageAt: '2026-05-16T10:00:00Z' }] })
+      .mockResolvedValueOnce({ items: [{ id: 's2', projectId: 'p2', title: 'b', type: 'session', latestMessageAt: '2026-05-16T11:00:00Z' }] })
     const { result } = renderHook(
       () => useRecentSessions(['srvA', 'srvB']),
       { wrapper: createWrapper() },
     )
-    await waitFor(() => expect(result.current.data.sessions).toHaveLength(2))
-    // Newest first: srvB's s2 comes before srvA's s1
-    expect(result.current.data.sessions[0].id).toBe('s2')
-    expect(result.current.data.sessions[1].id).toBe('s1')
+    await waitFor(() => expect(result.current.data.projectChats).toHaveLength(2))
+    // Newest first by latestMessageAt: srvB's s2 comes before srvA's s1
+    expect(result.current.data.projectChats[0].id).toBe('s2')
+    expect(result.current.data.projectChats[1].id).toBe('s1')
   })
 })
 
