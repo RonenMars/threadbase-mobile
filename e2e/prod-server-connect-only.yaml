@@ -237,9 +237,11 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "session-detail-screen"
 
-# Verify our conversation history is visible with our prompt text
+# Verify our conversation history is visible with our prompt text.
+# The terminal renders the prompt line with a leading "› " marker, so match
+# as a substring. "+" and "?" are regex metacharacters and must be escaped.
 - assertVisible:
-    text: "What is 2+2?"
+    text: ".*What is 2\\+2\\?.*"
 
 # Test completed successfully - we verified:
 # 1. Connection to production server works ✓
