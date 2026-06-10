@@ -1,0 +1,33 @@
+{
+  "header": {
+    "title": "Беседа",
+    "containsImage": "📎 Содержит изображение"
+  },
+  "list": {
+    "loadingMore": "Загрузка…",
+    "empty": "В этой беседе нет сообщений.",
+    "msgs_one": "{{count}} сообщение",
+    "msgs_other": "{{count}} сообщений",
+    "tokens": "{{count}}k токенов"
+  },
+  "error": {
+    "loadFailed": "Не удалось загрузить беседу"
+  },
+  "action": {
+    "export": "Экспорт",
+    "copyPatch": "Копировать патч",
+    "showAllLines": "Показать все {{count}} строк",
+    "copyCode": "Копировать",
+    "copiedCode": "Скопировано",
+    "scrollToBottom": "Прокрутить вниз"
+  },
+  "message": {
+    "code": "Код",
+    "tokens": "{{count}} токенов",
+    "errorBadge": "Ошибка"
+  },
+  "thinking": {
+    "label": "Рассуждение",
+    "redacted": "Рассуждение скрыто"
+  }
+}

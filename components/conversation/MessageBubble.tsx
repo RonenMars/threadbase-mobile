@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
 import { dark, font, radius, spacing } from '@/constants/theme'
 import type { Message, MessageContent } from '@/types/api'
+import { flexRow } from '@/lib/rtl'
 
 interface Props {
   message: Message
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     marginVertical: spacing.xs,
   },
   codeHeader: {
-    flexDirection: 'row',
+    flexDirection: flexRow(),
     justifyContent: 'space-between',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   codeLine: {
-    flexDirection: 'row',
+    flexDirection: flexRow(),
     flexWrap: 'wrap',
   },
   codeToken: {

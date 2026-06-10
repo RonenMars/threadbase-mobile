@@ -1,0 +1,99 @@
+{
+  "header": {
+    "title": "Сеансы",
+    "history": "История"
+  },
+  "search": {
+    "placeholder": "Поиск сеансов и бесед…"
+  },
+  "filter": {
+    "label": "Фильтр и сортировка",
+    "all": "Все",
+    "active": "Активные",
+    "waiting": "Ожидание",
+    "completed": "Завершённые",
+    "failed": "С ошибками"
+  },
+  "sort": {
+    "label": "Сортировка",
+    "newest": "Новые",
+    "oldest": "Старые",
+    "az": "А–Я"
+  },
+  "list": {
+    "sessionCount_one": "{{count}} сеанс",
+    "sessionCount_other": "{{count}} сеансов",
+    "empty": "Нет сеансов",
+    "emptySubtitle": "Запустите сеанс Claude Code, чтобы увидеть его здесь",
+    "noResults": "Ничего не найдено",
+    "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
+    "emptyProjects": "Проектов пока нет"
+  },
+  "card": {
+    "status": {
+      "active": "Активен",
+      "waiting": "Ожидание ввода",
+      "completed": "Сеанс завершён",
+      "failed": "Ошибка сеанса",
+      "starting": "Запуск…",
+      "stopping": "Остановка…"
+    },
+    "connectedTo": "{{server}}",
+    "copyId": "Копировать ID сеанса",
+    "sendInput": "Отправить ввод",
+    "cancel": "Отменить сеанс",
+    "remove": "Удалить сеанс",
+    "viewError": "Показать ошибку подключения",
+    "prompts_one": "{{count}} запрос",
+    "prompts_other": "{{count}} запросов"
+  },
+  "takeover": {
+    "prompt": "Другой клиент управляет этим сеансом",
+    "takeControl": "Взять управление",
+    "dismiss": "Закрыть"
+  },
+  "directory": {
+    "empty": "Пустая директория",
+    "loadFailed": "Не удалось загрузить директории",
+    "browsingNotConfigured": "Просмотр не настроен"
+  },
+  "hub": {
+    "seeAll_one": "Показать {{count}} беседу →",
+    "seeAll_other": "Показать все {{count}} беседы →",
+    "msgs_one": "{{count}} сообщение",
+    "msgs_other": "{{count}} сообщений",
+    "prompts_one": "{{count}} запрос",
+    "prompts_other": "{{count}} запросов"
+  },
+  "loading": {
+    "title": "Загрузка сеансов",
+    "progress": "{{loaded}} из {{total}}",
+    "fetchingServer": "Получение {{server}}",
+    "fetchingNoLabel": "Получение"
+  },
+  "live": {
+    "headerLive_one": "ОНЛАЙН · {{count}}",
+    "headerLive_other": "ОНЛАЙН · {{count}}",
+    "headerIdle_one": "БЕЗ АКТИВНОСТИ · {{count}}",
+    "headerIdle_other": "БЕЗ АКТИВНОСТИ · {{count}}"
+  },
+  "rename": {
+    "title": "Переименовать сеанс",
+    "placeholder": "Название сеанса",
+    "cancel": "Отмена",
+    "save": "Сохранить"
+  },
+  "preview": {
+    "liveUnavailable": "Предпросмотр активного сеанса недоступен — откройте сеанс, чтобы увидеть терминал в реальном времени.",
+    "noMessages": "Сообщений пока нет.",
+    "openSession": "Открыть сеанс",
+    "openConversation": "Открыть беседу",
+    "pin": "Закрепить",
+    "unpin": "Открепить"
+  },
+  "manageFavorites": {
+    "empty": "Избранное пусто.",
+    "emptySub": "Нажмите на кнопку в ленте и выберите \"Добавить в избранное\".",
+    "addToFavorites": "Добавить в избранное"
+  }
+}

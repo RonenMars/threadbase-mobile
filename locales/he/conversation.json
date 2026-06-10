@@ -1,0 +1,33 @@
+{
+  "header": {
+    "title": "שיחה",
+    "containsImage": "📎 מכיל תמונה"
+  },
+  "list": {
+    "loadingMore": "טוען עוד…",
+    "empty": "אין הודעות בשיחה זו.",
+    "msgs_one": "הודעה אחת",
+    "msgs_other": "{{count}} הודעות",
+    "tokens": "{{count}}k טוקנים"
+  },
+  "error": {
+    "loadFailed": "לא ניתן לטעון שיחה"
+  },
+  "action": {
+    "export": "ייצוא",
+    "copyPatch": "העתק תיקון",
+    "showAllLines": "הצג את כל {{count}} השורות",
+    "copyCode": "העתק",
+    "copiedCode": "הועתק",
+    "scrollToBottom": "גלול למטה"
+  },
+  "message": {
+    "code": "קוד",
+    "tokens": "{{count}} טוקנים",
+    "errorBadge": "שגיאה"
+  },
+  "thinking": {
+    "label": "חשיבה",
+    "redacted": "חשיבה נמחקה"
+  }
+}

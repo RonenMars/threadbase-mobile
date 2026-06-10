@@ -1,0 +1,16 @@
+{
+  "planPreview": {
+    "title": "Предпросмотр плана",
+    "autoProceed": "Автопродолжение через {{count}}с",
+    "proceed": "▶ Продолжить",
+    "editPrompt": "Изменить запрос",
+    "sendEdit": "Отправить изменение",
+    "cancel": "✕ Отмена"
+  },
+  "promptQueue": {
+    "title": "Очередь запросов",
+    "pending_one": "{{count}} в ожидании",
+    "pending_other": "{{count}} в ожидании",
+    "remove": "✕"
+  }
+}

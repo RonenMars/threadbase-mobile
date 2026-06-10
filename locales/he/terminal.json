@@ -1,0 +1,52 @@
+{
+  "header": {
+    "session": "סשן"
+  },
+  "action": {
+    "copyId": "העתק מזהה סשן",
+    "sendInput": "שלח קלט",
+    "cancel": "בטל סשן",
+    "more": "עוד"
+  },
+  "voice": {
+    "start": "התחל הכתבה",
+    "stop": "עצור הכתבה",
+    "permissionDeniedTitle": "הרשאת מיקרופון נדחתה",
+    "permissionDeniedBody": "Threadbase זקוק לגישה למיקרופון כדי להכתיב פרומפטים. אפשר זאת בהגדרות."
+  },
+  "dialog": {
+    "cancelTitle": "בטל סשן",
+    "cancelMessage": "האם אתה בטוח שברצונך לבטל את הסשן הזה?",
+    "cancelConfirm": "בטל סשן",
+    "cancelDismiss": "המשך ריצה",
+    "removeTitle": "הסר סשן",
+    "removeMessage": "האם אתה בטוח שברצונך להסיר את הסשן הזה?",
+    "removeConfirm": "הסר",
+    "removeDismiss": "שמור"
+  },
+  "status": {
+    "connecting": "מתחבר…",
+    "reconnecting": "מתחבר מחדש…",
+    "disconnected": "מנותק",
+    "waking": "מתעורר…",
+    "starting": "מתחיל סשן…"
+  },
+  "input": {
+    "placeholder": "שלח הודעה…",
+    "send": "שלח"
+  },
+  "session": {
+    "notFound": "סשן לא נמצא",
+    "failedToStart": "הסשן נכשל להתחיל",
+    "noTerminal": "אין פלט טרמינל",
+    "noTerminalBody": "לסשן זה אין טרמינל פעיל.\nחדש את הסשן כדי להתחיל טרמינל חדש.",
+    "alreadyRunningTitle": "הסשן כבר רץ",
+    "alreadyRunningBody": "לסשן זה יש תהליך פעיל בשרת. חידוש כאן יעצור את התהליך וישתחיל סשן טרמינל חדש באפליקציה.",
+    "overtake": "השתלט",
+    "prompts_one": "פרומפט אחד",
+    "prompts_other": "{{count}} פרומפטים"
+  },
+  "banner": {
+    "streamingInfo": "קריאות כלי ופלט זורמים כאן בזמן אמת. הקלד המשך למטה בזמן ש-Claude עדיין עובד."
+  }
+}

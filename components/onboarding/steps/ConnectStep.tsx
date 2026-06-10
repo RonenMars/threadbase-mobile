@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {
   KeyboardAvoidingView,
-  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -231,8 +230,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             linkLabel="Networking guide"
             linkUrl="https://github.com/RonenMars/threadbase-streamer#networking"
           >
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            {'Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.'}
+            {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
+            <Text>Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.</Text>
           </InfoTooltip>
         </View>
         <TextInput
@@ -256,8 +255,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             linkLabel="Pairing docs"
             linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
           >
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            {'A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.'}
+            {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
+            <Text>A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.</Text>
           </InfoTooltip>
         </View>
         <TextInput

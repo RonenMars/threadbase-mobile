@@ -32,6 +32,7 @@
     "test:e2e:prod:watch": "node e2e/check-sim.js && node e2e/ensure-release-build.js && source .env.prod && maestro test -e PROD_SERVER_URL=$PROD_SERVER_URL -e PROD_API_KEY=$PROD_API_KEY e2e/prod-server-connect-only.yaml",
     "test:e2e:prod:debug": "node e2e/check-sim.js && source .env.prod && echo '\n⚠️  Debug mode: manually tap your Metro server in the simulator, then press Enter to continue...' && read -p '' && maestro test -e PROD_SERVER_URL=$PROD_SERVER_URL -e PROD_API_KEY=$PROD_API_KEY e2e/prod-server-connect-only.yaml",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
+    "lint:i18n": "ESLINT_USE_FLAT_CONFIG=false eslint ./app ./components ./hooks ./services ./constants ./types --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -94,6 +95,7 @@
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.4",
     "eslint-plugin-i18next": "^6.1.4",
+    "eslint-plugin-react-native": "^5.0.0",
     "expo-mcp": "~0.2.1",
     "jest": "^29.7.0",
     "jest-expo": "~56.0.4",

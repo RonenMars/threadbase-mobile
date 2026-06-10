@@ -1,0 +1,27 @@
+{
+  "scanner": {
+    "permissionTitle": "גישה למצלמה",
+    "permissionBody": "Threadbase זקוק לגישה למצלמה כדי לסרוק קוד QR לזיווג המוצג על ידי השרת שלך.",
+    "allowCamera": "אפשר מצלמה",
+    "permissionHint": "גישה למצלמה מושבתת. פתח הגדרות כדי לאפשר זאת עבור Threadbase.",
+    "exchanging": "מחליף טוקן זיווג…",
+    "errorTitle": "הזיווג נכשל",
+    "tryAgain": "נסה שוב",
+    "reticleHint": "הצבע על ה-QR המוצג על ידי השרת שלך",
+    "errors": {
+      "generic": "הזיווג נכשל.",
+      "uri": {
+        "invalid": "ה-QR הזה לא נראה כמו קוד זיווג Threadbase.",
+        "expired": "QR זיווג זה פג. הרץ tb pair על השרת שלך שוב.",
+        "bad-server-url": "כתובת השרת ב-QR זה לא תקפה."
+      },
+      "exchange": {
+        "token": "טוקן הזיווג נדחה — צור QR טרי על השרת שלך.",
+        "rate-limited": "יותר מדי ניסיונות. המתן דקה ונסה שוב.",
+        "network": "לא ניתן להגיע לשרת: {{message}}",
+        "decrypt": "לא ניתן לפענח תגובת שרת.",
+        "server": "{{message}}"
+      }
+    }
+  }
+}

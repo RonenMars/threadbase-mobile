@@ -1,0 +1,85 @@
+{
+  "welcome": {
+    "title": "ברוכים הבאים ל-Threadbase",
+    "subtitle": "התחבר לסשני Claude Code שלך",
+    "eyebrow": "// AMBIENT CODING",
+    "headline": "משוך חוט.",
+    "headlineAccent": "צפה בו נורג.",
+    "body": "שלט רחוק ל-Claude Code, על המכשיר שאתה באמת נושא איתך.",
+    "cta": "התחל לחיצת יד"
+  },
+  "addServer": {
+    "title": "הוסף שרת",
+    "subtitle": "הזן את כתובת שרת Threadbase שלך כדי להתחיל"
+  },
+  "browse": {
+    "title": "עיון",
+    "empty": "אין קבצים",
+    "emptySubtitle": "תיקייה זו ריקה"
+  },
+  "conversation": {
+    "title": "שיחה",
+    "empty": "אין הודעות",
+    "emptySubtitle": "עדיין אין היסטוריית שיחה"
+  },
+  "shell": {
+    "back": "חזרה",
+    "skip": "דלג"
+  },
+  "serverName": {
+    "eyebrow": "> 02 / שם",
+    "headline": "תן שם לשרת שלך.",
+    "body": "אופציונלי. בחר תווית שתזהה במרכז — כמו \"Mac עבודה\" או \"שרת בית\". אתה יכול לשנות זאת מאוחר יותר בהגדרות.",
+    "fieldLabel": "שם שרת",
+    "placeholder": "למשל Mac עבודה",
+    "cta": "המשך",
+    "skip": "דלג לעת עתה"
+  },
+  "connect": {
+    "eyebrow": "> 02 / זיווג",
+    "headline": "חבר סביבת ריצה.",
+    "modeBlurb": "בחר איך אתה רוצה למסור לשרת את המפתחות שלו.",
+    "scanQr": "סרוק QR",
+    "scanQrBody": "הרץ tb pair על השרת שלך כדי להדפיס QR. הכי מהיר, בלי הקלדה.",
+    "pasteCredentials": "הקלד / הדבק באופן ידני",
+    "pasteCredentialsBody": "הרץ tb pair על השרת שלך, ואז הדבק את ה-URL והטוקן.",
+    "qrEyebrow": "> 02 / זיווג · QR",
+    "qrHeadline": "סרוק כדי לזווג.",
+    "step1": "1. על השרת שלך, הרץ tb pair. QR יודפס לטרמינל.",
+    "step2": "2. הקש על פתח מצלמה למטה. Threadbase תבקש הרשאה להשתמש במצלמה — היא משמשת רק לקריאת ה-QR.",
+    "openCamera": "פתח מצלמה",
+    "pairMyLaptop": "זווג את המחשב הנייד שלי",
+    "ready": "✓ מוכן",
+    "footnote": "// על שולחן העבודה שלך, הרץ tb pair כדי להדפיס טוקן."
+  },
+  "tour": {
+    "eyebrow": "> 04 / סיור",
+    "eyebrowProgress": "> 04 / סיור · {{current}}/{{total}}",
+    "dropIn": "הכנס אותי",
+    "nextConcept": "קונספט הבא"
+  },
+  "valueProp": {
+    "eyebrow": "// מראה",
+    "eyebrowWhy": "> 01 / למה",
+    "headline": "המחשב הנייד שלך הוא סביבת הריצה. הטלפון שלך הוא תא הטייס.",
+    "headlineMain": "המחשב הנייד שלך הוא סביבת הריצה.",
+    "headlineMuted": "הטלפון שלך הוא תא הטייס.",
+    "headlineAccent": "vibe.",
+    "body": "Threadbase שומר על הסוכנים שלך חיים על המכונה שיש לה את ה-GPU, את המפתחות ואת עץ הקבצים — ונותן לך משטח רגוע לנהוג אותם מכל מקום.",
+    "cta": "זווג את המחשב הנייד שלי",
+    "labelYou": "אתה",
+    "labelPrompts": "פרומפטים ▸",
+    "labelStdout": "◂ stdout",
+    "labelClaudeRun": "claude run"
+  },
+  "notifications": {
+    "allowTitle": "התראות דחיפה",
+    "body": "נשלח לך פינג כאשר סשן מסתיים, נתקל בשגיאה או זקוק להחלטה מהירה — כך שאתה לא צריך לשמור את האפליקציה פתוחה.",
+    "continue": "המשך"
+  },
+  "theme": {
+    "eyebrow": "// מראה",
+    "headlineLine1": "בחר את ה",
+    "body": "בחר ערכת צבעים. אתה תמיד יכול לשנות זאת מאוחר יותר בהגדרות."
+  }
+}

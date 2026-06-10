@@ -55,7 +55,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const setConnected = useServersStore((s) => s.setConnected)
 
   useEffect(() => {
-    hydrateSettings()
+    hydrateSettings().then(() => {
+      const locale = useSettingsStore.getState().locale;
+      i18n.changeLanguage(locale);
+    });
     void hydrateSessionNames()
     void hydrateQuickAccess()
   }, [hydrateSettings, hydrateSessionNames, hydrateQuickAccess])

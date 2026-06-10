@@ -4,6 +4,7 @@ import { ArrowRight, FolderOpen, Star, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { dark, font, spacing } from '@/constants/theme'
 import type { ChipItem } from './QuickAccessChip'
+import { flexRow } from '@/lib/rtl'
 
 interface Props {
   item: ChipItem | null
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     borderColor: dark.border,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: flexRow(),
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,

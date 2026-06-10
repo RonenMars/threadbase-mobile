@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "back": "› חזרה",
+    "recentDirs": "תיקיות אחרונות ({{count}})",
+    "newFolder": "תיקייה חדשה",
+    "create": "צור",
+    "startSession": "התחל סשן כאן"
+  },
+  "error": {
+    "loadFailed": "נכשל לטעון שיחות",
+    "retryHint": "משוך למטה כדי לנסות שוב"
+  }
+}
