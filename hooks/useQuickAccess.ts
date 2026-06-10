@@ -2,9 +2,10 @@ import { useQueries } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { createApiForServer } from '@/services/api-client'
 import { clientLog } from '@/lib/clientLog'
-import type { MultiPopularProject, MultiSession, PopularProject } from '@/types/api'
+import type { MultiPopularProject, PopularProject } from '@/types/api'
+import type { ProjectChat } from '@/types/projectChat'
 
-type RecentsResponse = { sessions: MultiSession[]; total: number }
+type RecentsResponse = { projectChats: ProjectChat[]; total: number }
 type PopularResponse = { projects: MultiPopularProject[]; total: number }
 
 type AggregateStatus = 'pending' | 'success' | 'error'
@@ -20,9 +21,10 @@ type AggregateResult<T> = {
 }
 
 /**
- * Spawns one query per server in `serverIds`, returning sessions merged across
- * all servers. Each session is tagged with the `serverId` it came from so
- * downstream code can route taps back to the right server.
+ * Spawns one query per server in `serverIds`, returning recent ProjectChats
+ * (both live sessions and historical conversations) merged across all servers.
+ * Each item is tagged with the `serverId` it came from so downstream code can
+ * route taps back to the right server.
  *
  * The aggregate `status` follows union semantics:
  *  - 'pending' if every query is still pending
@@ -36,16 +38,20 @@ export function useRecentSessions(serverIds: string[], limit = 20): AggregateRes
       queryFn: async (): Promise<RecentsResponse> => {
         clientLog.info('hook.useRecentSessions', 'queryFn START', { serverId })
         try {
-          const r = await createApiForServer(serverId).get<RecentsResponse>(
-            `/api/sessions/recents?limit=${limit}`,
+          // Call the unified /project-chats endpoint instead of /api/sessions/recents.
+          // This returns both active sessions AND historical conversations with a
+          // type discriminator, fixing the bug where tapping a historical conversation
+          // from Recents tried to open it as a PTY session (showing "No terminal output").
+          const r = await createApiForServer(serverId).get<{ items: ProjectChat[] }>(
+            `/project-chats?limit=${limit}`,
           )
-          // Tag every session with its serverId so the merged list keeps the origin.
+          // Items already carry serverId from the normalizer, but double-tag for safety.
           const tagged: RecentsResponse = {
-            ...r,
-            sessions: (r.sessions ?? []).map((s) => ({ ...s, serverId })),
+            projectChats: (r.items ?? []).map((item) => ({ ...item, serverId })),
+            total: r.items?.length ?? 0,
           }
           clientLog.info('hook.useRecentSessions', 'queryFn OK', {
-            serverId, sessions: tagged.sessions.length,
+            serverId, projectChats: tagged.projectChats.length,
           })
           return tagged
         } catch (e) {
@@ -128,13 +134,17 @@ function makeRefetch(queries: QueryLike<unknown>[]): () => void {
 
 function aggregateRecents(queries: QueryLike<RecentsResponse>[]): AggregateResult<RecentsResponse> {
   const successful = queries.filter((q) => q.status === 'success' && q.data)
-  const merged = successful.flatMap((q) => q.data!.sessions)
-  // Newest first. The streamer sets `startedAt` to the conversation's last activity
-  // for this endpoint, so it's the right sort key for unioning across servers.
-  merged.sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
+  const merged = successful.flatMap((q) => q.data!.projectChats)
+  // Newest first. Sort by latestMessageAt (for ProjectChat), falling back to
+  // updatedAt and createdAt for robustness across sessions and conversations.
+  merged.sort((a, b) => {
+    const aTime = a.latestMessageAt ?? a.updatedAt ?? a.createdAt ?? ''
+    const bTime = b.latestMessageAt ?? b.updatedAt ?? b.createdAt ?? ''
+    return bTime.localeCompare(aTime)
+  })
 
   return {
-    data: { sessions: merged, total: merged.length },
+    data: { projectChats: merged, total: merged.length },
     status: aggregateStatus(queries),
     fetchStatus: aggregateFetchStatus(queries),
     error: queries.find((q) => q.error)?.error ?? null,

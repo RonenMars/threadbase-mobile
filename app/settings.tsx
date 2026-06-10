@@ -146,6 +146,8 @@ export default function SettingsScreen() {
     setAiGeneratedNames,
     rowDensity,
     setRowDensity,
+    rowPreviewMode,
+    setRowPreviewMode,
     rowPathDisplay,
     setRowPathDisplay,
     rowServerIndicator,
@@ -485,6 +487,35 @@ await refreshServerInfo(serverId)
                 onPress={() => setRowDensity('compact')}
               >
                 <Text style={[s.segmentBtnText, rowDensity === 'compact' && s.segmentBtnTextActive]}>{t('conversationRows.compact')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={s.row}>
+            <Text style={s.rowLabel}>Message preview</Text>
+            <View style={s.segmentedControl}>
+              <TouchableOpacity
+                style={[s.segmentBtn, rowPreviewMode === 'first' && s.segmentBtnActive]}
+                onPress={() => setRowPreviewMode('first')}
+              >
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'first' && s.segmentBtnTextActive]}>First</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentBtn, rowPreviewMode === 'last' && s.segmentBtnActive]}
+                onPress={() => setRowPreviewMode('last')}
+              >
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'last' && s.segmentBtnTextActive]}>Last</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentBtn, rowPreviewMode === 'auto' && s.segmentBtnActive]}
+                onPress={() => setRowPreviewMode('auto')}
+              >
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'auto' && s.segmentBtnTextActive]}>Auto</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentBtn, rowPreviewMode === 'off' && s.segmentBtnActive]}
+                onPress={() => setRowPreviewMode('off')}
+              >
+                <Text style={[s.segmentBtnText, rowPreviewMode === 'off' && s.segmentBtnTextActive]}>Off</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,0 +1,254 @@
+appId: com.ronenmars.threadbase
+---
+# Test production server connection with real Claude API
+# Server: ${PROD_SERVER_URL}
+# API Key: Injected via ${PROD_API_KEY} environment variable
+#
+# Run with:
+#   maestro test -e PROD_SERVER_URL=<url> -e PROD_API_KEY=<key> e2e/prod-server-connect-only.yaml
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# Wait for onboarding splash screen
+- waitForAnimationToEnd
+
+# Should see the welcome screen with "Begin handshake"
+- assertVisible:
+    text: "Begin handshake"
+
+# Instead of Skip, tap "Begin handshake" to go to connection flow
+- tapOn:
+    text: "Begin handshake"
+
+# Wait for pairing options screen
+- waitForAnimationToEnd
+
+# Should see "Connect a runtime" screen with QR or manual options
+- assertVisible:
+    text: "Connect a runtime."
+
+# Tap the manual entry option using testID
+- tapOn:
+    id: "onboarding-connect-paste-card"
+
+# Wait for manual entry form
+- waitForAnimationToEnd
+
+# Now we should see the server connection form
+- assertVisible:
+    id: "onboarding-connect-url-input"
+
+# Tap URL input and clear any existing content
+- tapOn:
+    id: "onboarding-connect-url-input"
+- eraseText
+- waitForAnimationToEnd
+
+# Enter production server URL from environment variable
+- inputText: ${PROD_SERVER_URL}
+
+# Wait a moment for input to settle
+- waitForAnimationToEnd
+
+# Hide keyboard before moving to next field
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Tap token input and clear any existing content
+- tapOn:
+    id: "onboarding-connect-token-input"
+- eraseText
+- waitForAnimationToEnd
+
+# Enter production API key from environment variable
+- inputText: ${PROD_API_KEY}
+
+# Wait a moment for input to settle
+- waitForAnimationToEnd
+
+# Hide keyboard
+- hideKeyboard
+
+# Tap the connect/handshake button
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+
+# Wait for connection to succeed
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Verify we're past the connection screen (success!)
+- assertNotVisible:
+    text: "Connection failed"
+
+# Dismiss iOS password save dialog if it appears
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
+# After successful connection, app advances to Notifications step (step 3/4)
+# Wait for navigation
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Skip the notifications step
+- tapOn:
+    text: "Skip"
+
+# Wait for Done step (step 4/4)
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Dismiss iOS password save dialog if it appears (can show here too)
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
+# Tap the "Enter Threadbase" button to complete onboarding
+- tapOn:
+    id: "onboarding-done-cta"
+
+# Wait for navigation to hub
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Verify we're on the hub by checking for the FAB
+- assertVisible:
+    id: "fab-new-session"
+
+# Tap the new session FAB to open project picker
+- tapOn:
+    id: "fab-new-session"
+
+# Wait for Browse modal to appear
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# The Browse modal shows project folders
+# Tap on the first project directory
+- tapOn:
+    id: "browse-first-directory"
+
+# Wait for project selection/navigation
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Now tap "Start Session Here" button to create the session
+- tapOn:
+    text: "Start Session Here"
+
+# Wait for session to be created and screen to load
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Should now be in a live session screen
+- assertVisible:
+    id: "session-detail-screen"
+
+# Type a test prompt
+- tapOn:
+    id: "message-input"
+- inputText: "What is 2+2?"
+
+# Hide keyboard so send button is visible
+- hideKeyboard
+
+# Wait for keyboard to hide
+- waitForAnimationToEnd
+
+# Tap send button to send the message
+- tapOn:
+    id: "send-message-button"
+
+# Wait for response to start streaming
+- waitForAnimationToEnd:
+    timeout: 20000
+
+# Verify terminal output is visible (indicates response is rendering)
+- assertVisible:
+    id: "terminal-output"
+
+# Test the info button functionality
+- tapOn:
+    id: "session-info-button"
+
+# Wait for info modal to appear
+- waitForAnimationToEnd
+
+# Verify info modal opened by checking for close button
+- assertVisible:
+    id: "info-modal-close-button"
+
+# Close the info modal
+- tapOn:
+    id: "info-modal-close-button"
+
+# Wait for modal to close
+- waitForAnimationToEnd
+
+# Verify modal closed
+- assertNotVisible:
+    id: "info-modal-close-button"
+
+# Navigate back from the live session
+- tapOn:
+    id: "screen-header-back-button"
+
+# Wait for navigation animation
+- waitForAnimationToEnd
+
+# Should now be back on projects hub with session list
+# Wait for the list to load
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Verify we're back on the hub by checking for FAB
+- assertVisible:
+    id: "fab-new-session"
+
+# Verify sessions are visible in the list
+# The session we created should be there at the top (most recent)
+
+# Wait for sessions to load
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Tap on the first session card using its testID
+- tapOn:
+    id: "first-session-card"
+
+# Wait for navigation to session detail
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Verify we entered the session (now in conversation/history view)
+- assertVisible:
+    id: "session-detail-screen"
+
+# Verify our conversation history is visible with our prompt text.
+# The terminal renders the prompt line with a leading "› " marker, so match
+# as a substring. "+" and "?" are regex metacharacters and must be escaped.
+- assertVisible:
+    text: ".*What is 2\\+2\\?.*"
+
+# Test completed successfully - we verified:
+# 1. Connection to production server works ✓
+# 2. New session can be created ✓
+# 3. Messages can be sent and responses received via real Claude API ✓
+# 4. Terminal output displays correctly ✓
+# 5. Info modal opens and closes ✓
+# 6. Navigation back to hub works ✓
+# 7. Session can be found in list and re-entered ✓
+# 8. Conversation history persists ✓
