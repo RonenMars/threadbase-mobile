@@ -95,7 +95,11 @@
     "always": "Всегда",
     "never": "Никогда",
     "label": "Метка",
-    "letter": "Буква"
+    "letter": "Буква",
+    "messagePreview": "Предпросмотр сообщения",
+    "previewFirst": "Первое",
+    "previewLast": "Последнее",
+    "previewOff": "Выкл."
   },
   "restartTour": "Перезапустить обзор приложения"
 }

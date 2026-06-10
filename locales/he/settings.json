@@ -95,7 +95,11 @@
     "always": "תמיד",
     "never": "אף פעם",
     "label": "תווית",
-    "letter": "אות"
+    "letter": "אות",
+    "messagePreview": "תצוגה מקדימה של הודעה",
+    "previewFirst": "ראשונה",
+    "previewLast": "אחרונה",
+    "previewOff": "כבוי"
   },
   "restartTour": "הפעל מחדש סיור באפליקציה"
 }

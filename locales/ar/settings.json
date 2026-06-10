@@ -19,5 +19,11 @@
   "notifications": {
     "label": "الإشعارات",
     "enable": "تمكين الإشعارات"
+  },
+  "conversationRows": {
+    "messagePreview": "معاينة الرسالة",
+    "previewFirst": "الأولى",
+    "previewLast": "الأخيرة",
+    "previewOff": "إيقاف"
   }
 }
