@@ -16,6 +16,8 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
+import { parseQuestionBlock } from '@/utils/parseQuestionBlock'
+import { QuestionCard } from '@/components/terminal/QuestionCard'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -56,9 +58,10 @@ const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
 interface Props {
   lines: TerminalLine[]
   isStreaming: boolean
+  onSendInput?: (text: string) => void
 }
 
-export function TerminalOutput({ lines, isStreaming: _isStreaming }: Props) {
+export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput }: Props) {
   const { t } = useTranslation('common')
   const listRef = useRef<FlashListRef<TerminalLine>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
@@ -121,6 +124,11 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming }: Props) {
   }, [lines])
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
+  const questionBlock = useMemo(
+    () => (onSendInput ? parseQuestionBlock(lines.slice(-30)) : null),
+    [lines, onSendInput]
+  )
+
   return (
     <View style={styles.container}>
       <FlashList
@@ -136,6 +144,10 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming }: Props) {
         }}
         contentContainerStyle={styles.listContent}
       />
+
+      {questionBlock && onSendInput ? (
+        <QuestionCard block={questionBlock} onSelect={onSendInput} />
+      ) : null}
 
       <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
