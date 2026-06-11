@@ -97,6 +97,19 @@ export default function BrowseScreen() {
 
   const { data, isLoading, isError, error } = useBrowse(serverId ?? '', currentPath)
   const isBrowseSlow = useLoadingStateStore((s) => s.slowCounts.browse > 0)
+
+  // The TreeView drill prefill passes the session's absolute cwd, which may
+  // live outside the server's configured browse root (adopted sessions, demo
+  // seed data, root changed after the session ran). Such a path can neither
+  // be listed nor started — fall back to the browse root instead of
+  // dead-ending on it. setState is deferred to a microtask so the
+  // `react-hooks/set-state-in-effect` rule is satisfied (same pattern as
+  // app/session/[id].tsx).
+  useEffect(() => {
+    if (isError && currentPath && error?.message?.includes('outside browse root')) {
+      queueMicrotask(() => setCurrentPath(''))
+    }
+  }, [isError, error, currentPath])
   const createDir = useCreateDirectory(serverId ?? '')
   const startSession = useStartSession(serverId ?? '')
 
