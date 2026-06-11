@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -288,19 +288,59 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
 
 const CONVERSATION_MESSAGE_LIMIT = 80
 
+// First-page ETags, keyed by `${serverId}::${id}`. The server sets an ETag on
+// the first-page (newest) response of /api/conversations/{id}; echoing it back
+// via If-None-Match lets the server answer 304 when the conversation is
+// unchanged, so we skip re-downloading the page. Module-level so it survives
+// re-renders and the queryFn closure; only the first page participates (older
+// pages are immutable history and never revalidate).
+const firstPageEtags = new Map<string, string>()
+
 export function useConversation(serverId: string, id: string) {
   const api = createApiForServer(serverId)
+  const queryClient = useQueryClient()
+  const queryKey = ['conversation', serverId, id] as const
   const query = useInfiniteQuery({
-    queryKey: ['conversation', serverId, id],
+    queryKey,
     initialPageParam: -1,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
       params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
-      if (pageParam !== -1) {
+      const isFirstPage = pageParam === -1
+      if (!isFirstPage) {
         params.set('before_index', String(pageParam))
       }
       const path = `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
-      return api.get<RawConversationDetail>(path)
+
+      // Back-pages are immutable history — fetch normally, no conditional check.
+      if (!isFirstPage) {
+        return api.get<RawConversationDetail>(path)
+      }
+
+      // First page: send If-None-Match with the last known ETag (if any) and
+      // use the conditional path so a 304 keeps the cached copy.
+      const etagKey = `${serverId}::${id}`
+      const knownEtag = firstPageEtags.get(etagKey)
+      const res = await api.getWithMeta<RawConversationDetail>(
+        path,
+        knownEtag ? { headers: { 'If-None-Match': knownEtag } } : undefined,
+      )
+
+      if (res.status === 304) {
+        // Unchanged: reuse the previously cached first page so merge output is
+        // identical. If somehow nothing is cached, fall back to a full fetch.
+        const cached = queryClient.getQueryData<InfiniteData<RawConversationDetail, number>>(queryKey)
+        const cachedFirst = cached?.pages?.[0]
+        if (cachedFirst) return cachedFirst
+        return api.get<RawConversationDetail>(path)
+      }
+
+      // 200: remember the validator (null against a non-ETag server clears it,
+      // so we simply stop sending If-None-Match — graceful degradation).
+      if (res.etag) firstPageEtags.set(etagKey, res.etag)
+      else firstPageEtags.delete(etagKey)
+      // body is non-null on a 200 from requestWithMeta.
+      return res.body as RawConversationDetail
     },
     getNextPageParam: (last) => {
       const p = last.message_pagination

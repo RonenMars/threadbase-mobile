@@ -33,7 +33,7 @@ async function request<T>(
   path: string,
   body: unknown | undefined,
   serverId: string,
-  options: { signal?: AbortSignal } = {},
+  options: RequestOptions = {},
   retried = false,
 ): Promise<T> {
   const server = useServersStore.getState().getServer(serverId)
@@ -60,6 +60,7 @@ async function request<T>(
         'Authorization': `Bearer ${server.apiKey}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        ...options.headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: timeoutController.signal,
@@ -94,12 +95,97 @@ async function request<T>(
   return response.json() as Promise<T>
 }
 
+// Conditional GET that surfaces the response status + ETag to the caller.
+// Used for the conversation-detail freshness check: send `If-None-Match` and
+// short-circuit on `304 Not Modified` (empty body) so the cached copy is kept.
+// Unlike request<T>(), a 304 is NOT an error — it returns { status: 304,
+// body: null }. Degrades gracefully against servers that don't emit ETag:
+// `etag` is simply null and callers send no `If-None-Match` next time.
+async function requestWithMeta<T>(
+  path: string,
+  serverId: string,
+  options: RequestOptions = {},
+  retried = false,
+): Promise<{ status: number; etag: string | null; body: T | null }> {
+  const server = useServersStore.getState().getServer(serverId)
+  if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
+
+  const url = `${server.url.replace(/\/$/, '')}${path}`
+
+  const timeoutController = new AbortController()
+  const timeoutMs = retried ? REQUEST_TIMEOUT_MS : FIRST_ATTEMPT_TIMEOUT_MS
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs)
+  const onCallerAbort = () => timeoutController.abort()
+  if (options.signal) {
+    if (options.signal.aborted) timeoutController.abort()
+    else options.signal.addEventListener('abort', onCallerAbort)
+  }
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${server.apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+      signal: timeoutController.signal,
+    })
+  } catch (err) {
+    if (options.signal?.aborted) {
+      throw new NetworkError('Request cancelled')
+    }
+    if (!retried) {
+      return requestWithMeta<T>(path, serverId, options, true)
+    }
+    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+  } finally {
+    clearTimeout(timeoutId)
+    options.signal?.removeEventListener('abort', onCallerAbort)
+  }
+
+  const etag = response.headers.get('etag')
+
+  // 304: the cached copy is current. fetch() resolves (does not throw); the
+  // body is empty, so don't call response.json().
+  if (response.status === 304) {
+    return { status: 304, etag, body: null }
+  }
+
+  if (response.status === 401) throw new AuthError()
+  if (response.status === 404) throw new NotFoundError(path)
+  if (!response.ok) {
+    let detail = ''
+    let code: string | undefined
+    try {
+      const errBody = await response.json()
+      if (errBody?.error) detail = errBody.error
+      if (errBody?.code) code = errBody.code
+    } catch {}
+    throw new NetworkError(detail || `Server returned ${response.status}`, code)
+  }
+
+  return { status: response.status, etag, body: (await response.json()) as T }
+}
+
 export interface RequestOptions {
   signal?: AbortSignal
+  /** Extra request headers, e.g. `If-None-Match` for conditional GETs. */
+  headers?: Record<string, string>
+}
+
+export interface ResponseWithMeta<T> {
+  status: number
+  etag: string | null
+  body: T | null
 }
 
 export interface ServerApi {
   get: <T>(path: string, options?: RequestOptions) => Promise<T>
+  /** Conditional GET exposing status + ETag; `body` is null on 304. */
+  getWithMeta: <T>(path: string, options?: RequestOptions) => Promise<ResponseWithMeta<T>>
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   delete: <T>(path: string, options?: RequestOptions) => Promise<T>
@@ -108,6 +194,7 @@ export interface ServerApi {
 export function createApiForServer(serverId: string): ServerApi {
   return {
     get: <T>(path: string, options?: RequestOptions) => request<T>('GET', path, undefined, serverId, options),
+    getWithMeta: <T>(path: string, options?: RequestOptions) => requestWithMeta<T>(path, serverId, options),
     post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('POST', path, body, serverId, options),
     patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, body, serverId, options),
     delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, undefined, serverId, options),
@@ -119,6 +206,10 @@ export const api: ServerApi = {
   get: <T>(path: string, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]
     return first ? request<T>('GET', path, undefined, first, options) : Promise.reject(new NetworkError('No servers configured'))
+  },
+  getWithMeta: <T>(path: string, options?: RequestOptions) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? requestWithMeta<T>(path, first, options) : Promise.reject(new NetworkError('No servers configured'))
   },
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]
