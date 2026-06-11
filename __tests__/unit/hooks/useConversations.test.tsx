@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react-native'
 import {
+  useConversation,
   useConversations,
   useConversationSearch,
   useEagerConversations,
@@ -22,6 +23,12 @@ interface RawSessionMeta {
 // We mock createApiForServer so each serverId can independently resolve/reject.
 
 const handlers: Record<string, (path: string) => Promise<unknown>> = {}
+// Records the last If-None-Match header each server's getWithMeta saw, plus a
+// per-server responder for the conditional first-page fetch.
+const metaHandlers: Record<
+  string,
+  (path: string, opts?: { headers?: Record<string, string> }) => Promise<unknown>
+> = {}
 
 jest.mock('@/services/api-client', () => ({
   createApiForServer: (serverId: string) => ({
@@ -29,6 +36,11 @@ jest.mock('@/services/api-client', () => ({
       const h = handlers[serverId]
       if (!h) return Promise.reject(new Error(`no handler for ${serverId}`))
       return h(path)
+    },
+    getWithMeta: (path: string, opts?: { headers?: Record<string, string> }) => {
+      const h = metaHandlers[serverId]
+      if (!h) return Promise.reject(new Error(`no meta handler for ${serverId}`))
+      return h(path, opts)
     },
   }),
 }))
@@ -65,8 +77,46 @@ function setActiveServers(ids: string[]) {
 
 beforeEach(() => {
   for (const k of Object.keys(handlers)) delete handlers[k]
+  for (const k of Object.keys(metaHandlers)) delete metaHandlers[k]
   useServersStore.setState({ servers: {}, activeServerIds: [], displayedServerIds: [] } as any)
   useServerFetchStatusStore.setState({ statuses: {} })
+})
+
+function rawConversationPage(id: string, texts: string[]) {
+  return {
+    meta: { id, project_name: `proj-${id}`, message_count: texts.length },
+    messages: texts.map((text, i) => ({ message_index: i, role: 'user', content: [{ type: 'text', text }], timestamp: '2026-06-11T10:00:00.000Z' })),
+    message_pagination: { total: texts.length, before_index: texts.length, from_index: 0, has_more_older: false, next_before_index: null },
+  }
+}
+
+describe('useConversation — ETag conditional fetch (Task C)', () => {
+  it('fetches the first page via getWithMeta and renders messages', async () => {
+    setActiveServers(['srv_a'])
+    let lastIfNoneMatch: string | undefined
+    metaHandlers.srv_a = (_path, opts) => {
+      lastIfNoneMatch = opts?.headers?.['If-None-Match']
+      return Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c1', ['hello']) })
+    }
+
+    const { result } = renderHook(() => useConversation('srv_a', 'c1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data?.messages.length).toBe(1)
+    // First-ever fetch has no stored ETag, so no If-None-Match is sent.
+    expect(lastIfNoneMatch).toBeUndefined()
+  })
+
+  it('degrades gracefully when the server emits no ETag (status 200, etag null)', async () => {
+    setActiveServers(['srv_b'])
+    metaHandlers.srv_b = () =>
+      Promise.resolve({ status: 200, etag: null, body: rawConversationPage('c2', ['a', 'b']) })
+
+    const { result } = renderHook(() => useConversation('srv_b', 'c2'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data?.messages.length).toBe(2)
+  })
 })
 
 describe('useConversations — partial failure (Bug 32)', () => {

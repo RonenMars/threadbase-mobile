@@ -47,6 +47,10 @@ function makeDetail(messageCount: number) {
 jest.mock('@/services/api-client', () => ({
   createApiForServer: () => ({
     get: () => Promise.resolve(mockDetailRef.current),
+    // useConversation's first page uses getWithMeta (conditional fetch). This
+    // gating suite only cares about render timing, so return a plain 200 with
+    // no ETag — the same detail payload, wrapped in the meta envelope.
+    getWithMeta: () => Promise.resolve({ status: 200, etag: null, body: mockDetailRef.current }),
     post: () => Promise.resolve({}),
   }),
 }))

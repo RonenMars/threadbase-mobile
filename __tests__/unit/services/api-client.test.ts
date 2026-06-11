@@ -176,3 +176,50 @@ describe('createApiForServer – unknown server', () => {
     await expect(unknownApi.get('/api/test')).rejects.toThrow(NetworkError)
   })
 })
+
+describe('api.getWithMeta – conditional fetch', () => {
+  function metaResponse(status: number, etag: string | null, body: unknown) {
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      headers: { get: (h: string) => (h.toLowerCase() === 'etag' ? etag : null) },
+      json: jest.fn().mockResolvedValue(body),
+    }
+  }
+
+  it('returns status, etag, and body on a 200', async () => {
+    mockFetch.mockResolvedValueOnce(metaResponse(200, '"abc123"', { meta: { id: 'c1' } }))
+    const res = await api.getWithMeta<{ meta: { id: string } }>('/api/conversations/c1')
+    expect(res.status).toBe(200)
+    expect(res.etag).toBe('"abc123"')
+    expect(res.body?.meta.id).toBe('c1')
+  })
+
+  it('returns body=null and does not parse json on a 304', async () => {
+    const resp = metaResponse(304, '"abc123"', undefined)
+    mockFetch.mockResolvedValueOnce(resp)
+    const res = await api.getWithMeta('/api/conversations/c1')
+    expect(res.status).toBe(304)
+    expect(res.body).toBeNull()
+    expect(res.etag).toBe('"abc123"')
+    expect(resp.json).not.toHaveBeenCalled()
+  })
+
+  it('sends If-None-Match when provided in headers', async () => {
+    mockFetch.mockResolvedValueOnce(metaResponse(200, '"new"', { ok: true }))
+    await api.getWithMeta('/api/conversations/c1', { headers: { 'If-None-Match': '"old"' } })
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'If-None-Match': '"old"' }),
+      }),
+    )
+  })
+
+  it('degrades gracefully against a server that emits no ETag', async () => {
+    mockFetch.mockResolvedValueOnce(metaResponse(200, null, { ok: true }))
+    const res = await api.getWithMeta('/api/conversations/c1')
+    expect(res.status).toBe(200)
+    expect(res.etag).toBeNull()
+  })
+})
