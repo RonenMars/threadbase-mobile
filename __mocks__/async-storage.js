@@ -8,7 +8,7 @@ const AsyncStorage = {
   getAllKeys: jest.fn().mockResolvedValue([]),
   multiGet: jest.fn().mockResolvedValue([]),
   multiSet: jest.fn().mockResolvedValue(undefined),
-}
+};
 
-module.exports = AsyncStorage
-module.exports.default = AsyncStorage
+module.exports = AsyncStorage;
+module.exports.default = AsyncStorage;

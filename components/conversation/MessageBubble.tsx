@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
@@ -49,6 +49,45 @@ function DiffLines({ code }: { code: string }) {
   )
 }
 
+// Prism tokenization runs synchronously on the JS thread and a large block
+// costs tens of ms — memoized so CodeBlock-local state changes (the copied
+// flag) and parent re-renders don't re-tokenize the same code.
+const HighlightedCode = React.memo(function HighlightedCode({ code, language }: { code: string; language: Language }) {
+  return (
+    <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
+      {language === 'diff' ? (
+        <DiffLines code={code} />
+      ) : (
+        <Highlight code={code} language={language} theme={CODE_THEME}>
+          {({ tokens, getLineProps, getTokenProps }) => (
+            <>
+              {tokens.map((line, lineIdx) => {
+                const { style: lineStyle } = getLineProps({ line })
+                return (
+                  <View key={lineIdx} style={[styles.codeLine, lineStyle as object]}>
+                    {line.map((token, tokenIdx) => {
+                      const { style: tokenStyle, children } = getTokenProps({ token })
+                      return (
+                        <Text
+                          key={tokenIdx}
+                          style={[styles.codeToken, tokenStyle as object]}
+                          selectable
+                        >
+                          {children}
+                        </Text>
+                      )
+                    })}
+                  </View>
+                )
+              })}
+            </>
+          )}
+        </Highlight>
+      )}
+    </View>
+  )
+})
+
 function CodeBlock({ code, language }: { code: string; language: Language }) {
   const { t } = useTranslation('conversation')
   const [copied, setCopied] = useState(false)
@@ -74,37 +113,7 @@ function CodeBlock({ code, language }: { code: string; language: Language }) {
           </Text>
         </TouchableOpacity>
       </View>
-      <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
-        {language === 'diff' ? (
-          <DiffLines code={code} />
-        ) : (
-          <Highlight code={code} language={language} theme={CODE_THEME}>
-            {({ tokens, getLineProps, getTokenProps }) => (
-              <>
-                {tokens.map((line, lineIdx) => {
-                  const { style: lineStyle } = getLineProps({ line })
-                  return (
-                    <View key={lineIdx} style={[styles.codeLine, lineStyle as object]}>
-                      {line.map((token, tokenIdx) => {
-                        const { style: tokenStyle, children } = getTokenProps({ token })
-                        return (
-                          <Text
-                            key={tokenIdx}
-                            style={[styles.codeToken, tokenStyle as object]}
-                            selectable
-                          >
-                            {children}
-                          </Text>
-                        )
-                      })}
-                    </View>
-                  )
-                })}
-              </>
-            )}
-          </Highlight>
-        )}
-      </View>
+      <HighlightedCode code={code} language={language} />
     </View>
   )
 }
@@ -153,33 +162,50 @@ function parseLanguage(rawLang: string | undefined, code: string): Language {
   return LANGUAGE_ALIASES[normalized] ?? (normalized as Language)
 }
 
-function TextBlockBody({ text }: { text: string }) {
+type ParsedPart =
+  | { kind: 'code'; code: string; language: Language }
+  | { kind: 'text'; text: string }
+
+function parseTextParts(text: string): ParsedPart[] {
   const decoded = decodeEntities(text)
   const parts = decoded.split(/(```[\s\S]*?```)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('```') && part.endsWith('```')) {
+      const inner = part.slice(3, -3)
+      const langMatch = inner.match(/^(\w+)\n/)
+      const rawCode = langMatch ? inner.slice(langMatch[0].length) : inner
+      // Strip the leading/trailing newlines that fence syntax introduces;
+      // preserve any blank lines that are part of the actual code body.
+      const code = rawCode.replace(/^\n+/, '').replace(/\n+$/, '')
+      const language = parseLanguage(langMatch?.[1], code)
+      return { kind: 'code' as const, code, language }
+    }
+    // Trim a single newline on each side that touches a fenced sibling so
+    // the visual gap around CodeBlocks doesn't double up with the fence
+    // syntax's own newlines. Blank lines elsewhere in the prose are kept.
+    const prevIsFence = i > 0 && parts[i - 1].startsWith('```') && parts[i - 1].endsWith('```')
+    const nextIsFence = i < parts.length - 1 && parts[i + 1].startsWith('```') && parts[i + 1].endsWith('```')
+    let body = part
+    if (prevIsFence) body = body.replace(/^\n/, '')
+    if (nextIsFence) body = body.replace(/\n$/, '')
+    return { kind: 'text' as const, text: body }
+  })
+}
+
+function TextBlockBody({ text }: { text: string }) {
+  // The fence split + per-block parse runs on every render otherwise —
+  // memoized so re-renders of the bubble don't redo string work.
+  const parts = useMemo(() => parseTextParts(text), [text])
 
   return (
     <View style={styles.gap}>
-      {parts.map((part, i) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          const inner = part.slice(3, -3)
-          const langMatch = inner.match(/^(\w+)\n/)
-          const rawCode = langMatch ? inner.slice(langMatch[0].length) : inner
-          // Strip the leading/trailing newlines that fence syntax introduces;
-          // preserve any blank lines that are part of the actual code body.
-          const code = rawCode.replace(/^\n+/, '').replace(/\n+$/, '')
-          const language = parseLanguage(langMatch?.[1], code)
-          return <CodeBlock key={i} code={code} language={language} />
-        }
-        // Trim a single newline on each side that touches a fenced sibling so
-        // the visual gap around CodeBlocks doesn't double up with the fence
-        // syntax's own newlines. Blank lines elsewhere in the prose are kept.
-        const prevIsFence = i > 0 && parts[i - 1].startsWith('```') && parts[i - 1].endsWith('```')
-        const nextIsFence = i < parts.length - 1 && parts[i + 1].startsWith('```') && parts[i + 1].endsWith('```')
-        let text = part
-        if (prevIsFence) text = text.replace(/^\n/, '')
-        if (nextIsFence) text = text.replace(/\n$/, '')
-        return <TextContent key={i} text={text} />
-      })}
+      {parts.map((part, i) =>
+        part.kind === 'code' ? (
+          <CodeBlock key={i} code={part.code} language={part.language} />
+        ) : (
+          <TextContent key={i} text={part.text} />
+        ),
+      )}
     </View>
   )
 }
@@ -198,7 +224,10 @@ function ContentBlock({ block }: { block: MessageContent }) {
   return null
 }
 
-export function MessageBubble({ message }: Props) {
+// Memoized: message objects are stable by reference for already-loaded pages
+// (adaptRawMessage output is reused between renders), so screen-level state
+// changes don't re-render — and re-highlight — every visible row.
+export const MessageBubble = React.memo(function MessageBubble({ message }: Props) {
   const { t } = useTranslation('conversation')
   const isUser = message.role === 'user'
 
@@ -214,7 +243,7 @@ export function MessageBubble({ message }: Props) {
       </View>
     </View>
   )
-}
+})
 
 const styles = StyleSheet.create({
   container: {

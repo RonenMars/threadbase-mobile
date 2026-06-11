@@ -24,6 +24,9 @@ export class NotFoundError extends Error {
 }
 
 const REQUEST_TIMEOUT_MS = 15000
+// First attempt fails over to the silent retry sooner — a stalled connection
+// shouldn't burn the full 15 s before the retry even starts.
+const FIRST_ATTEMPT_TIMEOUT_MS = 8000
 
 async function request<T>(
   method: string,
@@ -41,7 +44,8 @@ async function request<T>(
   // Combine the caller's signal (from React Query) with a per-request timeout
   // so a single hung page can't strand the eager-pagination loop.
   const timeoutController = new AbortController()
-  const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS)
+  const timeoutMs = retried ? REQUEST_TIMEOUT_MS : FIRST_ATTEMPT_TIMEOUT_MS
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs)
   const onCallerAbort = () => timeoutController.abort()
   if (options.signal) {
     if (options.signal.aborted) timeoutController.abort()
