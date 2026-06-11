@@ -14,45 +14,73 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decide whether to skip the heavy CI work. The PR jobs (Type check, Unit
+  # tests, Integration tests, Lint) are enforced as required status checks by
+  # branch protection, so they must ALWAYS run and report success — a job
+  # skipped via a job-level `if:` reports "skipped", which does NOT satisfy a
+  # required check and would leave the PR un-mergeable forever. Instead each job
+  # checks out (cheap, and required so the local composite action exists) and
+  # then runs a single guarded `run-ci` step. When the bracketed tag `[skip-ci]`
+  # is present in the latest commit message, the PR title, or the PR body, that
+  # one step is skipped, the job still succeeds, and the check context goes
+  # green in seconds. The tag is bracketed so prose that merely mentions it does
+  # not accidentally trip the skip. (The monthly e2e-maestro job is schedule-
+  # only and is intentionally not gated.)
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.decide.outputs.skip }}
+    steps:
+      - id: decide
+        env:
+          HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          haystack="${HEAD_COMMIT_MSG}
+          ${PR_TITLE}
+          ${PR_BODY}"
+          if printf '%s' "$haystack" | grep -qF -- '[skip-ci]'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=CI skipped::'[skip-ci]' found in commit message / PR title / PR body — run-ci step skipped, check reported green."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── Type-check ───────────────────────────────────────────────────────────────
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
+    needs: gate
     steps:
+      # Checkout is unguarded and first: the local composite action below only
+      # exists on disk after the repo is checked out.
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Type check
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run TypeScript
-        run: npm run typecheck
+          run: npm run typecheck
 
   # ── Unit tests ───────────────────────────────────────────────────────────────
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
+    needs: gate
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Unit tests
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm run test:unit -- --coverage --coverageDirectory=coverage/unit
+          run: npm run test:unit -- --coverage --coverageDirectory=coverage/unit
 
       - name: Upload unit coverage
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.gate.outputs.skip != 'true'
         with:
           name: unit-coverage
           path: coverage/unit
@@ -62,23 +90,19 @@ jobs:
   integration:
     name: Integration tests
     runs-on: ubuntu-latest
+    needs: gate
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Integration tests
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run integration tests
-        run: npm run test:integration -- --coverage --coverageDirectory=coverage/integration
+          run: npm run test:integration -- --coverage --coverageDirectory=coverage/integration
 
       - name: Upload integration coverage
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.gate.outputs.skip != 'true'
         with:
           name: integration-coverage
           path: coverage/integration
@@ -88,19 +112,15 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: gate
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Lint
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
+          run: npm run lint
 
   # ── Maestro E2E (iOS sim, monthly schedule only) ─────────────────────────────
   # Runs once per month (00:00 UTC on the 1st) via the schedule trigger above.
@@ -110,6 +130,7 @@ jobs:
   #
   # Only `github.event_name` is interpolated here — a GitHub-controlled context
   # value, not user input — so no command-injection surface in `run:` steps.
+  # Schedule-only, so it is intentionally NOT gated by [skip-ci].
   e2e-maestro:
     name: E2E maestro (iOS)
     if: github.event_name == 'schedule'
