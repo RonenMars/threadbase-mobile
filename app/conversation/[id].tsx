@@ -61,7 +61,9 @@ function renderContent(block: MessageContent, index: number, recycleKey: string)
 // across messages (ToolCard / ThinkingCard / DiffViewer / MessageBubble each
 // own `expanded` state). Threading the message id as `recycleKey` lets each
 // child use `useRecyclingState` to reset its state when the cell is reassigned.
-function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
+// Memoized so screen re-renders during the initial settle don't re-render
+// (and re-highlight) every visible row.
+const MessageItem = React.memo(function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
   const { t } = useTranslation('conversation')
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
@@ -102,7 +104,7 @@ function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }
       <MessageBubble message={message} recycleKey={message.id} />
     </View>
   )
-}
+})
 
 export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
@@ -128,6 +130,10 @@ export default function ConversationDetailScreen() {
   const hasInitialScrolled = useRef(false)
   const userHasScrolled = useRef(false)
   const initialScrollSettleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Hard ceiling on how long the skeleton may wait for layout to settle —
+  // code/image-heavy pages keep resizing and would otherwise reset the settle
+  // debounce indefinitely. Starts at the first onContentSizeChange.
+  const firstLayoutCapRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevScrollY = useRef(0)
   const contentHeightRef = useRef(0)
   // Bug 10: hold the Top button visible for ~600ms after the last upward
@@ -148,10 +154,11 @@ export default function ConversationDetailScreen() {
   const [pulseAnim] = useState(() => new Animated.Value(1))
 
   // Skeleton stays up until the network fetch lands AND the FlashList has
-  // stopped resizing (handleContentSizeChange settles). The 800 ms
-  // useMinDisplayTime floor below is the anti-flicker mechanism from bug-1.
+  // had a beat to lay out (handleContentSizeChange settles or hits its cap).
+  // The 400 ms useMinDisplayTime floor below is the anti-flicker mechanism
+  // from bug-1 — just enough to avoid a skeleton flash on fast loads.
   const isReady = conversation !== undefined && firstLayoutDone
-  const isGated = useMinDisplayTime(isReady, 800, id)
+  const isGated = useMinDisplayTime(isReady, 400, id)
 
   useEffect(() => {
     hasInitialScrolled.current = false
@@ -160,6 +167,10 @@ export default function ConversationDetailScreen() {
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
+    }
+    if (firstLayoutCapRef.current) {
+      clearTimeout(firstLayoutCapRef.current)
+      firstLayoutCapRef.current = null
     }
     if (scrollTopHideTimerRef.current) {
       clearTimeout(scrollTopHideTimerRef.current)
@@ -175,6 +186,10 @@ export default function ConversationDetailScreen() {
       if (scrollTopHideTimerRef.current) {
         clearTimeout(scrollTopHideTimerRef.current)
         scrollTopHideTimerRef.current = null
+      }
+      if (firstLayoutCapRef.current) {
+        clearTimeout(firstLayoutCapRef.current)
+        firstLayoutCapRef.current = null
       }
     }
   }, [])
@@ -195,7 +210,11 @@ export default function ConversationDetailScreen() {
   // actually drags. scrollToEnd targets the current bottom and the bottom
   // keeps moving as lazy rows / tool cards / images finish laying out. After
   // 150ms of no size changes we treat the initial scroll as "settled" and
-  // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts.
+  // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts. Heavy pages
+  // (code blocks, images) can keep resizing and resetting that debounce, so
+  // a one-shot cap started at the FIRST size change flips `firstLayoutDone`
+  // after 500ms no matter what — the list may keep settling to the bottom
+  // visibly, but the skeleton must not wait for layout to fully quiesce.
   //
   // Bug 17: once the initial scroll has settled, stop firing per-chunk
   // scrollToEnd calls. FlashList's `maintainVisibleContentPosition`
@@ -207,6 +226,12 @@ export default function ConversationDetailScreen() {
     if (userHasScrolled.current) return
     if (hasInitialScrolled.current) return
     scrollToBottom(false)
+    if (!firstLayoutCapRef.current) {
+      firstLayoutCapRef.current = setTimeout(() => {
+        firstLayoutCapRef.current = null
+        setFirstLayoutDone(true)
+      }, 500)
+    }
     if (initialScrollSettleRef.current) clearTimeout(initialScrollSettleRef.current)
     initialScrollSettleRef.current = setTimeout(() => {
       scrollToBottom(true)
@@ -338,12 +363,16 @@ export default function ConversationDetailScreen() {
     await Share.share({ message: md })
   }, [conversation])
 
-  const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => (
+  // Key the callback on the last message's id, not the count: older pages
+  // prepend, so the id only changes when the tail actually changes and rows
+  // don't all receive a new render function on every fetch.
+  const lastMessageId = conversation?.messages[conversation.messages.length - 1]?.id
+  const renderItem = useCallback(({ item }: { item: Message }) => (
     <MessageItem
       message={item}
-      isLast={index === (conversation?.messages.length ?? 0) - 1}
+      isLast={item.id === lastMessageId}
     />
-  ), [conversation?.messages.length])
+  ), [lastMessageId])
 
   const handleFooterLayout = useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height

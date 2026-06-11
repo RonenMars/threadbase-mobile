@@ -112,6 +112,36 @@ describe('api.get', () => {
     expect(result.retried).toBe(true)
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
+
+  it('aborts a stalled first attempt at 8 s and fails over to the retry', async () => {
+    jest.useFakeTimers()
+    try {
+      const abortReasons: string[] = []
+      mockFetch.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+        return new Promise((resolve, reject) => {
+          init.signal.addEventListener('abort', () => {
+            abortReasons.push('aborted')
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+          // First attempt stalls forever; the retry responds.
+          if (abortReasons.length > 0) resolve(mockOkResponse({ recovered: true }))
+        })
+      })
+
+      const pending = api.get<{ recovered: boolean }>('/api/stalled')
+      // Just before the 8 s first-attempt timeout — still stalled.
+      await jest.advanceTimersByTimeAsync(7999)
+      expect(abortReasons).toHaveLength(0)
+      // Crossing it aborts attempt #1 and the silent retry succeeds.
+      await jest.advanceTimersByTimeAsync(2)
+      const result = await pending
+      expect(result.recovered).toBe(true)
+      expect(abortReasons).toHaveLength(1)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
 })
 
 describe('api.post', () => {

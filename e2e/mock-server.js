@@ -73,6 +73,13 @@ function handleRequest(req, res) {
     if (conversationMatch[1] === 'conv-many-messages') {
       return json(res, 200, readFixture('conversation-detail-many.json'))
     }
+    // Perf-repro fixtures: code-heavy vs text-only first page (80 messages each).
+    if (conversationMatch[1] === 'conv-code-heavy') {
+      return json(res, 200, readFixture('conv-code-heavy.json'))
+    }
+    if (conversationMatch[1] === 'conv-text-only') {
+      return json(res, 200, readFixture('conv-text-only.json'))
+    }
     if (conversationMatch[1] === 'conv-111') {
       return json(res, 200, readFixture('conversation-detail.json'))
     }

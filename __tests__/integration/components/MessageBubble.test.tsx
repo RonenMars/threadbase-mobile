@@ -3,6 +3,21 @@ import { render } from '@testing-library/react-native'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import type { Message } from '@/types/api'
 
+// Counts <Highlight> invocations so the memo regression test below can assert
+// Prism work doesn't repeat. Pass-through to the real implementation.
+const mockHighlightRenders = { count: 0 }
+jest.mock('prism-react-renderer', () => {
+  const actual = jest.requireActual('prism-react-renderer')
+  return {
+    ...actual,
+    Highlight: (props: object) => {
+      mockHighlightRenders.count++
+      const ReactActual = jest.requireActual('react')
+      return ReactActual.createElement(actual.Highlight, props)
+    },
+  }
+})
+
 const makeMessage = (overrides: Partial<Message> = {}): Message => ({
   id: 'msg-1',
   role: 'user',
@@ -43,6 +58,23 @@ describe('MessageBubble – code blocks', () => {
     const { getByText } = render(<MessageBubble message={msgWithCode} />)
     expect(getByText('Copy')).toBeTruthy()
     expect(getByText('Code')).toBeTruthy()
+  })
+
+  // Slow-first-load fix: Prism tokenization is synchronous, tens of ms for a
+  // large block, and must not repeat when the screen re-renders rows with the
+  // same message (initial scroll settle, footer layout, scroll-button state).
+  it('does not re-run Prism when re-rendered with the same message', () => {
+    mockHighlightRenders.count = 0
+    const msgWithCode = makeMessage({
+      content: [{ type: 'text', text: '```js\nconst x = 1\n```' }],
+    })
+
+    const { rerender } = render(<MessageBubble message={msgWithCode} />)
+    expect(mockHighlightRenders.count).toBe(1)
+
+    rerender(<MessageBubble message={msgWithCode} />)
+    rerender(<MessageBubble message={msgWithCode} />)
+    expect(mockHighlightRenders.count).toBe(1)
   })
 })
 
