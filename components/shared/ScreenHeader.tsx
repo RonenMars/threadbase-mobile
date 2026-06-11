@@ -14,11 +14,21 @@ interface Props {
 export function ScreenHeader({ title, right, onBack }: Props) {
   const router = useRouter()
   const { t } = useTranslation('common')
+  // Deep links (push notifications, threadbase:// URLs) can mount a screen as
+  // the only entry in the stack — there is nothing to pop, so GO_BACK would be
+  // unhandled. Fall back to the hub instead.
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/')
+    }
+  }
   return (
     <View style={styles.bar}>
       <Pressable
         testID="screen-header-back-button"
-        onPress={onBack ?? (() => router.back())}
+        onPress={onBack ?? goBack}
         hitSlop={16}
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}
         accessibilityLabel={t('button.back')}
