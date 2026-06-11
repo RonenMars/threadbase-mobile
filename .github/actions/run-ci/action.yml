@@ -1,0 +1,26 @@
+name: "Run CI"
+description: "Sets up Node 22 with npm cache, installs deps via npm ci, and runs the given CI command."
+
+inputs:
+  run:
+    description: "The shell command to run (e.g. 'npm run typecheck')."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Run command
+      shell: bash
+      env:
+        CI_RUN: ${{ inputs.run }}
+      run: bash -c "$CI_RUN"
