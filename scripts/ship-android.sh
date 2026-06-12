@@ -6,6 +6,8 @@
 #   bundle + upload → done.
 #
 # No emulator, no UI. Default track is internal.
+# Step 1 always runs first: verifies 1Password is signed in and fetches
+# Google Play credentials — fails fast before any slow step (npm, Gradle).
 #
 # Usage:
 #   ./scripts/ship-android.sh                           # → Internal testing
@@ -55,16 +57,32 @@ esac
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOTAL_STEPS=8
 
-# 1. Preflight
+# 1. Verify 1Password is signed in and fetch Google Play credentials.
+# Do this first so we fail fast before any slow steps (npm install, Gradle).
+# Always fetch from 1Password — never trust ambient GOOGLE_APPLICATION_CREDENTIALS
+# (it may point at a gcloud ADC credential instead of the Play service account).
+echo "▸ [1/$TOTAL_STEPS] Verify 1Password + fetch Google Play credentials"
+if ! command -v op >/dev/null 2>&1; then
+  echo "ERROR: 1Password CLI (op) not found — install with: brew install --cask 1password-cli" >&2
+  exit 1
+fi
+if ! op whoami >/dev/null 2>&1; then
+  echo "ERROR: 1Password not signed in — run: eval \"\$(op signin)\" then retry" >&2
+  exit 1
+fi
+CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
+export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_PATH"
+
+# 2. Preflight
 if (( SKIP_PREFLIGHT == 0 )); then
-  echo "▸ [1/$TOTAL_STEPS] Preflight (Android)"
+  echo "▸ [2/$TOTAL_STEPS] Preflight (Android)"
   PLATFORM=android "$SCRIPT_DIR/preflight.sh"
 else
-  echo "▸ [1/$TOTAL_STEPS] Preflight — skipped"
+  echo "▸ [2/$TOTAL_STEPS] Preflight — skipped"
 fi
 
-# 2. Install deps (detect package manager)
-echo "▸ [2/$TOTAL_STEPS] Install dependencies"
+# 3. Install deps (detect package manager)
+echo "▸ [3/$TOTAL_STEPS] Install dependencies"
 if   [[ -f bun.lockb || -f bun.lock ]]; then bun install
 elif [[ -f pnpm-lock.yaml ]];           then pnpm install
 elif [[ -f yarn.lock ]];               then yarn install
@@ -72,40 +90,31 @@ else                                        npm ci --legacy-peer-deps || npm ins
 fi
 npx expo install --check >/dev/null || true
 
-# 3. Prebuild if android/ missing
+# 4. Prebuild if android/ missing
 if (( SKIP_PREBUILD == 0 )) && [[ ! -d android ]]; then
-  echo "▸ [3/$TOTAL_STEPS] Prebuild (no android/ directory)"
+  echo "▸ [4/$TOTAL_STEPS] Prebuild (no android/ directory)"
   npx expo prebuild --platform android --non-interactive
 else
-  echo "▸ [3/$TOTAL_STEPS] Prebuild — android/ exists, skipping"
+  echo "▸ [4/$TOTAL_STEPS] Prebuild — android/ exists, skipping"
 fi
 
-# 4. Bootstrap Android signing from 1Password
+# 5. Bootstrap Android signing from 1Password
 # Skip if .env.signing.android already exists and keystore is on disk.
 if [[ -f .env.signing.android ]]; then
   _ks_path=$(bash -c 'source .env.signing.android 2>/dev/null && echo "${TB_MOBILE_UPLOAD_KEYSTORE:-}"')
   if [[ -n "$_ks_path" && -f "$_ks_path" ]]; then
-    echo "▸ [4/$TOTAL_STEPS] Android signing already bootstrapped — skipping"
+    echo "▸ [5/$TOTAL_STEPS] Android signing already bootstrapped — skipping"
     source .env.signing.android
   else
-    echo "▸ [4/$TOTAL_STEPS] Bootstrap Android signing"
+    echo "▸ [5/$TOTAL_STEPS] Bootstrap Android signing"
     "$SCRIPT_DIR/bootstrap-android-signing.sh"
     source .env.signing.android
   fi
 else
-  echo "▸ [4/$TOTAL_STEPS] Bootstrap Android signing"
+  echo "▸ [5/$TOTAL_STEPS] Bootstrap Android signing"
   "$SCRIPT_DIR/bootstrap-android-signing.sh"
   source .env.signing.android
 fi
-
-# 5. Fetch Google Play service-account credentials from 1Password.
-# Always fetch — the canonical credential lives in 1Password (written to
-# ~/.config/threadbase/play-console-sa.json). Never trust an ambient
-# GOOGLE_APPLICATION_CREDENTIALS from the shell environment; it may point
-# at a different service account (e.g. a gcloud ADC credential).
-echo "▸ [5/$TOTAL_STEPS] Fetch Google Play credentials"
-CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
-export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_PATH"
 
 # 6. Git sync — refuse to ship if local main is behind origin/main, or if
 # app.json has uncommitted changes.
