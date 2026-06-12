@@ -412,7 +412,7 @@ export default function SessionDetailScreen() {
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
   const skipLiveStream = isPending || (session?.ptyAttached === false && session?.status === 'idle')
   const { lines, isStreaming, isLoadingHistory } = useTerminalStream(serverId, id, skipLiveStream)
-  const { sendInput } = useSessionActions(serverId, id)
+  const { sendInput, sendKeys } = useSessionActions(serverId, id)
 
   // When the app returns from background, iOS may have torn down the WS
   // connection without firing onclose, and the streamer may have restarted
@@ -811,6 +811,9 @@ export default function SessionDetailScreen() {
                 isStreaming={isStreaming}
                 onSendInput={session?.status === 'waiting_input'
                   ? (text) => sendInput.mutate(text, { onError: (err) => Alert.alert('Send failed', err instanceof Error ? err.message : String(err)) })
+                  : undefined}
+                onSendKeys={session?.status === 'waiting_input'
+                  ? (keys) => sendKeys.mutate(keys, { onError: (err) => Alert.alert('Send failed', err instanceof Error ? err.message : String(err)) })
                   : undefined}
               />
               {isLoadingHistory ? (

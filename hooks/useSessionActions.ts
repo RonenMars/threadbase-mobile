@@ -18,6 +18,15 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
+  // Send raw key sequences (arrow keys, Enter) without bracketed-paste wrapping.
+  const sendKeys = useMutation({
+    mutationFn: (keys: string) =>
+      api.post(`/api/sessions/${sessionId}/input`, { keys }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+    },
+  })
+
   const cancelSession = useMutation({
     mutationFn: () => api.post(`/api/sessions/${sessionId}/cancel`),
     onSuccess: () => {
@@ -58,5 +67,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, cancelSession, addToQueue, removeFromQueue, respondToPlan, adoptSession }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, adoptSession }
 }

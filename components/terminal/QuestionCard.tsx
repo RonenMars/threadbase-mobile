@@ -6,13 +6,13 @@ import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 interface Props {
   block: QuestionBlock
-  onSelect: (optionText: string) => void
+  onSelect: (index: number) => void
 }
 
 export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Props) {
-  const handlePress = (optionText: string) => {
+  const handlePress = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    onSelect(optionText)
+    onSelect(index)
   }
 
   return (
@@ -22,7 +22,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Prop
         <TouchableOpacity
           key={index}
           style={[styles.option, index === block.selectedIndex && styles.optionSelected]}
-          onPress={() => handlePress(option)}
+          onPress={() => handlePress(index)}
           accessibilityRole="button"
           accessibilityLabel={option}
         >

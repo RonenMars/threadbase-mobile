@@ -59,9 +59,10 @@ interface Props {
   lines: TerminalLine[]
   isStreaming: boolean
   onSendInput?: (text: string) => void
+  onSendKeys?: (keys: string) => void
 }
 
-export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput }: Props) {
+export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, onSendKeys }: Props) {
   const { t } = useTranslation('common')
   const listRef = useRef<FlashListRef<TerminalLine>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
@@ -125,9 +126,17 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput }
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
   const questionBlock = useMemo(
-    () => (onSendInput ? parseQuestionBlock(lines.slice(-30)) : null),
-    [lines, onSendInput]
+    () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
+    [lines, onSendKeys]
   )
+
+  const handleOptionSelect = useCallback((targetIndex: number) => {
+    if (!onSendKeys || !questionBlock) return
+    const delta = targetIndex - questionBlock.selectedIndex
+    const arrow = delta > 0 ? '\x1b[B' : '\x1b[A'
+    const keys = arrow.repeat(Math.abs(delta)) + '\r'
+    onSendKeys(keys)
+  }, [onSendKeys, questionBlock])
 
   return (
     <View style={styles.container}>
@@ -145,8 +154,8 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput }
         contentContainerStyle={styles.listContent}
       />
 
-      {questionBlock && onSendInput ? (
-        <QuestionCard block={questionBlock} onSelect={onSendInput} />
+      {questionBlock && onSendKeys ? (
+        <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
       ) : null}
 
       <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
