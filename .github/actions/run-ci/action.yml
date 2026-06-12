@@ -1,5 +1,5 @@
 name: "Run CI"
-description: "Sets up Node 22 with npm cache, installs deps via npm ci, and runs the given CI command."
+description: "Sets up Node 22 with npm cache, restores cached node_modules, and runs the given CI command."
 
 inputs:
   run:
@@ -15,7 +15,15 @@ runs:
         node-version: 22
         cache: npm
 
+    - name: Restore node_modules cache
+      id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: node_modules
+        key: node-modules-${{ hashFiles('package-lock.json') }}
+
     - name: Install dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: npm ci
 
