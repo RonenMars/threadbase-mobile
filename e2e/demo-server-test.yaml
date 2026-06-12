@@ -1,7 +1,7 @@
-appId: com.ronenmars.threadbase
+appId: ${APP_BUNDLE_ID}
 ---
 # Test demo server connection and basic session creation
-# Server: https://threadbase-demo.fly.dev
+# Server: set DEMO_SERVER_URL env var (pass via -e DEMO_SERVER_URL=... to maestro)
 # API Key: tb_public_demo_reviewer_key
 
 - launchApp:
@@ -19,7 +19,7 @@ appId: com.ronenmars.threadbase
 # Enter server URL
 - tapOn:
     id: "onboarding-connect-url-input"
-- inputText: "https://threadbase-demo.fly.dev"
+- inputText: ${DEMO_SERVER_URL}
 
 # Enter API key
 - tapOn:

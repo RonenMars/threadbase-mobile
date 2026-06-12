@@ -974,7 +974,7 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ### Feature 31 — Reuse the Fly demo server as a stable backend for Maestro and visual regression tests
 
-**Filed:** 2026-06-01 (during App Store submission — see `demo-server/` and `https://threadbase-demo.fly.dev`).
+**Filed:** 2026-06-01 (during App Store submission — see `demo-server/` and the Fly-hosted demo server).
 
 **Goal:** Promote the Fly-hosted demo server (currently spun up so Apple App Review reviewers can pair against a public Threadbase streamer) into a first-class CI/test fixture. Today `e2e/mock-server.js` runs only on localhost; the Fly deploy is a copy of it with the same fixtures. The duplication invites drift, and the Fly URL is a real piece of infra we already pay nothing for — we should put it to work.
 
@@ -982,7 +982,7 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 - **Sub-item A — Single source of truth for mock fixtures.** Decide between (a) keeping `demo-server/` as the deployable copy and writing a sync check (CI fails if `demo-server/server.js` or `demo-server/fixtures/` drift from `e2e/`), or (b) making `demo-server/` import from `e2e/` directly via relative path so there is literally one copy. Option (b) is simpler if Fly's Docker context can reach the parent `e2e/` directory (it can, but requires moving the Dockerfile up or using `--file`). Option (a) keeps the deploy directory self-contained.
 
-- **Sub-item B — Maestro flows runnable against either backend.** Today `setup.yaml` hardcodes `http://localhost:7071`; `setup-demo.yaml` hardcodes `https://threadbase-demo.fly.dev`. Add a third variant that reads the URL from a `MAESTRO_HOST_URL` env var (Maestro supports parameterized flows). Then a single `setup-paramd.yaml` works for both local CI runs (against `mock-server.js`) and remote/device runs (against Fly). Delete the dupes once the parameterized version is proven.
+- **Sub-item B — Maestro flows runnable against either backend.** Today `setup.yaml` hardcodes `http://localhost:7071`; `setup-demo.yaml` reads `DEMO_SERVER_URL` from `.env.demo`. The env-var approach is already in place for demo flows — extend it so a single parameterized flow covers both local CI runs (against `mock-server.js`) and remote/device runs (against the Fly demo). Delete the per-backend duplicates once the parameterized version is proven.
 
 - **Sub-item C — Visual regression test harness.** Now that we have a deterministic backend producing the same fixtures every time, we can checksum or diff screenshots between builds. Tooling options: `playwright-test` against the simulator via Maestro hooks; `reg-cli` / `pixelmatch` for image diffs; or roll a tiny `vitest`-based diff suite. Decision point: where do baseline images live (the repo? Git LFS? a separate bucket?), and what is the diff threshold before we fail CI.
 
@@ -990,7 +990,7 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 **Open questions:**
 
-- Is anyone else likely to pair to `threadbase-demo.fly.dev` outside CI / App Review? If so, the load model changes and we may want auth (a rotating shared secret) rather than "accept any non-empty token."
+- Is anyone else likely to pair to the demo server outside CI / App Review? If so, the load model changes and we may want auth (a rotating shared secret) rather than "accept any non-empty token."
 - For visual regression, do we care about pixel-perfect diffs (will catch font / kerning regressions but flake on simulator GPU non-determinism), or structural diffs only (less flaky but misses subtle layout shifts)?
 - Does fly.io's free-tier policy still cover this VM size in 2026? Worth confirming before betting CI on it.
 
