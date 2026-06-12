@@ -121,9 +121,28 @@ fi
 echo "▸ [6/$TOTAL_STEPS] Git sync check"
 "$SCRIPT_DIR/git-sync-check.sh"
 
-# 7. Verify (and auto-bump) versionCode against Play
+# 7. Verify (and auto-bump) versionCode against Play.
+# Exit 2 from check-version-code.sh means a bump commit was made.
+# We install a rollback trap so that if step 8 fails, the bump is reverted.
 echo "▸ [7/$TOTAL_STEPS] Check versionCode against Play"
-"$SCRIPT_DIR/check-version-code.sh"
+VERSION_BUMPED=0
+"$SCRIPT_DIR/check-version-code.sh" && true || {
+  code=$?
+  if (( code == 2 )); then
+    VERSION_BUMPED=1
+  else
+    exit $code
+  fi
+}
+
+_rollback_bump() {
+  if (( VERSION_BUMPED )); then
+    echo
+    echo "⚠ Upload failed — rolling back version code bump commit..." >&2
+    git revert HEAD --no-edit >&2
+    echo "  ✓ bump reverted. Fix the issue and re-run." >&2
+  fi
+}
 
 # 8. Build AAB + upload to Play
 PACKAGE="${PACKAGE_OVERRIDE:-$(jq -r '.expo.android.package' app.json)}"
@@ -136,7 +155,9 @@ if (( SKIP_BUNDLE )); then
 else
   echo "▸ [8/$TOTAL_STEPS] Bundle and upload"
 fi
+trap '_rollback_bump' EXIT
 ANDROID_TRACK="$TRACK" SKIP_BUNDLE="$SKIP_BUNDLE" "$SCRIPT_DIR/bundle-and-upload-android.sh"
+trap - EXIT
 
 echo
 echo "✅  Build is live on Play ($TRACK track)."
