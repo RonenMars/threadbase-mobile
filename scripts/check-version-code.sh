@@ -40,7 +40,7 @@ const fs   = require('fs');
 const crypto = require('crypto');
 const https  = require('https');
 
-const sa = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+const sa = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const now = Math.floor(Date.now() / 1000);
 const scope = 'https://www.googleapis.com/auth/androidpublisher';
 
@@ -155,8 +155,8 @@ function del(path, token) {
 }
 
 (async () => {
-  const pkg   = process.argv[1];
-  const token = process.argv[2];
+  const pkg   = process.argv[2];
+  const token = process.argv[3];
   const base  = `/androidpublisher/v3/applications/${pkg}`;
 
   // Open a temporary edit to read track state; delete it immediately after.

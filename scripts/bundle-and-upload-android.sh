@@ -71,7 +71,7 @@ const crypto = require('crypto');
 const https  = require('https');
 const path   = require('path');
 
-const [pkg, versionCode, aabPath, track, saPath] = process.argv.slice(1);
+const [pkg, versionCode, aabPath, track, saPath] = process.argv.slice(2);
 const sa = JSON.parse(fs.readFileSync(saPath, 'utf8'));
 
 // --- Mint OAuth2 access token ---
