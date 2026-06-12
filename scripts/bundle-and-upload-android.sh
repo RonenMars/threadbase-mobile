@@ -43,6 +43,18 @@ VERSION_NAME=$(jq -r '.expo.version' app.json)
 
 mkdir -p build
 
+# Sync versionCode into android/app/build.gradle from app.json.
+# Expo prebuild hard-codes the value at generation time; subsequent app.json
+# bumps (e.g. from check-version-code.sh) are not automatically reflected.
+# Without this sync, Gradle sees no change and returns an UP-TO-DATE AAB
+# that still carries the old versionCode.
+GRADLE_BUILD="android/app/build.gradle"
+GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
+if [[ "$GRADLE_VC" != "$VERSION_CODE" ]]; then
+  echo "  syncing build.gradle versionCode $GRADLE_VC → $VERSION_CODE"
+  sed -i '' "s/versionCode $GRADLE_VC/versionCode $VERSION_CODE/" "$GRADLE_BUILD"
+fi
+
 echo "▸ Building Android App Bundle (versionCode=$VERSION_CODE, versionName=$VERSION_NAME)"
 echo "  package:  $PACKAGE_NAME"
 echo "  track:    $ANDROID_TRACK"

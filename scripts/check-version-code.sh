@@ -111,6 +111,8 @@ function get(path, token) {
     https.get(opts, r => {
       r.on('data', d => body += d);
       r.on('end', () => {
+        // 404 = app has no published tracks yet (first-ever upload); treat as remote = 0.
+        if (r.statusCode === 404) { resolve({ __notFound: true }); return; }
         try { resolve(JSON.parse(body)); }
         catch(e) { reject(new Error('JSON parse failed (HTTP ' + r.statusCode + '): ' + body.slice(0, 300))); }
       });
@@ -126,6 +128,12 @@ function get(path, token) {
 
   // Use the edit-less tracks endpoint — reads live published state directly.
   const tracks = await get(`/androidpublisher/v3/applications/${pkg}/tracks`, token);
+  if (tracks.__notFound) {
+    // No tracks exist yet — this is the first build for this app. Remote = 0.
+    process.stderr.write('  no published tracks found (first upload) — treating remote versionCode as 0\n');
+    process.stdout.write('0');
+    return;
+  }
   if (tracks.error) {
     process.stderr.write('tracks.list error: ' + JSON.stringify(tracks.error) + '\n');
     process.exit(1);
@@ -182,3 +190,6 @@ echo "  ✓ app.json updated to versionCode $NEXT_CODE"
 git add app.json
 git commit -m "chore(android): bump version code to $NEXT_CODE"
 echo "  ✓ committed bump (push with: git push)"
+# Exit 2 signals to ship-android.sh that a bump commit was made.
+# The caller should roll it back if the subsequent upload fails.
+exit 2
