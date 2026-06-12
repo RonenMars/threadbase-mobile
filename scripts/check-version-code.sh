@@ -91,6 +91,8 @@ req.end();
 EOF
 )
 
+[[ -n "$ACCESS_TOKEN" ]] || { echo "ERROR: OAuth2 token minting failed — check GOOGLE_APPLICATION_CREDENTIALS and service account permissions" >&2; exit 1; }
+
 # Query the androidpublisher API for the highest versionCode across all
 # active tracks using the edit-less tracks endpoint, which reflects the
 # live published state (edits/{id}/tracks only shows the current edit's
@@ -108,7 +110,10 @@ function get(path, token) {
     let body = '';
     https.get(opts, r => {
       r.on('data', d => body += d);
-      r.on('end', () => resolve(JSON.parse(body)));
+      r.on('end', () => {
+        try { resolve(JSON.parse(body)); }
+        catch(e) { reject(new Error('JSON parse failed (HTTP ' + r.statusCode + '): ' + body.slice(0, 300))); }
+      });
     }).on('error', reject);
   });
 }
@@ -116,6 +121,8 @@ function get(path, token) {
 (async () => {
   const pkg   = process.argv[2];
   const token = process.argv[3];
+
+  if (!token || token === '-') { process.stderr.write('ERROR: access token is empty — OAuth2 minting failed\n'); process.exit(1); }
 
   // Use the edit-less tracks endpoint — reads live published state directly.
   const tracks = await get(`/androidpublisher/v3/applications/${pkg}/tracks`, token);

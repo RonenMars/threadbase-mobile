@@ -95,15 +95,14 @@ else
   source .env.signing.android
 fi
 
-# 5. Fetch Google Play service-account credentials from 1Password
-# Skip if GOOGLE_APPLICATION_CREDENTIALS already points at a valid file.
-if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" && -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
-  echo "▸ [5/$TOTAL_STEPS] Play credentials already present — skipping fetch"
-else
-  echo "▸ [5/$TOTAL_STEPS] Fetch Google Play credentials"
-  CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
-  export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_PATH"
-fi
+# 5. Fetch Google Play service-account credentials from 1Password.
+# Always fetch — the canonical credential lives in 1Password (written to
+# ~/.config/threadbase/play-console-sa.json). Never trust an ambient
+# GOOGLE_APPLICATION_CREDENTIALS from the shell environment; it may point
+# at a different service account (e.g. a gcloud ADC credential).
+echo "▸ [5/$TOTAL_STEPS] Fetch Google Play credentials"
+CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
+export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_PATH"
 
 # 6. Git sync — refuse to ship if local main is behind origin/main, or if
 # app.json has uncommitted changes.
