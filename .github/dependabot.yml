@@ -9,6 +9,3 @@ updates:
       directory: "/" # Location of package manifests
       schedule:
           interval: "weekly"
-      # Always increase the version requirement
-      # to match the new version.
-      versioning-strategy: increase
