@@ -4,10 +4,10 @@
 
 `threadbase-mobile` is an **Expo SDK 51 managed app** (React Native) distributed to iOS via **EAS Build + TestFlight**.
 
-- Bundle ID: `com.ronenmars.threadbase`
-- App Store Connect App ID: `6762130307`
-- Expo project: `@ronenmars/threadbase-mobile` (project ID: `35430e75-2718-4261-a46c-d6f6ff1e27c3`)
-- Apple Team: `GUW6BN8X57` (Ronen Bakhteev, Individual)
+- Bundle ID: defined in `app.json` → `expo.ios.bundleIdentifier`
+- App Store Connect App ID: in `app.json` → `expo.extra.storeListing.appId` (or check App Store Connect)
+- Expo project: configured in `app.json` → `expo.owner` and `eas.json`
+- Apple Team: configured via EAS and `app.json` → `expo.ios.appleTeamId`
 
 ---
 
@@ -23,13 +23,13 @@ End-to-end deploy without any manual steps:
 ### 1Password auth — no `op signin` required
 
 The ship pipeline calls `scripts/bootstrap-ios-signing.sh` to pull the App Store Connect
-API key from 1Password (`op://MyDevSecrets/AppStoreConnect`). This requires `op` to be
-authenticated, but **not interactively** — as long as `OP_SERVICE_ACCOUNT_TOKEN` is set
-in the environment, `op` works without `op signin`.
+API key from 1Password (vault/item set in `.env.op` via `OP_IOS_VAULT`/`OP_IOS_ITEM`).
+This requires `op` to be authenticated, but **not interactively** — as long as
+`OP_SERVICE_ACCOUNT_TOKEN` is set in the environment, `op` works without `op signin`.
 
-This token is stored in `MyDevSecrets/OP_SERVICE_ACCOUNT_TOKEN` and exported via
-`~/dotfiles/config/zsh/secrets-template.zsh`. After running `refresh-secrets` once, every
-new terminal session has it automatically.
+This token is stored in your 1Password vault (see `.env.op.example`) and exported via
+your shell profile. After running `refresh-secrets` once, every new terminal session has
+it automatically.
 
 **First-time setup on a new machine:**
 1. Ensure `OP_SERVICE_ACCOUNT_TOKEN` is in your environment (`echo $OP_SERVICE_ACCOUNT_TOKEN`)
@@ -48,8 +48,8 @@ bootstrapped from the cached files — 1Password isn't contacted at all.
 
 All signing credentials are stored on EAS servers and auto-managed:
 
-- **Distribution Certificate** — Serial `17ABEEA468D49F53D630889C3D4BDAE3`, expires Apr 13 2027
-- **Provisioning Profile** — Developer Portal ID `HY7993X576`, expires Apr 13 2027
+- **Distribution Certificate** — managed by EAS; view in App Store Connect → Certificates
+- **Provisioning Profile** — managed by EAS; view in Developer Portal → Profiles
 - **Push Notifications Key** — Created and assigned via EAS
 
 No manual certificate management needed.
@@ -91,12 +91,11 @@ Option 2 is usually the least friction for TestFlight releases.
 
 ## Expo Account
 
-EAS CLI is authenticated under the **old Expo account**:
-- Username: `ronenmars`
-- Email: `ronen@cdi-negev.com`
+EAS CLI must be authenticated before running builds or submits:
 
-> Note: There is also a newer account with username `ronemmars` (typo) linked to `ronenmars@gmail.com`.
-> Long-term fix: update the old account's email to `ronenmars@gmail.com` and delete the duplicate.
+```bash
+eas login
+```
 
 To verify which account EAS is using: `eas whoami`
 

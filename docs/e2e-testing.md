@@ -34,7 +34,7 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
 **What it tests:**
 1. ✅ Onboarding flow (4 steps: Welcome → Connect → Notifications → Done)
 2. ✅ Manual credential entry (clearing pre-filled values)
-3. ✅ Demo server connection (`https://threadbase-demo.fly.dev`)
+3. ✅ Demo server connection (URL from `DEMO_SERVER_URL` env var)
 4. ✅ Session creation via Browse modal
 5. ✅ Sending a message ("What is 2+2?")
 6. ✅ Terminal output rendering
@@ -44,7 +44,7 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
 10. ✅ Re-entering session (conversation history view)
 
 **Credentials used:**
-- Server URL: `https://threadbase-demo.fly.dev`
+- Server URL: from `DEMO_SERVER_URL` in `.env.demo` (gitignored)
 - API Token: `tb_public_demo_reviewer_key`
 
 ### Mock Server Tests
@@ -141,7 +141,7 @@ All interactive elements in the app that need to be tested must have `testID` pr
 ### Basic Structure
 
 ```yaml
-appId: com.ronenmars.threadbase
+appId: ${APP_BUNDLE_ID}
 ---
 # Test description
 - launchApp:

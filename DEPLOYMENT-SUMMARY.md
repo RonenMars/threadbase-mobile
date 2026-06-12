@@ -2,9 +2,9 @@
 
 ## Deployment Details
 
-**Production Server:** `https://threadbase.fly.dev`  
-**Fly App Name:** `threadbase`  
-**Region:** `iad` (US East)
+**Production Server:** configured via `PROD_SERVER_URL` in `.env.prod`  
+**Platform:** Fly.io  
+**Region:** configured in `fly.prod.toml`
 
 ## Credentials
 
@@ -18,8 +18,8 @@
 
 ### Secrets Set
 ```bash
-fly secrets set PROD_API_KEY="<generated-api-key>" -a threadbase
-fly secrets set CLAUDE_API_KEY="<key-from-1password>" -a threadbase
+fly secrets set PROD_API_KEY="<generated-api-key>" -a <your-app-name>
+fly secrets set CLAUDE_API_KEY="<key-from-1password>" -a <your-app-name>
 ```
 
 ### Volume
@@ -90,7 +90,7 @@ maestro test -e PROD_SERVER_URL=$PROD_SERVER_URL -e PROD_API_KEY=$PROD_API_KEY \
 ```bash
 # Source credentials from .env.prod first
 source .env.prod
-curl -H "Authorization: Bearer $PROD_API_KEY" https://threadbase.fly.dev/healthz
+curl -H "Authorization: Bearer $PROD_API_KEY" $PROD_SERVER_URL/healthz
 ```
 
 Expected response:
@@ -101,6 +101,6 @@ Expected response:
 ## Next Steps
 
 1. Run the production E2E test to validate end-to-end flow
-2. Monitor Fly.io logs during test execution: `fly logs -a threadbase`
+2. Monitor Fly.io logs during test execution: `fly logs -a <your-app-name>`
 3. Consider setting up monitoring/alerting for the production instance
 4. Document any production-specific behaviors or quirks

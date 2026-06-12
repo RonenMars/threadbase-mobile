@@ -12,7 +12,7 @@ This blocks App Store submission of v1.0 (we need a credible session screenshot)
 
 ## What works
 
-- **Demo server** at `https://threadbase-demo.fly.dev` serves the right contract. Already deployed and tested:
+- **Demo server** (Fly-hosted, URL in `.env.demo`) serves the right contract. Already deployed and tested:
   - `GET /api/info`, `/api/profiles`, `/api/sessions`, `/api/sessions/:id`, `/api/sessions/:id/output`, `/api/conversations`, `/api/conversations/:id`, plus stubs for `names`, `recents`, `popular`, `count`
   - `WSS /ws?key=<anything>` accepts `{type: 'auth', token}` and `{type: 'subscribe_session', sessionId}` and replies with `{type: 'terminal_replay', sessionId, lines: [...]}` after a 150ms delay (workaround for an app-side race condition documented in `demo-server/server.js`).
   - Returns per-session status by matching the request ID against `e2e/fixtures/sessions.json`. So `session-def456` returns `status: waiting_input` (the one we want for the shot), `session-abc123` returns `status: running` (which triggers the wake-up overlay).
@@ -99,7 +99,7 @@ The hub renders session cards with composite accessibility labels of the form `"
      --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 --cellularMode active
 
    # Drive the onboarding flow:
-   export PATH=/Users/ronenmars/.maestro/bin:$PATH
+   export PATH=~/.maestro/bin:$PATH
    maestro test e2e/setup-demo.yaml
    ```
 
@@ -211,7 +211,7 @@ Verify with:
 ```bash
 # Stream Fly logs while reproducing the bug
 cd ~/Desktop/dev/ai-tools/tb-mobile/demo-server
-flyctl logs -a threadbase-demo &
+flyctl logs -a <demo-app-name> &
 # In another shell:
 cd ~/Desktop/dev/ai-tools/tb-mobile
 maestro test e2e/shots-02-session-waited.yaml
