@@ -44,7 +44,7 @@ if [[ "$PLATFORM" == "android" || "$PLATFORM" == "both" ]]; then
   echo
   echo "▸ Android toolchain"
   check "ANDROID_HOME set"        "[[ -n \${ANDROID_HOME:-} && -d \$ANDROID_HOME ]]" "export ANDROID_HOME=\$HOME/Library/Android/sdk in ~/.zshrc"
-  check "JAVA_HOME >= 17"         "java -version 2>&1 | grep -oE 'version \"[0-9]+' | grep -qE '\"(1[7-9]|[2-9][0-9])'" "export JAVA_HOME=\$(/usr/libexec/java_home -v 17) # or 21/22"
+  check "JAVA_HOME >= 17"         "java -version 2>&1 | grep -oE 'version \"[0-9]+' | grep -qE '\"(1[7-9]|[2-9][0-9])'" "brew install --cask temurin@21 && export JAVA_HOME=\$(/usr/libexec/java_home -v 21)"
   check "AVD configured"          "[[ -n \"\$( [[ -d \${ANDROID_HOME:-}/emulator ]] && \${ANDROID_HOME}/emulator/emulator -list-avds 2>/dev/null )\" ]]" "avdmanager create avd -n Pixel_API_34 -k 'system-images;android-34;google_apis;arm64-v8a' -d pixel"
 fi
 
