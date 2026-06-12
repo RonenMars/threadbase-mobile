@@ -21,8 +21,8 @@ The repo ships **`.mcp.example.json`** as a template. Your real **`.mcp.json`** 
 
 1. Export the 1Password coordinates in your shell profile (`~/.zshrc` or `~/.bash_profile`):
    ```sh
-   export OP_PLAY_VAULT="MyDevSecrets"
-   export OP_PLAY_ITEM="GOOGLE_APPLICATION_CREDENTIALS"
+   export OP_PLAY_VAULT="<your-vault>"
+   export OP_PLAY_ITEM="<your-play-credentials-item>"
    # optional, defaults to "credential"
    # export OP_PLAY_FIELD="credential"
    ```

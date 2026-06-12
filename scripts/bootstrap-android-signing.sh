@@ -12,7 +12,7 @@
 #   brew install --cask 1password-cli
 #   eval "$(op signin)"               # interactive — or set OP_SERVICE_ACCOUNT_TOKEN
 #
-# 1Password item shape (vault MyDevSecrets, item title "AndroidSigning"):
+# 1Password item shape (vault + item set via OP_ANDROID_VAULT / OP_ANDROID_ITEM in .env.op):
 #   field   keystore_b64        — base64-encoded .keystore binary
 #                                 (encode with: `base64 -i tb-mobile-upload.keystore`)
 #   field   store_password      — keystore password
@@ -31,7 +31,13 @@
 
 set -euo pipefail
 
-OP_ITEM="${OP_ITEM:-op://MyDevSecrets/AndroidSigning}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../.env.op
+[ -f "${SCRIPT_DIR}/../.env.op" ] && source "${SCRIPT_DIR}/../.env.op"
+
+OP_ANDROID_VAULT="${OP_ANDROID_VAULT:-<your-vault>}"
+OP_ANDROID_ITEM="${OP_ANDROID_ITEM:-AndroidSigning}"
+OP_ITEM="${OP_ITEM:-op://${OP_ANDROID_VAULT}/${OP_ANDROID_ITEM}}"
 
 if ! op whoami >/dev/null 2>&1; then
   echo "1Password CLI is not signed in. Run: eval \"\$(op signin)\"" >&2

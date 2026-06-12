@@ -24,7 +24,7 @@
 # with 1Password CLI" toggle — that toggle only works after an account is
 # already registered with the CLI.
 #
-# 1Password item shape (vault MyDevSecrets, item title "AppStoreConnect"):
+# 1Password item shape (vault + item set via OP_IOS_VAULT / OP_IOS_ITEM in .env.op):
 #   field   key_id          — App Store Connect API Key ID      (e.g. ABC123XYZ4)
 #   field   issuer_id       — Issuer UUID                       (8-4-4-4-12)
 #   field   team_id         — Apple Developer Team ID           (10-char)
@@ -42,7 +42,13 @@
 
 set -euo pipefail
 
-OP_ITEM="${OP_ITEM:-op://MyDevSecrets/AppStoreConnect}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../.env.op
+[ -f "${SCRIPT_DIR}/../.env.op" ] && source "${SCRIPT_DIR}/../.env.op"
+
+OP_IOS_VAULT="${OP_IOS_VAULT:-<your-vault>}"
+OP_IOS_ITEM="${OP_IOS_ITEM:-AppStoreConnect}"
+OP_ITEM="${OP_ITEM:-op://${OP_IOS_VAULT}/${OP_IOS_ITEM}}"
 
 if ! op whoami >/dev/null 2>&1; then
   echo "1Password CLI is not signed in. Run: eval \"\$(op signin)\"" >&2
@@ -68,10 +74,7 @@ if ! head -1 "${ASC_KEY_PATH}" | grep -q '^-----BEGIN PRIVATE KEY-----$'; then
 fi
 
 mkdir -p build
-op inject \
-  --in-file scripts/ExportOptions.template.plist \
-  --out-file build/ExportOptions.plist \
-  --force
+sed "s/TEAM_ID_PLACEHOLDER/${ASC_TEAM_ID}/" scripts/ExportOptions.template.plist > build/ExportOptions.plist
 
 cat > .env.signing <<EOF
 export ASC_KEY_ID="${ASC_KEY_ID}"

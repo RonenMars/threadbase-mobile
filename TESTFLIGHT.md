@@ -23,13 +23,13 @@ End-to-end deploy without any manual steps:
 ### 1Password auth — no `op signin` required
 
 The ship pipeline calls `scripts/bootstrap-ios-signing.sh` to pull the App Store Connect
-API key from 1Password (`op://MyDevSecrets/AppStoreConnect`). This requires `op` to be
-authenticated, but **not interactively** — as long as `OP_SERVICE_ACCOUNT_TOKEN` is set
-in the environment, `op` works without `op signin`.
+API key from 1Password (vault/item set in `.env.op` via `OP_IOS_VAULT`/`OP_IOS_ITEM`).
+This requires `op` to be authenticated, but **not interactively** — as long as
+`OP_SERVICE_ACCOUNT_TOKEN` is set in the environment, `op` works without `op signin`.
 
-This token is stored in `MyDevSecrets/OP_SERVICE_ACCOUNT_TOKEN` and exported via
-`~/dotfiles/config/zsh/secrets-template.zsh`. After running `refresh-secrets` once, every
-new terminal session has it automatically.
+This token is stored in your 1Password vault (see `.env.op.example`) and exported via
+your shell profile. After running `refresh-secrets` once, every new terminal session has
+it automatically.
 
 **First-time setup on a new machine:**
 1. Ensure `OP_SERVICE_ACCOUNT_TOKEN` is in your environment (`echo $OP_SERVICE_ACCOUNT_TOKEN`)

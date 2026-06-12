@@ -241,7 +241,7 @@ to Google Play via the Play Developer API.
 1. **Preflight** — `scripts/preflight.sh` with `PLATFORM=android` (ANDROID_HOME, JAVA_HOME, etc.).
 2. **Install dependencies** — auto-detects bun / pnpm / yarn / npm.
 3. **Prebuild** — `npx expo prebuild --platform android` if `android/` is missing.
-4. **Bootstrap signing** — `scripts/bootstrap-android-signing.sh` pulls the upload keystore + passwords from 1Password (`op://MyDevSecrets/AndroidSigning`) into `.env.signing.android`.
+4. **Bootstrap signing** — `scripts/bootstrap-android-signing.sh` pulls the upload keystore + passwords from 1Password (vault/item set in `.env.op` via `OP_ANDROID_VAULT`/`OP_ANDROID_ITEM`) into `.env.signing.android`.
 5. **Fetch Play credentials** — `scripts/fetch-play-credentials.sh` pulls the service-account JSON from 1Password (`op://$OP_PLAY_VAULT/$OP_PLAY_ITEM`) to `~/.config/threadbase/play-console-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`.
 6. **Git sync check** — same as iOS: refuses to ship if `main` is behind `origin/main` or `app.json` has uncommitted changes.
 7. **Check/bump versionCode** — `scripts/check-version-code.sh` queries all Play tracks for the highest live versionCode, auto-bumps `app.json` if local ≤ remote, and commits the bump.
@@ -263,7 +263,7 @@ Other flags: `--skip-preflight`, `--skip-prebuild`, `--package <id>`.
 ### Prerequisites
 
 1. **1Password** signed in (`eval "$(op signin)"` or `OP_SERVICE_ACCOUNT_TOKEN`).
-2. **1Password item `AndroidSigning`** in vault `MyDevSecrets` with fields:
+2. **1Password item for Android signing** (vault/item set via `OP_ANDROID_VAULT`/`OP_ANDROID_ITEM` in `.env.op`) with fields:
    - `keystore_b64` — base64 of the upload keystore (`base64 -i tb-mobile-upload.keystore`)
    - `store_password`, `key_alias` (default: `upload`), `key_password`
 3. **Play service-account JSON** in 1Password — vault/item set via `OP_PLAY_VAULT` / `OP_PLAY_ITEM` env vars (see `docs/google-play-mcp-setup.md`).
