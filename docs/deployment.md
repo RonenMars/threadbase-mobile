@@ -250,11 +250,13 @@ to Google Play via the Play Developer API.
 ### Usage
 
 ```bash
-./scripts/ship-android.sh                    # → internal track (default)
-./scripts/ship-android.sh --track alpha      # → alpha track
-./scripts/ship-android.sh --track beta       # → beta track
-./scripts/ship-android.sh --track production # → production track
+./scripts/ship-android.sh                    # → Internal testing (default)
+./scripts/ship-android.sh --track alpha      # → Closed testing (Alpha)
+./scripts/ship-android.sh --track beta       # → Open testing
+./scripts/ship-android.sh --track production # → Production
 ```
+
+Play Console UI names → API track names: Internal testing=`internal`, Closed testing=`alpha`, Open testing=`beta`, Production=`production`.
 
 Other flags: `--skip-preflight`, `--skip-prebuild`, `--package <id>`.
 

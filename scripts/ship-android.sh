@@ -8,9 +8,16 @@
 # No emulator, no UI. Default track is internal.
 #
 # Usage:
-#   ./scripts/ship-android.sh                           # → internal track
-#   ./scripts/ship-android.sh --track alpha             # → alpha track
-#   ./scripts/ship-android.sh --track production        # → production track
+#   ./scripts/ship-android.sh                           # → Internal testing
+#   ./scripts/ship-android.sh --track alpha             # → Closed testing (Alpha)
+#   ./scripts/ship-android.sh --track beta              # → Open testing
+#   ./scripts/ship-android.sh --track production        # → Production
+#
+# Play Console UI → API track name mapping:
+#   Internal testing  = internal
+#   Closed testing    = alpha
+#   Open testing      = beta
+#   Production        = production
 #
 # Flags:
 #   --track internal|alpha|beta|production  default: internal
