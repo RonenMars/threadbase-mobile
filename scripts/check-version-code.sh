@@ -92,8 +92,9 @@ EOF
 )
 
 # Query the androidpublisher API for the highest versionCode across all
-# active tracks (internal → alpha → beta → production). We use the
-# edits.tracks.list method with a temporary edit.
+# active tracks using the edit-less tracks endpoint, which reflects the
+# live published state (edits/{id}/tracks only shows the current edit's
+# modifications — an empty edit returns nothing).
 REMOTE_CODE=$(node - "$PACKAGE_NAME" "$ACCESS_TOKEN" <<'EOF'
 const https = require('https');
 
@@ -112,76 +113,25 @@ function get(path, token) {
   });
 }
 
-function post(path, token, payload) {
-  return new Promise((resolve, reject) => {
-    const body = payload ? JSON.stringify(payload) : '';
-    const opts = {
-      hostname: 'androidpublisher.googleapis.com',
-      path,
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-      },
-    };
-    let resp = '';
-    const req = https.request(opts, r => {
-      r.on('data', d => resp += d);
-      r.on('end', () => resolve(JSON.parse(resp)));
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-function del(path, token) {
-  return new Promise((resolve, reject) => {
-    const opts = {
-      hostname: 'androidpublisher.googleapis.com',
-      path,
-      method: 'DELETE',
-      headers: { Authorization: 'Bearer ' + token },
-    };
-    let resp = '';
-    const req = https.request(opts, r => {
-      r.on('data', d => resp += d);
-      r.on('end', () => resolve(resp));
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
-
 (async () => {
   const pkg   = process.argv[2];
   const token = process.argv[3];
-  const base  = `/androidpublisher/v3/applications/${pkg}`;
 
-  // Open a temporary edit to read track state; delete it immediately after.
-  const edit = await post(`${base}/edits`, token, {});
-  if (edit.error) {
-    process.stderr.write('edits.insert error: ' + JSON.stringify(edit.error) + '\n');
+  // Use the edit-less tracks endpoint — reads live published state directly.
+  const tracks = await get(`/androidpublisher/v3/applications/${pkg}/tracks`, token);
+  if (tracks.error) {
+    process.stderr.write('tracks.list error: ' + JSON.stringify(tracks.error) + '\n');
     process.exit(1);
   }
-  const editId = edit.id;
 
   let maxCode = 0;
-  try {
-    const tracks = await get(`${base}/edits/${editId}/tracks`, token);
-    if (tracks.tracks) {
-      for (const track of tracks.tracks) {
-        for (const release of (track.releases || [])) {
-          for (const vc of (release.versionCodes || [])) {
-            const n = parseInt(vc, 10);
-            if (n > maxCode) maxCode = n;
-          }
-        }
+  for (const track of (tracks.tracks || [])) {
+    for (const release of (track.releases || [])) {
+      for (const vc of (release.versionCodes || [])) {
+        const n = parseInt(vc, 10);
+        if (n > maxCode) maxCode = n;
       }
     }
-  } finally {
-    await del(`${base}/edits/${editId}`, token);
   }
 
   process.stdout.write(String(maxCode));
