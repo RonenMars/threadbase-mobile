@@ -23,6 +23,7 @@
 #   --track internal|alpha|beta|production  default: internal
 #   --skip-preflight                        skip ./scripts/preflight.sh
 #   --skip-prebuild                         skip `npx expo prebuild` even if android/ missing
+#   --skip-bundle                           skip Gradle build; reuse existing AAB at default path
 #   --package <id>                          override expo.android.package
 #
 # Exits non-zero on any failure. Re-running is safe.
@@ -32,6 +33,7 @@ set -euo pipefail
 TRACK="internal"
 SKIP_PREFLIGHT=0
 SKIP_PREBUILD=0
+SKIP_BUNDLE=0
 PACKAGE_OVERRIDE=""
 
 while [[ $# -gt 0 ]]; do
@@ -39,6 +41,7 @@ while [[ $# -gt 0 ]]; do
     --track)          TRACK="$2"; shift 2 ;;
     --skip-preflight) SKIP_PREFLIGHT=1; shift ;;
     --skip-prebuild)  SKIP_PREBUILD=1; shift ;;
+    --skip-bundle)    SKIP_BUNDLE=1; shift ;;
     --package)        PACKAGE_OVERRIDE="$2"; shift 2 ;;
     -h|--help) sed -n '1,30p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
@@ -117,8 +120,14 @@ echo "▸ [7/$TOTAL_STEPS] Check versionCode against Play"
 PACKAGE="${PACKAGE_OVERRIDE:-$(jq -r '.expo.android.package' app.json)}"
 [[ -n "$PACKAGE" && "$PACKAGE" != "null" ]] || { echo "Could not resolve android package name" >&2; exit 1; }
 
-echo "▸ [8/$TOTAL_STEPS] Bundle and upload"
-ANDROID_TRACK="$TRACK" "$SCRIPT_DIR/bundle-and-upload-android.sh"
+if (( SKIP_BUNDLE )); then
+  AAB_PATH="${AAB_PATH:-android/app/build/outputs/bundle/release/app-release.aab}"
+  [[ -f "$AAB_PATH" ]] || { echo "ERROR: --skip-bundle set but no AAB found at $AAB_PATH" >&2; exit 1; }
+  echo "▸ [8/$TOTAL_STEPS] Bundle — skipped (reusing $AAB_PATH)"
+else
+  echo "▸ [8/$TOTAL_STEPS] Bundle and upload"
+fi
+ANDROID_TRACK="$TRACK" SKIP_BUNDLE="$SKIP_BUNDLE" "$SCRIPT_DIR/bundle-and-upload-android.sh"
 
 echo
 echo "✅  Build is live on Play ($TRACK track)."
