@@ -18,6 +18,7 @@
 # Flags (env vars):
 #   ANDROID_TRACK   — Play track to upload to (default: internal)
 #   AAB_PATH        — override default build output path
+#   SKIP_BUNDLE     — set to 1 to skip Gradle and reuse existing AAB
 
 set -euo pipefail
 
@@ -31,6 +32,7 @@ command -v node >/dev/null || { echo "node required" >&2; exit 1; }
 
 ANDROID_TRACK="${ANDROID_TRACK:-internal}"
 AAB_PATH="${AAB_PATH:-android/app/build/outputs/bundle/release/app-release.aab}"
+SKIP_BUNDLE="${SKIP_BUNDLE:-0}"
 
 PACKAGE_NAME=$(jq -r '.expo.android.package' app.json)
 VERSION_CODE=$(jq -r '.expo.android.versionCode' app.json)
@@ -47,20 +49,26 @@ echo "  track:    $ANDROID_TRACK"
 echo "  aab:      $AAB_PATH"
 echo
 
-# Export signing vars so Gradle reads them (build.gradle uses System.getenv)
-export TB_MOBILE_UPLOAD_KEYSTORE
-export TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD
-export TB_MOBILE_UPLOAD_KEY_ALIAS
-export TB_MOBILE_UPLOAD_KEY_PASSWORD
+if (( SKIP_BUNDLE )); then
+  echo "  skipping Gradle build — reusing existing AAB"
+  [[ -f "$AAB_PATH" ]] || { echo "ERROR: no AAB at $AAB_PATH — build first or omit --skip-bundle" >&2; exit 1; }
+  echo "  ✓ AAB found: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
+else
+  # Export signing vars so Gradle reads them (build.gradle uses System.getenv)
+  export TB_MOBILE_UPLOAD_KEYSTORE
+  export TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD
+  export TB_MOBILE_UPLOAD_KEY_ALIAS
+  export TB_MOBILE_UPLOAD_KEY_PASSWORD
 
-(cd android && ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee ../build/gradle-bundle.log)
+  (cd android && ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee ../build/gradle-bundle.log)
 
-if [[ ! -f "$AAB_PATH" ]]; then
-  echo "ERROR: Expected AAB not found at $AAB_PATH" >&2
-  echo "Check build/gradle-bundle.log for details." >&2
-  exit 1
+  if [[ ! -f "$AAB_PATH" ]]; then
+    echo "ERROR: Expected AAB not found at $AAB_PATH" >&2
+    echo "Check build/gradle-bundle.log for details." >&2
+    exit 1
+  fi
+  echo "  ✓ AAB built: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
 fi
-echo "  ✓ AAB built: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
 echo
 
 echo "▸ Uploading to Play ($ANDROID_TRACK track)"
