@@ -5,6 +5,8 @@ Pick one based on what you have access to and what you're trying to do.
 
 ## TL;DR — which path do I use?
 
+### iOS
+
 | Path | Use when | Command |
 | --- | --- | --- |
 | **`ship.sh`** | You're the maintainer (have access to the 1Password signing vault). Full-featured: signing bootstrap, git safety checks, polls until the build is `VALID` on App Store Connect, optional App Store submission. | `./scripts/ship.sh` |
@@ -15,6 +17,12 @@ Pick one based on what you have access to and what you're trying to do.
 All three local paths (`ship.sh`, fastlane, manual Xcode) produce the same kind
 of artifact — an App Store IPA archived locally and uploaded to TestFlight.
 They differ in how much automation sits around the archive step.
+
+### Android
+
+| Path | Use when | Command |
+| --- | --- | --- |
+| **`ship-android.sh`** | You're the maintainer (have 1Password access for keystore + Play service account). Builds a signed AAB, bumps versionCode if needed, uploads to the chosen track. | `./scripts/ship-android.sh` |
 
 ---
 
@@ -221,10 +229,70 @@ bootstrap, and polling. Use it sparingly.
 
 ---
 
+---
+
+## Path E — `./scripts/ship-android.sh` (Android maintainer default)
+
+The Android equivalent of Path A. Builds a signed App Bundle and uploads it
+to Google Play via the Play Developer API.
+
+### What it does
+
+1. **Preflight** — `scripts/preflight.sh` with `PLATFORM=android` (ANDROID_HOME, JAVA_HOME, etc.).
+2. **Install dependencies** — auto-detects bun / pnpm / yarn / npm.
+3. **Prebuild** — `npx expo prebuild --platform android` if `android/` is missing.
+4. **Bootstrap signing** — `scripts/bootstrap-android-signing.sh` pulls the upload keystore + passwords from 1Password (`op://MyDevSecrets/AndroidSigning`) into `.env.signing.android`.
+5. **Fetch Play credentials** — `scripts/fetch-play-credentials.sh` pulls the service-account JSON from 1Password (`op://$OP_PLAY_VAULT/$OP_PLAY_ITEM`) to `~/.config/threadbase/play-console-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`.
+6. **Git sync check** — same as iOS: refuses to ship if `main` is behind `origin/main` or `app.json` has uncommitted changes.
+7. **Check/bump versionCode** — `scripts/check-version-code.sh` queries all Play tracks for the highest live versionCode, auto-bumps `app.json` if local ≤ remote, and commits the bump.
+8. **Bundle + upload** — `scripts/bundle-and-upload-android.sh` runs `./gradlew :app:bundleRelease` then uploads the `.aab` to the chosen track via the Play Developer API (resumable upload + edits.commit).
+
+### Usage
+
+```bash
+./scripts/ship-android.sh                    # → internal track (default)
+./scripts/ship-android.sh --track alpha      # → alpha track
+./scripts/ship-android.sh --track beta       # → beta track
+./scripts/ship-android.sh --track production # → production track
+```
+
+Other flags: `--skip-preflight`, `--skip-prebuild`, `--package <id>`.
+
+### Prerequisites
+
+1. **1Password** signed in (`eval "$(op signin)"` or `OP_SERVICE_ACCOUNT_TOKEN`).
+2. **1Password item `AndroidSigning`** in vault `MyDevSecrets` with fields:
+   - `keystore_b64` — base64 of the upload keystore (`base64 -i tb-mobile-upload.keystore`)
+   - `store_password`, `key_alias` (default: `upload`), `key_password`
+3. **Play service-account JSON** in 1Password — vault/item set via `OP_PLAY_VAULT` / `OP_PLAY_ITEM` env vars (see `docs/google-play-mcp-setup.md`).
+4. `ANDROID_HOME` pointing at the Android SDK, `JAVA_HOME` pointing at JDK 17.
+5. The app registered in Play Console with the bundle ID `com.ronenmars.threadbase`.
+
+### Individual steps
+
+Each script is independent and idempotent:
+
+```bash
+PLATFORM=android ./scripts/preflight.sh
+./scripts/bootstrap-android-signing.sh
+./scripts/fetch-play-credentials.sh
+./scripts/git-sync-check.sh
+GOOGLE_APPLICATION_CREDENTIALS=~/.config/threadbase/play-console-sa.json \
+  ./scripts/check-version-code.sh
+source .env.signing.android
+GOOGLE_APPLICATION_CREDENTIALS=~/.config/threadbase/play-console-sa.json \
+ANDROID_TRACK=internal \
+  ./scripts/bundle-and-upload-android.sh
+```
+
+---
+
 ## See also
 
 - `/expo-local-ship` skill — wraps `scripts/ship.sh` with conversational
   affordances (release notes prompts, etc.).
 - `/ship-expo-cloud` skill — EAS cloud build/submit. Manual approval required.
 - `fastlane/.env.example` — env var template for Path B.
-- `scripts/ship.sh` — Path A entry point.
+- `scripts/ship.sh` — iOS Path A entry point.
+- `scripts/ship-android.sh` — Android Path E entry point.
+- `docs/google-play-mcp-setup.md` — Play service-account credential setup.
