@@ -51,6 +51,10 @@ case "$TARGET" in testflight|production) ;;
   *) echo "--target must be testflight or production" >&2; exit 2 ;;
 esac
 
+case "$RELEASE_TYPE" in MANUAL|AFTER_APPROVAL|SCHEDULED) ;;
+  *) echo "--release-type must be MANUAL, AFTER_APPROVAL, or SCHEDULED" >&2; exit 2 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(pwd)"
 

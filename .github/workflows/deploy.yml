@@ -51,9 +51,6 @@ jobs:
 
       - uses: 1password/install-cli-action@v1
 
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app
-
       - name: Ship iOS
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

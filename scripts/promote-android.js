@@ -11,7 +11,12 @@ if (!pkg || !versionCodeStr || !toTrack || !saPath) {
   console.error('Usage: node promote-android.js <pkg> <versionCode> <toTrack> <saPath>');
   process.exit(1);
 }
-const versionCode = String(versionCodeStr);
+const versionCode = parseInt(versionCodeStr, 10);
+if (!Number.isInteger(versionCode) || versionCode <= 0) {
+  console.error('Usage: node promote-android.js <pkg> <versionCode> <toTrack> <saPath>');
+  console.error('  versionCode must be a positive integer');
+  process.exit(1);
+}
 const sa = JSON.parse(fs.readFileSync(saPath, 'utf8'));
 
 function mintToken(sa) {
@@ -33,7 +38,16 @@ function mintToken(sa) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) },
     };
     let resp = '';
-    const req = https.request(opts, r => { r.on('data', d => resp += d); r.on('end', () => { const d = JSON.parse(resp); d.access_token ? resolve(d.access_token) : reject(new Error('OAuth2: ' + resp)); }); });
+    const req = https.request(opts, r => {
+      r.on('data', d => resp += d);
+      r.on('error', reject);
+      r.on('end', () => {
+        try {
+          const d = JSON.parse(resp);
+          d.access_token ? resolve(d.access_token) : reject(new Error('OAuth2: ' + resp));
+        } catch (e) { reject(new Error('OAuth2: invalid JSON response: ' + resp.slice(0, 200))); }
+      });
+    });
     req.setTimeout(30_000, () => req.destroy(new Error('OAuth2 token request timed out after 30s')));
     req.on('error', reject); req.write(body); req.end();
   });
@@ -47,7 +61,13 @@ function apiCall(method, path, token, payload) {
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
     };
     let resp = '';
-    const req = https.request(opts, r => { r.on('data', d => resp += d); r.on('end', () => resolve(JSON.parse(resp))); });
+    const req = https.request(opts, r => {
+      r.on('data', d => resp += d);
+      r.on('error', reject);
+      r.on('end', () => {
+        try { resolve(JSON.parse(resp)); } catch (e) { reject(new Error(`Play API ${method} ${path}: invalid JSON response: ${resp.slice(0, 200)}`)); }
+      });
+    });
     req.setTimeout(30_000, () => req.destroy(new Error(`Play API ${method} ${path} timed out after 30s`)));
     req.on('error', reject);
     if (body) req.write(body);

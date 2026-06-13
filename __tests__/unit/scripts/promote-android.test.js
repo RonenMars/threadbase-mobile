@@ -13,6 +13,7 @@ const os = require('os');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/promote-android.js');
 
+// gitleaks:allow — 512-bit throwaway key with no IAM binding; not a real credential
 const FAKE_PRIVATE_KEY = [
   '-----BEGIN RSA PRIVATE KEY-----',
   'MIIBOgIBAAJBALRiMLAHudeSA/xKl1oFnNGFSbDhFnFrUuSZ4U8S1ICkHBvyWZjz',
@@ -88,6 +89,13 @@ describe('promote-android.js — argument validation', () => {
 describe('promote-android.js — track name acceptance', () => {
   // All four valid tracks should pass arg parsing and fail only at the OAuth
   // network call (no SA with real credentials in test env).
+  //
+  // The execFileSync timeout (5 s) is intentionally shorter than the script's
+  // own network timeout (30 s). In CI without outbound access the child is
+  // killed at 5 s before the OAuth attempt completes — the assertions still
+  // pass because the early kill means stderr contains neither 'Usage:' nor
+  // 'must be one of'. Do not raise the execFileSync timeout above 30 s or
+  // these tests will block on real network I/O.
   const validTracks = ['internal', 'alpha', 'beta', 'production'];
 
   validTracks.forEach(track => {

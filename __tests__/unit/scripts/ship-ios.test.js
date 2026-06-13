@@ -47,19 +47,25 @@ describe('ship-ios.sh — --target validation', () => {
 });
 
 describe('ship-ios.sh — --release-type validation', () => {
+  it('rejects an unknown release type', () => {
+    const { code, stderr } = runScript(['--target', 'production', '--release-type', 'BOGUS']);
+    expect(code).not.toBe(0);
+    expect(stderr).toContain('--release-type must be');
+  });
+
   it('accepts MANUAL release type', () => {
     const { stderr } = runScript(['--target', 'production', '--release-type', 'MANUAL']);
-    expect(stderr).not.toContain('--target must be');
+    expect(stderr).not.toContain('--release-type must be');
   });
 
   it('accepts AFTER_APPROVAL release type', () => {
     const { stderr } = runScript(['--target', 'production', '--release-type', 'AFTER_APPROVAL']);
-    expect(stderr).not.toContain('--target must be');
+    expect(stderr).not.toContain('--release-type must be');
   });
 
   it('accepts SCHEDULED release type', () => {
     const { stderr } = runScript(['--target', 'production', '--release-type', 'SCHEDULED']);
-    expect(stderr).not.toContain('--target must be');
+    expect(stderr).not.toContain('--release-type must be');
   });
 });
 
