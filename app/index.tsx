@@ -34,12 +34,10 @@ import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
-import { TourOverlay } from '@/components/tour/TourOverlay'
-import { useHubTour, type HubTourStep } from '@/components/tour/useHubTour'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -263,28 +261,13 @@ export default function ProjectsHub() {
     router.push(browseHref(serverId))
   }
 
-  // Hub tour
-  const hubTour = useHubTour()
   const fabRef = useRef<View>(null)
-  const hubScreenRef = useRef<View>(null)
-
-  const measureAndRegister = useCallback(
-    (step: HubTourStep, nodeRef: React.RefObject<View | null>) => {
-      if (!hubTour || !nodeRef.current) return
-      nodeRef.current.measure((_x, _y, width, height, pageX, pageY) => {
-        hubTour.registerTarget(step, { x: pageX, y: pageY, width, height })
-      })
-    },
-    [hubTour],
-  )
 
   return (
     <SafeAreaView
-      ref={hubScreenRef}
       style={styles.container}
       edges={['top']}
       testID="hub-screen"
-      onLayout={() => measureAndRegister('sessionCard', hubScreenRef)}
     >
       {activeServerIds.map((sid) => <SessionNamesSyncer key={sid} serverId={sid} />)}
       {/* Header */}
@@ -334,17 +317,6 @@ export default function ProjectsHub() {
           >
             <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
-          </Pressable>
-          {/* Feature 22: Settings entry on the Filter & Sort bar — parity with
-              the sidebar's Gear next to the brand. */}
-          <Pressable
-            testID="filter-sort-settings-btn"
-            onPress={() => router.push('/settings')}
-            hitSlop={8}
-            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel={t('settings:header.title')}
-          >
-            <Gear size={20} color={dark.text.secondary} />
           </Pressable>
         </View>
       </View>
@@ -441,7 +413,6 @@ export default function ProjectsHub() {
       <FAB
         ref={fabRef}
         onPress={handleFABPress}
-        onLayout={() => measureAndRegister('fab', fabRef)}
       />
 
       {/* Modals & Sheets */}
@@ -474,39 +445,6 @@ export default function ProjectsHub() {
         serverLabel={currentServerLabel}
       />
 
-      {hubTour && (() => {
-        const STEPS = [
-          {
-            key: 'sessionCard' as HubTourStep,
-            text: 'Each card is a Claude Code session running on your Mac. Tap to open it.',
-          },
-          {
-            key: 'laneIndicator' as HubTourStep,
-            text: 'The color stripe shows state: blue = running, amber = plan, grey = done.',
-          },
-          {
-            key: 'fab' as HubTourStep,
-            text: 'Tap here to start a new session. Your Mac runs the agent; you drive from here.',
-          },
-        ] as const
-
-        const step = STEPS[hubTour.stepIndex]
-        const target =
-          hubTour.targets[step.key] ??
-          (step.key === 'laneIndicator' ? hubTour.targets['sessionCard'] : undefined)
-
-        if (!target) return null
-
-        return (
-          <TourOverlay
-            target={target}
-            text={step.text}
-            stepLabel={`${hubTour.stepIndex + 1} / ${STEPS.length}`}
-            onGotIt={hubTour.advanceStep}
-            onSkip={hubTour.skipTour}
-          />
-        )
-      })()}
     </SafeAreaView>
   )
 }
