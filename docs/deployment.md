@@ -321,6 +321,39 @@ If the script exits with a timeout error, check your network connection and retr
 
 ---
 
+## GitHub Actions — manual deploy workflow
+
+`.github/workflows/deploy.yml` adds a `workflow_dispatch` trigger so you can
+ship iOS and/or Android from the GitHub Actions UI without a local machine.
+
+**Trigger:** Actions → Deploy → Run workflow
+
+| Input | Options | Default |
+|---|---|---|
+| `platform` | `ios`, `android`, `all` | `ios` |
+| `target` (iOS) | `testflight`, `production` | `testflight` |
+| `android_track` | `internal`, `alpha`, `beta`, `production` | `internal` |
+| `release_notes` | free text (iOS production only) | — |
+
+**Requirements:** `OP_SERVICE_ACCOUNT_TOKEN` secret must be configured in the
+repo (Settings → Secrets → Actions). The service account token gives the runner
+access to the 1Password signing vault.
+
+## npm ship scripts
+
+Convenience wrappers so you can ship without remembering script paths:
+
+```bash
+npm run ship:ios                   # → TestFlight (runs scripts/ship-ios.sh)
+npm run ship:android               # → Internal testing (runs scripts/ship-android.sh)
+npm run ship:all                   # → both in sequence
+```
+
+These are thin aliases; all flags supported by the underlying scripts work as
+normal when you call the scripts directly.
+
+---
+
 ## See also
 
 - `/expo-local-ship` skill — wraps `scripts/ship-ios.sh` with conversational
