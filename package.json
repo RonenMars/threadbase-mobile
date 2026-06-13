@@ -33,7 +33,8 @@
     "test:e2e:prod:debug": "node e2e/check-sim.js && source .env.prod && echo '\n⚠️  Debug mode: manually tap your Metro server in the simulator, then press Enter to continue...' && read -p '' && maestro test -e PROD_SERVER_URL=$PROD_SERVER_URL -e PROD_API_KEY=$PROD_API_KEY e2e/prod-server-connect-only.yaml",
     "lint": "eslint \"**/*.{ts,tsx}\"",
     "lint:i18n": "eslint ./app ./components ./hooks ./services ./constants ./types --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:scripts": "node_modules/.bin/jest --config jest.config.scripts.js --ci --forceExit"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.13",

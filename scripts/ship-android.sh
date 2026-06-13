@@ -14,6 +14,7 @@
 #   ./scripts/ship-android.sh --track alpha             # → Closed testing (Alpha)
 #   ./scripts/ship-android.sh --track beta              # → Open testing
 #   ./scripts/ship-android.sh --track production        # → Production
+#   ./scripts/ship-android.sh --promote 8 --track alpha # → Promote versionCode 8 to alpha (no rebuild)
 #
 # Play Console UI → API track name mapping:
 #   Internal testing  = internal
@@ -23,6 +24,7 @@
 #
 # Flags:
 #   --track internal|alpha|beta|production  default: internal
+#   --promote <versionCode>                 promote an existing build to --track (no rebuild/upload)
 #   --skip-preflight                        skip ./scripts/preflight.sh
 #   --skip-prebuild                         skip `npx expo prebuild` even if android/ missing
 #   --skip-bundle                           skip Gradle build; reuse existing AAB at default path
@@ -33,6 +35,7 @@
 set -euo pipefail
 
 TRACK="internal"
+PROMOTE_VERSION=""
 SKIP_PREFLIGHT=0
 SKIP_PREBUILD=0
 SKIP_BUNDLE=0
@@ -41,6 +44,7 @@ PACKAGE_OVERRIDE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --track)          TRACK="$2"; shift 2 ;;
+    --promote)        PROMOTE_VERSION="$2"; shift 2 ;;
     --skip-preflight) SKIP_PREFLIGHT=1; shift ;;
     --skip-prebuild)  SKIP_PREBUILD=1; shift ;;
     --skip-bundle)    SKIP_BUNDLE=1; shift ;;
@@ -56,6 +60,31 @@ esac
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOTAL_STEPS=8
+
+# ── Promote-only fast path ────────────────────────────────────────────────────
+# --promote <versionCode> skips the entire build pipeline and just moves an
+# already-uploaded versionCode to a different track via the Play API.
+if [[ -n "$PROMOTE_VERSION" ]]; then
+  echo "▸ [1/2] Verify 1Password + fetch Google Play credentials"
+  if ! command -v op >/dev/null 2>&1; then
+    echo "ERROR: 1Password CLI (op) not found — install with: brew install --cask 1password-cli" >&2
+    exit 1
+  fi
+  if ! op whoami >/dev/null 2>&1; then
+    echo "ERROR: 1Password not signed in — run: eval \"\$(op signin)\" then retry" >&2
+    exit 1
+  fi
+  CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
+
+  PACKAGE="${PACKAGE_OVERRIDE:-$(jq -r '.expo.android.package' app.json)}"
+  [[ -n "$PACKAGE" && "$PACKAGE" != "null" ]] || { echo "Could not resolve android package name" >&2; exit 1; }
+
+  echo "▸ [2/2] Promote versionCode=$PROMOTE_VERSION → $TRACK"
+  node "$SCRIPT_DIR/promote-android.js" "$PACKAGE" "$PROMOTE_VERSION" "$TRACK" "$CREDS_PATH"
+  echo
+  echo "✅  versionCode $PROMOTE_VERSION promoted to Play ($TRACK track)."
+  exit 0
+fi
 
 # 1. Verify 1Password is signed in and fetch Google Play credentials.
 # Do this first so we fail fast before any slow steps (npm install, Gradle).

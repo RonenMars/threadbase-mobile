@@ -287,6 +287,26 @@ ANDROID_TRACK=internal \
   ./scripts/bundle-and-upload-android.sh
 ```
 
+### Promoting a build between tracks
+
+Once a build is live on a track, use `scripts/promote-android.js` to move it
+to a wider track **without re-uploading**. The Play API reuses the already-uploaded
+AAB — no Gradle rebuild needed.
+
+```bash
+SA="$HOME/.config/threadbase/play-console-sa.json"
+node scripts/promote-android.js com.ronenmars.threadbase <versionCode> alpha "$SA"
+node scripts/promote-android.js com.ronenmars.threadbase <versionCode> beta  "$SA"
+node scripts/promote-android.js com.ronenmars.threadbase <versionCode> production "$SA"
+```
+
+The service-account JSON path is the same one fetched by `scripts/fetch-play-credentials.sh`.
+
+> **Why not `ship-android.sh --track alpha`?** That path tries to re-upload the
+> AAB, which fails with `PERMISSION_DENIED: Version code N has already been used`.
+> The promote script opens an edit, updates the target track to include the
+> existing versionCode, and commits — no binary upload.
+
 ---
 
 ## See also
@@ -297,4 +317,5 @@ ANDROID_TRACK=internal \
 - `fastlane/.env.example` — env var template for Path B.
 - `scripts/ship.sh` — iOS Path A entry point.
 - `scripts/ship-android.sh` — Android Path E entry point.
+- `scripts/promote-android.js` — promote an existing build between Play tracks.
 - `docs/google-play-mcp-setup.md` — Play service-account credential setup.
