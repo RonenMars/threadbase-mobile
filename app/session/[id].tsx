@@ -30,7 +30,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple, Microphone, MicrophoneSlash } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
-import { FirstShowBanner } from '@/components/tour/FirstShowBanner'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
@@ -753,21 +752,14 @@ export default function SessionDetailScreen() {
       onPress={() => setRenameSheetVisible(true)}
       hitSlop={8}
       accessibilityLabel="Rename session"
-      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, marginRight: 8 })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
     >
       <PencilSimple size={18} color={dark.text.secondary} />
     </Pressable>
   )
 
-  const headerRight = (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      {pencilButton}
-      {infoButton}
-    </View>
-  )
-
   const handleBack = () => {
-    router.back()
+    router.replace('/')
   }
 
   return (
@@ -776,11 +768,7 @@ export default function SessionDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <SafeAreaView style={styles.flex} edges={['top']} testID="session-detail-screen">
-        <ScreenHeader title={sessionName} right={headerRight} onBack={handleBack} />
-        <FirstShowBanner
-          storageKey="threadbase_tour_session"
-          text="Tool calls and output stream here in real time. Type a follow-up below while Claude is still working."
-        />
+        <ScreenHeader title={sessionName} titleRight={pencilButton} right={infoButton} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
             <SessionStatusBadge status={session.status} isRefetching={isStreaming} />

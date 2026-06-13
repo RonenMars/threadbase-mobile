@@ -7,11 +7,12 @@ import { dark, font, spacing } from '@/constants/theme'
 
 interface Props {
   title?: string
+  titleRight?: React.ReactNode
   right?: React.ReactNode
   onBack?: () => void
 }
 
-export function ScreenHeader({ title, right, onBack }: Props) {
+export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
   const router = useRouter()
   const { t } = useTranslation('common')
   // Deep links (push notifications, threadbase:// URLs) can mount a screen as
@@ -35,7 +36,10 @@ export function ScreenHeader({ title, right, onBack }: Props) {
       >
         <CaretLeft size={28} color={dark.text.primary} />
       </Pressable>
-      <Text style={styles.title} numberOfLines={1}>{title ?? ''}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title} numberOfLines={1}>{title ?? ''}</Text>
+        {titleRight ?? null}
+      </View>
       <View style={styles.side}>{right ?? null}</View>
     </View>
   )
@@ -56,11 +60,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
+  titleRow: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  title: {
     color: dark.text.primary,
     fontSize: font.base,
     fontWeight: '600',
-    textAlign: 'center',
+    flexShrink: 1,
   },
 })

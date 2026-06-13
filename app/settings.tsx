@@ -33,7 +33,6 @@ import { QrCode } from 'phosphor-react-native'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 
 function addServerActionLabel(action: AddServerAction): string {
   switch (action) {
@@ -202,18 +201,6 @@ await refreshServerInfo(serverId)
     setIsPullRefreshing(false)
   }
 
-  // Bug 22: a top-level Settings entry to the QR scanner so users don't have
-  // to open the "+ Add server" modal first. Reuses the same pair-exchange
-  // flow as the onboarding ConnectStep.
-  const handleRestartTour = useCallback(async () => {
-    await Promise.all([
-      AsyncStorage.removeItem('threadbase_tour_hub'),
-      AsyncStorage.removeItem('threadbase_tour_session'),
-      AsyncStorage.removeItem('threadbase_tour_new_session'),
-    ])
-    // eslint-disable-next-line i18next/no-literal-string
-    Alert.alert('Tour reset', 'The app tour will reappear next time you visit the Hub and session screens.')
-  }, [])
 
   const handleLanguageChange = useCallback(async (newLocale: string) => {
     const currentIsRTL = I18nManager.isRTL
@@ -600,14 +587,6 @@ await refreshServerInfo(serverId)
         <View style={s.card}>
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
-            <Text style={s.rowValue}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="settings-restart-tour"
-            style={s.row}
-            onPress={handleRestartTour}
-          >
-            <Text style={s.rowLabel}>{t('restartTour')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => Linking.openURL('mailto:ronenmars@gmail.com?subject=Threadbase%20Support')}>
