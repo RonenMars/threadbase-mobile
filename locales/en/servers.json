@@ -68,5 +68,15 @@
   "statusModal": {
     "title": "Server Status",
     "close": "✕"
+  },
+  "error": {
+    "label": "Server unreachable",
+    "subtitle": "Could not connect to {{server}}. Check that the server is running and your network is reachable.",
+    "expand": "Show error details",
+    "collapse": "Hide error details"
+  },
+  "indexing": {
+    "label": "Scanning and indexing conversations…",
+    "subtitle": "Your server is warming up and building its conversation index for the first time. This only happens once — history will appear as soon as it's ready."
   }
 }
