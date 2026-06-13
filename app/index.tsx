@@ -38,6 +38,8 @@ import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, Fold
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
+import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
+import { ServerErrorBanner } from '@/components/servers/ServerErrorBanner'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -323,6 +325,9 @@ export default function ProjectsHub() {
 
       {/* Quick Access Strip */}
       <QuickAccessStrip />
+
+      {/* Shown while server is scanning/indexing conversations on first boot */}
+      <ServerIndexingBanner />
 
       {/* Content */}
       {sessionsLayout === 'tree' ? (

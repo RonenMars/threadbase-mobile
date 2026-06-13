@@ -31,12 +31,15 @@ interface ServersStore {
   /** Ordered subset of servers visible in sessions/history. */
   displayedServerIds: string[]
   isLoading: boolean
+  /** Per-server flag: true once the server emits `cache_ready` (scan+index done). */
+  cacheReady: Record<string, boolean>
 
   addServer: (url: string, apiKey: string, label?: string) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
+  setCacheReady: (serverId: string) => void
   refreshServerInfo: (serverId: string) => Promise<void>
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
@@ -91,6 +94,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   activeServerIds: [],
   displayedServerIds: [],
   isLoading: true,
+  cacheReady: {},
 
   get serverUrl() {
     const { servers, activeServerIds } = get()
@@ -194,13 +198,22 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => {
       const server = state.servers[serverId]
       if (!server) return state
+      // Reset cacheReady when disconnected so we show the scanning banner again on reconnect.
+      const cacheReady = connected
+        ? state.cacheReady
+        : { ...state.cacheReady, [serverId]: false }
       return {
         servers: {
           ...state.servers,
           [serverId]: { ...server, isConnected: connected, serverInfo: info ?? server.serverInfo },
         },
+        cacheReady,
       }
     })
+  },
+
+  setCacheReady: (serverId: string) => {
+    set((state) => ({ cacheReady: { ...state.cacheReady, [serverId]: true } }))
   },
 
   refreshServerInfo: async (serverId: string): Promise<void> => {

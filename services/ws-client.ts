@@ -8,6 +8,7 @@ export type WSMessage =
   | { type: 'plan_ready'; sessionId: string; plan: string }
   | { type: 'terminal_replay'; sessionId: string; lines: string[] }
   | { type: 'session_ready'; session: Session }
+  | { type: 'cache_ready' }
 
 type MessageHandler = (msg: WSMessage) => void
 

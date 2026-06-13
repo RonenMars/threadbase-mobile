@@ -68,5 +68,9 @@
   "statusModal": {
     "title": "Server Status",
     "close": "✕"
+  },
+  "indexing": {
+    "label": "Scanning and indexing conversations…",
+    "subtitle": "Your server is warming up and building its conversation index for the first time. This only happens once — history will appear as soon as it's ready."
   }
 }

@@ -53,6 +53,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrateSessionNames = useSessionNamesStore((s) => s.hydrate)
   const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
+  const setCacheReady = useServersStore((s) => s.setCacheReady)
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -131,6 +132,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
       setConnected(serverId, status === 'connected')
     })
+    const unsubCacheReady = wsManager.onAll('cache_ready', (msg) => {
+      if (msg.type !== 'cache_ready') return
+      setCacheReady(msg.serverId)
+    })
 
     // Register push tokens for all servers
     registerPushTokenForAll(activeServerIds).catch(() => {})
@@ -139,10 +144,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubUpdate()
       unsubReady()
       unsubStatus()
+      unsubCacheReady()
       wsManager.disconnectAll()
     }
-    // router from expo-router is a stable singleton; setConnected is a stable
-    // Zustand setter. Wiring is intentionally scoped to activeServerIds changes.
+    // router from expo-router is a stable singleton; setConnected/setCacheReady
+    // are stable Zustand setters. Wiring is intentionally scoped to activeServerIds changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds])
 
