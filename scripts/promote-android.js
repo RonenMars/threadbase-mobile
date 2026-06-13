@@ -34,6 +34,7 @@ function mintToken(sa) {
     };
     let resp = '';
     const req = https.request(opts, r => { r.on('data', d => resp += d); r.on('end', () => { const d = JSON.parse(resp); d.access_token ? resolve(d.access_token) : reject(new Error('OAuth2: ' + resp)); }); });
+    req.setTimeout(30_000, () => req.destroy(new Error('OAuth2 token request timed out after 30s')));
     req.on('error', reject); req.write(body); req.end();
   });
 }
@@ -47,6 +48,7 @@ function apiCall(method, path, token, payload) {
     };
     let resp = '';
     const req = https.request(opts, r => { r.on('data', d => resp += d); r.on('end', () => resolve(JSON.parse(resp))); });
+    req.setTimeout(30_000, () => req.destroy(new Error(`Play API ${method} ${path} timed out after 30s`)));
     req.on('error', reject);
     if (body) req.write(body);
     req.end();

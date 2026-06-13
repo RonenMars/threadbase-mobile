@@ -308,6 +308,17 @@ The service-account JSON path is the same one fetched by `scripts/fetch-play-cre
 > The promote script opens an edit, updates the target track to include the
 > existing versionCode, and commits — no binary upload.
 
+#### Connectivity failure behaviour
+
+Each `https.request` in `promote-android.js` carries a **30-second timeout**.
+
+| Failure mode | What happens |
+|---|---|
+| No connectivity / DNS failure | Node fires `ECONNREFUSED` / `ENOTFOUND` immediately → script exits with a clear error message |
+| Server connected but never responds | Timeout fires after 30 s → `req.destroy()` → `ERROR: … timed out after 30s` → exit 1 |
+
+If the script exits with a timeout error, check your network connection and retry. No Play edit is left open — the edit is only committed in the final step, so a mid-flight timeout leaves no side effects in Play Console.
+
 ---
 
 ## See also
