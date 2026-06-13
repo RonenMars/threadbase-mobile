@@ -329,6 +329,9 @@ export default function ProjectsHub() {
       {/* Shown while server is scanning/indexing conversations on first boot */}
       <ServerIndexingBanner />
 
+      {/* Shown when a server is unreachable or returns an error */}
+      <ServerErrorBanner />
+
       {/* Content */}
       {sessionsLayout === 'tree' ? (
         <TreeSessionsList
