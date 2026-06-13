@@ -250,15 +250,16 @@ to Google Play via the Play Developer API.
 ### Usage
 
 ```bash
-./scripts/ship-android.sh                    # → Internal testing (default)
-./scripts/ship-android.sh --track alpha      # → Closed testing (Alpha)
-./scripts/ship-android.sh --track beta       # → Open testing
-./scripts/ship-android.sh --track production # → Production
+./scripts/ship-android.sh                           # → Internal testing (default)
+./scripts/ship-android.sh --track alpha             # → Closed testing (Alpha)
+./scripts/ship-android.sh --track beta              # → Open testing
+./scripts/ship-android.sh --track production        # → Production
+./scripts/ship-android.sh --promote 8 --track alpha # → Promote versionCode 8 to alpha (no rebuild)
 ```
 
 Play Console UI names → API track names: Internal testing=`internal`, Closed testing=`alpha`, Open testing=`beta`, Production=`production`.
 
-Other flags: `--skip-preflight`, `--skip-prebuild`, `--package <id>`.
+Other flags: `--skip-preflight`, `--skip-prebuild`, `--skip-bundle` (reuse existing AAB without rebuilding), `--package <id>`.
 
 ### Prerequisites
 
