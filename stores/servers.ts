@@ -89,6 +89,19 @@ function toValidUniqueIds(ids: string[], activeServerIds: string[]): string[] {
   return Array.from(new Set(ids)).filter((id) => activeServerIds.includes(id))
 }
 
+// If the server never emits `cache_ready` (timeout, crash, slow scan), dismiss
+// the banner after this many milliseconds so it doesn't hang indefinitely.
+const CACHE_READY_TIMEOUT_MS = 30_000
+const cacheReadyTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
+
+function clearCacheReadyTimer(serverId: string) {
+  const t = cacheReadyTimers.get(serverId)
+  if (t !== undefined) {
+    clearTimeout(t)
+    cacheReadyTimers.delete(serverId)
+  }
+}
+
 export const useServersStore = create<ServersStore>((set, get) => ({
   servers: {},
   activeServerIds: [],
@@ -198,10 +211,25 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => {
       const server = state.servers[serverId]
       if (!server) return state
-      // Reset cacheReady when disconnected so we show the scanning banner again on reconnect.
+      // Reset cacheReady when disconnected so the banner reappears on reconnect.
       const cacheReady = connected
         ? state.cacheReady
         : { ...state.cacheReady, [serverId]: false }
+
+      if (connected) {
+        // Start a fallback timer: if `cache_ready` never arrives, dismiss the
+        // banner after the timeout rather than leaving it stuck indefinitely.
+        clearCacheReadyTimer(serverId)
+        const timer = setTimeout(() => {
+          cacheReadyTimers.delete(serverId)
+          useServersStore.getState().setCacheReady(serverId)
+        }, CACHE_READY_TIMEOUT_MS)
+        cacheReadyTimers.set(serverId, timer)
+      } else {
+        // Disconnected — cancel any pending timeout; banner resets above.
+        clearCacheReadyTimer(serverId)
+      }
+
       return {
         servers: {
           ...state.servers,
@@ -213,6 +241,8 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   },
 
   setCacheReady: (serverId: string) => {
+    // Cancel the fallback timeout — the real event arrived first.
+    clearCacheReadyTimer(serverId)
     set((state) => ({ cacheReady: { ...state.cacheReady, [serverId]: true } }))
   },
 
