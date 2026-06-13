@@ -1,57 +1,65 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import type { ViewStyle } from 'react-native'
+import { Terminal } from 'phosphor-react-native'
+import { useTheme } from '@/contexts/ThemeContext'
+import { font, spacing, radius, type Theme } from '@/constants/theme'
 
 interface EmptyStateProps {
-  icon?: React.ReactNode | string
   title: string
   subtitle?: string
+  style?: ViewStyle
 }
 
-export function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
+export function EmptyState({ title, subtitle, style }: EmptyStateProps) {
+  const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
+
   return (
-    <View style={styles.container}>
-      {icon ? (
-        <View style={styles.icon}>
-          {typeof icon === 'string' ? (
-            <Text style={styles.iconEmoji}>{icon}</Text>
-          ) : (
-            icon
-          )}
-        </View>
-      ) : null}
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+    <View style={[s.container, style]}>
+      <View style={s.iconWrap}>
+        <Terminal size={32} color={theme.text.accent} weight="light" />
+      </View>
+      <Text style={s.title}>{title}</Text>
+      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
     </View>
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  icon: {
-    opacity: 0.5,
-    marginBottom: spacing.xs,
-  },
-  iconEmoji: {
-    fontSize: 40,
-  },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.lg,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-})
+function styles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xl,
+      gap: spacing.sm,
+      backgroundColor: theme.bg.primary,
+    },
+    iconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.md,
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+    },
+    title: {
+      color: theme.text.primary,
+      fontSize: font.lg,
+      fontWeight: '600',
+      textAlign: 'center',
+      letterSpacing: -0.2,
+    },
+    subtitle: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+      fontWeight: '400',
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+  })
+}

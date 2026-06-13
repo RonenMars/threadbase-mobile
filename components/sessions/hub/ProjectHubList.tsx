@@ -261,7 +261,9 @@ export function ProjectHubList({
           }
           contentContainerStyle={hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent}
           ListEmptyComponent={
-            <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+            <View style={{ flex: 1 }}>
+              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+            </View>
           }
         />
       )}

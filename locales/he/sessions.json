@@ -24,7 +24,7 @@
     "sessionCount_one": "סשן אחד",
     "sessionCount_other": "{{count}} סשנים",
     "empty": "אין סשנים",
-    "emptySubtitle": "התחל סשן Claude Code כדי לראות אותו כאן",
+    "emptySubtitle": "התחל סשן Claude Code\nכדי לראות אותו כאן",
     "noResults": "אין תוצאות",
     "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
     "emptyProjects": "עדיין אין פרויקטים"

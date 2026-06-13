@@ -24,7 +24,7 @@
     "sessionCount_one": "{{count}} сеанс",
     "sessionCount_other": "{{count}} сеансов",
     "empty": "Нет сеансов",
-    "emptySubtitle": "Запустите сеанс Claude Code, чтобы увидеть его здесь",
+    "emptySubtitle": "Запустите сеанс Claude Code,\nчтобы увидеть его здесь",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
     "emptyProjects": "Проектов пока нет"
