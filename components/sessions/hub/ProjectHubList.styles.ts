@@ -11,15 +11,24 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: dark.border,
   },
-  searchInput: {
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: dark.bg.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: dark.border,
+  },
+  searchInput: {
+    flex: 1,
     color: dark.text.primary,
     fontSize: font.base,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: dark.border,
+  },
+  clearBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   listContent: {
     padding: spacing.sm,
