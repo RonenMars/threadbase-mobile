@@ -40,7 +40,7 @@ import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
-import { ServerErrorBanner } from '@/components/servers/ServerErrorBanner'
+import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { dark, font, spacing } from '@/constants/theme'
 import { searchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -125,6 +125,7 @@ export default function ProjectsHub() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [statusModalOpen, setStatusModalOpen] = useState(false)
   const [pickerVisible, setPickerVisible] = useState(false)
+  const [fabNoServerToast, setFabNoServerToast] = useState(false)
 
   // Sort state (hub mode)
   const [sortBy, setSortBy] = useState<SortBy>('lastActivity')
@@ -247,7 +248,11 @@ export default function ProjectsHub() {
   }
 
   const handleFABPress = () => {
-    if (activeServerIds.length === 0) return
+    if (activeServerIds.length === 0) {
+      setFabNoServerToast(true)
+      setTimeout(() => setFabNoServerToast(false), 2500)
+      return
+    }
     if (currentDrill && activeServerIds.includes(currentDrill.serverId)) {
       router.push(browseHref(currentDrill.serverId, currentDrill.path))
       return
@@ -330,8 +335,13 @@ export default function ProjectsHub() {
       {/* Shown while server is scanning/indexing conversations on first boot */}
       <ServerIndexingBanner />
 
-      {/* Shown when a server is unreachable or returns an error */}
-      <ServerErrorBanner />
+      <ServerStateMessage
+        activeServerIds={activeServerIds}
+        servers={servers}
+        fetchStatuses={fetchStatuses}
+        wsConnectedCount={wsConnectedCount}
+        onTapDetails={() => setStatusModalOpen(true)}
+      />
 
       {/* Content */}
       {sessionsLayout === 'tree' ? (
@@ -419,6 +429,11 @@ export default function ProjectsHub() {
       )}
 
       {/* FAB */}
+      {fabNoServerToast && (
+        <View style={styles.fabToast} pointerEvents="none">
+          <Text style={styles.fabToastText}>{t('sessions:fab.noServerHint')}</Text>
+        </View>
+      )}
       <FAB
         ref={fabRef}
         onPress={handleFABPress}
@@ -750,5 +765,20 @@ const styles = StyleSheet.create({
   convCardMeta: {
     color: dark.text.secondary,
     fontSize: font.xs,
+  },
+  fabToast: {
+    position: 'absolute',
+    bottom: 88,
+    alignSelf: 'center',
+    backgroundColor: dark.bg.card,
+    borderRadius: 8,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+  },
+  fabToastText: {
+    color: dark.text.secondary,
+    fontSize: font.sm,
   },
 })
