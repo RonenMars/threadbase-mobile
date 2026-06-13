@@ -130,7 +130,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       timerRef.current = setTimeout(() => setShowInfo(true), 2000)
     } else {
       if (timerRef.current) clearTimeout(timerRef.current)
-      setShowInfo(false)
+      timerRef.current = setTimeout(() => setShowInfo(false), 0)
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)

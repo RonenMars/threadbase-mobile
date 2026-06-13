@@ -431,7 +431,7 @@ export default function ProjectsHub() {
       {/* FAB */}
       {fabNoServerToast && (
         <View style={styles.fabToast} pointerEvents="none">
-          <Text style={styles.fabToastText}>Add a server in Settings to get started</Text>
+          <Text style={styles.fabToastText}>{t('sessions:fab.noServerHint')}</Text>
         </View>
       )}
       <FAB

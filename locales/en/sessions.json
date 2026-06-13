@@ -95,5 +95,8 @@
     "empty": "No favorites pinned yet.",
     "emptySub": "Tap a chip in the strip and choose \"Pin to Favorites\".",
     "addToFavorites": "Add to favorites"
+  },
+  "fab": {
+    "noServerHint": "Add a server in Settings to get started"
   }
 }
