@@ -439,3 +439,80 @@ The `SessionsLoadingOverlay` is controlled by the `isDone` flag from `useEagerSe
 | **Header dot color mismatch vs modal** | 3.5, 4.10 | WS=`connected` + fetch=`error`: header shows **red** (0 healthy servers) but modal shows **amber** per server. The header red implies "nothing working" which conflicts with the amber "partial problem" framing in the modal. |
 | **No reconnecting indicator** | Post-disconnect reconnect | After disconnect + reconnect cycle, the dot stays red until WS is `connected` AND a fetch succeeds. There is no visible "reconnecting" transition state in the header. |
 | **No error count in dot** | All multi-server error states | The amber/red dot gives no count. With 3+ servers, users cannot tell from the dot alone how many servers are failing. |
+
+---
+
+## 7. Message Categorization — Info / Warning / Error
+
+Severity definitions used below:
+
+- **Info** — background state the user may want to know but requires no immediate action. Non-blocking, dismissible, low urgency.
+- **Warning** — degraded state where the app still works partially or with stale data. User should be aware but can continue.
+- **Error** — fully broken state where the user cannot accomplish their goal. Action is required (or at minimum clearly expected).
+- **None** — nominal state; no message needed.
+
+### Single-server
+
+| Scenario | Severity | Suggested message |
+|----------|----------|-------------------|
+| **3.0** No servers configured | **Info** | "Add a server to get started" — empty state prompt in the sessions area + FAB tooltip/disabled state |
+| **3.1** Server connecting | **Info** | "Connecting to [server]…" — transient inline notice; auto-dismisses once connected. Not an error. |
+| **3.2** Connected, sessions loading | **None** | Loading overlay already communicates this state adequately. |
+| **3.3** Connected, sessions loaded | **None** | Nominal state — no message. |
+| **3.4** Server disconnected (clean) | **Warning** | "Disconnected from [server]. Showing cached sessions." — persistent until reconnected; amber inline banner. |
+| **3.5** Connected WS + fetch error | **Warning** | "Couldn't refresh sessions from [server]. Tap for details." — persistent until fetch succeeds; amber inline banner. |
+| **3.6** Server unreachable (WS + fetch both down) | **Error** | "Can't reach [server]. Check your connection or server address." — persistent red inline banner until resolved. |
+
+### Two-server (and N-server generalizations)
+
+| Scenario | Severity | Suggested message |
+|----------|----------|-------------------|
+| **4.1** Both connected + ok | **None** | Nominal. |
+| **4.2** One connected, one connecting | **Info** | "Connecting to [B]…" — transient per-server notice, auto-dismisses. |
+| **4.3** One connected, one disconnected | **Warning** | "Disconnected from [B]. Showing cached sessions." |
+| **4.4** One connected, one unreachable | **Warning** | "[B] is unreachable. Some sessions may be missing." |
+| **4.5** Both unreachable | **Error** | "Can't reach any servers. Check your connection." — FAB should be disabled or show inline error on tap. |
+| **4.6** One connected, one hidden | **None** | Hidden is an intentional user choice. No message needed. |
+| **4.7** One connecting, one hidden (connected) | **Info** | "Connecting to [A]…" — same as 4.2. |
+| **4.8** One unreachable (visible), one hidden (healthy) | **Warning** | "[A] is unreachable. Some sessions may be missing." — note: healthy server is hidden so the user's view is degraded. |
+| **4.9** One connected + ok, one fetch-failed | **Warning** | "Couldn't refresh sessions from [B]. Tap for details." |
+| **4.10** Both connected + fetch-failed | **Error** | "Couldn't refresh sessions from any server. Tap for details." — header is already red; needs inline text. |
+| **4.11** Both disconnected (no error) | **Warning** | "Disconnected from all servers. Showing cached sessions." |
+| **4.12** Three-server: one connected, one unreachable, one hidden | **Warning** | "[B] is unreachable. Some sessions may be missing." |
+
+### Loading overlay
+
+| Scenario | Severity | Message approach |
+|----------|----------|-----------------|
+| **5.1** First boot, no cache | **None** | Overlay already communicates loading adequately. |
+| **5.2** Cache hit on launch | **None** | Cached data renders immediately; background refresh is silent. |
+| **5.3** Pull-to-refresh | **None** | `RefreshControl` spinner is sufficient feedback. |
+| **5.4** Multi-server sequential pagination | **None** | Overlay + server label already communicates this. |
+| **5.5** Pagination with hidden server | **Info** | Consider suppressing hidden-server label from overlay subtitle, or show "(hidden)" qualifier so users aren't confused by a server name they didn't expect. |
+| **5.6** Pagination complete | **None** | No message needed. |
+
+### Message placement guidance
+
+| Placement | When to use |
+|-----------|-------------|
+| **Inline banner (below header, above list)** | Persistent degraded states: warning or error that persists until the server recovers (scenarios 3.4, 3.5, 3.6, 4.3, 4.4, 4.5, 4.9, 4.10, 4.11) |
+| **Transient inline notice / toast** | Short-lived transitional states that auto-resolve: connecting (3.1, 4.2, 4.7) |
+| **Empty-state prompt in sessions area** | No servers configured (3.0) |
+| **FAB disabled state / tooltip** | All-servers-down (4.5) or no-servers (3.0) — FAB should not silently no-op |
+| **ServerStatusModal only** | Already implemented for detailed error text; keep as the drill-down layer |
+
+### Priority order for implementation
+
+1. **Error** scenarios first — these are fully broken states with no current user signal beyond the header dot:
+   - 3.6 Unreachable (single server)
+   - 4.5 Both unreachable
+   - 4.10 Both connected + fetch-failed
+
+2. **Warning** scenarios — degraded but partially functional:
+   - 3.4 Disconnected (single, stale data shown)
+   - 3.5 Fetch error while WS connected
+   - 4.3, 4.4, 4.8, 4.9, 4.11, 4.12 Multi-server degraded combos
+
+3. **Info** scenarios last — non-blocking, nice-to-have polish:
+   - 3.0 No servers (empty state)
+   - 3.1, 4.2, 4.7 Connecting transitional state
