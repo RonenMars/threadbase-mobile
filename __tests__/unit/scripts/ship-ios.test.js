@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Tests for scripts/ship.sh (iOS) argument parsing.
+ * Tests for scripts/ship-ios.sh argument parsing.
  *
  * Covers flag validation only — full pipeline tests require Xcode + 1Password
  * and are not run in CI. Each test exits before any slow step by triggering
@@ -13,7 +13,7 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
 
-const SCRIPT = path.resolve(__dirname, '../../../scripts/ship.sh');
+const SCRIPT = path.resolve(__dirname, '../../../scripts/ship-ios.sh');
 
 function runScript(args) {
   try {
@@ -28,7 +28,7 @@ function runScript(args) {
   }
 }
 
-describe('ship.sh — --target validation', () => {
+describe('ship-ios.sh — --target validation', () => {
   it('rejects an unknown target', () => {
     const { code, stderr } = runScript(['--target', 'staging']);
     expect(code).not.toBe(0);
@@ -46,7 +46,7 @@ describe('ship.sh — --target validation', () => {
   });
 });
 
-describe('ship.sh — --release-type validation', () => {
+describe('ship-ios.sh — --release-type validation', () => {
   it('accepts MANUAL release type', () => {
     const { stderr } = runScript(['--target', 'production', '--release-type', 'MANUAL']);
     expect(stderr).not.toContain('--target must be');
@@ -63,7 +63,7 @@ describe('ship.sh — --release-type validation', () => {
   });
 });
 
-describe('ship.sh — unknown flags', () => {
+describe('ship-ios.sh — unknown flags', () => {
   it('exits non-zero for an unrecognised flag', () => {
     const { code, stderr } = runScript(['--deploy-to-mars']);
     expect(code).not.toBe(0);
@@ -71,7 +71,7 @@ describe('ship.sh — unknown flags', () => {
   });
 });
 
-describe('ship.sh — pipeline entry point', () => {
+describe('ship-ios.sh — pipeline entry point', () => {
   it('fails fast at preflight or 1Password, not at arg parsing, for valid args', () => {
     const { code, stderr } = runScript(['--target', 'testflight', '--skip-preflight']);
     // Should not fail on argument validation

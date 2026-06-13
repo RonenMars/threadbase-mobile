@@ -34,7 +34,10 @@
     "lint": "eslint \"**/*.{ts,tsx}\"",
     "lint:i18n": "eslint ./app ./components ./hooks ./services ./constants ./types --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:scripts": "node_modules/.bin/jest --config jest.config.scripts.js --ci --forceExit"
+    "test:scripts": "node_modules/.bin/jest --config jest.config.scripts.js --ci --forceExit",
+    "ship:ios": "./scripts/ship-ios.sh",
+    "ship:android": "./scripts/ship-android.sh",
+    "ship:all": "./scripts/ship-ios.sh && ./scripts/ship-android.sh"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.13",

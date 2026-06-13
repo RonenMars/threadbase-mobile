@@ -69,7 +69,7 @@ That's the whole thing. Don't pass extra flags unless you know why.
    - Local `main` is behind `origin/main` (another machine may have pushed a build-number bump).
    - On a non-`main` branch, prints a warning but proceeds.
 
-   See [`.claude/skills/_shared/pre-ship-checks.md`](../_shared/pre-ship-checks.md) for the rationale behind these checks. They mirror the gates `./scripts/ship.sh` runs.
+   See [`.claude/skills/_shared/pre-ship-checks.md`](../_shared/pre-ship-checks.md) for the rationale behind these checks. They mirror the gates `./scripts/ship-ios.sh` runs.
 
 2. **Authenticate to ASC** — `app_store_connect_api_key` with the three `ASC_*` env vars. No Apple ID prompt, no 2FA.
 
@@ -87,10 +87,10 @@ That's the whole thing. Don't pass extra flags unless you know why.
 
 | Missing | What to use instead |
 |---|---|
-| 1Password signing vault bootstrap | `./scripts/ship.sh` (Path A in `docs/deployment.md`) |
-| `expo prebuild` if `ios/` is missing | Run `npx expo prebuild --platform ios` first, or use `ship.sh` |
-| Poll ASC until the build is VALID | Check TestFlight manually, or use `ship.sh` |
-| Submit for App Store review | `ship.sh --target production` |
+| 1Password signing vault bootstrap | `./scripts/ship-ios.sh` (Path A in `docs/deployment.md`) |
+| `expo prebuild` if `ios/` is missing | Run `npx expo prebuild --platform ios` first, or use `ship-ios.sh` |
+| Poll ASC until the build is VALID | Check TestFlight manually, or use `ship-ios.sh` |
+| Submit for App Store review | `ship-ios.sh --target production` |
 | Auto-install npm dependencies | Run `npm install` (or your package manager) first |
 
 ## After a successful run

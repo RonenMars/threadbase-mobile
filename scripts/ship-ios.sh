@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ship.sh — single-command end-to-end ship pipeline.
+# ship-ios.sh — single-command end-to-end iOS ship pipeline.
 #
 #   preflight → install deps → prebuild (if missing) → bootstrap signing →
 #   check/bump build number → archive → upload → poll until VALID → optionally submit for App Store review.
@@ -7,10 +7,10 @@
 # No simulator, no UI. Default target is TestFlight.
 #
 # Usage:
-#   ./scripts/ship.sh                                       # → TestFlight
-#   ./scripts/ship.sh --target testflight                   # → TestFlight (explicit)
-#   ./scripts/ship.sh --target production --release-notes "Fixes..." \
-#                     --release-type AFTER_APPROVAL         # → App Store review
+#   ./scripts/ship-ios.sh                                       # → TestFlight
+#   ./scripts/ship-ios.sh --target testflight                   # → TestFlight (explicit)
+#   ./scripts/ship-ios.sh --target production --release-notes "Fixes..." \
+#                         --release-type AFTER_APPROVAL         # → App Store review
 #
 # Flags:
 #   --target testflight|production           default: testflight
