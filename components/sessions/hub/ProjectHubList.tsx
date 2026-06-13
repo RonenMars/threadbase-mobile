@@ -11,7 +11,7 @@ import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { dark } from '@/constants/theme'
-import { MagnifyingGlass, XCircle } from 'phosphor-react-native'
+import { XCircle } from 'phosphor-react-native'
 import { isMultiSession } from './types'
 import { styles } from './ProjectHubList.styles'
 import type { ProjectHubListProps, SearchSection } from './types'
@@ -213,7 +213,6 @@ export function ProjectHubList({
         searchSections.length === 0 ? (
           <View style={{ flex: 1 }}>
             <EmptyState
-              icon={<MagnifyingGlass size={48} color={dark.text.secondary} />}
               title={t('list.noResults')}
               subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })}
             />

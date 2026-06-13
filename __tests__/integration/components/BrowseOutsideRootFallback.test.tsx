@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import BrowseScreen from '@/app/browse'
 
 // ─── Module mocks (localized to this test file) ─────────────────────────────
@@ -76,9 +77,11 @@ function renderScreen() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={qc}>
-      <BrowseScreen />
-    </QueryClientProvider>,
+    <ThemeProvider>
+      <QueryClientProvider client={qc}>
+        <BrowseScreen />
+      </QueryClientProvider>
+    </ThemeProvider>,
   )
 }
 
