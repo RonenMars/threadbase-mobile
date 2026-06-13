@@ -24,7 +24,7 @@
     "sessionCount_one": "{{count}} session",
     "sessionCount_other": "{{count}} sessions",
     "empty": "No sessions",
-    "emptySubtitle": "Start a Claude Code session to see it here",
+    "emptySubtitle": "Start a Claude Code\nsession to see it here",
     "noResults": "No results",
     "noResultsSubtitle": "Nothing matched \"{{query}}\"",
     "emptyProjects": "No projects yet"

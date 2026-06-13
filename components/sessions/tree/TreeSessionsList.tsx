@@ -328,10 +328,12 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
               tintColor="#7d8590"
             />
           }
-          contentContainerStyle={flatItems.length === 0 ? styles.emptyContainer : styles.listContent}
+          contentContainerStyle={flatItems.length === 0 ? { flexGrow: 1 } : styles.listContent}
           ListHeaderComponent={liveSessionsBlock}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>{t('list.emptyProjects')}</Text>
+            <View style={{ flex: 1 }}>
+              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+            </View>
           }
         />
       )}

@@ -6,4 +6,7 @@ export const styles = StyleSheet.create({
     padding: spacing.sm,
     flexGrow: 1,
   },
+  emptyContent: {
+    flexGrow: 1,
+  },
 })

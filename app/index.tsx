@@ -33,6 +33,7 @@ import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
@@ -608,6 +609,11 @@ function MergedClassicList({
         contentContainerStyle={styles.mergedContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
+        }
+        ListEmptyComponent={
+          <View style={{ flex: 1 }}>
+            <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+          </View>
         }
       />
     </View>

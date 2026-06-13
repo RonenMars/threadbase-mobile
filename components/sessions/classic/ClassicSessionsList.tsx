@@ -84,17 +84,19 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
             <SessionCard session={item.session} />
           )
         }
-        contentContainerStyle={styles.content}
+        contentContainerStyle={rows.length === 0 ? styles.emptyContent : styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
         }
         ListEmptyComponent={
-          debouncedQuery ? (
-            <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
-          ) : (
-            <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
-          )
+          <View style={{ flex: 1 }}>
+            {debouncedQuery ? (
+              <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
+            ) : (
+              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+            )}
+          </View>
         }
       />
     </View>
