@@ -59,6 +59,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
 import { useRenameSession } from '@/hooks/useSessionName'
 import type { SlashCommand } from '@/constants/slashCommands'
+import { MatrixRain } from '@/components/terminal/MatrixRain'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -798,11 +799,32 @@ export default function SessionDetailScreen() {
             </View>
           ) : noAttachEmptyPlaceholder ? (
             <View style={styles.discoveredInfo}>
-              <Text style={styles.discoveredTitle}>{t('session.noTerminal')}</Text>
-              <Text style={styles.discoveredText}>{t('session.noTerminalBody')}</Text>
-              {session?.projectPath ? (
-                <Text style={styles.discoveredPath}>{session.projectPath}</Text>
-              ) : null}
+              {session?.status === 'idle' ? (
+                <>
+                  <MatrixRain />
+                  <Text style={styles.discoveredTitle}>{t('session.runningElsewhere')}</Text>
+                  <Text style={styles.discoveredText}>{t('session.runningElsewhereBody')}</Text>
+                  {session?.projectPath ? (
+                    <Text style={styles.discoveredPath}>{session.projectPath}</Text>
+                  ) : null}
+                  {(session?.promptCount ?? 0) > 0 ? (
+                    <TouchableOpacity
+                      style={styles.viewConversationBtn}
+                      onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
+                    >
+                      <Text style={styles.viewConversationBtnText}>{t('session.openConversation')}</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <Text style={styles.discoveredTitle}>{t('session.noTerminal')}</Text>
+                  <Text style={styles.discoveredText}>{t('session.noTerminalBody')}</Text>
+                  {session?.projectPath ? (
+                    <Text style={styles.discoveredPath}>{session.projectPath}</Text>
+                  ) : null}
+                </>
+              )}
             </View>
           ) : (
             <>
