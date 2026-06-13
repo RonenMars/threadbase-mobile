@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { FlatList, View, Text, TextInput, SectionList, RefreshControl } from 'react-native'
+import { FlatList, View, Text, TextInput, SectionList, RefreshControl, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -11,6 +11,7 @@ import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { dark } from '@/constants/theme'
+import { MagnifyingGlass, XCircle } from 'phosphor-react-native'
 import { isMultiSession } from './types'
 import { styles } from './ProjectHubList.styles'
 import type { ProjectHubListProps, SearchSection } from './types'
@@ -188,23 +189,35 @@ export function ProjectHubList({
     <View style={styles.container}>
       {searchOpen ? (
         <View style={styles.searchBar}>
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('search.placeholder')}
-            placeholderTextColor={dark.text.secondary}
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
+          <View style={styles.searchRow}>
+            <TextInput
+              ref={inputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('search.placeholder')}
+              placeholderTextColor={dark.text.secondary}
+              autoFocus
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn} hitSlop={8}>
+                <XCircle size={20} color={dark.text.primary} weight="fill" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
       ) : null}
 
       {showSearch ? (
         searchSections.length === 0 ? (
-          <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
+          <View style={{ flex: 1 }}>
+            <EmptyState
+              icon={<MagnifyingGlass size={48} color={dark.text.secondary} />}
+              title={t('list.noResults')}
+              subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })}
+            />
+          </View>
         ) : (
           <SectionList
             sections={searchSections}

@@ -260,7 +260,9 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
 
       {showSearch ? (
         searchSections.length === 0 ? (
-          <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
+          <View style={{ flex: 1 }}>
+            <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
+          </View>
         ) : (
           <SectionList
             sections={searchSections}
