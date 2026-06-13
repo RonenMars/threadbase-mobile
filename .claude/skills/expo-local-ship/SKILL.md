@@ -34,8 +34,8 @@ API-key flags.
 ## Quick start
 
 ```bash
-./scripts/ship.sh              # → TestFlight (default)
-./scripts/ship.sh --target production --release-notes "Fixes login bug" \
+./scripts/ship-ios.sh              # → TestFlight (default)
+./scripts/ship-ios.sh --target production --release-notes "Fixes login bug" \
                   --release-type AFTER_APPROVAL          # → App Store
 ```
 
@@ -60,7 +60,7 @@ reference if needed.
 
 | Script | Role |
 |--------|------|
-| `ship.sh` | Top-level orchestrator. The only command users typically run. |
+| `ship-ios.sh` | Top-level orchestrator. The only command users typically run. |
 | `preflight.sh` | Runs every prerequisite check and fails loud. Standalone too. |
 | `git-sync-check.sh` | Verifies local `main` is up to date with `origin/main` and `app.json` has no uncommitted edits. Prevents shipping from a stale base on a multi-machine setup. |
 | `check-build-number.sh` | Queries App Store Connect for the highest `buildNumber` in TestFlight, compares to `app.json`, and auto-bumps if local ≤ remote. Surfaces a louder warning when drift ≥ 2 (sign of a missed bump). |
@@ -209,7 +209,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
       - uses: 1password/install-cli-action@v1
-      - run: ./scripts/ship.sh
+      - run: ./scripts/ship-ios.sh
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 ```

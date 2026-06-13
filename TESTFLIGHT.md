@@ -11,13 +11,13 @@
 
 ---
 
-## Ship Pipeline (`scripts/ship.sh`)
+## Ship Pipeline (`scripts/ship-ios.sh`)
 
 End-to-end deploy without any manual steps:
 
 ```bash
-./scripts/ship.sh                     # → TestFlight
-./scripts/ship.sh --target production # → App Store review
+./scripts/ship-ios.sh                     # → TestFlight
+./scripts/ship-ios.sh --target production # → App Store review
 ```
 
 ### 1Password auth — no `op signin` required
@@ -34,11 +34,11 @@ it automatically.
 **First-time setup on a new machine:**
 1. Ensure `OP_SERVICE_ACCOUNT_TOKEN` is in your environment (`echo $OP_SERVICE_ACCOUNT_TOKEN`)
 2. If missing: `refresh-secrets` (requires one interactive `op signin` to bootstrap)
-3. Then `./scripts/ship.sh` runs without any further 1Password prompts
+3. Then `./scripts/ship-ios.sh` runs without any further 1Password prompts
 
 ### Skip bootstrap when already set up
 
-`ship.sh` detects if `.env.signing` exists and the `.p8` key is already on disk, and
+`ship-ios.sh` detects if `.env.signing` exists and the `.p8` key is already on disk, and
 skips the bootstrap step entirely. On repeat deploys from the same machine, signing is
 bootstrapped from the cached files — 1Password isn't contacted at all.
 

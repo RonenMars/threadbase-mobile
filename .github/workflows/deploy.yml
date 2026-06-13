@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to deploy'
+        required: true
+        default: ios
+        type: choice
+        options:
+          - ios
+          - android
+          - all
+      target:
+        description: 'iOS target (testflight or production)'
+        required: false
+        default: testflight
+        type: choice
+        options:
+          - testflight
+          - production
+      android_track:
+        description: 'Android track'
+        required: false
+        default: internal
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+      release_notes:
+        description: 'Release notes (iOS production only)'
+        required: false
+        type: string
+
+jobs:
+  deploy-ios:
+    name: Ship iOS
+    if: ${{ inputs.platform == 'ios' || inputs.platform == 'all' }}
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: 1password/install-cli-action@v1
+
+      - name: Ship iOS
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          IOS_TARGET: ${{ inputs.target }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          ARGS=(--target "$IOS_TARGET")
+          if [[ -n "$RELEASE_NOTES" ]]; then
+            ARGS+=(--release-notes "$RELEASE_NOTES")
+          fi
+          ./scripts/ship-ios.sh "${ARGS[@]}"
+
+  deploy-android:
+    name: Ship Android
+    if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: 1password/install-cli-action@v1
+
+      - name: Ship Android
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ANDROID_TRACK: ${{ inputs.android_track }}
+        run: ./scripts/ship-android.sh --track "$ANDROID_TRACK"

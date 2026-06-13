@@ -9,12 +9,12 @@ Pick one based on what you have access to and what you're trying to do.
 
 | Path | Use when | Command |
 | --- | --- | --- |
-| **`ship.sh`** | You're the maintainer (have access to the 1Password signing vault). Full-featured: signing bootstrap, git safety checks, polls until the build is `VALID` on App Store Connect, optional App Store submission. | `./scripts/ship.sh` |
+| **`ship-ios.sh`** | You're the maintainer (have access to the 1Password signing vault). Full-featured: signing bootstrap, git safety checks, polls until the build is `VALID` on App Store Connect, optional App Store submission. | `./scripts/ship-ios.sh` |
 | **fastlane** | You're a contributor / running on a machine without the 1Password vault. Vanilla fastlane, configured purely via env vars. TestFlight only, no polling, no App Store submission. | `bundle exec fastlane beta` |
 | **EAS cloud builds** | You want to build on Expo's servers (e.g. CI without macOS, or no local Xcode). Costs money. Opt-in only. | `/ship-expo-cloud` (skill, manual approval required) |
 | **Manual Xcode** | Tooling diagnosis or a one-off where you want to see every step in the UI. | Xcode → Product → Archive → Distribute App |
 
-All three local paths (`ship.sh`, fastlane, manual Xcode) produce the same kind
+All three local paths (`ship-ios.sh`, fastlane, manual Xcode) produce the same kind
 of artifact — an App Store IPA archived locally and uploaded to TestFlight.
 They differ in how much automation sits around the archive step.
 
@@ -26,7 +26,7 @@ They differ in how much automation sits around the archive step.
 
 ---
 
-## Path A — `./scripts/ship.sh` (maintainer default)
+## Path A — `./scripts/ship-ios.sh` (maintainer default)
 
 The full pipeline. This is what the `/expo-local-ship` skill runs, and it's
 the default for anyone with the 1Password signing vault.
@@ -54,9 +54,9 @@ the default for anyone with the 1Password signing vault.
 ### Usage
 
 ```bash
-./scripts/ship.sh                                     # → TestFlight (default)
-./scripts/ship.sh --target testflight                 # explicit
-./scripts/ship.sh --target production \
+./scripts/ship-ios.sh                                     # → TestFlight (default)
+./scripts/ship-ios.sh --target testflight                 # explicit
+./scripts/ship-ios.sh --target production \
   --release-notes "Fixes..." \
   --release-type AFTER_APPROVAL                       # → App Store review
 ```
@@ -92,7 +92,7 @@ submission — just bump the build number, archive, and upload to TestFlight.
    local `main` is behind `origin/main`, or if `app.json` has uncommitted
    edits. Shared canonical policy (see
    [`.claude/skills/_shared/pre-ship-checks.md`](../.claude/skills/_shared/pre-ship-checks.md))
-   — mirrors what `ship.sh` enforces.
+   — mirrors what `ship-ios.sh` enforces.
 2. Authenticate to App Store Connect via the API key (no Apple ID prompt, no 2FA).
 3. Read `expo.version` from `app.json` for the marketing version.
 4. Call `latest_testflight_build_number` for that marketing version and add 1.
@@ -148,7 +148,7 @@ tree stays clean. The value is derived from App Store Connect on every run —
 the next ship queries ASC again and writes a fresh number. There's nothing
 to commit.
 
-(`./scripts/ship.sh` does commit the bump, because its bash pipeline is built
+(`./scripts/ship-ios.sh` does commit the bump, because its bash pipeline is built
 around it. That convention does not apply to the fastlane path.)
 
 To target multiple environments, drop additional files like
@@ -163,18 +163,18 @@ ruby -c fastlane/Fastfile                   # syntax-check the Fastfile
 bundle exec fastlane action build_app       # show signatures/help
 ```
 
-### When to prefer fastlane over `ship.sh`
+### When to prefer fastlane over `ship-ios.sh`
 
 - You don't have access to the 1Password signing vault.
 - You're setting up CI and want a single, declarative pipeline tool.
-- `ship.sh` is broken or behaving weirdly and you want a known-vanilla fallback.
+- `ship-ios.sh` is broken or behaving weirdly and you want a known-vanilla fallback.
 - You're contributing from another machine and just need to get a build to
   TestFlight without configuring the full maintainer pipeline.
 
 ### Notes
 
 - The lane never touches code signing, provisioning profiles, or entitlements —
-  whatever the Xcode project already has is used as-is. (`ship.sh` is the path
+  whatever the Xcode project already has is used as-is. (`ship-ios.sh` is the path
   that sets those up from 1Password.)
 - If `latest_testflight_build_number` returns 0 (e.g. brand-new marketing
   version with no uploads yet), the lane sets the build number to 1.
@@ -250,15 +250,16 @@ to Google Play via the Play Developer API.
 ### Usage
 
 ```bash
-./scripts/ship-android.sh                    # → Internal testing (default)
-./scripts/ship-android.sh --track alpha      # → Closed testing (Alpha)
-./scripts/ship-android.sh --track beta       # → Open testing
-./scripts/ship-android.sh --track production # → Production
+./scripts/ship-android.sh                           # → Internal testing (default)
+./scripts/ship-android.sh --track alpha             # → Closed testing (Alpha)
+./scripts/ship-android.sh --track beta              # → Open testing
+./scripts/ship-android.sh --track production        # → Production
+./scripts/ship-android.sh --promote 8 --track alpha # → Promote versionCode 8 to alpha (no rebuild)
 ```
 
 Play Console UI names → API track names: Internal testing=`internal`, Closed testing=`alpha`, Open testing=`beta`, Production=`production`.
 
-Other flags: `--skip-preflight`, `--skip-prebuild`, `--package <id>`.
+Other flags: `--skip-preflight`, `--skip-prebuild`, `--skip-bundle` (reuse existing AAB without rebuilding), `--package <id>`.
 
 ### Prerequisites
 
@@ -287,14 +288,79 @@ ANDROID_TRACK=internal \
   ./scripts/bundle-and-upload-android.sh
 ```
 
+### Promoting a build between tracks
+
+Once a build is live on a track, use `scripts/promote-android.js` to move it
+to a wider track **without re-uploading**. The Play API reuses the already-uploaded
+AAB — no Gradle rebuild needed.
+
+```bash
+SA="$HOME/.config/threadbase/play-console-sa.json"
+node scripts/promote-android.js com.ronenmars.threadbase <versionCode> alpha "$SA"
+node scripts/promote-android.js com.ronenmars.threadbase <versionCode> beta  "$SA"
+node scripts/promote-android.js com.ronenmars.threadbase <versionCode> production "$SA"
+```
+
+The service-account JSON path is the same one fetched by `scripts/fetch-play-credentials.sh`.
+
+> **Why not `ship-android.sh --track alpha`?** That path tries to re-upload the
+> AAB, which fails with `PERMISSION_DENIED: Version code N has already been used`.
+> The promote script opens an edit, updates the target track to include the
+> existing versionCode, and commits — no binary upload.
+
+#### Connectivity failure behaviour
+
+Each `https.request` in `promote-android.js` carries a **30-second timeout**.
+
+| Failure mode | What happens |
+|---|---|
+| No connectivity / DNS failure | Node fires `ECONNREFUSED` / `ENOTFOUND` immediately → script exits with a clear error message |
+| Server connected but never responds | Timeout fires after 30 s → `req.destroy()` → `ERROR: … timed out after 30s` → exit 1 |
+
+If the script exits with a timeout error, check your network connection and retry. No Play edit is left open — the edit is only committed in the final step, so a mid-flight timeout leaves no side effects in Play Console.
+
+---
+
+## GitHub Actions — manual deploy workflow
+
+`.github/workflows/deploy.yml` adds a `workflow_dispatch` trigger so you can
+ship iOS and/or Android from the GitHub Actions UI without a local machine.
+
+**Trigger:** Actions → Deploy → Run workflow
+
+| Input | Options | Default |
+|---|---|---|
+| `platform` | `ios`, `android`, `all` | `ios` |
+| `target` (iOS) | `testflight`, `production` | `testflight` |
+| `android_track` | `internal`, `alpha`, `beta`, `production` | `internal` |
+| `release_notes` | free text (iOS production only) | — |
+
+**Requirements:** `OP_SERVICE_ACCOUNT_TOKEN` secret must be configured in the
+repo (Settings → Secrets → Actions). The service account token gives the runner
+access to the 1Password signing vault.
+
+## npm ship scripts
+
+Convenience wrappers so you can ship without remembering script paths:
+
+```bash
+npm run ship:ios                   # → TestFlight (runs scripts/ship-ios.sh)
+npm run ship:android               # → Internal testing (runs scripts/ship-android.sh)
+npm run ship:all                   # → both in sequence
+```
+
+These are thin aliases; all flags supported by the underlying scripts work as
+normal when you call the scripts directly.
+
 ---
 
 ## See also
 
-- `/expo-local-ship` skill — wraps `scripts/ship.sh` with conversational
+- `/expo-local-ship` skill — wraps `scripts/ship-ios.sh` with conversational
   affordances (release notes prompts, etc.).
 - `/ship-expo-cloud` skill — EAS cloud build/submit. Manual approval required.
 - `fastlane/.env.example` — env var template for Path B.
-- `scripts/ship.sh` — iOS Path A entry point.
+- `scripts/ship-ios.sh` — iOS Path A entry point.
 - `scripts/ship-android.sh` — Android Path E entry point.
+- `scripts/promote-android.js` — promote an existing build between Play tracks.
 - `docs/google-play-mcp-setup.md` — Play service-account credential setup.

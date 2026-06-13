@@ -89,6 +89,12 @@ jobs:
         with:
           run: npm run test:unit -- --coverage --coverageDirectory=coverage/unit
 
+      - name: Script tests
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
+        with:
+          run: npm run test:scripts
+
       - name: Upload unit coverage
         uses: actions/upload-artifact@v4
         if: always() && needs.gate.outputs.skip != 'true'

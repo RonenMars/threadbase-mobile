@@ -2,7 +2,7 @@
 # preflight.sh — non-interactive prerequisite check for the ship pipeline.
 #
 # Runs every check in turn, prints PASS/FAIL per row, exits non-zero on the
-# first failure with a remediation hint. Call from CI, ship.sh, or a
+# first failure with a remediation hint. Call from CI, ship-ios.sh/ship-android.sh, or a
 # developer's terminal.
 #
 # Usage:

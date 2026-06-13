@@ -3,7 +3,7 @@
 # different branch, or has uncommitted app.json changes.
 #
 # Multi-machine ship hazard: another machine pushed a build-number bump that
-# you haven't pulled. Without this check, ship.sh would happily auto-bump
+# you haven't pulled. Without this check, ship-ios.sh would happily auto-bump
 # from a stale base, silently re-using a build number that's already taken
 # (or worse, skipping numbers and confusing your TestFlight history).
 #

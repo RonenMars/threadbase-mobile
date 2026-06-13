@@ -14,7 +14,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: node_modules
-        key: node-modules-${{ hashFiles('package-lock.json') }}
+        key: node-modules-v2-${{ hashFiles('package-lock.json') }}
 
     - name: Install dependencies
       if: steps.cache.outputs.cache-hit != 'true'
@@ -26,4 +26,4 @@ runs:
       uses: actions/cache/save@v4
       with:
         path: node_modules
-        key: node-modules-${{ hashFiles('package-lock.json') }}
+        key: node-modules-v2-${{ hashFiles('package-lock.json') }}
