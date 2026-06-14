@@ -12,7 +12,8 @@
     "skip": "تخطي",
     "create": "إنشاء",
     "export": "تصدير",
-    "copy": "نسخ"
+    "copy": "نسخ",
+    "paste": "لصق"
   },
   "error": {
     "generic": "حدث خطأ ما",

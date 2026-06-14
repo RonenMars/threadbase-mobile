@@ -12,7 +12,8 @@
     "skip": "Skip",
     "create": "Create",
     "export": "Export",
-    "copy": "Copy"
+    "copy": "Copy",
+    "paste": "Paste"
   },
   "error": {
     "generic": "Something went wrong",

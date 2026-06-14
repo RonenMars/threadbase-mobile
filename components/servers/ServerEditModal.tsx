@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native'
+import * as Clipboard from 'expo-clipboard'
 import { X, Eye, EyeSlash, QrCode, XCircle, CaretDown } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
@@ -75,6 +76,22 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
   function markDirty() {
     if (!isDirty) setIsDirty(true)
+  }
+
+  async function pasteUrl() {
+    const text = await Clipboard.getStringAsync()
+    if (!text) return
+    const { protocol: p, host } = splitUrl(text.trim())
+    setProtocol(p)
+    setUrlHost(host)
+    markDirty()
+  }
+
+  async function pasteApiKey() {
+    const text = await Clipboard.getStringAsync()
+    if (!text) return
+    setApiKey(text.trim())
+    markDirty()
   }
 
   function handleDismiss() {
@@ -186,7 +203,12 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
+                <TouchableOpacity onPress={pasteUrl} hitSlop={8}>
+                  <Text style={styles.pasteBtn}>{t('button.paste')}</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.urlRow}>
                 <View>
                   <TouchableOpacity
@@ -225,7 +247,12 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 />
               </View>
 
-              <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
+                <TouchableOpacity onPress={pasteApiKey} hitSlop={8}>
+                  <Text style={styles.pasteBtn}>{t('button.paste')}</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.apiKeyRow}>
                 <TextInput
                   style={[styles.input, styles.apiKeyInput]}
@@ -400,6 +427,11 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
     minHeight: 44,
     justifyContent: 'center',
+  },
+  pasteBtn: {
+    color: dark.text.accent,
+    fontSize: font.sm,
+    fontWeight: '500',
   },
   errorBox: {
     flexDirection: 'row',
