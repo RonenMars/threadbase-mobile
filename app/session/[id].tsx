@@ -13,6 +13,7 @@ import {
   Alert,
   ScrollView,
   AppState,
+  Linking,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -663,7 +664,10 @@ export default function SessionDetailScreen() {
       await voice.start()
     } catch (err) {
       if (err instanceof Error && err.message === 'PERMISSION_DENIED') {
-        Alert.alert(t('voice.permissionDeniedTitle'), t('voice.permissionDeniedBody'))
+        Alert.alert(t('voice.permissionDeniedTitle'), t('voice.permissionDeniedBody'), [
+          { text: t('common:button.cancel'), style: 'cancel' },
+          { text: t('common:button.openSettings'), onPress: () => Linking.openSettings() },
+        ])
       }
     }
   }

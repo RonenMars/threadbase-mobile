@@ -20,6 +20,24 @@
     "label": "الإشعارات",
     "enable": "تمكين الإشعارات"
   },
+  "section": {
+    "permissions": "الأذونات"
+  },
+  "permissions": {
+    "camera": "الكاميرا",
+    "cameraDesc": "مسح رمز QR للاقتران بالخوادم",
+    "microphone": "الميكروفون",
+    "microphoneDesc": "الإملاء الصوتي للمطالبات",
+    "photos": "الصور",
+    "photosDesc": "إرفاق صور من مكتبتك",
+    "notifications": "الإشعارات",
+    "notificationsDesc": "تنبيهات لأحداث الجلسة",
+    "statusGranted": "مسموح",
+    "statusDenied": "مرفوض",
+    "statusUndetermined": "لم يُسأل",
+    "actionAllow": "السماح",
+    "actionManage": "إدارة"
+  },
   "conversationRows": {
     "messagePreview": "معاينة الرسالة",
     "previewFirst": "الأولى",

@@ -6,11 +6,27 @@
     "appearance": "Внешний вид",
     "servers": "Серверы",
     "notifications": "Уведомления",
+    "permissions": "Разрешения",
     "about": "О программе",
     "displayedServers": "Отображаемые серверы",
     "history": "История",
     "help": "Помощь",
     "language": "Язык"
+  },
+  "permissions": {
+    "camera": "Камера",
+    "cameraDesc": "Сканирование QR-кода для подключения к серверам",
+    "microphone": "Микрофон",
+    "microphoneDesc": "Голосовой ввод для подсказок",
+    "photos": "Фото",
+    "photosDesc": "Прикрепление изображений из библиотеки",
+    "notifications": "Уведомления",
+    "notificationsDesc": "Оповещения о событиях сессии",
+    "statusGranted": "Разрешено",
+    "statusDenied": "Отклонено",
+    "statusUndetermined": "Не запрашивалось",
+    "actionAllow": "Разрешить",
+    "actionManage": "Управлять"
   },
   "appearance": {
     "theme": "Тема",

@@ -13,7 +13,8 @@
     "create": "Create",
     "export": "Export",
     "copy": "Copy",
-    "paste": "Paste"
+    "paste": "Paste",
+    "openSettings": "Open Settings"
   },
   "error": {
     "generic": "Something went wrong",

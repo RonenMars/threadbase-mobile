@@ -33,6 +33,7 @@ import { QrCode } from 'phosphor-react-native'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
 function addServerActionLabel(action: AddServerAction): string {
   switch (action) {
@@ -70,6 +71,60 @@ function SettingsRow({
         thumbColor="#fff"
       />
     </View>
+  )
+}
+
+function PermissionRow({
+  label,
+  description,
+  status,
+  onPress,
+  isLast,
+}: {
+  label: string
+  description: string
+  status: PermissionStatus
+  onPress: () => void
+  isLast?: boolean
+}) {
+  const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
+  const { t } = useTranslation('settings')
+
+  const dotColor =
+    status === 'granted'
+      ? theme.text.success
+      : status === 'denied'
+        ? theme.text.danger
+        : theme.text.secondary
+
+  const statusLabel =
+    status === 'granted'
+      ? t('permissions.statusGranted')
+      : status === 'denied'
+        ? t('permissions.statusDenied')
+        : t('permissions.statusUndetermined')
+
+  const actionLabel =
+    status === 'undetermined'
+      ? t('permissions.actionAllow')
+      : t('permissions.actionManage')
+
+  return (
+    <TouchableOpacity
+      style={[s.row, isLast && { borderBottomWidth: 0 }]}
+      onPress={onPress}
+    >
+      <View style={s.permissionRowLeft}>
+        <Text style={s.rowLabel}>{label}</Text>
+        <Text style={s.permissionRowDesc}>{description}</Text>
+      </View>
+      <View style={s.permissionRowRight}>
+        <View style={[s.permissionDot, { backgroundColor: dotColor }]} />
+        <Text style={[s.rowValue, { color: dotColor }]}>{statusLabel}</Text>
+        <Text style={s.permissionRowAction}>{actionLabel}</Text>
+      </View>
+    </TouchableOpacity>
   )
 }
 
@@ -167,6 +222,7 @@ export default function SettingsScreen() {
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
   const [qrScannerOpen, setQrScannerOpen] = useState(false)
+  const { statuses: permStatuses, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
 
   const handleTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
@@ -571,6 +627,35 @@ await refreshServerInfo(serverId)
           </View>
         </View>
 
+        <SectionHeader title={t('section.permissions')} />
+        <View style={s.card}>
+          <PermissionRow
+            label={t('permissions.camera')}
+            description={t('permissions.cameraDesc')}
+            status={permStatuses.camera}
+            onPress={permStatuses.camera === 'undetermined' ? () => requestPermission('camera') : openPermissionSettings}
+          />
+          <PermissionRow
+            label={t('permissions.microphone')}
+            description={t('permissions.microphoneDesc')}
+            status={permStatuses.microphone}
+            onPress={permStatuses.microphone === 'undetermined' ? () => requestPermission('microphone') : openPermissionSettings}
+          />
+          <PermissionRow
+            label={t('permissions.photos')}
+            description={t('permissions.photosDesc')}
+            status={permStatuses.photos}
+            onPress={permStatuses.photos === 'undetermined' ? () => requestPermission('photos') : openPermissionSettings}
+          />
+          <PermissionRow
+            label={t('permissions.notifications')}
+            description={t('permissions.notificationsDesc')}
+            status={permStatuses.notifications}
+            onPress={permStatuses.notifications === 'undetermined' ? () => requestPermission('notifications') : openPermissionSettings}
+            isLast
+          />
+        </View>
+
         <SectionHeader title={t('section.about')} />
         <View style={s.card}>
           <Text style={s.aboutText}>
@@ -737,6 +822,11 @@ function styles(theme: ReturnType<typeof useTheme>) {
     segmentBtnTextActive: { color: '#fff' },
     aboutText: { color: theme.text.primary, fontSize: font.base, padding: spacing.md, fontWeight: '500' },
     aboutSubtext: { color: theme.text.secondary, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+    permissionRowLeft: { flex: 1, gap: 2 },
+    permissionRowDesc: { color: theme.text.secondary, fontSize: font.xs },
+    permissionRowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    permissionDot: { width: 8, height: 8, borderRadius: 4 },
+    permissionRowAction: { color: theme.text.accent, fontSize: font.sm, fontWeight: '500', marginLeft: spacing.xs },
     themeGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
