@@ -35,8 +35,9 @@ echo "  local app.json versionCode: $LOCAL_CODE"
 
 # Mint an OAuth2 access token from the service-account JSON using Node
 # (pure stdlib — no googleapis package needed).
-ACCESS_TOKEN=$(node - "$GOOGLE_APPLICATION_CREDENTIALS" <<'EOF'
-const fs   = require('fs');
+_tmp_token=$(mktemp /tmp/check-vc-token.XXXXXX.js)
+cat > "$_tmp_token" <<'NODEJS'
+const fs     = require('fs');
 const crypto = require('crypto');
 const https  = require('https');
 
@@ -46,19 +47,13 @@ const scope = 'https://www.googleapis.com/auth/androidpublisher';
 
 const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
 const payload = Buffer.from(JSON.stringify({
-  iss: sa.client_email,
-  sub: sa.client_email,
+  iss: sa.client_email, sub: sa.client_email,
   aud: 'https://oauth2.googleapis.com/token',
-  iat: now,
-  exp: now + 3600,
-  scope,
+  iat: now, exp: now + 3600, scope,
 })).toString('base64url');
 
 const unsigned = `${header}.${payload}`;
-const sig = crypto.createSign('SHA256')
-  .update(unsigned)
-  .sign(sa.private_key, 'base64url');
-
+const sig = crypto.createSign('SHA256').update(unsigned).sign(sa.private_key, 'base64url');
 const jwt = `${unsigned}.${sig}`;
 
 const body = new URLSearchParams({
@@ -67,13 +62,8 @@ const body = new URLSearchParams({
 }).toString();
 
 const opts = {
-  hostname: 'oauth2.googleapis.com',
-  path: '/token',
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Content-Length': Buffer.byteLength(body),
-  },
+  hostname: 'oauth2.googleapis.com', path: '/token', method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(body) },
 };
 
 let resp = '';
@@ -85,38 +75,59 @@ const req = https.request(opts, r => {
     process.stdout.write(d.access_token);
   });
 });
-req.on('error', e => { process.stderr.write(e.message + '\n'); process.exit(1); });
+req.on('error', e => {
+  const offline = e.code === 'ENOTFOUND' || e.code === 'ECONNREFUSED' || e.code === 'ETIMEDOUT';
+  process.stderr.write(e.message + '\n');
+  process.exit(offline ? 3 : 1);
+});
 req.write(body);
 req.end();
-EOF
-)
+NODEJS
 
+set +e
+ACCESS_TOKEN=$(node "$_tmp_token" "$GOOGLE_APPLICATION_CREDENTIALS")
+_token_exit=$?
+set -e
+rm -f "$_tmp_token"
+
+if (( _token_exit == 3 )); then
+  echo "  ⚠ Play API unreachable (OAuth2) — skipping remote versionCode check, proceeding with local ($LOCAL_CODE)" >&2
+  exit 0
+fi
 [[ -n "$ACCESS_TOKEN" ]] || { echo "ERROR: OAuth2 token minting failed — check GOOGLE_APPLICATION_CREDENTIALS and service account permissions" >&2; exit 1; }
 
 # Query the androidpublisher API for the highest versionCode across all
-# active tracks using the edit-less tracks endpoint, which reflects the
-# live published state (edits/{id}/tracks only shows the current edit's
-# modifications — an empty edit returns nothing).
-REMOTE_CODE=$(node - "$PACKAGE_NAME" "$ACCESS_TOKEN" <<'EOF'
+# sources: the edit-less tracks endpoint (live published state) plus a
+# throwaway edit's bundles.list (catches versionCodes uploaded in edits
+# that were committed but not yet reflected by the tracks endpoint).
+_tmp_query=$(mktemp /tmp/check-vc-query.XXXXXX.js)
+cat > "$_tmp_query" <<'NODEJS'
 const https = require('https');
 
-function get(path, token) {
+function request(method, path, token, payload) {
   return new Promise((resolve, reject) => {
+    const body = payload ? JSON.stringify(payload) : '';
     const opts = {
       hostname: 'androidpublisher.googleapis.com',
-      path,
-      headers: { Authorization: 'Bearer ' + token },
+      path, method,
+      headers: {
+        Authorization: 'Bearer ' + token,
+        ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {}),
+      },
     };
-    let body = '';
-    https.get(opts, r => {
-      r.on('data', d => body += d);
+    let resp = '';
+    const req = https.request(opts, r => {
+      r.on('data', d => resp += d);
       r.on('end', () => {
-        // 404 = app has no published tracks yet (first-ever upload); treat as remote = 0.
         if (r.statusCode === 404) { resolve({ __notFound: true }); return; }
-        try { resolve(JSON.parse(body)); }
-        catch(e) { reject(new Error('JSON parse failed (HTTP ' + r.statusCode + '): ' + body.slice(0, 300))); }
+        if (r.statusCode === 204 || !resp) { resolve({}); return; }
+        try { resolve(JSON.parse(resp)); }
+        catch(e) { reject(new Error('JSON parse failed (HTTP ' + r.statusCode + '): ' + resp.slice(0, 300))); }
       });
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
   });
 }
 
@@ -126,10 +137,12 @@ function get(path, token) {
 
   if (!token || token === '-') { process.stderr.write('ERROR: access token is empty — OAuth2 minting failed\n'); process.exit(1); }
 
-  // Use the edit-less tracks endpoint — reads live published state directly.
-  const tracks = await get(`/androidpublisher/v3/applications/${pkg}/tracks`, token);
+  const base = `/androidpublisher/v3/applications/${pkg}`;
+  let maxCode = 0;
+
+  // Source 1: edit-less tracks endpoint — live published state.
+  const tracks = await request('GET', `${base}/tracks`, token, null);
   if (tracks.__notFound) {
-    // No tracks exist yet — this is the first build for this app. Remote = 0.
     process.stderr.write('  no published tracks found (first upload) — treating remote versionCode as 0\n');
     process.stdout.write('0');
     return;
@@ -138,8 +151,6 @@ function get(path, token) {
     process.stderr.write('tracks.list error: ' + JSON.stringify(tracks.error) + '\n');
     process.exit(1);
   }
-
-  let maxCode = 0;
   for (const track of (tracks.tracks || [])) {
     for (const release of (track.releases || [])) {
       for (const vc of (release.versionCodes || [])) {
@@ -149,10 +160,48 @@ function get(path, token) {
     }
   }
 
+  // Source 2: open a throwaway edit and list bundles — catches versionCodes
+  // that were uploaded in a recently-committed edit but haven't propagated
+  // to the tracks endpoint yet (eventual consistency window).
+  let editId = null;
+  try {
+    const edit = await request('POST', `${base}/edits`, token, {});
+    if (edit.error) throw new Error('edits.insert: ' + JSON.stringify(edit.error));
+    editId = edit.id;
+
+    const bundles = await request('GET', `${base}/edits/${editId}/bundles`, token, null);
+    if (!bundles.error) {
+      for (const b of (bundles.bundles || [])) {
+        const n = parseInt(b.versionCode, 10);
+        if (n > maxCode) maxCode = n;
+      }
+    }
+  } catch(e) {
+    process.stderr.write('  bundles.list via edit skipped: ' + e.message + '\n');
+  } finally {
+    if (editId) {
+      await request('DELETE', `${base}/edits/${editId}`, token, null).catch(() => {});
+    }
+  }
+
   process.stdout.write(String(maxCode));
-})().catch(e => { process.stderr.write(e.message + '\n'); process.exit(1); });
-EOF
-)
+})().catch(e => {
+  const offline = e.message.includes('ENOTFOUND') || e.message.includes('ECONNREFUSED') || e.message.includes('ETIMEDOUT');
+  process.stderr.write(e.message + '\n');
+  process.exit(offline ? 3 : 1);
+});
+NODEJS
+
+set +e
+REMOTE_CODE=$(node "$_tmp_query" "$PACKAGE_NAME" "$ACCESS_TOKEN")
+_query_exit=$?
+set -e
+rm -f "$_tmp_query"
+
+if (( _query_exit == 3 )); then
+  echo "  ⚠ Play API unreachable — skipping remote versionCode check, proceeding with local ($LOCAL_CODE)" >&2
+  exit 0
+fi
 
 echo "  latest Play versionCode (all tracks): $REMOTE_CODE"
 
@@ -187,7 +236,17 @@ echo "  ⚠ app.json versionCode ($LOCAL_CODE) ≤ Play latest ($REMOTE_CODE) �
 jq ".expo.android.versionCode = $NEXT_CODE" app.json > app.json.tmp && mv app.json.tmp app.json
 echo "  ✓ app.json updated to versionCode $NEXT_CODE"
 
-git add app.json
+# Sync build.gradle to match so both files are committed together.
+GRADLE_BUILD="android/app/build.gradle"
+if [[ -f "$GRADLE_BUILD" ]]; then
+  GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
+  if [[ "$GRADLE_VC" != "$NEXT_CODE" ]]; then
+    sed -i '' "s/versionCode $GRADLE_VC/versionCode $NEXT_CODE/" "$GRADLE_BUILD"
+    echo "  ✓ build.gradle synced to versionCode $NEXT_CODE"
+  fi
+fi
+
+git add app.json "$GRADLE_BUILD"
 git commit -m "chore(android): bump version code to $NEXT_CODE [skip-ci]"
 echo "  ✓ committed bump (push with: git push)"
 # Exit 2 signals to ship-android.sh that a bump commit was made.
