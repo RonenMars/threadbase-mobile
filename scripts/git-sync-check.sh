@@ -53,6 +53,12 @@ if ! git diff --quiet -- app.json 2>/dev/null || ! git diff --cached --quiet -- 
 fi
 
 # 3. Fetch + compare local main against origin/main
+# Only relevant when shipping from main. On a feature branch the stale-main
+# check is misleading — you're intentionally not on main.
+if [[ "$CURRENT_BRANCH" != "main" ]]; then
+  echo "  ✓ shipping from branch $CURRENT_BRANCH — skipping main sync check"
+  exit 0
+fi
 if (( DO_FETCH )); then
   echo "  fetching origin..."
   if ! git fetch origin main --quiet 2>&1; then
