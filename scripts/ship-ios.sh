@@ -19,6 +19,8 @@
 #   --release-date 2026-04-26T08:00:00-07:00 required for SCHEDULED
 #   --skip-preflight                         skip ./scripts/preflight.sh
 #   --skip-prebuild                          skip `npx expo prebuild` even if ios/ missing
+#   --skip-git-sync                          skip git sync check (used by CI)
+#   --skip-version-check                     skip build number reconciliation (used by CI)
 #   --bundle-id <id>                         override expo.ios.bundleIdentifier
 #
 # Exits non-zero on any failure. Re-running is safe.
@@ -31,17 +33,21 @@ RELEASE_TYPE="MANUAL"
 RELEASE_DATE=""
 SKIP_PREFLIGHT=0
 SKIP_PREBUILD=0
+SKIP_GIT_SYNC=0
+SKIP_VERSION_CHECK=0
 BUNDLE_ID_OVERRIDE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --target)         TARGET="$2"; shift 2 ;;
-    --release-notes)  RELEASE_NOTES="$2"; shift 2 ;;
-    --release-type)   RELEASE_TYPE="$2"; shift 2 ;;
-    --release-date)   RELEASE_DATE="$2"; shift 2 ;;
-    --skip-preflight) SKIP_PREFLIGHT=1; shift ;;
-    --skip-prebuild)  SKIP_PREBUILD=1; shift ;;
-    --bundle-id)      BUNDLE_ID_OVERRIDE="$2"; shift 2 ;;
+    --target)              TARGET="$2"; shift 2 ;;
+    --release-notes)       RELEASE_NOTES="$2"; shift 2 ;;
+    --release-type)        RELEASE_TYPE="$2"; shift 2 ;;
+    --release-date)        RELEASE_DATE="$2"; shift 2 ;;
+    --skip-preflight)      SKIP_PREFLIGHT=1; shift ;;
+    --skip-prebuild)       SKIP_PREBUILD=1; shift ;;
+    --skip-git-sync)       SKIP_GIT_SYNC=1; shift ;;
+    --skip-version-check)  SKIP_VERSION_CHECK=1; shift ;;
+    --bundle-id)           BUNDLE_ID_OVERRIDE="$2"; shift 2 ;;
     -h|--help) sed -n '1,30p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
@@ -99,12 +105,23 @@ fi
 # 5. Git sync — refuse to ship if local main is behind origin/main, or if
 # app.json has uncommitted changes. Catches the multi-machine "someone else
 # already shipped a higher build number on another laptop" footgun.
-echo "▸ [5/$TOTAL_STEPS] Git sync check"
-"$SCRIPT_DIR/git-sync-check.sh"
+# Skipped in CI: the workflow checks out main fresh and owns the bump commit.
+if (( SKIP_GIT_SYNC == 0 )); then
+  echo "▸ [5/$TOTAL_STEPS] Git sync check"
+  "$SCRIPT_DIR/git-sync-check.sh"
+else
+  echo "▸ [5/$TOTAL_STEPS] Git sync check — skipped (CI)"
+fi
 
 # 6. Verify (and auto-bump) build number against TestFlight
-echo "▸ [6/$TOTAL_STEPS] Check build number against TestFlight"
-"$SCRIPT_DIR/check-build-number.sh"
+# Skipped in CI: the workflow runs check-build-number.sh as a separate step
+# before invoking ship-ios.sh, commits the bump to main, and pushes.
+if (( SKIP_VERSION_CHECK == 0 )); then
+  echo "▸ [6/$TOTAL_STEPS] Check build number against TestFlight"
+  "$SCRIPT_DIR/check-build-number.sh"
+else
+  echo "▸ [6/$TOTAL_STEPS] Build number check — skipped (CI)"
+fi
 
 # 7. Archive + upload
 echo "▸ [7/$TOTAL_STEPS] Archive and upload"

@@ -28,6 +28,8 @@
 #   --skip-preflight                        skip ./scripts/preflight.sh
 #   --skip-prebuild                         skip `npx expo prebuild` even if android/ missing
 #   --skip-bundle                           skip Gradle build; reuse existing AAB at default path
+#   --skip-git-sync                         skip git sync check (used by CI)
+#   --skip-version-check                    skip versionCode reconciliation (used by CI)
 #   --package <id>                          override expo.android.package
 #
 # Exits non-zero on any failure. Re-running is safe.
@@ -39,16 +41,20 @@ PROMOTE_VERSION=""
 SKIP_PREFLIGHT=0
 SKIP_PREBUILD=0
 SKIP_BUNDLE=0
+SKIP_GIT_SYNC=0
+SKIP_VERSION_CHECK=0
 PACKAGE_OVERRIDE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --track)          TRACK="$2"; shift 2 ;;
-    --promote)        PROMOTE_VERSION="$2"; shift 2 ;;
-    --skip-preflight) SKIP_PREFLIGHT=1; shift ;;
-    --skip-prebuild)  SKIP_PREBUILD=1; shift ;;
-    --skip-bundle)    SKIP_BUNDLE=1; shift ;;
-    --package)        PACKAGE_OVERRIDE="$2"; shift 2 ;;
+    --track)               TRACK="$2"; shift 2 ;;
+    --promote)             PROMOTE_VERSION="$2"; shift 2 ;;
+    --skip-preflight)      SKIP_PREFLIGHT=1; shift ;;
+    --skip-prebuild)       SKIP_PREBUILD=1; shift ;;
+    --skip-bundle)         SKIP_BUNDLE=1; shift ;;
+    --skip-git-sync)       SKIP_GIT_SYNC=1; shift ;;
+    --skip-version-check)  SKIP_VERSION_CHECK=1; shift ;;
+    --package)             PACKAGE_OVERRIDE="$2"; shift 2 ;;
     -h|--help) sed -n '1,30p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
@@ -159,22 +165,33 @@ fi
 
 # 6. Git sync — refuse to ship if local main is behind origin/main, or if
 # app.json has uncommitted changes.
-echo "▸ [6/$TOTAL_STEPS] Git sync check"
-"$SCRIPT_DIR/git-sync-check.sh"
+# Skipped in CI: the workflow checks out main fresh and owns the bump commit.
+if (( SKIP_GIT_SYNC == 0 )); then
+  echo "▸ [6/$TOTAL_STEPS] Git sync check"
+  "$SCRIPT_DIR/git-sync-check.sh"
+else
+  echo "▸ [6/$TOTAL_STEPS] Git sync check — skipped (CI)"
+fi
 
 # 7. Verify (and auto-bump) versionCode against Play.
 # Exit 2 from check-version-code.sh means a bump commit was made.
 # We install a rollback trap so that if step 8 fails, the bump is reverted.
-echo "▸ [7/$TOTAL_STEPS] Check versionCode against Play"
+# Skipped in CI: the workflow runs check-version-code.sh as a separate step,
+# commits the bump to main, and pushes before invoking this script.
 VERSION_BUMPED=0
-"$SCRIPT_DIR/check-version-code.sh" && true || {
-  code=$?
-  if (( code == 2 )); then
-    VERSION_BUMPED=1
-  else
-    exit $code
-  fi
-}
+if (( SKIP_VERSION_CHECK == 0 )); then
+  echo "▸ [7/$TOTAL_STEPS] Check versionCode against Play"
+  "$SCRIPT_DIR/check-version-code.sh" && true || {
+    code=$?
+    if (( code == 2 )); then
+      VERSION_BUMPED=1
+    else
+      exit $code
+    fi
+  }
+else
+  echo "▸ [7/$TOTAL_STEPS] versionCode check — skipped (CI)"
+fi
 
 _rollback_bump() {
   if (( VERSION_BUMPED )); then

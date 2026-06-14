@@ -41,8 +41,23 @@ jobs:
     if: ${{ inputs.platform == 'ios' || inputs.platform == 'all' }}
     runs-on: macos-15
     timeout-minutes: 90
+    permissions:
+      contents: write
     steps:
+      - name: Warn if triggered from a non-main branch
+        if: ${{ github.ref != 'refs/heads/main' }}
+        env:
+          TRIGGERED_REF: ${{ github.ref }}
+        run: |
+          echo "::warning::This workflow was triggered from '${TRIGGERED_REF}', not main." \
+               "The build always uses main (ref: main is hardcoded)." \
+               "If you intended to ship code from this branch, merge it to main first."
+
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          # persist-credentials lets us push the bump commit back to main
+          persist-credentials: true
 
       - uses: actions/setup-node@v4
         with:
@@ -51,13 +66,45 @@ jobs:
 
       - uses: 1password/install-cli-action@v1
 
+      - name: Bootstrap iOS signing
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          source .env.signing 2>/dev/null || true
+          if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
+            echo "Signing already bootstrapped — skipping"
+          else
+            ./scripts/bootstrap-ios-signing.sh
+          fi
+
+      - name: Bump build number → commit → push to main
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          source .env.signing
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # check-build-number.sh auto-bumps app.json and commits if local ≤ remote.
+          # On CI the bump commit lands directly on main (no PR needed).
+          ./scripts/check-build-number.sh
+          # Push only if the script made a new commit (idempotent if already ahead).
+          if git diff --quiet origin/main HEAD; then
+            echo "No bump commit — nothing to push"
+          else
+            git push origin main
+          fi
+
       - name: Ship iOS
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           IOS_TARGET: ${{ inputs.target }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
-          ARGS=(--target "$IOS_TARGET")
+          ARGS=(
+            --target "$IOS_TARGET"
+            --skip-git-sync
+            --skip-version-check
+          )
           if [[ -n "$RELEASE_NOTES" ]]; then
             ARGS+=(--release-notes "$RELEASE_NOTES")
           fi
@@ -68,8 +115,22 @@ jobs:
     if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
     steps:
+      - name: Warn if triggered from a non-main branch
+        if: ${{ github.ref != 'refs/heads/main' }}
+        env:
+          TRIGGERED_REF: ${{ github.ref }}
+        run: |
+          echo "::warning::This workflow was triggered from '${TRIGGERED_REF}', not main." \
+               "The build always uses main (ref: main is hardcoded)." \
+               "If you intended to ship code from this branch, merge it to main first."
+
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
 
       - uses: actions/setup-node@v4
         with:
@@ -85,8 +146,33 @@ jobs:
 
       - uses: 1password/install-cli-action@v1
 
+      - name: Fetch Play credentials
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: ./scripts/fetch-play-credentials.sh
+
+      - name: Bump versionCode → commit → push to main
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # check-version-code.sh auto-bumps app.json and commits (exit 2) if local ≤ remote.
+          # Exit 0 = already ahead, exit 2 = bumped, anything else = error.
+          ./scripts/check-version-code.sh && true || {
+            code=$?
+            [[ $code -eq 2 ]] || exit $code
+          }
+          if git diff --quiet origin/main HEAD; then
+            echo "No bump commit — nothing to push"
+          else
+            git push origin main
+          fi
+
       - name: Ship Android
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           ANDROID_TRACK: ${{ inputs.android_track }}
-        run: ./scripts/ship-android.sh --track "$ANDROID_TRACK"
+        run: |
+          ./scripts/ship-android.sh \
+            --track "$ANDROID_TRACK" \
+            --skip-git-sync \
+            --skip-version-check
