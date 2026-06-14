@@ -1,0 +1,59 @@
+# Troubleshooting Guide
+
+Collected from fixed bugs, incidents, and session notes. Each section describes a symptom, its root cause, and the fix. Use this before digging into source.
+
+---
+
+## Terminal output / session display
+
+### SSH passphrase prompt appears mid-conversation in the terminal view
+
+**When:** A Claude Code session is started (via `POST /api/sessions/start`) on a Mac where the SSH agent is not running or the key is not loaded. The terminal output in the mobile app shows `Enter passphrase for key '/Users/<you>/.ssh/id_ed25519':` interspersed between conversation lines — visible as raw text in the streaming terminal view.
+
+**What it looks like (mobile):** The session shows `Running · X prompts` but the terminal output contains a passphrase prompt mid-stream, e.g.:
+
+```
+Enter passphrase for key '/Users/ronenmars/.ssh/id_ed25519':
+  Sonnet 4.6 | ~/Desktop/dev/ai-tools/tb-mobile  fix/ship-branch-sync-check ...
+```
+
+**Cause:** The SSH agent (`ssh-agent`) is not running or `SSH_AUTH_SOCK` is not set in the environment inherited by the PTY. When Claude Code (or git inside it) tries to authenticate over SSH, it falls through to directly prompting for the key passphrase. This prompt goes to stdout/stderr of the PTY, which tb-streamer captures and streams to the mobile client verbatim — there is no filtering for interactive passphrase prompts.
+
+The underlying cause is usually one of:
+- `~/.ssh/config` has `IdentityAgent` pointing to a 1Password socket (`~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`) that no longer exists (e.g. 1Password SSH agent was disabled or uninstalled).
+- The native macOS SSH agent is running (`com.openssh.ssh-agent` via launchd) but `SSH_AUTH_SOCK` is not exported in the shell, so `ssh-add` and PTY-spawned processes can't find it.
+- The key exists but was never added to the keychain — so the agent restarts empty on every reboot.
+
+**Fix (one-time, persists across restarts):**
+
+1. Update `~/.ssh/config` to use the native macOS keychain instead of 1Password:
+
+```
+Host *
+  UseKeychain yes
+  AddKeysToAgent yes
+  IdentityFile ~/.ssh/id_ed25519
+```
+
+2. Start the agent and store the passphrase in Keychain:
+
+```sh
+eval "$(ssh-agent -s)"
+ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+```
+
+Enter the passphrase once — it is stored in macOS Keychain and never prompted again.
+
+3. To ensure the agent starts automatically in every new shell, add to `~/.zshrc` (or the appropriate shell config):
+
+```sh
+if ! ssh-add -l &>/dev/null; then
+  eval "$(ssh-agent -s)" &>/dev/null
+fi
+```
+
+**Why this appears in the mobile app:** tb-streamer streams raw PTY output to the mobile client without filtering for interactive prompts. The passphrase request is just another line of terminal output. Once the SSH setup is fixed, it won't appear again — there is no mobile-side workaround.
+
+**Related fix in tb-streamer:** see "SSH passphrase prompt leaks into streamed terminal output" in the tb-streamer troubleshooting guide.
+
+---
