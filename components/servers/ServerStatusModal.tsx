@@ -15,6 +15,10 @@ interface Props {
 
 type WSStatus = 'connecting' | 'connected' | 'disconnected'
 
+function safeHostname(url: string): string {
+  try { return new URL(url).hostname } catch { return url.replace(/^[a-z]+:\/\//i, '').split('/')[0] || url }
+}
+
 function useServerStatuses(serverIds: string[]) {
   const [statuses, setStatuses] = useState<Record<string, WSStatus>>(() => {
     const init: Record<string, WSStatus> = {}
@@ -140,7 +144,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
               return (
                 <StatusRow
                   key={id}
-                  label={server.label || new URL(server.url).hostname}
+                  label={server.label || safeHostname(server.url)}
                   url={server.url}
                   status={statuses[id] ?? 'disconnected'}
                   fetchStatus={fetchStatuses[id]}

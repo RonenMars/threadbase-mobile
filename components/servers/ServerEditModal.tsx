@@ -12,7 +12,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native'
-import { X, Eye, EyeSlash, QrCode, XCircle } from 'phosphor-react-native'
+import * as Clipboard from 'expo-clipboard'
+import { X, Eye, EyeSlash, QrCode, XCircle, CaretDown } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { useServersStore } from '@/stores/servers'
@@ -27,6 +28,12 @@ interface Props {
   onClose: () => void
 }
 
+function splitUrl(full: string): { protocol: 'http' | 'https'; host: string } {
+  if (full.startsWith('https://')) return { protocol: 'https', host: full.slice(8).replace(/\/+$/, '') }
+  if (full.startsWith('http://')) return { protocol: 'http', host: full.slice(7).replace(/\/+$/, '') }
+  return { protocol: 'http', host: full.replace(/\/+$/, '') }
+}
+
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const { t } = useTranslation(['common', 'servers'])
   const { servers, addServer, editServer } = useServersStore()
@@ -34,7 +41,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const isEditMode = serverId !== null
 
   const [label, setLabel] = useState('')
-  const [url, setUrl] = useState('')
+  const [protocol, setProtocol] = useState<'http' | 'https'>('http')
+  const [urlHost, setUrlHost] = useState('')
+  const [showProtocolPicker, setShowProtocolPicker] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -47,22 +56,42 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
       queueMicrotask(() => {
         if (server) {
           setLabel(server.label ?? '')
-          setUrl(server.url)
+          const { protocol: p, host } = splitUrl(server.url)
+          setProtocol(p)
+          setUrlHost(host)
           setApiKey(server.apiKey)
         } else {
           setLabel('')
-          setUrl('')
+          setProtocol('http')
+          setUrlHost('')
           setApiKey('')
         }
         setError(null)
         setIsDirty(false)
         setShowApiKey(false)
+        setShowProtocolPicker(false)
       })
     }
   }, [visible, serverId, server])
 
   function markDirty() {
     if (!isDirty) setIsDirty(true)
+  }
+
+  async function pasteUrl() {
+    const text = await Clipboard.getStringAsync()
+    if (!text) return
+    const { protocol: p, host } = splitUrl(text.trim())
+    setProtocol(p)
+    setUrlHost(host)
+    markDirty()
+  }
+
+  async function pasteApiKey() {
+    const text = await Clipboard.getStringAsync()
+    if (!text) return
+    setApiKey(text.trim())
+    markDirty()
   }
 
   function handleDismiss() {
@@ -77,7 +106,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   }
 
   async function handleSave() {
-    const trimmedUrl = url.trim().replace(/\/+$/, '')
+    const trimmedHost = urlHost.trim().replace(/\/+$/, '')
+    const trimmedUrl = trimmedHost ? `${protocol}://${trimmedHost}` : ''
     const trimmedKey = apiKey.trim()
 
     if (!trimmedUrl) {
@@ -121,7 +151,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
   function handleScanSuccess(result: ExchangeResult) {
     setScannerOpen(false)
-    setUrl(result.url)
+    const { protocol: p, host } = splitUrl(result.url)
+    setProtocol(p)
+    setUrlHost(host)
     setApiKey(result.apiKey)
     if (result.machineName && !label) setLabel(result.machineName)
     markDirty()
@@ -171,20 +203,56 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
-              <TextInput
-                style={styles.input}
-                value={url}
-                onChangeText={(v) => { setUrl(v); markDirty() }}
-                placeholder="http://192.168.1.10:8766"
-                placeholderTextColor={dark.text.secondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                returnKeyType="next"
-              />
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
+                <TouchableOpacity onPress={pasteUrl} hitSlop={8}>
+                  <Text style={styles.pasteBtn}>{t('button.paste')}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.urlRow}>
+                <View>
+                  <TouchableOpacity
+                    style={styles.protocolBtn}
+                    onPress={() => { setShowProtocolPicker((v) => !v); markDirty() }}
+                  >
+                    <Text style={styles.protocolText}>{protocol}://</Text>
+                    <CaretDown size={10} color={dark.text.secondary} weight="bold" />
+                  </TouchableOpacity>
+                  {showProtocolPicker && (
+                    <View style={styles.protocolOptions}>
+                      {(['http', 'https'] as const).map((opt) => (
+                        <TouchableOpacity
+                          key={opt}
+                          style={styles.protocolOption}
+                          onPress={() => { setProtocol(opt); setShowProtocolPicker(false); markDirty() }}
+                        >
+                          <Text style={[styles.protocolOptionText, protocol === opt && styles.protocolOptionSelected]}>
+                            {opt}://
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <TextInput
+                  style={[styles.input, styles.urlInput]}
+                  value={urlHost}
+                  onChangeText={(v) => { setUrlHost(v); markDirty() }}
+                  placeholder="192.168.1.10:8766"
+                  placeholderTextColor={dark.text.secondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  returnKeyType="next"
+                />
+              </View>
 
-              <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
+                <TouchableOpacity onPress={pasteApiKey} hitSlop={8}>
+                  <Text style={styles.pasteBtn}>{t('button.paste')}</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.apiKeyRow}>
                 <TextInput
                   style={[styles.input, styles.apiKeyInput]}
@@ -217,9 +285,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               ) : null}
 
               <TouchableOpacity
-                style={[styles.saveBtn, (!url.trim() || !apiKey.trim()) && styles.saveBtnDisabled]}
+                style={[styles.saveBtn, (!urlHost.trim() || !apiKey.trim()) && styles.saveBtnDisabled]}
                 onPress={handleSave}
-                disabled={!url.trim() || !apiKey.trim()}
+                disabled={!urlHost.trim() || !apiKey.trim()}
               >
                 <Text style={styles.saveBtnText}>{t('button.save')}</Text>
               </TouchableOpacity>
@@ -299,6 +367,54 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minHeight: 44,
   },
+  urlRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    zIndex: 1,
+  },
+  urlInput: {
+    flex: 1,
+  },
+  protocolBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: dark.bg.primary,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    paddingHorizontal: spacing.sm,
+    minHeight: 44,
+  },
+  protocolText: {
+    color: dark.text.primary,
+    fontSize: font.base,
+  },
+  protocolOptions: {
+    position: 'absolute',
+    top: 46,
+    left: 0,
+    right: 0,
+    backgroundColor: dark.bg.card,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: dark.border,
+    zIndex: 10,
+    overflow: 'hidden',
+  },
+  protocolOption: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  protocolOptionText: {
+    color: dark.text.primary,
+    fontSize: font.base,
+  },
+  protocolOptionSelected: {
+    color: dark.text.accent,
+    fontWeight: '600',
+  },
   apiKeyRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -311,6 +427,11 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
     minHeight: 44,
     justifyContent: 'center',
+  },
+  pasteBtn: {
+    color: dark.text.accent,
+    fontSize: font.sm,
+    fontWeight: '500',
   },
   errorBox: {
     flexDirection: 'row',
