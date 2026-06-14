@@ -44,6 +44,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Warn if triggered from a non-main branch
+        if: ${{ github.ref != 'refs/heads/main' }}
+        env:
+          TRIGGERED_REF: ${{ github.ref }}
+        run: |
+          echo "::warning::This workflow was triggered from '${TRIGGERED_REF}', not main." \
+               "The build always uses main (ref: main is hardcoded)." \
+               "If you intended to ship code from this branch, merge it to main first."
+
       - uses: actions/checkout@v4
         with:
           ref: main
@@ -109,6 +118,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Warn if triggered from a non-main branch
+        if: ${{ github.ref != 'refs/heads/main' }}
+        env:
+          TRIGGERED_REF: ${{ github.ref }}
+        run: |
+          echo "::warning::This workflow was triggered from '${TRIGGERED_REF}', not main." \
+               "The build always uses main (ref: main is hardcoded)." \
+               "If you intended to ship code from this branch, merge it to main first."
+
       - uses: actions/checkout@v4
         with:
           ref: main
