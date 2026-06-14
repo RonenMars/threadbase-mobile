@@ -6,11 +6,27 @@
     "appearance": "מראה",
     "servers": "שרתים",
     "notifications": "התראות",
+    "permissions": "הרשאות",
     "about": "אודות",
     "displayedServers": "שרתים מוצגים",
     "history": "היסטוריה",
     "help": "עזרה",
     "language": "שפה"
+  },
+  "permissions": {
+    "camera": "מצלמה",
+    "cameraDesc": "סריקת קוד QR לחיבור עם שרתים",
+    "microphone": "מיקרופון",
+    "microphoneDesc": "הכתבה קולית להנחיות",
+    "photos": "תמונות",
+    "photosDesc": "צירוף תמונות מהגלריה",
+    "notifications": "התראות",
+    "notificationsDesc": "התראות על אירועי סשן",
+    "statusGranted": "מאושר",
+    "statusDenied": "נדחה",
+    "statusUndetermined": "לא נשאל",
+    "actionAllow": "אישור",
+    "actionManage": "ניהול"
   },
   "appearance": {
     "theme": "ערכת נושא",

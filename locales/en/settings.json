@@ -6,11 +6,27 @@
     "appearance": "Appearance",
     "servers": "Servers",
     "notifications": "Notifications",
+    "permissions": "Permissions",
     "about": "About",
     "displayedServers": "Displayed Servers",
     "history": "History",
     "help": "Help",
     "language": "Language"
+  },
+  "permissions": {
+    "camera": "Camera",
+    "cameraDesc": "QR code scanning to pair with servers",
+    "microphone": "Microphone",
+    "microphoneDesc": "Voice dictation for prompts",
+    "photos": "Photos",
+    "photosDesc": "Attach images from your library",
+    "notifications": "Notifications",
+    "notificationsDesc": "Alerts for session events",
+    "statusGranted": "Allowed",
+    "statusDenied": "Denied",
+    "statusUndetermined": "Not asked",
+    "actionAllow": "Allow",
+    "actionManage": "Manage"
   },
   "appearance": {
     "theme": "Theme",

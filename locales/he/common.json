@@ -13,7 +13,8 @@
     "create": "צור",
     "export": "ייצוא",
     "copy": "העתק",
-    "paste": "הדבק"
+    "paste": "הדבק",
+    "openSettings": "פתח הגדרות"
   },
   "error": {
     "generic": "משהו השתבש",

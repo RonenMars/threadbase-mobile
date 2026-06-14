@@ -13,7 +13,8 @@
     "create": "إنشاء",
     "export": "تصدير",
     "copy": "نسخ",
-    "paste": "لصق"
+    "paste": "لصق",
+    "openSettings": "فتح الإعدادات"
   },
   "error": {
     "generic": "حدث خطأ ما",
