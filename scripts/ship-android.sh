@@ -64,8 +64,13 @@ TOTAL_STEPS=8
 # ── Promote-only fast path ────────────────────────────────────────────────────
 # --promote <versionCode> skips the entire build pipeline and just moves an
 # already-uploaded versionCode to a different track via the Play API.
-if [[ -n "$PROMOTE_VERSION" ]]; then
-  echo "▸ [1/2] Verify 1Password + fetch Google Play credentials"
+_PLAY_CREDS_CACHE="$HOME/.config/threadbase/play-console-sa.json"
+
+_fetch_play_creds() {
+  if [[ -f "$_PLAY_CREDS_CACHE" ]]; then
+    echo "$_PLAY_CREDS_CACHE"
+    return 0
+  fi
   if ! command -v op >/dev/null 2>&1; then
     echo "ERROR: 1Password CLI (op) not found — install with: brew install --cask 1password-cli" >&2
     exit 1
@@ -74,7 +79,17 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
     echo "ERROR: 1Password not signed in — run: eval \"\$(op signin)\" then retry" >&2
     exit 1
   fi
-  CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
+  "$SCRIPT_DIR/fetch-play-credentials.sh"
+}
+
+if [[ -n "$PROMOTE_VERSION" ]]; then
+  if [[ -f "$_PLAY_CREDS_CACHE" ]]; then
+    echo "▸ [1/2] Google Play credentials already cached — skipping"
+    CREDS_PATH="$_PLAY_CREDS_CACHE"
+  else
+    echo "▸ [1/2] Verify 1Password + fetch Google Play credentials"
+    CREDS_PATH=$(_fetch_play_creds)
+  fi
 
   PACKAGE="${PACKAGE_OVERRIDE:-$(jq -r '.expo.android.package' app.json)}"
   [[ -n "$PACKAGE" && "$PACKAGE" != "null" ]] || { echo "Could not resolve android package name" >&2; exit 1; }
@@ -86,20 +101,17 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
   exit 0
 fi
 
-# 1. Verify 1Password is signed in and fetch Google Play credentials.
-# Do this first so we fail fast before any slow steps (npm install, Gradle).
-# Always fetch from 1Password — never trust ambient GOOGLE_APPLICATION_CREDENTIALS
-# (it may point at a gcloud ADC credential instead of the Play service account).
-echo "▸ [1/$TOTAL_STEPS] Verify 1Password + fetch Google Play credentials"
-if ! command -v op >/dev/null 2>&1; then
-  echo "ERROR: 1Password CLI (op) not found — install with: brew install --cask 1password-cli" >&2
-  exit 1
+# 1. Fetch Google Play credentials (from cache or 1Password).
+# Cache: ~/.config/threadbase/play-console-sa.json — skipped if already present,
+# matching the iOS/Android keystore bootstrap behavior. Re-run fetch-play-credentials.sh
+# manually to rotate the key.
+if [[ -f "$_PLAY_CREDS_CACHE" ]]; then
+  echo "▸ [1/$TOTAL_STEPS] Google Play credentials already cached — skipping"
+  CREDS_PATH="$_PLAY_CREDS_CACHE"
+else
+  echo "▸ [1/$TOTAL_STEPS] Verify 1Password + fetch Google Play credentials"
+  CREDS_PATH=$(_fetch_play_creds)
 fi
-if ! op whoami >/dev/null 2>&1; then
-  echo "ERROR: 1Password not signed in — run: eval \"\$(op signin)\" then retry" >&2
-  exit 1
-fi
-CREDS_PATH=$("$SCRIPT_DIR/fetch-play-credentials.sh")
 export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_PATH"
 
 # 2. Preflight
