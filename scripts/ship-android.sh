@@ -30,6 +30,7 @@
 #   --skip-bundle                           skip Gradle build; reuse existing AAB at default path
 #   --skip-git-sync                         skip git sync check (used by CI)
 #   --skip-version-check                    skip versionCode reconciliation (used by CI)
+#   --no-bump                               skip both git sync and version bump (ship from branch as-is)
 #   --package <id>                          override expo.android.package
 #
 # Exits non-zero on any failure. Re-running is safe.
@@ -54,6 +55,7 @@ while [[ $# -gt 0 ]]; do
     --skip-bundle)         SKIP_BUNDLE=1; shift ;;
     --skip-git-sync)       SKIP_GIT_SYNC=1; shift ;;
     --skip-version-check)  SKIP_VERSION_CHECK=1; shift ;;
+    --no-bump)             SKIP_GIT_SYNC=1; SKIP_VERSION_CHECK=1; shift ;;
     --package)             PACKAGE_OVERRIDE="$2"; shift 2 ;;
     -h|--help) sed -n '1,30p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
