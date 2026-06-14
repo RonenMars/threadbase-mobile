@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -9,19 +10,19 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
   },
   searchInput: {
     flex: 1,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -42,7 +43,7 @@ export const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   sectionHeaderText: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -52,15 +53,16 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
   },
   resultTitle: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
   },
   resultSubtitle: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     marginTop: 2,
   },
-})
+  })
+}

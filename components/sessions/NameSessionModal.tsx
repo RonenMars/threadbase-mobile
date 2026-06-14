@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   visible: boolean
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function NameSessionModal({ visible, mode, currentName, onSave, onCancel }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [name, setName] = useState('')
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
           <TextInput
             style={styles.input}
             placeholder="e.g. Fix auth bug"
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             value={name}
             onChangeText={setName}
             autoFocus
@@ -78,7 +81,8 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -88,31 +92,31 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
     padding: spacing.xl,
     gap: spacing.md,
   },
   title: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.lg,
     fontWeight: '600',
   },
   hint: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     fontStyle: 'italic',
   },
   input: {
-    backgroundColor: dark.bg.secondary,
+    backgroundColor: theme.bg.secondary,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
   },
   buttonRow: {
@@ -125,11 +129,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
     alignItems: 'center',
   },
   cancelLabel: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.base,
     fontWeight: '500',
   },
@@ -137,12 +141,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: dark.text.accent,
+    backgroundColor: theme.text.accent,
     alignItems: 'center',
   },
   saveLabel: {
-    color: dark.bg.primary,
+    color: theme.bg.primary,
     fontSize: font.base,
     fontWeight: '600',
   },
-})
+  })
+}

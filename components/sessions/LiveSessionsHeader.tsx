@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   count: number
@@ -19,6 +20,8 @@ interface Props {
  * (Inter Semibold 11, UPPER, +0.08em tracking).
  */
 export function LiveSessionsHeader({ count, hasLive }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation('sessions')
   // Inline conditional rather than a dynamic key so the i18n typegen can
   // narrow each call site to a literal key.
@@ -28,7 +31,7 @@ export function LiveSessionsHeader({ count, hasLive }: Props) {
 
   // Amber = brand "live / now / running"; blue = brand "thread / archive".
   // We tint the eyebrow itself, not the surface, so the chrome stays calm.
-  const tint = hasLive ? dark.status.waiting : dark.text.accent
+  const tint = hasLive ? theme.status.waiting : theme.text.accent
 
   return (
     <View style={styles.container} accessibilityRole="header" accessibilityLabel={label}>
@@ -38,7 +41,8 @@ export function LiveSessionsHeader({ count, hasLive }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(_theme: Theme) {
+  return StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -56,4 +60,5 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
   },
-})
+  })
+}

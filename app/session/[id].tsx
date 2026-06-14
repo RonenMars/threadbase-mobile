@@ -46,7 +46,8 @@ import {
 } from '@/services/uploads'
 import { useServersStore } from '@/stores/servers'
 import { useDraftsStore } from '@/stores/drafts'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
@@ -87,6 +88,8 @@ const PENDING_PHRASES = [
 ]
 
 function WakingUpOverlay({ phrase }: { phrase: string }) {
+  const theme = useTheme()
+  const wakingStyles = makeWakingStyles(theme)
   const bounce = useSharedValue(0)
   const rotate = useSharedValue(0)
   const pulse = useSharedValue(1)
@@ -166,44 +169,48 @@ function WakingUpOverlay({ phrase }: { phrase: string }) {
   )
 }
 
-const wakingStyles = StyleSheet.create({
-  overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(10, 10, 14, 0.85)',
-    zIndex: 10,
-  },
-  card: {
-    alignItems: 'center',
-    gap: 16,
-    paddingHorizontal: 32,
-  },
-  emoji: {
-    fontSize: 72,
-  },
-  dots: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: dark.text.accent,
-  },
-  phrase: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 280,
-  },
-})
+function makeWakingStyles(theme: Theme) {
+  return StyleSheet.create({
+    overlay: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(10, 10, 14, 0.85)',
+      zIndex: 10,
+    },
+    card: {
+      alignItems: 'center',
+      gap: 16,
+      paddingHorizontal: 32,
+    },
+    emoji: {
+      fontSize: 72,
+    },
+    dots: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.text.accent,
+    },
+    phrase: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+      textAlign: 'center',
+      lineHeight: 24,
+      maxWidth: 280,
+    },
+  })
+}
 
 function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendingId: string }) {
   const router = useRouter()
   const { t } = useTranslation(['terminal', 'common'])
+  const theme = useTheme()
+  const pendingStyles = makePendingStyles(theme)
   const [phraseIdx, setPhraseIdx] = useState(0)
 
   useEffect(() => {
@@ -241,7 +248,7 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
   return (
     <SafeAreaView style={pendingStyles.container} edges={['bottom']}>
       <View style={pendingStyles.content}>
-        <ActivityIndicator size="large" color={dark.text.accent} style={pendingStyles.spinner} />
+        <ActivityIndicator size="large" color={theme.text.accent} style={pendingStyles.spinner} />
         <Text style={pendingStyles.title}>{t('terminal:status.starting')}</Text>
         <Text style={pendingStyles.phrase}>{PENDING_PHRASES[phraseIdx]}</Text>
       </View>
@@ -254,22 +261,24 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
   )
 }
 
-const pendingStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: dark.bg.primary },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md },
-  spinner: { marginBottom: spacing.md },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  phrase: { color: dark.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
-  footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
-  cancelButton: {
-    borderWidth: 1,
-    borderColor: dark.text.danger,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  cancelText: { color: dark.text.danger, fontSize: font.base, fontWeight: '500' },
-})
+function makePendingStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg.primary },
+    content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md },
+    spinner: { marginBottom: spacing.md },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    phrase: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
+    footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+    cancelButton: {
+      borderWidth: 1,
+      borderColor: theme.text.danger,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '500' },
+  })
+}
 
 function DiscoveredSessionScreen({
   serverId,
@@ -280,6 +289,8 @@ function DiscoveredSessionScreen({
 }) {
   const { t } = useTranslation(['terminal', 'common'])
   const router = useRouter()
+  const theme = useTheme()
+  const discStyles = makeDiscStyles(theme)
   const { adoptSession } = useSessionActions(serverId, sessionId)
 
   const handleRestart = () => {
@@ -329,66 +340,68 @@ function DiscoveredSessionScreen({
   )
 }
 
-const discStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: dark.bg.primary },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  warning: {
-    backgroundColor: dark.bg.card,
-    borderWidth: 1,
-    borderColor: dark.text.warning,
-    borderRadius: 10,
-    padding: spacing.md,
-    gap: spacing.sm,
-    width: '100%',
-  },
-  warningTitle: {
-    color: dark.text.warning,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  warningBody: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    lineHeight: 20,
-  },
-  buttons: {
-    width: '100%',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  btn: {
-    borderRadius: 10,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  restartBtn: {
-    backgroundColor: dark.text.accent,
-  },
-  backBtn: {
-    backgroundColor: dark.bg.card,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  btnDisabled: { opacity: 0.5 },
-  restartBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: font.base,
-  },
-  backBtnText: {
-    color: dark.text.primary,
-    fontWeight: '600',
-    fontSize: font.base,
-  },
-})
+function makeDiscStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg.primary },
+    content: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.lg,
+      gap: spacing.lg,
+    },
+    warning: {
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderColor: theme.text.warning,
+      borderRadius: 10,
+      padding: spacing.md,
+      gap: spacing.sm,
+      width: '100%',
+    },
+    warningTitle: {
+      color: theme.text.warning,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    warningBody: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      lineHeight: 20,
+    },
+    buttons: {
+      width: '100%',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    btn: {
+      borderRadius: 10,
+      minHeight: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    restartBtn: {
+      backgroundColor: theme.text.accent,
+    },
+    backBtn: {
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    btnDisabled: { opacity: 0.5 },
+    restartBtnText: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: font.base,
+    },
+    backBtnText: {
+      color: theme.text.primary,
+      fontWeight: '600',
+      fontSize: font.base,
+    },
+  })
+}
 
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -400,6 +413,8 @@ function formatElapsed(ms: number): string {
 
 export default function SessionDetailScreen() {
   const { t } = useTranslation(['terminal', 'common'])
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -709,7 +724,7 @@ export default function SessionDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader />
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator color={dark.text.secondary} />
+          <ActivityIndicator color={theme.text.secondary} />
         </View>
         {isDetailSlow ? <SessionDetailSlowBanner onAbort={() => router.back()} /> : null}
         {infoModal}
@@ -743,7 +758,7 @@ export default function SessionDetailScreen() {
       accessibilityLabel="Session info"
       style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
     >
-      <InfoIcon size={22} color={dark.text.secondary} />
+      <InfoIcon size={22} color={theme.text.secondary} />
     </Pressable>
   )
 
@@ -754,7 +769,7 @@ export default function SessionDetailScreen() {
       accessibilityLabel="Rename session"
       style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
     >
-      <PencilSimple size={18} color={dark.text.secondary} />
+      <PencilSimple size={18} color={theme.text.secondary} />
     </Pressable>
   )
 
@@ -780,7 +795,7 @@ export default function SessionDetailScreen() {
         <View style={styles.terminal} testID="terminal-output">
           {session?.failureReason ? (
             <View style={styles.discoveredInfo}>
-              <Text style={[styles.discoveredTitle, { color: dark.text.danger }]}>
+              <Text style={[styles.discoveredTitle, { color: theme.text.danger }]}>
                 {t('session.failedToStart')}
               </Text>
               <Text style={styles.discoveredText}>{session.failureReason}</Text>
@@ -828,7 +843,7 @@ export default function SessionDetailScreen() {
               />
               {isLoadingHistory ? (
                 <View style={styles.historyLoader}>
-                  <ActivityIndicator color={dark.text.secondary} />
+                  <ActivityIndicator color={theme.text.secondary} />
                 </View>
               ) : null}
               {isWakingUp ? (
@@ -860,7 +875,7 @@ export default function SessionDetailScreen() {
               >
                 {attachments.map((a) => (
                   <View key={a.id} style={styles.chip}>
-                    <PhosphorImage size={14} color={dark.text.primary} />
+                    <PhosphorImage size={14} color={theme.text.primary} />
                     <Text style={styles.chipText} numberOfLines={1}>
                       {a.originalName}
                     </Text>
@@ -869,7 +884,7 @@ export default function SessionDetailScreen() {
                       accessibilityLabel={`Remove ${a.originalName}`}
                       hitSlop={8}
                     >
-                      <X size={14} color={dark.text.secondary} />
+                      <X size={14} color={theme.text.secondary} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -883,9 +898,9 @@ export default function SessionDetailScreen() {
                 accessibilityLabel="Attach photo"
               >
                 {isUploading ? (
-                  <ActivityIndicator size="small" color={dark.text.primary} />
+                  <ActivityIndicator size="small" color={theme.text.primary} />
                 ) : (
-                  <Paperclip size={26} color={dark.text.primary} />
+                  <Paperclip size={26} color={theme.text.primary} />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -897,9 +912,9 @@ export default function SessionDetailScreen() {
                 hitSlop={8}
               >
                 {voice.listening ? (
-                  <MicrophoneSlash size={26} color={dark.status.failed} />
+                  <MicrophoneSlash size={26} color={theme.status.failed} />
                 ) : (
-                  <Microphone size={26} color={dark.text.primary} />
+                  <Microphone size={26} color={theme.text.primary} />
                 )}
               </TouchableOpacity>
               <TextInput
@@ -908,7 +923,7 @@ export default function SessionDetailScreen() {
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
                 placeholder={isWakingUp ? 'Starting up…' : 'Send input to session…'}
-                placeholderTextColor={dark.text.secondary}
+                placeholderTextColor={theme.text.secondary}
                 multiline
                 returnKeyType="done"
                 blurOnSubmit
@@ -989,162 +1004,164 @@ export default function SessionDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: dark.bg.primary },
-  flex: { flex: 1 },
-  statusBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: dark.bg.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: dark.border,
-  },
-  elapsed: { color: dark.text.secondary, fontSize: font.sm },
-  prompts: { color: dark.text.secondary, fontSize: font.sm },
-  terminal: { flex: 1 },
-  historyLoader: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: dark.bg.primary,
-  },
-  discoveredInfo: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  discoveredTitle: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  discoveredText: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  discoveredPath: {
-    color: dark.text.accent,
-    fontSize: font.xs,
-    fontFamily: 'monospace',
-    marginTop: spacing.sm,
-  },
-  viewConversationBtn: {
-    marginTop: spacing.lg,
-    backgroundColor: dark.text.accent,
-    borderRadius: 10,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewConversationBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: font.base,
-  },
-  inputArea: {
-    borderTopWidth: 1,
-    borderTopColor: dark.border,
-    padding: spacing.sm,
-    gap: spacing.sm,
-  },
-  sendError: {
-    color: dark.status.failed,
-    fontSize: font.sm,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: dark.bg.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: dark.border,
-    color: dark.text.primary,
-    fontSize: font.base,
-    padding: spacing.sm,
-    maxHeight: 120,
-    minHeight: 44,
-  },
-  queueBtn: {
-    backgroundColor: dark.bg.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: dark.border,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  queueBtnText: { color: dark.text.primary, fontSize: font.base },
-  sendBtn: {
-    width: 52,
-    backgroundColor: dark.text.accent,
-    borderRadius: 10,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  attachBtn: {
-    width: 52,
-    backgroundColor: dark.bg.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: dark.border,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    backgroundColor: dark.bg.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: dark.border,
-    maxWidth: 200,
-  },
-  chipText: {
-    color: dark.text.primary,
-    fontSize: font.xs,
-    flexShrink: 1,
-  },
-  sendBtnDisabled: { opacity: 0.4 },
-  inputDisabled: { opacity: 0.5 },
-  stopBtn: {
-    minHeight: 36,
-    minWidth: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  queueBtnBottom: {
-    margin: spacing.md,
-    backgroundColor: dark.bg.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: dark.border,
-    padding: spacing.md,
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg.primary },
+    flex: { flex: 1 },
+    statusBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    elapsed: { color: theme.text.secondary, fontSize: font.sm },
+    prompts: { color: theme.text.secondary, fontSize: font.sm },
+    terminal: { flex: 1 },
+    historyLoader: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.bg.primary,
+    },
+    discoveredInfo: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    discoveredTitle: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    discoveredText: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    discoveredPath: {
+      color: theme.text.accent,
+      fontSize: font.xs,
+      fontFamily: 'monospace',
+      marginTop: spacing.sm,
+    },
+    viewConversationBtn: {
+      marginTop: spacing.lg,
+      backgroundColor: theme.text.accent,
+      borderRadius: 10,
+      paddingHorizontal: spacing.lg,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    viewConversationBtnText: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: font.base,
+    },
+    inputArea: {
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      padding: spacing.sm,
+      gap: spacing.sm,
+    },
+    sendError: {
+      color: theme.status.failed,
+      fontSize: font.sm,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: theme.bg.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      color: theme.text.primary,
+      fontSize: font.base,
+      padding: spacing.sm,
+      maxHeight: 120,
+      minHeight: 44,
+    },
+    queueBtn: {
+      backgroundColor: theme.bg.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      paddingHorizontal: spacing.lg,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    queueBtnText: { color: theme.text.primary, fontSize: font.base },
+    sendBtn: {
+      width: 52,
+      backgroundColor: theme.text.accent,
+      borderRadius: 10,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    attachBtn: {
+      width: 52,
+      backgroundColor: theme.bg.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chipsRow: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      paddingVertical: spacing.xs,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      backgroundColor: theme.bg.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.border,
+      maxWidth: 200,
+    },
+    chipText: {
+      color: theme.text.primary,
+      fontSize: font.xs,
+      flexShrink: 1,
+    },
+    sendBtnDisabled: { opacity: 0.4 },
+    inputDisabled: { opacity: 0.5 },
+    stopBtn: {
+      minHeight: 36,
+      minWidth: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xs,
+    },
+    queueBtnBottom: {
+      margin: spacing.md,
+      backgroundColor: theme.bg.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: spacing.md,
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+  })
+}

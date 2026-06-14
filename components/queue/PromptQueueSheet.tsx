@@ -4,16 +4,19 @@ import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bott
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
 import { PaperPlaneRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useSessionsStore } from '@/stores/sessions'
 import type { QueuedPrompt } from '@/types/api'
 
-const STATUS_COLORS: Record<QueuedPrompt['status'], string> = {
-  pending: dark.text.secondary,
-  running: dark.status.running,
-  completed: dark.status.completed,
-  cancelled: dark.status.failed,
+function statusColors(theme: Theme): Record<QueuedPrompt['status'], string> {
+  return {
+    pending: theme.text.secondary,
+    running: theme.status.running,
+    completed: theme.status.completed,
+    cancelled: theme.status.failed,
+  }
 }
 
 const EMPTY_QUEUE: QueuedPrompt[] = []
@@ -26,6 +29,9 @@ interface Props {
 }
 
 export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const STATUS_COLORS = statusColors(theme)
   const { t } = useTranslation('queue')
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
@@ -96,7 +102,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             value={input}
             onChangeText={setInput}
             placeholder="Add a prompt to queue..."
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             multiline
             returnKeyType="done"
           />
@@ -122,51 +128,53 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
   )
 }
 
-const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: dark.bg.secondary },
-  handle: { backgroundColor: dark.border },
-  content: { flex: 1, padding: spacing.md, gap: spacing.md },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  subtitle: { color: dark.text.secondary, fontSize: font.sm },
-  inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' },
-  input: {
-    flex: 1,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    color: dark.text.primary,
-    fontSize: font.base,
-    padding: spacing.sm,
-    maxHeight: 120,
-  },
-  addBtn: {
-    backgroundColor: dark.text.accent,
-    borderRadius: radius.md,
-    minWidth: 48,
-    minHeight: 44,
-    paddingHorizontal: spacing.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addBtnDisabled: { opacity: 0.4 },
-  list: { flex: 1 },
-  queueItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginBottom: spacing.xs,
-    borderWidth: 1,
-    borderColor: dark.border,
-    minHeight: 44,
-  },
-  queueItemActive: { opacity: 0.7, transform: [{ scale: 1.02 }] },
-  queueItemLeft: { flex: 1, flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
-  queueStatus: { fontSize: font.base, width: 20 },
-  queueText: { color: dark.text.primary, fontSize: font.sm, flex: 1 },
-  removeBtn: { padding: spacing.xs, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  removeBtnText: { color: dark.status.failed, fontSize: font.sm },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    sheetBg: { backgroundColor: theme.bg.secondary },
+    handle: { backgroundColor: theme.border },
+    content: { flex: 1, padding: spacing.md, gap: spacing.md },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    subtitle: { color: theme.text.secondary, fontSize: font.sm },
+    inputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' },
+    input: {
+      flex: 1,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      color: theme.text.primary,
+      fontSize: font.base,
+      padding: spacing.sm,
+      maxHeight: 120,
+    },
+    addBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      minWidth: 48,
+      minHeight: 44,
+      paddingHorizontal: spacing.sm,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addBtnDisabled: { opacity: 0.4 },
+    list: { flex: 1 },
+    queueItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      padding: spacing.sm,
+      marginBottom: spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.border,
+      minHeight: 44,
+    },
+    queueItemActive: { opacity: 0.7, transform: [{ scale: 1.02 }] },
+    queueItemLeft: { flex: 1, flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+    queueStatus: { fontSize: font.base, width: 20 },
+    queueText: { color: theme.text.primary, fontSize: font.sm, flex: 1 },
+    removeBtn: { padding: spacing.xs, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    removeBtnText: { color: theme.status.failed, fontSize: font.sm },
+  })
+}

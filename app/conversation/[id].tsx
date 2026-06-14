@@ -35,7 +35,8 @@ import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResumeConversationResponse } from '@/types/projectChat'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, MessageContent } from '@/types/api'
@@ -65,6 +66,8 @@ function renderContent(block: MessageContent, index: number, recycleKey: string)
 // (and re-highlight) every visible row.
 const MessageItem = React.memo(function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
   const { t } = useTranslation('conversation')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
@@ -108,6 +111,8 @@ const MessageItem = React.memo(function MessageItem({ message, isLast }: { messa
 
 export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -406,7 +411,7 @@ export default function ConversationDetailScreen() {
       accessibilityLabel="Conversation info"
       style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
     >
-      <InfoIcon size={22} color={dark.text.secondary} />
+      <InfoIcon size={22} color={theme.text.secondary} />
     </Pressable>
   )
 
@@ -491,7 +496,7 @@ export default function ConversationDetailScreen() {
             ListHeaderComponent={
               isFetchingNextPage ? (
                 <View style={styles.headerLoading}>
-                  <ActivityIndicator color={dark.text.secondary} />
+                  <ActivityIndicator color={theme.text.secondary} />
                 </View>
               ) : null
             }
@@ -574,101 +579,103 @@ export default function ConversationDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: dark.bg.primary },
-  inner: { flex: 1 },
-  skeletonOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: dark.bg.primary,
-    zIndex: 10,
-  },
-  listWrapper: { flex: 1 },
-  listContent: { paddingTop: spacing.md, paddingBottom: spacing.lg },
-  headerLoading: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollBtn: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: dark.text.accent,
-    borderRadius: 20,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  scrollBtnTop: { top: spacing.md },
-  // Bug 11: circular FAB-style bottom-right button. Sits inside the
-  // listWrapper, which ends at the top of the footer bar, so `spacing.md`
-  // already clears the Resume Session row.
-  scrollBtnBottom: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: dark.text.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  scrollBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
-  toolContainer: { paddingHorizontal: spacing.md, gap: spacing.xs, marginVertical: spacing.xs },
-  imageBadge: { color: dark.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
-  footer: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: dark.border,
-  },
-  resumeWrapper: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  resumeError: {
-    color: '#ef4444',
-    fontSize: font.xs,
-    textAlign: 'center',
-  },
-  resumeBtn: {
-    backgroundColor: dark.text.accent,
-    borderRadius: 10,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  resumeBtnDisabled: { opacity: 0.5 },
-  resumeBtnText: { color: '#fff', fontWeight: '700', fontSize: font.base },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  errorTitle: { color: dark.text.primary, fontSize: font.base, fontWeight: '600' },
-  errorMessage: { color: dark.text.secondary, fontSize: font.sm, textAlign: 'center' },
-  emptyText: { color: dark.text.secondary, fontSize: font.sm },
-  retryBtn: {
-    marginTop: spacing.md,
-    backgroundColor: dark.bg.card,
-    borderWidth: 1,
-    borderColor: dark.border,
-    borderRadius: 10,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  retryBtnText: { color: dark.text.primary, fontSize: font.base },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg.primary },
+    inner: { flex: 1 },
+    skeletonOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.bg.primary,
+      zIndex: 10,
+    },
+    listWrapper: { flex: 1 },
+    listContent: { paddingTop: spacing.md, paddingBottom: spacing.lg },
+    headerLoading: {
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scrollBtn: {
+      position: 'absolute',
+      alignSelf: 'center',
+      backgroundColor: theme.text.accent,
+      borderRadius: 20,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    scrollBtnTop: { top: spacing.md },
+    // Bug 11: circular FAB-style bottom-right button. Sits inside the
+    // listWrapper, which ends at the top of the footer bar, so `spacing.md`
+    // already clears the Resume Session row.
+    scrollBtnBottom: {
+      position: 'absolute',
+      right: spacing.md,
+      bottom: spacing.md,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.text.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    scrollBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
+    toolContainer: { paddingHorizontal: spacing.md, gap: spacing.xs, marginVertical: spacing.xs },
+    imageBadge: { color: theme.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    resumeWrapper: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    resumeError: {
+      color: '#ef4444',
+      fontSize: font.xs,
+      textAlign: 'center',
+    },
+    resumeBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: 10,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    resumeBtnDisabled: { opacity: 0.5 },
+    resumeBtnText: { color: '#fff', fontWeight: '700', fontSize: font.base },
+    centered: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    errorTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
+    errorMessage: { color: theme.text.secondary, fontSize: font.sm, textAlign: 'center' },
+    emptyText: { color: theme.text.secondary, fontSize: font.sm },
+    retryBtn: {
+      marginTop: spacing.md,
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 10,
+      paddingHorizontal: spacing.lg,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    retryBtnText: { color: theme.text.primary, fontSize: font.base },
+  })
+}

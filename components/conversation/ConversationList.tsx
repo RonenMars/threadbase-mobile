@@ -19,7 +19,8 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SkeletonBox } from '@/components/ui/Skeleton'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
@@ -28,6 +29,8 @@ import type { MultiConversation } from '@/types/api'
 const CONV_SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `conv-sk-${i}`)
 
 function ConversationRowSkeleton() {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   return (
     <View style={styles.skeletonRow}>
       <SkeletonBox height={16} width="70%" borderRadius={radius.sm} />
@@ -100,6 +103,8 @@ interface Props {
 }
 
 function Separator() {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   return <View style={styles.separator} />
 }
 
@@ -117,6 +122,8 @@ export function ConversationList({
   loadingProgress = null,
 }: Props) {
   const { t } = useTranslation(['conversation', 'common'])
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
@@ -174,10 +181,10 @@ export function ConversationList({
       <RefreshControl
         refreshing={refreshing}
         onRefresh={onRefresh}
-        tintColor={dark.text.secondary}
+        tintColor={theme.text.secondary}
       />
     ),
-    [refreshing, onRefresh],
+    [refreshing, onRefresh, theme],
   )
 
   return (
@@ -189,7 +196,7 @@ export function ConversationList({
             value={searchQuery}
             onChangeText={onSearchChange}
             placeholder="Search conversations…"
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             autoFocus
             returnKeyType="search"
             clearButtonMode="while-editing"
@@ -221,7 +228,7 @@ export function ConversationList({
         ListFooterComponent={
           isFetchingNextPage && !skeletonMode ? (
             <View style={styles.listFooter}>
-              <ActivityIndicator color={dark.text.secondary} />
+              <ActivityIndicator color={theme.text.secondary} />
               <Text style={styles.listFooterText}>{t('list.loadingMore')}</Text>
             </View>
           ) : null
@@ -251,70 +258,71 @@ export function ConversationList({
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  skLine: { marginTop: spacing.xs },
-  listFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
-  },
-  listFooterText: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    margin: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    minHeight: 44,
-  },
-
-  searchInput: {
-    flex: 1,
-    color: dark.text.primary,
-    fontSize: font.base,
-    paddingVertical: spacing.sm,
-  },
-  skeletonRow: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    minHeight: 64,
-    gap: spacing.xs,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: dark.border,
-    marginHorizontal: spacing.md,
-  },
-  scrollBtn: {
-    position: 'absolute',
-    alignSelf: 'center',
-  },
-  scrollBtnTop: {
-    top: spacing.md,
-  },
-  scrollBtnBottom: {
-    bottom: spacing.md,
-  },
-  scrollBtnInner: {
-    backgroundColor: 'rgba(31, 111, 235, 0.14)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 166, 255, 0.2)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  scrollBtnText: {
-    color: 'rgba(230, 237, 243, 0.6)',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1 },
+    skLine: { marginTop: spacing.xs },
+    listFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.lg,
+    },
+    listFooterText: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      margin: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      minHeight: 44,
+    },
+    searchInput: {
+      flex: 1,
+      color: theme.text.primary,
+      fontSize: font.base,
+      paddingVertical: spacing.sm,
+    },
+    skeletonRow: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      minHeight: 64,
+      gap: spacing.xs,
+    },
+    separator: {
+      height: 1,
+      backgroundColor: theme.border,
+      marginHorizontal: spacing.md,
+    },
+    scrollBtn: {
+      position: 'absolute',
+      alignSelf: 'center',
+    },
+    scrollBtnTop: {
+      top: spacing.md,
+    },
+    scrollBtnBottom: {
+      bottom: spacing.md,
+    },
+    scrollBtnInner: {
+      backgroundColor: 'rgba(31, 111, 235, 0.14)',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 166, 255, 0.2)',
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+    },
+    scrollBtnText: {
+      color: 'rgba(230, 237, 243, 0.6)',
+      fontSize: 12,
+      fontWeight: '500',
+    },
+  })
+}

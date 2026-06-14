@@ -1,4 +1,3 @@
-import { dark } from '@/constants/theme'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { TreeNode, FlatNode } from './types'
@@ -8,9 +7,9 @@ import type { TreeNode, FlatNode } from './types'
 // archive" colour. Matches SessionCard's spine and SessionStatusBadge dots
 // so the same node reads identically across hub, classic, and tree modes.
 export const STATUS_COLOR: Record<string, string> = {
-  running: dark.status.waiting,
-  waiting_input: dark.status.waiting,
-  idle: dark.text.accent,
+  running: '#d29922',
+  waiting_input: '#d29922',
+  idle: '#58a6ff',
 }
 
 function splitPath(p: string | null | undefined): string[] {

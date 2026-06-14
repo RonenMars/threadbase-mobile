@@ -1,5 +1,6 @@
 import { ScrollView, Pressable, Text, View, StyleSheet } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export type TimeBucket = 'all' | 'today' | '7d' | '30d' | 'custom'
 
@@ -33,6 +34,8 @@ export function TimeBucketPills({
   showCustom = true,
   testID,
 }: TimeBucketPillsProps) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const buckets = showCustom ? [...BUCKETS, { key: 'custom' as const, label: 'Custom' }] : BUCKETS
   return (
     <ScrollView
@@ -71,56 +74,58 @@ export function TimeBucketPills({
   )
 }
 
-const styles = StyleSheet.create({
-  row: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: 6,
-    flexDirection: 'row',
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: dark.bg.secondary,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  pillActive: {
-    backgroundColor: `${dark.text.accent}1f`,
-    borderColor: dark.text.accent,
-  },
-  label: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontWeight: '600',
-  },
-  labelActive: {
-    color: dark.text.accent,
-  },
-  countWrap: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: radius.full,
-    backgroundColor: 'transparent',
-  },
-  countWrapActive: {
-    backgroundColor: 'transparent',
-  },
-  count: {
-    color: dark.text.secondary,
-    fontSize: font.xs - 1,
-    fontWeight: '600',
-    opacity: 0.7,
-  },
-  countActive: {
-    color: dark.text.accent,
-    opacity: 1,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    row: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: 6,
+      flexDirection: 'row',
+    },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      backgroundColor: theme.bg.secondary,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    pillActive: {
+      backgroundColor: `${theme.text.accent}1f`,
+      borderColor: theme.text.accent,
+    },
+    label: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '600',
+    },
+    labelActive: {
+      color: theme.text.accent,
+    },
+    countWrap: {
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: radius.full,
+      backgroundColor: 'transparent',
+    },
+    countWrapActive: {
+      backgroundColor: 'transparent',
+    },
+    count: {
+      color: theme.text.secondary,
+      fontSize: font.xs - 1,
+      fontWeight: '600',
+      opacity: 0.7,
+    },
+    countActive: {
+      color: theme.text.accent,
+      opacity: 1,
+    },
+  })
+}
 
 /** Pure helper: bucket a list of items by an ISO timestamp accessor. */
 export function bucketTimestamps<T>(

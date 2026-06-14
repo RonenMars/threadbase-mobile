@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated, Easing } fro
 import { Trash, PencilSimple, ArrowsClockwise, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
 import type { ServerConfig } from '@/types/api'
 
 interface Props {
@@ -19,12 +20,14 @@ const REFRESH_TIMEOUT_MS = 12000
 
 export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefresh, onViewError }: Props) {
   const { t } = useTranslation('servers')
+  const theme = useTheme()
   const progress = useMemo(() => new Animated.Value(1), [])
   const progressAnim = useRef<Animated.CompositeAnimation | null>(null)
   const resultOpacity = useMemo(() => new Animated.Value(0), [])
-  const [resultColor, setResultColor] = useState<string>(dark.status.running)
+  const [resultColor, setResultColor] = useState<string>(theme.status.running)
   const [showBottomLine, setShowBottomLine] = useState(false)
   const prevRefreshing = useRef(false)
+  const styles = makeStyles(theme)
 
   useEffect(() => {
     progressAnim.current?.stop()
@@ -40,7 +43,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
     } else {
       progress.setValue(1)
       if (prevRefreshing.current) {
-        const color = server.connectionError ? dark.status.failed : dark.status.running
+        const color = server.connectionError ? theme.status.failed : theme.status.running
         setResultColor(color)
         setShowBottomLine(true)
         resultOpacity.setValue(1)
@@ -82,7 +85,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
               hitSlop={4}
               accessibilityLabel="View connection error"
             >
-              <XCircle size={20} color={dark.text.danger} weight="fill" />
+              <XCircle size={20} color={theme.text.danger} weight="fill" />
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
@@ -91,7 +94,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
             hitSlop={4}
             accessibilityLabel="Delete server"
           >
-            <Trash size={20} color={dark.text.danger} />
+            <Trash size={20} color={theme.text.danger} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconBtn}
@@ -99,7 +102,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
             hitSlop={4}
             accessibilityLabel="Edit server"
           >
-            <PencilSimple size={20} color={dark.text.accent} />
+            <PencilSimple size={20} color={theme.text.accent} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconBtn, isRefreshing && styles.iconBtnDisabled]}
@@ -107,7 +110,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
             hitSlop={4}
             accessibilityLabel="Refresh server info"
           >
-            <ArrowsClockwise size={20} color={dark.text.secondary} />
+            <ArrowsClockwise size={20} color={theme.text.secondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -150,88 +153,90 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    overflow: 'hidden',
-    marginBottom: spacing.sm,
-    padding: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  cardNoBottomPad: {
-    paddingBottom: 0,
-  },
-  bottomSlot: {
-    height: 4,
-    marginTop: spacing.sm,
-    marginHorizontal: -spacing.md,
-    marginBottom: -spacing.sm,
-  },
-  progressFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: 4,
-    backgroundColor: dark.text.accent,
-    shadowColor: dark.text.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-  },
-  resultLine: {
-    height: 4,
-    width: '100%',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    flexShrink: 0,
-  },
-  dotConnected: { backgroundColor: dark.status.running },
-  dotDisconnected: { backgroundColor: dark.status.failed },
-  label: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-    flex: 1,
-  },
-  iconGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    flexShrink: 0,
-  },
-  iconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconBtnDisabled: {
-    opacity: 0.4,
-  },
-  url: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontFamily: 'monospace',
-    paddingLeft: 16,
-    marginBottom: 2,
-  },
-  meta: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    paddingLeft: 16,
-    paddingBottom: spacing.xs,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      overflow: 'hidden',
+      marginBottom: spacing.sm,
+      padding: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    cardNoBottomPad: {
+      paddingBottom: 0,
+    },
+    bottomSlot: {
+      height: 4,
+      marginTop: spacing.sm,
+      marginHorizontal: -spacing.md,
+      marginBottom: -spacing.sm,
+    },
+    progressFill: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      height: 4,
+      backgroundColor: theme.text.accent,
+      shadowColor: theme.text.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 1,
+      shadowRadius: 6,
+    },
+    resultLine: {
+      height: 4,
+      width: '100%',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      flexShrink: 0,
+    },
+    dotConnected: { backgroundColor: theme.status.running },
+    dotDisconnected: { backgroundColor: theme.status.failed },
+    label: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+      flex: 1,
+    },
+    iconGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      flexShrink: 0,
+    },
+    iconBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconBtnDisabled: {
+      opacity: 0.4,
+    },
+    url: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontFamily: 'monospace',
+      paddingLeft: 16,
+      marginBottom: 2,
+    },
+    meta: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      paddingLeft: 16,
+      paddingBottom: spacing.xs,
+    },
+  })
+}

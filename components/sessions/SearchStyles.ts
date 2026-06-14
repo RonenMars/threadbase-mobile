@@ -1,22 +1,23 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const searchStyles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   searchBar: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
   },
   searchInput: {
-    backgroundColor: dark.bg.card,
-    color: dark.text.primary,
+    backgroundColor: theme.bg.card,
+    color: theme.text.primary,
     fontSize: font.base,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
   },
   listContent: {
     padding: spacing.sm,
@@ -27,7 +28,7 @@ export const searchStyles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   sectionHeaderText: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -37,15 +38,16 @@ export const searchStyles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
   },
   resultTitle: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
   },
   resultSubtitle: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     marginTop: 2,
   },
-})
+  })
+}

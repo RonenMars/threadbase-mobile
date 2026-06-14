@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { WarningCircle, Warning, Info } from 'phosphor-react-native'
-import { dark, spacing, font } from '@/constants/theme'
+import { type Theme, spacing, font } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { wsManager } from '@/services/ws-client'
 import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import type { ServerConfig } from '@/types/api'
@@ -23,6 +24,8 @@ function serverLabel(id: string, servers: Record<string, ServerConfig>): string 
 type Severity = 'error' | 'warning' | 'info' | null
 
 export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, wsConnectedCount, onTapDetails }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [showInfo, setShowInfo] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -140,9 +143,9 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
   if (!severity || (severity === 'info' && !showInfo)) return null
 
   const accentColor =
-    severity === 'error' ? dark.status.failed
-    : severity === 'warning' ? dark.status.waiting
-    : dark.text.secondary
+    severity === 'error' ? theme.status.failed
+    : severity === 'warning' ? theme.status.waiting
+    : theme.text.secondary
 
   const Icon = severity === 'error' ? WarningCircle : severity === 'warning' ? Warning : Info
   const iconWeight = severity === 'error' ? 'fill' as const : 'regular' as const
@@ -152,7 +155,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
     <View style={[styles.banner, { borderLeftColor: accentColor }]}>
       <Icon size={16} color={accentColor} weight={iconWeight} />
       <Text
-        style={[styles.text, { color: severity === 'info' ? dark.text.secondary : dark.text.primary }]}
+        style={[styles.text, { color: severity === 'info' ? theme.text.secondary : theme.text.primary }]}
         numberOfLines={2}
       >
         {message}
@@ -170,24 +173,26 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
   return inner
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: dark.bg.card,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: dark.border,
-    borderLeftWidth: 3,
-  },
-  text: {
-    flex: 1,
-    fontSize: font.sm,
-    fontWeight: '500',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.xs,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      backgroundColor: theme.bg.card,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderLeftWidth: 3,
+    },
+    text: {
+      flex: 1,
+      fontSize: font.sm,
+      fontWeight: '500',
+    },
+  })
+}

@@ -1,5 +1,6 @@
 import { Text, StyleSheet } from 'react-native'
-import { dark, font } from '@/constants/theme'
+import { font, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export type MessagePreviewMode = 'first' | 'last' | 'auto' | 'none'
 
@@ -50,6 +51,8 @@ function truncate(text: string, max: number): string {
 }
 
 export function MessagePreview(props: MessagePreviewProps) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const text = pickText(props)
   if (!text) return null
 
@@ -94,14 +97,16 @@ export function MessagePreview(props: MessagePreviewProps) {
   )
 }
 
-const styles = StyleSheet.create({
-  preview: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    lineHeight: font.xs + 4,
-  },
-  match: {
-    backgroundColor: `${dark.text.accent}38`,
-    color: dark.text.primary,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    preview: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      lineHeight: font.xs + 4,
+    },
+    match: {
+      backgroundColor: `${theme.text.accent}38`,
+      color: theme.text.primary,
+    },
+  })
+}

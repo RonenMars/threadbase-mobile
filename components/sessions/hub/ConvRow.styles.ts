@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -14,21 +15,22 @@ export const styles = StyleSheet.create({
     gap: 2,
   },
   convTitle: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.sm,
   },
   rowSecondary: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
   },
   serverLabel: {
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontSize: font.xs,
     opacity: 0.75,
   },
   rowDate: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     flexShrink: 0,
   },
-})
+  })
+}

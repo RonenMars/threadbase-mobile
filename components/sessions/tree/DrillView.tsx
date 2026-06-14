@@ -4,8 +4,9 @@ import { useRouter } from 'expo-router'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
+import { useTheme } from '@/contexts/ThemeContext'
 import { DrillRow } from './DrillRow'
-import { styles } from './DrillView.styles'
+import { makeStyles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
 
 interface Props {
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export function DrillView({ node, serverId, onBack }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)

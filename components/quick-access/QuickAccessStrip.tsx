@@ -12,7 +12,8 @@ import { useServersStore } from '@/stores/servers'
 import { useRecentSessions, usePopularProjects } from '@/hooks/useQuickAccess'
 import { QuickAccessChip, type ChipItem, type QuickAccessTab } from './QuickAccessChip'
 import { QuickAccessActionSheet } from './QuickAccessActionSheet'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { clientLog } from '@/lib/clientLog'
 
 const INITIAL_CHIPS = 4
@@ -21,6 +22,8 @@ const LOAD_MORE_STEP = 4
 export function QuickAccessStrip() {
   const { t } = useTranslation('shared')
   const router = useRouter()
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const {
@@ -272,7 +275,7 @@ export function QuickAccessStrip() {
             style={[styles.tab, effectiveTab === key && styles.tabActive]}
             onPress={() => handleTabSwitch(key)}
           >
-            <Icon size={13} color={effectiveTab === key ? dark.text.accent : dark.text.secondary} />
+            <Icon size={13} color={effectiveTab === key ? theme.text.accent : theme.text.secondary} />
             <Text style={[styles.tabLabel, effectiveTab === key && styles.tabLabelActive]}>{label}</Text>
           </Pressable>
         ))}
@@ -282,7 +285,7 @@ export function QuickAccessStrip() {
               on a row that just shows tab labels. */}
           {!stripCollapsed && effectiveTab === 'favorites' && (
             <Pressable style={styles.iconBtn} onPress={() => router.push('/manage-favorites' as any)} hitSlop={8}>
-              <GearSix size={16} color={dark.text.secondary} />
+              <GearSix size={16} color={theme.text.secondary} />
             </Pressable>
           )}
           {/* Bug 26 — also hide the pencil when the active tab is empty:
@@ -290,8 +293,8 @@ export function QuickAccessStrip() {
           {!stripCollapsed && allItems.length > 0 && (
             <Pressable style={styles.iconBtn} onPress={() => setEditMode((v) => !v)} hitSlop={8}>
               {editMode
-                ? <Check size={16} color={dark.text.accent} />
-                : <PencilSimple size={16} color={dark.text.secondary} />
+                ? <Check size={16} color={theme.text.accent} />
+                : <PencilSimple size={16} color={theme.text.secondary} />
               }
             </Pressable>
           )}
@@ -308,6 +311,7 @@ export function QuickAccessStrip() {
                 recentsQuery,
                 popularQuery,
                 onOpenSettings: () => router.push('/settings' as any),
+                styles,
               })
             : (
               <View style={styles.chips}>
@@ -353,7 +357,7 @@ type QueryShape = {
 }
 
 function renderEmptyState({
-  t, tab, hasServers, recentsQuery, popularQuery, onOpenSettings,
+  t, tab, hasServers, recentsQuery, popularQuery, onOpenSettings, styles,
 }: {
   t: TFunction<'shared'>
   tab: QuickAccessTab
@@ -361,6 +365,7 @@ function renderEmptyState({
   recentsQuery: QueryShape
   popularQuery: QueryShape
   onOpenSettings: () => void
+  styles: ReturnType<typeof makeStyles>
 }) {
   if (tab === 'favorites') {
     return <Text style={styles.emptyText}>{t('quickAccess.emptyFavorites')}</Text>
@@ -388,42 +393,44 @@ function renderEmptyState({
   return <Text style={styles.emptyText}>{t('quickAccess.nothing')}</Text>
 }
 
-const styles = StyleSheet.create({
-  strip: {
-    backgroundColor: dark.bg.secondary,
-    borderBottomWidth: 1,
-    borderColor: dark.border,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: dark.border,
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 2,
-    borderColor: 'transparent',
-  },
-  tabActive: { borderColor: dark.text.accent },
-  tabLabel: { color: dark.text.secondary, fontSize: font.xs },
-  tabLabelActive: { color: dark.text.accent, fontWeight: '600' },
-  tabRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', paddingRight: spacing.sm },
-  iconBtn: { padding: 6 },
-  chipsContainer: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  loadMoreChip: {
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  loadMoreText: { color: dark.text.secondary, fontSize: font.xs },
-  emptyText: { color: dark.text.secondary, fontSize: font.xs, paddingVertical: 2 },
-  emptyTextLink: { color: dark.text.accent, fontSize: font.xs, paddingVertical: 2 },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    strip: {
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: 1,
+      borderColor: theme.border,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderColor: theme.border,
+    },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 2,
+      borderColor: 'transparent',
+    },
+    tabActive: { borderColor: theme.text.accent },
+    tabLabel: { color: theme.text.secondary, fontSize: font.xs },
+    tabLabelActive: { color: theme.text.accent, fontWeight: '600' },
+    tabRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', paddingRight: spacing.sm },
+    iconBtn: { padding: 6 },
+    chipsContainer: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+    loadMoreChip: {
+      paddingHorizontal: 11,
+      paddingVertical: 6,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    loadMoreText: { color: theme.text.secondary, fontSize: font.xs },
+    emptyText: { color: theme.text.secondary, fontSize: font.xs, paddingVertical: 2 },
+    emptyTextLink: { color: theme.text.accent, fontSize: font.xs, paddingVertical: 2 },
+  })
+}

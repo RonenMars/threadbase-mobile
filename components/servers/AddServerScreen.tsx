@@ -17,13 +17,16 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { AuthError, NetworkError } from '@/services/api-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   isAddingServer: boolean
 }
 
 export function AddServerScreen({ isAddingServer }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'shared', 'settings'])
   const router = useRouter()
   const navigation = useNavigation()
@@ -172,7 +175,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               onPress={() => setScannerOpen(true)}
               accessibilityLabel="Scan pairing QR"
             >
-              <QrCode size={18} color={dark.text.accent} />
+              <QrCode size={18} color={theme.text.accent} />
             </TouchableOpacity>
           </View>
           <View style={styles.urlRow}>
@@ -215,7 +218,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               value={serverUrl}
               onChangeText={setServerUrl}
               placeholder="192.168.x.x:8766"
-              placeholderTextColor={dark.text.secondary}
+              placeholderTextColor={theme.text.secondary}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -231,7 +234,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
             value={label}
             onChangeText={setLabel}
             placeholder="Work Mac, Home Server…"
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             autoCapitalize="words"
             autoCorrect={false}
             returnKeyType="next"
@@ -245,7 +248,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               value={apiKey}
               onChangeText={setApiKey}
               placeholder="Paste your API token here"
-              placeholderTextColor={dark.text.secondary}
+              placeholderTextColor={theme.text.secondary}
               secureTextEntry={__DEV__ ? false : !showApiKey}
               textContentType={__DEV__ ? 'none' : 'password'}
               autoCapitalize="none"
@@ -298,155 +301,157 @@ export function AddServerScreen({ isAddingServer }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: dark.bg.primary },
-  container: {
-    flexGrow: 1,
-    padding: spacing.xl,
-    justifyContent: 'center',
-    gap: spacing.xl,
-  },
-  hero: { alignItems: 'center', gap: spacing.sm },
-  title: {
-    color: dark.text.primary,
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: dark.text.secondary,
-    fontSize: font.lg,
-  },
-  form: { gap: spacing.md, zIndex: 1 },
-  urlRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  urlInput: { flex: 1 },
-  protocolDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: dark.border,
-    paddingHorizontal: spacing.md,
-    minHeight: 56,
-    gap: 4,
-  },
-  protocolText: {
-    color: dark.text.primary,
-    fontSize: font.lg,
-  },
-  dropdownArrow: {
-    color: dark.text.secondary,
-    fontSize: 10,
-  },
-  protocolOptions: {
-    position: 'absolute',
-    top: 48,
-    left: 0,
-    right: 0,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    zIndex: 10,
-    overflow: 'hidden',
-  },
-  protocolOption: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  protocolOptionText: {
-    color: dark.text.primary,
-    fontSize: font.base,
-  },
-  protocolOptionSelected: {
-    color: dark.text.accent,
-    fontWeight: '600',
-  },
-  label: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  scanQrBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    backgroundColor: dark.bg.card,
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  input: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: dark.border,
-    color: dark.text.primary,
-    fontSize: font.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 56,
-  },
-  urlHint: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    marginTop: -spacing.xs,
-  },
-  passwordRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'center',
-  },
-  passwordInput: { flex: 1 },
-  showHideBtn: {
-    minHeight: 56,
-    paddingHorizontal: spacing.sm,
-    justifyContent: 'center',
-  },
-  showHideText: {
-    color: dark.text.accent,
-    fontSize: font.sm,
-  },
-  error: {
-    color: dark.status.failed,
-    fontSize: font.sm,
-    marginTop: spacing.xs,
-  },
-  connectBtn: {
-    backgroundColor: dark.text.accent,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    minHeight: 50,
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  connectBtnDisabled: { opacity: 0.5 },
-  connectBtnText: {
-    color: '#fff',
-    fontSize: font.lg,
-    fontWeight: '700',
-  },
-  hint: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    textAlign: 'center',
-  },
-  code: {
-    fontFamily: 'monospace',
-    color: dark.text.primary,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: theme.bg.primary },
+    container: {
+      flexGrow: 1,
+      padding: spacing.xl,
+      justifyContent: 'center',
+      gap: spacing.xl,
+    },
+    hero: { alignItems: 'center', gap: spacing.sm },
+    title: {
+      color: theme.text.primary,
+      fontSize: 32,
+      fontWeight: '700',
+    },
+    subtitle: {
+      color: theme.text.secondary,
+      fontSize: font.lg,
+    },
+    form: { gap: spacing.md, zIndex: 1 },
+    urlRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+    },
+    urlInput: { flex: 1 },
+    protocolDropdown: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: theme.border,
+      paddingHorizontal: spacing.md,
+      minHeight: 56,
+      gap: 4,
+    },
+    protocolText: {
+      color: theme.text.primary,
+      fontSize: font.lg,
+    },
+    dropdownArrow: {
+      color: theme.text.secondary,
+      fontSize: 10,
+    },
+    protocolOptions: {
+      position: 'absolute',
+      top: 48,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      zIndex: 10,
+      overflow: 'hidden',
+    },
+    protocolOption: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    protocolOptionText: {
+      color: theme.text.primary,
+      fontSize: font.base,
+    },
+    protocolOptionSelected: {
+      color: theme.text.accent,
+      fontWeight: '600',
+    },
+    label: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 2,
+    },
+    scanQrBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.sm,
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    input: {
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: theme.border,
+      color: theme.text.primary,
+      fontSize: font.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: 56,
+    },
+    urlHint: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      marginTop: -spacing.xs,
+    },
+    passwordRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'center',
+    },
+    passwordInput: { flex: 1 },
+    showHideBtn: {
+      minHeight: 56,
+      paddingHorizontal: spacing.sm,
+      justifyContent: 'center',
+    },
+    showHideText: {
+      color: theme.text.accent,
+      fontSize: font.sm,
+    },
+    error: {
+      color: theme.status.failed,
+      fontSize: font.sm,
+      marginTop: spacing.xs,
+    },
+    connectBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      alignItems: 'center',
+      minHeight: 50,
+      justifyContent: 'center',
+      marginTop: spacing.sm,
+    },
+    connectBtnDisabled: { opacity: 0.5 },
+    connectBtnText: {
+      color: '#fff',
+      fontSize: font.lg,
+      fontWeight: '700',
+    },
+    hint: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      textAlign: 'center',
+    },
+    code: {
+      fontFamily: 'monospace',
+      color: theme.text.primary,
+    },
+  })
+}

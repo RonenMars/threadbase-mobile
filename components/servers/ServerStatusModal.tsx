@@ -6,7 +6,8 @@ import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore, type ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import { ServersManageModal } from '@/components/servers/ServersManageModal'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   visible: boolean
@@ -50,12 +51,15 @@ function StatusRow({
   url,
   status,
   fetchStatus,
+  theme,
 }: {
   label: string
   url: string
   status: WSStatus
   fetchStatus?: ServerFetchStatusEntry
+  theme: Theme
 }) {
+  const styles = makeStyles(theme)
   const isConnected = status === 'connected'
   const isConnecting = status === 'connecting'
   // Fetch-status defaults to ok when we haven't seen a request yet — only flip
@@ -64,10 +68,10 @@ function StatusRow({
 
   const healthy = isConnected && !fetchFailed
   const dotColor = healthy
-    ? dark.status.running
+    ? theme.status.running
     : isConnecting && !fetchFailed
-      ? dark.status.waiting
-      : dark.status.failed
+      ? theme.status.waiting
+      : theme.status.failed
 
   let statusLabel: string
   if (fetchFailed && !isConnected) statusLabel = 'Unreachable'
@@ -101,6 +105,8 @@ function StatusRow({
 
 export function ServerStatusModal({ visible, onClose }: Props) {
   const { t } = useTranslation('servers')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
   const statuses = useServerStatuses(activeServerIds)
@@ -120,7 +126,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
-            <Cloud size={18} color={dark.text.secondary} weight="regular" />
+            <Cloud size={18} color={theme.text.secondary} weight="regular" />
             <Text style={styles.title}>{t('statusModal.title')}</Text>
             <TouchableOpacity
               onPress={() => setManageOpen(true)}
@@ -128,7 +134,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
               style={styles.iconBtn}
               accessibilityLabel="Manage servers"
             >
-              <ListDashes size={18} color={dark.text.secondary} />
+              <ListDashes size={18} color={theme.text.secondary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.iconBtn}>
               <Text style={styles.closeText}>{t('statusModal.close')}</Text>
@@ -148,6 +154,7 @@ export function ServerStatusModal({ visible, onClose }: Props) {
                   url={server.url}
                   status={statuses[id] ?? 'disconnected'}
                   fetchStatus={fetchStatuses[id]}
+                  theme={theme}
                 />
               )
             })
@@ -163,77 +170,79 @@ export function ServerStatusModal({ visible, onClose }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-    paddingBottom: 40,
-    paddingHorizontal: spacing.md,
-  },
-  sheet: {
-    backgroundColor: dark.bg.secondary,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: dark.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: dark.border,
-  },
-  title: {
-    flex: 1,
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  iconBtn: { padding: spacing.xs },
-  closeText: { color: dark.text.secondary, fontSize: font.base },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  rowLeft: { flex: 1, gap: 2 },
-  serverLabel: {
-    color: dark.text.primary,
-    fontSize: font.sm,
-    fontWeight: '500',
-  },
-  serverUrl: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  errorDetail: {
-    color: dark.status.failed,
-    fontSize: font.xs,
-    marginTop: 2,
-  },
-  rowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: font.xs,
-    fontWeight: '500',
-  },
-  empty: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    textAlign: 'center',
-    paddingVertical: spacing.md,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      justifyContent: 'flex-end',
+      paddingBottom: 40,
+      paddingHorizontal: spacing.md,
+    },
+    sheet: {
+      backgroundColor: theme.bg.secondary,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingBottom: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    title: {
+      flex: 1,
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    iconBtn: { padding: spacing.xs },
+    closeText: { color: theme.text.secondary, fontSize: font.base },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+    },
+    rowLeft: { flex: 1, gap: 2 },
+    serverLabel: {
+      color: theme.text.primary,
+      fontSize: font.sm,
+      fontWeight: '500',
+    },
+    serverUrl: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+    },
+    errorDetail: {
+      color: theme.status.failed,
+      fontSize: font.xs,
+      marginTop: 2,
+    },
+    rowRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    statusDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    statusText: {
+      fontSize: font.xs,
+      fontWeight: '500',
+    },
+    empty: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      textAlign: 'center',
+      paddingVertical: spacing.md,
+    },
+  })
+}

@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   visible: boolean
@@ -16,6 +17,8 @@ interface Props {
 const SNAP_POINTS = ['40%', '70%']
 
 export function NewSessionServerPicker({ visible, serverIds, servers, onPick, onClose }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
   if (!visible) return null
 
@@ -61,57 +64,59 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
   )
 }
 
-const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: dark.bg.secondary },
-  handle: { backgroundColor: dark.border },
-  content: { flex: 1, padding: spacing.md, gap: spacing.md },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  list: { gap: spacing.sm },
-  row: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: dark.border,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  serverInfo: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  serverLabel: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '500',
-  },
-  serverUrl: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  chevron: {
-    color: dark.text.secondary,
-    fontSize: font.xl,
-    fontWeight: '300',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    marginTop: 'auto',
-    paddingTop: spacing.sm,
-  },
-  cancelButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    sheetBg: { backgroundColor: theme.bg.secondary },
+    handle: { backgroundColor: theme.border },
+    content: { flex: 1, padding: spacing.md, gap: spacing.md },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    list: { gap: spacing.sm },
+    row: {
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    serverInfo: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    serverLabel: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '500',
+    },
+    serverUrl: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+    },
+    chevron: {
+      color: theme.text.secondary,
+      fontSize: font.xl,
+      fontWeight: '300',
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.sm,
+      marginTop: 'auto',
+      paddingTop: spacing.sm,
+    },
+    cancelButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    cancelText: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+    },
+  })
+}

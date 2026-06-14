@@ -1,14 +1,15 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   drillRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
     gap: spacing.sm,
     minHeight: 44,
   },
@@ -23,14 +24,14 @@ export const styles = StyleSheet.create({
   },
   drillLabel: {
     fontSize: font.base,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontWeight: '600',
   },
   drillStatus: {
     fontSize: font.xs,
     marginTop: 2,
     textTransform: 'capitalize',
-    color: dark.text.secondary,
+    color: theme.text.secondary,
   },
   badge: {
     backgroundColor: 'rgba(88,166,255,0.12)',
@@ -40,7 +41,8 @@ export const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: font.xs,
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontWeight: '600',
   },
-})
+  })
+}

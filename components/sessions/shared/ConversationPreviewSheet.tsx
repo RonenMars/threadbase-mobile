@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet
 import BottomSheet from '@gorhom/bottom-sheet'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useConversation } from '@/hooks/useConversations'
 import { useSettingsStore } from '@/stores/settings'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
@@ -34,6 +35,8 @@ const SNAP_POINTS = ['60%', '90%']
 
 export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: Props) {
   const { t } = useTranslation('sessions')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const sheetRef = useRef<BottomSheet>(null)
   const router = useRouter()
   const messageCount = useSettingsStore((s) => s.rowPreviewModalCount)
@@ -75,8 +78,8 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
       snapPoints={SNAP_POINTS}
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={{ backgroundColor: dark.bg.card }}
-      handleIndicatorStyle={{ backgroundColor: dark.border }}
+      backgroundStyle={{ backgroundColor: theme.bg.card }}
+      handleIndicatorStyle={{ backgroundColor: theme.border }}
     >
       <View style={styles.pinned}>
         <ConversationListItem
@@ -99,7 +102,7 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
           <Text style={styles.placeholder}>{t('preview.liveUnavailable')}</Text>
         ) : isLoading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color={dark.text.secondary} />
+            <ActivityIndicator color={theme.text.secondary} />
           </View>
         ) : lastMessages.length === 0 ? (
           <Text style={styles.placeholder}>{t('preview.noMessages')}</Text>
@@ -124,59 +127,61 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
   )
 }
 
-const styles = StyleSheet.create({
-  pinned: {
-    borderBottomWidth: 1,
-    borderBottomColor: dark.border,
-  },
-  messages: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  loading: {
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-  },
-  placeholder: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    paddingVertical: spacing.md,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingBottom: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: dark.border,
-    backgroundColor: dark.bg.card,
-  },
-  primary: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: dark.text.accent,
-    alignItems: 'center',
-  },
-  primaryLabel: {
-    color: dark.bg.primary,
-    fontWeight: '600',
-    fontSize: font.base,
-  },
-  ghost: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    alignItems: 'center',
-  },
-  ghostLabel: {
-    color: dark.text.primary,
-    fontWeight: '500',
-    fontSize: font.base,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    pinned: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    messages: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+    },
+    loading: {
+      paddingVertical: spacing.xl,
+      alignItems: 'center',
+    },
+    placeholder: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      paddingVertical: spacing.md,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      paddingBottom: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      backgroundColor: theme.bg.card,
+    },
+    primary: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: theme.text.accent,
+      alignItems: 'center',
+    },
+    primaryLabel: {
+      color: theme.bg.primary,
+      fontWeight: '600',
+      fontSize: font.base,
+    },
+    ghost: {
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+    },
+    ghostLabel: {
+      color: theme.text.primary,
+      fontWeight: '500',
+      fontSize: font.base,
+    },
+  })
+}

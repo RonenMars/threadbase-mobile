@@ -13,12 +13,15 @@ import { ConversationListItem } from '@/components/sessions/shared/ConversationL
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { useServersStore } from '@/stores/servers'
+import { useTheme } from '@/contexts/ThemeContext'
 import { styles } from './TreeSessionsList.styles'
-import { searchStyles } from '../SearchStyles'
+import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './types'
 import type { MultiSession, MultiConversation } from '@/types/api'
 
 export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen }: TreeSessionsListProps) {
+  const theme = useTheme()
+  const searchStyles = makeSearchStyles(theme)
   const router = useRouter()
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')

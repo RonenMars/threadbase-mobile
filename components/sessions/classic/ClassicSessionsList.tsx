@@ -5,9 +5,9 @@ import { useDebounce } from 'use-debounce'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { dark } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { styles } from './ClassicSessionsList.styles'
-import { searchStyles } from '../SearchStyles'
+import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { MultiSession, SessionStatus } from '@/types/api'
 
 interface Props {
@@ -24,6 +24,8 @@ type Row =
   | { kind: 'session'; session: MultiSession }
 
 export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
+  const theme = useTheme()
+  const searchStyles = makeSearchStyles(theme)
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
@@ -65,7 +67,7 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={t('search.placeholder')}
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             autoFocus
             returnKeyType="search"
             clearButtonMode="while-editing"
@@ -87,7 +89,7 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
         contentContainerStyle={rows.length === 0 ? styles.emptyContent : styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
         }
         ListEmptyComponent={
           <View style={{ flex: 1 }}>

@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import type { AddServerAction } from '@/stores/settings'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 type Choice = Exclude<AddServerAction, 'ask'>
 
@@ -35,6 +36,8 @@ const OPTIONS: { id: Choice; label: string; description: string }[] = [
 
 export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
   const { t } = useTranslation(['servers', 'common'])
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [choice, setChoice] = useState<Choice>('add')
   const [rememberChoice, setRememberChoice] = useState(false)
 
@@ -75,8 +78,8 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
           <Switch
             value={rememberChoice}
             onValueChange={setRememberChoice}
-            trackColor={{ false: dark.border, true: dark.text.accent }}
-            thumbColor="#fff"
+            trackColor={{ false: theme.border, true: theme.text.accent }}
+            thumbColor={theme.colorMode === 'light' ? theme.bg.card : '#fff'}
           />
         </View>
 
@@ -96,68 +99,70 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: dark.bg.secondary },
-  handle: { backgroundColor: dark.border },
-  content: { flex: 1, padding: spacing.md, gap: spacing.md },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  subtitle: { color: dark.text.secondary, fontSize: font.sm },
-  options: { gap: spacing.sm },
-  option: {
-    borderWidth: 1,
-    borderColor: dark.border,
-    borderRadius: radius.md,
-    backgroundColor: dark.bg.card,
-    padding: spacing.md,
-    gap: spacing.xs,
-    minHeight: 44,
-  },
-  optionActive: {
-    borderColor: dark.text.accent,
-  },
-  optionLabel: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '500',
-  },
-  optionLabelActive: { color: dark.text.accent },
-  optionDescription: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-  },
-  rememberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rememberLabel: {
-    color: dark.text.primary,
-    fontSize: font.base,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    marginTop: 'auto',
-    paddingTop: spacing.sm,
-  },
-  cancelButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-  },
-  applyButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  applyText: {
-    color: dark.text.accent,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    sheetBg: { backgroundColor: theme.bg.secondary },
+    handle: { backgroundColor: theme.border },
+    content: { flex: 1, padding: spacing.md, gap: spacing.md },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    subtitle: { color: theme.text.secondary, fontSize: font.sm },
+    options: { gap: spacing.sm },
+    option: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: radius.md,
+      backgroundColor: theme.bg.card,
+      padding: spacing.md,
+      gap: spacing.xs,
+      minHeight: 44,
+    },
+    optionActive: {
+      borderColor: theme.text.accent,
+    },
+    optionLabel: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '500',
+    },
+    optionLabelActive: { color: theme.text.accent },
+    optionDescription: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+    },
+    rememberRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    rememberLabel: {
+      color: theme.text.primary,
+      fontSize: font.base,
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.sm,
+      marginTop: 'auto',
+      paddingTop: spacing.sm,
+    },
+    cancelButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    cancelText: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+    },
+    applyButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    applyText: {
+      color: theme.text.accent,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+  })
+}

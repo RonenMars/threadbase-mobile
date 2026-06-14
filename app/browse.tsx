@@ -22,7 +22,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 const MAX_RECENT_DIRS = 8
 
@@ -48,6 +49,8 @@ function buildSessionRoute(
 }
 
 export default function BrowseScreen() {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
@@ -129,7 +132,7 @@ export default function BrowseScreen() {
       headerLeft: currentPath
         ? () => (
             <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginLeft: 8, paddingRight: 16 }}>
-              <Text style={{ color: dark.text.accent, fontSize: font.base }}>{t('nav.back')}</Text>
+              <Text style={{ color: theme.text.accent, fontSize: font.base }}>{t('nav.back')}</Text>
             </TouchableOpacity>
           )
         : undefined,
@@ -372,13 +375,13 @@ export default function BrowseScreen() {
             value={newFolderName}
             onChangeText={setNewFolderName}
             placeholder="Folder name"
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             autoFocus
             onSubmitEditing={handleCreateFolder}
           />
           <TouchableOpacity style={styles.newFolderBtn} onPress={handleCreateFolder}>
             {createDir.isPending ? (
-              <ActivityIndicator size="small" color={dark.text.accent} />
+              <ActivityIndicator size="small" color={theme.text.accent} />
             ) : (
               <Text style={styles.newFolderBtnText}>{t('nav.create')}</Text>
             )}
@@ -412,10 +415,11 @@ export default function BrowseScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: dark.bg.primary,
+    backgroundColor: theme.bg.primary,
   },
   breadcrumbs: {
     flexDirection: 'row',
@@ -423,20 +427,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
   crumb: {
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontSize: font.sm,
   },
   crumbActive: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontWeight: '600',
   },
   crumbSeparator: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
   },
   listContainer: {
@@ -444,7 +448,7 @@ const styles = StyleSheet.create({
   },
   recents: {
     borderBottomWidth: 1,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
   },
   recentsHeader: {
     flexDirection: 'row',
@@ -452,17 +456,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: dark.bg.secondary,
+    backgroundColor: theme.bg.secondary,
   },
   recentsHeaderText: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     fontWeight: '600',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   recentsChevron: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
   },
   recentsList: {
@@ -482,11 +486,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recentName: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
   },
   recentPath: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     marginTop: 2,
   },
@@ -499,7 +503,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
   },
   folderIcon: {
     fontSize: 20,
@@ -507,11 +511,11 @@ const styles = StyleSheet.create({
   },
   dirName: {
     flex: 1,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
   },
   chevron: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xl,
     marginLeft: spacing.sm,
   },
@@ -519,21 +523,21 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     paddingHorizontal: spacing.md,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
   },
   newFolderBtn: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     height: 40,
     justifyContent: 'center',
   },
   newFolderBtnText: {
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontSize: font.sm,
     fontWeight: '600',
   },
@@ -543,7 +547,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: dark.border,
+    borderTopColor: theme.border,
     gap: spacing.md,
   },
   newFolderToggle: {
@@ -551,12 +555,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   newFolderToggleText: {
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontSize: font.sm,
   },
   startBtn: {
     flex: 1,
-    backgroundColor: dark.text.accent,
+    backgroundColor: theme.text.accent,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
@@ -569,4 +573,5 @@ const styles = StyleSheet.create({
     fontSize: font.base,
     fontWeight: '600',
   },
-})
+})}
+

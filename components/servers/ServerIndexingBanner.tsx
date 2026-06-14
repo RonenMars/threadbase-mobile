@@ -11,7 +11,8 @@ import Animated, {
   interpolateColor,
 } from 'react-native-reanimated'
 import { useTranslation } from 'react-i18next'
-import { dark, font, spacing } from '@/constants/theme'
+import { type Theme, font, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 
 const BEAM_WIDTH = 72
@@ -23,6 +24,8 @@ const SCAN_DURATION_MS = 1800
 
 // A single glowing dot that pulses opacity in sequence.
 function PulseDot({ index }: { index: number }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const opacity = useSharedValue(0.2)
 
   useEffect(() => {
@@ -51,6 +54,8 @@ function PulseDot({ index }: { index: number }) {
 
 // Sweeping beam that bounces left ↔ right along the track.
 function ScanBeam({ trackWidth }: { trackWidth: number }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const position = useSharedValue(0)
   const colorProgress = useSharedValue(0)
 
@@ -95,6 +100,8 @@ function ScanBeam({ trackWidth }: { trackWidth: number }) {
 }
 
 export function ServerIndexingBanner() {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation('servers')
   const { width: screenWidth } = useWindowDimensions()
   const servers = useServersStore((s) => s.servers)
@@ -137,57 +144,59 @@ export function ServerIndexingBanner() {
   )
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm + 2,
-    paddingBottom: spacing.md,
-    backgroundColor: dark.bg.secondary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-    gap: spacing.xs,
-  },
-  textBlock: {
-    gap: 2,
-  },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.sm,
-    fontWeight: '600',
-  },
-  subtitle: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    lineHeight: 16,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    gap: DOT_SPACING - DOT_SIZE,
-    marginTop: 2,
-  },
-  dot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    backgroundColor: dark.text.accent,
-  },
-  track: {
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT,
-    backgroundColor: dark.border,
-    overflow: 'hidden',
-    marginTop: 2,
-  },
-  beam: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: BEAM_WIDTH,
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    banner: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm + 2,
+      paddingBottom: spacing.md,
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+      gap: spacing.xs,
+    },
+    textBlock: {
+      gap: 2,
+    },
+    title: {
+      color: theme.text.primary,
+      fontSize: font.sm,
+      fontWeight: '600',
+    },
+    subtitle: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      lineHeight: 16,
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      gap: DOT_SPACING - DOT_SIZE,
+      marginTop: 2,
+    },
+    dot: {
+      width: DOT_SIZE,
+      height: DOT_SIZE,
+      borderRadius: DOT_SIZE / 2,
+      backgroundColor: theme.text.accent,
+    },
+    track: {
+      height: TRACK_HEIGHT,
+      borderRadius: TRACK_HEIGHT,
+      backgroundColor: theme.border,
+      overflow: 'hidden',
+      marginTop: 2,
+    },
+    beam: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: BEAM_WIDTH,
+      height: TRACK_HEIGHT,
+      borderRadius: TRACK_HEIGHT,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.9,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+  })
+}

@@ -4,14 +4,14 @@ import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } f
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/settings'
-import { dark } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
 import { ConvRow } from './ConvRow'
 import { Card } from '@/components/ui/Card'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
-import { styles } from './ProjectHubCard.styles'
+import { makeStyles } from './ProjectHubCard.styles'
 import type { ProjectHubCardProps } from './types'
 import type { MultiSession } from '@/types/api'
 
@@ -21,6 +21,8 @@ if (Platform.OS === 'android') {
 
 export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps) {
   const { t } = useTranslation('sessions')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const chevronProgress = useSharedValue(isOpen ? 1 : 0)
@@ -60,8 +62,8 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
     const hasLive = group.sessions.some(
       (s: MultiSession) => s.status === 'running' || s.status === 'waiting_input',
     )
-    if (hasLive) return { color: dark.status.waiting, opacity: 1 }
-    if (group.sessions.length > 0) return { color: dark.text.accent, opacity: 0.55 }
+    if (hasLive) return { color: theme.status.waiting, opacity: 1 }
+    if (group.sessions.length > 0) return { color: theme.text.accent, opacity: 0.55 }
     return null
   }, [group.sessions])
 

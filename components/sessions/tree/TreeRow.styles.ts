@@ -1,14 +1,15 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 11,
     paddingRight: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
     minHeight: 44,
     position: 'relative',
   },
@@ -28,27 +29,27 @@ export const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 18,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     lineHeight: 20,
     marginTop: -1,
   },
   chevronOpen: {
     transform: [{ rotate: '90deg' }],
-    color: dark.text.accent,
+    color: theme.text.accent,
   },
   leafDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: dark.text.secondary,
+    backgroundColor: theme.text.secondary,
   },
   label: {
     flex: 1,
     fontSize: font.sm,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
   },
   labelWithItems: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontWeight: '500',
   },
   meta: {
@@ -66,12 +67,12 @@ export const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: font.xs,
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontWeight: '600',
   },
   time: {
     fontSize: font.xs,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     minWidth: 44,
     textAlign: 'right',
     fontVariant: ['tabular-nums'],
@@ -79,4 +80,5 @@ export const styles = StyleSheet.create({
   chatIcon: {
     marginRight: 4,
   },
-})
+  })
+}

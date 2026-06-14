@@ -12,7 +12,8 @@ import { NestableDraggableFlatList, RenderItemParams } from 'react-native-dragga
 import { DotsSixVertical } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   activeServerIds: string[]
@@ -40,6 +41,8 @@ interface JigglingRowProps {
 }
 
 function JigglingRow({ server, index, drag, isActive, isEditingOrder }: JigglingRowProps) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const rotation = useSharedValue(0)
 
   useEffect(() => {
@@ -86,7 +89,7 @@ function JigglingRow({ server, index, drag, isActive, isEditingOrder }: Jiggling
           ) : null}
         </View>
         <View testID={`drag-handle-${server.id}`}>
-          <DotsSixVertical size={20} color={dark.text.secondary} />
+          <DotsSixVertical size={20} color={theme.text.secondary} />
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -103,6 +106,8 @@ export function DisplayedServersList({
   onReorder,
 }: Props) {
   const { t } = useTranslation('servers')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const latestServerId = activeServerIds[activeServerIds.length - 1]
 
   if (isEditingOrder) {
@@ -168,8 +173,8 @@ export function DisplayedServersList({
             <Switch
               value={selected}
               onValueChange={() => onChange(toggleServer(selectedServerIds, id))}
-              trackColor={{ false: dark.border, true: dark.text.accent }}
-              thumbColor="#fff"
+              trackColor={{ false: theme.border, true: theme.text.accent }}
+              thumbColor={theme.colorMode === 'light' ? theme.bg.card : '#fff'}
               testID={`server-toggle-${id}`}
             />
           </View>
@@ -179,60 +184,62 @@ export function DisplayedServersList({
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  jigglingRowWrapper: {
-    marginBottom: spacing.sm,
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  quickButton: {
-    backgroundColor: dark.bg.card,
-    borderColor: dark.border,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    minHeight: 38,
-    justifyContent: 'center',
-  },
-  quickButtonText: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '500',
-  },
-  row: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: dark.border,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  rowActive: {
-    opacity: 0.7,
-    transform: [{ scale: 1.02 }],
-  },
-  serverInfo: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  serverLabel: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '500',
-  },
-  serverUrl: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      gap: spacing.sm,
+    },
+    jigglingRowWrapper: {
+      marginBottom: spacing.sm,
+    },
+    quickRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    quickButton: {
+      backgroundColor: theme.bg.card,
+      borderColor: theme.border,
+      borderWidth: 1,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      minHeight: 38,
+      justifyContent: 'center',
+    },
+    quickButtonText: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontWeight: '500',
+    },
+    row: {
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    rowActive: {
+      opacity: 0.7,
+      transform: [{ scale: 1.02 }],
+    },
+    serverInfo: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    serverLabel: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '500',
+    },
+    serverUrl: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+    },
+  })
+}

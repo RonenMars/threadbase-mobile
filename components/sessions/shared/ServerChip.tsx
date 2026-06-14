@@ -1,5 +1,6 @@
 import { Text, Pressable, StyleSheet } from 'react-native'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { SERVER_COLOR_DEFAULT, initialsFor } from './serverPalette'
 
 export type ServerChipVariant = 'label' | 'letter' | 'symbol'
@@ -35,6 +36,8 @@ export function ServerChip({
   maxLabelChars = 12,
   testID,
 }: ServerChipProps) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const a11yLabel = `Server: ${label}`
 
   if (variant === 'letter' || variant === 'symbol') {
@@ -71,29 +74,31 @@ export function ServerChip({
   )
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    borderWidth: 1,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm - 2,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-  },
-  pillText: {
-    fontSize: font.xs - 2,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-  },
-  tile: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileText: {
-    color: dark.bg.primary,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    pill: {
+      borderWidth: 1,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm - 2,
+      paddingVertical: 2,
+      alignSelf: 'flex-start',
+    },
+    pillText: {
+      fontSize: font.xs - 2,
+      fontWeight: '600',
+      letterSpacing: 0.4,
+    },
+    tile: {
+      width: 18,
+      height: 18,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tileText: {
+      color: theme.bg.primary,
+      fontSize: 10,
+      fontWeight: '700',
+    },
+  })
+}

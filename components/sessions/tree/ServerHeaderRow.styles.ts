@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -12,7 +13,7 @@ export const styles = StyleSheet.create({
   },
   label: {
     fontSize: font.xs,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -20,6 +21,7 @@ export const styles = StyleSheet.create({
   },
   count: {
     fontSize: font.xs,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
   },
-})
+  })
+}

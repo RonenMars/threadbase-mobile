@@ -16,7 +16,8 @@ import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
 import type { ExchangeResult } from '@/services/pair-exchange'
 
 interface Props {
@@ -34,6 +35,7 @@ function splitUrl(full: string): { protocol: 'http' | 'https'; host: string } {
 
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const { t } = useTranslation(['common', 'servers'])
+  const theme = useTheme()
   const { servers, addServer, editServer } = useServersStore()
   const server = serverId ? servers[serverId] : null
   const isEditMode = serverId !== null
@@ -47,6 +49,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+
+  const styles = makeStyles(theme)
 
   // Pre-fill fields when opening
   useEffect(() => {
@@ -176,7 +180,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
             <View style={styles.header}>
               <Text style={styles.title}>{isEditMode ? 'Edit Server' : 'Add Server'}</Text>
               <TouchableOpacity onPress={handleDismiss} hitSlop={12} style={styles.closeBtn}>
-                <X size={20} color={dark.text.secondary} />
+                <X size={20} color={theme.text.secondary} />
               </TouchableOpacity>
             </View>
 
@@ -189,7 +193,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                   hitSlop={12}
                   accessibilityLabel="Scan QR code"
                 >
-                  <QrCode size={18} color={dark.text.accent} />
+                  <QrCode size={18} color={theme.text.accent} />
                 </TouchableOpacity>
               </View>
               <TextInput
@@ -197,7 +201,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 value={label}
                 onChangeText={(v) => { setLabel(v); markDirty() }}
                 placeholder="e.g. Work Mac, Home Server"
-                placeholderTextColor={dark.text.secondary}
+                placeholderTextColor={theme.text.secondary}
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="next"
@@ -216,7 +220,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                     onPress={() => { setShowProtocolPicker((v) => !v); markDirty() }}
                   >
                     <Text style={styles.protocolText}>{protocol}://</Text>
-                    <CaretDown size={10} color={dark.text.secondary} weight="bold" />
+                    <CaretDown size={10} color={theme.text.secondary} weight="bold" />
                   </TouchableOpacity>
                   {showProtocolPicker && (
                     <View style={styles.protocolOptions}>
@@ -239,7 +243,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                   value={urlHost}
                   onChangeText={(v) => { setUrlHost(v); markDirty() }}
                   placeholder="192.168.1.10:8766"
-                  placeholderTextColor={dark.text.secondary}
+                  placeholderTextColor={theme.text.secondary}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="url"
@@ -259,7 +263,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                   value={apiKey}
                   onChangeText={(v) => { setApiKey(v); markDirty() }}
                   placeholder="Paste your API token here"
-                  placeholderTextColor={dark.text.secondary}
+                  placeholderTextColor={theme.text.secondary}
                   secureTextEntry={!showApiKey}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -272,14 +276,14 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                   style={styles.eyeBtn}
                 >
                   {showApiKey
-                    ? <EyeSlash size={18} color={dark.text.secondary} />
-                    : <Eye size={18} color={dark.text.secondary} />}
+                    ? <EyeSlash size={18} color={theme.text.secondary} />
+                    : <Eye size={18} color={theme.text.secondary} />}
                 </TouchableOpacity>
               </View>
 
               {error ? (
                 <View style={styles.errorBox}>
-                  <XCircle size={14} color={dark.text.danger} weight="fill" />
+                  <XCircle size={14} color={theme.text.danger} weight="fill" />
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
@@ -305,169 +309,171 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  avoidingView: {
-    flex: 1,
-  },
-  avoidingViewContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-  },
-  modal: {
-    width: '100%',
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: dark.border,
-    overflow: 'hidden',
-    maxHeight: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-  },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  closeBtn: {
-    padding: spacing.xs,
-  },
-  body: {
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  fieldLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  fieldLabel: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  input: {
-    backgroundColor: dark.bg.primary,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    color: dark.text.primary,
-    fontSize: font.base,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
-  },
-  urlRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    zIndex: 1,
-  },
-  urlInput: {
-    flex: 1,
-  },
-  protocolBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: dark.bg.primary,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    paddingHorizontal: spacing.sm,
-    minHeight: 44,
-  },
-  protocolText: {
-    color: dark.text.primary,
-    fontSize: font.base,
-  },
-  protocolOptions: {
-    position: 'absolute',
-    top: 46,
-    left: 0,
-    right: 0,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    zIndex: 10,
-    overflow: 'hidden',
-  },
-  protocolOption: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  protocolOptionText: {
-    color: dark.text.primary,
-    fontSize: font.base,
-  },
-  protocolOptionSelected: {
-    color: dark.text.accent,
-    fontWeight: '600',
-  },
-  apiKeyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  apiKeyInput: {
-    flex: 1,
-  },
-  eyeBtn: {
-    padding: spacing.xs,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  pasteBtn: {
-    color: dark.text.accent,
-    fontSize: font.sm,
-    fontWeight: '500',
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: 'rgba(248,81,73,0.08)',
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(248,81,73,0.25)',
-    padding: spacing.sm,
-  },
-  errorText: {
-    color: dark.text.danger,
-    fontSize: font.sm,
-    flex: 1,
-    lineHeight: 18,
-  },
-  saveBtn: {
-    backgroundColor: dark.text.accent,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-    marginTop: spacing.xs,
-  },
-  saveBtnDisabled: {
-    opacity: 0.4,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    overlay: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    avoidingView: {
+      flex: 1,
+    },
+    avoidingViewContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.xl,
+    },
+    modal: {
+      width: '100%',
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: theme.border,
+      overflow: 'hidden',
+      maxHeight: '85%',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    title: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    closeBtn: {
+      padding: spacing.xs,
+    },
+    body: {
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    fieldLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    fieldLabel: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontWeight: '500',
+      marginBottom: 2,
+    },
+    input: {
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      color: theme.text.primary,
+      fontSize: font.base,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: 44,
+    },
+    urlRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      zIndex: 1,
+    },
+    urlInput: {
+      flex: 1,
+    },
+    protocolBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      paddingHorizontal: spacing.sm,
+      minHeight: 44,
+    },
+    protocolText: {
+      color: theme.text.primary,
+      fontSize: font.base,
+    },
+    protocolOptions: {
+      position: 'absolute',
+      top: 46,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      zIndex: 10,
+      overflow: 'hidden',
+    },
+    protocolOption: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    protocolOptionText: {
+      color: theme.text.primary,
+      fontSize: font.base,
+    },
+    protocolOptionSelected: {
+      color: theme.text.accent,
+      fontWeight: '600',
+    },
+    apiKeyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    apiKeyInput: {
+      flex: 1,
+    },
+    eyeBtn: {
+      padding: spacing.xs,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    pasteBtn: {
+      color: theme.text.accent,
+      fontSize: font.sm,
+      fontWeight: '500',
+    },
+    errorBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      backgroundColor: 'rgba(248,81,73,0.08)',
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: 'rgba(248,81,73,0.25)',
+      padding: spacing.sm,
+    },
+    errorText: {
+      color: theme.text.danger,
+      fontSize: font.sm,
+      flex: 1,
+      lineHeight: 18,
+    },
+    saveBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+      marginTop: spacing.xs,
+    },
+    saveBtnDisabled: {
+      opacity: 0.4,
+    },
+    saveBtnText: {
+      color: '#fff',
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+  })
+}

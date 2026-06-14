@@ -1,3 +1,6 @@
+// Use the real ThemeContext so the provider/hook contract tests remain meaningful
+jest.unmock('@/contexts/ThemeContext')
+
 import React from 'react'
 import { renderHook } from '@testing-library/react-native'
 import { useSettingsStore } from '@/stores/settings'
