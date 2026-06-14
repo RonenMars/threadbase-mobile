@@ -45,11 +45,13 @@ export function usePermissionsStatus() {
   // Sync camera status from the expo-camera hook (no extra async call needed)
   useEffect(() => {
     if (!cameraPermission) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatuses((prev) => ({ ...prev, camera: cameraPermission.status as PermissionStatus }))
   }, [cameraPermission])
 
   // Fetch all non-camera permissions on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh()
   }, [refresh])
 
