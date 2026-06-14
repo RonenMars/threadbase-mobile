@@ -1,13 +1,12 @@
 import React, { useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
@@ -199,10 +198,11 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   }
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={80}
+      contentContainerStyle={styles.rootContent}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={16}
     >
       <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
       <Text style={styles.headline}>{t('connect.headline')}</Text>
@@ -318,12 +318,13 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
               : '…connecting'}
       </PrimaryButton>
       <View style={{ height: 14 }} />
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingHorizontal: 22, paddingTop: 4 },
+  root: { flex: 1 },
+  rootContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 4 },
   eyebrow: {
     color: colors.amber400,
     fontFamily: fonts.mono,

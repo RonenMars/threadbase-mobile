@@ -15,6 +15,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { queryClient, queryPersister, persistBuster, shouldPersistQuery } from '@/services/query-client'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
@@ -248,6 +249,7 @@ export default function RootLayout() {
     <I18nextProvider i18n={i18n}>
     <ThemeProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
         <SafeAreaProvider>
           {!splashDone && <SplashAnimation onComplete={handleSplashComplete} />}
           <PersistQueryClientProvider
@@ -271,6 +273,7 @@ export default function RootLayout() {
             </AuthGate>
           </PersistQueryClientProvider>
         </SafeAreaProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </ThemeProvider>
     </I18nextProvider>

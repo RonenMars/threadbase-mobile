@@ -1,13 +1,12 @@
 import React, { useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
@@ -33,10 +32,11 @@ export function ServerNameStep({ value, onSubmit }: Props) {
   const skip = () => onSubmit('')
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={80}
+      contentContainerStyle={styles.rootContent}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={16}
     >
       <Text style={styles.eyebrow}>{t('serverName.eyebrow')}</Text>
       <Text style={styles.headline}>{t('serverName.headline')}</Text>
@@ -74,12 +74,13 @@ export function ServerNameStep({ value, onSubmit }: Props) {
       </TouchableOpacity>
 
       <View style={{ height: 14 }} />
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingHorizontal: 22, paddingTop: 4 },
+  root: { flex: 1 },
+  rootContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 4 },
   eyebrow: {
     color: colors.amber400,
     fontFamily: fonts.mono,
