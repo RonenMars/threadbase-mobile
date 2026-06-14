@@ -188,7 +188,7 @@ jq ".expo.android.versionCode = $NEXT_CODE" app.json > app.json.tmp && mv app.js
 echo "  ✓ app.json updated to versionCode $NEXT_CODE"
 
 git add app.json
-git commit -m "chore(android): bump version code to $NEXT_CODE"
+git commit -m "chore(android): bump version code to $NEXT_CODE [skip-ci]"
 echo "  ✓ committed bump (push with: git push)"
 # Exit 2 signals to ship-android.sh that a bump commit was made.
 # The caller should roll it back if the subsequent upload fails.

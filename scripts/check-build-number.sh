@@ -126,5 +126,5 @@ echo "  ✓ app.json updated to buildNumber $NEXT_BUILD"
 # re-use it even if the upload later fails), so the commit is justified
 # regardless of ship outcome. Push is left to the user.
 git add app.json
-git commit -m "chore(ios): bump build number to $NEXT_BUILD"
+git commit -m "chore(ios): bump build number to $NEXT_BUILD [skip-ci]"
 echo "  ✓ committed bump (push with: git push)"
