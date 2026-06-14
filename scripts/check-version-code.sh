@@ -94,29 +94,37 @@ EOF
 [[ -n "$ACCESS_TOKEN" ]] || { echo "ERROR: OAuth2 token minting failed — check GOOGLE_APPLICATION_CREDENTIALS and service account permissions" >&2; exit 1; }
 
 # Query the androidpublisher API for the highest versionCode across all
-# active tracks using the edit-less tracks endpoint, which reflects the
-# live published state (edits/{id}/tracks only shows the current edit's
-# modifications — an empty edit returns nothing).
+# sources: the edit-less tracks endpoint (live published state) plus a
+# throwaway edit's bundles.list (catches versionCodes uploaded in edits
+# that were committed but not yet reflected by the tracks endpoint).
 REMOTE_CODE=$(node - "$PACKAGE_NAME" "$ACCESS_TOKEN" <<'EOF'
 const https = require('https');
 
-function get(path, token) {
+function request(method, path, token, payload) {
   return new Promise((resolve, reject) => {
+    const body = payload ? JSON.stringify(payload) : '';
     const opts = {
       hostname: 'androidpublisher.googleapis.com',
       path,
-      headers: { Authorization: 'Bearer ' + token },
+      method,
+      headers: {
+        Authorization: 'Bearer ' + token,
+        ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {}),
+      },
     };
-    let body = '';
-    https.get(opts, r => {
-      r.on('data', d => body += d);
+    let resp = '';
+    const req = https.request(opts, r => {
+      r.on('data', d => resp += d);
       r.on('end', () => {
-        // 404 = app has no published tracks yet (first-ever upload); treat as remote = 0.
         if (r.statusCode === 404) { resolve({ __notFound: true }); return; }
-        try { resolve(JSON.parse(body)); }
-        catch(e) { reject(new Error('JSON parse failed (HTTP ' + r.statusCode + '): ' + body.slice(0, 300))); }
+        if (r.statusCode === 204 || !resp) { resolve({}); return; }
+        try { resolve(JSON.parse(resp)); }
+        catch(e) { reject(new Error('JSON parse failed (HTTP ' + r.statusCode + '): ' + resp.slice(0, 300))); }
       });
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
   });
 }
 
@@ -126,10 +134,12 @@ function get(path, token) {
 
   if (!token || token === '-') { process.stderr.write('ERROR: access token is empty — OAuth2 minting failed\n'); process.exit(1); }
 
-  // Use the edit-less tracks endpoint — reads live published state directly.
-  const tracks = await get(`/androidpublisher/v3/applications/${pkg}/tracks`, token);
+  const base = `/androidpublisher/v3/applications/${pkg}`;
+  let maxCode = 0;
+
+  // Source 1: edit-less tracks endpoint — live published state.
+  const tracks = await request('GET', `${base}/tracks`, token, null);
   if (tracks.__notFound) {
-    // No tracks exist yet — this is the first build for this app. Remote = 0.
     process.stderr.write('  no published tracks found (first upload) — treating remote versionCode as 0\n');
     process.stdout.write('0');
     return;
@@ -138,14 +148,37 @@ function get(path, token) {
     process.stderr.write('tracks.list error: ' + JSON.stringify(tracks.error) + '\n');
     process.exit(1);
   }
-
-  let maxCode = 0;
   for (const track of (tracks.tracks || [])) {
     for (const release of (track.releases || [])) {
       for (const vc of (release.versionCodes || [])) {
         const n = parseInt(vc, 10);
         if (n > maxCode) maxCode = n;
       }
+    }
+  }
+
+  // Source 2: open a throwaway edit and list bundles — catches versionCodes
+  // that were uploaded in a recently-committed edit but haven't propagated
+  // to the tracks endpoint yet (eventual consistency window).
+  let editId = null;
+  try {
+    const edit = await request('POST', `${base}/edits`, token, {});
+    if (edit.error) throw new Error('edits.insert: ' + JSON.stringify(edit.error));
+    editId = edit.id;
+
+    const bundles = await request('GET', `${base}/edits/${editId}/bundles`, token, null);
+    if (!bundles.error) {
+      for (const b of (bundles.bundles || [])) {
+        const n = parseInt(b.versionCode, 10);
+        if (n > maxCode) maxCode = n;
+      }
+    }
+  } catch(e) {
+    process.stderr.write('  bundles.list via edit skipped: ' + e.message + '\n');
+  } finally {
+    // Always delete the throwaway edit so it doesn't block future uploads.
+    if (editId) {
+      await request('DELETE', `${base}/edits/${editId}`, token, null).catch(() => {});
     }
   }
 

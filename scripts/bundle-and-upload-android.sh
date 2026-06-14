@@ -53,6 +53,8 @@ GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
 if [[ "$GRADLE_VC" != "$VERSION_CODE" ]]; then
   echo "  syncing build.gradle versionCode $GRADLE_VC → $VERSION_CODE"
   sed -i '' "s/versionCode $GRADLE_VC/versionCode $VERSION_CODE/" "$GRADLE_BUILD"
+  # Remove the stale AAB so Gradle can't serve it from cache with the old versionCode.
+  rm -f "$AAB_PATH"
 fi
 
 echo "▸ Building Android App Bundle (versionCode=$VERSION_CODE, versionName=$VERSION_NAME)"
