@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useSessionActions } from '@/hooks/useSessionActions'
 
 const AUTO_PROCEED_TIMEOUT_MS = 60000
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation('queue')
   const sheetRef = useRef<BottomSheet>(null)
   const { respondToPlan } = useSessionActions(serverId, sessionId)
@@ -95,7 +98,7 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
             value={editedPrompt}
             onChangeText={setEditedPrompt}
             placeholder="Edit the prompt before proceeding..."
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             multiline
             autoFocus
           />
@@ -117,64 +120,66 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
   )
 }
 
-const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: dark.bg.secondary },
-  handle: { backgroundColor: dark.border },
-  content: { padding: spacing.lg, gap: spacing.md },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: dark.text.primary, fontSize: font.xl, fontWeight: '700' },
-  timer: { color: dark.text.secondary, fontSize: font.sm },
-  planBox: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    padding: spacing.md,
-  },
-  planText: { color: dark.text.primary, fontSize: font.base, lineHeight: 22 },
-  editInput: {
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.text.accent,
-    color: dark.text.primary,
-    fontSize: font.base,
-    padding: spacing.md,
-    minHeight: 100,
-  },
-  actions: { flexDirection: 'row', gap: spacing.sm },
-  btnProceed: {
-    flex: 1,
-    backgroundColor: dark.status.running,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  btnProceedText: { color: '#fff', fontWeight: '700', fontSize: font.base },
-  btnEdit: {
-    flex: 1,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: dark.border,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  btnEditText: { color: dark.text.primary, fontSize: font.base },
-  btnCancel: {
-    flex: 1,
-    backgroundColor: `${dark.status.failed}20`,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: dark.status.failed,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  btnCancelText: { color: dark.status.failed, fontSize: font.base },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    sheetBg: { backgroundColor: theme.bg.secondary },
+    handle: { backgroundColor: theme.border },
+    content: { padding: spacing.lg, gap: spacing.md },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    title: { color: theme.text.primary, fontSize: font.xl, fontWeight: '700' },
+    timer: { color: theme.text.secondary, fontSize: font.sm },
+    planBox: {
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: spacing.md,
+    },
+    planText: { color: theme.text.primary, fontSize: font.base, lineHeight: 22 },
+    editInput: {
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.text.accent,
+      color: theme.text.primary,
+      fontSize: font.base,
+      padding: spacing.md,
+      minHeight: 100,
+    },
+    actions: { flexDirection: 'row', gap: spacing.sm },
+    btnProceed: {
+      flex: 1,
+      backgroundColor: theme.status.running,
+      borderRadius: radius.md,
+      padding: spacing.sm,
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    btnProceedText: { color: '#fff', fontWeight: '700', fontSize: font.base },
+    btnEdit: {
+      flex: 1,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.md,
+      padding: spacing.sm,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.border,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    btnEditText: { color: theme.text.primary, fontSize: font.base },
+    btnCancel: {
+      flex: 1,
+      backgroundColor: `${theme.status.failed}20`,
+      borderRadius: radius.md,
+      padding: spacing.sm,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.status.failed,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    btnCancelText: { color: theme.status.failed, fontSize: font.base },
+  })
+}

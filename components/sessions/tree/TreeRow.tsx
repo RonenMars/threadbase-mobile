@@ -1,9 +1,10 @@
 import { View, Text, TouchableOpacity, Pressable } from 'react-native'
 import { ChatCircle } from 'phosphor-react-native'
-import { dark, spacing } from '@/constants/theme'
+import { spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { activeSessionColor, hasLiveSession, latestActivityLabel } from './treeUtils'
 import { LiveDot } from '@/components/sessions/LiveDot'
-import { styles } from './TreeRow.styles'
+import { makeStyles } from './TreeRow.styles'
 import type { TreeNode } from './types'
 
 interface Props {
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSelectLeaf }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const hasChildren = node.children.size > 0
   const hasItems = node.sessions.length + node.conversations.length > 0
   const isLeaf = !hasChildren
@@ -89,7 +92,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
             <ChatCircle
               size={14}
               weight="fill"
-              color={`${dark.text.accent}cc`}
+              color={`${theme.text.accent}cc`}
             />
           </Pressable>
         )}

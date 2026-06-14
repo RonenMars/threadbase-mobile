@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { formatListTime, formatListTimeAccessible } from './formatListTime'
 import { pathDisplay, type PathDisplayMode } from './pathDisplay'
@@ -84,6 +85,8 @@ function shouldShowServer(mode: ConversationListServerMode, activeServerCount: n
 }
 
 export function ConversationListItem(props: ConversationListItemProps) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const {
     title,
     path,
@@ -121,7 +124,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const serverVisible = shouldShowServer(showServer, activeServerCount, Boolean(serverLabel))
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
-    : (live ? dark.status.waiting : null)
+    : (live ? theme.status.waiting : null)
 
   // Path rendering — only consulted when no title.
   const pathParts = useMemo(() => {
@@ -150,7 +153,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const renderTitle = () => {
     if (!primaryText) return null
     if (!highlight) return <Text style={styles.title} numberOfLines={1}>{primaryText}</Text>
-    return <Text style={styles.title} numberOfLines={1}>{highlightSegments(primaryText, highlight)}</Text>
+    return <Text style={styles.title} numberOfLines={1}>{highlightSegments(primaryText, highlight, styles)}</Text>
   }
 
   const showPreview = !isChip && previewMode !== 'none'
@@ -198,7 +201,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       )}
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
-          <LiveDot live={live} color={live ? dark.status.waiting : dark.text.accent} size={6} />
+          <LiveDot live={live} color={live ? theme.status.waiting : theme.text.accent} size={6} />
         </View>
       )}
       {leading === 'depth' && !isChip && (
@@ -264,7 +267,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   )
 }
 
-function highlightSegments(text: string, needle: string): React.ReactNode {
+function highlightSegments(text: string, needle: string, styles: ReturnType<typeof makeStyles>): React.ReactNode {
   const trimmed = needle.trim()
   if (!trimmed) return text
   const lower = text.toLowerCase()
@@ -288,105 +291,107 @@ function highlightSegments(text: string, needle: string): React.ReactNode {
   return out
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    minHeight: 64,
-  },
-  rowCompact: {
-    minHeight: 48,
-    paddingVertical: spacing.xs + 2,
-  },
-  rowChip: {
-    minHeight: 28,
-    paddingVertical: 0,
-    paddingHorizontal: spacing.sm,
-  },
-  strip: {
-    width: STRIP_WIDTH,
-    alignSelf: 'stretch',
-    borderRadius: STRIP_RADIUS,
-    marginVertical: spacing.xs,
-  },
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: dark.bg.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontWeight: '700',
-  },
-  dotSlot: {
-    width: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  depthSlot: {
-    height: 1,
-  },
-  body: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  parent: {
-    color: dark.text.secondary,
-    fontSize: font.xs - 1,
-    fontWeight: '500',
-  },
-  title: {
-    color: dark.text.primary,
-    fontSize: font.sm,
-    fontWeight: '600',
-    lineHeight: font.sm + 5,
-  },
-  meta: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    lineHeight: font.xs + 4,
-  },
-  match: {
-    backgroundColor: `${dark.text.accent}38`,
-    color: dark.text.primary,
-  },
-  tail: {
-    alignItems: 'flex-end',
-    gap: 4,
-    flexShrink: 0,
-  },
-  time: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontWeight: '500',
-  },
-  livePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: `${dark.status.waiting}24`,
-  },
-  livePillDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: dark.status.waiting,
-  },
-  livePillText: {
-    color: dark.status.waiting,
-    fontSize: font.xs - 2,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      minHeight: 64,
+    },
+    rowCompact: {
+      minHeight: 48,
+      paddingVertical: spacing.xs + 2,
+    },
+    rowChip: {
+      minHeight: 28,
+      paddingVertical: 0,
+      paddingHorizontal: spacing.sm,
+    },
+    strip: {
+      width: STRIP_WIDTH,
+      alignSelf: 'stretch',
+      borderRadius: STRIP_RADIUS,
+      marginVertical: spacing.xs,
+    },
+    avatar: {
+      width: 28,
+      height: 28,
+      borderRadius: 6,
+      backgroundColor: theme.bg.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '700',
+    },
+    dotSlot: {
+      width: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    depthSlot: {
+      height: 1,
+    },
+    body: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    parent: {
+      color: theme.text.secondary,
+      fontSize: font.xs - 1,
+      fontWeight: '500',
+    },
+    title: {
+      color: theme.text.primary,
+      fontSize: font.sm,
+      fontWeight: '600',
+      lineHeight: font.sm + 5,
+    },
+    meta: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      lineHeight: font.xs + 4,
+    },
+    match: {
+      backgroundColor: `${theme.text.accent}38`,
+      color: theme.text.primary,
+    },
+    tail: {
+      alignItems: 'flex-end',
+      gap: 4,
+      flexShrink: 0,
+    },
+    time: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '500',
+    },
+    livePill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 999,
+      backgroundColor: `${theme.status.waiting}24`,
+    },
+    livePillDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: theme.status.waiting,
+    },
+    livePillText: {
+      color: theme.status.waiting,
+      fontSize: font.xs - 2,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+  })
+}

@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from './LiveDot'
 import type { SessionStatus } from '@/types/api'
 
@@ -9,19 +10,20 @@ const STATUS_LABELS: Record<SessionStatus, string> = {
   idle: 'Idle',
 }
 
-const STATUS_COLORS: Record<SessionStatus, string> = {
-  running: dark.status.running,
-  waiting_input: dark.status.running,
-  idle: dark.status.idle,
-}
-
 interface Props {
   status: SessionStatus
   isRefetching?: boolean
 }
 
 export function SessionStatusBadge({ status, isRefetching }: Props) {
-  const color = STATUS_COLORS[status] ?? dark.status.idle
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const STATUS_COLORS: Record<SessionStatus, string> = {
+    running: theme.status.running,
+    waiting_input: theme.status.running,
+    idle: theme.status.idle,
+  }
+  const color = STATUS_COLORS[status] ?? theme.status.idle
   const isLive = status === 'running' || status === 'waiting_input'
 
   return (
@@ -36,7 +38,8 @@ export function SessionStatusBadge({ status, isRefetching }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(_theme: Theme) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -49,4 +52,5 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     fontWeight: '500',
   },
-})
+  })
+}

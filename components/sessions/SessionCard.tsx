@@ -9,7 +9,8 @@ import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { Badge } from '@/components/ui/Badge'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -38,6 +39,8 @@ function formatElapsed(ms: number): string {
 
 export function SessionCard({ session, isFirstSession = false }: Props) {
   const { t } = useTranslation('sessions')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
@@ -54,10 +57,10 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   // glance which server the card came from), then brand blue for idle.
   // Echoes the brand mark; not a decorative side-stripe border.
   const spineColor = isLive
-    ? dark.status.waiting
+    ? theme.status.waiting
     : multipleServers
       ? serverColor
-      : dark.text.accent
+      : theme.text.accent
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -126,7 +129,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
           <View style={styles.body}>
             {/* Line 1: project name + trailing meta chips */}
             <View style={styles.titleRow}>
-              <FolderSimple size={14} color={dark.text.secondary} weight="fill" />
+              <FolderSimple size={14} color={theme.text.secondary} weight="fill" />
               <Text style={styles.projectName} numberOfLines={1}>{displayName}</Text>
               <View style={styles.titleMeta}>
                 {session.branch ? <Badge label={session.branch} /> : null}
@@ -164,13 +167,14 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   cardWrap: {
     marginBottom: spacing.sm,
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
     overflow: 'hidden', // clip the spine to the card's rounded corners
   },
   touchable: {
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
   },
   projectName: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
     fontWeight: '600',
     flexShrink: 1,
@@ -208,7 +212,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   timeLabel: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
@@ -220,20 +224,21 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   metaMono: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontVariant: ['tabular-nums'],
   },
   metaSeparator: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     opacity: 0.5,
   },
   output: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     opacity: 0.85,
   },
-})
+  })
+}

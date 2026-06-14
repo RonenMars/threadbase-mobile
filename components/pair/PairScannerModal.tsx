@@ -10,7 +10,8 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import {
   exchangeToken,
   parsePairUri,
@@ -42,6 +43,8 @@ function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
 
 export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [permission, requestPermission] = useCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
@@ -92,7 +95,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   if (!permission) {
     body = (
       <View style={styles.center}>
-        <ActivityIndicator color={dark.text.primary} />
+        <ActivityIndicator color={theme.text.primary} />
       </View>
     )
   } else if (!permission.granted) {
@@ -118,7 +121,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   } else if (phase === 'exchanging') {
     body = (
       <View style={styles.center}>
-        <ActivityIndicator color={dark.text.primary} />
+        <ActivityIndicator color={theme.text.primary} />
         <Text style={styles.statusText}>{t('scanner.exchanging')}</Text>
       </View>
     )
@@ -168,76 +171,79 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-  closeBtn: {
-    position: 'absolute',
-    top: 56,
-    right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeText: { color: '#fff', fontSize: 28, lineHeight: 30 },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  statusText: { color: dark.text.primary, fontSize: font.base },
-  permissionWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  permissionTitle: { color: dark.text.primary, fontSize: font.xl, fontWeight: '700' },
-  permissionBody: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  permissionHint: { color: dark.text.warning, fontSize: font.sm, textAlign: 'center' },
-  primaryBtn: {
-    marginTop: spacing.md,
-    backgroundColor: dark.text.accent,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  primaryBtnText: { color: '#fff', fontSize: font.base, fontWeight: '700' },
-  reticleWrap: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  reticle: {
-    width: 240,
-    height: 240,
-    borderWidth: 2,
-    borderColor: '#fff',
-    borderRadius: radius.lg,
-    backgroundColor: 'transparent',
-  },
-  reticleHint: {
-    color: '#fff',
-    fontSize: font.base,
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowRadius: 6,
-  },
-  errorTitle: { color: dark.text.danger, fontSize: font.lg, fontWeight: '700' },
-  errorBody: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    // Camera screen always uses black background — camera overlay context
+    root: { flex: 1, backgroundColor: '#000' },
+    closeBtn: {
+      position: 'absolute',
+      top: 56,
+      right: 20,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeText: { color: '#fff', fontSize: 28, lineHeight: 30 },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    statusText: { color: theme.text.primary, fontSize: font.base },
+    permissionWrap: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
+      gap: spacing.md,
+    },
+    permissionTitle: { color: theme.text.primary, fontSize: font.xl, fontWeight: '700' },
+    permissionBody: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    permissionHint: { color: theme.text.warning, fontSize: font.sm, textAlign: 'center' },
+    primaryBtn: {
+      marginTop: spacing.md,
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
+    },
+    primaryBtnText: { color: '#fff', fontSize: font.base, fontWeight: '700' },
+    reticleWrap: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.lg,
+    },
+    reticle: {
+      width: 240,
+      height: 240,
+      borderWidth: 2,
+      borderColor: '#fff',
+      borderRadius: radius.lg,
+      backgroundColor: 'transparent',
+    },
+    reticleHint: {
+      color: '#fff',
+      fontSize: font.base,
+      textShadowColor: 'rgba(0,0,0,0.7)',
+      textShadowRadius: 6,
+    },
+    errorTitle: { color: theme.text.danger, fontSize: font.lg, fontWeight: '700' },
+    errorBody: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+  })
+}

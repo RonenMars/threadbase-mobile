@@ -4,7 +4,8 @@ import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/botto
 import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { SessionStatus } from '@/types/api'
 
 export type SortType = 'lastActivity' | 'startedAt'
@@ -20,17 +21,19 @@ interface Props {
 
 const SNAP_POINTS = ['50%', '85%']
 
-const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
-  { value: 'running', label: 'Running', color: dark.status.running },
-  { value: 'idle', label: 'Idle', color: dark.status.idle },
-]
+function getStatusOptions(theme: Theme): { value: SessionStatus; label: string; color: string }[] {
+  return [
+    { value: 'running', label: 'Running', color: theme.status.running },
+    { value: 'idle', label: 'Idle', color: theme.status.idle },
+  ]
+}
 
 const SORT_OPTIONS: { value: SortType; label: string }[] = [
   { value: 'lastActivity', label: 'Last activity' },
   { value: 'startedAt', label: 'Started' },
 ]
 
-const ALL_STATUSES: SessionStatus[] = STATUS_OPTIONS.map((s) => s.value)
+const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
 
 function toggleStatus(selected: SessionStatus[], status: SessionStatus): SessionStatus[] {
   if (selected.includes(status)) return selected.filter((s) => s !== status)
@@ -45,6 +48,9 @@ export function ServerFilterSheet({
   sortType,
   onChangeSortType,
 }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const STATUS_OPTIONS = getStatusOptions(theme)
   const { t } = useTranslation(['servers', 'common'])
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -197,102 +203,104 @@ export function ServerFilterSheet({
   )
 }
 
-const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: dark.bg.secondary },
-  handle: { backgroundColor: dark.border },
-  content: { flex: 1, padding: spacing.md, gap: spacing.md },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  closeButton: { padding: spacing.xs },
-  closeButtonText: { color: dark.text.secondary, fontSize: font.lg, lineHeight: font.lg },
-  section: { gap: spacing.sm },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: dark.border,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    minHeight: 36,
-  },
-  chipSelected: {
-    borderColor: dark.text.accent,
-    backgroundColor: dark.bg.primary,
-  },
-  chipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-  },
-  chipText: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: dark.text.primary,
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  quickButton: {
-    backgroundColor: dark.bg.card,
-    borderColor: dark.border,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  quickButtonText: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    fontWeight: '500',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    marginTop: 'auto',
-    paddingTop: spacing.sm,
-  },
-  cancelButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-  },
-  applyButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  applyText: {
-    color: dark.text.accent,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    sheetBg: { backgroundColor: theme.bg.secondary },
+    handle: { backgroundColor: theme.border },
+    content: { flex: 1, padding: spacing.md, gap: spacing.md },
+    titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    closeButton: { padding: spacing.xs },
+    closeButtonText: { color: theme.text.secondary, fontSize: font.lg, lineHeight: font.lg },
+    section: { gap: spacing.sm },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionTitle: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      minHeight: 36,
+    },
+    chipSelected: {
+      borderColor: theme.text.accent,
+      backgroundColor: theme.bg.primary,
+    },
+    chipDot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.full,
+    },
+    chipText: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontWeight: '500',
+    },
+    chipTextSelected: {
+      color: theme.text.primary,
+    },
+    quickRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    quickButton: {
+      backgroundColor: theme.bg.card,
+      borderColor: theme.border,
+      borderWidth: 1,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      minHeight: 32,
+      justifyContent: 'center',
+    },
+    quickButtonText: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '500',
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.sm,
+      marginTop: 'auto',
+      paddingTop: spacing.sm,
+    },
+    cancelButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    cancelText: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+    },
+    applyButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    applyText: {
+      color: theme.text.accent,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+  })
+}

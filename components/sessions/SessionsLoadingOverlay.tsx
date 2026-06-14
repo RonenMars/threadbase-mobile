@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Animated, Easing, StyleSheet, View, Text } from 'react-native'
 import { CircleNotch } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   visible: boolean
@@ -14,6 +15,8 @@ interface Props {
 const SPIN_DURATION_MS = 900
 
 export function SessionsLoadingOverlay({ visible, loaded, total, serverLabel }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation('sessions')
   const [spin] = useState(() => new Animated.Value(0))
 
@@ -49,7 +52,7 @@ export function SessionsLoadingOverlay({ visible, loaded, total, serverLabel }: 
     >
       <View style={styles.card}>
         <Animated.View style={[styles.iconWrap, { transform: [{ rotate }] }]}>
-          <CircleNotch size={28} color={dark.text.accent} weight="bold" />
+          <CircleNotch size={28} color={theme.text.accent} weight="bold" />
         </Animated.View>
 
         <Text style={styles.title} numberOfLines={1}>
@@ -72,7 +75,8 @@ export function SessionsLoadingOverlay({ visible, loaded, total, serverLabel }: 
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   scrim: {
     position: 'absolute',
     top: 0,
@@ -85,7 +89,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   card: {
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: 16,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -104,13 +108,13 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: spacing.sm,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
     fontWeight: '600',
   },
   subtitle: {
     marginTop: 4,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
   },
   barTrack: {
@@ -119,11 +123,12 @@ const styles = StyleSheet.create({
     width: 192,
     borderRadius: 999,
     overflow: 'hidden',
-    backgroundColor: dark.border,
+    backgroundColor: theme.border,
   },
   barFill: {
     height: '100%',
-    backgroundColor: dark.text.accent,
+    backgroundColor: theme.text.accent,
     borderRadius: 999,
   },
-})
+  })
+}

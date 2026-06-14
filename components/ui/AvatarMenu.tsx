@@ -2,10 +2,11 @@ import React from 'react'
 import { TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Gear } from 'phosphor-react-native'
-import { dark } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export function AvatarMenu() {
   const router = useRouter()
+  const theme = useTheme()
 
   return (
     <TouchableOpacity
@@ -15,7 +16,7 @@ export function AvatarMenu() {
       accessibilityRole="button"
       hitSlop={8}
     >
-      <Gear size={22} color={dark.text.secondary} />
+      <Gear size={22} color={theme.text.secondary} />
     </TouchableOpacity>
   )
 }

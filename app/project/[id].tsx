@@ -13,7 +13,8 @@ import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { useAllProjectChats } from '@/hooks/useProjectChats'
 import { useConversationSearch } from '@/hooks/useConversations'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiConversation } from '@/types/api'
 import type { ProjectChat } from '@/types/projectChat'
 
@@ -22,6 +23,8 @@ import type { ProjectChat } from '@/types/projectChat'
  * query params are display/debug only — never used as primary identity.
  */
 export default function ProjectDetailScreen() {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation('browse')
   const params = useLocalSearchParams<{ id: string; path?: string; server?: string }>()
   const projectId = params.id ?? ''
@@ -98,7 +101,7 @@ export default function ProjectDetailScreen() {
             <RefreshControl
               refreshing={false}
               onRefresh={handleRefresh}
-              tintColor={dark.text.secondary}
+              tintColor={theme.text.secondary}
             />
           }
         >
@@ -124,10 +127,11 @@ export default function ProjectDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: dark.bg.primary,
+    backgroundColor: theme.bg.primary,
   },
   centered: {
     flex: 1,
@@ -136,12 +140,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   errorText: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
     fontWeight: '600',
   },
   errorHint: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     marginTop: spacing.sm,
     opacity: 0.6,
@@ -150,4 +154,5 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-})
+})}
+

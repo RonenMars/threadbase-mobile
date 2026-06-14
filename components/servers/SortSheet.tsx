@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { SortBy, SortOrder } from '@/types/ui'
 
 interface Props {
@@ -36,6 +37,8 @@ export function SortSheet({
   onChangeSortBy,
   onChangeSortOrder,
 }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
   const [draftBy, setDraftBy] = useState<SortBy>(sortBy)
   const [draftOrder, setDraftOrder] = useState<SortOrder>(sortOrder)
@@ -138,73 +141,75 @@ export function SortSheet({
   )
 }
 
-const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: dark.bg.secondary },
-  handle: { backgroundColor: dark.border },
-  content: { flex: 1, padding: spacing.md, gap: spacing.md },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: dark.text.primary, fontSize: font.lg, fontWeight: '600' },
-  closeButton: { padding: spacing.xs },
-  closeButtonText: { color: dark.text.secondary, fontSize: font.lg, lineHeight: font.lg },
-  section: { gap: spacing.sm },
-  sectionTitle: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: dark.border,
-    backgroundColor: dark.bg.card,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    minHeight: 36,
-  },
-  chipSelected: {
-    borderColor: dark.text.accent,
-    backgroundColor: dark.bg.primary,
-  },
-  chipText: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: dark.text.primary,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    marginTop: 'auto',
-    paddingTop: spacing.sm,
-  },
-  cancelButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    color: dark.text.secondary,
-    fontSize: font.base,
-  },
-  applyButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  applyText: {
-    color: dark.text.accent,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    sheetBg: { backgroundColor: theme.bg.secondary },
+    handle: { backgroundColor: theme.border },
+    content: { flex: 1, padding: spacing.md, gap: spacing.md },
+    titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    closeButton: { padding: spacing.xs },
+    closeButtonText: { color: theme.text.secondary, fontSize: font.lg, lineHeight: font.lg },
+    section: { gap: spacing.sm },
+    sectionTitle: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      minHeight: 36,
+    },
+    chipSelected: {
+      borderColor: theme.text.accent,
+      backgroundColor: theme.bg.primary,
+    },
+    chipText: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontWeight: '500',
+    },
+    chipTextSelected: {
+      color: theme.text.primary,
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.sm,
+      marginTop: 'auto',
+      paddingTop: spacing.sm,
+    },
+    cancelButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    cancelText: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+    },
+    applyButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    applyText: {
+      color: theme.text.accent,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+  })
+}

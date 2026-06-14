@@ -41,8 +41,9 @@ import { clientLog } from '@/lib/clientLog'
 import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
-import { dark, font, spacing } from '@/constants/theme'
-import { searchStyles } from '@/components/sessions/SearchStyles'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
+import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
@@ -65,6 +66,8 @@ function SessionNamesSyncer({ serverId }: { serverId: string }) {
 }
 
 export default function ProjectsHub() {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const { t } = useTranslation(['sessions', 'shared', 'settings'])
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
@@ -291,7 +294,7 @@ export default function ProjectsHub() {
             style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel={t('settings:header.title')}
           >
-            <Gear size={20} color={dark.text.secondary} />
+            <Gear size={20} color={theme.text.secondary} />
           </Pressable>
         </View>
 
@@ -303,9 +306,9 @@ export default function ProjectsHub() {
             style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Server status"
           >
-            <Cloud size={20} color={dark.text.secondary} />
+            <Cloud size={20} color={theme.text.secondary} />
             {!allConnected ? (
-              <View style={[styles.notifDot, { backgroundColor: someConnected ? dark.status.waiting : dark.status.failed }]} />
+              <View style={[styles.notifDot, { backgroundColor: someConnected ? theme.status.waiting : theme.status.failed }]} />
             ) : null}
           </Pressable>
           <Pressable
@@ -314,7 +317,7 @@ export default function ProjectsHub() {
             style={({ pressed }) => [styles.headerButton, searchOpen && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Search"
           >
-            <MagnifyingGlass size={20} color={searchOpen ? dark.text.primary : dark.text.secondary} />
+            <MagnifyingGlass size={20} color={searchOpen ? theme.text.primary : theme.text.secondary} />
           </Pressable>
           <Pressable
             onPress={() => setSheetOpen(true)}
@@ -323,7 +326,7 @@ export default function ProjectsHub() {
             accessibilityLabel={t('filter.label')}
             testID="filter-sort-button"
           >
-            <SlidersHorizontal size={20} color={isSheetActive ? dark.text.accent : dark.text.secondary} />
+            <SlidersHorizontal size={20} color={isSheetActive ? theme.text.accent : theme.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
           </Pressable>
         </View>
@@ -382,7 +385,7 @@ export default function ProjectsHub() {
                   style={[styles.segmentTab, classicTab === 'sessions' && styles.segmentTabActive]}
                   onPress={() => setClassicTab('sessions')}
                 >
-                  <Lightning size={13} color={classicTab === 'sessions' ? dark.text.primary : dark.text.secondary} />
+                  <Lightning size={13} color={classicTab === 'sessions' ? theme.text.primary : theme.text.secondary} />
                   <Text style={[styles.segmentText, classicTab === 'sessions' && styles.segmentTextActive]}>
                     {t('header.title')}
                   </Text>
@@ -391,7 +394,7 @@ export default function ProjectsHub() {
                   style={[styles.segmentTab, classicTab === 'history' && styles.segmentTabActive]}
                   onPress={() => setClassicTab('history')}
                 >
-                  <Books size={13} color={classicTab === 'history' ? dark.text.primary : dark.text.secondary} />
+                  <Books size={13} color={classicTab === 'history' ? theme.text.primary : theme.text.secondary} />
                   <Text style={[styles.segmentText, classicTab === 'history' && styles.segmentTextActive]}>
                     {t('header.history')}
                   </Text>
@@ -488,6 +491,9 @@ function MergedClassicList({
   searchQuery: string
   onSearchChange: (q: string) => void
 }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const searchStyles = makeSearchStyles(theme)
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
@@ -569,7 +575,7 @@ function MergedClassicList({
         testID={`classic-conv-${item.title || item.id}`}
       >
         <View style={styles.convCardTitleRow}>
-          <FolderSimple size={18} color={dark.text.secondary} weight="fill" />
+          <FolderSimple size={18} color={theme.text.secondary} weight="fill" />
           <Text style={styles.convCardTitle} numberOfLines={1}>
             {item.title || item.projectPath}
           </Text>
@@ -594,7 +600,7 @@ function MergedClassicList({
             value={searchQuery}
             onChangeText={onSearchChange}
             placeholder={t('search.placeholder')}
-            placeholderTextColor={dark.text.secondary}
+            placeholderTextColor={theme.text.secondary}
             autoFocus
             returnKeyType="search"
             clearButtonMode="while-editing"
@@ -623,7 +629,7 @@ function MergedClassicList({
         }}
         contentContainerStyle={styles.mergedContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
         }
         ListEmptyComponent={
           <View style={{ flex: 1 }}>
@@ -636,10 +642,11 @@ function MergedClassicList({
 }
 
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: dark.bg.primary,
+    backgroundColor: theme.bg.primary,
   },
   header: {
     flexDirection: 'row',
@@ -661,7 +668,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   headerTitle: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.lg,
     fontWeight: '600',
   },
@@ -678,7 +685,7 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: dark.bg.primary,
+    borderColor: theme.bg.primary,
   },
   headerButton: {
     width: 32,
@@ -697,7 +704,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: dark.text.accent,
+    backgroundColor: theme.text.accent,
   },
   classicContainer: {
     flex: 1,
@@ -707,10 +714,10 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
     overflow: 'hidden',
   },
   segmentTab: {
@@ -723,15 +730,15 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   segmentTabActive: {
-    backgroundColor: dark.bg.secondary,
+    backgroundColor: theme.bg.secondary,
   },
   segmentText: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
     fontWeight: '500',
   },
   segmentTextActive: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontWeight: '600',
   },
   mergedContent: {
@@ -739,11 +746,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   convCard: {
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: 10,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
     gap: spacing.xs,
     marginBottom: spacing.sm,
   },
@@ -754,31 +761,32 @@ const styles = StyleSheet.create({
   },
   convCardTitle: {
     flex: 1,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
     fontWeight: '600',
   },
   convCardPreview: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
   },
   convCardMeta: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
   },
   fabToast: {
     position: 'absolute',
     bottom: 88,
     alignSelf: 'center',
-    backgroundColor: dark.bg.card,
+    backgroundColor: theme.bg.card,
     borderRadius: 8,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderWidth: 1,
-    borderColor: dark.border,
+    borderColor: theme.border,
   },
   fabToastText: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.sm,
   },
-})
+})}
+

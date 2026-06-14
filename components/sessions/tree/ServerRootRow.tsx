@@ -1,8 +1,8 @@
 import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
-import { dark } from '@/constants/theme'
-import { styles } from './ServerRootRow.styles'
+import { useTheme } from '@/contexts/ThemeContext'
+import { makeStyles } from './ServerRootRow.styles'
 import type { TreeNode } from './types'
 
 interface Props {
@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function ServerRootRow({ node, serverLabel, onSelectLeaf }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const hasDirectItems = (node.sessions.length + node.conversations.length) > 0
 
   return (
@@ -20,7 +22,7 @@ export function ServerRootRow({ node, serverLabel, onSelectLeaf }: Props) {
       onPress={hasDirectItems ? () => onSelectLeaf(node) : undefined}
       activeOpacity={hasDirectItems ? 0.65 : 1}
     >
-      <View style={[styles.statusDot, { backgroundColor: dark.text.secondary }]} />
+      <View style={[styles.statusDot, { backgroundColor: theme.text.secondary }]} />
       <View style={styles.drillContent}>
         <Text style={styles.drillLabel} numberOfLines={1}>{node.name}</Text>
         <Text style={styles.drillStatus}>{serverLabel}</Text>

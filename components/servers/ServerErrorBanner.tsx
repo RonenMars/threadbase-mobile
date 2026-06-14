@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { StyleSheet, View, Text, Pressable } from 'react-native'
 import { WarningCircle, CaretDown, CaretUp } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { dark, font, spacing } from '@/constants/theme'
+import { type Theme, font, spacing } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
@@ -24,6 +25,9 @@ export function ServerErrorBanner() {
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+
+  const theme = useTheme()
+  const styles = makeStyles(theme)
 
   const [expanded, setExpanded] = useState(false)
 
@@ -50,7 +54,7 @@ export function ServerErrorBanner() {
         accessibilityLabel={expanded ? t('error.collapse') : t('error.expand')}
       >
         <View style={styles.iconAndText}>
-          <WarningCircle size={16} color={dark.text.danger} weight="fill" />
+          <WarningCircle size={16} color={theme.text.danger} weight="fill" />
           <View style={styles.textBlock}>
             <Text style={styles.title}>{t('error.label')}</Text>
             <Text style={styles.subtitle} numberOfLines={expanded ? undefined : 1}>
@@ -59,8 +63,8 @@ export function ServerErrorBanner() {
           </View>
         </View>
         {expanded
-          ? <CaretUp size={14} color={dark.text.secondary} />
-          : <CaretDown size={14} color={dark.text.secondary} />
+          ? <CaretUp size={14} color={theme.text.secondary} />
+          : <CaretDown size={14} color={theme.text.secondary} />
         }
       </Pressable>
 
@@ -74,54 +78,56 @@ export function ServerErrorBanner() {
   )
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm + 2,
-    paddingBottom: spacing.md,
-    backgroundColor: dark.bg.secondary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
-    gap: spacing.xs,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  iconAndText: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-    flex: 1,
-  },
-  textBlock: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    color: dark.text.danger,
-    fontSize: font.sm,
-    fontWeight: '600',
-  },
-  subtitle: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    lineHeight: 16,
-  },
-  detail: {
-    backgroundColor: dark.bg.primary,
-    borderRadius: 6,
-    padding: spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: dark.border,
-    marginTop: 2,
-  },
-  detailText: {
-    color: dark.text.danger,
-    fontSize: font.xs,
-    fontFamily: 'monospace',
-    lineHeight: 18,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    banner: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm + 2,
+      paddingBottom: spacing.md,
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+      gap: spacing.xs,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    iconAndText: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.xs,
+      flex: 1,
+    },
+    textBlock: {
+      flex: 1,
+      gap: 2,
+    },
+    title: {
+      color: theme.text.danger,
+      fontSize: font.sm,
+      fontWeight: '600',
+    },
+    subtitle: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      lineHeight: 16,
+    },
+    detail: {
+      backgroundColor: theme.bg.primary,
+      borderRadius: 6,
+      padding: spacing.sm,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.border,
+      marginTop: 2,
+    },
+    detailText: {
+      color: theme.text.danger,
+      fontSize: font.xs,
+      fontFamily: 'monospace',
+      lineHeight: 18,
+    },
+  })
+}

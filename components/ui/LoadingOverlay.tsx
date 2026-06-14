@@ -1,12 +1,13 @@
 import React from 'react'
 import { View, ActivityIndicator } from 'react-native'
-import { dark } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   visible: boolean
 }
 
 export function LoadingOverlay({ visible }: Props) {
+  const theme = useTheme()
   if (!visible) return null
   return (
     <View
@@ -15,7 +16,7 @@ export function LoadingOverlay({ visible }: Props) {
       accessibilityRole="progressbar"
       accessibilityLabel="Loading"
     >
-      <ActivityIndicator size="large" color={dark.text.accent} />
+      <ActivityIndicator size="large" color={theme.text.accent} />
     </View>
   )
 }

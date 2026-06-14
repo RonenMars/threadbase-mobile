@@ -2,7 +2,8 @@ import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRecyclingState } from '@shopify/flash-list'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { MessageContent } from '@/types/api'
 
 type ThinkingBlock = Extract<MessageContent, { type: 'thinking' }>
@@ -15,6 +16,8 @@ interface Props {
 
 export function ThinkingCard({ block, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
   const isRedacted = !block.thinking && !!block.signature
 
@@ -41,43 +44,45 @@ export function ThinkingCard({ block, recycleKey }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: dark.border,
-    backgroundColor: dark.bg.card,
-    overflow: 'hidden',
-    marginVertical: spacing.xs,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  label: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '600',
-  },
-  chevron: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  body: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  content: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    lineHeight: font.sm * 1.5,
-  },
-  redacted: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    fontStyle: 'italic',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      overflow: 'hidden',
+      marginVertical: spacing.xs,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    label: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontWeight: '600',
+    },
+    chevron: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+    },
+    body: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    content: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      lineHeight: font.sm * 1.5,
+    },
+    redacted: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontStyle: 'italic',
+    },
+  })
+}

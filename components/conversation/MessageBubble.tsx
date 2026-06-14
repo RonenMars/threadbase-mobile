@@ -4,7 +4,8 @@ import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { Message, MessageContent } from '@/types/api'
 import { flexRow } from '@/lib/rtl'
 
@@ -24,6 +25,8 @@ function decodeEntities(s: string) {
 }
 
 function TextContent({ text }: { text: string }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   return <Text style={styles.messageText} selectable>{text}</Text>
 }
 
@@ -32,6 +35,8 @@ function TextContent({ text }: { text: string }) {
 const CODE_THEME = themes.oneDark
 
 function DiffLines({ code }: { code: string }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const lines = code.split('\n')
   return (
     <>
@@ -53,6 +58,8 @@ function DiffLines({ code }: { code: string }) {
 // costs tens of ms — memoized so CodeBlock-local state changes (the copied
 // flag) and parent re-renders don't re-tokenize the same code.
 const HighlightedCode = React.memo(function HighlightedCode({ code, language }: { code: string; language: Language }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   return (
     <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
       {language === 'diff' ? (
@@ -90,6 +97,8 @@ const HighlightedCode = React.memo(function HighlightedCode({ code, language }: 
 
 function CodeBlock({ code, language }: { code: string; language: Language }) {
   const { t } = useTranslation('conversation')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => {
@@ -193,6 +202,8 @@ function parseTextParts(text: string): ParsedPart[] {
 }
 
 function TextBlockBody({ text }: { text: string }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   // The fence split + per-block parse runs on every render otherwise —
   // memoized so re-renders of the bubble don't redo string work.
   const parts = useMemo(() => parseTextParts(text), [text])
@@ -211,6 +222,8 @@ function TextBlockBody({ text }: { text: string }) {
 }
 
 function ContentBlock({ block }: { block: MessageContent }) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   if (block.type === 'text') {
     return <TextBlockBody text={block.text} />
   }
@@ -229,6 +242,8 @@ function ContentBlock({ block }: { block: MessageContent }) {
 // changes don't re-render — and re-highlight — every visible row.
 export const MessageBubble = React.memo(function MessageBubble({ message }: Props) {
   const { t } = useTranslation('conversation')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const isUser = message.role === 'user'
 
   return (
@@ -245,97 +260,99 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: Prop
   )
 })
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: spacing.md,
-    marginVertical: spacing.xs,
-  },
-  containerUser: { alignItems: 'flex-end' },
-  containerAssistant: { alignItems: 'flex-start' },
-  bubble: {
-    maxWidth: '85%',
-    alignSelf: 'flex-start',
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  bubbleUser: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#1f6feb',
-    borderBottomRightRadius: radius.sm,
-  },
-  bubbleAssistant: {
-    backgroundColor: dark.bg.card,
-    borderWidth: 1,
-    borderColor: dark.border,
-    borderBottomLeftRadius: radius.sm,
-  },
-  messageText: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    lineHeight: 22,
-  },
-  codeBlock: {
-    backgroundColor: dark.bg.primary,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    marginVertical: spacing.xs,
-  },
-  codeHeader: {
-    flexDirection: flexRow(),
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    backgroundColor: '#1c2128',
-  },
-  codeHeaderText: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  codeCopyBtn: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  codeCopyText: {
-    color: dark.text.accent,
-    fontSize: font.xs,
-  },
-  codeBody: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-  },
-  codeLine: {
-    flexDirection: flexRow(),
-    flexWrap: 'wrap',
-  },
-  codeToken: {
-    fontFamily: 'monospace',
-    fontSize: font.sm,
-    fontWeight: '600',
-    color: dark.text.primary,
-  },
-  diffAdd: {
-    backgroundColor: 'rgba(46, 160, 67, 0.18)',
-  },
-  diffDel: {
-    backgroundColor: 'rgba(248, 81, 73, 0.18)',
-  },
-  toolTag: {
-    backgroundColor: `${dark.text.accent}20`,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  toolTagText: {
-    color: dark.text.accent,
-    fontSize: font.xs,
-  },
-  tokens: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    marginTop: spacing.xs,
-    alignSelf: 'flex-end',
-  },
-  gap: { gap: spacing.xs },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: spacing.md,
+      marginVertical: spacing.xs,
+    },
+    containerUser: { alignItems: 'flex-end' },
+    containerAssistant: { alignItems: 'flex-start' },
+    bubble: {
+      maxWidth: '85%',
+      alignSelf: 'flex-start',
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    bubbleUser: {
+      alignSelf: 'flex-end',
+      backgroundColor: theme.text.accent,
+      borderBottomRightRadius: radius.sm,
+    },
+    bubbleAssistant: {
+      backgroundColor: theme.bg.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderBottomLeftRadius: radius.sm,
+    },
+    messageText: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      lineHeight: 22,
+    },
+    codeBlock: {
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+      marginVertical: spacing.xs,
+    },
+    codeHeader: {
+      flexDirection: flexRow(),
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      backgroundColor: '#1c2128',
+    },
+    codeHeaderText: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+    },
+    codeCopyBtn: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.sm,
+    },
+    codeCopyText: {
+      color: theme.text.accent,
+      fontSize: font.xs,
+    },
+    codeBody: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+    },
+    codeLine: {
+      flexDirection: flexRow(),
+      flexWrap: 'wrap',
+    },
+    codeToken: {
+      fontFamily: 'monospace',
+      fontSize: font.sm,
+      fontWeight: '600',
+      color: theme.text.primary,
+    },
+    diffAdd: {
+      backgroundColor: 'rgba(46, 160, 67, 0.18)',
+    },
+    diffDel: {
+      backgroundColor: 'rgba(248, 81, 73, 0.18)',
+    },
+    toolTag: {
+      backgroundColor: `${theme.text.accent}20`,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    toolTagText: {
+      color: theme.text.accent,
+      fontSize: font.xs,
+    },
+    tokens: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      marginTop: spacing.xs,
+      alignSelf: 'flex-end',
+    },
+    gap: { gap: spacing.xs },
+  })
+}

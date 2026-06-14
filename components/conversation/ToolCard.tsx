@@ -2,7 +2,8 @@ import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import type { MessageContent } from '@/types/api'
 
 const TOOL_ICONS: Record<string, string> = {
@@ -26,6 +27,8 @@ interface Props {
 
 export function ToolCard({ block, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
 
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
@@ -70,50 +73,52 @@ export function ToolCard({ block, recycleKey }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: dark.bg.secondary,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: dark.border,
-    overflow: 'hidden',
-  },
-  cardError: {
-    borderColor: dark.status.failed,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-    minHeight: 44,
-  },
-  icon: { fontSize: font.sm },
-  name: {
-    color: dark.text.secondary,
-    fontSize: font.sm,
-    flex: 1,
-  },
-  errorBadge: {
-    color: dark.status.failed,
-    fontSize: font.xs,
-    fontWeight: '600',
-  },
-  chevron: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-  },
-  body: {
-    borderTopWidth: 1,
-    borderTopColor: dark.border,
-    padding: spacing.sm,
-  },
-  code: {
-    color: dark.text.primary,
-    fontFamily: 'monospace',
-    fontSize: font.xs,
-  },
-  errorText: {
-    color: dark.status.failed,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: theme.bg.secondary,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: theme.border,
+      overflow: 'hidden',
+    },
+    cardError: {
+      borderColor: theme.status.failed,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      padding: spacing.sm,
+      minHeight: 44,
+    },
+    icon: { fontSize: font.sm },
+    name: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      flex: 1,
+    },
+    errorBadge: {
+      color: theme.status.failed,
+      fontSize: font.xs,
+      fontWeight: '600',
+    },
+    chevron: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+    },
+    body: {
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+      padding: spacing.sm,
+    },
+    code: {
+      color: theme.text.primary,
+      fontFamily: 'monospace',
+      fontSize: font.xs,
+    },
+    errorText: {
+      color: theme.status.failed,
+    },
+  })
+}

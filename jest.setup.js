@@ -222,3 +222,14 @@ jest.mock('react-native-keyboard-controller', () => {
 
 // ─── WebSocket global (for ws-client tests) ──────────────────────────────────
 global.WebSocket = global.WebSocket || class {}
+
+// ─── ThemeContext ─────────────────────────────────────────────────────────────
+// All tests run with the dark theme so components using useTheme() don't
+// require a ThemeProvider wrapper in test renders.
+jest.mock('@/contexts/ThemeContext', () => {
+  const { dark } = require('./constants/theme')
+  return {
+    useTheme: () => dark,
+    ThemeProvider: ({ children }) => children,
+  }
+})

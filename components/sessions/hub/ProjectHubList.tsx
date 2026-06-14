@@ -10,10 +10,10 @@ import { useServersStore } from '@/stores/servers'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
-import { dark } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { XCircle } from 'phosphor-react-native'
 import { isMultiSession } from './types'
-import { styles } from './ProjectHubList.styles'
+import { makeStyles } from './ProjectHubList.styles'
 import type { ProjectHubListProps, SearchSection } from './types'
 import type { ProjectGroup } from './useProjectGroups'
 import type { MultiSession, MultiConversation } from '@/types/api'
@@ -27,6 +27,8 @@ export function ProjectHubList({
   onRefresh,
   searchOpen,
 }: ProjectHubListProps) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const router = useRouter()
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
@@ -196,13 +198,13 @@ export function ProjectHubList({
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder={t('search.placeholder')}
-              placeholderTextColor={dark.text.secondary}
+              placeholderTextColor={theme.text.secondary}
               autoFocus
               returnKeyType="search"
             />
             {searchQuery.length > 0 ? (
               <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn} hitSlop={8}>
-                <XCircle size={20} color={dark.text.primary} weight="fill" />
+                <XCircle size={20} color={theme.text.primary} weight="fill" />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -256,7 +258,7 @@ export function ProjectHubList({
             )
           }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={dark.text.secondary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
           }
           contentContainerStyle={hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent}
           ListEmptyComponent={

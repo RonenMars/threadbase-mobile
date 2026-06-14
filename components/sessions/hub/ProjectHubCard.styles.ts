@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   // Spine wrapper: a flex row that pins the brand-coloured thread spine to
   // the left edge of the card and lets the existing header / body fill the
   // remaining width. Mirrors SessionCard's structure.
@@ -31,32 +32,32 @@ export const styles = StyleSheet.create({
     gap: 2,
   },
   headerParent: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs - 1,
     fontWeight: '500',
   },
   headerSuffix: {
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.lg,
     fontWeight: '600',
     lineHeight: font.lg + 4,
   },
   headerActivity: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
   },
   projectName: {
     flex: 1,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontSize: font.base,
     fontWeight: '600',
   },
   countBadge: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
   },
   chevron: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.lg,
     fontWeight: '300',
     lineHeight: font.lg,
@@ -65,7 +66,7 @@ export const styles = StyleSheet.create({
   },
   body: {
     borderTopWidth: 1,
-    borderTopColor: dark.border,
+    borderTopColor: theme.border,
     paddingBottom: spacing.md,
   },
   section: {
@@ -73,7 +74,7 @@ export const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   sectionLabel: {
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     fontSize: font.xs,
     fontWeight: '600',
     letterSpacing: 0.8,
@@ -83,7 +84,8 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   seeAllText: {
-    color: dark.text.accent,
+    color: theme.text.accent,
     fontSize: font.sm,
   },
-})
+  })
+}

@@ -1,14 +1,15 @@
 import { StyleSheet } from 'react-native'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 
-export const styles = StyleSheet.create({
+export function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   drillRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: dark.border,
+    borderBottomColor: theme.border,
     gap: spacing.sm,
     minHeight: 44,
   },
@@ -23,7 +24,7 @@ export const styles = StyleSheet.create({
   },
   drillLabel: {
     fontSize: font.base,
-    color: dark.text.primary,
+    color: theme.text.primary,
     fontWeight: '600',
   },
   drillStatus: {
@@ -33,7 +34,8 @@ export const styles = StyleSheet.create({
   },
   drillTime: {
     fontSize: font.xs,
-    color: dark.text.secondary,
+    color: theme.text.secondary,
     flexShrink: 0,
   },
-})
+  })
+}

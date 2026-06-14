@@ -10,7 +10,8 @@ import {
 } from 'react-native'
 import { X, Copy, Check, type IconProps } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
-import { dark, font, spacing } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export interface InfoField {
   label: string
@@ -33,6 +34,8 @@ interface Props {
 }
 
 export function InfoModal({ visible, onClose, title, fields, action }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
 
   const handleCopy = async (label: string, value: string) => {
@@ -55,11 +58,11 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
                 accessibilityLabel={action.accessibilityLabel}
                 testID={action.testID}
               >
-                <action.icon size={22} color={dark.text.secondary} />
+                <action.icon size={22} color={theme.text.secondary} />
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity testID="info-modal-close-button" onPress={onClose} hitSlop={8} accessibilityLabel="Close">
-              <X size={22} color={dark.text.secondary} />
+              <X size={22} color={theme.text.secondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -82,8 +85,8 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
                   hitSlop={8}
                 >
                   {isCopied
-                    ? <Check size={16} color={dark.text.success} />
-                    : <Copy size={16} color={dark.text.secondary} />}
+                    ? <Check size={16} color={theme.text.success} />
+                    : <Copy size={16} color={theme.text.secondary} />}
                 </TouchableOpacity>
               </View>
             )
@@ -94,62 +97,64 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  sheet: {
-    backgroundColor: dark.bg.secondary,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '70%',
-    borderTopWidth: 1,
-    borderColor: dark.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: dark.border,
-  },
-  headerTitle: {
-    color: dark.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  scroll: { flexGrow: 0 },
-  scrollContent: { paddingBottom: spacing.xl },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: dark.border,
-    gap: spacing.sm,
-  },
-  rowLeft: { flex: 1, gap: 2 },
-  label: {
-    color: dark.text.secondary,
-    fontSize: font.xs,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  value: {
-    color: dark.text.primary,
-    fontSize: font.sm,
-    fontFamily: 'monospace',
-  },
-  copyBtn: {
-    padding: spacing.xs,
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    sheet: {
+      backgroundColor: theme.bg.secondary,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      maxHeight: '70%',
+      borderTopWidth: 1,
+      borderColor: theme.border,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    headerTitle: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '600',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    scroll: { flexGrow: 0 },
+    scrollContent: { paddingBottom: spacing.xl },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+      gap: spacing.sm,
+    },
+    rowLeft: { flex: 1, gap: 2 },
+    label: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    value: {
+      color: theme.text.primary,
+      fontSize: font.sm,
+      fontFamily: 'monospace',
+    },
+    copyBtn: {
+      padding: spacing.xs,
+    },
+  })
+}

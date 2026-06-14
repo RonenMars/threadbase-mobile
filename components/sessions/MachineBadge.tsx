@@ -1,17 +1,18 @@
 import React from 'react'
 import { Badge } from '@/components/ui/Badge'
-import { dark } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   machineName: string
 }
 
 export function MachineBadge({ machineName }: Props) {
+  const theme = useTheme()
   return (
     <Badge
       label={machineName}
-      color={dark.text.accent}
-      bg={`${dark.text.accent}20`}
+      color={theme.text.accent}
+      bg={`${theme.text.accent}20`}
     />
   )
 }
