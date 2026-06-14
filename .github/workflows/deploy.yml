@@ -77,6 +77,19 @@ jobs:
             ./scripts/bootstrap-ios-signing.sh
           fi
 
+      - name: Install npm dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-
+
+      - name: Install CocoaPods
+        run: cd ios && pod install --deployment
+
       - name: Bump build number → commit → push to main
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
