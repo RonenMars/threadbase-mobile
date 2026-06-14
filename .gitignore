@@ -24,6 +24,7 @@ e2e/_artifacts/
 web-build/
 # android/ and ios/ are tracked — CNG is not used in this project
 # (prebuild does not run in the ship pipeline; native dirs are modified directly)
+android/.kotlin/
 .env.*
 .env
 # Keep committed templates — real env files stay ignored.

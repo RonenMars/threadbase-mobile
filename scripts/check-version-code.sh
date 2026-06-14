@@ -236,7 +236,17 @@ echo "  ⚠ app.json versionCode ($LOCAL_CODE) ≤ Play latest ($REMOTE_CODE) �
 jq ".expo.android.versionCode = $NEXT_CODE" app.json > app.json.tmp && mv app.json.tmp app.json
 echo "  ✓ app.json updated to versionCode $NEXT_CODE"
 
-git add app.json
+# Sync build.gradle to match so both files are committed together.
+GRADLE_BUILD="android/app/build.gradle"
+if [[ -f "$GRADLE_BUILD" ]]; then
+  GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
+  if [[ "$GRADLE_VC" != "$NEXT_CODE" ]]; then
+    sed -i '' "s/versionCode $GRADLE_VC/versionCode $NEXT_CODE/" "$GRADLE_BUILD"
+    echo "  ✓ build.gradle synced to versionCode $NEXT_CODE"
+  fi
+fi
+
+git add app.json "$GRADLE_BUILD"
 git commit -m "chore(android): bump version code to $NEXT_CODE [skip-ci]"
 echo "  ✓ committed bump (push with: git push)"
 # Exit 2 signals to ship-android.sh that a bump commit was made.
