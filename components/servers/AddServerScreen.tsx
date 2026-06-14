@@ -5,13 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { QrCode, Lightning } from 'phosphor-react-native'
-import { useHeaderHeight } from 'expo-router/react-navigation'
 import { useNavigation, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
@@ -30,7 +27,6 @@ export function AddServerScreen({ isAddingServer }: Props) {
   const { t } = useTranslation(['servers', 'shared', 'settings'])
   const router = useRouter()
   const navigation = useNavigation()
-  const headerHeight = useHeaderHeight()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
   const { addServerAction, setAddServerAction } = useSettingsStore()
   const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:8766'
@@ -156,12 +152,12 @@ export function AddServerScreen({ isAddingServer }: Props) {
 
   return (
     <>
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={16}
       >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <Lightning size={64} color="#f0883e" weight="fill" />
           <Text style={styles.title}>{t('shared:app.title')}</Text>
@@ -281,8 +277,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
         </View>
 
         <Text style={styles.hint}>{t('servers:form.hint')}</Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
       <AddServerActionSheet
         visible={Boolean(newServerId)}
         onClose={() => {

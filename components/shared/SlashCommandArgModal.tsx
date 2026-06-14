@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, PaperPlaneRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
@@ -50,12 +49,14 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
       statusBarTranslucent
       onRequestClose={onDismiss}
     >
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.outer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        contentContainerStyle={styles.outerContent}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={8}
       >
         <Pressable style={styles.backdrop} onPress={onDismiss} />
-        <View style={styles.card}>
+        <View style={styles.card} pointerEvents="box-none">
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -112,7 +113,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Modal>
   )
 }
@@ -120,6 +121,9 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
 const styles = StyleSheet.create({
   outer: {
     flex: 1,
+  },
+  outerContent: {
+    flexGrow: 1,
     justifyContent: 'flex-end',
   },
   backdrop: {

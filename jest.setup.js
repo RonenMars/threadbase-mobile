@@ -209,5 +209,16 @@ jest.mock('expo-speech-recognition', () => ({
   useSpeechRecognitionEvent: jest.fn(),
 }))
 
+// ─── react-native-keyboard-controller ────────────────────────────────────────
+jest.mock('react-native-keyboard-controller', () => {
+  const React = require('react')
+  return {
+    KeyboardProvider: ({ children }) => children,
+    KeyboardAwareScrollView: React.forwardRef(({ children, contentContainerStyle, ...props }, ref) =>
+      React.createElement('ScrollView', { ...props, contentContainerStyle, ref }, children)
+    ),
+  }
+})
+
 // ─── WebSocket global (for ws-client tests) ──────────────────────────────────
 global.WebSocket = global.WebSocket || class {}

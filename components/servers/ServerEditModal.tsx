@@ -8,11 +8,9 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, Eye, EyeSlash, QrCode, XCircle, CaretDown } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
@@ -166,9 +164,11 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
 
-        <KeyboardAvoidingView
+        <KeyboardAwareScrollView
           style={styles.avoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          contentContainerStyle={styles.avoidingViewContent}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={16}
           pointerEvents="box-none"
         >
           <View style={styles.modal}>
@@ -180,7 +180,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
+            <View style={styles.body}>
               {/* Label row — QR icon right-aligned */}
               <View style={styles.fieldLabelRow}>
                 <Text style={styles.fieldLabel}>{t('servers:form.labelOptional')}</Text>
@@ -291,9 +291,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               >
                 <Text style={styles.saveBtnText}>{t('button.save')}</Text>
               </TouchableOpacity>
-            </ScrollView>
+            </View>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
       </Modal>
 
       <PairScannerModal
@@ -312,9 +312,13 @@ const styles = StyleSheet.create({
   },
   avoidingView: {
     flex: 1,
+  },
+  avoidingViewContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
   },
   modal: {
     width: '100%',
