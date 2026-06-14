@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Install npm dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Cache CocoaPods
         uses: actions/cache@v4

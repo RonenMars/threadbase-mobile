@@ -19,7 +19,7 @@ runs:
     - name: Install dependencies
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
-      run: npm ci --legacy-peer-deps
+      run: npm ci
 
     - name: Save node_modules cache
       if: steps.cache.outputs.cache-hit != 'true'
