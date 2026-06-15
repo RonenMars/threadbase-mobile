@@ -106,13 +106,20 @@ jobs:
           source .env.signing
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # check-build-number.sh auto-bumps app.json and commits if local ≤ remote.
+          # check-build-number.sh bumps app.json's buildNumber in the working tree
+          # and exits 2 (does not commit). Exit 0 = already ahead, exit 2 = bumped,
+          # anything else = real error.
+          ./scripts/check-build-number.sh && true || {
+            code=$?
+            [[ $code -eq 2 ]] || exit $code
+          }
+          # Commit the bump and push to main only if it actually changed app.json.
           # On CI the bump commit lands directly on main (no PR needed).
-          ./scripts/check-build-number.sh
-          # Push only if the script made a new commit (idempotent if already ahead).
-          if git diff --quiet origin/main HEAD; then
-            echo "No bump commit — nothing to push"
+          if git diff --quiet -- app.json; then
+            echo "No buildNumber bump — nothing to commit"
           else
+            git add app.json
+            git commit -m "chore(ios): bump build number [skip-ci]"
             git push origin main
           fi
 
