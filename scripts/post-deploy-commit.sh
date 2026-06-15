@@ -42,11 +42,12 @@ _prompt_input() {
   # _prompt_input "Label: " default → prints value to stdout
   local label="$1" default="${2:-}"
   if [[ -n "$default" ]]; then
-    printf "%s [%s]: " "$label" "$default" >&2
+    printf "%s: " "$label" >&2
+    read -re -i "$default" value </dev/tty
   else
     printf "%s: " "$label" >&2
+    read -re value </dev/tty
   fi
-  read -r value </dev/tty
   echo "${value:-$default}"
 }
 
