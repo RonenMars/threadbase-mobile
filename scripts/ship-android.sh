@@ -2,10 +2,12 @@
 # ship-android.sh — single-command end-to-end Android ship pipeline.
 #
 #   fetch Play credentials → preflight → git sync check → check/bump versionCode →
-#   install deps → prebuild (if missing) → bootstrap signing → bundle + upload → done.
+#   install deps → prebuild (if missing) → bootstrap signing → bundle + upload →
+#   commit version bump → prompt for other dirty files → done.
 #
 # The versionCode check runs early (before npm install / Gradle) so the script
-# fails fast or commits the bump before any slow work begins.
+# fails fast before any slow work begins. The bump commit is deferred until
+# after the upload succeeds so git history matches what actually shipped.
 #
 # No emulator, no UI. Default track is internal.
 # Step 1 always runs first: verifies 1Password is signed in and fetches
@@ -200,18 +202,11 @@ else
   source .env.signing.android
 fi
 
-_rollback_bump() {
-  if (( VERSION_BUMPED )); then
-    echo
-    echo "⚠ Upload failed — rolling back version code bump commit..." >&2
-    git revert HEAD --no-edit >&2
-    echo "  ✓ bump reverted. Fix the issue and re-run." >&2
-  fi
-}
-
 # 8. Build AAB + upload to Play
 PACKAGE="${PACKAGE_OVERRIDE:-$(jq -r '.expo.android.package' app.json)}"
 [[ -n "$PACKAGE" && "$PACKAGE" != "null" ]] || { echo "Could not resolve android package name" >&2; exit 1; }
+
+VERSION_CODE=$(jq -r '.expo.android.versionCode' app.json)
 
 if (( SKIP_BUNDLE )); then
   AAB_PATH="${AAB_PATH:-android/app/build/outputs/bundle/release/app-release.aab}"
@@ -220,10 +215,14 @@ if (( SKIP_BUNDLE )); then
 else
   echo "▸ [8/$TOTAL_STEPS] Bundle and upload"
 fi
-trap '_rollback_bump' EXIT
 ANDROID_TRACK="$TRACK" SKIP_BUNDLE="$SKIP_BUNDLE" "$SCRIPT_DIR/bundle-and-upload-android.sh"
-trap - EXIT
 
 echo
 echo "✅  Build is live on Play ($TRACK track)."
 echo "    Open Play Console to promote to a wider track when ready."
+
+# ── Post-deploy: commit version bump + prompt for other dirty files ───────────
+"$SCRIPT_DIR/post-deploy-commit.sh" \
+  --platform android \
+  --version-code "$VERSION_CODE" \
+  --version-bumped "$VERSION_BUMPED"

@@ -3,10 +3,11 @@
 #
 #   preflight → bootstrap signing → git sync → check/bump build number →
 #   install deps → prebuild (if missing) → archive → upload → poll until VALID →
-#   optionally submit for App Store review.
+#   commit version bump → prompt for other dirty files → optionally submit for App Store review.
 #
 # The version check runs early (before npm install / xcodebuild) so the script
-# fails fast or commits the bump before any slow work begins.
+# fails fast before any slow work begins. The bump commit is deferred until
+# after the upload succeeds so git history matches what actually shipped.
 #
 # No simulator, no UI. Default target is TestFlight.
 #
@@ -106,12 +107,22 @@ fi
 # 4. Verify (and auto-bump) build number against TestFlight — before any slow
 # work (npm install, xcodebuild). Queries App Store Connect: if the local
 # buildNumber already exceeds the latest in TestFlight the script continues
-# immediately; otherwise it bumps app.json and commits before the archive runs.
+# immediately; otherwise it bumps app.json in-place (no commit yet — commit
+# is deferred until after successful upload).
+# Exit 2 from check-build-number.sh means app.json was bumped.
 # Skipped in CI: the workflow runs check-build-number.sh as a separate step
 # before invoking ship-ios.sh, commits the bump to main, and pushes.
+VERSION_BUMPED=0
 if (( SKIP_VERSION_CHECK == 0 )); then
   echo "▸ [4/$TOTAL_STEPS] Check/bump build number against TestFlight"
-  "$SCRIPT_DIR/check-build-number.sh"
+  "$SCRIPT_DIR/check-build-number.sh" && true || {
+    code=$?
+    if (( code == 2 )); then
+      VERSION_BUMPED=1
+    else
+      exit $code
+    fi
+  }
 else
   echo "▸ [4/$TOTAL_STEPS] Build number check — skipped (CI)"
 fi
@@ -154,18 +165,23 @@ echo "▸ [8/$TOTAL_STEPS] Wait for App Store Connect processing (build $BUILD_N
 if [[ "$TARGET" == "testflight" ]]; then
   echo
   echo "✅ Build is live on TestFlight."
-  exit 0
+else
+  # 9. Production: submit for App Store review
+  echo "▸ [9/$TOTAL_STEPS] Submit for App Store review"
+  VERSION=$(jq -r '.expo.version' app.json)
+  [[ -n "$VERSION" && "$VERSION" != "null" ]] || { echo "expo.version missing in app.json" >&2; exit 1; }
+
+  ARGS=("$BUNDLE_ID" "$VERSION" --release-type "$RELEASE_TYPE")
+  [[ -n "$RELEASE_NOTES" ]] && ARGS+=(--release-notes "$RELEASE_NOTES")
+  [[ -n "$RELEASE_DATE"  ]] && ARGS+=(--release-date  "$RELEASE_DATE")
+  "$SCRIPT_DIR/submit-for-review.sh" "${ARGS[@]}"
+
+  echo
+  echo "✅ Submitted $VERSION for App Store review (releaseType=$RELEASE_TYPE)."
 fi
 
-# 9. Production: submit for App Store review
-echo "▸ [9/$TOTAL_STEPS] Submit for App Store review"
-VERSION=$(jq -r '.expo.version' app.json)
-[[ -n "$VERSION" && "$VERSION" != "null" ]] || { echo "expo.version missing in app.json" >&2; exit 1; }
-
-ARGS=("$BUNDLE_ID" "$VERSION" --release-type "$RELEASE_TYPE")
-[[ -n "$RELEASE_NOTES" ]] && ARGS+=(--release-notes "$RELEASE_NOTES")
-[[ -n "$RELEASE_DATE"  ]] && ARGS+=(--release-date  "$RELEASE_DATE")
-"$SCRIPT_DIR/submit-for-review.sh" "${ARGS[@]}"
-
-echo
-echo "✅ Submitted $VERSION for App Store review (releaseType=$RELEASE_TYPE)."
+# ── Post-deploy: commit version bump + prompt for other dirty files ───────────
+"$SCRIPT_DIR/post-deploy-commit.sh" \
+  --platform ios \
+  --build-number "$BUILD_NUMBER" \
+  --version-bumped "$VERSION_BUMPED"
