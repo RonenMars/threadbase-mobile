@@ -18,6 +18,7 @@
 # Flags (env vars):
 #   ANDROID_TRACK   — Play track to upload to (default: internal)
 #   AAB_PATH        — override default build output path
+#   MAPPING_PATH    — override default R8 mapping.txt output path
 #   SKIP_BUNDLE     — set to 1 to skip Gradle and reuse existing AAB
 
 set -euo pipefail
@@ -32,6 +33,7 @@ command -v node >/dev/null || { echo "node required" >&2; exit 1; }
 
 ANDROID_TRACK="${ANDROID_TRACK:-internal}"
 AAB_PATH="${AAB_PATH:-android/app/build/outputs/bundle/release/app-release.aab}"
+MAPPING_PATH="${MAPPING_PATH:-android/app/build/outputs/mapping/release/mapping.txt}"
 SKIP_BUNDLE="${SKIP_BUNDLE:-0}"
 
 PACKAGE_NAME=$(jq -r '.expo.android.package' app.json)
@@ -53,8 +55,8 @@ GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
 if [[ "$GRADLE_VC" != "$VERSION_CODE" ]]; then
   echo "  syncing build.gradle versionCode $GRADLE_VC → $VERSION_CODE"
   sed -i '' "s/versionCode $GRADLE_VC/versionCode $VERSION_CODE/" "$GRADLE_BUILD"
-  # Remove the stale AAB so Gradle can't serve it from cache with the old versionCode.
-  rm -f "$AAB_PATH"
+  # Remove stale release artifacts so Gradle can't serve an old versionCode.
+  rm -f "$AAB_PATH" "$MAPPING_PATH"
 fi
 
 echo "▸ Building Android App Bundle (versionCode=$VERSION_CODE, versionName=$VERSION_NAME)"
@@ -83,17 +85,19 @@ else
   fi
   echo "  ✓ AAB built: $AAB_PATH ($(du -sh "$AAB_PATH" | cut -f1))"
 fi
+[[ -f "$MAPPING_PATH" ]] || { echo "ERROR: Expected R8 mapping file not found at $MAPPING_PATH" >&2; exit 1; }
+echo "  ✓ mapping found: $MAPPING_PATH ($(du -sh "$MAPPING_PATH" | cut -f1))"
 echo
 
 echo "▸ Uploading to Play ($ANDROID_TRACK track)"
 
-node - "$PACKAGE_NAME" "$VERSION_CODE" "$AAB_PATH" "$ANDROID_TRACK" "$GOOGLE_APPLICATION_CREDENTIALS" <<'EOF'
+node - "$PACKAGE_NAME" "$VERSION_CODE" "$AAB_PATH" "$MAPPING_PATH" "$ANDROID_TRACK" "$GOOGLE_APPLICATION_CREDENTIALS" <<'EOF'
 const fs     = require('fs');
 const crypto = require('crypto');
 const https  = require('https');
 const path   = require('path');
 
-const [pkg, versionCode, aabPath, track, saPath] = process.argv.slice(2);
+const [pkg, versionCode, aabPath, mappingPath, track, saPath] = process.argv.slice(2);
 const sa = JSON.parse(fs.readFileSync(saPath, 'utf8'));
 
 // --- Mint OAuth2 access token ---
@@ -186,6 +190,29 @@ function uploadAAB(editId, token, aabPath) {
   });
 }
 
+function uploadDeobfuscationFile(editId, token, versionCode, mappingPath) {
+  return new Promise((resolve, reject) => {
+    const mappingData = fs.readFileSync(mappingPath);
+    const uploadPath = `/upload/androidpublisher/v3/applications/${pkg}/edits/${editId}/deobfuscationFiles/${versionCode}/proguard?uploadType=media`;
+    const opts = {
+      hostname: 'androidpublisher.googleapis.com', path: uploadPath, method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': mappingData.length,
+      },
+    };
+    let resp = '';
+    const req = https.request(opts, r => {
+      r.on('data', d => resp += d);
+      r.on('end', () => { try { resolve(JSON.parse(resp)); } catch(e) { reject(new Error('Deobfuscation upload response: ' + resp)); } });
+    });
+    req.on('error', reject);
+    req.write(mappingData);
+    req.end();
+  });
+}
+
 (async () => {
   const token = await mintToken(sa);
   const base  = `/androidpublisher/v3/applications/${pkg}`;
@@ -203,7 +230,13 @@ function uploadAAB(editId, token, aabPath) {
     if (bundle.error) throw new Error('bundles.upload: ' + JSON.stringify(bundle.error));
     console.error(`  AAB uploaded: versionCode=${bundle.versionCode}`);
 
-    // 3. Assign to track
+    // 3. Upload R8/ProGuard mapping.txt so Play can deobfuscate crashes and ANRs.
+    console.error(`  uploading deobfuscation file (${Math.round(fs.statSync(mappingPath).size / 1024)}KB)...`);
+    const deobfuscation = await uploadDeobfuscationFile(editId, token, versionCode, mappingPath);
+    if (deobfuscation.error) throw new Error('deobfuscationfiles.upload: ' + JSON.stringify(deobfuscation.error));
+    console.error('  deobfuscation file uploaded');
+
+    // 4. Assign to track
     const trackBody = {
       track,
       releases: [{ versionCodes: [String(versionCode)], status: 'completed' }],
@@ -222,7 +255,7 @@ function uploadAAB(editId, token, aabPath) {
     if (trackResult.error) throw new Error('tracks.update: ' + JSON.stringify(trackResult.error));
     console.error(`  track '${track}' updated`);
 
-    // 4. Commit the edit
+    // 5. Commit the edit
     const commit = await apiPost(`${base}/edits/${editId}:commit`, token, null);
     if (commit.error) throw new Error('edits.commit: ' + JSON.stringify(commit.error));
     console.error(`  edit committed: ${commit.id}`);
@@ -240,7 +273,7 @@ function uploadAAB(editId, token, aabPath) {
 })().catch(e => { process.stderr.write('ERROR: ' + e.message + '\n'); process.exit(1); });
 EOF
 
-echo "  ✓ AAB uploaded to Play ($ANDROID_TRACK track, versionCode=$VERSION_CODE)"
+echo "  ✓ AAB and deobfuscation file uploaded to Play ($ANDROID_TRACK track, versionCode=$VERSION_CODE)"
 echo
 echo "The build is now in review by Google. Internal track builds are"
 echo "typically available to testers within a few minutes."
