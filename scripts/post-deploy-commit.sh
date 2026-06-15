@@ -121,6 +121,14 @@ for f in "${DIRTY_FILES[@]}"; do
 done
 echo
 
+# In CI there is no TTY to prompt on (read </dev/tty would hang/fail). Leave the
+# pipeline-dirtied files uncommitted — CI must not open ad-hoc branches — and exit
+# cleanly. Interactive local runs still get the prompt below.
+if [[ -n "${CI:-}" || -n "${GITHUB_ACTIONS:-}" || ! -t 0 ]]; then
+  echo "  CI / non-interactive shell — leaving these changes uncommitted."
+  exit 0
+fi
+
 if ! _prompt "Would you like to commit these changes? [y/N]: "; then
   echo "  Skipped — changes left unstaged."
   exit 0
