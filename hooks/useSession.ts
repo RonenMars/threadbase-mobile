@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { serverDisplayName } from '@/components/sessions/shared/serverDisplayName'
 import type {
   MultiSession,
@@ -109,6 +110,8 @@ export interface UseEagerSessionsResult {
 export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessionsResult {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
+  const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
+  const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
 
   const sortBy: SortBy = args.sort?.sortBy ?? 'lastActivity'
   const order: SortOrder = args.sort?.order ?? 'desc'
@@ -167,24 +170,35 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
         // against the post-loop increment when React applies the state update.
         const baselineLoaded = runningLoadedSoFar
         const baselineTotal = runningTotalSoFar
-        const serverSessions = await fetchAllPagesForServer(
-          serverId,
-          label,
-          wireSortBy,
-          order,
-          status,
-          (loadedSoFarOnThisServer, totalOnThisServer) => {
-            const globalLoaded = baselineLoaded + loadedSoFarOnThisServer
-            const globalTotal = baselineTotal + totalOnThisServer
-            setProgress({
-              loaded: globalLoaded,
-              total: globalTotal,
-              currentServerId: serverId,
-              currentServerLabel: displayLabel,
-            })
-          },
-          signal,
-        )
+        let serverSessions: MultiSession[] = []
+        try {
+          serverSessions = await fetchAllPagesForServer(
+            serverId,
+            label,
+            wireSortBy,
+            order,
+            status,
+            (loadedSoFarOnThisServer, totalOnThisServer) => {
+              const globalLoaded = baselineLoaded + loadedSoFarOnThisServer
+              const globalTotal = baselineTotal + totalOnThisServer
+              setProgress({
+                loaded: globalLoaded,
+                total: globalTotal,
+                currentServerId: serverId,
+                currentServerLabel: displayLabel,
+              })
+            },
+            signal,
+          )
+          recordSuccess(serverId)
+        } catch (err) {
+          // If the caller cancelled the query (unmount / refetch), propagate the
+          // abort so React Query can mark the query as cancelled rather than
+          // silently swallowing it. Any other per-server error is isolated: the
+          // remaining servers still contribute their sessions.
+          if (signal?.aborted) throw err
+          recordFailure(serverId, err)
+        }
 
         // Roll this server's contribution into the running counters once it finishes.
         runningLoadedSoFar += serverSessions.length

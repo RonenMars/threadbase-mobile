@@ -147,16 +147,23 @@ describe('useEagerSessions', () => {
     expect(url).toContain('status=running%2Cwaiting_input')
   })
 
-  it('reports error when a fetch fails mid-loop and exits the loading state', async () => {
-    setActiveServers([{ id: 'srv-A', label: 'A' }])
-    mockGet.mockRejectedValueOnce(new Error('boom'))
+  it('isolates per-server fetch errors and returns sessions from healthy servers', async () => {
+    setActiveServers([
+      { id: 'srv-A', label: 'A' },
+      { id: 'srv-B', label: 'B' },
+    ])
+    // Server A fails; Server B succeeds.
+    mockGet
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(pageOf(['b1'], { nextCursor: null, total: 1 }))
 
     const { result } = renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
     await waitFor(() => expect(result.current.isDone).toBe(true))
-    expect(result.current.error).toBeTruthy()
-    expect(result.current.error?.message).toBe('boom')
-    expect(result.current.sessions).toEqual([])
+    // The query itself succeeds — partial results are not a fatal error.
+    expect(result.current.error).toBeNull()
+    // Only sessions from the healthy server are present.
+    expect(result.current.sessions.map((s) => s.id)).toEqual(['b1'])
   })
 
   it('changing sort triggers a fresh sequential loop', async () => {
