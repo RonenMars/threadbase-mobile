@@ -232,7 +232,7 @@ function makeStyles(theme: Theme) {
     },
     confirmBtnDisabled: { opacity: 0.4 },
     confirmBtnText: {
-      color: '#fff',
+      color: theme.text.onAccent,
       fontSize: font.base,
       fontWeight: '600',
     },

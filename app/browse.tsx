@@ -569,7 +569,7 @@ function makeStyles(theme: Theme) {
     opacity: 0.6,
   },
   startBtnText: {
-    color: '#fff',
+    color: theme.text.onAccent,
     fontSize: font.base,
     fontWeight: '600',
   },

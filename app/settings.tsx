@@ -819,7 +819,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
     segmentBtn: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.sm },
     segmentBtnActive: { backgroundColor: theme.text.accent },
     segmentBtnText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
-    segmentBtnTextActive: { color: '#fff' },
+    segmentBtnTextActive: { color: theme.text.onAccent },
     aboutText: { color: theme.text.primary, fontSize: font.base, padding: spacing.md, fontWeight: '500' },
     aboutSubtext: { color: theme.text.secondary, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
     permissionRowLeft: { flex: 1, gap: 2 },

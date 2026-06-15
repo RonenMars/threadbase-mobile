@@ -166,7 +166,7 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
     },
     primaryLabel: {
-      color: theme.bg.primary,
+      color: theme.text.onAccent,
       fontWeight: '600',
       fontSize: font.base,
     },

@@ -24,10 +24,14 @@ function decodeEntities(s: string) {
     .replace(/&amp;/g, '&')
 }
 
-function TextContent({ text }: { text: string }) {
+function TextContent({ text, isUser }: { text: string; isUser?: boolean }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  return <Text style={styles.messageText} selectable>{text}</Text>
+  return (
+    <Text style={[styles.messageText, isUser && { color: theme.text.onAccent }]} selectable>
+      {text}
+    </Text>
+  )
 }
 
 
@@ -201,7 +205,7 @@ function parseTextParts(text: string): ParsedPart[] {
   })
 }
 
-function TextBlockBody({ text }: { text: string }) {
+function TextBlockBody({ text, isUser }: { text: string; isUser?: boolean }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   // The fence split + per-block parse runs on every render otherwise —
@@ -214,18 +218,18 @@ function TextBlockBody({ text }: { text: string }) {
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
         ) : (
-          <TextContent key={i} text={part.text} />
+          <TextContent key={i} text={part.text} isUser={isUser} />
         ),
       )}
     </View>
   )
 }
 
-function ContentBlock({ block }: { block: MessageContent }) {
+function ContentBlock({ block, isUser }: { block: MessageContent; isUser?: boolean }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} />
+    return <TextBlockBody text={block.text} isUser={isUser} />
   }
   if (block.type === 'tool_use') {
     return (
@@ -250,7 +254,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: Prop
     <View style={[styles.container, isUser ? styles.containerUser : styles.containerAssistant]}>
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} />
+          <ContentBlock key={i} block={block} isUser={isUser} />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>

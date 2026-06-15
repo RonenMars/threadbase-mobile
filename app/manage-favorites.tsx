@@ -99,6 +99,6 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: spacing.xl,
   },
   primaryBtnPressed: { opacity: 0.7 },
-  primaryBtnText: { color: '#fff', fontSize: font.base, fontWeight: '700' },
+  primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '700' },
 })}
 
