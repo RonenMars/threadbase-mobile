@@ -11,7 +11,13 @@
     "tokens": "{{count}}k tokens"
   },
   "error": {
-    "loadFailed": "Couldn't load conversation"
+    "loadFailed": "Couldn't load conversation",
+    "notFound": "This conversation is no longer available on the server."
+  },
+  "unavailable": {
+    "pathMissing": "The project folder for this conversation was moved or deleted. You can read the history, but it can't be resumed.",
+    "worktreeRemoved": "This conversation ran in a git worktree that no longer exists. You can read the history, but it can't be resumed.",
+    "cannotResume": "Can't resume"
   },
   "action": {
     "export": "Export",

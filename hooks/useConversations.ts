@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration } from '@/types/api'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -200,7 +200,11 @@ export interface ConversationMessagePagination {
 }
 
 interface RawConversationDetail {
-  meta: RawSessionMeta & { last_prompt?: string }
+  meta: RawSessionMeta & {
+    last_prompt?: string
+    resumable?: boolean
+    unavailable_reason?: UnavailableReason
+  }
   messages: RawMessage[]
   message_pagination?: ConversationMessagePagination
   turn_durations?: TurnDuration[]
@@ -283,6 +287,8 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     messages,
     lastPrompt: first.meta.last_prompt,
     turn_durations: first.turn_durations,
+    resumable: first.meta.resumable,
+    unavailableReason: first.meta.unavailable_reason,
   }
 }
 
