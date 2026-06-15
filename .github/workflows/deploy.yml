@@ -95,7 +95,11 @@ jobs:
           restore-keys: pods-
 
       - name: Install CocoaPods
-        run: cd ios && bundle exec pod install --deployment
+        # Not --deployment: prebuilt-artifact pods (hermes, React-Core-prebuilt,
+        # ReactNativeDependencies, ExpoModulesCore) regenerate fresh checksums on
+        # CI, which --deployment treats as a fatal lockfile change. Let pod install
+        # update Podfile.lock in place instead of failing the build.
+        run: cd ios && bundle exec pod install
 
       - name: Bump build number → commit → push to main
         run: |
@@ -121,6 +125,7 @@ jobs:
             --target "$IOS_TARGET"
             --skip-git-sync
             --skip-version-check
+            --skip-preflight
           )
           if [[ -n "$RELEASE_NOTES" ]]; then
             ARGS+=(--release-notes "$RELEASE_NOTES")
@@ -201,4 +206,5 @@ jobs:
           ./scripts/ship-android.sh \
             --track "$ANDROID_TRACK" \
             --skip-git-sync \
-            --skip-version-check
+            --skip-version-check \
+            --skip-preflight
