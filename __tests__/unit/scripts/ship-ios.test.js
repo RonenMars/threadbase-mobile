@@ -3,9 +3,9 @@
  *
  * Tests for scripts/ship-ios.sh argument parsing.
  *
- * Covers flag validation only — full pipeline tests require Xcode + 1Password
+ * Covers flag validation only — full pipeline tests require Xcode + signing secrets
  * and are not run in CI. Each test exits before any slow step by triggering
- * an arg error or the 1Password check.
+ * an arg error or the signing secret check.
  */
 
 'use strict';
@@ -35,12 +35,12 @@ describe('ship-ios.sh — --target validation', () => {
     expect(stderr).toContain('--target must be');
   });
 
-  it('accepts --target testflight (fails later at preflight/1Password)', () => {
+  it('accepts --target testflight (fails later at preflight/signing setup)', () => {
     const { stderr } = runScript(['--target', 'testflight']);
     expect(stderr).not.toContain('--target must be');
   });
 
-  it('accepts --target production (fails later at preflight/1Password)', () => {
+  it('accepts --target production (fails later at preflight/signing setup)', () => {
     const { stderr } = runScript(['--target', 'production']);
     expect(stderr).not.toContain('--target must be');
   });
@@ -78,7 +78,7 @@ describe('ship-ios.sh — unknown flags', () => {
 });
 
 describe('ship-ios.sh — pipeline entry point', () => {
-  it('fails fast at preflight or 1Password, not at arg parsing, for valid args', () => {
+  it('fails fast at preflight or signing setup, not at arg parsing, for valid args', () => {
     const { code, stderr } = runScript(['--target', 'testflight', '--skip-preflight']);
     // Should not fail on argument validation
     expect(stderr).not.toContain('--target must be');

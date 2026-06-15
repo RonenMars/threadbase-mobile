@@ -10,8 +10,8 @@
 # after the upload succeeds so git history matches what actually shipped.
 #
 # No emulator, no UI. Default track is internal.
-# Step 1 always runs first: verifies 1Password is signed in and fetches
-# Google Play credentials — fails fast before any slow step (npm, Gradle).
+# Step 1 always runs first: verifies Google Play credentials are available
+# before any slow step (npm, Gradle).
 #
 # Usage:
 #   ./scripts/ship-android.sh                           # → Internal testing
@@ -83,14 +83,6 @@ _fetch_play_creds() {
     echo "$_PLAY_CREDS_CACHE"
     return 0
   fi
-  if ! command -v op >/dev/null 2>&1; then
-    echo "ERROR: 1Password CLI (op) not found — install with: brew install --cask 1password-cli" >&2
-    exit 1
-  fi
-  if ! op whoami >/dev/null 2>&1; then
-    echo "ERROR: 1Password not signed in — run: eval \"\$(op signin)\" then retry" >&2
-    exit 1
-  fi
   "$SCRIPT_DIR/fetch-play-credentials.sh"
 }
 
@@ -99,7 +91,7 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
     echo "▸ [1/2] Google Play credentials already cached — skipping"
     CREDS_PATH="$_PLAY_CREDS_CACHE"
   else
-    echo "▸ [1/2] Verify 1Password + fetch Google Play credentials"
+    echo "▸ [1/2] Fetch Google Play credentials"
     CREDS_PATH=$(_fetch_play_creds)
   fi
 
@@ -113,7 +105,7 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
   exit 0
 fi
 
-# 1. Fetch Google Play credentials (from cache or 1Password).
+# 1. Fetch Google Play credentials.
 # Cache: ~/.config/threadbase/play-console-sa.json — skipped if already present,
 # matching the iOS/Android keystore bootstrap behavior. Re-run fetch-play-credentials.sh
 # manually to rotate the key.
@@ -121,7 +113,7 @@ if [[ -f "$_PLAY_CREDS_CACHE" ]]; then
   echo "▸ [1/$TOTAL_STEPS] Google Play credentials already cached — skipping"
   CREDS_PATH="$_PLAY_CREDS_CACHE"
 else
-  echo "▸ [1/$TOTAL_STEPS] Verify 1Password + fetch Google Play credentials"
+  echo "▸ [1/$TOTAL_STEPS] Fetch Google Play credentials"
   CREDS_PATH=$(_fetch_play_creds)
 fi
 export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_PATH"
@@ -184,7 +176,7 @@ else
   echo "▸ [6/$TOTAL_STEPS] Prebuild — android/ exists, skipping"
 fi
 
-# 7. Bootstrap Android signing from 1Password
+# 7. Bootstrap Android signing
 # Skip if .env.signing.android already exists and keystore is on disk.
 if [[ -f .env.signing.android ]]; then
   _ks_path=$(bash -c 'source .env.signing.android 2>/dev/null && echo "${TB_MOBILE_UPLOAD_KEYSTORE:-}"')

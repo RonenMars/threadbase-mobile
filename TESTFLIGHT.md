@@ -20,27 +20,29 @@ End-to-end deploy without any manual steps:
 ./scripts/ship-ios.sh --target production # → App Store review
 ```
 
-### 1Password auth — no `op signin` required
+### Signing env setup
 
 The ship pipeline calls `scripts/bootstrap-ios-signing.sh` to pull the App Store Connect
-API key from 1Password (vault/item set in `.env.op` via `OP_IOS_VAULT`/`OP_IOS_ITEM`).
-This requires `op` to be authenticated, but **not interactively** — as long as
-`OP_SERVICE_ACCOUNT_TOKEN` is set in the environment, `op` works without `op signin`.
+API key from environment variables and write `.env.signing`.
 
-This token is stored in your 1Password vault (see `.env.op.example`) and exported via
-your shell profile. After running `refresh-secrets` once, every new terminal session has
-it automatically.
+Required variables:
+
+```bash
+export ASC_KEY_ID="<key-id>"
+export ASC_ISSUER_ID="<issuer-id>"
+export ASC_TEAM_ID="<team-id>"
+export ASC_AUTH_KEY_B64="<base64-auth-key>"
+```
 
 **First-time setup on a new machine:**
-1. Ensure `OP_SERVICE_ACCOUNT_TOKEN` is in your environment (`echo $OP_SERVICE_ACCOUNT_TOKEN`)
-2. If missing: `refresh-secrets` (requires one interactive `op signin` to bootstrap)
-3. Then `./scripts/ship-ios.sh` runs without any further 1Password prompts
+1. Ensure the `ASC_*` variables above are in your environment.
+2. Run `./scripts/ship-ios.sh`.
 
 ### Skip bootstrap when already set up
 
 `ship-ios.sh` detects if `.env.signing` exists and the `.p8` key is already on disk, and
 skips the bootstrap step entirely. On repeat deploys from the same machine, signing is
-bootstrapped from the cached files — 1Password isn't contacted at all.
+bootstrapped from the cached files.
 
 ---
 

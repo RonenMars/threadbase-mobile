@@ -29,7 +29,6 @@ android/.kotlin/
 .env
 # Keep committed templates — real env files stay ignored.
 !.env.example
-!.env.op.example
 !fastlane/.env.example
 
 # macOS metadata
