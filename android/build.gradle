@@ -16,7 +16,15 @@ allprojects {
   repositories {
     google()
     mavenCentral()
-    maven { url 'https://www.jitpack.io' }
+    // Scope JitPack to GitHub-hosted artifacts only. Without this filter Gradle
+    // queries JitPack's maven-metadata.xml for every dependency — including
+    // Maven Central ones like org.bouncycastle (pulled via expo-updates as a
+    // version range, which forces a cross-repo version listing). A JitPack read
+    // timeout on that lookup then fails the whole build.
+    maven {
+      url 'https://www.jitpack.io'
+      content { includeGroupByRegex 'com\\.github\\..*' }
+    }
   }
 }
 
