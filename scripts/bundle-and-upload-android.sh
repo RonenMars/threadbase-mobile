@@ -54,7 +54,11 @@ GRADLE_BUILD="android/app/build.gradle"
 GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
 if [[ "$GRADLE_VC" != "$VERSION_CODE" ]]; then
   echo "  syncing build.gradle versionCode $GRADLE_VC → $VERSION_CODE"
-  sed -i '' "s/versionCode $GRADLE_VC/versionCode $VERSION_CODE/" "$GRADLE_BUILD"
+  # Portable in-place edit: BSD sed (macOS) wants `-i ''` while GNU sed (Linux CI)
+  # treats the empty arg as the script and the real script as a filename. Write to
+  # a temp file and move it back to avoid the `-i` incompatibility entirely.
+  sed "s/versionCode $GRADLE_VC/versionCode $VERSION_CODE/" "$GRADLE_BUILD" > "$GRADLE_BUILD.tmp"
+  mv "$GRADLE_BUILD.tmp" "$GRADLE_BUILD"
   # Remove stale release artifacts so Gradle can't serve an old versionCode.
   rm -f "$AAB_PATH" "$MAPPING_PATH"
 fi
