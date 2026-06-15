@@ -23,11 +23,11 @@ on:
       android_track:
         description: 'Android track'
         required: false
-        default: internal
+        default: alpha
         type: choice
         options:
-          - internal
           - alpha
+          - internal
           - beta
           - production
       release_notes:
