@@ -35,7 +35,7 @@ on:
         required: false
         type: string
       deploy_ref:
-        description: 'Branch/ref to build (default: main). Set to a feature branch to validate a fix before merging — it still does a full ship (bump + upload + push bump to main).'
+        description: 'Branch/ref to build (default: main). Set to a feature branch to validate a fix before merging: the branch is built + uploaded to the store, and only the version bump is pushed to main (after a successful upload). The branch code lands on main via the PR.'
         required: false
         default: main
         type: string
@@ -61,8 +61,9 @@ jobs:
           DEPLOY_REF: ${{ inputs.deploy_ref }}
         run: |
           echo "::warning::Building '${DEPLOY_REF}', not main (deploy_ref override)." \
-               "This is a validation build: it bumps + uploads to the store but does" \
-               "NOT push the version bump to main. Merge the branch to land the change."
+               "The branch's code is built and uploaded to the store. Only the" \
+               "version bump is pushed to main (after a successful upload) — the" \
+               "branch's other changes land on main only when you merge the PR."
 
       - uses: actions/checkout@v5
         with:
@@ -112,35 +113,21 @@ jobs:
         # update Podfile.lock in place instead of failing the build.
         run: cd ios && bundle exec pod install
 
-      - name: Bump build number → commit → push to main
-        env:
-          DEPLOY_REF: ${{ inputs.deploy_ref }}
+      - name: Bump build number (working tree only)
         run: |
           source .env.signing
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           # check-build-number.sh bumps app.json's buildNumber in the working tree
           # and exits 2 (does not commit). Exit 0 = already ahead, exit 2 = bumped,
-          # anything else = real error.
+          # anything else = real error. The bumped app.json stays in the working
+          # tree so the ship step builds with the new buildNumber; the push to main
+          # happens only AFTER a successful upload (see step below).
           ./scripts/check-build-number.sh && true || {
             code=$?
             [[ $code -eq 2 ]] || exit $code
           }
-          # The bumped app.json stays in the working tree so the ship step builds
-          # with the new buildNumber. Push the bump commit to main only when we
-          # actually built main. On a branch validation build (DEPLOY_REF != main)
-          # we skip the push — the build still uploads, but main is left untouched
-          # (its bump lands on the next real main run). This avoids pushing the
-          # built branch's other commits onto main.
-          if git diff --quiet -- app.json; then
-            echo "No buildNumber bump — nothing to commit"
-          elif [[ "$DEPLOY_REF" != "main" ]]; then
-            echo "Branch build ($DEPLOY_REF) — bumped locally, not pushing to main"
-          else
-            git add app.json
-            git commit -m "chore(ios): bump build number [skip-ci]"
-            git push origin main
-          fi
+          # Record the resolved buildNumber so the post-ship step can re-derive the
+          # bump onto main's own app.json without carrying other working-tree edits.
+          echo "BUMPED_BUILD_NUMBER=$(jq -r '.expo.ios.buildNumber' app.json)" >> "$GITHUB_ENV"
 
       - name: Ship iOS
         env:
@@ -158,6 +145,32 @@ jobs:
           fi
           ./scripts/ship-ios.sh "${ARGS[@]}"
 
+      - name: Push build number bump to main (after successful upload)
+        # Only runs if Ship iOS succeeded — so main advances only when a build
+        # actually uploaded to TestFlight. Re-derives just the buildNumber onto
+        # main's own app.json in a throwaway worktree, so a branch validation build
+        # does NOT leak the branch's code to main — only the version bump lands.
+        if: success()
+        env:
+          BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          MAIN_BN=$(git show origin/main:app.json | jq -r '.expo.ios.buildNumber')
+          if [[ "$BUMPED_BUILD_NUMBER" == "$MAIN_BN" ]]; then
+            echo "main already at buildNumber $MAIN_BN — nothing to push"
+            exit 0
+          fi
+          git worktree add /tmp/bump-main-ios origin/main
+          ( cd /tmp/bump-main-ios
+            jq ".expo.ios.buildNumber = \"${BUMPED_BUILD_NUMBER}\"" app.json > app.json.tmp && mv app.json.tmp app.json
+            git add app.json
+            git commit -m "chore(ios): bump build number to ${BUMPED_BUILD_NUMBER} [skip-ci]"
+            git push origin HEAD:main
+          )
+          git worktree remove /tmp/bump-main-ios --force
+
   deploy-android:
     name: Ship Android
     if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
@@ -172,8 +185,9 @@ jobs:
           DEPLOY_REF: ${{ inputs.deploy_ref }}
         run: |
           echo "::warning::Building '${DEPLOY_REF}', not main (deploy_ref override)." \
-               "This is a validation build: it bumps + uploads to the store but does" \
-               "NOT push the version bump to main. Merge the branch to land the change."
+               "The branch's code is built and uploaded to the store. Only the" \
+               "version bump is pushed to main (after a successful upload) — the" \
+               "branch's other changes land on main only when you merge the PR."
 
       - uses: actions/checkout@v5
         with:
@@ -209,34 +223,20 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./scripts/bootstrap-android-signing.sh
 
-      - name: Bump versionCode → commit → push to main
-        env:
-          DEPLOY_REF: ${{ inputs.deploy_ref }}
+      - name: Bump versionCode (working tree only)
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           # check-version-code.sh bumps app.json + android/app/build.gradle in the
           # working tree and exits 2 (does not commit). Exit 0 = already ahead,
-          # exit 2 = bumped, anything else = real error.
+          # exit 2 = bumped, anything else = real error. The bumped files stay in
+          # the working tree so the ship step builds with the new versionCode; the
+          # push to main happens only AFTER a successful upload (see step below).
           ./scripts/check-version-code.sh && true || {
             code=$?
             [[ $code -eq 2 ]] || exit $code
           }
-          # The bumped files stay in the working tree so the ship step builds with
-          # the new versionCode. Push the bump commit to main only when we actually
-          # built main. On a branch validation build (DEPLOY_REF != main) we skip
-          # the push — the build still uploads, but main is left untouched (its bump
-          # lands on the next real main run). This avoids pushing the built branch's
-          # other commits onto main.
-          if git diff --quiet -- app.json android/app/build.gradle; then
-            echo "No versionCode bump — nothing to commit"
-          elif [[ "$DEPLOY_REF" != "main" ]]; then
-            echo "Branch build ($DEPLOY_REF) — bumped locally, not pushing to main"
-          else
-            git add app.json android/app/build.gradle
-            git commit -m "chore(android): bump version code [skip-ci]"
-            git push origin main
-          fi
+          # Record the resolved versionCode so the post-ship step can re-derive the
+          # bump onto main's own files without carrying any other working-tree edits.
+          echo "BUMPED_VERSION_CODE=$(jq -r '.expo.android.versionCode' app.json)" >> "$GITHUB_ENV"
 
       - name: Ship Android
         env:
@@ -247,3 +247,33 @@ jobs:
             --skip-git-sync \
             --skip-version-check \
             --skip-preflight
+
+      - name: Push versionCode bump to main (after successful upload)
+        # Only runs if Ship Android succeeded — so main advances only when a build
+        # actually consumed a versionCode on Play. Re-derives just the version
+        # number onto main's own files in a throwaway worktree, so a branch
+        # validation build does NOT leak the branch's code (e.g. build.gradle
+        # edits) to main — only the version bump lands.
+        if: success()
+        env:
+          BUMPED_VERSION_CODE: ${{ env.BUMPED_VERSION_CODE }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          MAIN_VC=$(git show origin/main:app.json | jq -r '.expo.android.versionCode')
+          if [[ "$BUMPED_VERSION_CODE" == "$MAIN_VC" ]]; then
+            echo "main already at versionCode $MAIN_VC — nothing to push"
+            exit 0
+          fi
+          git worktree add /tmp/bump-main origin/main
+          ( cd /tmp/bump-main
+            jq ".expo.android.versionCode = ${BUMPED_VERSION_CODE}" app.json > app.json.tmp && mv app.json.tmp app.json
+            GRADLE_VC=$(grep -oE 'versionCode [0-9]+' android/app/build.gradle | grep -oE '[0-9]+')
+            sed "s/versionCode ${GRADLE_VC}/versionCode ${BUMPED_VERSION_CODE}/" android/app/build.gradle > android/app/build.gradle.tmp
+            mv android/app/build.gradle.tmp android/app/build.gradle
+            git add app.json android/app/build.gradle
+            git commit -m "chore(android): bump version code to ${BUMPED_VERSION_CODE} [skip-ci]"
+            git push origin HEAD:main
+          )
+          git worktree remove /tmp/bump-main --force
