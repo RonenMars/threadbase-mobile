@@ -26,6 +26,22 @@ allprojects {
       content { includeGroupByRegex 'com\\.github\\..*' }
     }
   }
+
+  // Pin Bouncy Castle to exact versions across EVERY project (not just :app).
+  // expo-updates pulls bcutil-jdk15to18:1.81, which transitively requires
+  // bcprov-jdk15to18 as the range [1.81,1.82). Resolving a range makes Gradle
+  // list versions across all repos — including the unfiltered JitPack injected
+  // by expo autolinking — whose maven-metadata.xml read-times-out and fails the
+  // build. The failing classpath is :expo-updates:releaseCompileClasspath, so
+  // the force must live here in allprojects, not in app/build.gradle. Forcing
+  // exact versions skips version listing; both resolve directly from Maven
+  // Central (where they exist at 1.81).
+  configurations.all {
+    resolutionStrategy {
+      force "org.bouncycastle:bcprov-jdk15to18:1.81"
+      force "org.bouncycastle:bcutil-jdk15to18:1.81"
+    }
+  }
 }
 
 apply plugin: "expo-root-project"
