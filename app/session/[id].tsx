@@ -392,7 +392,7 @@ function makeDiscStyles(theme: Theme) {
     },
     btnDisabled: { opacity: 0.5 },
     restartBtnText: {
-      color: '#fff',
+      color: theme.text.onAccent,
       fontWeight: '700',
       fontSize: font.base,
     },
@@ -946,7 +946,7 @@ export default function SessionDetailScreen() {
                 }
                 accessibilityLabel={t('action.sendInput')}
               >
-                <PaperPlaneRight size={26} color="#fff" />
+                <PaperPlaneRight size={26} color={theme.text.onAccent} />
               </TouchableOpacity>
             </View>
           </View>
@@ -1065,7 +1065,7 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
     },
     viewConversationBtnText: {
-      color: '#fff',
+      color: theme.text.onAccent,
       fontWeight: '700',
       fontSize: font.base,
     },

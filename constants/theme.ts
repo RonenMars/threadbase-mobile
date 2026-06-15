@@ -9,6 +9,7 @@ export type Theme = {
     readonly primary: string
     readonly secondary: string
     readonly accent: string
+    readonly onAccent: string
     readonly danger: string
     readonly warning: string
     readonly success: string
@@ -34,6 +35,7 @@ export const dark = {
     primary: '#e6edf3',
     secondary: '#7d8590',
     accent: '#58a6ff',
+    onAccent: '#0d1117',
     danger: '#f85149',
     warning: '#d29922',
     success: '#3fb950',
@@ -59,6 +61,7 @@ export const light = {
     primary: '#1f2328',
     secondary: '#57606a',
     accent: '#0969da',
+    onAccent: '#ffffff',
     danger: '#cf222e',
     warning: '#9a6700',
     success: '#1a7f37',
@@ -84,6 +87,7 @@ export const dracula = {
     primary: '#f8f8f2',
     secondary: '#6272a4',
     accent: '#bd93f9',
+    onAccent: '#282a36',
     danger: '#ff5555',
     warning: '#ffb86c',
     success: '#50fa7b',
@@ -107,8 +111,9 @@ export const catppuccin = {
   },
   text: {
     primary: '#cdd6f4',
-    secondary: '#6c7086',
+    secondary: '#a6adc8',
     accent: '#cba6f7',
+    onAccent: '#1e1e2e',
     danger: '#f38ba8',
     warning: '#fab387',
     success: '#a6e3a1',
@@ -134,6 +139,7 @@ export const nord = {
     primary: '#eceff4',
     secondary: '#4c566a',
     accent: '#88c0d0',
+    onAccent: '#2e3440',
     danger: '#bf616a',
     warning: '#ebcb8b',
     success: '#a3be8c',

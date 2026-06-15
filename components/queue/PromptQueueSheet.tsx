@@ -112,7 +112,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             disabled={!input.trim()}
             accessibilityLabel="Add prompt to queue"
           >
-            <PaperPlaneRight size={22} color="#fff" />
+            <PaperPlaneRight size={22} color={theme.text.onAccent} />
           </TouchableOpacity>
         </View>
 

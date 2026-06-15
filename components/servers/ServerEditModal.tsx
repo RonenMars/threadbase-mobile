@@ -471,7 +471,7 @@ function makeStyles(theme: Theme) {
       opacity: 0.4,
     },
     saveBtnText: {
-      color: '#fff',
+      color: theme.text.onAccent,
       fontSize: font.base,
       fontWeight: '600',
     },
