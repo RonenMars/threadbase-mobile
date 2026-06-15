@@ -80,7 +80,7 @@ if (( SKIP_PREFLIGHT == 0 )); then
   "$SCRIPT_DIR/preflight.sh"
 fi
 
-# 2. Bootstrap iOS signing from 1Password — must run before the version check
+# 2. Bootstrap iOS signing — must run before the version check
 # because check-build-number.sh needs ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH
 # to query the App Store Connect API.
 # Skip if .env.signing already exists and the .p8 key is materialized on disk.

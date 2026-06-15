@@ -4,8 +4,8 @@ description: >
   Vanilla fastlane TestFlight pipeline. ONLY invoke this skill when the user
   explicitly types /ship-fastlane. Never trigger automatically on "ship",
   "TestFlight", or general release requests — those go to /expo-local-ship
-  instead. Use when shipping from a machine without the 1Password signing
-  vault, when wiring up CI, or as a vanilla fallback if /expo-local-ship is
+  instead. Use when shipping from a machine without the maintainer signing
+  env vars, when wiring up CI, or as a vanilla fallback if /expo-local-ship is
   misbehaving. Before running `bundle exec fastlane beta`, confirm with the
   user and wait for explicit approval.
 ---
@@ -14,7 +14,7 @@ description: >
 
 Standard fastlane setup for archiving the iOS app and uploading to TestFlight.
 TestFlight only — no App Store submission, no polling until VALID, no
-1Password integration. The lane is intentionally minimal; if you need the
+custom signing bootstrap. The lane is intentionally minimal; if you need the
 full pipeline, use `/expo-local-ship`.
 
 ## When this skill applies
@@ -87,7 +87,7 @@ That's the whole thing. Don't pass extra flags unless you know why.
 
 | Missing | What to use instead |
 |---|---|
-| 1Password signing vault bootstrap | `./scripts/ship-ios.sh` (Path A in `docs/deployment.md`) |
+| Maintainer signing env bootstrap | `./scripts/ship-ios.sh` (Path A in `docs/deployment.md`) |
 | `expo prebuild` if `ios/` is missing | Run `npx expo prebuild --platform ios` first, or use `ship-ios.sh` |
 | Poll ASC until the build is VALID | Check TestFlight manually, or use `ship-ios.sh` |
 | Submit for App Store review | `ship-ios.sh --target production` |
@@ -149,5 +149,5 @@ git restore app.json
 - [`fastlane/Fastfile`](../../../fastlane/Fastfile) — the lane source.
 - [`fastlane/.env.example`](../../../fastlane/.env.example) — env var template.
 - [`_shared/pre-ship-checks.md`](../_shared/pre-ship-checks.md) — canonical pre-ship policy.
-- `/expo-local-ship` — full pipeline (1Password, polling, production submission).
+- `/expo-local-ship` — full pipeline (signing bootstrap, polling, production submission).
 - `/ship-expo-cloud` — EAS cloud builds (opt-in, costs money).

@@ -19,7 +19,7 @@
 ### Secrets Set
 ```bash
 fly secrets set PROD_API_KEY="<generated-api-key>" -a <your-app-name>
-fly secrets set CLAUDE_API_KEY="<key-from-1password>" -a <your-app-name>
+fly secrets set CLAUDE_API_KEY="<claude-api-key>" -a <your-app-name>
 ```
 
 ### Volume

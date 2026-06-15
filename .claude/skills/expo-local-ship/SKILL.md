@@ -44,7 +44,7 @@ That's the whole flow. No simulator, no UI clicks. The script:
 1. **Preflight** — runs every prerequisite check, fails loud if anything is off.
 2. **Install deps** — npm / yarn / pnpm / bun, auto-detected from lockfile.
 3. **Prebuild** — runs `npx expo prebuild` only if `ios/` is missing.
-4. **Bootstrap signing** — skipped automatically if `.env.signing` and the `.p8` key are already on disk. On a fresh machine, pulls ASC API key + Team ID from 1Password (requires `eval "$(op signin)"` or `OP_SERVICE_ACCOUNT_TOKEN`), renders `ExportOptions.plist`, writes `.env.signing`.
+4. **Bootstrap signing** — skipped automatically if `.env.signing` and the `.p8` key are already on disk. On a fresh machine, reads ASC API key + Team ID from environment variables, renders `ExportOptions.plist`, writes `.env.signing`.
 5. **Git sync check** — `git fetch origin` then refuses to ship if local `main` is behind `origin/main` (someone else may have pushed an `app.json` bump from another machine that you haven't pulled). Also refuses if `app.json` has uncommitted edits.
 6. **Build-number reconciliation** — queries the App Store Connect API for the highest `buildNumber` already in TestFlight for this `bundleIdentifier`, compares against `app.json`. If local ≤ remote, auto-bumps `app.json` to `remote + 1`. A drift ≥ 2 prints a louder warning (likely sign of a multi-machine skip).
 7. **Archive + upload** — `xcodebuild archive` then `xcodebuild -exportArchive` with `destination=upload`.
@@ -55,8 +55,8 @@ That's the whole flow. No simulator, no UI clicks. The script:
 
 The skill is a thin spec; the canonical implementation is the `scripts/`
 folder. When invoked in a project, copy `~/.claude/skills/expo-local-build/scripts/`
-into the project's `scripts/` folder, then customize the 1Password vault
-reference if needed.
+into the project's `scripts/` folder, then customize any project-specific
+defaults if needed.
 
 | Script | Role |
 |--------|------|
@@ -64,12 +64,12 @@ reference if needed.
 | `preflight.sh` | Runs every prerequisite check and fails loud. Standalone too. |
 | `git-sync-check.sh` | Verifies local `main` is up to date with `origin/main` and `app.json` has no uncommitted edits. Prevents shipping from a stale base on a multi-machine setup. |
 | `check-build-number.sh` | Queries App Store Connect for the highest `buildNumber` in TestFlight, compares to `app.json`, and auto-bumps if local ≤ remote. Surfaces a louder warning when drift ≥ 2 (sign of a missed bump). |
-| `bootstrap-ios-signing.sh` | Pulls API key + Team ID from 1Password, writes `.p8`, renders plist, emits `.env.signing`. |
+| `bootstrap-ios-signing.sh` | Reads API key + Team ID from environment variables, writes `.p8`, renders plist, emits `.env.signing`. |
 | `archive-and-upload.sh` | `xcodebuild archive` + `xcodebuild -exportArchive --destination=upload`. |
 | `asc-jwt.sh` | Mints a 19-min ES256 JWT for ASC API requests. |
 | `poll-build.sh` | Watches `processingState` with 7 independent kill switches (per-curl timeout, wall clock, iteration cap, failure cap, watchdog, orphan check, signal traps). `--timeout` is hard-capped at 1800 s. |
 | `submit-for-review.sh` | App Store Connect REST API: resolve app+build → create version → attach build → set `whatsNew` → submit. |
-| `ExportOptions.template.plist` | `op inject` template — `team_id` substituted at bootstrap time. |
+| `ExportOptions.template.plist` | Template plist — `TEAM_ID_PLACEHOLDER` is substituted at bootstrap time. |
 
 ## One-time setup
 
@@ -78,19 +78,16 @@ reference if needed.
 1. **App Store Connect API key** — at App Store Connect → Users and Access → Integrations → App Store Connect API. Role: App Manager (or higher). Download the `.p8` *immediately* (only chance). Record Key ID + Issuer ID.
 2. **Register the app** in App Store Connect with the bundle ID.
 
-### 1Password (vault of your choice)
+### Signing env vars
 
-Create an item titled **`AppStoreConnect`** (type: API Credential) with these custom fields:
+Set these variables in the environment before running the ship pipeline:
 
 | Field | Value |
 |-------|-------|
-| `key_id` | ASC API Key ID |
-| `issuer_id` | Issuer UUID |
-| `team_id` | Apple Developer Team ID (10 chars) — `xcodebuild -showBuildSettings ... \| awk '/DEVELOPMENT_TEAM/ {print $3}'` |
-| `auth_key_b64` | base64 of the `.p8`: `base64 -i AuthKey_<KEYID>.p8 \| pbcopy` |
-
-Override the item path with `OP_ITEM=op://<vault>/<item>` if needed. The
-default in the bootstrap script is `op://Private/AppStoreConnect`.
+| `ASC_KEY_ID` | ASC API Key ID |
+| `ASC_ISSUER_ID` | Issuer UUID |
+| `ASC_TEAM_ID` | Apple Developer Team ID (10 chars) — `xcodebuild -showBuildSettings ... \| awk '/DEVELOPMENT_TEAM/ {print $3}'` |
+| `ASC_AUTH_KEY_B64` | base64 of the `.p8`: `base64 -i AuthKey_<KEYID>.p8 \| pbcopy` |
 
 ### Project side
 
@@ -108,8 +105,7 @@ build/
 *.p8
 ```
 
-Commit `scripts/`. The template plist references `op://<vault>/AppStoreConnect/team_id`
-— edit if your vault is named differently.
+Commit `scripts/`.
 
 ## The ship pipeline
 
@@ -192,12 +188,12 @@ Refuse or warn against:
 - ❌ Committing `.env.signing`, `build/`, or `*.p8`. The provided `.gitignore` covers all three.
 - ❌ Pinning Xcode betas (signing breaks unpredictably). Stick to GM unless the user explicitly requested a beta.
 - ❌ `expo build:ios` / `expo build:android` (deprecated). Use the local pipeline or EAS Build.
-- ❌ Storing `.p8` in plaintext outside Keychain / 1Password. The bootstrap script materializes it with `umask 077` and `chmod 600` for a reason.
+- ❌ Committing `.p8` or env files. The bootstrap script materializes the key with `umask 077` and `chmod 600` for a reason.
 
 ## CI variant
 
-For unattended (GitHub Actions, etc.), swap interactive `op signin` for a
-service account token. Same scripts otherwise:
+For unattended (GitHub Actions, etc.), provide the same signing variables from
+repository secrets:
 
 ```yaml
 # .github/workflows/ship-testflight.yml
@@ -208,23 +204,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
-      - uses: 1password/install-cli-action@v1
       - run: ./scripts/ship-ios.sh
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+          ASC_AUTH_KEY_B64: ${{ secrets.ASC_AUTH_KEY_B64 }}
 ```
-
-The 1Password Service Account needs **read** access to the vault holding
-the `AppStoreConnect` item and **nothing else**. Token rotation is annual
-or on-demand.
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `account is not signed in` from `op` | New shell, no session | `eval "$(op signin)"` (interactive) — or set `OP_SERVICE_ACCOUNT_TOKEN` |
-| `No accounts configured for use with 1Password CLI` | CLI installed but never linked to an account on this machine | Run `op vault list` — it triggers an interactive setup flow (sign-in address, email, Secret Key, master password). Non-interactive: `OP_SECRET_KEY=<key> op account add --address my.1password.com --email you@example.com`. One-time per machine; separate from the desktop app's "Integrate with 1Password CLI" toggle, which only works after an account is registered. |
-| Bootstrap dies on PEM sanity check | `.p8` field stripped of newlines (single-line text field) | Re-encode: `base64 -i AuthKey_*.p8` and store in `auth_key_b64` |
+| Bootstrap dies on PEM sanity check | `ASC_AUTH_KEY_B64` is missing or invalid | Re-encode: `base64 -i AuthKey_*.p8` and export `ASC_AUTH_KEY_B64` |
 | Archive succeeds, upload rejected: "Invalid Bundle Structure" | Stale Pods after a config-plugin change | `cd ios && pod install --repo-update && cd ..` then re-archive |
 | `processingState=INVALID` | App Store Connect rejected the binary | `curl …/v1/builds/<id>` for reason; common: missing privacy manifest, deprecated APIs |
 | `xcodebuild` hangs at signing | Distribution profile missing | Pass `-allowProvisioningUpdates` + the API-key flags (the scripts already do this) |
@@ -243,7 +235,7 @@ or on-demand.
 - **The ship pipeline never opens a simulator.** That's `npx expo run:ios` territory (dev iteration), not shipping.
 - **Default target is TestFlight.** Production submission is opt-in via `--target production`.
 - **Apple auth is API key (`.p8`) only.** No Apple ID prompts. Always pass `-allowProvisioningUpdates` + `-authenticationKey*` flags to `xcodebuild`.
-- **Secrets live in 1Password**, materialized at bootstrap. The scripts use `umask 077` + `chmod 600` for the `.p8`. Never inline secrets in markdown, scripts, or commits.
+- **Secrets are provided via environment variables**, materialized at bootstrap. The scripts use `umask 077` + `chmod 600` for the `.p8`. Never inline secrets in markdown, scripts, or commits.
 - **Detect the package manager from the lockfile.** Don't assume npm.
 - **`prebuild` only when `ios/` is missing**, unless the user requested a clean regen. Warn if `ios/` has uncommitted changes before `--clean`.
 - **The script files are canonical.** This document is a spec; `scripts/*` is the implementation. Don't paraphrase script contents inline — link instead.

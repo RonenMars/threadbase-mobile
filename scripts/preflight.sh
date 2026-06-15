@@ -9,7 +9,7 @@
 #   ./scripts/preflight.sh                  # iOS-only by default
 #   PLATFORM=android ./scripts/preflight.sh # Android-only
 #   PLATFORM=both    ./scripts/preflight.sh # both
-#   SKIP_SECRETS=1   ./scripts/preflight.sh # skip 1Password / ASC checks
+#   SKIP_SECRETS=1   ./scripts/preflight.sh # skip signing secret checks
 
 set -euo pipefail
 
@@ -64,7 +64,7 @@ fi
 if [[ "$SKIP_SECRETS" != "1" ]]; then
   if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "both" ]]; then
     # If .env.signing exists and the .p8 key is already on disk, signing is
-    # pre-bootstrapped — no live 1Password session needed.
+    # pre-bootstrapped.
     _env_signing_ok=0
     if [[ -f .env.signing ]]; then
       _asc_key_path=$(bash -c 'source .env.signing 2>/dev/null && echo "${ASC_KEY_PATH:-}"')
@@ -72,12 +72,14 @@ if [[ "$SKIP_SECRETS" != "1" ]]; then
     fi
 
     if (( _env_signing_ok )); then
-      log_pass "iOS signing pre-bootstrapped (.env.signing + .p8 present — skipping 1Password check)"
+      log_pass "iOS signing pre-bootstrapped (.env.signing + .p8 present)"
     else
       echo
       echo "▸ Ship secrets (set SKIP_SECRETS=1 to bypass)"
-      check "1Password CLI installed" "command -v op"                              "brew install --cask 1password-cli"
-      check "1Password signed in"     "op whoami"                                  "eval \"\$(op signin)\" — or set OP_SERVICE_ACCOUNT_TOKEN for CI"
+      check "ASC_KEY_ID set"       "[[ -n \${ASC_KEY_ID:-} ]]"       "export ASC_KEY_ID"
+      check "ASC_ISSUER_ID set"    "[[ -n \${ASC_ISSUER_ID:-} ]]"    "export ASC_ISSUER_ID"
+      check "ASC_TEAM_ID set"      "[[ -n \${ASC_TEAM_ID:-} ]]"      "export ASC_TEAM_ID"
+      check "ASC_AUTH_KEY_B64 set" "[[ -n \${ASC_AUTH_KEY_B64:-} ]]" "export ASC_AUTH_KEY_B64"
     fi
   fi
 fi

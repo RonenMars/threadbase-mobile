@@ -75,7 +75,7 @@ if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
   npx expo prebuild --platform ios --non-interactive
 fi
 
-# 4. Bootstrap iOS signing from 1Password
+# 4. Bootstrap iOS signing
 echo "▸ [4/6] Bootstrap iOS signing"
 "$SCRIPT_DIR/bootstrap-ios-signing.sh"
 # shellcheck disable=SC1091

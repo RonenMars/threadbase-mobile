@@ -64,13 +64,13 @@ jobs:
           node-version: 24
           cache: npm
 
-      - uses: 1password/install-cli-action@v1
-
       - name: Bootstrap iOS signing
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+          ASC_AUTH_KEY_B64: ${{ secrets.ASC_AUTH_KEY_B64 }}
         run: |
-          source .env.signing 2>/dev/null || true
           if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
             echo "Signing already bootstrapped — skipping"
           else
@@ -91,8 +91,6 @@ jobs:
         run: cd ios && pod install --deployment
 
       - name: Bump build number → commit → push to main
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |
           source .env.signing
           git config user.name  "github-actions[bot]"
@@ -109,7 +107,6 @@ jobs:
 
       - name: Ship iOS
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           IOS_TARGET: ${{ inputs.target }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
@@ -157,12 +154,22 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
-      - uses: 1password/install-cli-action@v1
-
       - name: Fetch Play credentials
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: ./scripts/fetch-play-credentials.sh
+          PLAY_SA_JSON_B64: ${{ secrets.PLAY_SA_JSON_B64 }}
+        run: |
+          # Materializes the SA JSON to the cache path ship-android.sh checks,
+          # then exports its path so later steps (version check, upload) authenticate.
+          CREDS_PATH="$(./scripts/fetch-play-credentials.sh)"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${CREDS_PATH}" >> "$GITHUB_ENV"
+
+      - name: Bootstrap Android signing
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./scripts/bootstrap-android-signing.sh
 
       - name: Bump versionCode → commit → push to main
         run: |
@@ -182,7 +189,6 @@ jobs:
 
       - name: Ship Android
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           ANDROID_TRACK: ${{ inputs.android_track }}
         run: |
           ./scripts/ship-android.sh \
