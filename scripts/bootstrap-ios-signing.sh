@@ -50,20 +50,32 @@ OP_IOS_VAULT="${OP_IOS_VAULT:-<your-vault>}"
 OP_IOS_ITEM="${OP_IOS_ITEM:-AppStoreConnect}"
 OP_ITEM="${OP_ITEM:-op://${OP_IOS_VAULT}/${OP_IOS_ITEM}}"
 
-if ! op whoami >/dev/null 2>&1; then
-  echo "1Password CLI is not signed in. Run: eval \"\$(op signin)\"" >&2
-  exit 1
+# CI fast path: if the signing values are already in the environment (e.g.
+# injected from GitHub secrets), use them directly and skip 1Password entirely.
+# Local dev leaves these unset and falls through to the `op read` path below.
+if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && \
+   [ -n "${ASC_TEAM_ID:-}" ] && [ -n "${ASC_AUTH_KEY_B64:-}" ]; then
+  ASC_KEY_PATH="${HOME}/.appstoreconnect/keys/AuthKey_${ASC_KEY_ID}.p8"
+  mkdir -p "$(dirname "${ASC_KEY_PATH}")"
+  umask 077
+  printf '%s' "${ASC_AUTH_KEY_B64}" | base64 -d > "${ASC_KEY_PATH}"
+  chmod 600 "${ASC_KEY_PATH}"
+else
+  if ! op whoami >/dev/null 2>&1; then
+    echo "1Password CLI is not signed in. Run: eval \"\$(op signin)\"" >&2
+    exit 1
+  fi
+
+  ASC_KEY_ID="$(op read "${OP_ITEM}/key_id")"
+  ASC_ISSUER_ID="$(op read "${OP_ITEM}/issuer_id")"
+  ASC_TEAM_ID="$(op read "${OP_ITEM}/team_id")"
+  ASC_KEY_PATH="${HOME}/.appstoreconnect/keys/AuthKey_${ASC_KEY_ID}.p8"
+
+  mkdir -p "$(dirname "${ASC_KEY_PATH}")"
+  umask 077
+  op read "${OP_ITEM}/auth_key_b64" | base64 -d > "${ASC_KEY_PATH}"
+  chmod 600 "${ASC_KEY_PATH}"
 fi
-
-ASC_KEY_ID="$(op read "${OP_ITEM}/key_id")"
-ASC_ISSUER_ID="$(op read "${OP_ITEM}/issuer_id")"
-ASC_TEAM_ID="$(op read "${OP_ITEM}/team_id")"
-ASC_KEY_PATH="${HOME}/.appstoreconnect/keys/AuthKey_${ASC_KEY_ID}.p8"
-
-mkdir -p "$(dirname "${ASC_KEY_PATH}")"
-umask 077
-op read "${OP_ITEM}/auth_key_b64" | base64 -d > "${ASC_KEY_PATH}"
-chmod 600 "${ASC_KEY_PATH}"
 
 # Sanity-check the materialized PEM
 if ! head -1 "${ASC_KEY_PATH}" | grep -q '^-----BEGIN PRIVATE KEY-----$'; then

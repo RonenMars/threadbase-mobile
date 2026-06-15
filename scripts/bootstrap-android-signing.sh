@@ -39,23 +39,35 @@ OP_ANDROID_VAULT="${OP_ANDROID_VAULT:-<your-vault>}"
 OP_ANDROID_ITEM="${OP_ANDROID_ITEM:-AndroidSigning}"
 OP_ITEM="${OP_ITEM:-op://${OP_ANDROID_VAULT}/${OP_ANDROID_ITEM}}"
 
-if ! op whoami >/dev/null 2>&1; then
-  echo "1Password CLI is not signed in. Run: eval \"\$(op signin)\"" >&2
-  exit 1
-fi
-
 KEYSTORE_DIR="${HOME}/.android-signing"
 KEYSTORE_PATH="${KEYSTORE_DIR}/tb-mobile-upload.keystore"
 
 mkdir -p "${KEYSTORE_DIR}"
 umask 077
 
-op read "${OP_ITEM}/keystore_b64" | base64 -d > "${KEYSTORE_PATH}"
-chmod 600 "${KEYSTORE_PATH}"
+# CI fast path: if the signing values are already in the environment (e.g.
+# injected from GitHub secrets), use them directly and skip 1Password entirely.
+# Local dev leaves these unset and falls through to the `op read` path below.
+if [ -n "${ANDROID_KEYSTORE_B64:-}" ] && [ -n "${ANDROID_STORE_PASSWORD:-}" ] && \
+   [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
+  printf '%s' "${ANDROID_KEYSTORE_B64}" | base64 -d > "${KEYSTORE_PATH}"
+  chmod 600 "${KEYSTORE_PATH}"
+  STORE_PASSWORD="${ANDROID_STORE_PASSWORD}"
+  KEY_ALIAS="${ANDROID_KEY_ALIAS:-upload}"
+  KEY_PASSWORD="${ANDROID_KEY_PASSWORD}"
+else
+  if ! op whoami >/dev/null 2>&1; then
+    echo "1Password CLI is not signed in. Run: eval \"\$(op signin)\"" >&2
+    exit 1
+  fi
 
-STORE_PASSWORD="$(op read "${OP_ITEM}/store_password")"
-KEY_ALIAS="$(op read "${OP_ITEM}/key_alias" 2>/dev/null || echo "upload")"
-KEY_PASSWORD="$(op read "${OP_ITEM}/key_password")"
+  op read "${OP_ITEM}/keystore_b64" | base64 -d > "${KEYSTORE_PATH}"
+  chmod 600 "${KEYSTORE_PATH}"
+
+  STORE_PASSWORD="$(op read "${OP_ITEM}/store_password")"
+  KEY_ALIAS="$(op read "${OP_ITEM}/key_alias" 2>/dev/null || echo "upload")"
+  KEY_PASSWORD="$(op read "${OP_ITEM}/key_password")"
+fi
 
 # Sanity-check the materialized keystore — keytool exits non-zero if the
 # binary is corrupt or the password is wrong.

@@ -18,18 +18,20 @@
 
 set -euo pipefail
 
-: "${OP_PLAY_VAULT:?OP_PLAY_VAULT must be set (1Password vault name)}"
-: "${OP_PLAY_ITEM:?OP_PLAY_ITEM must be set (1Password item name)}"
-OP_PLAY_FIELD="${OP_PLAY_FIELD:-password}"
+if [ -z "${PLAY_SA_JSON_B64:-}" ]; then
+  : "${OP_PLAY_VAULT:?OP_PLAY_VAULT must be set (1Password vault name)}"
+  : "${OP_PLAY_ITEM:?OP_PLAY_ITEM must be set (1Password item name)}"
+  OP_PLAY_FIELD="${OP_PLAY_FIELD:-password}"
 
-if ! command -v op >/dev/null 2>&1; then
-  echo "error: 1Password CLI (op) not found — install with 'brew install --cask 1password-cli'" >&2
-  exit 1
-fi
+  if ! command -v op >/dev/null 2>&1; then
+    echo "error: 1Password CLI (op) not found — install with 'brew install --cask 1password-cli'" >&2
+    exit 1
+  fi
 
-if ! op account list >/dev/null 2>&1; then
-  echo "error: 1Password CLI not signed in — run: eval \$(op signin)" >&2
-  exit 1
+  if ! op account list >/dev/null 2>&1; then
+    echo "error: 1Password CLI not signed in — run: eval \$(op signin)" >&2
+    exit 1
+  fi
 fi
 
 CACHE_DIR="$HOME/.config/threadbase"
@@ -37,6 +39,26 @@ CACHE_FILE="$CACHE_DIR/play-console-sa.json"
 
 mkdir -p "$CACHE_DIR"
 chmod 700 "$CACHE_DIR"
+
+# CI fast-path: if PLAY_SA_JSON_B64 is provided, decode it directly and skip
+# 1Password entirely.
+if [ -n "${PLAY_SA_JSON_B64:-}" ]; then
+  TMP_FILE="$(mktemp)"
+  trap 'rm -f "$TMP_FILE"' EXIT
+
+  if ! printf '%s' "$PLAY_SA_JSON_B64" | base64 -d > "$TMP_FILE" 2>/dev/null || \
+     ! jq -e 'has("type") and has("project_id") and has("private_key")' "$TMP_FILE" >/dev/null 2>&1; then
+    echo "error: PLAY_SA_JSON_B64 is not valid base64-encoded Google service-account JSON" >&2
+    exit 1
+  fi
+
+  mv "$TMP_FILE" "$CACHE_FILE"
+  chmod 600 "$CACHE_FILE"
+
+  echo "wrote $CACHE_FILE (mode 600)" >&2
+  echo "$CACHE_FILE"
+  exit 0
+fi
 
 TMP_FILE="$(mktemp)"
 trap 'rm -f "$TMP_FILE"' EXIT
