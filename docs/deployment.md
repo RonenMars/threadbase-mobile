@@ -354,6 +354,35 @@ normal when you call the scripts directly.
 
 ---
 
+## Branch & commit naming after a ship
+
+After a successful upload, the `ship-*` scripts commit the version bump on a
+fresh branch (never on `main`) and push it for a PR. This is handled by
+`scripts/post-deploy-commit.sh`, which both `ship-ios.sh` and `ship-android.sh`
+call. The naming follows a fixed convention — match it for any manual bump too:
+
+| Artifact | Pattern | Example |
+|---|---|---|
+| **Branch** | `chore/bump-<platform>-version-<N>` | `chore/bump-ios-version-140` |
+| **Commit (iOS)** | `chore(ios): bump build number to <N> [skip-ci]` | `chore(ios): bump build number to 140 [skip-ci]` |
+| **Commit (Android)** | `chore(android): bump version code to <N> [skip-ci]` | `chore(android): bump version code to 20 [skip-ci]` |
+
+Notes:
+
+- `<platform>` is `ios` or `android`; `<N>` is the new build/version number — the
+  iOS build number or the Android version code being shipped. Both the branch
+  and the commit carry it.
+- The branch name is offered as an editable default at ship time — keep the
+  convention unless you have a reason to deviate.
+- `[skip-ci]` stops CI from re-running on a bump-only commit.
+- iOS bumps touch `app.json`; Android bumps touch `app.json` **and**
+  `android/app/build.gradle` (kept in sync).
+- A second, interactive commit may follow for files modified during the
+  pipeline (e.g. lockfile or Pods changes); its branch and message are entered
+  by hand and have no fixed convention.
+
+---
+
 ## See also
 
 - `/expo-local-ship` skill — wraps `scripts/ship-ios.sh` with conversational

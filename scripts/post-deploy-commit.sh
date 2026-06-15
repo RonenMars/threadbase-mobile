@@ -60,19 +60,22 @@ else
   echo
   echo "▸ post-deploy: committing version bump..."
 
-  # Determine which files were bumped and the bump description
+  # Determine which files were bumped, the bump description, and the number
+  # that goes into both the commit message and the branch name.
   if [[ "$PLATFORM" == "ios" ]]; then
     BUMP_FILES=("app.json")
+    BUMP_NUMBER="$BUILD_NUMBER"
     BUMP_MSG="chore(ios): bump build number to ${BUILD_NUMBER} [skip-ci]"
   else
     BUMP_FILES=("app.json")
     GRADLE="android/app/build.gradle"
     [[ -f "$GRADLE" ]] && BUMP_FILES+=("$GRADLE")
+    BUMP_NUMBER="$VERSION_CODE"
     BUMP_MSG="chore(android): bump version code to ${VERSION_CODE} [skip-ci]"
   fi
 
-  # Ask for branch name
-  DEFAULT_BRANCH="chore/bump-${PLATFORM}-version-$(date +%Y%m%d)"
+  # Ask for branch name — defaults to including the new build/version number.
+  DEFAULT_BRANCH="chore/bump-${PLATFORM}-version-${BUMP_NUMBER}"
   BRANCH=$(_prompt_input "Branch name for version bump" "$DEFAULT_BRANCH")
 
   ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
