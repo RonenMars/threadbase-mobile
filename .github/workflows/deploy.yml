@@ -64,6 +64,10 @@ jobs:
           node-version: 24
           cache: npm
 
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
       - name: Bootstrap iOS signing
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -80,6 +84,9 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Install Ruby dependencies
+        run: bundle install
+
       - name: Cache CocoaPods
         uses: actions/cache@v4
         with:
@@ -88,7 +95,7 @@ jobs:
           restore-keys: pods-
 
       - name: Install CocoaPods
-        run: cd ios && pod install --deployment
+        run: cd ios && bundle exec pod install --deployment
 
       - name: Bump build number → commit → push to main
         run: |
