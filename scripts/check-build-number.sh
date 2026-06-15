@@ -119,12 +119,6 @@ fi
 
 echo "  ⚠ app.json buildNumber ($LOCAL_BUILD) ≤ TestFlight latest ($REMOTE_BUILD) — auto-bumping to $NEXT_BUILD"
 jq ".expo.ios.buildNumber = \"$NEXT_BUILD\"" app.json > app.json.tmp && mv app.json.tmp app.json
-echo "  ✓ app.json updated to buildNumber $NEXT_BUILD"
-
-# Commit the bump so the next ship doesn't trip git-sync-check.sh on a dirty
-# app.json. Apple has already consumed this build number permanently (you can't
-# re-use it even if the upload later fails), so the commit is justified
-# regardless of ship outcome. Push is left to the user.
-git add app.json
-git commit -m "chore(ios): bump build number to $NEXT_BUILD [skip-ci]"
-echo "  ✓ committed bump (push with: git push)"
+echo "  ✓ app.json updated to buildNumber $NEXT_BUILD (commit deferred until after successful upload)"
+# Exit 2 signals to ship-ios.sh that app.json was bumped and needs committing.
+exit 2

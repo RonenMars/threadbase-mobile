@@ -246,9 +246,6 @@ if [[ -f "$GRADLE_BUILD" ]]; then
   fi
 fi
 
-git add app.json "$GRADLE_BUILD"
-git commit -m "chore(android): bump version code to $NEXT_CODE [skip-ci]"
-echo "  ✓ committed bump (push with: git push)"
-# Exit 2 signals to ship-android.sh that a bump commit was made.
-# The caller should roll it back if the subsequent upload fails.
+echo "  ✓ app.json + build.gradle updated to versionCode $NEXT_CODE (commit deferred until after successful upload)"
+# Exit 2 signals to ship-android.sh that files were bumped and need committing.
 exit 2
