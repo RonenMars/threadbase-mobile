@@ -163,3 +163,76 @@ describe('conversation detail — skeleton gating', () => {
     expect(lifted!).toBeLessThanOrEqual(700)
   })
 })
+
+function allText(root: RenderResult): string {
+  const walk = (node: unknown): string => {
+    if (node == null) return ''
+    if (typeof node === 'string') return node
+    if (Array.isArray(node)) return node.map(walk).join(' ')
+    const n = node as { children?: unknown }
+    return walk(n.children)
+  }
+  return walk(root.toJSON())
+}
+
+describe('conversation detail — resumability gating', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    seedServer()
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'conv-gating', server: 'srv1' })
+  })
+  afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
+  })
+
+  it('shows the worktree banner and disables Resume when resumable is false', async () => {
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, resumable: false, unavailable_reason: 'worktree_removed' },
+    }
+    const root = render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await renderScreenAndFindList(root)
+    await act(async () => {
+      jest.advanceTimersByTime(600) // lift the skeleton gate
+    })
+
+    const text = allText(root)
+    expect(text).toContain('git worktree that no longer exists')
+    expect(text).toContain("Can't resume")
+    expect(text).not.toContain('Resume Session')
+  })
+
+  it('shows the path-missing banner for a missing project dir', async () => {
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, resumable: false, unavailable_reason: 'path_missing' },
+    }
+    const root = render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await renderScreenAndFindList(root)
+    await act(async () => {
+      jest.advanceTimersByTime(600)
+    })
+
+    const text = allText(root)
+    expect(text).toContain('project folder for this conversation was moved or deleted')
+    expect(text).toContain("Can't resume")
+  })
+
+  it('keeps Resume enabled and shows no banner when resumable', async () => {
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, resumable: true },
+    }
+    const root = render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await renderScreenAndFindList(root)
+    await act(async () => {
+      jest.advanceTimersByTime(600)
+    })
+
+    const text = allText(root)
+    expect(text).toContain('Resume Session')
+    expect(text).not.toContain("Can't resume")
+    expect(text).not.toContain('no longer exists')
+  })
+})

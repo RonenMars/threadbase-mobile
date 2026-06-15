@@ -9,8 +9,8 @@ Pick one based on what you have access to and what you're trying to do.
 
 | Path | Use when | Command |
 | --- | --- | --- |
-| **`ship-ios.sh`** | You're the maintainer (have access to the 1Password signing vault). Full-featured: signing bootstrap, git safety checks, polls until the build is `VALID` on App Store Connect, optional App Store submission. | `./scripts/ship-ios.sh` |
-| **fastlane** | You're a contributor / running on a machine without the 1Password vault. Vanilla fastlane, configured purely via env vars. TestFlight only, no polling, no App Store submission. | `bundle exec fastlane beta` |
+| **`ship-ios.sh`** | You're the maintainer and have the signing env vars. Full-featured: signing bootstrap, git safety checks, polls until the build is `VALID` on App Store Connect, optional App Store submission. | `./scripts/ship-ios.sh` |
+| **fastlane** | You're a contributor or want a vanilla fastlane path configured purely via env vars. TestFlight only, no polling, no App Store submission. | `bundle exec fastlane beta` |
 | **EAS cloud builds** | You want to build on Expo's servers (e.g. CI without macOS, or no local Xcode). Costs money. Opt-in only. | `/ship-expo-cloud` (skill, manual approval required) |
 | **Manual Xcode** | Tooling diagnosis or a one-off where you want to see every step in the UI. | Xcode → Product → Archive → Distribute App |
 
@@ -22,14 +22,14 @@ They differ in how much automation sits around the archive step.
 
 | Path | Use when | Command |
 | --- | --- | --- |
-| **`ship-android.sh`** | You're the maintainer (have 1Password access for keystore + Play service account). Builds a signed AAB, bumps versionCode if needed, uploads to the chosen track. | `./scripts/ship-android.sh` |
+| **`ship-android.sh`** | You're the maintainer and have the Android signing + Play service account env vars. Builds a signed AAB, bumps versionCode if needed, uploads to the chosen track. | `./scripts/ship-android.sh` |
 
 ---
 
 ## Path A — `./scripts/ship-ios.sh` (maintainer default)
 
 The full pipeline. This is what the `/expo-local-ship` skill runs, and it's
-the default for anyone with the 1Password signing vault.
+the default maintainer path.
 
 ### What it does
 
@@ -37,7 +37,7 @@ the default for anyone with the 1Password signing vault.
 2. **Install dependencies** — auto-detects bun / pnpm / yarn / npm.
 3. **Prebuild** — `npx expo prebuild --platform ios` if `ios/` is missing.
 4. **Bootstrap signing** — `scripts/bootstrap-ios-signing.sh` pulls the ASC
-   API key + signing config from 1Password into `.env.signing`.
+   API key + signing config from environment variables into `.env.signing`.
 5. **Git sync check** — refuses to ship if local `main` is behind `origin/main`
    or if `app.json` has uncommitted changes. Catches the multi-machine "someone
    else already shipped a higher build number on another laptop" footgun.
@@ -67,19 +67,19 @@ Other flags: `--skip-preflight`, `--skip-prebuild`, `--bundle-id <id>`,
 
 ### Prerequisites
 
-- 1Password CLI signed in (either via `op signin` or
-  `OP_SERVICE_ACCOUNT_TOKEN`).
+- App Store Connect signing variables set: `ASC_KEY_ID`, `ASC_ISSUER_ID`,
+  `ASC_TEAM_ID`, and `ASC_AUTH_KEY_B64`.
 - macOS with Xcode + CLI tools installed.
 - Node version that satisfies the Expo SDK's `engines` field.
 
-If 1Password isn't available, **stop and use fastlane (Path B) instead** — don't
-try to hand-roll `.env.signing`.
+If signing env vars are not available, **stop and use fastlane (Path B) instead**
+or configure them before running the maintainer pipeline.
 
 ---
 
 ## Path B — fastlane `bundle exec fastlane beta` (contributor-friendly)
 
-Vanilla fastlane setup. No 1Password integration, no polling, no App Store
+Vanilla fastlane setup. No custom signing bootstrap, no polling, no App Store
 submission — just bump the build number, archive, and upload to TestFlight.
 
 > **Note:** `fastlane/README.md` is auto-generated from the `Fastfile` on every
@@ -165,7 +165,7 @@ bundle exec fastlane action build_app       # show signatures/help
 
 ### When to prefer fastlane over `ship-ios.sh`
 
-- You don't have access to the 1Password signing vault.
+- You don't have access to the maintainer signing env vars.
 - You're setting up CI and want a single, declarative pipeline tool.
 - `ship-ios.sh` is broken or behaving weirdly and you want a known-vanilla fallback.
 - You're contributing from another machine and just need to get a build to
@@ -175,7 +175,7 @@ bundle exec fastlane action build_app       # show signatures/help
 
 - The lane never touches code signing, provisioning profiles, or entitlements —
   whatever the Xcode project already has is used as-is. (`ship-ios.sh` is the path
-  that sets those up from 1Password.)
+  that sets those up from environment variables.)
 - If `latest_testflight_build_number` returns 0 (e.g. brand-new marketing
   version with no uploads yet), the lane sets the build number to 1.
 - Any missing required env var fails the lane fast with a clear message — no
@@ -241,8 +241,8 @@ to Google Play via the Play Developer API.
 1. **Preflight** — `scripts/preflight.sh` with `PLATFORM=android` (ANDROID_HOME, JAVA_HOME, etc.).
 2. **Install dependencies** — auto-detects bun / pnpm / yarn / npm.
 3. **Prebuild** — `npx expo prebuild --platform android` if `android/` is missing.
-4. **Bootstrap signing** — `scripts/bootstrap-android-signing.sh` pulls the upload keystore + passwords from 1Password (vault/item set in `.env.op` via `OP_ANDROID_VAULT`/`OP_ANDROID_ITEM`) into `.env.signing.android`.
-5. **Fetch Play credentials** — `scripts/fetch-play-credentials.sh` pulls the service-account JSON from 1Password (`op://$OP_PLAY_VAULT/$OP_PLAY_ITEM`) to `~/.config/threadbase/play-console-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`.
+4. **Bootstrap signing** — `scripts/bootstrap-android-signing.sh` pulls the upload keystore + passwords from environment variables into `.env.signing.android`.
+5. **Fetch Play credentials** — `scripts/fetch-play-credentials.sh` decodes `PLAY_SA_JSON_B64` to `~/.config/threadbase/play-console-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`.
 6. **Git sync check** — same as iOS: refuses to ship if `main` is behind `origin/main` or `app.json` has uncommitted changes.
 7. **Check/bump versionCode** — `scripts/check-version-code.sh` queries all Play tracks for the highest live versionCode, auto-bumps `app.json` if local ≤ remote, and commits the bump.
 8. **Bundle + upload** — `scripts/bundle-and-upload-android.sh` runs `./gradlew :app:bundleRelease` then uploads the `.aab` to the chosen track via the Play Developer API (resumable upload + edits.commit).
@@ -263,11 +263,11 @@ Other flags: `--skip-preflight`, `--skip-prebuild`, `--skip-bundle` (reuse exist
 
 ### Prerequisites
 
-1. **1Password** signed in (`eval "$(op signin)"` or `OP_SERVICE_ACCOUNT_TOKEN`).
-2. **1Password item for Android signing** (vault/item set via `OP_ANDROID_VAULT`/`OP_ANDROID_ITEM` in `.env.op`) with fields:
-   - `keystore_b64` — base64 of the upload keystore (`base64 -i tb-mobile-upload.keystore`)
-   - `store_password`, `key_alias` (default: `upload`), `key_password`
-3. **Play service-account JSON** in 1Password — vault/item set via `OP_PLAY_VAULT` / `OP_PLAY_ITEM` env vars (see `docs/google-play-mcp-setup.md`).
+1. **Android signing variables** set:
+   - `ANDROID_KEYSTORE_B64` — base64 of the upload keystore (`base64 -i tb-mobile-upload.keystore`)
+   - `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_ALIAS` (default: `upload`), `ANDROID_KEY_PASSWORD`
+2. **Play service-account JSON** available as `PLAY_SA_JSON_B64` (see `docs/google-play-mcp-setup.md`).
+3. `jq` installed for credential validation.
 4. `ANDROID_HOME` pointing at the Android SDK, `JAVA_HOME` pointing at JDK 17.
 5. The app registered in Play Console with the bundle ID `com.ronenmars.threadbase`.
 
@@ -335,9 +335,10 @@ ship iOS and/or Android from the GitHub Actions UI without a local machine.
 | `android_track` | `internal`, `alpha`, `beta`, `production` | `internal` |
 | `release_notes` | free text (iOS production only) | — |
 
-**Requirements:** `OP_SERVICE_ACCOUNT_TOKEN` secret must be configured in the
-repo (Settings → Secrets → Actions). The service account token gives the runner
-access to the 1Password signing vault.
+**Requirements:** signing secrets must be configured in the repo (Settings →
+Secrets → Actions): `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_TEAM_ID`,
+`ASC_AUTH_KEY_B64`, `ANDROID_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and `PLAY_SA_JSON_B64`.
 
 ## npm ship scripts
 

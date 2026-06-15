@@ -117,6 +117,31 @@ describe('useConversation — ETag conditional fetch (Task C)', () => {
 
     expect(result.current.data?.messages.length).toBe(2)
   })
+
+  it('parses resumable + unavailable_reason from the meta', async () => {
+    setActiveServers(['srv_c'])
+    const page = rawConversationPage('c3', ['hi'])
+    page.meta = { ...page.meta, resumable: false, unavailable_reason: 'worktree_removed' } as any
+    metaHandlers.srv_c = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = renderHook(() => useConversation('srv_c', 'c3'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data?.resumable).toBe(false)
+    expect(result.current.data?.unavailableReason).toBe('worktree_removed')
+  })
+
+  it('leaves resumable undefined for older servers that omit it (back-compat)', async () => {
+    setActiveServers(['srv_d'])
+    metaHandlers.srv_d = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c4', ['hi']) })
+
+    const { result } = renderHook(() => useConversation('srv_d', 'c4'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data?.resumable).toBeUndefined()
+    expect(result.current.data?.unavailableReason).toBeUndefined()
+  })
 })
 
 describe('useConversations — partial failure (Bug 32)', () => {

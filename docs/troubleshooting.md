@@ -20,13 +20,13 @@ Enter passphrase for key '/Users/ronenmars/.ssh/id_ed25519':
 **Cause:** The SSH agent (`ssh-agent`) is not running or `SSH_AUTH_SOCK` is not set in the environment inherited by the PTY. When Claude Code (or git inside it) tries to authenticate over SSH, it falls through to directly prompting for the key passphrase. This prompt goes to stdout/stderr of the PTY, which tb-streamer captures and streams to the mobile client verbatim — there is no filtering for interactive passphrase prompts.
 
 The underlying cause is usually one of:
-- `~/.ssh/config` has `IdentityAgent` pointing to a 1Password socket (`~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`) that no longer exists (e.g. 1Password SSH agent was disabled or uninstalled).
+- `~/.ssh/config` has `IdentityAgent` pointing to a stale external agent socket that no longer exists.
 - The native macOS SSH agent is running (`com.openssh.ssh-agent` via launchd) but `SSH_AUTH_SOCK` is not exported in the shell, so `ssh-add` and PTY-spawned processes can't find it.
 - The key exists but was never added to the keychain — so the agent restarts empty on every reboot.
 
 **Fix (one-time, persists across restarts):**
 
-1. Update `~/.ssh/config` to use the native macOS keychain instead of 1Password:
+1. Update `~/.ssh/config` to use the native macOS keychain:
 
 ```
 Host *

@@ -13,7 +13,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "139",
+      "buildNumber": "141",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
@@ -26,7 +26,7 @@
     },
     "android": {
       "package": "com.ronenmars.threadbase",
-      "versionCode": 11,
+      "versionCode": 13,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"

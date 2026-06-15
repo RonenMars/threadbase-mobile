@@ -5,7 +5,7 @@
  *
  * These tests only exercise argument validation and the promote fast-path
  * (which exits before running Gradle or calling Play). Full pipeline tests
- * would require mocked 1Password + Play API and are out of scope here.
+ * would require mocked signing secrets + Play API and are out of scope here.
  */
 
 'use strict';
@@ -37,7 +37,7 @@ describe('ship-android.sh — --track validation', () => {
 
   const validTracks = ['internal', 'alpha', 'beta', 'production'];
   validTracks.forEach(track => {
-    it(`accepts --track ${track} (fails later at 1Password, not arg parsing)`, () => {
+    it(`accepts --track ${track} (fails later at credential setup, not arg parsing)`, () => {
       const { stderr } = runScript(['--track', track]);
       expect(stderr).not.toContain('--track must be one of');
     });
@@ -45,17 +45,17 @@ describe('ship-android.sh — --track validation', () => {
 });
 
 describe('ship-android.sh — --promote fast path', () => {
-  it('fails at 1Password check, not at arg parsing, when --promote is given', () => {
+  it('fails at credential setup, not at arg parsing, when --promote is given', () => {
     const { stderr } = runScript(['--promote', '8', '--track', 'alpha']);
-    // Should reach the 1Password check, not fail on argument validation
+    // Should reach credential setup, not fail on argument validation
     expect(stderr).not.toContain('--track must be one of');
     expect(stderr).not.toContain('Unknown arg');
   });
 
-  it('reaches the 1Password step (does not fail on arg validation)', () => {
+  it('reaches credential setup (does not fail on arg validation)', () => {
     const { stderr } = runScript(['--promote', '8', '--track', 'alpha']);
-    // Should not fail on argument parsing — it either passes 1Password (local
-    // with op signed in) or fails there with a clear message, not an arg error.
+    // Should not fail on argument parsing — it either passes local credential
+    // setup or fails there with a clear message, not an arg error.
     expect(stderr).not.toContain('Unknown arg');
     expect(stderr).not.toContain('--track must be one of');
   });
