@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # ship-android.sh — single-command end-to-end Android ship pipeline.
 #
-#   preflight → install deps → prebuild (if missing) → bootstrap signing →
-#   fetch Play credentials → git sync check → check/bump versionCode →
-#   bundle + upload → done.
+#   fetch Play credentials → preflight → git sync check → check/bump versionCode →
+#   install deps → prebuild (if missing) → bootstrap signing → bundle + upload → done.
+#
+# The versionCode check runs early (before npm install / Gradle) so the script
+# fails fast or commits the bump before any slow work begins.
 #
 # No emulator, no UI. Default track is internal.
 # Step 1 always runs first: verifies 1Password is signed in and fetches
@@ -130,59 +132,27 @@ else
   echo "▸ [2/$TOTAL_STEPS] Preflight — skipped"
 fi
 
-# 3. Install deps (detect package manager)
-echo "▸ [3/$TOTAL_STEPS] Install dependencies"
-if   [[ -f bun.lockb || -f bun.lock ]]; then bun install
-elif [[ -f pnpm-lock.yaml ]];           then pnpm install
-elif [[ -f yarn.lock ]];               then yarn install
-else                                        npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-fi
-npx expo install --check >/dev/null || true
-
-# 4. Prebuild if android/ missing
-if (( SKIP_PREBUILD == 0 )) && [[ ! -d android ]]; then
-  echo "▸ [4/$TOTAL_STEPS] Prebuild (no android/ directory)"
-  npx expo prebuild --platform android --non-interactive
-else
-  echo "▸ [4/$TOTAL_STEPS] Prebuild — android/ exists, skipping"
-fi
-
-# 5. Bootstrap Android signing from 1Password
-# Skip if .env.signing.android already exists and keystore is on disk.
-if [[ -f .env.signing.android ]]; then
-  _ks_path=$(bash -c 'source .env.signing.android 2>/dev/null && echo "${TB_MOBILE_UPLOAD_KEYSTORE:-}"')
-  if [[ -n "$_ks_path" && -f "$_ks_path" ]]; then
-    echo "▸ [5/$TOTAL_STEPS] Android signing already bootstrapped — skipping"
-    source .env.signing.android
-  else
-    echo "▸ [5/$TOTAL_STEPS] Bootstrap Android signing"
-    "$SCRIPT_DIR/bootstrap-android-signing.sh"
-    source .env.signing.android
-  fi
-else
-  echo "▸ [5/$TOTAL_STEPS] Bootstrap Android signing"
-  "$SCRIPT_DIR/bootstrap-android-signing.sh"
-  source .env.signing.android
-fi
-
-# 6. Git sync — refuse to ship if local main is behind origin/main, or if
+# 3. Git sync — refuse to ship if local main is behind origin/main, or if
 # app.json has uncommitted changes.
 # Skipped in CI: the workflow checks out main fresh and owns the bump commit.
 if (( SKIP_GIT_SYNC == 0 )); then
-  echo "▸ [6/$TOTAL_STEPS] Git sync check"
+  echo "▸ [3/$TOTAL_STEPS] Git sync check"
   "$SCRIPT_DIR/git-sync-check.sh"
 else
-  echo "▸ [6/$TOTAL_STEPS] Git sync check — skipped (CI)"
+  echo "▸ [3/$TOTAL_STEPS] Git sync check — skipped (CI)"
 fi
 
-# 7. Verify (and auto-bump) versionCode against Play.
-# Exit 2 from check-version-code.sh means a bump commit was made.
-# We install a rollback trap so that if step 8 fails, the bump is reverted.
+# 4. Verify (and auto-bump) versionCode against Play — before any slow work
+# (npm install, Gradle). Queries Google Play: if the local versionCode already
+# exceeds the latest on any track the script continues immediately; otherwise
+# it bumps app.json + build.gradle and commits before the bundle step runs.
+# Exit 2 from check-version-code.sh means a bump commit was made; we install
+# a rollback trap so that if step 8 fails the bump is reverted.
 # Skipped in CI: the workflow runs check-version-code.sh as a separate step,
 # commits the bump to main, and pushes before invoking this script.
 VERSION_BUMPED=0
 if (( SKIP_VERSION_CHECK == 0 )); then
-  echo "▸ [7/$TOTAL_STEPS] Check versionCode against Play"
+  echo "▸ [4/$TOTAL_STEPS] Check/bump versionCode against Play"
   "$SCRIPT_DIR/check-version-code.sh" && true || {
     code=$?
     if (( code == 2 )); then
@@ -192,7 +162,42 @@ if (( SKIP_VERSION_CHECK == 0 )); then
     fi
   }
 else
-  echo "▸ [7/$TOTAL_STEPS] versionCode check — skipped (CI)"
+  echo "▸ [4/$TOTAL_STEPS] versionCode check — skipped (CI)"
+fi
+
+# 5. Install deps (detect package manager)
+echo "▸ [5/$TOTAL_STEPS] Install dependencies"
+if   [[ -f bun.lockb || -f bun.lock ]]; then bun install
+elif [[ -f pnpm-lock.yaml ]];           then pnpm install
+elif [[ -f yarn.lock ]];               then yarn install
+else                                        npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+fi
+npx expo install --check >/dev/null || true
+
+# 6. Prebuild if android/ missing
+if (( SKIP_PREBUILD == 0 )) && [[ ! -d android ]]; then
+  echo "▸ [6/$TOTAL_STEPS] Prebuild (no android/ directory)"
+  npx expo prebuild --platform android --non-interactive
+else
+  echo "▸ [6/$TOTAL_STEPS] Prebuild — android/ exists, skipping"
+fi
+
+# 7. Bootstrap Android signing from 1Password
+# Skip if .env.signing.android already exists and keystore is on disk.
+if [[ -f .env.signing.android ]]; then
+  _ks_path=$(bash -c 'source .env.signing.android 2>/dev/null && echo "${TB_MOBILE_UPLOAD_KEYSTORE:-}"')
+  if [[ -n "$_ks_path" && -f "$_ks_path" ]]; then
+    echo "▸ [7/$TOTAL_STEPS] Android signing already bootstrapped — skipping"
+    source .env.signing.android
+  else
+    echo "▸ [7/$TOTAL_STEPS] Bootstrap Android signing"
+    "$SCRIPT_DIR/bootstrap-android-signing.sh"
+    source .env.signing.android
+  fi
+else
+  echo "▸ [7/$TOTAL_STEPS] Bootstrap Android signing"
+  "$SCRIPT_DIR/bootstrap-android-signing.sh"
+  source .env.signing.android
 fi
 
 _rollback_bump() {

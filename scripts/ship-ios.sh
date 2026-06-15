@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # ship-ios.sh — single-command end-to-end iOS ship pipeline.
 #
-#   preflight → install deps → prebuild (if missing) → bootstrap signing →
-#   check/bump build number → archive → upload → poll until VALID → optionally submit for App Store review.
+#   preflight → bootstrap signing → git sync → check/bump build number →
+#   install deps → prebuild (if missing) → archive → upload → poll until VALID →
+#   optionally submit for App Store review.
+#
+# The version check runs early (before npm install / xcodebuild) so the script
+# fails fast or commits the bump before any slow work begins.
 #
 # No simulator, no UI. Default target is TestFlight.
 #
@@ -75,8 +79,45 @@ if (( SKIP_PREFLIGHT == 0 )); then
   "$SCRIPT_DIR/preflight.sh"
 fi
 
-# 2. Install deps (detect package manager)
-echo "▸ [2/$TOTAL_STEPS] Install dependencies"
+# 2. Bootstrap iOS signing from 1Password — must run before the version check
+# because check-build-number.sh needs ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH
+# to query the App Store Connect API.
+# Skip if .env.signing already exists and the .p8 key is materialized on disk.
+# shellcheck disable=SC1091
+if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
+  echo "▸ [2/$TOTAL_STEPS] iOS signing already bootstrapped — skipping"
+else
+  echo "▸ [2/$TOTAL_STEPS] Bootstrap iOS signing"
+  "$SCRIPT_DIR/bootstrap-ios-signing.sh"
+  source .env.signing
+fi
+
+# 3. Git sync — refuse to ship if local main is behind origin/main, or if
+# app.json has uncommitted changes. Catches the multi-machine "someone else
+# already shipped a higher build number on another laptop" footgun.
+# Skipped in CI: the workflow checks out main fresh and owns the bump commit.
+if (( SKIP_GIT_SYNC == 0 )); then
+  echo "▸ [3/$TOTAL_STEPS] Git sync check"
+  "$SCRIPT_DIR/git-sync-check.sh"
+else
+  echo "▸ [3/$TOTAL_STEPS] Git sync check — skipped (CI)"
+fi
+
+# 4. Verify (and auto-bump) build number against TestFlight — before any slow
+# work (npm install, xcodebuild). Queries App Store Connect: if the local
+# buildNumber already exceeds the latest in TestFlight the script continues
+# immediately; otherwise it bumps app.json and commits before the archive runs.
+# Skipped in CI: the workflow runs check-build-number.sh as a separate step
+# before invoking ship-ios.sh, commits the bump to main, and pushes.
+if (( SKIP_VERSION_CHECK == 0 )); then
+  echo "▸ [4/$TOTAL_STEPS] Check/bump build number against TestFlight"
+  "$SCRIPT_DIR/check-build-number.sh"
+else
+  echo "▸ [4/$TOTAL_STEPS] Build number check — skipped (CI)"
+fi
+
+# 5. Install deps (detect package manager)
+echo "▸ [5/$TOTAL_STEPS] Install dependencies"
 if   [[ -f bun.lockb || -f bun.lock ]]; then bun install
 elif [[ -f pnpm-lock.yaml ]];          then pnpm install
 elif [[ -f yarn.lock ]];               then yarn install
@@ -84,45 +125,14 @@ else                                        npm ci --legacy-peer-deps || npm ins
 fi
 npx expo install --check >/dev/null || true
 
-# 3. Prebuild if ios/ missing
+# 6. Prebuild if ios/ missing; otherwise re-run pod install to keep Pods in sync
+# with node_modules after the npm install above.
 if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
-  echo "▸ [3/$TOTAL_STEPS] Prebuild (no ios/ directory)"
+  echo "▸ [6/$TOTAL_STEPS] Prebuild (no ios/ directory)"
   npx expo prebuild --platform ios --non-interactive
-fi
-
-# 4. Bootstrap iOS signing from 1Password
-# Skip if .env.signing already exists and the .p8 key is materialized on disk.
-# On a fresh machine (or after rotating the key) the bootstrap will re-run and
-# repopulate both files from 1Password (requires OP_SERVICE_ACCOUNT_TOKEN or
-# an active `op signin` session).
-# shellcheck disable=SC1091
-if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
-  echo "▸ [4/$TOTAL_STEPS] iOS signing already bootstrapped — skipping"
 else
-  echo "▸ [4/$TOTAL_STEPS] Bootstrap iOS signing"
-  "$SCRIPT_DIR/bootstrap-ios-signing.sh"
-  source .env.signing
-fi
-
-# 5. Git sync — refuse to ship if local main is behind origin/main, or if
-# app.json has uncommitted changes. Catches the multi-machine "someone else
-# already shipped a higher build number on another laptop" footgun.
-# Skipped in CI: the workflow checks out main fresh and owns the bump commit.
-if (( SKIP_GIT_SYNC == 0 )); then
-  echo "▸ [5/$TOTAL_STEPS] Git sync check"
-  "$SCRIPT_DIR/git-sync-check.sh"
-else
-  echo "▸ [5/$TOTAL_STEPS] Git sync check — skipped (CI)"
-fi
-
-# 6. Verify (and auto-bump) build number against TestFlight
-# Skipped in CI: the workflow runs check-build-number.sh as a separate step
-# before invoking ship-ios.sh, commits the bump to main, and pushes.
-if (( SKIP_VERSION_CHECK == 0 )); then
-  echo "▸ [6/$TOTAL_STEPS] Check build number against TestFlight"
-  "$SCRIPT_DIR/check-build-number.sh"
-else
-  echo "▸ [6/$TOTAL_STEPS] Build number check — skipped (CI)"
+  echo "▸ [6/$TOTAL_STEPS] Pod install (sync Pods with node_modules)"
+  (cd ios && pod install --silent)
 fi
 
 # 7. Archive + upload
