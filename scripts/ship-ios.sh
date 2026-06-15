@@ -84,10 +84,14 @@ else                                        npm ci --legacy-peer-deps || npm ins
 fi
 npx expo install --check >/dev/null || true
 
-# 3. Prebuild if ios/ missing
+# 3. Prebuild if ios/ missing; otherwise re-run pod install to keep Pods in sync
+# with node_modules after the npm install above.
 if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
   echo "▸ [3/$TOTAL_STEPS] Prebuild (no ios/ directory)"
   npx expo prebuild --platform ios --non-interactive
+else
+  echo "▸ [3/$TOTAL_STEPS] Pod install (sync Pods with node_modules)"
+  (cd ios && pod install --silent)
 fi
 
 # 4. Bootstrap iOS signing from 1Password
