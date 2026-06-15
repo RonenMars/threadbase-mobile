@@ -167,24 +167,33 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
         // against the post-loop increment when React applies the state update.
         const baselineLoaded = runningLoadedSoFar
         const baselineTotal = runningTotalSoFar
-        const serverSessions = await fetchAllPagesForServer(
-          serverId,
-          label,
-          wireSortBy,
-          order,
-          status,
-          (loadedSoFarOnThisServer, totalOnThisServer) => {
-            const globalLoaded = baselineLoaded + loadedSoFarOnThisServer
-            const globalTotal = baselineTotal + totalOnThisServer
-            setProgress({
-              loaded: globalLoaded,
-              total: globalTotal,
-              currentServerId: serverId,
-              currentServerLabel: displayLabel,
-            })
-          },
-          signal,
-        )
+        let serverSessions: MultiSession[] = []
+        try {
+          serverSessions = await fetchAllPagesForServer(
+            serverId,
+            label,
+            wireSortBy,
+            order,
+            status,
+            (loadedSoFarOnThisServer, totalOnThisServer) => {
+              const globalLoaded = baselineLoaded + loadedSoFarOnThisServer
+              const globalTotal = baselineTotal + totalOnThisServer
+              setProgress({
+                loaded: globalLoaded,
+                total: globalTotal,
+                currentServerId: serverId,
+                currentServerLabel: displayLabel,
+              })
+            },
+            signal,
+          )
+        } catch (err) {
+          // If the caller cancelled the query (unmount / refetch), propagate the
+          // abort so React Query can mark the query as cancelled rather than
+          // silently swallowing it. Any other per-server error is isolated: the
+          // remaining servers still contribute their sessions.
+          if (signal?.aborted) throw err
+        }
 
         // Roll this server's contribution into the running counters once it finishes.
         runningLoadedSoFar += serverSessions.length
