@@ -59,13 +59,13 @@ jobs:
                "The build always uses main (ref: main is hardcoded)." \
                "If you intended to ship code from this branch, merge it to main first."
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           # persist-credentials lets us push the bump commit back to main
           persist-credentials: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -94,7 +94,7 @@ jobs:
         run: bundle install
 
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ios/Pods
           key: pods-${{ hashFiles('ios/Podfile.lock') }}
@@ -162,22 +162,22 @@ jobs:
                "The build always uses main (ref: main is hardcoded)." \
                "If you intended to ship code from this branch, merge it to main first."
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           persist-credentials: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - name: Fetch Play credentials
         env:
