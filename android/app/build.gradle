@@ -169,6 +169,20 @@ android {
     }
 }
 
+// Pin Bouncy Castle to an exact version. expo-updates pulls
+// bcutil-jdk15to18:1.81, which transitively requires bcprov-jdk15to18 as the
+// range [1.81,1.82). Resolving a range forces Gradle to list versions across
+// every repository — including JitPack (injected unfiltered by expo
+// autolinking), whose maven-metadata.xml fetch read-times-out and fails the
+// build. Forcing exact versions skips version listing entirely; both artifacts
+// resolve directly from Maven Central.
+configurations.all {
+    resolutionStrategy {
+        force "org.bouncycastle:bcprov-jdk15to18:1.81"
+        force "org.bouncycastle:bcutil-jdk15to18:1.81"
+    }
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
