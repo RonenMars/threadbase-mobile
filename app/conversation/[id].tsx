@@ -31,7 +31,7 @@ import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { useConversation } from '@/hooks/useConversations'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { invalidateProjectChats } from '@/hooks/useProjectChats'
-import { createApiForServer } from '@/services/api-client'
+import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResumeConversationResponse } from '@/types/projectChat'
@@ -416,15 +416,23 @@ export default function ConversationDetailScreen() {
   )
 
   if (error) {
+    // A 404 means the conversation's data is gone from the server — retrying
+    // can't recover it, so show a tailored message without a Retry button.
+    // Other errors (timeout, network) are transient: keep Retry.
+    const isNotFound = error instanceof NotFoundError
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader right={infoButton} />
         <View style={styles.centered}>
           <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
-          <Text style={styles.errorMessage}>{error.message}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-            <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
-          </TouchableOpacity>
+          <Text style={styles.errorMessage}>
+            {isNotFound ? t('error.notFound') : error.message}
+          </Text>
+          {isNotFound ? null : (
+            <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+              <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
     )
@@ -453,6 +461,16 @@ export default function ConversationDetailScreen() {
   const hasMessages = conversation.messages.length > 0
   const isLoadingMessages = Boolean(hasNextPage || isFetchingNextPage)
 
+  // `resumable` is absent on older servers — treat undefined as resumable.
+  // When false, the project the session ran in is gone: show the history
+  // read-only with a banner explaining why, and disable Resume.
+  const notResumable = conversation.resumable === false
+  const unavailableMessage = notResumable
+    ? conversation.unavailableReason === 'worktree_removed'
+      ? t('unavailable.worktreeRemoved')
+      : t('unavailable.pathMissing')
+    : null
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={conversation.title} right={infoButton} />
@@ -475,6 +493,11 @@ export default function ConversationDetailScreen() {
           total={totalMessages}
           label="messages"
         />
+      ) : null}
+      {unavailableMessage ? (
+        <View style={styles.unavailableBanner}>
+          <Text style={styles.unavailableBannerText}>{unavailableMessage}</Text>
+        </View>
       ) : null}
       {hasMessages ? (
         <View style={styles.listWrapper}>
@@ -538,12 +561,18 @@ export default function ConversationDetailScreen() {
             </Text>
           ) : null}
           <TouchableOpacity
-            style={styles.resumeBtn}
+            style={[styles.resumeBtn, notResumable && styles.resumeBtnDisabled]}
             onPress={() => resumeSession.mutate()}
-            disabled={resumeSession.isPending}
+            disabled={resumeSession.isPending || notResumable}
           >
-            <Animated.Text style={[styles.resumeBtnText, { opacity: pulseAnim }]}>
-              {resumeSession.isPending ? 'Starting...' : '▶ Resume Session'}
+            <Animated.Text
+              style={[styles.resumeBtnText, { opacity: notResumable ? 1 : pulseAnim }]}
+            >
+              {notResumable
+                ? t('unavailable.cannotResume')
+                : resumeSession.isPending
+                  ? 'Starting...'
+                  : '▶ Resume Session'}
             </Animated.Text>
           </TouchableOpacity>
         </View>
@@ -636,6 +665,17 @@ function makeStyles(theme: Theme) {
       padding: spacing.md,
       borderTopWidth: 1,
       borderTopColor: theme.border,
+    },
+    unavailableBanner: {
+      backgroundColor: theme.bg.card,
+      borderLeftWidth: 3,
+      borderLeftColor: '#f59e0b',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    unavailableBannerText: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
     },
     resumeWrapper: {
       flex: 1,
