@@ -43,6 +43,12 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: write
+    env:
+      # expo-modules-jsi's Package.swift declares swift-tools-version 6.2, which
+      # needs Xcode 26+. The macos-15 runner defaults to Xcode 16.4 (Swift 6.1),
+      # so the archive fails at SPM resolution. Point the whole toolchain at the
+      # Xcode 26.3 that's preinstalled on the image.
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - name: Warn if triggered from a non-main branch
         if: ${{ github.ref != 'refs/heads/main' }}
