@@ -217,7 +217,7 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.xl,
     },
-    primaryBtnText: { color: '#fff', fontSize: font.base, fontWeight: '700' },
+    primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '700' },
     reticleWrap: {
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
       alignItems: 'center',

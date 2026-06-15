@@ -142,12 +142,7 @@ function request(method, path, token, payload) {
 
   // Source 1: edit-less tracks endpoint — live published state.
   const tracks = await request('GET', `${base}/tracks`, token, null);
-  if (tracks.__notFound) {
-    process.stderr.write('  no published tracks found (first upload) — treating remote versionCode as 0\n');
-    process.stdout.write('0');
-    return;
-  }
-  if (tracks.error) {
+  if (tracks.error && !tracks.__notFound) {
     process.stderr.write('tracks.list error: ' + JSON.stringify(tracks.error) + '\n');
     process.exit(1);
   }

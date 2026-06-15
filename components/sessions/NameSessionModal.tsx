@@ -145,7 +145,7 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
   },
   saveLabel: {
-    color: theme.bg.primary,
+    color: theme.text.onAccent,
     fontSize: font.base,
     fontWeight: '600',
   },

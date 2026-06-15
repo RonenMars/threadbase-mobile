@@ -16,7 +16,16 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   light: 'Light',
   dracula: 'Dracula',
   catppuccin: 'Mocha',
+  catppuccinLatte: 'Latte',
   nord: 'Nord',
+  oneDark: 'One Dark',
+  oneLight: 'One Light',
+  solarizedDark: 'Solarized Dark',
+  solarizedLight: 'Solarized Light',
+  rosePine: 'Rosé Pine',
+  rosePineDawn: 'Rosé Pine Dawn',
+  tokyoNight: 'Tokyo Night',
+  tokyoNightLight: 'Tokyo Night Light',
 }
 
 const THEME_IDS = Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]

@@ -440,7 +440,7 @@ function makeStyles(theme: Theme) {
     },
     connectBtnDisabled: { opacity: 0.5 },
     connectBtnText: {
-      color: '#fff',
+      color: theme.text.onAccent,
       fontSize: font.lg,
       fontWeight: '700',
     },

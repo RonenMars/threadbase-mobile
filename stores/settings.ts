@@ -4,7 +4,23 @@ import type { NotificationPreferences } from '@/types/api'
 import type { SessionsLayout } from '@/types/ui'
 import type { ThemeId } from '@/constants/theme'
 
-const VALID_THEME_IDS = new Set<string>(['dark', 'light', 'system', 'dracula', 'catppuccin', 'nord'])
+const VALID_THEME_IDS = new Set<string>([
+  'dark',
+  'light',
+  'system',
+  'dracula',
+  'catppuccin',
+  'catppuccinLatte',
+  'nord',
+  'oneDark',
+  'oneLight',
+  'solarizedDark',
+  'solarizedLight',
+  'rosePine',
+  'rosePineDawn',
+  'tokyoNight',
+  'tokyoNightLight',
+])
 
 function isValidThemeId(v: unknown): v is ThemeId {
   return typeof v === 'string' && VALID_THEME_IDS.has(v)
