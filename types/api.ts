@@ -81,10 +81,21 @@ export interface TurnDuration {
   uuid?: string
 }
 
+/** Why a conversation can't be resumed, when `resumable` is false. */
+export type UnavailableReason = 'path_missing' | 'worktree_removed'
+
 export interface ConversationDetail extends Conversation {
   messages: Message[]
   turn_durations?: TurnDuration[]
   lastPrompt?: string
+  /**
+   * Whether the conversation can be resumed. Absent on older servers — treat
+   * `undefined` as resumable. False when the project dir the session ran in is
+   * gone; history is still viewable but resume would fail.
+   */
+  resumable?: boolean
+  /** Set only when `resumable` is false; explains why. */
+  unavailableReason?: UnavailableReason
 }
 
 export interface Message {
