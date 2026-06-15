@@ -107,7 +107,7 @@ export const catppuccin = {
   },
   text: {
     primary: '#cdd6f4',
-    secondary: '#6c7086',
+    secondary: '#a6adc8',
     accent: '#cba6f7',
     danger: '#f38ba8',
     warning: '#fab387',
