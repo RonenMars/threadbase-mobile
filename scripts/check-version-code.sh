@@ -236,7 +236,10 @@ GRADLE_BUILD="android/app/build.gradle"
 if [[ -f "$GRADLE_BUILD" ]]; then
   GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
   if [[ "$GRADLE_VC" != "$NEXT_CODE" ]]; then
-    sed -i '' "s/versionCode $GRADLE_VC/versionCode $NEXT_CODE/" "$GRADLE_BUILD"
+    # Portable in-place edit (BSD sed wants `-i ''`, GNU sed on CI does not); write
+    # to a temp file and move it back to avoid the `-i` incompatibility entirely.
+    sed "s/versionCode $GRADLE_VC/versionCode $NEXT_CODE/" "$GRADLE_BUILD" > "$GRADLE_BUILD.tmp"
+    mv "$GRADLE_BUILD.tmp" "$GRADLE_BUILD"
     echo "  ✓ build.gradle synced to versionCode $NEXT_CODE"
   fi
 fi
