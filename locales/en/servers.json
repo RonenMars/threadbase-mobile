@@ -68,7 +68,10 @@
   },
   "statusModal": {
     "title": "Servers Status",
-    "close": "✕"
+    "close": "✕",
+    "menuEdit": "Edit",
+    "menuRefresh": "Refresh",
+    "menuDelete": "Delete"
   },
   "error": {
     "label": "Server unreachable",

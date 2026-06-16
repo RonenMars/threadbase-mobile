@@ -83,16 +83,16 @@ function StatusRow({
   theme: Theme
 }) {
   const styles = makeStyles(theme)
-  const spinAnim = useRef(new Animated.Value(0)).current
+  const spinAnim = useRef(new Animated.Value(0))
   const spinLoop = useRef<Animated.CompositeAnimation | null>(null)
   const [errorHeight, setErrorHeight] = useState<number | null>(null)
   const [statusWidth, setStatusWidth] = useState<number | null>(null)
 
   useEffect(() => {
     if (isRefreshing) {
-      spinAnim.setValue(0)
+      spinAnim.current.setValue(0)
       spinLoop.current = Animated.loop(
-        Animated.timing(spinAnim, {
+        Animated.timing(spinAnim.current, {
           toValue: 1,
           duration: 800,
           easing: Easing.linear,
@@ -102,11 +102,11 @@ function StatusRow({
       spinLoop.current.start()
     } else {
       spinLoop.current?.stop()
-      spinAnim.setValue(0)
+      spinAnim.current.setValue(0)
     }
   }, [isRefreshing, spinAnim])
 
-  const rotate = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+  const rotate = spinAnim.current.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
 
   const fetchFailed = fetchStatus?.status === 'error'
 
@@ -189,6 +189,7 @@ interface ServerMenuModalProps {
 function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onDelete }: ServerMenuModalProps) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const { t } = useTranslation('servers')
 
   return (
     <Modal
@@ -204,17 +205,17 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onEdit}>
             <PencilSimple size={16} color={theme.text.accent} />
-            <Text style={[styles.dropItemText, { color: theme.text.accent }]}>Edit</Text>
+            <Text style={[styles.dropItemText, { color: theme.text.accent }]}>{t('statusModal.menuEdit')}</Text>
           </TouchableOpacity>
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onRefresh}>
             <ArrowsClockwise size={16} color={theme.text.secondary} />
-            <Text style={styles.dropItemText}>Refresh</Text>
+            <Text style={styles.dropItemText}>{t('statusModal.menuRefresh')}</Text>
           </TouchableOpacity>
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onDelete}>
             <Trash size={16} color={theme.text.danger} />
-            <Text style={[styles.dropItemText, { color: theme.text.danger }]}>Delete</Text>
+            <Text style={[styles.dropItemText, { color: theme.text.danger }]}>{t('statusModal.menuDelete')}</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>
