@@ -1,0 +1,51 @@
+name: Tag + GitHub Release
+description: >
+  Bookkeeping after a successful ship — tag the shipped commit and cut a
+  per-platform GitHub Release. Records "version N = this commit + these
+  changes". Consumes the version the deploy job already resolved; it does not
+  compute its own.
+
+inputs:
+  platform:
+    description: 'Platform slug used as the tag prefix (ios | android)'
+    required: true
+  version:
+    description: 'Resolved version (iOS buildNumber or Android versionCode)'
+    required: true
+  label:
+    description: 'Human label for the release title, e.g. "iOS build"'
+    required: true
+  github-token:
+    description: 'Token with contents:write to push the tag and create the release'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Tag + release
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        VERSION: ${{ inputs.version }}
+        LABEL: ${{ inputs.label }}
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        TAG="${PLATFORM}-v${VERSION}"
+        if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+          echo "Tag ${TAG} already exists — skipping release"
+          exit 0
+        fi
+        # Tag the bump commit on main: it's the commit that represents what
+        # shipped (for a deploy_ref branch build, only the bump reached main).
+        git fetch origin main
+        SHA="$(git rev-parse origin/main)"
+        PREV="$(git tag --list "${PLATFORM}-v*" --sort=-version:refname | head -1)"
+        if [[ -n "$PREV" ]]; then RANGE="${PREV}..${SHA}"; else RANGE="$SHA"; fi
+        NOTES="$(git log --no-merges --pretty='- %s' "$RANGE" 2>/dev/null \
+                 | grep -vE '^\- chore\((ios|android)\): bump' || true)"
+        [[ -z "$NOTES" ]] && NOTES="- No user-facing changes recorded."
+        git tag "$TAG" "$SHA"
+        git push origin "refs/tags/${TAG}"
+        printf '%s %s\n\n%s\n' "$LABEL" "$VERSION" "$NOTES" \
+          | gh release create "$TAG" --target "$SHA" \
+              --title "${LABEL} ${VERSION}" --notes-file -

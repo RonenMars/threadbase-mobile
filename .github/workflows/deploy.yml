@@ -171,6 +171,25 @@ jobs:
           )
           git worktree remove /tmp/bump-main-ios --force
 
+      - name: Ensure tag-release action present (from main)
+        # The composite action is resolved from the checked-out tree. A deploy_ref
+        # branch that predates this action wouldn't contain it, so materialize the
+        # actions dir from origin/main before the local `uses:` below. Runs only
+        # for non-main builds; building main already has it checked out.
+        if: ${{ success() && inputs.deploy_ref != 'main' }}
+        run: |
+          git fetch origin main
+          git checkout origin/main -- .github/actions
+
+      - name: Tag + GitHub Release (iOS)
+        if: success()
+        uses: ./.github/actions/tag-release
+        with:
+          platform: ios
+          version: ${{ env.BUMPED_BUILD_NUMBER }}
+          label: iOS build
+          github-token: ${{ github.token }}
+
   deploy-android:
     name: Ship Android
     if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
@@ -277,3 +296,22 @@ jobs:
             git push origin HEAD:main
           )
           git worktree remove /tmp/bump-main --force
+
+      - name: Ensure tag-release action present (from main)
+        # The composite action is resolved from the checked-out tree. A deploy_ref
+        # branch that predates this action wouldn't contain it, so materialize the
+        # actions dir from origin/main before the local `uses:` below. Runs only
+        # for non-main builds; building main already has it checked out.
+        if: ${{ success() && inputs.deploy_ref != 'main' }}
+        run: |
+          git fetch origin main
+          git checkout origin/main -- .github/actions
+
+      - name: Tag + GitHub Release (Android)
+        if: success()
+        uses: ./.github/actions/tag-release
+        with:
+          platform: android
+          version: ${{ env.BUMPED_VERSION_CODE }}
+          label: Android versionCode
+          github-token: ${{ github.token }}
