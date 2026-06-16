@@ -75,6 +75,9 @@
         {
           "ios": {
             "deploymentTarget": "16.4"
+          },
+           "android": {
+            "enableProguardInReleaseBuilds": true
           }
         }
       ],

@@ -197,7 +197,11 @@ function uploadAAB(editId, token, aabPath) {
 function uploadDeobfuscationFile(editId, token, versionCode, mappingPath) {
   return new Promise((resolve, reject) => {
     const mappingData = fs.readFileSync(mappingPath);
-    const uploadPath = `/upload/androidpublisher/v3/applications/${pkg}/edits/${editId}/deobfuscationFiles/${versionCode}/proguard?uploadType=media`;
+    // Play API path is .../edits/{editId}/apks/{versionCode}/deobfuscationFiles/{type}.
+    // The previous path omitted the /apks/ segment and transposed versionCode with
+    // the deobfuscationFiles literal, so the gateway returned "Could not find
+    // handler for this request" after the AAB had already uploaded.
+    const uploadPath = `/upload/androidpublisher/v3/applications/${pkg}/edits/${editId}/apks/${versionCode}/deobfuscationFiles/proguard?uploadType=media`;
     const opts = {
       hostname: 'androidpublisher.googleapis.com', path: uploadPath, method: 'POST',
       headers: {
