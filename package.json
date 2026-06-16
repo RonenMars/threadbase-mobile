@@ -38,7 +38,10 @@
     "kill:metro": "./scripts/kill-metro.sh",
     "ship:ios": "./scripts/ship-ios.sh",
     "ship:android": "./scripts/ship-android.sh",
-    "ship:all": "./scripts/ship-ios.sh && ./scripts/ship-android.sh"
+    "ship:all": "./scripts/ship-ios.sh && ./scripts/ship-android.sh",
+    "status:android": "./scripts/check-play-status.sh",
+    "status:ios": "source .env.signing && ./scripts/check-appstore-status.sh",
+    "status:all": "npm run status:ios && npm run status:android"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.13",
