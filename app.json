@@ -13,7 +13,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "142",
+      "buildNumber": "143",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
@@ -76,7 +76,7 @@
           "ios": {
             "deploymentTarget": "16.4"
           },
-           "android": {
+          "android": {
             "enableProguardInReleaseBuilds": true
           }
         }
