@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, Platform, UIManager, LayoutAnimation } from 'react-native'
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
@@ -13,7 +13,9 @@ import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { makeStyles } from './ProjectHubCard.styles'
 import type { ProjectHubCardProps } from './types'
-import type { MultiSession } from '@/types/api'
+import type { MultiSession, MultiConversation } from '@/types/api'
+import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
@@ -25,6 +27,8 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
   const styles = makeStyles(theme)
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
+  const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
+  const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const chevronProgress = useSharedValue(isOpen ? 1 : 0)
 
   const handleToggle = useCallback(() => {
@@ -169,6 +173,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                     <ConvRow
                       key={`${conv.serverId}::${conv.id}`}
                       conv={conv}
+                      onLongPress={setActiveConv}
                     />
                   ))}
                   {convCount > 5 && (
@@ -189,6 +194,42 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
           )}
         </View>
       </View>
+      {activeConv ? (() => {
+        const favId = buildFavoriteId(activeConv.serverId, 'conversation', activeConv.id)
+        const isFav = favorites.some((f) => f.id === favId)
+        return (
+          <QuickAccessActionSheet
+            item={{
+              type: 'conversation',
+              id: favId,
+              label: activeConv.title || activeConv.projectPath || activeConv.id,
+              serverId: activeConv.serverId,
+            }}
+            isFavorite={isFav}
+            onClose={() => setActiveConv(null)}
+            onNewSession={() => setActiveConv(null)}
+            onBrowse={() => setActiveConv(null)}
+            onOpenSession={() => {
+              setActiveConv(null)
+              router.push(`/conversation/${activeConv.id}?server=${activeConv.serverId}`)
+            }}
+            onTogglePin={() => {
+              if (isFav) {
+                unpinItem(favId)
+              } else {
+                pinItem({
+                  type: 'conversation',
+                  id: favId,
+                  label: activeConv.title || activeConv.projectPath || activeConv.id,
+                  serverId: activeConv.serverId,
+                  conversationId: activeConv.id,
+                })
+              }
+              setActiveConv(null)
+            }}
+          />
+        )
+      })() : null}
     </Card>
   )
 }

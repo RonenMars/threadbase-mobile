@@ -16,7 +16,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { CaretDown, ExportIcon, InfoIcon } from 'phosphor-react-native'
+import { CaretDown, ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation } from '@tanstack/react-query'
@@ -41,6 +41,7 @@ import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, MessageContent } from '@/types/api'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
@@ -149,6 +150,9 @@ export default function ConversationDetailScreen() {
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [infoVisible, setInfoVisible] = useState(false)
   const [firstLayoutDone, setFirstLayoutDone] = useState(false)
+  const favoriteId = buildFavoriteId(serverId, 'conversation', id)
+  const isFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === favoriteId))
+  const { pinItem, unpinItem } = useQuickAccessStore()
   // Bug 6: measure the bottom action bar so the list's paddingBottom matches
   // its height. The outer SafeAreaView already reserves the bottom inset, so
   // we only feed bar height here (no additional safe-area math).
@@ -404,15 +408,37 @@ export default function ConversationDetailScreen() {
     <MessageSkeletonRow index={index} />
   ), [])
 
-  const infoButton = (
-    <Pressable
-      onPress={() => setInfoVisible(true)}
-      hitSlop={8}
-      accessibilityLabel="Conversation info"
-      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-    >
-      <InfoIcon size={22} color={theme.text.secondary} />
-    </Pressable>
+  const headerActions = (
+    <View style={styles.headerActions}>
+      <Pressable
+        onPress={() => {
+          if (isFavorite) {
+            unpinItem(favoriteId)
+          } else {
+            pinItem({
+              type: 'conversation',
+              id: favoriteId,
+              label: conversation?.title || id,
+              serverId,
+              conversationId: id,
+            })
+          }
+        }}
+        hitSlop={8}
+        accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+      >
+        <Star size={22} color={isFavorite ? theme.text.accent : theme.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />
+      </Pressable>
+      <Pressable
+        onPress={() => setInfoVisible(true)}
+        hitSlop={8}
+        accessibilityLabel="Conversation info"
+        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+      >
+        <InfoIcon size={22} color={theme.text.secondary} />
+      </Pressable>
+    </View>
   )
 
   if (error) {
@@ -422,7 +448,7 @@ export default function ConversationDetailScreen() {
     const isNotFound = error instanceof NotFoundError
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScreenHeader right={infoButton} />
+        <ScreenHeader right={headerActions} />
         <View style={styles.centered}>
           <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
           <Text style={styles.errorMessage}>
@@ -442,7 +468,7 @@ export default function ConversationDetailScreen() {
   if (isLoading && !conversation) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScreenHeader right={infoButton} />
+        <ScreenHeader right={headerActions} />
         <View style={styles.listWrapper}>
           <FlatList
             data={MESSAGE_SKELETON_KEYS}
@@ -473,7 +499,7 @@ export default function ConversationDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title={conversation.title} right={infoButton} />
+      <ScreenHeader title={conversation.title} right={headerActions} />
       <View style={styles.inner}>
       {isGated ? (
         <View style={styles.skeletonOverlay} pointerEvents="none">
@@ -611,6 +637,7 @@ export default function ConversationDetailScreen() {
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     inner: { flex: 1 },
     skeletonOverlay: {
       position: 'absolute',

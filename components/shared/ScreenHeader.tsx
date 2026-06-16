@@ -60,7 +60,7 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.border,
     },
     side: {
-      width: 48,
+      minWidth: 48,
       alignItems: 'center',
       justifyContent: 'center',
     },
