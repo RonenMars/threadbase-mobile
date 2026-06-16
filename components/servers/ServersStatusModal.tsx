@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -83,16 +83,19 @@ function StatusRow({
   theme: Theme
 }) {
   const styles = makeStyles(theme)
-  const spinAnim = useRef(new Animated.Value(0))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const animValue = useMemo(() => new Animated.Value(0), [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rotate = useMemo(() => animValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }), [])
   const spinLoop = useRef<Animated.CompositeAnimation | null>(null)
   const [errorHeight, setErrorHeight] = useState<number | null>(null)
   const [statusWidth, setStatusWidth] = useState<number | null>(null)
 
   useEffect(() => {
     if (isRefreshing) {
-      spinAnim.current.setValue(0)
+      animValue.setValue(0)
       spinLoop.current = Animated.loop(
-        Animated.timing(spinAnim.current, {
+        Animated.timing(animValue, {
           toValue: 1,
           duration: 800,
           easing: Easing.linear,
@@ -102,11 +105,9 @@ function StatusRow({
       spinLoop.current.start()
     } else {
       spinLoop.current?.stop()
-      spinAnim.current.setValue(0)
+      animValue.setValue(0)
     }
-  }, [isRefreshing, spinAnim])
-
-  const rotate = spinAnim.current.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+  }, [isRefreshing, animValue])
 
   const fetchFailed = fetchStatus?.status === 'error'
 
