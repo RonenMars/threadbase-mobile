@@ -13,7 +13,8 @@
     "edit": "ערוך",
     "remove": "הסר שרת",
     "viewError": "הצג שגיאת חיבור",
-    "connect": "התחבר"
+    "connect": "התחבר",
+    "details": "פרטים"
   },
   "dialog": {
     "removeTitle": "הסר שרת",

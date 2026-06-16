@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import Animated, {
   useSharedValue,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { WarningCircle, Warning, Info } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { type Theme, spacing, font } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { wsManager } from '@/services/ws-client'
@@ -32,16 +33,15 @@ function serverLabel(id: string, servers: Record<string, ServerConfig>): string 
 type Severity = 'error' | 'warning' | 'info' | null
 
 const DISMISS_DURATION = 220
-const DOWN_MAX = 40    // px the user can pull down before it commits
-const DOWN_THRESHOLD = 20  // how far down triggers commit on release
+const DOWN_MAX = 40
+const DOWN_THRESHOLD = 20
 
 export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, wsConnectedCount, onViewDetails }: Props) {
+  const { t } = useTranslation('servers')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const [showInfo, setShowInfo] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Track which severity the user dismissed so a new severity re-shows the banner
   const [dismissedSeverity, setDismissedSeverity] = useState<Severity>(null)
 
   const translateY = useSharedValue(0)
@@ -146,14 +146,25 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, fetchStatuses, wsConnectedCount, servers])
 
-  // Reset dismiss when severity changes (e.g. reconnect → new error)
+  // Reset animation values when severity changes — in a callback so the
+  // react-hooks/immutability rule doesn't fire on direct .value writes.
+  const resetAnimation = useCallback(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    translateY.value = 0
+    // eslint-disable-next-line react-hooks/immutability
+    opacity.value = 1
+    // translateY/opacity are stable Reanimated shared values; omitting avoids
+    // the react-hooks/immutability flag on the dep array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
-    if (severity !== dismissedSeverity) {
-      setDismissedSeverity(null)
-      translateY.value = 0
-      opacity.value = 1
-    }
-  }, [severity])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDismissedSeverity(null)
+    resetAnimation()
+    // Intentionally omit dismissedSeverity — we only want to reset on severity change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [severity, resetAnimation])
 
   useEffect(() => {
     if (severity === 'info') {
@@ -167,46 +178,60 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
     }
   }, [severity])
 
-  function handleDismiss() {
-    setDismissedSeverity(severity)
-  }
+  // Keep severity in a ref so the worklet's runOnJS callback always reads the latest value.
+  const severityRef = useRef<Severity>(null)
+  // eslint-disable-next-line react-hooks/refs
+  severityRef.current = severity
 
-  const pan = Gesture.Pan()
+  const handleDismissWithSeverity = useCallback(() => {
+    setDismissedSeverity(severityRef.current)
+  }, [])
+
+  const pan = useMemo(() => Gesture.Pan()
     .activeOffsetY([-8, 8])
     .onUpdate((e) => {
       'worklet'
       if (e.translationY < 0) {
-        // Drag up: follow freely, fade proportionally
+        // eslint-disable-next-line react-hooks/immutability
         translateY.value = e.translationY
+        // eslint-disable-next-line react-hooks/immutability
         opacity.value = 1 + e.translationY / 60
       } else {
-        // Drag down: clamp to DOWN_MAX with rubber-band resistance past that
         const clamped = Math.min(e.translationY, DOWN_MAX)
         const overflow = Math.max(0, e.translationY - DOWN_MAX)
+        // eslint-disable-next-line react-hooks/immutability
         translateY.value = clamped + overflow * 0.15
       }
     })
+    // eslint-disable-next-line react-hooks/refs
     .onEnd((e) => {
       'worklet'
       if (e.translationY < -40) {
-        // Swipe up commit: slide off top
+        // eslint-disable-next-line react-hooks/immutability
         translateY.value = withTiming(-80, { duration: DISMISS_DURATION, easing: Easing.out(Easing.quad) })
+        // eslint-disable-next-line react-hooks/immutability
         opacity.value = withTiming(0, { duration: DISMISS_DURATION }, () => {
-          runOnJS(handleDismiss)()
+          runOnJS(handleDismissWithSeverity)()
         })
       } else if (e.translationY >= DOWN_THRESHOLD) {
-        // Drag down commit: snap back up to top and exit
+        // eslint-disable-next-line react-hooks/immutability
         translateY.value = withTiming(-80, { duration: DISMISS_DURATION, easing: Easing.out(Easing.quad) })
+        // eslint-disable-next-line react-hooks/immutability
         opacity.value = withTiming(0, { duration: DISMISS_DURATION }, () => {
-          runOnJS(handleDismiss)()
+          runOnJS(handleDismissWithSeverity)()
         })
       } else {
-        // Not far enough either way: snap back
+        // eslint-disable-next-line react-hooks/immutability
         translateY.value = withTiming(0, { duration: 150 })
+        // eslint-disable-next-line react-hooks/immutability
         opacity.value = withTiming(1, { duration: 150 })
       }
     })
-    .runOnJS(false)
+    .runOnJS(false),
+  // translateY/opacity are stable Reanimated shared values; handleDismissWithSeverity
+  // is stable via useCallback. Omitting avoids react-hooks/immutability flags.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [handleDismissWithSeverity])
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -214,7 +239,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
   }))
 
   if (!severity || (severity === 'info' && !showInfo)) return null
-  if (dismissedSeverity === severity) return null
+  if (dismissedSeverity !== null) return null
 
   const accentColor =
     severity === 'error' ? theme.status.failed
@@ -243,7 +268,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
             >
-              <Text style={[styles.actionText, { color: accentColor }]}>Details</Text>
+              <Text style={[styles.actionText, { color: accentColor }]}>{t('action.details')}</Text>
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -256,8 +281,6 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     clip: {
       overflow: 'visible',
-      // Reserve space so the banner can travel DOWN_MAX px downward
-      // without being clipped by the parent SafeAreaView
       zIndex: 10,
     },
     banner: {
