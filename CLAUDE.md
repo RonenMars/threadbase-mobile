@@ -19,6 +19,18 @@ When adding new Maestro flows:
 
 ---
 
+## Lint Before Commit
+
+Before every `git commit`, run ESLint on the files being committed:
+
+```bash
+npx eslint <staged-files>
+```
+
+Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx)$'`. If there are no JS/TS staged files, skip. Fix any errors before committing — warnings are allowed through.
+
+---
+
 ## Icons
 
 **Never use emojis in the app UI.** All icons must come from the [Phosphor Icons](https://phosphoricons.com/) library (`phosphor-react-native`). Use the appropriate Phosphor component (e.g. `<Star />`, `<Clock />`, `<Fire />`, `<GearSix />`, `<PencilSimple />`). This applies to all new code and any code you touch.
