@@ -39,7 +39,7 @@ import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPic
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
-import { SessionsLoadingOverlay } from '@/components/sessions/SessionsLoadingOverlay'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -162,22 +162,13 @@ export default function ProjectsHub() {
     isDone: sessionsDone,
     loaded: sessionsLoaded,
     total: sessionsTotal,
-    currentServerLabel,
+    inFlightCount: sessionsInFlight,
     refetch: refetchSessions,
   } = useEagerSessions({
     sort: { sortBy, order: sortOrder },
     filter: { status: selectedStatuses },
   })
   const [manualRefreshing, setManualRefreshing] = useState(false)
-
-  const handleSessionsRefresh = async () => {
-    setManualRefreshing(true)
-    try {
-      await refetchSessions()
-    } finally {
-      setManualRefreshing(false)
-    }
-  }
 
   const visibleSessions = useMemo(
     () => sessions.filter((s) => displayedServerIds.includes(s.serverId)),
@@ -198,14 +189,17 @@ export default function ProjectsHub() {
     return () => sub.remove()
   }, [])
 
-  const handleConvRefresh = useCallback(() => {
+  // Unified refresh — always reloads both sessions and conversations.
+  const handleRefresh = useCallback(async () => {
+    setManualRefreshing(true)
     setConvLoaderMode('full')
     setRefreshEpoch((e) => e + 1)
-  }, [])
-
-  // No focus refetch — useQuery's staleTime (60s) plus WS session_update
-  // deltas keep this list fresh. Forcing a refetch on every navigation back
-  // to /index turned into a polling storm at 3 servers × N pages per focus.
+    try {
+      await refetchSessions()
+    } finally {
+      setManualRefreshing(false)
+    }
+  }, [refetchSessions])
 
   const { conversations, loaded: convLoaded, total: convTotal, isDone: convDone, isCounting: convCounting } =
     useEagerConversations(undefined, refreshEpoch)
@@ -357,7 +351,7 @@ export default function ProjectsHub() {
           sessions={visibleSessions}
           conversations={conversations}
           refreshing={manualRefreshing}
-          onRefresh={handleSessionsRefresh}
+          onRefresh={handleRefresh}
           searchOpen={searchOpen}
         />
       ) : sessionsLayout === 'hub' ? (
@@ -367,7 +361,7 @@ export default function ProjectsHub() {
           sortBy={sortBy}
           sortOrder={sortOrder}
           refreshing={manualRefreshing}
-          onRefresh={handleSessionsRefresh}
+          onRefresh={handleRefresh}
           searchOpen={searchOpen}
         />
       ) : (
@@ -377,7 +371,7 @@ export default function ProjectsHub() {
             <MergedClassicList
               items={mergedClassicItems}
               refreshing={manualRefreshing}
-              onRefresh={handleSessionsRefresh}
+              onRefresh={handleRefresh}
               searchOpen={searchOpen}
               searchQuery={classicConvSearch}
               onSearchChange={setClassicConvSearch}
@@ -398,6 +392,7 @@ export default function ProjectsHub() {
                 <TouchableOpacity
                   style={[styles.segmentTab, classicTab === 'history' && styles.segmentTabActive]}
                   onPress={() => setClassicTab('history')}
+                  testID="hub-history-tab"
                 >
                   <Books size={13} color={classicTab === 'history' ? theme.text.primary : theme.text.secondary} />
                   <Text style={[styles.segmentText, classicTab === 'history' && styles.segmentTextActive]}>
@@ -411,14 +406,14 @@ export default function ProjectsHub() {
                 <ClassicSessionsList
                   sessions={visibleSessions}
                   refreshing={manualRefreshing}
-                  onRefresh={handleSessionsRefresh}
+                  onRefresh={handleRefresh}
                   searchOpen={searchOpen}
                 />
               ) : (
                 /* Classic history */
                 <ConversationList
                   conversations={debouncedConvSearch ? (convSearchData?.conversations ?? []) : conversations}
-                  onRefresh={handleConvRefresh}
+                  onRefresh={handleRefresh}
                   refreshing={showConvProgress}
                   onEndReached={() => {}}
                   searchQuery={classicConvSearch}
@@ -426,9 +421,7 @@ export default function ProjectsHub() {
                   searchOpen={searchOpen}
                   isLoadingInitial={false}
                   isFetchingNextPage={false}
-                  loadingProgress={
-                    showConvProgress && !debouncedConvSearch ? { loaded: convLoaded, total: convTotal, isCounting: convCounting } : null
-                  }
+                  loadingProgress={null}
                 />
               )}
             </>
@@ -470,11 +463,16 @@ export default function ProjectsHub() {
         onClose={() => setPickerVisible(false)}
       />
 
-      <SessionsLoadingOverlay
-        visible={!sessionsDone}
+      <LoadingOverlay
+        visible={!sessionsDone || showConvProgress}
+        sessionsDone={sessionsDone}
         loaded={sessionsLoaded}
         total={sessionsTotal}
-        serverLabel={currentServerLabel}
+        inFlightCount={sessionsInFlight}
+        convLoaded={convLoaded}
+        convTotal={convTotal}
+        convDone={convDone}
+        convCounting={convCounting}
       />
 
     </SafeAreaView>
@@ -577,7 +575,7 @@ function MergedClassicList({
         activeOpacity={0.75}
         onPress={() => router.push(`/conversation/${item.id}?server=${item.serverId}`)}
         accessibilityLabel={item.title || item.projectPath}
-        testID={`classic-conv-${item.title || item.id}`}
+        testID={`conversation-row-${item.id}`}
       >
         <View style={styles.convCardTitleRow}>
           <FolderSimple size={18} color={theme.text.secondary} weight="fill" />

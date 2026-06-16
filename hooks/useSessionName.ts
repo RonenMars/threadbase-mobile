@@ -37,6 +37,5 @@ export function useFetchSessionNames(serverId: string) {
       mergeFromServer(serverId, data)
       return data
     },
-    staleTime: 60_000,
   })
 }

@@ -23,7 +23,7 @@ export function ProgressBar({ loaded, total, label, isCounting = false }: Props)
   }, [progress])
 
   return (
-    <View className="px-3 pt-4 pb-3 gap-2">
+    <View className="px-3 pt-4 pb-3 gap-2" testID="conv-loading-progress">
       <Text className="text-text-secondary text-font-sm text-center">
         {loaded.toLocaleString()} / {total.toLocaleString()} {label}
       </Text>

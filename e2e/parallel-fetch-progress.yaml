@@ -1,0 +1,133 @@
+# Parallel-fetch progress overlay — e2e validation.
+#
+# Verifies that:
+#   1. The sessions loading overlay appears on hub load and then disappears.
+#   2. The conversation progress bar is visible while pages are still loading
+#      (mergeChats is enabled by default — conversations appear inline in the
+#      merged hub list, no separate History tab needed).
+#   3. Conversations are visible once loading is complete.
+#
+# Requires: pagination mock running on http://localhost:7073 with a short
+# per-page delay so the progress states are observable.
+# Start with:
+#   MOCK_PORT=7073 MOCK_TOTAL_CONVERSATIONS=30 MOCK_PAGE_DELAY_MS=3000 \
+#     node e2e/pagination-mock-server.js
+#
+# Run: npm run test:e2e:parallel-fetch
+
+appId: com.ronenmars.threadbase
+---
+- runScript: scripts/reset-progress-mock.js
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# 1. Dev-client picker — select Metro server
+- extendedWaitUntil:
+    visible: "DEVELOPMENT SERVERS"
+    timeout: 10000
+- tapOn: "http://192.168.68.112:8081"
+
+# 2. Dev menu intro — tap Continue
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 10000
+- tapOn: "Continue"
+
+# 3. Dev tools sheet — close with X (top-right of the bottom sheet)
+- extendedWaitUntil:
+    visible: "Reload"
+    timeout: 10000
+- tapOn:
+    point: "85%, 48%"
+
+# Wait for dev tools to close before proceeding
+- extendedWaitUntil:
+    notVisible: "Reload"
+    timeout: 5000
+
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      # Step 1 / WELCOME
+      - tapOn:
+          id: "onboarding-welcome-cta"
+      # Step 2 / CONNECT
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-connect-url-input"
+          timeout: 5000
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:7073"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-connect-token-input"
+          timeout: 5000
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "mock-key-pagination"
+      - tapOn:
+          point: "50%, 20%"
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      # Step 3 / NOTIFICATIONS
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 10000
+      - tapOn:
+          id: "onboarding-notifications-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      # Step 4 / DONE
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-done-cta"
+          timeout: 5000
+      - tapOn:
+          id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+
+# ── Step 1: unified loading overlay visible (sessions + conversations) ────────
+# Overlay stays up until BOTH sessions and conversations are fully loaded.
+# With 3000ms mock delay per page, it will be visible for many seconds.
+- extendedWaitUntil:
+    visible:
+      id: "sessions-loading-overlay"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/progress-01-loading-overlay
+
+# ── Step 2: overlay dismisses once both fetches are complete ──────────────────
+- extendedWaitUntil:
+    notVisible:
+      id: "sessions-loading-overlay"
+    timeout: 120000
+
+- takeScreenshot: e2e/_artifacts/progress-02-both-done
+
+# ── Step 3: conversations appear after loading ────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-0000"
+    timeout: 120000
+
+- takeScreenshot: e2e/_artifacts/progress-03-conversations-loaded

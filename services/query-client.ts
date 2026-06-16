@@ -4,7 +4,8 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 
 const ONE_MINUTE = 1000 * 60
-const ONE_DAY = ONE_MINUTE * 60 * 24
+export const QUERY_GC_TIME = ONE_MINUTE * 5
+
 const SLOW_QUERY_THRESHOLD_MS = 20000
 
 const slowTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -35,8 +36,8 @@ export const queryClient = new QueryClient({
       // Default 0 keeps a 3-server, multi-page eager loop from amplifying a
       // single transient failure into 3×N×3 retried requests.
       retry: 0,
-      staleTime: 30 * 1000,
-      gcTime: ONE_DAY,
+      staleTime: 0,
+      gcTime: QUERY_GC_TIME,
       refetchOnReconnect: true,
     },
   },
