@@ -105,7 +105,7 @@ function makeStyles(theme: Theme) {
     handle: { backgroundColor: theme.border },
     content: { flex: 1, padding: spacing.md, gap: spacing.md },
     title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
-    subtitle: { color: theme.text.secondary, fontSize: font.sm },
+    subtitle: { color: theme.text.secondary, fontSize: font.base },
     options: { gap: spacing.sm },
     option: {
       borderWidth: 1,
@@ -127,7 +127,7 @@ function makeStyles(theme: Theme) {
     optionLabelActive: { color: theme.text.accent },
     optionDescription: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.base,
     },
     rememberRow: {
       flexDirection: 'row',

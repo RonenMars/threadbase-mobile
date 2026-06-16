@@ -151,12 +151,12 @@ function makeStyles(theme: Theme) {
     },
     detailLabel: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.base,
       width: 64,
     },
     detailValue: {
       color: theme.text.primary,
-      fontSize: font.sm,
+      fontSize: font.base,
       flex: 1,
     },
     mono: {

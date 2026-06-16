@@ -98,5 +98,12 @@
   },
   "fab": {
     "noServerHint": "Add a server in Settings to get started"
+  },
+  "noServer": {
+    "title": "Connect your first server",
+    "desc": "Threadbase connects to a running tb-streamer instance. Add your server URL and API key to connect to your server.",
+    "repoLink": "github.com/RonenMars/threadbase-streamer",
+    "repoUrl": "https://github.com/RonenMars/threadbase-streamer",
+    "cta": "Add Server"
   }
 }

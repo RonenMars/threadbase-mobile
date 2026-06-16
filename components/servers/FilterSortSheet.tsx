@@ -335,7 +335,7 @@ function makeStyles(theme: Theme) {
     },
     chipSelected: { borderColor: theme.text.accent, backgroundColor: theme.bg.primary },
     chipDot: { width: 8, height: 8, borderRadius: radius.full },
-    chipText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
+    chipText: { color: theme.text.secondary, fontSize: font.base, fontWeight: '500' },
     chipTextSelected: { color: theme.text.primary },
     quickRow: { flexDirection: 'row', gap: spacing.sm },
     quickButton: {

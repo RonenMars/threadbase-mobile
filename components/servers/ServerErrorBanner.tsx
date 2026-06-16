@@ -107,7 +107,7 @@ function makeStyles(theme: Theme) {
     },
     title: {
       color: theme.text.danger,
-      fontSize: font.sm,
+      fontSize: font.base,
       fontWeight: '600',
     },
     subtitle: {

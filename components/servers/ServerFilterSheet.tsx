@@ -251,7 +251,7 @@ function makeStyles(theme: Theme) {
     },
     chipText: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.base,
       fontWeight: '500',
     },
     chipTextSelected: {

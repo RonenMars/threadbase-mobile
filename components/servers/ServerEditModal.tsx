@@ -361,7 +361,7 @@ function makeStyles(theme: Theme) {
     },
     fieldLabel: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.base,
       fontWeight: '500',
       marginBottom: 2,
     },
@@ -439,7 +439,7 @@ function makeStyles(theme: Theme) {
     },
     pasteBtn: {
       color: theme.text.accent,
-      fontSize: font.sm,
+      fontSize: font.base,
       fontWeight: '500',
     },
     errorBox: {
@@ -454,7 +454,7 @@ function makeStyles(theme: Theme) {
     },
     errorText: {
       color: theme.text.danger,
-      fontSize: font.sm,
+      fontSize: font.base,
       flex: 1,
       lineHeight: 18,
     },
