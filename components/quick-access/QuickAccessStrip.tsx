@@ -272,11 +272,11 @@ export function QuickAccessStrip() {
         {TAB_DEFS.filter((t) => enabledTabs.includes(t.key)).map(({ key, label, Icon }) => (
           <Pressable
             key={key}
-            style={[styles.tab, effectiveTab === key && styles.tabActive]}
+            style={[styles.tab, !stripCollapsed && effectiveTab === key && styles.tabActive]}
             onPress={() => handleTabSwitch(key)}
           >
-            <Icon size={13} color={effectiveTab === key ? theme.text.accent : theme.text.secondary} />
-            <Text style={[styles.tabLabel, effectiveTab === key && styles.tabLabelActive]}>{label}</Text>
+            <Icon size={13} color={!stripCollapsed && effectiveTab === key ? theme.text.accent : theme.text.secondary} />
+            <Text style={[styles.tabLabel, !stripCollapsed && effectiveTab === key && styles.tabLabelActive]}>{label}</Text>
           </Pressable>
         ))}
 
@@ -416,7 +416,7 @@ function makeStyles(theme: Theme) {
       borderColor: 'transparent',
     },
     tabActive: { borderColor: theme.text.accent },
-    tabLabel: { color: theme.text.secondary, fontSize: font.xs },
+    tabLabel: { color: theme.text.secondary, fontSize: font.base },
     tabLabelActive: { color: theme.text.accent, fontWeight: '600' },
     tabRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', paddingRight: spacing.sm },
     iconBtn: { padding: 6 },
