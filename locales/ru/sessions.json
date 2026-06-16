@@ -68,8 +68,11 @@
   "loading": {
     "title": "Загрузка сеансов",
     "progress": "{{loaded}} из {{total}}",
-    "fetchingServer": "Получение {{server}}",
-    "fetchingNoLabel": "Получение"
+    "fetchingOne": "Получение",
+    "fetchingN": "Получение {{count}} серверов параллельно",
+    "sessionsLabel": "Сеансы",
+    "conversationsLabel": "Беседы",
+    "done": "Готово"
   },
   "live": {
     "headerLive_one": "ОНЛАЙН · {{count}}",

@@ -68,8 +68,11 @@
   "loading": {
     "title": "טוען סשנים",
     "progress": "{{loaded}} מתוך {{total}}",
-    "fetchingServer": "מושך {{server}}",
-    "fetchingNoLabel": "מושך"
+    "fetchingOne": "מושך",
+    "fetchingN": "מושך {{count}} שרתים במקביל",
+    "sessionsLabel": "סשנים",
+    "conversationsLabel": "שיחות",
+    "done": "הושלם"
   },
   "live": {
     "headerLive_one": "חי · {{count}}",

@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { ProgressBar } from '@/components/ui/ProgressBar'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -205,14 +205,12 @@ export function ConversationList({
         </View>
       ) : null}
 
-      {loadingProgress ? (
-        <ProgressBar
-          loaded={loadingProgress.loaded}
-          total={loadingProgress.total}
-          label="conversations"
-          isCounting={loadingProgress.isCounting}
-        />
-      ) : null}
+      <LoadingOverlay
+        visible={!!loadingProgress}
+        convLoaded={loadingProgress?.loaded ?? 0}
+        convTotal={loadingProgress?.total ?? 0}
+        convDone={!loadingProgress}
+      />
 
       <Animated.FlatList
         ref={listRef}

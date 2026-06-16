@@ -411,6 +411,7 @@ async function fetchAllConversationPagesForServer(
   const pageCount = Math.ceil(total / limit)
   for (let page = 0; page < pageCount; page++) {
     if (signal?.aborted) throw new Error('aborted')
+
     const params = new URLSearchParams()
     if (filter?.projectPath) params.set('project', filter.projectPath)
     params.set('limit', String(limit))

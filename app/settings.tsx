@@ -54,15 +54,17 @@ function SettingsRow({
   label,
   value,
   onValueChange,
+  testID,
 }: {
   label: string
   value: boolean
   onValueChange: (v: boolean) => void
+  testID?: string
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
   return (
-    <View style={s.row}>
+    <View style={s.row} testID={testID}>
       <Text style={s.rowLabel}>{label}</Text>
       <Switch
         value={value}
@@ -442,6 +444,7 @@ await refreshServerInfo(serverId)
             label="Merge sessions & history as Chats"
             value={mergeChats}
             onValueChange={setMergeChats}
+            testID="settings-merge-chats-toggle"
           />
         </View>
 

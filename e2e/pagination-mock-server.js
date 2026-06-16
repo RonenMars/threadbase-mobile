@@ -32,7 +32,9 @@ const http = require('http')
 
 const PORT = parseInt(process.env.MOCK_PORT || '7072', 10)
 const TOTAL_CONVERSATIONS = parseInt(process.env.MOCK_TOTAL_CONVERSATIONS || '346', 10)
-const TOTAL_SESSIONS = parseInt(process.env.MOCK_TOTAL_SESSIONS || '5', 10)
+const TOTAL_SESSIONS = parseInt(process.env.MOCK_TOTAL_SESSIONS || '25', 10)
+// Artificial per-response delay in ms — lets e2e tests observe loading states.
+const PAGE_DELAY_MS = parseInt(process.env.MOCK_PAGE_DELAY_MS || '0', 10)
 
 // In-memory request log so the maestro flow can assert pagination behaviour.
 // Reset with POST /__mock/reset, read with GET /__mock/requests.
@@ -99,6 +101,8 @@ function generateSessions(total) {
 const ALL_CONVERSATIONS = generateConversations(TOTAL_CONVERSATIONS)
 const ALL_SESSIONS = generateSessions(TOTAL_SESSIONS)
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
 function json(res, status, body) {
   const payload = typeof body === 'string' ? body : JSON.stringify(body)
   res.writeHead(status, {
@@ -128,7 +132,7 @@ function handle(req, res) {
   // Mock keeps it tiny — drop on the floor.
   let bodyChunks = []
   req.on('data', (c) => bodyChunks.push(c))
-  req.on('end', () => {
+  req.on('end', async () => {
     let status = 200
 
     // Test-only inspection endpoints (NO auth required).
@@ -212,6 +216,7 @@ function handle(req, res) {
       status = 200
       logRequest(req, url, status)
       if (!hasParams) return json(res, status, ALL_SESSIONS)
+      if (PAGE_DELAY_MS > 0) await sleep(PAGE_DELAY_MS)
       return json(res, status, {
         sessions: ALL_SESSIONS,
         nextCursor: null,
@@ -263,6 +268,7 @@ function handle(req, res) {
       // array and object responses, but the page form is the modern path.
       status = 200
       logRequest(req, url, status)
+      if (PAGE_DELAY_MS > 0) await sleep(PAGE_DELAY_MS)
       return json(res, status, {
         conversations: slice,
         hasMore: offset + slice.length < total,
