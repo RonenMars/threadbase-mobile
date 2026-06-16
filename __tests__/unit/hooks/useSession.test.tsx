@@ -87,7 +87,7 @@ describe('useEagerSessions', () => {
     const firstCall = mockGet.mock.calls[0][0] as string
     expect(firstCall).toContain('sortBy=lastActivityAt')
     expect(firstCall).toContain('order=desc')
-    expect(firstCall).toContain('limit=200')
+    expect(firstCall).toContain('limit=50')
     expect(firstCall).not.toContain('cursor=')
 
     const secondCall = mockGet.mock.calls[1][0] as string
