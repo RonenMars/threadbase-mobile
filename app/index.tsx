@@ -203,10 +203,6 @@ export default function ProjectsHub() {
     setRefreshEpoch((e) => e + 1)
   }, [])
 
-  // No focus refetch — useQuery's staleTime (60s) plus WS session_update
-  // deltas keep this list fresh. Forcing a refetch on every navigation back
-  // to /index turned into a polling storm at 3 servers × N pages per focus.
-
   const { conversations, loaded: convLoaded, total: convTotal, isDone: convDone, isCounting: convCounting } =
     useEagerConversations(undefined, refreshEpoch)
 

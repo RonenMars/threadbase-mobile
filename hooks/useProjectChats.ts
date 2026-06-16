@@ -6,6 +6,7 @@
 import { useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listProjectChats } from '@/services/project-chats-api'
+import { QUERY_GC_TIME } from '@/services/query-client'
 import { useServersStore } from '@/stores/servers'
 import type { ProjectChat, ProjectChatType } from '@/types/projectChat'
 
@@ -80,8 +81,7 @@ export function useProjectChats(serverId: string, serverLabel?: string): UseProj
       return dedupeProjectChats([...resp.items].sort(sortProjectChats))
     },
     enabled: Boolean(serverId),
-    staleTime: 15_000,
-    gcTime: 24 * 60 * 60 * 1000,
+    gcTime: QUERY_GC_TIME,
   })
 
   const refresh = useCallback(async () => {
@@ -141,8 +141,7 @@ export function useAllProjectChats(): UseAllProjectChatsResult {
       return dedupeProjectChats(merged.sort(sortProjectChats))
     },
     enabled: activeServerIds.length > 0,
-    staleTime: 15_000,
-    gcTime: 24 * 60 * 60 * 1000,
+    gcTime: QUERY_GC_TIME,
   })
 
   const refresh = useCallback(async () => {

@@ -209,10 +209,6 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       return dedupeByServerAndId(merged)
     },
     enabled: activeServerIds.length > 0,
-    // Live updates arrive via WS session_update; the HTTP eager paginate
-    // is only needed on cold start, manual pull-to-refresh, or after the
-    // sessions list has actually drifted. 60s prevents a focus storm.
-    staleTime: 60_000,
   })
 
   const refetch = useCallback(async () => {
@@ -278,7 +274,6 @@ export function useSessions() {
       return dedupeByServerAndId(merged)
     },
     enabled: activeServerIds.length > 0,
-    staleTime: 60_000,
   })
 }
 
@@ -287,11 +282,6 @@ export function useSessionDetail(serverId: string, sessionId: string) {
   return useQuery({
     queryKey: ['session', serverId, sessionId],
     queryFn: () => api.get<Session>(`/api/sessions/${sessionId}`),
-    // WS session_update events keep this data fresh via setQueryData — no need
-    // to poll or aggressively refetch. staleTime prevents a background refetch
-    // from clobbering a running→waiting_input transition that already arrived
-    // over WS before the HTTP response completed.
-    staleTime: 30_000,
     // Don't persist session detail across app restarts — each session is
     // ephemeral and stale persisted state causes false status flickers.
     meta: { persist: false },

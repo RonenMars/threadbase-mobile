@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
+import { QUERY_GC_TIME } from '@/services/query-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
@@ -454,44 +455,56 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
     queryKey,
     queryFn: async ({ signal }) => {
       setProgress({ loaded: 0, total: 0 })
-      const merged: MultiConversation[] = []
-      let runningLoaded = 0
-      let runningTotal = 0
-      let fulfilledCount = 0
-      let lastFailure: unknown = null
 
-      for (const serverId of displayedServerIds) {
-        const label = serversRef.current[serverId]?.label
-        const baselineLoaded = runningLoaded
-        const baselineTotal = runningTotal
-        // Bug 32: a single bad server must not abort the whole drain. Catch
-        // here, record the failure in the per-server store, and move on so
-        // healthy servers' conversations still reach the UI.
-        try {
+      // Run all servers in parallel so an unreachable server's timeout doesn't
+      // block healthy servers from returning data. Progress counters are shared
+      // across concurrent callbacks via a plain object updated in-place.
+      const progressByServer = new Map<string, { loaded: number; total: number }>()
+      const emitProgress = () => {
+        let loaded = 0
+        let total = 0
+        for (const p of progressByServer.values()) {
+          loaded += p.loaded
+          total += p.total
+        }
+        setProgress({ loaded, total })
+      }
+
+      const settled = await Promise.allSettled(
+        displayedServerIds.map(async (serverId) => {
+          const label = serversRef.current[serverId]?.label
+          progressByServer.set(serverId, { loaded: 0, total: 0 })
           const items = await fetchAllConversationPagesForServer(
             serverId,
             label,
             filter,
             refreshEpoch,
             (loadedSoFar, totalSoFar) => {
-              setProgress({
-                loaded: baselineLoaded + loadedSoFar,
-                total: baselineTotal + totalSoFar,
-              })
+              progressByServer.set(serverId, { loaded: loadedSoFar, total: totalSoFar })
+              emitProgress()
             },
             signal,
           )
-          runningLoaded += items.length
-          runningTotal += items.length
-          merged.push(...items)
+          return { serverId, items }
+        })
+      )
+
+      const merged: MultiConversation[] = []
+      let fulfilledCount = 0
+      let lastFailure: unknown = null
+
+      for (const result of settled) {
+        if (result.status === 'fulfilled') {
+          merged.push(...result.value.items)
           fulfilledCount++
-          recordSuccess(serverId)
-        } catch (err) {
-          // Caller-initiated abort (unmount, refresh) must propagate so the
-          // query is cancelled cleanly.
-          if (signal?.aborted) throw err
-          lastFailure = err
-          recordFailure(serverId, err)
+          recordSuccess(result.value.serverId)
+        } else {
+          // Caller-initiated abort must propagate so the query is cancelled cleanly.
+          if (signal?.aborted) throw result.reason
+          lastFailure = result.reason
+          // Extract serverId from the rejection — find matching index.
+          const idx = settled.indexOf(result)
+          if (idx !== -1) recordFailure(displayedServerIds[idx], result.reason)
         }
       }
 
@@ -503,9 +516,8 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
       return dedupeByServerAndId(merged)
     },
     enabled: displayedServerIds.length > 0,
-    // Conversations rarely change minute-to-minute; list is augmented by WS
-    // session_update for live status. Avoid re-paginating on every focus.
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: QUERY_GC_TIME,
   })
 
   const conversations = query.data ?? []

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
+import { QUERY_GC_TIME } from '@/services/query-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
 
 export type TerminalLine = string
@@ -12,7 +13,7 @@ interface TerminalHistoryResponse {
   lines?: string[]
 }
 
-const FIVE_MINUTES = 1000 * 60 * 5
+
 const EMPTY_HISTORY: TerminalHistoryResponse = { output: '' }
 const TERMINAL_REPLAY_TIMEOUT_MS = 2000
 
@@ -46,8 +47,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       }
     },
     enabled: Boolean(serverId && sessionId) && httpFallbackEnabled,
-    staleTime: FIVE_MINUTES,
-    gcTime: FIVE_MINUTES,
+    gcTime: QUERY_GC_TIME,
     meta: { persist: false },
   })
 
