@@ -96,5 +96,7 @@ function get(path) {
   }
   console.log('\n  Review states: WAITING_FOR_REVIEW / IN_REVIEW = under Apple review;');
   console.log('  PENDING_DEVELOPER_RELEASE = approved, awaiting your release; READY_FOR_SALE = live.');
+  console.log('  A REJECTED version has a reason in App Store Connect → Resolution Center.');
+  console.log('  App Store Connect: https://appstoreconnect.apple.com');
 })().catch(e => { console.error('ERROR:', e.message); process.exit(1); });
 EOF

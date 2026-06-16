@@ -116,7 +116,8 @@ function api(method, path, token, payload) {
     }
     if (!(t.releases || []).length) console.log('    (no releases)');
   }
-  console.log('\n  note: "completed" = live to this track\'s testers. Google content-review');
-  console.log('  state is not exposed by the API — check Play Console for review banners.');
+  console.log('\n  note: "completed" = live to this track\'s testers.');
+  console.log('  Google content-review state is not exposed by the API — check Play Console for review banners.');
+  console.log('  Play Console: https://play.google.com/console');
 })().catch(e => { console.error('ERROR:', e.message); process.exit(1); });
 EOF
