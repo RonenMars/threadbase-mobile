@@ -497,7 +497,7 @@ function MergedClassicList({
   onSearchChange: (q: string) => void
 }) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const styles = useMemo(() => makeStyles(theme), [theme])
   const searchStyles = makeSearchStyles(theme)
   const { t } = useTranslation('sessions')
   const router = useRouter()
@@ -593,7 +593,7 @@ function MergedClassicList({
         </Text>
       </TouchableOpacity>
     ),
-    [router, t],
+    [router, t, styles, theme],
   )
 
   return (
