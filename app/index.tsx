@@ -346,7 +346,7 @@ export default function ProjectsHub() {
         servers={servers}
         fetchStatuses={fetchStatuses}
         wsConnectedCount={wsConnectedCount}
-        onTapDetails={() => setStatusModalOpen(true)}
+        onViewDetails={() => setStatusModalOpen(true)}
       />
 
       {/* Content */}

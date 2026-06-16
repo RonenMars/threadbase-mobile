@@ -13,7 +13,8 @@
     "edit": "Edit",
     "remove": "Remove Server",
     "viewError": "View connection error",
-    "connect": "Connect"
+    "connect": "Connect",
+    "details": "Details"
   },
   "dialog": {
     "removeTitle": "Remove Server",
