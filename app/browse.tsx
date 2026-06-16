@@ -50,7 +50,7 @@ function buildSessionRoute(
 
 export default function BrowseScreen() {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const styles = useMemo(() => makeStyles(theme), [theme])
   const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
@@ -137,7 +137,7 @@ export default function BrowseScreen() {
           )
         : undefined,
     })
-  }, [currentPath, navigation, goBack, t])
+  }, [currentPath, navigation, goBack, t, theme.text.accent])
 
   // Swipe from left edge to go back
   const swipeBack = Gesture.Pan()
@@ -258,7 +258,7 @@ export default function BrowseScreen() {
         </TouchableOpacity>
       )
     },
-    [currentPath, navigateTo],
+    [currentPath, navigateTo, styles],
   )
 
   const isBrowseNotConfigured = isError && (

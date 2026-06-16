@@ -1,11 +1,11 @@
-// Use the real ThemeContext so the provider/hook contract tests remain meaningful
-jest.unmock('@/contexts/ThemeContext')
-
 import React from 'react'
 import { renderHook } from '@testing-library/react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
 import { dark, dracula, catppuccin, nord, light } from '@/constants/theme'
+
+// Use the real ThemeContext so the provider/hook contract tests remain meaningful
+jest.unmock('@/contexts/ThemeContext')
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>

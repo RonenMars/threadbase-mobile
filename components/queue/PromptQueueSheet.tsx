@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react'
+import React, { useRef, useCallback, useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet'
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
@@ -30,8 +30,8 @@ interface Props {
 
 export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Props) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
-  const STATUS_COLORS = statusColors(theme)
+  const styles = useMemo(() => makeStyles(theme), [theme])
+  const STATUS_COLORS = useMemo(() => statusColors(theme), [theme])
   const { t } = useTranslation('queue')
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
@@ -74,7 +74,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
         ) : null}
       </TouchableOpacity>
     ),
-    [removeFromQueue, t]
+    [removeFromQueue, t, styles, STATUS_COLORS]
   )
 
   if (!visible) return null

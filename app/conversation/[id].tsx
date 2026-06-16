@@ -112,7 +112,7 @@ const MessageItem = React.memo(function MessageItem({ message, isLast }: { messa
 export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const styles = useMemo(() => makeStyles(theme), [theme])
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -386,7 +386,7 @@ export default function ConversationDetailScreen() {
 
   const listContentStyle = useMemo(
     () => [styles.listContent, { paddingBottom: footerHeight + spacing.lg }],
-    [footerHeight],
+    [footerHeight, styles],
   )
 
   // Distinguish row shapes so FlashList only recycles cells of the same kind.
