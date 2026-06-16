@@ -406,7 +406,7 @@ function makeStyles(theme: Theme) {
     },
     urlHint: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.base,
       marginTop: -spacing.xs,
     },
     passwordRow: {
@@ -422,11 +422,11 @@ function makeStyles(theme: Theme) {
     },
     showHideText: {
       color: theme.text.accent,
-      fontSize: font.sm,
+      fontSize: font.base,
     },
     error: {
       color: theme.status.failed,
-      fontSize: font.sm,
+      fontSize: font.base,
       marginTop: spacing.xs,
     },
     connectBtn: {
@@ -446,7 +446,7 @@ function makeStyles(theme: Theme) {
     },
     hint: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.base,
       textAlign: 'center',
     },
     code: {

@@ -33,7 +33,8 @@
   },
   "manage": {
     "title": "Servers",
-    "addServer": "+ Add Server",
+    "addServer": "Add Server",
+    "addServerHint": "Connect to a tb-streamer instance",
     "empty": "No servers added yet."
   },
   "filter": {
@@ -66,8 +67,11 @@
     "rememberChoice": "Remember this choice"
   },
   "statusModal": {
-    "title": "Server Status",
-    "close": "✕"
+    "title": "Servers Status",
+    "close": "✕",
+    "menuEdit": "Edit",
+    "menuRefresh": "Refresh",
+    "menuDelete": "Delete"
   },
   "error": {
     "label": "Server unreachable",

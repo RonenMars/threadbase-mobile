@@ -191,7 +191,7 @@ function makeStyles(theme: Theme) {
     },
     text: {
       flex: 1,
-      fontSize: font.sm,
+      fontSize: font.base,
       fontWeight: '500',
     },
   })

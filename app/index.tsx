@@ -30,10 +30,11 @@ import { SessionCard } from '@/components/sessions/SessionCard'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
-import { ServerStatusModal } from '@/components/servers/ServerStatusModal'
+import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
@@ -75,6 +76,7 @@ export default function ProjectsHub() {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
+  const hasEverHadServer = useServersStore((s) => s.hasEverHadServer)
 
   useEffect(() => {
     clientLog.info('hub.mount', 'ProjectsHub mounted', {
@@ -305,6 +307,7 @@ export default function ProjectsHub() {
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Server status"
+            testID="header-server-status-btn"
           >
             <Cloud size={20} color={theme.text.secondary} />
             {!allConnected ? (
@@ -347,7 +350,9 @@ export default function ProjectsHub() {
       />
 
       {/* Content */}
-      {sessionsLayout === 'tree' ? (
+      {activeServerIds.length === 0 && !hasEverHadServer ? (
+        <NoServersWelcome />
+      ) : sessionsLayout === 'tree' ? (
         <TreeSessionsList
           sessions={visibleSessions}
           conversations={conversations}
@@ -443,7 +448,7 @@ export default function ProjectsHub() {
       />
 
       {/* Modals & Sheets */}
-      <ServerStatusModal
+      <ServersStatusModal
         visible={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
       />

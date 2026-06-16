@@ -324,6 +324,46 @@ await refreshServerInfo(serverId)
           />
         }
       >
+        <SectionHeader title={t('section.servers')} />
+        {activeServerIds.map((id) => {
+          const server = servers[id]
+          if (!server) return null
+          return (
+            <ServerListCard
+              key={id}
+              server={server}
+              isRefreshing={refreshingServerIds.has(id)}
+              onRemove={handleRemoveServer}
+              onEdit={(sid) => setEditServerId(sid)}
+              onRefresh={handleRefreshServer}
+              onViewError={(sid) => setErrorServerId(sid)}
+            />
+          )
+        })}
+        <TouchableOpacity
+          style={s.addServerBtn}
+          onPress={() => setEditServerId('new')}
+        >
+          <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="settings-scan-qr-btn"
+          style={s.scanQrBtn}
+          onPress={() => setQrScannerOpen(true)}
+          accessibilityLabel={t('servers.scanQr')}
+        >
+          <QrCode size={18} color={theme.text.accent} />
+          <Text style={s.scanQrText}>{t('servers.scanQr')}</Text>
+        </TouchableOpacity>
+
+        <SectionHeader title={t('section.displayedServers')} />
+        <DisplayedServersList
+          activeServerIds={activeServerIds}
+          servers={servers}
+          selectedServerIds={displayedServerIds}
+          onChange={setDisplayedServerIds}
+        />
+
         <SectionHeader title={t('section.appearance')} />
         <View style={s.card}>
           <View style={s.row}>
@@ -404,46 +444,6 @@ await refreshServerInfo(serverId)
             onValueChange={setMergeChats}
           />
         </View>
-
-        <SectionHeader title={t('section.servers')} />
-        {activeServerIds.map((id) => {
-          const server = servers[id]
-          if (!server) return null
-          return (
-            <ServerListCard
-              key={id}
-              server={server}
-              isRefreshing={refreshingServerIds.has(id)}
-              onRemove={handleRemoveServer}
-              onEdit={(sid) => setEditServerId(sid)}
-              onRefresh={handleRefreshServer}
-              onViewError={(sid) => setErrorServerId(sid)}
-            />
-          )
-        })}
-        <TouchableOpacity
-          style={s.addServerBtn}
-          onPress={() => setEditServerId('new')}
-        >
-          <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          testID="settings-scan-qr-btn"
-          style={s.scanQrBtn}
-          onPress={() => setQrScannerOpen(true)}
-          accessibilityLabel={t('servers.scanQr')}
-        >
-          <QrCode size={18} color={theme.text.accent} />
-          <Text style={s.scanQrText}>{t('servers.scanQr')}</Text>
-        </TouchableOpacity>
-
-        <SectionHeader title={t('section.displayedServers')} />
-        <DisplayedServersList
-          activeServerIds={activeServerIds}
-          servers={servers}
-          selectedServerIds={displayedServerIds}
-          onChange={setDisplayedServerIds}
-        />
 
         <SectionHeader title={t('notifications.whenAddingServer')} />
         <View style={s.card}>

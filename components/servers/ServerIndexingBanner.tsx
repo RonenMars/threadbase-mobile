@@ -160,7 +160,7 @@ function makeStyles(theme: Theme) {
     },
     title: {
       color: theme.text.primary,
-      fontSize: font.sm,
+      fontSize: font.base,
       fontWeight: '600',
     },
     subtitle: {
