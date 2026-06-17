@@ -62,16 +62,25 @@ target 'Threadbase' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
-    # Xcode 26 enforces SwiftUICore allowable-clients; strip the weak_framework flag
-    # that ExpoModulesCore introduces so the linker doesn't try to link it directly.
+    # Xcode 26 enforces SwiftUICore allowable-clients; strip any direct SwiftUICore
+    # weak_framework flags and ensure SwiftUI (the public umbrella) is linked instead.
+    # RCTSwiftUI imports SwiftUI which causes an implicit SwiftUICore link on Xcode 26.
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         flags = config.build_settings['OTHER_LDFLAGS']
-        next unless flags
-        if flags.is_a?(Array)
-          config.build_settings['OTHER_LDFLAGS'] = flags.reject { |f| f == '-weak_framework SwiftUICore' || f == 'SwiftUICore' }
-        elsif flags.is_a?(String)
-          config.build_settings['OTHER_LDFLAGS'] = flags.gsub(/-weak_framework\s+SwiftUICore/, '').gsub(/\bSwiftUICore\b/, '').strip
+        if flags
+          if flags.is_a?(Array)
+            config.build_settings['OTHER_LDFLAGS'] = flags.reject { |f| f == '-weak_framework SwiftUICore' || f == 'SwiftUICore' }
+          elsif flags.is_a?(String)
+            config.build_settings['OTHER_LDFLAGS'] = flags.gsub(/-weak_framework\s+SwiftUICore/, '').gsub(/\bSwiftUICore\b/, '').strip
+          end
+        end
+        # Suppress Swift auto-linking for SwiftUICore on all pod targets.
+        # On Xcode 26, the debug.dylib linker rejects implicit SwiftUICore links
+        # triggered by `import SwiftUI` across expo-dev-launcher, RCTSwiftUI, etc.
+        existing_swift = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+        unless existing_swift.include?('-disable-autolink-framework')
+          config.build_settings['OTHER_SWIFT_FLAGS'] = "#{existing_swift} -Xfrontend -disable-autolink-framework -Xfrontend SwiftUICore"
         end
       end
     end
