@@ -14,6 +14,7 @@ import {
   ScrollView,
   AppState,
   Linking,
+  Modal,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -29,7 +30,7 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple, Microphone, MicrophoneSlash, Star } from 'phosphor-react-native'
+import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple, Microphone, MicrophoneSlash, Star, ArrowsOut, ArrowsIn } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -453,6 +454,8 @@ export default function SessionDetailScreen() {
   const hydrateDrafts = useDraftsStore((s) => s.hydrate)
 
   const [inputText, setInputText] = useState('')
+  const [inputExpanded, setInputExpanded] = useState(false)
+  const [inputContentHeight, setInputContentHeight] = useState(0)
   const voice = useVoiceInput({
     onTranscript: (text) => setInputText(text),
     contextualStrings: ['React', 'TypeScript', 'useEffect', 'Expo', 'TSX', 'Claude'],
@@ -952,6 +955,7 @@ export default function SessionDetailScreen() {
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
+                onContentSizeChange={(e) => setInputContentHeight(e.nativeEvent.contentSize.height)}
                 placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
                 placeholderTextColor={theme.text.secondary}
                 multiline
@@ -959,6 +963,16 @@ export default function SessionDetailScreen() {
                 textAlignVertical="top"
                 editable={!isWakingUp}
               />
+              {inputContentHeight >= 160 ? (
+                <TouchableOpacity
+                  style={styles.attachBtn}
+                  onPress={() => setInputExpanded(true)}
+                  accessibilityLabel="Expand input"
+                  hitSlop={8}
+                >
+                  <ArrowsOut size={22} color={theme.text.primary} />
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 testID="send-message-button"
                 style={[
@@ -976,6 +990,111 @@ export default function SessionDetailScreen() {
             </View>
           </View>
         ) : null}
+
+        <Modal
+          visible={inputExpanded}
+          animationType="slide"
+          onRequestClose={() => setInputExpanded(false)}
+        >
+          <KeyboardAvoidingView
+            style={[styles.container, { backgroundColor: theme.bg.primary }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+              <View style={[styles.inputArea, styles.inputAreaExpanded, { paddingBottom: keyboardVisible ? spacing.sm : spacing.sm + insets.bottom }]}>
+                {sendInput.isError ? (
+                  <Text style={styles.sendError} numberOfLines={2}>
+                    {sendInput.error instanceof Error ? sendInput.error.message : 'Failed to send'}
+                  </Text>
+                ) : null}
+                {attachError ? (
+                  <Text style={styles.sendError} numberOfLines={2}>{attachError}</Text>
+                ) : null}
+                {attachments.length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsRow}
+                  >
+                    {attachments.map((a) => (
+                      <View key={a.id} style={styles.chip}>
+                        <PhosphorImage size={14} color={theme.text.primary} />
+                        <Text style={styles.chipText} numberOfLines={1}>{a.originalName}</Text>
+                        <TouchableOpacity
+                          onPress={() => removeAttachment(a.id)}
+                          accessibilityLabel={`Remove ${a.originalName}`}
+                          hitSlop={8}
+                        >
+                          <X size={14} color={theme.text.secondary} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : null}
+                <View style={[styles.inputRow, { flex: 1 }]}>
+                  <View style={styles.expandedSidebar}>
+                    <TouchableOpacity
+                      style={styles.attachBtn}
+                      onPress={() => setInputExpanded(false)}
+                      accessibilityLabel="Minimize input"
+                      hitSlop={8}
+                    >
+                      <ArrowsIn size={22} color={theme.text.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.attachBtn, (isUploading || isWakingUp) && styles.sendBtnDisabled]}
+                      onPress={handleAttach}
+                      disabled={isUploading || isWakingUp}
+                      accessibilityLabel="Attach photo"
+                    >
+                      {isUploading ? (
+                        <ActivityIndicator size="small" color={theme.text.primary} />
+                      ) : (
+                        <Paperclip size={26} color={theme.text.primary} />
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.attachBtn, isWakingUp && styles.sendBtnDisabled]}
+                      onPress={handleToggleMic}
+                      disabled={isWakingUp}
+                      accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
+                      hitSlop={8}
+                    >
+                      {voice.listening ? (
+                        <MicrophoneSlash size={26} color={theme.status.failed} />
+                      ) : (
+                        <Microphone size={26} color={theme.text.primary} />
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.sendBtn,
+                        (!inputText.trim() && attachments.length === 0 || isWakingUp) && styles.sendBtnDisabled,
+                      ]}
+                      onPress={() => { handleSendInput(); setInputExpanded(false) }}
+                      disabled={(!inputText.trim() && attachments.length === 0) || sendInput.isPending || isWakingUp}
+                      accessibilityLabel={t('action.sendInput')}
+                    >
+                      <PaperPlaneRight size={26} color={theme.text.onAccent} />
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    testID="message-input-expanded"
+                    style={[styles.inputExpandedField, isWakingUp && styles.inputDisabled]}
+                    value={isWakingUp ? '' : inputText}
+                    onChangeText={isWakingUp ? undefined : handleInputChange}
+                    placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
+                    placeholderTextColor={theme.text.secondary}
+                    multiline
+                    textAlignVertical="top"
+                    autoFocus
+                    editable={!isWakingUp}
+                  />
+                </View>
+              </View>
+            </SafeAreaView>
+          </KeyboardAvoidingView>
+        </Modal>
       </SafeAreaView>
 
       {session ? (
@@ -1175,6 +1294,25 @@ function makeStyles(theme: Theme) {
     },
     sendBtnDisabled: { opacity: 0.4 },
     inputDisabled: { opacity: 0.5 },
+    inputAreaExpanded: {
+      flex: 1,
+      borderTopWidth: 0,
+    },
+    expandedSidebar: {
+      gap: spacing.sm,
+      alignItems: 'center',
+    },
+    inputExpandedField: {
+      flex: 1,
+      backgroundColor: theme.bg.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      color: theme.text.primary,
+      fontSize: font.base,
+      padding: spacing.sm,
+      textAlignVertical: 'top',
+    },
     stopBtn: {
       minHeight: 36,
       minWidth: 36,
