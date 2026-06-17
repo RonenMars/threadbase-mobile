@@ -33,6 +33,8 @@ interface ServersStore {
   isLoading: boolean
   /** Per-server flag: true once the server emits `cache_ready` (scan+index done). */
   cacheReady: Record<string, boolean>
+  /** Per-server scan progress received from `scan_progress` WS events. */
+  scanProgress: Record<string, { scanned: number; total: number }>
   /** True once the user has added at least one server (ever). Used to distinguish first launch from "removed all servers". */
   hasEverHadServer: boolean
 
@@ -42,6 +44,7 @@ interface ServersStore {
   updateServerLabel: (serverId: string, label: string) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
   setCacheReady: (serverId: string) => void
+  setScanProgress: (serverId: string, scanned: number, total: number) => void
   refreshServerInfo: (serverId: string) => Promise<void>
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
@@ -112,6 +115,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   displayedServerIds: [],
   isLoading: true,
   cacheReady: {},
+  scanProgress: {},
   hasEverHadServer: false,
 
   get serverUrl() {
@@ -216,10 +220,13 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => {
       const server = state.servers[serverId]
       if (!server) return state
-      // Reset cacheReady when disconnected so the banner reappears on reconnect.
+      // Reset cacheReady and scanProgress when disconnected so the banner reappears on reconnect.
       const cacheReady = connected
         ? state.cacheReady
         : { ...state.cacheReady, [serverId]: false }
+      const scanProgress = connected
+        ? state.scanProgress
+        : { ...state.scanProgress, [serverId]: { scanned: 0, total: 0 } }
 
       if (connected) {
         // Start a fallback timer: if `cache_ready` never arrives, dismiss the
@@ -241,6 +248,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           [serverId]: { ...server, isConnected: connected, serverInfo: info ?? server.serverInfo },
         },
         cacheReady,
+        scanProgress,
       }
     })
   },
@@ -250,6 +258,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     clearCacheReadyTimer(serverId)
     set((state) => ({ cacheReady: { ...state.cacheReady, [serverId]: true } }))
   },
+
+  setScanProgress: (serverId: string, scanned: number, total: number) =>
+    set((state) => ({
+      scanProgress: { ...state.scanProgress, [serverId]: { scanned, total } },
+    })),
 
   refreshServerInfo: async (serverId: string): Promise<void> => {
     const server = get().servers[serverId]

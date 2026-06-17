@@ -17,6 +17,7 @@ export type WSMessage =
   | { type: 'terminal_replay'; sessionId: string; lines: string[] }
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
+  | { type: 'scan_progress'; scanned: number; total: number }
   | { type: 'conversation_event'; sessionId: string; line: string }
   | QuestionWsMessage
   | QuestionCancelledWsMessage
