@@ -1,0 +1,179 @@
+# Maestro E2E — Live Chat Tab
+#
+# Verifies the Chat tab on the session screen against a real local streamer.
+# Skips the browse flow (which has a pre-existing crash on the live server)
+# by deep-linking directly to a session that was pre-started via the API.
+#
+# Pre-condition: a live session must exist on the server. The test uses
+# SERVER_URL and API_KEY to connect, then deep-links to SESSION_ID.
+#
+# Run with:
+#   maestro --device <UDID> test \
+#     -e SERVER_URL=http://192.168.68.125:8766 \
+#     -e "API_KEY=tb_ApAda@uHb8T2rtZ@*yf_tKMKC!G-LQXV" \
+#     -e SESSION_ID=a448985c-95ca-4668-b358-1427b33ac675 \
+#     e2e/live-chat-tab.yaml
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# ── Onboarding ────────────────────────────────────────────────────────────────
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Begin handshake"
+
+- tapOn:
+    text: "Begin handshake"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-paste-card"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-url-input"
+- eraseText
+- inputText: ${SERVER_URL}
+
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-token-input"
+- eraseText
+- inputText: ${API_KEY}
+
+- hideKeyboard
+
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- assertNotVisible:
+    text: "Connection failed"
+
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn:
+    text: "Skip"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "fab-new-session"
+    timeout: 10000
+
+- takeScreenshot: e2e/_artifacts/screenshots/live-chat-00-hub.png
+
+# ── Deep-link to the live session ─────────────────────────────────────────────
+# Bypasses the browse flow (pre-existing crash on live server).
+# The session was pre-started via the API before running this test.
+
+- openLink: "threadbase://session/${SESSION_ID}"
+
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 12000
+
+# ── Terminal tab (default) ────────────────────────────────────────────────────
+
+- assertVisible:
+    id: "terminal-output"
+
+- takeScreenshot: e2e/_artifacts/screenshots/live-chat-01-terminal-tab.png
+
+# ── Chat tab should be visible (session has a conversationId) ─────────────────
+
+- assertVisible:
+    id: "session-tab-chat"
+
+- assertVisible:
+    id: "session-tab-terminal"
+
+# ── Switch to Chat tab ────────────────────────────────────────────────────────
+
+- tapOn:
+    id: "session-tab-chat"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Historical messages should load from REST
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/live-chat-02-chat-tab.png
+
+# ── Send a reply via the chat input ──────────────────────────────────────────
+
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Say exactly: ready"
+
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "chat-send-button"
+
+# User bubble should appear
+- extendedWaitUntil:
+    visible:
+      text: "Say exactly: ready"
+    timeout: 10000
+
+- takeScreenshot: e2e/_artifacts/screenshots/live-chat-03-reply-sent.png
+
+# ── Switch back to Terminal tab ───────────────────────────────────────────────
+
+- tapOn:
+    id: "session-tab-terminal"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "terminal-output"
+
+- takeScreenshot: e2e/_artifacts/screenshots/live-chat-04-back-to-terminal.png

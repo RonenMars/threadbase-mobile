@@ -931,12 +931,14 @@ export default function SessionDetailScreen() {
             <TouchableOpacity
               style={[styles.tab, activeTab === 'terminal' && styles.tabActive]}
               onPress={() => setActiveTab('terminal')}
+              testID="session-tab-terminal"
             >
               <Text style={[styles.tabText, activeTab === 'terminal' && styles.tabTextActive]}>{t('session.tabTerminal')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'chat' && styles.tabActive]}
               onPress={() => setActiveTab('chat')}
+              testID="session-tab-chat"
             >
               <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>{t('session.tabChat')}</Text>
             </TouchableOpacity>
