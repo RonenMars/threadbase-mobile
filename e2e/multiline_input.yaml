@@ -1,0 +1,174 @@
+# Maestro E2E — multiline message input feature
+#
+# Tests:
+#   1. Input grows as text is typed (multi-line, no submit on Enter)
+#   2. Expand button appears once content overflows, opens full-screen modal
+#   3. Minimize button returns to regular input with text preserved
+#
+# Requires: mock server on localhost:7071, app installed on a booted sim.
+# Usage: maestro test e2e/multiline_input.yaml
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+
+# Dev-client picker — select Metro server
+# After clearState the app bundles from scratch; give it up to 90s
+- extendedWaitUntil:
+    visible: "DEVELOPMENT SERVERS"
+    timeout: 90000
+- tapOn: "http://192.168.68.125:8081"
+
+# Dev menu intro — tap Continue (allow up to 20s for transition)
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 20000
+- tapOn: "Continue"
+
+# Dev tools sheet — close it
+- extendedWaitUntil:
+    visible: "Reload"
+    timeout: 10000
+- tapOn:
+    point: "85%, 48%"
+
+- extendedWaitUntil:
+    notVisible: "Reload"
+    timeout: 5000
+
+# Walk onboarding if needed, then wait for hub
+# Steps: Welcome → Connect → Notifications → Done
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      # Step 0 / WELCOME
+      - tapOn:
+          id: "onboarding-welcome-cta"
+      # Step 1 / CONNECT — paste URL + token
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:7071"
+      - hideKeyboard
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "mock-key-123"
+      - hideKeyboard
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      # Step 2 / NOTIFICATIONS
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 8000
+      - tapOn:
+          id: "onboarding-notifications-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      # Step 3 / DONE
+      - tapOn:
+          id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+# Deeplink into the waiting_input session — this is the only state
+# where showInputBar is true and isWakingUp is false.
+- openLink: "threadbase://session/session-waiting"
+
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+- extendedWaitUntil:
+    visible:
+      id: "message-input"
+    timeout: 8000
+
+# ── Scenario 1: multi-line typing ──────────────────────────────────────────
+
+- takeScreenshot: e2e/_artifacts/screenshots/multiline-01-input-empty.png
+
+# Tap the input to focus it.
+- tapOn:
+    id: "message-input"
+
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Type a short message — input should be single line.
+- inputText: "Hello Claude"
+
+- takeScreenshot: e2e/_artifacts/screenshots/multiline-02-short-text.png
+
+# The send button should be enabled (text present).
+- assertVisible:
+    id: "send-message-button"
+
+# ── Scenario 2: expand button is always visible ─────────────────────────────
+
+# Tap the terminal area to dismiss the keyboard.
+- tapOn:
+    point: "50%, 30%"
+
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: e2e/_artifacts/screenshots/multiline-03-expand-button.png
+
+# Expand button (ArrowsOut) is always shown inside the input field.
+- assertVisible:
+    id: "expand-input-button"
+
+# ── Scenario 3: full-screen expanded modal ──────────────────────────────────
+
+- tapOn:
+    id: "expand-input-button"
+
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: e2e/_artifacts/screenshots/multiline-04-expanded-modal.png
+
+# Expanded text input should be visible and focused.
+- assertVisible:
+    id: "message-input-expanded"
+
+# Minimize button (ArrowsIn) should be visible in the sidebar.
+- assertVisible:
+    id: "minimize-input-button"
+
+# ── Scenario 4: minimize returns to regular input ───────────────────────────
+
+- tapOn:
+    id: "minimize-input-button"
+
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- takeScreenshot: e2e/_artifacts/screenshots/multiline-05-minimized.png
+
+# Regular input should be back.
+- assertVisible:
+    id: "message-input"

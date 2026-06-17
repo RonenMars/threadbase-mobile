@@ -455,7 +455,6 @@ export default function SessionDetailScreen() {
 
   const [inputText, setInputText] = useState('')
   const [inputExpanded, setInputExpanded] = useState(false)
-  const [inputContentHeight, setInputContentHeight] = useState(0)
   const voice = useVoiceInput({
     onTranscript: (text) => setInputText(text),
     contextualStrings: ['React', 'TypeScript', 'useEffect', 'Expo', 'TSX', 'Claude'],
@@ -955,7 +954,6 @@ export default function SessionDetailScreen() {
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
-                onContentSizeChange={(e) => setInputContentHeight(e.nativeEvent.contentSize.height)}
                 placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
                 placeholderTextColor={theme.text.secondary}
                 multiline
@@ -963,16 +961,17 @@ export default function SessionDetailScreen() {
                 textAlignVertical="top"
                 editable={!isWakingUp}
               />
-              {inputContentHeight >= 160 ? (
-                <TouchableOpacity
-                  style={styles.attachBtn}
-                  onPress={() => setInputExpanded(true)}
-                  accessibilityLabel="Expand input"
-                  hitSlop={8}
-                >
-                  <ArrowsOut size={22} color={theme.text.primary} />
-                </TouchableOpacity>
-              ) : null}
+              <TouchableOpacity
+                testID="expand-input-button"
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Expand input"
+                style={styles.expandBtn}
+                onPress={() => setInputExpanded(true)}
+                hitSlop={8}
+              >
+                <ArrowsOut size={20} color={theme.text.secondary} />
+              </TouchableOpacity>
               <TouchableOpacity
                 testID="send-message-button"
                 style={[
@@ -1031,65 +1030,64 @@ export default function SessionDetailScreen() {
                     ))}
                   </ScrollView>
                 ) : null}
-                <View style={[styles.inputRow, { flex: 1 }]}>
-                  <View style={styles.expandedSidebar}>
-                    <TouchableOpacity
-                      style={styles.attachBtn}
-                      onPress={() => setInputExpanded(false)}
-                      accessibilityLabel="Minimize input"
-                      hitSlop={8}
-                    >
-                      <ArrowsIn size={22} color={theme.text.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.attachBtn, (isUploading || isWakingUp) && styles.sendBtnDisabled]}
-                      onPress={handleAttach}
-                      disabled={isUploading || isWakingUp}
-                      accessibilityLabel="Attach photo"
-                    >
-                      {isUploading ? (
-                        <ActivityIndicator size="small" color={theme.text.primary} />
-                      ) : (
-                        <Paperclip size={26} color={theme.text.primary} />
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.attachBtn, isWakingUp && styles.sendBtnDisabled]}
-                      onPress={handleToggleMic}
-                      disabled={isWakingUp}
-                      accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
-                      hitSlop={8}
-                    >
-                      {voice.listening ? (
-                        <MicrophoneSlash size={26} color={theme.status.failed} />
-                      ) : (
-                        <Microphone size={26} color={theme.text.primary} />
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.sendBtn,
-                        (!inputText.trim() && attachments.length === 0 || isWakingUp) && styles.sendBtnDisabled,
-                      ]}
-                      onPress={() => { handleSendInput(); setInputExpanded(false) }}
-                      disabled={(!inputText.trim() && attachments.length === 0) || sendInput.isPending || isWakingUp}
-                      accessibilityLabel={t('action.sendInput')}
-                    >
-                      <PaperPlaneRight size={26} color={theme.text.onAccent} />
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    testID="message-input-expanded"
-                    style={[styles.inputExpandedField, isWakingUp && styles.inputDisabled]}
-                    value={isWakingUp ? '' : inputText}
-                    onChangeText={isWakingUp ? undefined : handleInputChange}
-                    placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
-                    placeholderTextColor={theme.text.secondary}
-                    multiline
-                    textAlignVertical="top"
-                    autoFocus
-                    editable={!isWakingUp}
-                  />
+                <TextInput
+                  testID="message-input-expanded"
+                  style={[styles.inputExpandedField, isWakingUp && styles.inputDisabled]}
+                  value={isWakingUp ? '' : inputText}
+                  onChangeText={isWakingUp ? undefined : handleInputChange}
+                  placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
+                  placeholderTextColor={theme.text.secondary}
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus
+                  editable={!isWakingUp}
+                />
+                <View style={styles.expandedToolbar}>
+                  <TouchableOpacity
+                    testID="minimize-input-button"
+                    style={styles.attachBtn}
+                    onPress={() => setInputExpanded(false)}
+                    accessibilityLabel="Minimize input"
+                    hitSlop={8}
+                  >
+                    <ArrowsIn size={22} color={theme.text.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.attachBtn, (isUploading || isWakingUp) && styles.sendBtnDisabled]}
+                    onPress={handleAttach}
+                    disabled={isUploading || isWakingUp}
+                    accessibilityLabel="Attach photo"
+                  >
+                    {isUploading ? (
+                      <ActivityIndicator size="small" color={theme.text.primary} />
+                    ) : (
+                      <Paperclip size={26} color={theme.text.primary} />
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.attachBtn, isWakingUp && styles.sendBtnDisabled]}
+                    onPress={handleToggleMic}
+                    disabled={isWakingUp}
+                    accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
+                    hitSlop={8}
+                  >
+                    {voice.listening ? (
+                      <MicrophoneSlash size={26} color={theme.status.failed} />
+                    ) : (
+                      <Microphone size={26} color={theme.text.primary} />
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.sendBtn,
+                      ((!inputText.trim() && attachments.length === 0) || isWakingUp) && styles.sendBtnDisabled,
+                    ]}
+                    onPress={() => { handleSendInput(); setInputExpanded(false) }}
+                    disabled={(!inputText.trim() && attachments.length === 0) || sendInput.isPending || isWakingUp}
+                    accessibilityLabel={t('action.sendInput')}
+                  >
+                    <PaperPlaneRight size={26} color={theme.text.onAccent} />
+                  </TouchableOpacity>
                 </View>
               </View>
             </SafeAreaView>
@@ -1241,6 +1239,12 @@ function makeStyles(theme: Theme) {
       maxHeight: 160,
       minHeight: 44,
     },
+    expandBtn: {
+      justifyContent: 'flex-end',
+      alignSelf: 'flex-end',
+      paddingBottom: spacing.sm,
+      paddingHorizontal: spacing.xs,
+    },
     queueBtn: {
       backgroundColor: theme.bg.card,
       borderRadius: 10,
@@ -1298,9 +1302,11 @@ function makeStyles(theme: Theme) {
       flex: 1,
       borderTopWidth: 0,
     },
-    expandedSidebar: {
-      gap: spacing.sm,
+    expandedToolbar: {
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
     },
     inputExpandedField: {
       flex: 1,
