@@ -64,6 +64,8 @@ else
   # that goes into both the commit message and the branch name.
   if [[ "$PLATFORM" == "ios" ]]; then
     BUMP_FILES=("app.json")
+    # Include Podfile.lock if pod install changed it during the pipeline
+    [[ -n "$(git status --short ios/Podfile.lock)" ]] && BUMP_FILES+=("ios/Podfile.lock")
     BUMP_NUMBER="$BUILD_NUMBER"
     BUMP_MSG="chore(ios): bump build number to ${BUILD_NUMBER} [skip-ci]"
   else
@@ -105,6 +107,7 @@ while IFS= read -r line; do
   # Skip version bump files already committed above
   [[ "$file" == "app.json" ]] && (( VERSION_BUMPED )) && continue
   [[ "$file" == "android/app/build.gradle" ]] && (( VERSION_BUMPED )) && [[ "$PLATFORM" == "android" ]] && continue
+  [[ "$file" == "ios/Podfile.lock" ]] && (( VERSION_BUMPED )) && [[ "$PLATFORM" == "ios" ]] && continue
   DIRTY_FILES+=("$file")
 done < <(git status --short)
 
