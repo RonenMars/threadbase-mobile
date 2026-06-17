@@ -39,7 +39,7 @@ function parseLineToMessage(line: string): Message | null {
     })
 
     return {
-      id: entry.uuid ?? `${entry.timestamp}-${Math.random()}`,
+      id: entry.uuid ?? `${entry.timestamp ?? ''}-${entry.type ?? ''}-${entry.message?.role ?? ''}`,
       uuid: entry.uuid ?? null,
       role: entry.message.role,
       content,
@@ -63,6 +63,8 @@ export function useConversationStream(
   useEffect(() => {
     if (!serverId || !sessionId) return
 
+    seenIds.current.clear()
+
     const unsub = wsManager.getClient(serverId)?.on('conversation_event', (msg) => {
       // wsManager.on uses a union type; cast is safe once Task 1 adds the type
       const evt = msg as { type: 'conversation_event'; sessionId: string; line: string }
@@ -80,7 +82,7 @@ export function useConversationStream(
       setLiveMessages([])
       seenIdsRef.clear()
     }
-  }, [serverId, sessionId])
+  }, [serverId, sessionId, conversationId])
 
   return { liveMessages }
 }
