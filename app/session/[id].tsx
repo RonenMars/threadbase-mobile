@@ -65,6 +65,7 @@ import { useRenameSession } from '@/hooks/useSessionName'
 import type { SlashCommand } from '@/constants/slashCommands'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
+import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -514,6 +515,7 @@ export default function SessionDetailScreen() {
   const starScale = useSharedValue(1)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState<'terminal' | 'chat'>('terminal')
 
   const getName = useSessionNamesStore((s) => s.getName)
   const { autoNameFromMessage } = useSettingsStore()
@@ -924,8 +926,31 @@ export default function SessionDetailScreen() {
           </View>
         ) : null}
 
+        {session?.conversationId ? (
+          <View style={styles.tabBar}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'terminal' && styles.tabActive]}
+              onPress={() => setActiveTab('terminal')}
+            >
+              <Text style={[styles.tabText, activeTab === 'terminal' && styles.tabTextActive]}>{t('session.tabTerminal')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'chat' && styles.tabActive]}
+              onPress={() => setActiveTab('chat')}
+            >
+              <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>{t('session.tabChat')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <View style={styles.terminal} testID="terminal-output">
-          {session?.failureReason ? (
+          {activeTab === 'chat' && session?.conversationId ? (
+            <LiveConversationView
+              serverId={serverId}
+              sessionId={id}
+              conversationId={session.conversationId}
+            />
+          ) : session?.failureReason ? (
             <View style={styles.discoveredInfo}>
               <Text style={[styles.discoveredTitle, { color: theme.text.danger }]}>
                 {t('session.failedToStart')}
@@ -1295,6 +1320,11 @@ function makeStyles(theme: Theme) {
     },
     sendBtnDisabled: { opacity: 0.4 },
     inputDisabled: { opacity: 0.5 },
+    tabBar: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border },
+    tab: { flex: 1, paddingVertical: spacing.sm, alignItems: 'center' },
+    tabActive: { borderBottomWidth: 2, borderBottomColor: theme.text.accent },
+    tabText: { color: theme.text.secondary },
+    tabTextActive: { color: theme.text.accent, fontWeight: '600' },
     stopBtn: {
       minHeight: 36,
       minWidth: 36,
