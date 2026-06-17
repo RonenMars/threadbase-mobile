@@ -23,7 +23,8 @@ import { ServerEditModal } from '@/components/servers/ServerEditModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { AddServerButton } from '@/components/servers/AddServerButton'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassView } from '@/components/ui/GlassView'
 
 interface Props {
   visible: boolean
@@ -227,6 +228,7 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
 export function ServersStatusModal({ visible, onClose }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const router = useRouter()
   const { servers, activeServerIds, removeServer, refreshServerInfo } = useServersStore()
@@ -283,7 +285,8 @@ export function ServersStatusModal({ visible, onClose }: Props) {
       statusBarTranslucent
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
+          {isGlass ? <GlassView style={styles.glassFill} pointerEvents="none" /> : null}
           <View style={styles.header}>
             <Cloud size={18} color={theme.text.secondary} weight="regular" />
             <Text style={styles.title}>
@@ -379,6 +382,17 @@ function makeStyles(theme: Theme) {
       padding: spacing.md,
       gap: spacing.sm,
       maxHeight: '75%',
+    },
+    sheetGlass: {
+      backgroundColor: 'transparent',
+      overflow: 'hidden',
+    },
+    glassFill: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
     scrollView: {
       flexGrow: 0,

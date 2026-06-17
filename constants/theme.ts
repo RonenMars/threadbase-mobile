@@ -22,6 +22,11 @@ export type Theme = {
     readonly completed: string
     readonly idle: string
   }
+  readonly glass?: {
+    readonly tint: 'light' | 'dark' | 'default'
+    readonly intensity: number
+    readonly overlayColor: string
+  }
 }
 
 export const dark = {
@@ -397,6 +402,40 @@ export const tokyoNightLight = {
   },
 } as const satisfies Theme
 
+// Apple Glass — iOS frosted-glass aesthetic with translucent vibrancy surfaces.
+// Surfaces render over a BlurView (see components/ui/GlassView.tsx); the bg.* values
+// below are deliberately semi-transparent so the blur shows through.
+export const appleGlass = {
+  colorMode: 'dark' as const,
+  bg: {
+    primary: 'transparent',
+    secondary: 'rgba(30,30,30,0.3)',
+    card: 'rgba(255,255,255,0.08)',
+  },
+  text: {
+    primary: '#ffffff',
+    secondary: 'rgba(255,255,255,0.7)',
+    accent: '#0a84ff',
+    onAccent: '#ffffff',
+    danger: '#ff453a',
+    warning: '#ff9f0a',
+    success: '#30d158',
+  },
+  border: 'rgba(255,255,255,0.15)',
+  status: {
+    running: '#30d158',
+    waiting: '#ff9f0a',
+    failed: '#ff453a',
+    completed: '#0a84ff',
+    idle: 'rgba(255,255,255,0.5)',
+  },
+  glass: {
+    tint: 'dark' as const,
+    intensity: 75,
+    overlayColor: 'rgba(0,0,0,0.25)',
+  },
+} as const satisfies Theme
+
 export type ThemeId =
   | 'dark'
   | 'light'
@@ -413,6 +452,7 @@ export type ThemeId =
   | 'rosePineDawn'
   | 'tokyoNight'
   | 'tokyoNightLight'
+  | 'appleGlass'
 
 export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   dark,
@@ -429,6 +469,7 @@ export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   rosePineDawn,
   tokyoNight,
   tokyoNightLight,
+  appleGlass,
 }
 
 export const spacing = {

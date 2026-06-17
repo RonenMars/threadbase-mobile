@@ -55,3 +55,9 @@ export function useTheme(): Theme {
   }
   return ctx
 }
+
+// True when the active theme uses frosted-glass surfaces (Apple Glass).
+// Consumer components branch their root container on this — see components/ui/GlassView.tsx.
+export function useIsGlass(): boolean {
+  return useTheme().glass !== undefined
+}

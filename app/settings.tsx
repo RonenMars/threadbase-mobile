@@ -145,6 +145,7 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   rosePineDawn: 'Rosé Pine Dawn',
   tokyoNight: 'Tokyo Night',
   tokyoNightLight: 'Tokyo Night Light',
+  appleGlass: 'Apple Glass',
 }
 
 function ThemePicker({

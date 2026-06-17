@@ -5,7 +5,8 @@ import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flat
 import { PaperPlaneRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassSheet } from '@/components/ui/GlassSheet'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useSessionsStore } from '@/stores/sessions'
 import type { QueuedPrompt } from '@/types/api'
@@ -30,6 +31,7 @@ interface Props {
 
 export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Props) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const STATUS_COLORS = useMemo(() => statusColors(theme), [theme])
   const { t } = useTranslation('queue')
@@ -86,6 +88,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={styles.sheetBg}
+      backgroundComponent={isGlass ? GlassSheet : undefined}
       handleIndicatorStyle={styles.handle}
       keyboardBehavior="extend"
       keyboardBlurBehavior="restore"

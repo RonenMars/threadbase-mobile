@@ -4,7 +4,8 @@ import BottomSheet from '@gorhom/bottom-sheet'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassSheet } from '@/components/ui/GlassSheet'
 import { useConversation } from '@/hooks/useConversations'
 import { useSettingsStore } from '@/stores/settings'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
@@ -36,6 +37,7 @@ const SNAP_POINTS = ['60%', '90%']
 export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const sheetRef = useRef<BottomSheet>(null)
   const router = useRouter()
@@ -79,6 +81,7 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={{ backgroundColor: theme.bg.card }}
+      backgroundComponent={isGlass ? GlassSheet : undefined}
       handleIndicatorStyle={{ backgroundColor: theme.border }}
     >
       <View style={styles.pinned}>

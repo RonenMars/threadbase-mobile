@@ -12,7 +12,8 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, PaperPlaneRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassView } from '@/components/ui/GlassView'
 import type { SlashCommand } from '@/constants/slashCommands'
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
 export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
   const { t } = useTranslation(['shared', 'common'])
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [arg, setArg] = useState('')
 
@@ -59,7 +61,8 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
         bottomOffset={8}
       >
         <Pressable style={styles.backdrop} onPress={onDismiss} />
-        <View style={styles.card} pointerEvents="box-none">
+        <View style={[styles.card, isGlass && styles.cardGlass]} pointerEvents="box-none">
+          {isGlass ? <GlassView style={styles.glassFill} pointerEvents="none" /> : null}
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -144,6 +147,17 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       paddingBottom: spacing.xl,
       gap: spacing.md,
+    },
+    cardGlass: {
+      backgroundColor: 'transparent',
+      overflow: 'hidden',
+    },
+    glassFill: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
     header: {
       flexDirection: 'row',

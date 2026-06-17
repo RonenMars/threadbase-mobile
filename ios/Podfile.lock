@@ -184,11 +184,15 @@ PODS:
     - Yoga
   - ExpoAsset (56.0.17):
     - ExpoModulesCore
+  - ExpoBlur (56.0.3):
+    - ExpoModulesCore
   - ExpoCamera (56.0.8):
     - ExpoModulesCore
   - ExpoCameraBarcodeScanning (56.0.8):
     - ExpoCamera
   - ExpoClipboard (56.0.4):
+    - ExpoModulesCore
+  - ExpoDocumentPicker (56.0.4):
     - ExpoModulesCore
   - ExpoDomWebView (56.0.5):
     - ExpoModulesCore
@@ -200,9 +204,13 @@ PODS:
     - ExpoModulesCore
   - ExpoHaptics (56.0.3):
     - ExpoModulesCore
+  - ExpoImageManipulator (56.0.19):
+    - ExpoModulesCore
   - ExpoImagePicker (56.0.17):
     - ExpoModulesCore
   - ExpoKeepAwake (56.0.3):
+    - ExpoModulesCore
+  - ExpoLinearGradient (56.0.4):
     - ExpoModulesCore
   - ExpoLinking (56.0.14):
     - ExpoModulesCore
@@ -2541,16 +2549,20 @@ DEPENDENCIES:
   - expo-dev-menu (from `../node_modules/expo-dev-menu`)
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoCamera (from `../node_modules/expo-camera/ios/ExpoCamera.podspec`)
   - ExpoCameraBarcodeScanning (from `../node_modules/expo-camera/ios/ExpoCameraBarcodeScanning.podspec`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
+  - ExpoDocumentPicker (from `../node_modules/expo-document-picker/ios`)
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios/ExpoFileSystem.podspec`)
   - ExpoFont (from `../node_modules/expo-font/ios/ExpoFont.podspec`)
   - ExpoGlassEffect (from `../node_modules/expo-glass-effect/ios`)
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
+  - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios/ExpoImageManipulator.podspec`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
+  - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - "ExpoLogBox (from `../node_modules/@expo/log-box`)"
@@ -2684,12 +2696,16 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-dev-menu-interface/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
+  ExpoBlur:
+    :path: "../node_modules/expo-blur/ios"
   ExpoCamera:
     :podspec: "../node_modules/expo-camera/ios/ExpoCamera.podspec"
   ExpoCameraBarcodeScanning:
     :podspec: "../node_modules/expo-camera/ios/ExpoCameraBarcodeScanning.podspec"
   ExpoClipboard:
     :path: "../node_modules/expo-clipboard/ios"
+  ExpoDocumentPicker:
+    :path: "../node_modules/expo-document-picker/ios"
   ExpoDomWebView:
     :path: "../node_modules/@expo/dom-webview/ios"
   ExpoFileSystem:
@@ -2700,10 +2716,14 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-glass-effect/ios"
   ExpoHaptics:
     :path: "../node_modules/expo-haptics/ios"
+  ExpoImageManipulator:
+    :podspec: "../node_modules/expo-image-manipulator/ios/ExpoImageManipulator.podspec"
   ExpoImagePicker:
     :path: "../node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../node_modules/expo-keep-awake/ios"
+  ExpoLinearGradient:
+    :path: "../node_modules/expo-linear-gradient/ios"
   ExpoLinking:
     :path: "../node_modules/expo-linking/ios"
   ExpoLocalization:
@@ -2924,20 +2944,24 @@ SPEC CHECKSUMS:
   expo-dev-menu: 50612b5950e0086853dd030cbc9694c7c0dfd1d0
   expo-dev-menu-interface: 65402d4affb8b418aa6cec29b3abb0e313c8f443
   ExpoAsset: 1e436e9aee7015d5c6d203c1ddfe1adbb521a623
+  ExpoBlur: caddd80171e5f8f3581ff3d865e99c6465047240
   ExpoCamera: 68008452cc12ad5ad5d46cc7c835073228c008da
   ExpoCameraBarcodeScanning: 2acb6385fe6aa7563da5241c775092aac40195ce
   ExpoClipboard: 342ae52697ff1cf89b8849bee624a9a320e77d3c
+  ExpoDocumentPicker: caa9c7c1071dc31262d86a8fe48f51929d291a43
   ExpoDomWebView: 27205be8754f9992913b8a9a08e65019f2207075
   ExpoFileSystem: 9dc04ec1e11bc3c7b965d7feb2de12c789755c7b
   ExpoFont: 3a9fd9690216be709f109d2bd67d80e1beefdbee
   ExpoGlassEffect: 7d4233dc0727ee2b28dd757eda70e1b6abf662fd
   ExpoHaptics: 89364cf3c3ca2cfd54cafed42f3be3169bab6d42
+  ExpoImageManipulator: b3d9d626f99cc827d26a8f7eb7adcf7239223e9c
   ExpoImagePicker: 684cb450a38a6e73813c706848820db0d6db60d0
   ExpoKeepAwake: 359c47a1d9ccc3a3c519bca6e39562cce230c5bb
+  ExpoLinearGradient: 16c2b9c6105444883d34958d573725de1293b8d0
   ExpoLinking: f3d1883179d784e3d74c0eaf6ae8b03ec3571da3
   ExpoLocalization: cf50efc436b2ec313510131c1ee0e778366d64b0
   ExpoLogBox: 63977cf56b04547c713535d2d4e9bbf2f012e3c6
-  ExpoModulesCore: 3cecf996e5677602223f919f2a4d9e4874403c97
+  ExpoModulesCore: a70478133480f9e58774619bbc307edde0ac8798
   ExpoModulesJSI: 49e5d86ad1a81cd696f07ca9d583b7848baa75cb
   ExpoModulesWorklets: 111c11b9ab7fe23ce3e52bba7bbfcf5ef730139f
   ExpoModulesWorkletsAdapter: 59a69740bd200ff5f983cd97d49c086d47b802f4
@@ -2953,7 +2977,7 @@ SPEC CHECKSUMS:
   EXUpdates: 849f30a2199491cfd02233f82386f534967dca45
   EXUpdatesInterface: 25408a97d682355eb9fb37e5aa6e22caece1881f
   FBLazyVector: 24e62c765683b8d89006a88a2c8f5cf019f0074d
-  hermes-engine: 125278270e455748eac6a2cd0b43c9f9d39cbfd4
+  hermes-engine: f18a2953b6dfdc70841b240a96f7534e4de71724
   RCTDeprecation: a4c521821fab57cbb125b36effe84d897d0dfa12
   RCTRequired: 9f3a7e5645d4bc3f551593de7550bb66ab6e42bc
   RCTSwiftUI: 239ed2eb9e73de5a6f518810630f0c95e01c8702
@@ -2963,7 +2987,7 @@ SPEC CHECKSUMS:
   React: e2dc35338068bbd299c66f043ae0d7f25de8499e
   React-callinvoker: 28b25d21b124c26cebaea713ba7d801b9351dc48
   React-Core: 02ed7d2ffb70437bdf2aba074a13078a7b0b9ff0
-  React-Core-prebuilt: c96d7eb9215295a20804b483f05c99dce39a85f6
+  React-Core-prebuilt: fa4f4ea8e738fbd9720a48ded06e187eafaaa861
   React-CoreModules: b3a5a42dadcde3b5d47b325bd912eb2ced89e146
   React-cxxreact: fe8f88dda044e5905e99a00f41b7a874c3908716
   React-debug: 92944dc4d89f56d640e75498266cbde557a48189
@@ -3029,7 +3053,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 25c9c516839be2c5e3d3344f95dc7da5f7e63fc2
   ReactCodegen: c8f81e6c6f762dcf442a6203a1fb58f7dafc8014
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
-  ReactNativeDependencies: 143ae42ca5e21bde5a0709062b6a8189d018e9e3
+  ReactNativeDependencies: 6b107750807acc0403cbfaf1ee444bcc6a93bb01
   RNCAsyncStorage: 2ad919e88b8bc2cd80e8697ce66d04d006743283
   RNCMaskedView: eb2b2e538afa907f05a5848a1a1ac26092e6fec9
   RNGestureHandler: 2ff61eac036eaf89f6818bf4ed9c39771a17d134

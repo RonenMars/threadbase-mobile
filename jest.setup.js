@@ -230,6 +230,7 @@ jest.mock('@/contexts/ThemeContext', () => {
   const { dark } = require('./constants/theme')
   return {
     useTheme: () => dark,
+    useIsGlass: () => dark.glass !== undefined,
     ThemeProvider: ({ children }) => children,
   }
 })

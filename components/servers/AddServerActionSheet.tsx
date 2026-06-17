@@ -4,7 +4,8 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import type { AddServerAction } from '@/stores/settings'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassSheet } from '@/components/ui/GlassSheet'
 
 type Choice = Exclude<AddServerAction, 'ask'>
 
@@ -37,6 +38,7 @@ const OPTIONS: { id: Choice; label: string; description: string }[] = [
 export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
   const { t } = useTranslation(['servers', 'common'])
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [choice, setChoice] = useState<Choice>('add')
   const [rememberChoice, setRememberChoice] = useState(false)
@@ -49,6 +51,7 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
       index={0}
       enablePanDownToClose={false}
       backgroundStyle={styles.sheetBg}
+      backgroundComponent={isGlass ? GlassSheet : undefined}
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>

@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassSheet } from '@/components/ui/GlassSheet'
 import type { SortBy, SortOrder } from '@/types/ui'
 
 interface Props {
@@ -38,6 +39,7 @@ export function SortSheet({
   onChangeSortOrder,
 }: Props) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
   const [draftBy, setDraftBy] = useState<SortBy>(sortBy)
@@ -67,6 +69,7 @@ export function SortSheet({
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
+      backgroundComponent={isGlass ? GlassSheet : undefined}
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>
