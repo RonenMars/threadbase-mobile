@@ -1008,7 +1008,16 @@ export default function SessionDetailScreen() {
                     <Microphone size={26} color={theme.text.onAccent} />
                   )}
                 </TouchableOpacity>
-              ) : null}
+              ) : (
+                <TouchableOpacity
+                  testID="send-message-button"
+                  style={[styles.sendBtn, styles.sendBtnDisabled]}
+                  disabled
+                  accessibilityLabel={t('action.sendInput')}
+                >
+                  <PaperPlaneRight size={26} color={theme.text.onAccent} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         ) : null}
