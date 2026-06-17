@@ -16,6 +16,10 @@ interface TerminalHistoryResponse {
 
 const EMPTY_HISTORY: TerminalHistoryResponse = { output: '' }
 const TERMINAL_REPLAY_TIMEOUT_MS = 2000
+// If no WS message of any kind arrives for this long, the connection is
+// probably dead without having fired onclose (iOS silently kills TCP while
+// the app is in the foreground). Force a reconnect so streaming resumes.
+const WS_SILENCE_TIMEOUT_MS = 45_000
 
 export function useTerminalStream(serverId: string, sessionId: string, skipLiveStream = false) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
@@ -98,8 +102,20 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
     let idleTimer: ReturnType<typeof setTimeout>
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null
     let unsubOutput: (() => void) | null = null
     let unsubReplay: (() => void) | null = null
+    let unsubWildcard: (() => void) | null = null
+
+    function resetSilenceTimer() {
+      if (silenceTimer) clearTimeout(silenceTimer)
+      silenceTimer = setTimeout(() => {
+        // No WS traffic for WS_SILENCE_TIMEOUT_MS — the connection is likely
+        // dead without having fired onclose (iOS silently kills TCP). Force a
+        // reconnect so the backoff machinery re-subscribes and resumes streaming.
+        wsManager.forceReconnect(serverId)
+      }, WS_SILENCE_TIMEOUT_MS)
+    }
 
     function sendSubscribeAndWaitForReplay() {
       const client = wsManager.getClient(serverId)
@@ -145,8 +161,18 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       })
     }
 
+    function subscribeWildcard() {
+      unsubWildcard?.()
+      const client = wsManager.getClient(serverId)
+      if (!client) return
+      // Any inbound message — including server pings — resets the silence timer.
+      unsubWildcard = client.on('*', () => resetSilenceTimer())
+    }
+
     sendSubscribeAndWaitForReplay()
     subscribeOutput()
+    subscribeWildcard()
+    resetSilenceTimer()
 
     // Re-subscribe on reconnect. This handles two cases:
     //   1. Client didn't exist yet when this effect ran (React runs child
@@ -161,14 +187,18 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       historyFedRef.current = false
       sendSubscribeAndWaitForReplay()
       subscribeOutput()
+      subscribeWildcard()
+      resetSilenceTimer()
     })
 
     return () => {
       unsubOutput?.()
       unsubReplay?.()
+      unsubWildcard?.()
       unsubStatus()
       clearTimeout(idleTimer)
       if (fallbackTimer) clearTimeout(fallbackTimer)
+      if (silenceTimer) clearTimeout(silenceTimer)
     }
     // feedHistory is a local closure that only reads refs + maxLines (already
     // in deps); excluding it avoids re-subscribing on every render.
