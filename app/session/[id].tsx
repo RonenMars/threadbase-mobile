@@ -952,12 +952,9 @@ export default function SessionDetailScreen() {
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
-                placeholder={isWakingUp ? 'Starting up…' : 'Send input to session…'}
+                placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
                 placeholderTextColor={theme.text.secondary}
                 multiline
-                returnKeyType="done"
-                blurOnSubmit
-                onSubmitEditing={isWakingUp ? undefined : handleSendInput}
                 editable={!isWakingUp}
               />
               <TouchableOpacity
@@ -1120,7 +1117,7 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.base,
       padding: spacing.sm,
-      maxHeight: 120,
+      maxHeight: 160,
       minHeight: 44,
     },
     queueBtn: {
