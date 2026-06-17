@@ -955,6 +955,8 @@ export default function SessionDetailScreen() {
                 placeholder={isWakingUp ? 'Starting up…' : 'Message…'}
                 placeholderTextColor={theme.text.secondary}
                 multiline
+                scrollEnabled
+                textAlignVertical="top"
                 editable={!isWakingUp}
               />
               <TouchableOpacity
