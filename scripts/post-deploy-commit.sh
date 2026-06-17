@@ -76,9 +76,7 @@ else
     BUMP_MSG="chore(android): bump version code to ${VERSION_CODE} [skip-ci]"
   fi
 
-  # Ask for branch name — defaults to including the new build/version number.
-  DEFAULT_BRANCH="chore/bump-${PLATFORM}-version-${BUMP_NUMBER}"
-  BRANCH=$(_prompt_input "Branch name for version bump" "$DEFAULT_BRANCH")
+  BRANCH="chore/bump-${PLATFORM}-version-${BUMP_NUMBER}"
 
   ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
