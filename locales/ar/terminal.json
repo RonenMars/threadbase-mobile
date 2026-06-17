@@ -10,6 +10,8 @@
   "session": {
     "runningElsewhere": "يعمل في طرفية أخرى",
     "runningElsewhereBody": "بدأ هذا الجلسة خارج التطبيق وتظهر للقراءة فقط. أوقفها في الطرفية الأخرى — ستُفتح المحادثة هنا تلقائيًا عند الانتهاء.",
-    "openConversation": "فتح المحادثة"
+    "openConversation": "فتح المحادثة",
+    "tabTerminal": "الطرفية",
+    "tabChat": "المحادثة"
   }
 }
