@@ -407,6 +407,9 @@ function makeDiscStyles(theme: Theme) {
   })
 }
 
+const RTL_RE = /[֐-׿؀-ۿ܀-ݏ]/
+function isRtlText(s: string): boolean { return RTL_RE.test(s) }
+
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
   if (s < 60) return `${s}s`
@@ -934,7 +937,11 @@ export default function SessionDetailScreen() {
                 {attachments.map((a) => (
                   <View key={a.id} style={styles.chip}>
                     <PhosphorImage size={14} color={theme.text.primary} />
-                    <Text style={styles.chipText} numberOfLines={1}>
+                    <Text
+                      style={[styles.chipText, isRtlText(a.originalName) && styles.chipTextRtl]}
+                      numberOfLines={1}
+                      textBreakStrategy="simple"
+                    >
                       {a.originalName}
                     </Text>
                     <TouchableOpacity
@@ -1201,6 +1208,10 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.xs,
       flexShrink: 1,
+    },
+    chipTextRtl: {
+      writingDirection: 'rtl',
+      textAlign: 'right',
     },
     sendBtnDisabled: { opacity: 0.4 },
     inputDisabled: { opacity: 0.5 },
