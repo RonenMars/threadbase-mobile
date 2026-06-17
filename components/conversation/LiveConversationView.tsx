@@ -72,8 +72,9 @@ export function LiveConversationView({ serverId, sessionId, conversationId }: Pr
           multiline
           returnKeyType="send"
           onSubmitEditing={handleSend}
+          testID="chat-message-input"
         />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={!inputText.trim()}>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={!inputText.trim()} testID="chat-send-button">
           <Text style={styles.sendButtonText}>{t('input.send')}</Text>
         </TouchableOpacity>
       </View>
