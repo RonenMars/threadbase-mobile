@@ -87,50 +87,49 @@ describe('useEagerSessions', () => {
     const firstCall = mockGet.mock.calls[0][0] as string
     expect(firstCall).toContain('sortBy=lastActivityAt')
     expect(firstCall).toContain('order=desc')
-    expect(firstCall).toContain('limit=200')
+    expect(firstCall).toContain('limit=50')
     expect(firstCall).not.toContain('cursor=')
 
     const secondCall = mockGet.mock.calls[1][0] as string
     expect(secondCall).toContain('cursor=c1')
   })
 
-  it('processes servers sequentially and surfaces the current server label', async () => {
+  it('fetches servers in parallel and aggregates progress', async () => {
     setActiveServers([
       { id: 'srv-A', label: 'Alpha' },
       { id: 'srv-B', label: 'Beta' },
     ])
 
-    // Server A: 1 page, 2 items, total 2.
-    // Server B: 1 page, 1 item, total 1.
-    // We capture progress mid-flight by having the first fetch's promise be
-    // resolvable on demand.
+    // Server A: 1 page, 2 items. Server B: 1 page, 1 item.
+    // Both are kicked off simultaneously; stagger resolution to observe
+    // intermediate aggregate state.
     let resolveA: (v: SessionListPage) => void = () => {}
-    const aPromise = new Promise<SessionListPage>((res) => {
-      resolveA = res
-    })
+    const aPromise = new Promise<SessionListPage>((res) => { resolveA = res })
+
+    // First call → Server A (in-flight), second call → Server B (resolves fast).
     mockGet
       .mockReturnValueOnce(aPromise)
       .mockResolvedValueOnce(pageOf(['b1'], { nextCursor: null, total: 1 }))
 
     const { result } = renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
-    // While A is in-flight we should be on the Alpha label, with total=0
-    // (haven't seen the first page yet) and not done.
-    await waitFor(() => expect(result.current.currentServerLabel).toBe('Alpha'))
+    // Before A resolves: both servers in-flight, B may already have landed.
+    // inFlightCount starts at 2 and drops as each server finishes.
+    await waitFor(() => expect(result.current.inFlightCount).toBeLessThanOrEqual(2))
     expect(result.current.isDone).toBe(false)
-    expect(result.current.total).toBe(0)
 
-    // Resolve A.
+    // Resolve A — now both servers are done.
     await act(async () => {
       resolveA(pageOf(['a1', 'a2'], { nextCursor: null, total: 2 }))
     })
 
     await waitFor(() => expect(result.current.isDone).toBe(true))
 
-    expect(result.current.sessions.map((s) => s.id)).toEqual(['a1', 'a2', 'b1'])
+    expect(result.current.sessions.map((s) => s.id).sort()).toEqual(['a1', 'a2', 'b1'].sort())
     expect(result.current.loaded).toBe(3)
-    // Total reflects Alpha (2) + Beta (1).
+    // Total = Alpha (2) + Beta (1).
     expect(result.current.total).toBe(3)
+    expect(result.current.inFlightCount).toBe(0)
   })
 
   it('passes status filter on the wire', async () => {
@@ -166,7 +165,7 @@ describe('useEagerSessions', () => {
     expect(result.current.sessions.map((s) => s.id)).toEqual(['b1'])
   })
 
-  it('changing sort triggers a fresh sequential loop', async () => {
+  it('changing sort triggers a fresh parallel fetch', async () => {
     setActiveServers([{ id: 'srv-A', label: 'A' }])
     mockGet
       .mockResolvedValueOnce(pageOf(['a1'], { nextCursor: null, total: 1 }))

@@ -118,4 +118,16 @@ module.exports = defineConfig([
       "react/display-name": "off",
     },
   },
+  // e2e mock servers run under Node — allow Node built-ins.
+  {
+    files: ["e2e/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        // Maestro runScript sandbox globals
+        http: "readonly",
+        output: "writable",
+      },
+    },
+  },
 ]);

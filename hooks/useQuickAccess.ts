@@ -62,7 +62,6 @@ export function useRecentSessions(serverIds: string[], limit = 20): AggregateRes
           throw e
         }
       },
-      staleTime: 30_000,
       enabled: !!serverId,
     })),
   })
@@ -101,7 +100,6 @@ export function usePopularProjects(serverIds: string[], limit = 20): AggregateRe
           throw e
         }
       },
-      staleTime: 5 * 60_000,
       enabled: !!serverId,
     })),
   })

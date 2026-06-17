@@ -1,0 +1,194 @@
+# Non-merged conversation loading overlay — e2e validation.
+#
+# Verifies that in the classic (non-merged) layout, tapping the History tab
+# shows the SessionsLoadingOverlay (conv-only mode) while conversations
+# are still being fetched from the server.
+#
+# Flow:
+#   1. Fresh launch with clearState → onboarding → hub
+#   2. Open Settings → disable "Merge sessions & history as Chats"
+#   3. Back to hub → tap History tab
+#   4. Assert loading overlay appears (conv-only, sessions row hidden)
+#   5. Assert overlay dismisses and conversations appear
+#
+# Requires: pagination mock running on http://localhost:7073
+# Run: npm run test:e2e:parallel-fetch:non-merged
+
+appId: com.ronenmars.threadbase
+---
+- runScript: scripts/reset-progress-mock.js
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# 1. Dev-client picker — select Metro server
+- extendedWaitUntil:
+    visible: "DEVELOPMENT SERVERS"
+    timeout: 10000
+- tapOn: "http://192.168.68.112:8081"
+
+# 2. Dev menu intro — tap Continue
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 10000
+- tapOn: "Continue"
+
+# 3. Dev tools sheet — close with X
+- extendedWaitUntil:
+    visible: "Reload"
+    timeout: 10000
+- tapOn:
+    point: "85%, 48%"
+
+- extendedWaitUntil:
+    notVisible: "Reload"
+    timeout: 5000
+
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      # Step 1 / WELCOME
+      - tapOn:
+          id: "onboarding-welcome-cta"
+      # Step 2 / CONNECT
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-connect-url-input"
+          timeout: 5000
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:7073"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-connect-token-input"
+          timeout: 5000
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "mock-key-pagination"
+      - tapOn:
+          point: "50%, 20%"
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      # Step 3 / NOTIFICATIONS
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 10000
+      - tapOn:
+          id: "onboarding-notifications-cta"
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      # Step 4 / DONE
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-done-cta"
+          timeout: 5000
+      - tapOn:
+          id: "onboarding-done-cta"
+
+# Wait for hub-screen, then for the unified overlay to fully dismiss
+# (sessions + conversations both done). Settings gear is blocked while overlay
+# is up (pointerEvents="auto"), so we wait before navigating.
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible:
+      id: "sessions-loading-overlay"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/non-merged-01-overlay-visible
+
+- extendedWaitUntil:
+    notVisible:
+      id: "sessions-loading-overlay"
+    timeout: 120000
+
+- takeScreenshot: e2e/_artifacts/non-merged-02-hub-loaded
+
+# ── Step 2: Go to Settings → disable Merge Chats ─────────────────────────────
+- tapOn:
+    id: "hub-settings-btn"
+
+- extendedWaitUntil:
+    visible:
+      id: "settings-merge-chats-toggle"
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/non-merged-03-settings
+
+# Disable "Merge sessions & history as Chats" (it's ON by default)
+- tapOn:
+    id: "settings-merge-chats-toggle"
+
+- takeScreenshot: e2e/_artifacts/non-merged-04-toggle-off
+
+# ── Step 3: Back to hub ───────────────────────────────────────────────────────
+- tapOn:
+    id: "header-back"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/non-merged-05-hub-non-merged
+
+# ── Step 4: Tap History tab, then pull-to-refresh to re-trigger conv fetch ────
+# convDone is already true after initial load. Pull-to-refresh calls
+# handleConvRefresh which resets convLoaderMode to 'full' and bumps refreshEpoch,
+# making showConvProgress true again → overlay appears.
+- extendedWaitUntil:
+    visible:
+      id: "hub-history-tab"
+    timeout: 5000
+
+- tapOn:
+    id: "hub-history-tab"
+
+- scroll:
+    direction: DOWN
+    speed: 40
+    duration: 500
+
+- scroll:
+    direction: UP
+    speed: 40
+    duration: 500
+
+- extendedWaitUntil:
+    visible:
+      id: "sessions-loading-overlay"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/non-merged-06-conv-loading-overlay
+
+# ── Step 5: Overlay dismisses and conversations appear ────────────────────────
+- extendedWaitUntil:
+    notVisible:
+      id: "sessions-loading-overlay"
+    timeout: 120000
+
+- takeScreenshot: e2e/_artifacts/non-merged-07-both-done
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-0000"
+    timeout: 30000
+
+- takeScreenshot: e2e/_artifacts/non-merged-08-conversations-loaded

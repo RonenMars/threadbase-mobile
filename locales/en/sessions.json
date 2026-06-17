@@ -68,8 +68,11 @@
   "loading": {
     "title": "Loading sessions",
     "progress": "{{loaded}} of {{total}}",
-    "fetchingServer": "Fetching {{server}}",
-    "fetchingNoLabel": "Fetching"
+    "fetchingOne": "Fetching",
+    "fetchingN": "Fetching {{count}} servers in parallel",
+    "sessionsLabel": "Sessions",
+    "conversationsLabel": "Conversations",
+    "done": "Done"
   },
   "live": {
     "headerLive_one": "LIVE · {{count}}",

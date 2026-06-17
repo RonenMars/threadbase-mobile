@@ -13,7 +13,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "142",
+      "buildNumber": "143",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
@@ -26,7 +26,7 @@
     },
     "android": {
       "package": "com.ronenmars.threadbase",
-      "versionCode": 14,
+      "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"
@@ -76,7 +76,7 @@
           "ios": {
             "deploymentTarget": "16.4"
           },
-           "android": {
+          "android": {
             "enableProguardInReleaseBuilds": true
           }
         }

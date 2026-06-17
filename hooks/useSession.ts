@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createApiForServer } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import { serverDisplayName } from '@/components/sessions/shared/serverDisplayName'
 import type {
   MultiSession,
   Session,
@@ -14,7 +13,7 @@ import type {
 } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
-const DEFAULT_PAGE_SIZE = 200
+const DEFAULT_PAGE_SIZE = 50
 
 // The home screen's `SortBy` (UI) uses 'lastActivity'; the wire format is
 // 'lastActivityAt' to match the field on SessionResponse. All other names
@@ -70,6 +69,7 @@ async function fetchAllPagesForServer(
 
   while (true) {
     if (signal?.aborted) throw new Error('aborted')
+
     const qs = buildSessionsQueryString({ limit: DEFAULT_PAGE_SIZE, cursor, sortBy, order, status })
     const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, { signal })
     for (const s of page.sessions) {
@@ -83,11 +83,12 @@ async function fetchAllPagesForServer(
   return collected
 }
 
-export interface SessionsLoadingProgress {
+// Per-server slice of loading progress. `total` is null until the first page
+// returns (the backend only reports the grand total on the first response).
+interface ServerProgress {
   loaded: number
-  total: number
-  currentServerId: string | null
-  currentServerLabel: string | null
+  total: number | null
+  done: boolean
 }
 
 export interface UseEagerSessionsArgs {
@@ -101,8 +102,7 @@ export interface UseEagerSessionsResult {
   total: number
   isDone: boolean
   isCounting: boolean
-  currentServerLabel: string | null
-  currentServerId: string | null
+  inFlightCount: number
   error: Error | null
   refetch: () => Promise<void>
 }
@@ -118,19 +118,15 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   const status = args.filter?.status
 
   const wireSortBy = toWireSortKey(sortBy)
-  // Stable string key for memoisation/queryKey use (status array order matters
-  // for cache identity but not for server semantics).
   const statusKey = status?.length ? [...status].sort().join(',') : ''
 
-  const [progress, setProgress] = useState<SessionsLoadingProgress>({
-    loaded: 0,
-    total: 0,
-    currentServerId: null,
-    currentServerLabel: null,
-  })
+  // Per-server progress map stored in a ref so queryFn mutations don't need
+  // setState on every page tick, only a single aggregate setState call.
+  const serverProgressRef = useRef<Map<string, ServerProgress>>(new Map())
 
-  // Keep the latest server labels accessible inside the queryFn (which closes
-  // over a snapshot) without re-running on every label change.
+  // Aggregated state for the UI — updated whenever any server's slice changes.
+  const [aggregateProgress, setAggregateProgress] = useState({ loaded: 0, total: 0, inFlightCount: 0 })
+
   const serversRef = useRef(servers)
   useEffect(() => {
     serversRef.current = servers
@@ -141,109 +137,101 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
     [wireSortBy, order, statusKey, activeServerIds],
   )
 
+  // Recomputes and flushes aggregate to state. Called from per-server progress
+  // callbacks — runs on the JS thread between awaits so no locking needed.
+  const flushAggregate = useCallback(() => {
+    let loaded = 0
+    let total = 0
+    let inFlight = 0
+    for (const slice of serverProgressRef.current.values()) {
+      loaded += slice.loaded
+      // Only include servers whose first page (which carries `total`) has
+      // returned. Before that the denominator is unknowable for that server.
+      if (slice.total !== null) total += slice.total
+      if (!slice.done) inFlight++
+    }
+    setAggregateProgress({ loaded, total, inFlightCount: inFlight })
+  }, [])
+
   const query = useQuery<MultiSession[], Error>({
     queryKey,
     queryFn: async ({ signal }) => {
-      // Reset progress at the start of every run so the overlay restarts cleanly.
-      setProgress({ loaded: 0, total: 0, currentServerId: null, currentServerLabel: null })
-
-      const merged: MultiSession[] = []
-      let runningTotalSoFar = 0
-      let runningLoadedSoFar = 0
-
-      for (const serverId of activeServerIds) {
-        const server = serversRef.current[serverId]
-        // Bug 28: when the user hasn't named the server (paired pre-Feature-23
-        // or tapped Skip), fall back to host:port so the progress modal still
-        // says *which* server it's fetching.
-        const displayLabel = serverDisplayName(server) || null
-        const label = server?.label
-        setProgress((p) => ({
-          loaded: runningLoadedSoFar,
-          total: p.total,
-          currentServerId: serverId,
-          currentServerLabel: displayLabel,
-        }))
-
-        // Snapshot the running counters at the moment we kick off this
-        // server's pages. Closures over the live mutable counters would race
-        // against the post-loop increment when React applies the state update.
-        const baselineLoaded = runningLoadedSoFar
-        const baselineTotal = runningTotalSoFar
-        let serverSessions: MultiSession[] = []
-        try {
-          serverSessions = await fetchAllPagesForServer(
-            serverId,
-            label,
-            wireSortBy,
-            order,
-            status,
-            (loadedSoFarOnThisServer, totalOnThisServer) => {
-              const globalLoaded = baselineLoaded + loadedSoFarOnThisServer
-              const globalTotal = baselineTotal + totalOnThisServer
-              setProgress({
-                loaded: globalLoaded,
-                total: globalTotal,
-                currentServerId: serverId,
-                currentServerLabel: displayLabel,
-              })
-            },
-            signal,
-          )
-          recordSuccess(serverId)
-        } catch (err) {
-          // If the caller cancelled the query (unmount / refetch), propagate the
-          // abort so React Query can mark the query as cancelled rather than
-          // silently swallowing it. Any other per-server error is isolated: the
-          // remaining servers still contribute their sessions.
-          if (signal?.aborted) throw err
-          recordFailure(serverId, err)
-        }
-
-        // Roll this server's contribution into the running counters once it finishes.
-        runningLoadedSoFar += serverSessions.length
-        runningTotalSoFar += serverSessions.length
-        merged.push(...serverSessions)
+      // Reset per-server slices and aggregate at the start of every run.
+      const initialMap = new Map<string, ServerProgress>()
+      for (const id of activeServerIds) {
+        initialMap.set(id, { loaded: 0, total: null, done: false })
       }
+      serverProgressRef.current = initialMap
+      setAggregateProgress({ loaded: 0, total: 0, inFlightCount: activeServerIds.length })
 
-      return dedupeByServerAndId(merged)
+      const perServerResults = await Promise.all(
+        activeServerIds.map(async (serverId) => {
+          const server = serversRef.current[serverId]
+          const label = server?.label
+
+          try {
+            const sessions = await fetchAllPagesForServer(
+              serverId,
+              label,
+              wireSortBy,
+              order,
+              status,
+              (loadedSoFar, serverTotal) => {
+                const slice = serverProgressRef.current.get(serverId)
+                if (slice) {
+                  slice.loaded = loadedSoFar
+                  slice.total = serverTotal
+                  flushAggregate()
+                }
+              },
+              signal,
+            )
+            recordSuccess(serverId)
+            return sessions
+          } catch (err) {
+            if (signal?.aborted) throw err
+            recordFailure(serverId, err)
+            return [] as MultiSession[]
+          } finally {
+            const slice = serverProgressRef.current.get(serverId)
+            if (slice) {
+              slice.done = true
+              flushAggregate()
+            }
+          }
+        }),
+      )
+
+      return dedupeByServerAndId(perServerResults.flat())
     },
     enabled: activeServerIds.length > 0,
-    // Live updates arrive via WS session_update; the HTTP eager paginate
-    // is only needed on cold start, manual pull-to-refresh, or after the
-    // sessions list has actually drifted. 60s prevents a focus storm.
-    staleTime: 60_000,
   })
 
   const refetch = useCallback(async () => {
     await query.refetch()
   }, [query])
 
-  // Reset visible progress to "done" when there are no servers (avoids
-  // leftover overlay state if the user removes their last server).
   useEffect(() => {
     if (activeServerIds.length === 0) {
       queueMicrotask(() => {
-        setProgress({ loaded: 0, total: 0, currentServerId: null, currentServerLabel: null })
+        serverProgressRef.current = new Map()
+        setAggregateProgress({ loaded: 0, total: 0, inFlightCount: 0 })
       })
     }
   }, [activeServerIds.length])
 
   const sessions = query.data ?? []
-  const isDone =
-    activeServerIds.length === 0 || (query.isFetched && !query.isFetching)
-  // "Counting" = we've kicked off the loop but the first page (which carries
-  // total) for the current server hasn't returned yet.
-  const isCounting = !isDone && progress.total === 0 && progress.currentServerId !== null
+  const isDone = activeServerIds.length === 0 || (query.isFetched && !query.isFetching)
+  // "Counting" = fetches are running but no server has returned its first page yet
+  const isCounting = !isDone && aggregateProgress.total === 0 && aggregateProgress.inFlightCount > 0
 
   return {
     sessions,
-    loaded: progress.loaded,
-    total: progress.total,
+    loaded: aggregateProgress.loaded,
+    total: aggregateProgress.total,
     isDone,
     isCounting,
-    currentServerLabel: progress.currentServerLabel,
-    currentServerId: progress.currentServerId,
+    inFlightCount: aggregateProgress.inFlightCount,
     error: query.error,
     refetch,
   }
@@ -278,7 +266,6 @@ export function useSessions() {
       return dedupeByServerAndId(merged)
     },
     enabled: activeServerIds.length > 0,
-    staleTime: 60_000,
   })
 }
 
@@ -287,11 +274,6 @@ export function useSessionDetail(serverId: string, sessionId: string) {
   return useQuery({
     queryKey: ['session', serverId, sessionId],
     queryFn: () => api.get<Session>(`/api/sessions/${sessionId}`),
-    // WS session_update events keep this data fresh via setQueryData — no need
-    // to poll or aggressively refetch. staleTime prevents a background refetch
-    // from clobbering a running→waiting_input transition that already arrived
-    // over WS before the HTTP response completed.
-    staleTime: 30_000,
     // Don't persist session detail across app restarts — each session is
     // ephemeral and stale persisted state causes false status flickers.
     meta: { persist: false },
