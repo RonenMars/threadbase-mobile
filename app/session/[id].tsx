@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -38,10 +38,12 @@ import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
+import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
 import { wsManager } from '@/services/ws-client'
 import {
   pickFromCamera,
-  pickFromLibrary,
+  pickFromLibraryMulti,
+  pickFromFiles,
   uploadAttachment,
   type UploadedFile,
 } from '@/services/uploads'
@@ -457,6 +459,19 @@ export default function SessionDetailScreen() {
     onTranscript: (text) => setInputText(text),
     contextualStrings: ['React', 'TypeScript', 'useEffect', 'Expo', 'TSX', 'Claude'],
   })
+  const [micGranted, setMicGranted] = useState(false)
+  const checkMicPermission = useCallback(async () => {
+    const { granted } = await ExpoSpeechRecognitionModule.getPermissionsAsync()
+    setMicGranted(granted)
+  }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void checkMicPermission() }, [checkMicPermission])
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') checkMicPermission()
+    })
+    return () => sub.remove()
+  }, [checkMicPermission])
   const [queueVisible, setQueueVisible] = useState(false)
   const [planVisible, setPlanVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
@@ -638,14 +653,24 @@ export default function SessionDetailScreen() {
     resetComposer()
   }
 
-  const runUpload = async (source: 'camera' | 'library') => {
+  const runUpload = async (source: 'camera' | 'library' | 'files') => {
     setAttachError(null)
     try {
-      const picked = source === 'camera' ? await pickFromCamera() : await pickFromLibrary()
-      if (!picked) return
+      let images: Awaited<ReturnType<typeof pickFromLibraryMulti>>
+      if (source === 'camera') {
+        const single = await pickFromCamera()
+        if (!single) return
+        images = [single]
+      } else if (source === 'library') {
+        images = await pickFromLibraryMulti()
+        if (images.length === 0) return
+      } else {
+        images = await pickFromFiles()
+        if (images.length === 0) return
+      }
       setIsUploading(true)
-      const uploaded = await uploadAttachment(serverId, id, picked)
-      setAttachments((prev) => [...prev, uploaded])
+      const uploaded = await Promise.all(images.map((img) => uploadAttachment(serverId, id, img)))
+      setAttachments((prev) => [...prev, ...uploaded])
     } catch (err) {
       setAttachError(err instanceof Error ? err.message : 'Failed to attach file')
     } finally {
@@ -655,9 +680,10 @@ export default function SessionDetailScreen() {
 
   const handleAttach = () => {
     if (isUploading) return
-    Alert.alert('Attach photo', undefined, [
+    Alert.alert('Attach', undefined, [
       { text: 'Take Photo', onPress: () => runUpload('camera') },
-      { text: 'Choose from Library', onPress: () => runUpload('library') },
+      { text: 'Choose from Gallery', onPress: () => runUpload('library') },
+      { text: 'Choose Files', onPress: () => runUpload('files') },
       { text: 'Cancel', style: 'cancel' },
     ])
   }
@@ -666,8 +692,10 @@ export default function SessionDetailScreen() {
     if (voice.listening) return voice.stop()
     try {
       await voice.start()
+      setMicGranted(true)
     } catch (err) {
       if (err instanceof Error && err.message === 'PERMISSION_DENIED') {
+        setMicGranted(false)
         Alert.alert(t('voice.permissionDeniedTitle'), t('voice.permissionDeniedBody'), [
           { text: t('common:button.cancel'), style: 'cancel' },
           { text: t('common:button.openSettings'), onPress: () => Linking.openSettings() },
@@ -925,26 +953,12 @@ export default function SessionDetailScreen() {
                 style={[styles.attachBtn, (isUploading || isWakingUp) && styles.sendBtnDisabled]}
                 onPress={handleAttach}
                 disabled={isUploading || isWakingUp}
-                accessibilityLabel="Attach photo"
+                accessibilityLabel="Attach file"
               >
                 {isUploading ? (
                   <ActivityIndicator size="small" color={theme.text.primary} />
                 ) : (
                   <Paperclip size={26} color={theme.text.primary} />
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                testID="message-input-mic"
-                style={[styles.attachBtn, isWakingUp && styles.sendBtnDisabled]}
-                onPress={handleToggleMic}
-                disabled={isWakingUp}
-                accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
-                hitSlop={8}
-              >
-                {voice.listening ? (
-                  <MicrophoneSlash size={26} color={theme.status.failed} />
-                ) : (
-                  <Microphone size={26} color={theme.text.primary} />
                 )}
               </TouchableOpacity>
               <TextInput
@@ -960,20 +974,34 @@ export default function SessionDetailScreen() {
                 onSubmitEditing={isWakingUp ? undefined : handleSendInput}
                 editable={!isWakingUp}
               />
-              <TouchableOpacity
-                testID="send-message-button"
-                style={[
-                  styles.sendBtn,
-                  (!inputText.trim() && attachments.length === 0 || isWakingUp) && styles.sendBtnDisabled,
-                ]}
-                onPress={handleSendInput}
-                disabled={
-                  (!inputText.trim() && attachments.length === 0) || sendInput.isPending || isWakingUp
-                }
-                accessibilityLabel={t('action.sendInput')}
-              >
-                <PaperPlaneRight size={26} color={theme.text.onAccent} />
-              </TouchableOpacity>
+              {inputText.trim() || attachments.length > 0 ? (
+                <TouchableOpacity
+                  testID="send-message-button"
+                  style={[
+                    styles.sendBtn,
+                    isWakingUp && styles.sendBtnDisabled,
+                  ]}
+                  onPress={handleSendInput}
+                  disabled={sendInput.isPending || isWakingUp}
+                  accessibilityLabel={t('action.sendInput')}
+                >
+                  <PaperPlaneRight size={26} color={theme.text.onAccent} />
+                </TouchableOpacity>
+              ) : micGranted ? (
+                <TouchableOpacity
+                  testID="message-input-mic"
+                  style={[styles.sendBtn, isWakingUp && styles.sendBtnDisabled]}
+                  onPress={handleToggleMic}
+                  disabled={isWakingUp}
+                  accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
+                >
+                  {voice.listening ? (
+                    <MicrophoneSlash size={26} color={theme.text.onAccent} />
+                  ) : (
+                    <Microphone size={26} color={theme.text.onAccent} />
+                  )}
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         ) : null}
