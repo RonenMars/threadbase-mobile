@@ -1,4 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
+import * as ImageManipulator from 'expo-image-manipulator'
 import { useServersStore } from '@/stores/servers'
 import { NetworkError, AuthError, NotFoundError } from '@/services/api-client'
 
@@ -19,7 +21,7 @@ export interface UploadedFile {
 
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
-  base64: true,
+  base64: false,
   quality: 0.85,
   exif: false,
 }
@@ -37,13 +39,48 @@ export async function pickFromCamera(): Promise<PickedImage | null> {
   return assetToPicked(result)
 }
 
-function assetToPicked(result: ImagePicker.ImagePickerResult): PickedImage | null {
+async function assetToPicked(result: ImagePicker.ImagePickerResult): Promise<PickedImage | null> {
   if (result.canceled || result.assets.length === 0) return null
   const a = result.assets[0]
-  if (!a.base64) throw new Error('Image picker returned no base64 data')
   const mimeType = a.mimeType ?? guessMimeFromUri(a.uri)
   const filename = a.fileName ?? deriveFilename(a.uri, mimeType)
-  return { uri: a.uri, base64: a.base64, filename, mimeType }
+  console.log('[uploads] pickerResult', {
+    uri: a.uri,
+    mimeType,
+    filename,
+    width: a.width,
+    height: a.height,
+  })
+  const heic = mimeType === 'image/heic' || mimeType === 'image/heif'
+  console.log('[uploads] normalizeAsset:start', { uri: a.uri, heic, mimeType })
+  const sourceUri = heic ? await convertHeicToJpeg(a.uri) : a.uri
+  const base64 = await FileSystem.readAsStringAsync(sourceUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  })
+  console.log('[uploads] normalizeAsset', {
+    uri: a.uri,
+    mimeType,
+    filename,
+    heic,
+    width: a.width,
+    height: a.height,
+    base64Len: base64.length,
+  })
+  return {
+    uri: sourceUri,
+    base64,
+    filename: heic ? replaceExtension(filename, 'jpg') : filename,
+    mimeType: heic ? 'image/jpeg' : mimeType,
+  }
+}
+
+async function convertHeicToJpeg(uri: string): Promise<string> {
+  console.log('[uploads] convertToJpeg:start', { uri })
+  const result = await ImageManipulator.manipulateAsync(uri, [], {
+    format: ImageManipulator.SaveFormat.JPEG,
+  })
+  console.log('[uploads] convertToJpeg', { uri, resultUri: result.uri })
+  return result.uri
 }
 
 function guessMimeFromUri(uri: string): string {
@@ -61,6 +98,12 @@ function deriveFilename(uri: string, mimeType: string): string {
   if (base.includes('.')) return base
   const ext = mimeType.split('/')[1] ?? 'jpg'
   return `${base}.${ext}`
+}
+
+function replaceExtension(filename: string, extension: string): string {
+  const idx = filename.lastIndexOf('.')
+  if (idx === -1) return `${filename}.${extension}`
+  return `${filename.slice(0, idx + 1)}${extension}`
 }
 
 export async function uploadAttachment(
@@ -84,6 +127,13 @@ export async function uploadAttachment(
       mimeType: image.mimeType,
       dataBase64: image.base64,
     }),
+  })
+  console.log('[uploads] uploadAttachment:request', {
+    url,
+    filename: image.filename,
+    mimeType: image.mimeType,
+    base64Len: image.base64.length,
+    status: response.status,
   })
 
   if (response.status === 401) throw new AuthError()
