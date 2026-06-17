@@ -29,27 +29,12 @@ done
 
 [[ -n "$PLATFORM" ]] || { echo "ERROR: --platform required" >&2; exit 1; }
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-_prompt() {
-  # _prompt "Question? [y/N]: " → reads into REPLY, returns 0 if y/Y
-  printf "%s" "$1" >&2
-  read -r REPLY </dev/tty
-  [[ "$REPLY" =~ ^[Yy]$ ]]
-}
-
-_prompt_input() {
-  # _prompt_input "Label: " default → prints value to stdout
-  local label="$1" default="${2:-}"
-  if [[ -n "$default" ]]; then
-    printf "%s: " "$label" >&2
-    read -re -i "$default" value </dev/tty
-  else
-    printf "%s: " "$label" >&2
-    read -re value </dev/tty
-  fi
-  echo "${value:-$default}"
-}
+# Derive the version number used in both branch and commit message names.
+if [[ "$PLATFORM" == "ios" ]]; then
+  BUMP_NUMBER="$BUILD_NUMBER"
+else
+  BUMP_NUMBER="$VERSION_CODE"
+fi
 
 # ── Step 1: commit the version bump ───────────────────────────────────────────
 
@@ -66,13 +51,11 @@ else
     BUMP_FILES=("app.json")
     # Include Podfile.lock if pod install changed it during the pipeline
     [[ -n "$(git status --short ios/Podfile.lock)" ]] && BUMP_FILES+=("ios/Podfile.lock")
-    BUMP_NUMBER="$BUILD_NUMBER"
     BUMP_MSG="chore(ios): bump build number to ${BUILD_NUMBER} [skip-ci]"
   else
     BUMP_FILES=("app.json")
     GRADLE="android/app/build.gradle"
     [[ -f "$GRADLE" ]] && BUMP_FILES+=("$GRADLE")
-    BUMP_NUMBER="$VERSION_CODE"
     BUMP_MSG="chore(android): bump version code to ${VERSION_CODE} [skip-ci]"
   fi
 
@@ -122,21 +105,8 @@ for f in "${DIRTY_FILES[@]}"; do
 done
 echo
 
-# In CI there is no TTY to prompt on (read </dev/tty would hang/fail). Leave the
-# pipeline-dirtied files uncommitted — CI must not open ad-hoc branches — and exit
-# cleanly. Interactive local runs still get the prompt below.
-if [[ -n "${CI:-}" || -n "${GITHUB_ACTIONS:-}" || ! -t 0 ]]; then
-  echo "  CI / non-interactive shell — leaving these changes uncommitted."
-  exit 0
-fi
-
-if ! _prompt "Would you like to commit these changes? [y/N]: "; then
-  echo "  Skipped — changes left unstaged."
-  exit 0
-fi
-
-EXTRA_BRANCH=$(_prompt_input "Branch name")
-EXTRA_MSG=$(_prompt_input "Commit message")
+EXTRA_BRANCH="chore/post-ship-${PLATFORM}-${BUMP_NUMBER}"
+EXTRA_MSG="chore(${PLATFORM}): post-ship cleanup [skip-ci]"
 
 ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
