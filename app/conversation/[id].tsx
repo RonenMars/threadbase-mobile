@@ -24,10 +24,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
-import { MessageBubble } from '@/components/conversation/MessageBubble'
-import { ThinkingCard } from '@/components/conversation/ThinkingCard'
-import { ToolCard } from '@/components/conversation/ToolCard'
-import { DiffViewer } from '@/components/conversation/DiffViewer'
+import { MessageItem } from '@/components/conversation/MessageItem'
 import { useConversation } from '@/hooks/useConversations'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { invalidateProjectChats } from '@/hooks/useProjectChats'
@@ -39,76 +36,13 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
-import type { Message, MessageContent } from '@/types/api'
+import type { Message } from '@/types/api'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
 
-function renderContent(block: MessageContent, index: number, recycleKey: string) {
-  if (block.type === 'thinking') {
-    return <ThinkingCard key={index} block={block} recycleKey={recycleKey} />
-  }
-  if (block.type === 'tool_use' || block.type === 'tool_result') {
-    return <ToolCard key={index} block={block} recycleKey={recycleKey} />
-  }
-  if (block.type === 'diff') {
-    return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
-  }
-  return null
-}
-
-// FlashList recycles cell instances, which would otherwise carry useState
-// across messages (ToolCard / ThinkingCard / DiffViewer / MessageBubble each
-// own `expanded` state). Threading the message id as `recycleKey` lets each
-// child use `useRecyclingState` to reset its state when the cell is reassigned.
-// Memoized so screen re-renders during the initial settle don't re-render
-// (and re-highlight) every visible row.
-const MessageItem = React.memo(function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
-  const { t } = useTranslation('conversation')
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const hasToolOrDiff = message.content.some(
-    (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
-  )
-  // Bug 6 e2e: tag the final row so the Maestro flow can assert the last
-  // message lands above (not behind) the Export + Resume action bar.
-  const lastTestId = isLast ? 'conversation-last-message' : undefined
-
-  if (hasToolOrDiff) {
-    return (
-      <View style={styles.toolContainer} testID={lastTestId}>
-        {message.has_images ? (
-          <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
-        ) : null}
-        {message.content.map((block, i) => {
-          if (block.type === 'text') {
-            if (!block.text.trim()) return null
-            return (
-              <MessageBubble
-                key={i}
-                message={{ ...message, content: [block] }}
-                recycleKey={message.id}
-              />
-            )
-          }
-          return renderContent(block, i, message.id)
-        })}
-      </View>
-    )
-  }
-
-  if (message.content.length === 0) return null
-  return (
-    <View testID={lastTestId}>
-      {message.has_images ? (
-        <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
-      ) : null}
-      <MessageBubble message={message} recycleKey={message.id} />
-    </View>
-  )
-})
 
 export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
