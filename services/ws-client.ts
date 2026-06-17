@@ -1,4 +1,5 @@
 import type { Session, NotificationEvent } from '@/types/api'
+import { getDeviceClientId } from './device-id'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
@@ -51,8 +52,12 @@ class WSClient {
     this.socket.onopen = () => {
       this.reconnectAttempt = 0
       this._setStatus('connected')
-      // Send auth as first message
+      // Send auth as first message, then register this device so the server
+      // can unicast session_list back only to the initiating client.
       this.send({ type: 'auth', token: this.apiKey })
+      getDeviceClientId().then((clientId) => {
+        this.send({ type: 'register', clientId })
+      })
     }
 
     this.socket.onmessage = (event) => {
