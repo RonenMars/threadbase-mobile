@@ -504,8 +504,22 @@ function MergedClassicList({
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
   const showServerHeaders = activeServerIds.length > 1
+  const SESSIONS_COLLAPSE_THRESHOLD = 3
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
+  const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
+  const [sessionsCollapsed, setSessionsCollapsed] = useState(
+    () => items.filter((it) => it.kind === 'session').length > SESSIONS_COLLAPSE_THRESHOLD
+  )
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
+
+  const toggleServer = useCallback((serverId: string) => {
+    setCollapsedServers((prev) => {
+      const next = new Set(prev)
+      if (next.has(serverId)) next.delete(serverId)
+      else next.add(serverId)
+      return next
+    })
+  }, [])
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items
@@ -523,9 +537,14 @@ function MergedClassicList({
     })
   }, [searchQuery, items])
 
+  const visibleServerCount = useMemo(
+    () => new Set(filteredItems.map((it) => it.item.serverId)).size,
+    [filteredItems],
+  )
+
   type ClassicFlatItem =
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
-    | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean }
+    | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean; collapsed: boolean; collapsible: boolean }
     | MergedItem
 
   const flatData = useMemo((): ClassicFlatItem[] => {
@@ -539,9 +558,12 @@ function MergedClassicList({
         const s = it.item as MultiSession
         return s.status === 'running' || s.status === 'waiting_input'
       })
+      const collapsible = sessionItems.length > SESSIONS_COLLAPSE_THRESHOLD
+      const nonSessionItems = filteredItems.filter((it) => it.kind !== 'session')
       return [
-        { kind: 'liveHeader', id: 'live-header', count: sessionItems.length, hasLive },
-        ...filteredItems,
+        { kind: 'liveHeader', id: 'live-header', count: sessionItems.length, hasLive, collapsed: sessionsCollapsed, collapsible },
+        ...(collapsible && sessionsCollapsed ? [] : sessionItems),
+        ...nonSessionItems,
       ]
     }
 
@@ -562,10 +584,10 @@ function MergedClassicList({
         serverLabel: servers[id]?.label ?? id,
         totalCount: bucket.length,
       })
-      result.push(...bucket)
+      if (!collapsedServers.has(id)) result.push(...bucket)
     }
     return result
-  }, [filteredItems, showServerHeaders, activeServerIds, servers])
+  }, [filteredItems, showServerHeaders, activeServerIds, servers, collapsedServers, sessionsCollapsed])
 
   // Find the index of the first session in the flat list
   const firstSessionIndex = useMemo(() => {
@@ -625,10 +647,26 @@ function MergedClassicList({
         }}
         renderItem={({ item, index }) => {
           if (item.kind === 'header') {
-            return <ServerHeaderRow serverId={item.serverId} serverLabel={item.serverLabel} totalCount={item.totalCount} />
+            return (
+              <ServerHeaderRow
+                serverId={item.serverId}
+                serverLabel={item.serverLabel}
+                totalCount={item.totalCount}
+                collapsible={visibleServerCount > 1}
+                isExpanded={!collapsedServers.has(item.serverId)}
+                onToggle={() => toggleServer(item.serverId)}
+              />
+            )
           }
           if (item.kind === 'liveHeader') {
-            return <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
+            return (
+              <LiveSessionsHeader
+                count={item.count}
+                hasLive={item.hasLive}
+                collapsed={item.collapsed}
+                onToggle={item.collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+              />
+            )
           }
           if (item.kind === 'session') {
             return <SessionCard session={item.item as MultiSession} isFirstSession={index === firstSessionIndex} />

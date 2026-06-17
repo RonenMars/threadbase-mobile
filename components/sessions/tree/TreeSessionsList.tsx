@@ -7,7 +7,6 @@ import { buildTree, compactTree, flattenVisible } from './treeUtils'
 import { TreeRow } from './TreeRow'
 import { DrillView } from './DrillView'
 import { ServerRootRow } from './ServerRootRow'
-import { ServerHeaderRow } from './ServerHeaderRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
@@ -123,6 +122,11 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     [router, servers, activeServerCount, debouncedQuery],
   )
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+  const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
+  const SESSIONS_COLLAPSE_THRESHOLD = 3
+  const [sessionsCollapsed, setSessionsCollapsed] = useState(
+    () => sessions.length > SESSIONS_COLLAPSE_THRESHOLD
+  )
   const [selectedDrill, setSelectedDrill] = useState<{ node: TreeNode; serverId: string } | null>(null)
 
   const serverTrees = useMemo((): ServerTree[] => {
@@ -183,24 +187,34 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
 
   const flatItems = useMemo((): FlatItem[] => {
     const items: FlatItem[] = []
-    const showHeaders = serverTrees.length > 1
+    const visibleServerCount = serverTrees.filter((st) => st.tree.totalCount > 0).length
+    const multiServer = visibleServerCount > 1
     for (const { serverId, serverLabel, tree, singleRootPath, singleRootNode } of serverTrees) {
-      if (showHeaders && tree.totalCount > 0) {
-        items.push({ kind: 'server-header', serverId, serverLabel, totalCount: tree.totalCount })
-      }
+      if (tree.totalCount === 0) continue
+      const serverExpanded = !collapsedServers.has(serverId)
       if (singleRootNode && singleRootPath) {
-        items.push({ kind: 'server-root', serverId, serverLabel, node: singleRootNode })
-        for (const fn of flattenVisible(singleRootNode.children, 1, effectiveExpandedPaths)) {
-          items.push({ kind: 'tree-row', serverId, node: fn.node, depth: fn.depth, depthOffset: 1 })
+        // Single root under this server: show server as non-collapsible root,
+        // with root path displayed as subtitle.
+        items.push({ kind: 'server-root', serverId, serverLabel, node: singleRootNode, collapsible: multiServer, isExpanded: serverExpanded })
+        if (!multiServer || serverExpanded) {
+          for (const fn of flattenVisible(singleRootNode.children, 1, effectiveExpandedPaths)) {
+            items.push({ kind: 'tree-row', serverId, node: fn.node, depth: fn.depth, depthOffset: 1 })
+          }
         }
       } else {
-        for (const fn of flattenVisible(tree.children, 0, effectiveExpandedPaths)) {
-          items.push({ kind: 'tree-row', serverId, node: fn.node, depth: fn.depth, depthOffset: 0 })
+        // Multiple roots: use a virtual server root row representing the server.
+        // For single-server, this row is non-collapsible. For multi-server, collapsible.
+        items.push({ kind: 'server-root', serverId, serverLabel, node: tree, collapsible: multiServer, isExpanded: serverExpanded })
+        if (!multiServer || serverExpanded) {
+          const depthShift = multiServer ? 1 : 0
+          for (const fn of flattenVisible(tree.children, 0, effectiveExpandedPaths)) {
+            items.push({ kind: 'tree-row', serverId, node: fn.node, depth: fn.depth + depthShift, depthOffset: 0 })
+          }
         }
       }
     }
     return items
-  }, [serverTrees, effectiveExpandedPaths])
+  }, [serverTrees, effectiveExpandedPaths, collapsedServers])
 
   const handleToggle = useCallback((path: string) => {
     if (serverTrees.some((st) => st.singleRootPath === path)) return
@@ -211,6 +225,15 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
       return next
     })
   }, [serverTrees])
+
+  const handleToggleServer = useCallback((serverId: string) => {
+    setCollapsedServers((prev) => {
+      const next = new Set(prev)
+      if (next.has(serverId)) next.delete(serverId)
+      else next.add(serverId)
+      return next
+    })
+  }, [])
 
   const handleSelectLeaf = useCallback((node: TreeNode, serverId: string) => {
     setSelectedDrill({ node, serverId })
@@ -226,15 +249,21 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     const hasLive = sessions.some(
       (s) => s.status === 'running' || s.status === 'waiting_input',
     )
+    const collapsible = sessions.length > SESSIONS_COLLAPSE_THRESHOLD
     return (
       <View style={{ marginBottom: 4 }}>
-        <LiveSessionsHeader count={sessions.length} hasLive={hasLive} />
-        {sessions.map((s) => (
+        <LiveSessionsHeader
+          count={sessions.length}
+          hasLive={hasLive}
+          collapsed={sessionsCollapsed}
+          onToggle={collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+        />
+        {(!collapsible || !sessionsCollapsed) && sessions.map((s) => (
           <SessionCard key={`${s.serverId}::${s.id}`} session={s} />
         ))}
       </View>
     )
-  }, [sessions])
+  }, [sessions, sessionsCollapsed, SESSIONS_COLLAPSE_THRESHOLD])
 
   if (selectedDrill && !searchOpen) {
     return (
@@ -293,27 +322,19 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
         <FlatList
           data={flatItems}
           keyExtractor={(item) =>
-            item.kind === 'server-header'
-              ? `header-${item.serverId}`
-              : item.kind === 'server-root'
+            item.kind === 'server-root'
               ? `root-${item.serverId}`
               : `row-${item.serverId}-${item.node.fullPath}`
           }
           renderItem={({ item }) => {
-            if (item.kind === 'server-header') {
-              return (
-                <ServerHeaderRow
-                  serverId={item.serverId}
-                  serverLabel={item.serverLabel}
-                  totalCount={item.totalCount}
-                />
-              )
-            }
             if (item.kind === 'server-root') {
               return (
                 <ServerRootRow
                   node={item.node}
                   serverLabel={item.serverLabel}
+                  collapsible={item.collapsible}
+                  isExpanded={item.isExpanded}
+                  onToggle={() => handleToggleServer(item.serverId)}
                   onSelectLeaf={(node) => handleSelectLeaf(node, item.serverId)}
                 />
               )
