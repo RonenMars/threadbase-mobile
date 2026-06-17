@@ -19,8 +19,10 @@ interface Props {
 
 const LIVE_STATUSES: SessionStatus[] = ['running', 'waiting_input']
 
+const SESSIONS_COLLAPSE_THRESHOLD = 3
+
 type Row =
-  | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean }
+  | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean; collapsed: boolean; collapsible: boolean }
   | { kind: 'session'; session: MultiSession }
 
 export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
@@ -30,6 +32,9 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const inputRef = useRef<TextInput>(null)
+  const [sessionsCollapsed, setSessionsCollapsed] = useState(
+    () => sessions.length > SESSIONS_COLLAPSE_THRESHOLD
+  )
 
   useEffect(() => {
     if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
@@ -43,19 +48,19 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
     )
   }, [debouncedQuery, sessions])
 
-  // Cluster live (running / waiting_input) sessions to the top of the list
-  // and tag the block with a LIVE/IDLE eyebrow header. Idle sessions follow.
-  // Mirrors the merged-list ordering on the hub screen.
   const rows = useMemo<Row[]>(() => {
     if (filteredSessions.length === 0) return []
     const live = filteredSessions.filter((s) => LIVE_STATUSES.includes(s.status))
     const idle = filteredSessions.filter((s) => !LIVE_STATUSES.includes(s.status))
+    const collapsible = filteredSessions.length > SESSIONS_COLLAPSE_THRESHOLD
+    const header: Row = { kind: 'liveHeader', id: 'live-header', count: filteredSessions.length, hasLive: live.length > 0, collapsed: sessionsCollapsed, collapsible }
+    if (collapsible && sessionsCollapsed) return [header]
     return [
-      { kind: 'liveHeader', id: 'live-header', count: filteredSessions.length, hasLive: live.length > 0 },
+      header,
       ...live.map((s) => ({ kind: 'session' as const, session: s })),
       ...idle.map((s) => ({ kind: 'session' as const, session: s })),
     ]
-  }, [filteredSessions])
+  }, [filteredSessions, sessionsCollapsed])
 
   return (
     <View style={{ flex: 1 }}>
@@ -81,7 +86,12 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
         }
         renderItem={({ item }) =>
           item.kind === 'liveHeader' ? (
-            <LiveSessionsHeader count={item.count} hasLive={item.hasLive} />
+            <LiveSessionsHeader
+              count={item.count}
+              hasLive={item.hasLive}
+              collapsed={item.collapsed}
+              onToggle={item.collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+            />
           ) : (
             <SessionCard session={item.session} />
           )

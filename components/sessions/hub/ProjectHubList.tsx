@@ -52,6 +52,15 @@ export function ProjectHubList({
   )
   const serverGroups = useServerGroups(groups, activeServerIds, serverLabels)
   const showServerHeaders = serverGroups.length > 0
+  const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
+  const toggleServer = useCallback((serverId: string) => {
+    setCollapsedServers((prev) => {
+      const next = new Set(prev)
+      if (next.has(serverId)) next.delete(serverId)
+      else next.add(serverId)
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
@@ -173,7 +182,7 @@ export function ProjectHubList({
         <Text style={styles.sectionHeaderText}>{section.title}</Text>
       </View>
     ),
-    [],
+    [styles.sectionHeader, styles.sectionHeaderText],
   )
 
   const showSearch = searchOpen && debouncedQuery.length > 0
@@ -184,12 +193,15 @@ export function ProjectHubList({
 
   const hubFlatData = useMemo((): HubFlatItem[] =>
     showServerHeaders
-      ? serverGroups.flatMap((sg) => [
-          { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
-          ...sg.groups.map((g) => ({ kind: 'group' as const, group: g })),
-        ])
+      ? serverGroups.flatMap((sg) => {
+          const expanded = !collapsedServers.has(sg.serverId)
+          return [
+            { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
+            ...(expanded ? sg.groups.map((g) => ({ kind: 'group' as const, group: g })) : []),
+          ]
+        })
       : groups.map((g) => ({ kind: 'group' as const, group: g })),
-    [showServerHeaders, serverGroups, groups],
+    [showServerHeaders, serverGroups, groups, collapsedServers],
   )
 
   return (
@@ -251,6 +263,9 @@ export function ProjectHubList({
                   serverId={item.serverId}
                   serverLabel={item.serverLabel}
                   totalCount={item.totalCount}
+                  collapsible={serverGroups.length > 1}
+                  isExpanded={!collapsedServers.has(item.serverId)}
+                  onToggle={() => toggleServer(item.serverId)}
                 />
               )
             }

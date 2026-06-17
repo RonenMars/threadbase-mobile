@@ -1,4 +1,5 @@
 import { useServersStore } from '@/stores/servers'
+import { getDeviceClientId } from './device-id'
 
 export class NetworkError extends Error {
   code?: string
@@ -52,6 +53,7 @@ async function request<T>(
     else options.signal.addEventListener('abort', onCallerAbort)
   }
 
+  const clientId = await getDeviceClientId()
   let response: Response
   try {
     response = await fetch(url, {
@@ -60,6 +62,7 @@ async function request<T>(
         'Authorization': `Bearer ${server.apiKey}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Client-Id': clientId,
         ...options.headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
