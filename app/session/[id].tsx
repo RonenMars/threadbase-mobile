@@ -29,7 +29,7 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple, Microphone, MicrophoneSlash } from 'phosphor-react-native'
+import { InfoIcon, ImageIcon as PhosphorImage, X, Paperclip, PaperPlaneRight, PencilSimple, Microphone, MicrophoneSlash, Star } from 'phosphor-react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
@@ -61,6 +61,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useRenameSession } from '@/hooks/useSessionName'
 import type { SlashCommand } from '@/constants/slashCommands'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -479,6 +480,9 @@ export default function SessionDetailScreen() {
   }, [])
   const [infoVisible, setInfoVisible] = useState(false)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
+  const sessionFavoriteId = buildFavoriteId(serverId, 'session', id ?? '')
+  const isSessionFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === sessionFavoriteId))
+  const { pinItem: pinFavorite, unpinItem: unpinFavorite } = useQuickAccessStore()
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
 
@@ -754,16 +758,38 @@ export default function SessionDetailScreen() {
     )
   }
 
-  const infoButton = (
-    <Pressable
-      testID="session-info-button"
-      onPress={() => setInfoVisible(true)}
-      hitSlop={8}
-      accessibilityLabel="Session info"
-      style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-    >
-      <InfoIcon size={22} color={theme.text.secondary} />
-    </Pressable>
+  const sessionHeaderActions = (
+    <View style={styles.headerActions}>
+      <Pressable
+        onPress={() => {
+          if (isSessionFavorite) {
+            unpinFavorite(sessionFavoriteId)
+          } else {
+            pinFavorite({
+              type: 'session',
+              id: sessionFavoriteId,
+              label: sessionName || id || '',
+              serverId,
+              sessionId: id,
+            })
+          }
+        }}
+        hitSlop={8}
+        accessibilityLabel={isSessionFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+      >
+        <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
+      </Pressable>
+      <Pressable
+        testID="session-info-button"
+        onPress={() => setInfoVisible(true)}
+        hitSlop={8}
+        accessibilityLabel="Session info"
+        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+      >
+        <InfoIcon size={22} color={theme.text.secondary} />
+      </Pressable>
+    </View>
   )
 
   const pencilButton = (
@@ -787,7 +813,7 @@ export default function SessionDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <SafeAreaView style={styles.flex} edges={['top']} testID="session-detail-screen">
-        <ScreenHeader title={sessionName} titleRight={pencilButton} right={infoButton} onBack={handleBack} />
+        <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
             <SessionStatusBadge status={session.status} isRefetching={isStreaming} />
@@ -1012,6 +1038,7 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     flex: { flex: 1 },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     statusBar: {
       flexDirection: 'row',
       alignItems: 'center',

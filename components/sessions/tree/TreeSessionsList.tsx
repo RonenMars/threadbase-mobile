@@ -18,6 +18,8 @@ import { styles } from './TreeSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './types'
 import type { MultiSession, MultiConversation } from '@/types/api'
+import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen }: TreeSessionsListProps) {
   const theme = useTheme()
@@ -27,6 +29,8 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const inputRef = useRef<TextInput>(null)
+  const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
+  const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
   useEffect(() => {
     if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
@@ -112,6 +116,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           leading="avatar"
           highlight={debouncedQuery}
           onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
+          onLongPress={() => setActiveConvItem(c)}
         />
       )
     },
@@ -340,6 +345,42 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           }
         />
       )}
+      {activeConvItem ? (() => {
+        const favId = buildFavoriteId(activeConvItem.serverId, 'conversation', activeConvItem.id)
+        const isFav = favorites.some((f) => f.id === favId)
+        return (
+          <QuickAccessActionSheet
+            item={{
+              type: 'conversation',
+              id: favId,
+              label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
+              serverId: activeConvItem.serverId,
+            }}
+            isFavorite={isFav}
+            onClose={() => setActiveConvItem(null)}
+            onNewSession={() => setActiveConvItem(null)}
+            onBrowse={() => setActiveConvItem(null)}
+            onOpenSession={() => {
+              setActiveConvItem(null)
+              router.push(`/conversation/${activeConvItem.id}?server=${activeConvItem.serverId}`)
+            }}
+            onTogglePin={() => {
+              if (isFav) {
+                unpinItem(favId)
+              } else {
+                pinItem({
+                  type: 'conversation',
+                  id: favId,
+                  label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
+                  serverId: activeConvItem.serverId,
+                  conversationId: activeConvItem.id,
+                })
+              }
+              setActiveConvItem(null)
+            }}
+          />
+        )
+      })() : null}
     </View>
   )
 }

@@ -38,6 +38,8 @@ import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
+import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
@@ -502,6 +504,8 @@ function MergedClassicList({
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
   const showServerHeaders = activeServerIds.length > 1
+  const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
+  const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items
@@ -574,6 +578,7 @@ function MergedClassicList({
         style={styles.convCard}
         activeOpacity={0.75}
         onPress={() => router.push(`/conversation/${item.id}?server=${item.serverId}`)}
+        onLongPress={() => setActiveConvItem(item)}
         accessibilityLabel={item.title || item.projectPath}
         testID={`conversation-row-${item.id}`}
       >
@@ -640,6 +645,42 @@ function MergedClassicList({
           </View>
         }
       />
+      {activeConvItem ? (() => {
+        const favId = buildFavoriteId(activeConvItem.serverId, 'conversation', activeConvItem.id)
+        const isFav = favorites.some((f) => f.id === favId)
+        return (
+          <QuickAccessActionSheet
+            item={{
+              type: 'conversation',
+              id: favId,
+              label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
+              serverId: activeConvItem.serverId,
+            }}
+            isFavorite={isFav}
+            onClose={() => setActiveConvItem(null)}
+            onNewSession={() => setActiveConvItem(null)}
+            onBrowse={() => setActiveConvItem(null)}
+            onOpenSession={() => {
+              setActiveConvItem(null)
+              router.push(`/conversation/${activeConvItem.id}?server=${activeConvItem.serverId}`)
+            }}
+            onTogglePin={() => {
+              if (isFav) {
+                unpinItem(favId)
+              } else {
+                pinItem({
+                  type: 'conversation',
+                  id: favId,
+                  label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
+                  serverId: activeConvItem.serverId,
+                  conversationId: activeConvItem.id,
+                })
+              }
+              setActiveConvItem(null)
+            }}
+          />
+        )
+      })() : null}
     </View>
   )
 }

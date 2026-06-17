@@ -17,6 +17,8 @@ import { makeStyles } from './ProjectHubList.styles'
 import type { ProjectHubListProps, SearchSection } from './types'
 import type { ProjectGroup } from './useProjectGroups'
 import type { MultiSession, MultiConversation } from '@/types/api'
+import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 export function ProjectHubList({
   sessions,
@@ -37,6 +39,8 @@ export function ProjectHubList({
   // fallback during migration — see useProjectGroups).
   const [openIds, setOpenIds] = useState<Set<string>>(new Set())
   const inputRef = useRef<TextInput>(null)
+  const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
+  const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
   const groups = useProjectGroups(sessions, conversations, sortBy, sortOrder)
 
@@ -156,6 +160,7 @@ export function ProjectHubList({
           leading="avatar"
           highlight={debouncedQuery}
           onPress={() => handleConversationPress(item)}
+          onLongPress={() => setActiveConvItem(item)}
         />
       )
     },
@@ -268,6 +273,42 @@ export function ProjectHubList({
           }
         />
       )}
+      {activeConvItem ? (() => {
+        const favId = buildFavoriteId(activeConvItem.serverId, 'conversation', activeConvItem.id)
+        const isFav = favorites.some((f) => f.id === favId)
+        return (
+          <QuickAccessActionSheet
+            item={{
+              type: 'conversation',
+              id: favId,
+              label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
+              serverId: activeConvItem.serverId,
+            }}
+            isFavorite={isFav}
+            onClose={() => setActiveConvItem(null)}
+            onNewSession={() => setActiveConvItem(null)}
+            onBrowse={() => setActiveConvItem(null)}
+            onOpenSession={() => {
+              setActiveConvItem(null)
+              router.push(`/conversation/${activeConvItem.id}?server=${activeConvItem.serverId}`)
+            }}
+            onTogglePin={() => {
+              if (isFav) {
+                unpinItem(favId)
+              } else {
+                pinItem({
+                  type: 'conversation',
+                  id: favId,
+                  label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
+                  serverId: activeConvItem.serverId,
+                  conversationId: activeConvItem.id,
+                })
+              }
+              setActiveConvItem(null)
+            }}
+          />
+        )
+      })() : null}
     </View>
   )
 }

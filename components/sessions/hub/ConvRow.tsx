@@ -6,7 +6,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { ConvRowProps } from './types'
 
-export function ConvRow({ conv }: ConvRowProps) {
+export function ConvRow({ conv, onLongPress }: ConvRowProps) {
   const router = useRouter()
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[conv.serverId]?.color)
@@ -16,6 +16,10 @@ export function ConvRow({ conv }: ConvRowProps) {
     Haptics.selectionAsync()
     router.push(`/conversation/${conv.id}?server=${conv.serverId}`)
   }, [conv, router])
+
+  const handleLongPress = useCallback(() => {
+    onLongPress?.(conv)
+  }, [conv, onLongPress])
 
   return (
     <ConversationListItem
@@ -34,6 +38,7 @@ export function ConvRow({ conv }: ConvRowProps) {
       density="compact"
       leading="dot"
       onPress={handlePress}
+      onLongPress={onLongPress ? handleLongPress : undefined}
     />
   )
 }

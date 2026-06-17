@@ -31,6 +31,7 @@ export interface SessionRowProps {
 
 export interface ConvRowProps {
   conv: MultiConversation
+  onLongPress?: (conv: MultiConversation) => void
 }
 
 export function isMultiSession(item: MultiConversation | MultiSession): item is MultiSession {
