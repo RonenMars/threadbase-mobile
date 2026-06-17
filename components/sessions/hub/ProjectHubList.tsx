@@ -182,7 +182,7 @@ export function ProjectHubList({
         <Text style={styles.sectionHeaderText}>{section.title}</Text>
       </View>
     ),
-    [],
+    [styles.sectionHeader, styles.sectionHeaderText],
   )
 
   const showSearch = searchOpen && debouncedQuery.length > 0
