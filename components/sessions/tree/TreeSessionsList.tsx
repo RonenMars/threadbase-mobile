@@ -193,17 +193,13 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
       if (tree.totalCount === 0) continue
       const serverExpanded = !collapsedServers.has(serverId)
       if (singleRootNode && singleRootPath) {
-        // Single root under this server: show server as non-collapsible root,
-        // with root path displayed as subtitle.
         items.push({ kind: 'server-root', serverId, serverLabel, node: singleRootNode, collapsible: multiServer, isExpanded: serverExpanded })
         if (!multiServer || serverExpanded) {
           for (const fn of flattenVisible(singleRootNode.children, 1, effectiveExpandedPaths)) {
-            items.push({ kind: 'tree-row', serverId, node: fn.node, depth: fn.depth, depthOffset: 1 })
+            items.push({ kind: 'tree-row', serverId, node: fn.node, depth: fn.depth + (multiServer ? 1 : 0), depthOffset: 0 })
           }
         }
       } else {
-        // Multiple roots: use a virtual server root row representing the server.
-        // For single-server, this row is non-collapsible. For multi-server, collapsible.
         items.push({ kind: 'server-root', serverId, serverLabel, node: tree, collapsible: multiServer, isExpanded: serverExpanded })
         if (!multiServer || serverExpanded) {
           const depthShift = multiServer ? 1 : 0
