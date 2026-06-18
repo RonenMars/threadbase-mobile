@@ -13,7 +13,7 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
   const [glowAnim] = useState(() => new Animated.Value(0.45))
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
           toValue: 1,
@@ -26,7 +26,9 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
           useNativeDriver: true,
         }),
       ])
-    ).start()
+    )
+    loop.start()
+    return () => loop.stop()
   }, [glowAnim])
 
   return (
