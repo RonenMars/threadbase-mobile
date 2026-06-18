@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Linking,
   I18nManager,
+  InteractionManager,
 } from 'react-native'
 import Constants from 'expo-constants'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -289,8 +290,24 @@ await refreshServerInfo(serverId)
               setLocale(newLocale)
               await i18n.changeLanguage(newLocale)
               I18nManager.forceRTL(newIsRTL)
-              // Reload the app to apply RTL changes
-              await Updates.reloadAsync()
+              // New-Arch reload deadlock mitigation: let in-flight native-driven
+              // animations (FAB glow, skeletons, spinners) drain and yield real
+              // frames before tearing down the bridge, so RCTNativeAnimatedTurboModule
+              // has no pending ops when invalidate runs during the reload.
+              InteractionManager.runAfterInteractions(() => {
+                setTimeout(async () => {
+                  try {
+                    await Updates.reloadAsync()
+                  } catch {
+                    // forceRTL is already applied; if programmatic reload is
+                    // unavailable (dev/Expo Go) ask the user to relaunch manually.
+                    Alert.alert(
+                      i18n.t('settings:language.restartRequired'),
+                      i18n.t('settings:language.restartMessage')
+                    )
+                  }
+                }, 350)
+              })
             },
           },
         ],
