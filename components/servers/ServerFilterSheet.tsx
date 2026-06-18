@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassSheet } from '@/components/ui/GlassSheet'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 
 export type SortType = 'lastActivity' | 'startedAt'
@@ -50,7 +50,7 @@ export function ServerFilterSheet({
   onChangeSortType,
 }: Props) {
   const theme = useTheme()
-  const isGlass = useIsGlass()
+  const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const STATUS_OPTIONS = getStatusOptions(theme)
   const { t } = useTranslation(['servers', 'common'])
@@ -97,7 +97,7 @@ export function ServerFilterSheet({
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
-      backgroundComponent={isGlass ? GlassSheet : undefined}
+      backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>

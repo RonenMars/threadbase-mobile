@@ -2,8 +2,17 @@ import React from 'react'
 import { StyleSheet, View } from 'react-native'
 import type { BottomSheetBackgroundProps } from '@gorhom/bottom-sheet'
 import { radius, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassView } from './GlassView'
+
+/**
+ * Resolves the `backgroundComponent` prop for a `@gorhom/bottom-sheet`:
+ * `GlassSheet` under the Apple Glass theme, `undefined` otherwise. Keeps the
+ * `isGlass ? GlassSheet : undefined` ternary out of every sheet's render.
+ */
+export function useGlassSheetBackground(): typeof GlassSheet | undefined {
+  return useIsGlass() ? GlassSheet : undefined
+}
 
 /**
  * Frosted-glass background for `@gorhom/bottom-sheet`. Pass as the

@@ -11,8 +11,8 @@ import {
 import { X, Copy, Check, type IconProps } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassView } from '@/components/ui/GlassView'
+import { useTheme } from '@/contexts/ThemeContext'
+import { GlassSurface } from '@/components/ui/GlassSurface'
 
 export interface InfoField {
   label: string
@@ -36,7 +36,6 @@ interface Props {
 
 export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
 
@@ -49,8 +48,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, isGlass && styles.sheetGlass]}>
-        {isGlass ? <GlassView style={styles.glassFill} pointerEvents="none" /> : null}
+      <GlassSurface baseStyle={styles.sheet}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{title}</Text>
           <View style={styles.headerActions}>
@@ -95,7 +93,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
             )
           })}
         </ScrollView>
-      </View>
+      </GlassSurface>
     </Modal>
   )
 }
@@ -113,17 +111,6 @@ function makeStyles(theme: Theme) {
       maxHeight: '70%',
       borderTopWidth: 1,
       borderColor: theme.border,
-    },
-    sheetGlass: {
-      backgroundColor: 'transparent',
-      overflow: 'hidden',
-    },
-    glassFill: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
     },
     header: {
       flexDirection: 'row',
