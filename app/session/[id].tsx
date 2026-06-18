@@ -75,10 +75,20 @@ const WAKING_UP_PHRASES = [
   "Counting to a trillion really fast, nearly done…",
 ]
 
-function wakingUpPhrase(sessionId: string): string {
+const RESUMING_PHRASES = [
+  "Picking up where we left off…",
+  "Reloading our conversation, almost there…",
+  "Dusting off my memory banks…",
+  "Catching up on everything we discussed…",
+  "Restoring context, won't be long…",
+  "Refreshing my memory of our chat…",
+]
+
+function wakingUpPhrase(sessionId: string, isResume: boolean): string {
   let hash = 0
   for (let i = 0; i < sessionId.length; i++) hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0
-  return WAKING_UP_PHRASES[hash % WAKING_UP_PHRASES.length]
+  const phrases = isResume ? RESUMING_PHRASES : WAKING_UP_PHRASES
+  return phrases[hash % phrases.length]
 }
 
 const PENDING_PHRASES = [
@@ -965,7 +975,7 @@ export default function SessionDetailScreen() {
                 </View>
               ) : null}
               {isWakingUp ? (
-                <WakingUpOverlay phrase={wakingUpPhrase(id)} />
+                <WakingUpOverlay phrase={wakingUpPhrase(id, !!session?.resumedFromConversationId)} />
               ) : null}
             </>
           )}
@@ -1030,7 +1040,7 @@ export default function SessionDetailScreen() {
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
-                placeholder={isWakingUp ? 'Starting up…' : 'Send input to session…'}
+                placeholder={isWakingUp ? (session?.resumedFromConversationId ? 'Picking up where we left off…' : 'Starting up…') : 'Send input to session…'}
                 placeholderTextColor={theme.text.secondary}
                 multiline
                 returnKeyType="done"
