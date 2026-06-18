@@ -154,7 +154,7 @@ export default function ConversationDetailScreen() {
   const [firstLayoutDone, setFirstLayoutDone] = useState(false)
   const favoriteId = buildFavoriteId(serverId, 'conversation', id)
   const isFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === favoriteId))
-  const starScale = useRef(new Animated.Value(1)).current
+  const [starScale] = useState(() => new Animated.Value(1))
   // Bug 6: measure the bottom action bar so the list's paddingBottom matches
   // its height. The outer SafeAreaView already reserves the bottom inset, so
   // we only feed bar height here (no additional safe-area math).

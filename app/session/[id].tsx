@@ -542,15 +542,14 @@ export default function SessionDetailScreen() {
 
   const glowOpacity = useSharedValue(0)
   const glowScale = useSharedValue(0.85)
-  const starAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: starScale.value }],
-  }))
-  const glowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-    transform: [{ scale: glowScale.value }],
-  }))
 
-  const animateStar = useCallback(() => {
+  // Reanimated shared values can only be mutated before they are read by a
+  // useAnimatedStyle (the React Compiler's immutability rule fixes a value as
+  // immutable once captured for styling). The toggle bumps this counter and the
+  // effect drives the star + glow animation; both run ahead of the styles below.
+  const [starTrigger, setStarTrigger] = useState(0)
+  useEffect(() => {
+    if (starTrigger === 0) return
     starScale.value = withSequence(
       withTiming(1.12, { duration: 140, easing: Easing.out(Easing.cubic) }),
       withTiming(1, { duration: 180, easing: Easing.inOut(Easing.cubic) }),
@@ -564,7 +563,17 @@ export default function SessionDetailScreen() {
       withTiming(1.08, { duration: 120, easing: Easing.out(Easing.cubic) }),
       withTiming(1.24, { duration: 200, easing: Easing.inOut(Easing.cubic) }),
     )
-  }, [starScale])
+    // SharedValues are stable refs; only starTrigger should re-fire this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [starTrigger])
+
+  const starAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: starScale.value }],
+  }))
+  const glowAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: glowScale.value }],
+  }))
 
   const toggleFavorite = useCallback(async () => {
     const previousFavorites = useQuickAccessStore.getState().favorites
@@ -587,12 +596,12 @@ export default function SessionDetailScreen() {
           favorites: nextFavorites,
         }),
       )
-      animateStar()
+      setStarTrigger((n) => n + 1)
     } catch (err) {
       useQuickAccessStore.setState({ favorites: previousFavorites })
       Alert.alert('Favorites error', err instanceof Error ? err.message : 'Failed to update favorites')
     }
-  }, [animateStar, id, isSessionFavorite, serverId, sessionFavoriteId, sessionName])
+  }, [id, isSessionFavorite, serverId, sessionFavoriteId, sessionName])
   useEffect(() => {
     if (session?.status === 'waiting_input') {
       queueMicrotask(() => setHasReachedPrompt(true))
