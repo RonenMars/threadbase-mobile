@@ -1,11 +1,13 @@
 import type { Session } from '@/types/api'
 
 /** Returns the full Session snapshot from a resume 201 body, or null for the legacy {id} shape. */
-export function normalizeResumeResponse(resp: Record<string, unknown>): Session | null {
+export function normalizeResumeResponse(resp: unknown): Session | null {
   if (
-    typeof resp.projectPath === 'string' &&
-    typeof resp.projectName === 'string' &&
-    typeof resp.startedAt === 'string'
+    typeof resp === 'object' &&
+    resp !== null &&
+    typeof (resp as Record<string, unknown>).projectPath === 'string' &&
+    typeof (resp as Record<string, unknown>).projectName === 'string' &&
+    typeof (resp as Record<string, unknown>).startedAt === 'string'
   ) {
     return resp as unknown as Session
   }
