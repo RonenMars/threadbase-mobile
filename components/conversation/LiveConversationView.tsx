@@ -16,12 +16,39 @@ interface Props {
   conversationId: string
 }
 
+// Concatenate a user message's text blocks for echo matching.
+function userMessageText(m: Message): string {
+  return m.content
+    .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+    .map((b) => b.text)
+    .join('')
+    .trim()
+}
+
+let optimisticSeq = 0
+function makeOptimisticMessage(text: string): Message {
+  optimisticSeq += 1
+  return {
+    id: `optimistic-${optimisticSeq}`,
+    uuid: null,
+    role: 'user',
+    content: [{ type: 'text', text }],
+    timestamp: '',
+    is_sidechain: false,
+    parent_uuid: null,
+  }
+}
+
 export function LiveConversationView({ serverId, sessionId, conversationId }: Props) {
   const { t } = useTranslation('terminal')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
   const [inputText, setInputText] = useState('')
+  // Optimistic user turns: shown immediately on send so the bubble doesn't
+  // wait for the JSONL to round-trip back over the WS. Cleared per id once the
+  // matching echo arrives in the historical/live stream (matched on text).
+  const [pendingSends, setPendingSends] = useState<Message[]>([])
 
   // Historical messages (REST)
   const { data } = useConversation(serverId, conversationId)
@@ -33,7 +60,17 @@ export function LiveConversationView({ serverId, sessionId, conversationId }: Pr
   // Deduplicate: live messages may duplicate the last REST-fetched message
   const seenIds = new Set(historicalMessages.map((m) => m.id))
   const newLive = liveMessages.filter((m) => !seenIds.has(m.id))
-  const allMessages = [...historicalMessages, ...newLive]
+  const streamed = [...historicalMessages, ...newLive]
+
+  // Drop optimistic turns whose echo has already landed in the stream — a user
+  // message with the same text. Avoids showing the sent bubble twice.
+  const echoedText = new Set(
+    streamed
+      .filter((m) => m.role === 'user')
+      .map((m) => userMessageText(m)),
+  )
+  const stillPending = pendingSends.filter((m) => !echoedText.has(userMessageText(m)))
+  const allMessages = [...streamed, ...stillPending]
 
   const { sendInput } = useSessionActions(serverId, sessionId)
 
@@ -41,15 +78,17 @@ export function LiveConversationView({ serverId, sessionId, conversationId }: Pr
     const text = inputText.trim()
     if (!text) return
     setInputText('')
+    setPendingSends((prev) => [...prev, makeOptimisticMessage(text)])
     sendInput.mutate(text)
   }
 
-  // Auto-scroll to bottom on new live message
+  // Auto-scroll to bottom when a new message appears — a live WS message or
+  // the user's own optimistic send.
   useEffect(() => {
-    if (newLive.length > 0) {
+    if (allMessages.length > 0) {
       listRef.current?.scrollToEnd({ animated: true })
     }
-  }, [newLive.length])
+  }, [allMessages.length])
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

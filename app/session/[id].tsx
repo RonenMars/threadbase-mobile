@@ -720,11 +720,14 @@ export default function SessionDetailScreen() {
     !isStreaming
 
   // Sessions without PTY attached — input cannot be sent through the streamer.
+  // The chat tab renders its own composer (LiveConversationView), so the
+  // terminal input bar must be suppressed there to avoid two reply boxes.
   const showInputBar =
     session &&
     session.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running') &&
-    !noAttachEmptyPlaceholder
+    !noAttachEmptyPlaceholder &&
+    activeTab !== 'chat'
 
   // "Waking up" = PTY status is running and Claude has never reported
   // waiting_input for THIS session id on this mount. hasReachedPrompt latches

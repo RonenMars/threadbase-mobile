@@ -144,6 +144,11 @@ appId: com.ronenmars.threadbase
       id: "chat-message-input"
     timeout: 8000
 
+# Only ONE input box on the chat tab — the terminal composer (testID
+# "message-input") must NOT also be on screen (Bug: two reply boxes).
+- assertNotVisible:
+    id: "message-input"
+
 - takeScreenshot: e2e/_artifacts/screenshots/live-chat-02-chat-tab.png
 
 # ── Send a reply via the chat input ──────────────────────────────────────────
