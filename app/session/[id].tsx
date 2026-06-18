@@ -540,14 +540,29 @@ export default function SessionDetailScreen() {
     queueMicrotask(() => setHasReachedPrompt(false))
   }, [id])
 
+  const glowOpacity = useSharedValue(0)
+  const glowScale = useSharedValue(0.85)
   const starAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: starScale.value }],
+  }))
+  const glowAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: glowScale.value }],
   }))
 
   const animateStar = useCallback(() => {
     starScale.value = withSequence(
-      withTiming(1.2, { duration: 90, easing: Easing.out(Easing.quad) }),
-      withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) }),
+      withTiming(1.12, { duration: 140, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { duration: 180, easing: Easing.inOut(Easing.cubic) }),
+    )
+    glowOpacity.value = withSequence(
+      withTiming(0.3, { duration: 120, easing: Easing.out(Easing.cubic) }),
+      withTiming(0, { duration: 200, easing: Easing.inOut(Easing.cubic) }),
+    )
+    glowScale.value = withSequence(
+      withTiming(0.85, { duration: 0 }),
+      withTiming(1.08, { duration: 120, easing: Easing.out(Easing.cubic) }),
+      withTiming(1.24, { duration: 200, easing: Easing.inOut(Easing.cubic) }),
     )
   }, [starScale])
 
@@ -837,7 +852,10 @@ export default function SessionDetailScreen() {
         accessibilityLabel={isSessionFavorite ? 'Remove from favorites' : 'Add to favorites'}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
       >
-        <Animated.View style={starAnimatedStyle}>
+        <Animated.View style={[starAnimatedStyle, { position: 'relative' }]}>
+          <Animated.View style={[glowAnimatedStyle, { position: 'absolute', top: -6, right: -6, bottom: -6, left: -6 }]}>
+            <Star size={28} color={theme.text.accent} weight="fill" />
+          </Animated.View>
           <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
         </Animated.View>
       </Pressable>

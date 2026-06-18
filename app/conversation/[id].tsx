@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Share,
+  Alert,
   ActivityIndicator,
   FlatList,
   NativeScrollEvent,
@@ -162,14 +163,28 @@ export default function ConversationDetailScreen() {
   // useState's lazy initializer creates the Animated.Value once at mount
   // without touching ref.current during render (which React 19 flags).
   const [pulseAnim] = useState(() => new Animated.Value(1))
+  const [glowOpacity] = useState(() => new Animated.Value(0))
+  const [glowScale] = useState(() => new Animated.Value(0.85))
   const animateStar = useCallback(() => {
     starScale.stopAnimation()
     starScale.setValue(1)
+    glowOpacity.stopAnimation()
+    glowScale.stopAnimation()
+    glowOpacity.setValue(0)
+    glowScale.setValue(0.85)
     Animated.sequence([
-      Animated.spring(starScale, { toValue: 1.2, useNativeDriver: true, friction: 4, tension: 220 }),
-      Animated.spring(starScale, { toValue: 1, useNativeDriver: true, friction: 4, tension: 220 }),
+      Animated.spring(starScale, { toValue: 1.14, useNativeDriver: true, friction: 8, tension: 130 }),
+      Animated.spring(starScale, { toValue: 1, useNativeDriver: true, friction: 7, tension: 110 }),
     ]).start()
-  }, [starScale])
+    Animated.sequence([
+      Animated.timing(glowOpacity, { toValue: 0.28, duration: 110, useNativeDriver: true }),
+      Animated.timing(glowOpacity, { toValue: 0, duration: 190, useNativeDriver: true }),
+    ]).start()
+    Animated.sequence([
+      Animated.timing(glowScale, { toValue: 1.05, duration: 110, useNativeDriver: true }),
+      Animated.timing(glowScale, { toValue: 1.2, duration: 190, useNativeDriver: true }),
+    ]).start()
+  }, [starScale, glowOpacity, glowScale])
 
   const toggleFavorite = useCallback(async () => {
     const previousFavorites = useQuickAccessStore.getState().favorites
@@ -453,7 +468,10 @@ export default function ConversationDetailScreen() {
         accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
       >
-        <Animated.View style={{ transform: [{ scale: starScale }] }}>
+        <Animated.View style={{ transform: [{ scale: starScale }], position: 'relative' }}>
+          <Animated.View style={{ transform: [{ scale: glowScale }], opacity: glowOpacity, position: 'absolute', top: -6, right: -6, bottom: -6, left: -6 }}>
+            <Star size={28} color={theme.text.accent} weight="fill" />
+          </Animated.View>
           <Star size={22} color={isFavorite ? theme.text.accent : theme.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />
         </Animated.View>
       </Pressable>
