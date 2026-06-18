@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { NotificationPreferences } from '@/types/api'
 import type { SessionsLayout } from '@/types/ui'
-import type { ThemeId } from '@/constants/theme'
+import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
 
 const VALID_THEME_IDS = new Set<string>([
   'dark',
@@ -20,6 +20,7 @@ const VALID_THEME_IDS = new Set<string>([
   'rosePineDawn',
   'tokyoNight',
   'tokyoNightLight',
+  'appleGlass',
 ])
 
 function isValidThemeId(v: unknown): v is ThemeId {
@@ -39,6 +40,7 @@ export type RowPreviewModalCount = 5 | 10 | 20
 
 interface SettingsStore {
   colorScheme: ThemeId
+  glassThemeVariant: GlassThemeVariant
   completedSessionFadeMs: number
   terminalMaxLines: number
   notifications: NotificationPreferences
@@ -56,6 +58,7 @@ interface SettingsStore {
   rowServerChipVariant: RowServerChipVariant
   rowPreviewModalCount: RowPreviewModalCount
   setColorScheme: (scheme: ThemeId) => void
+  setGlassThemeVariant: (variant: GlassThemeVariant) => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
@@ -91,6 +94,7 @@ const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
 
 interface PersistedSettings {
   colorScheme: ThemeId
+  glassThemeVariant: GlassThemeVariant
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
@@ -110,6 +114,7 @@ interface PersistedSettings {
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
   colorScheme: 'dark',
+  glassThemeVariant: 'aurora',
   completedSessionFadeMs: 60000,
   terminalMaxLines: 5000,
   notifications: DEFAULT_NOTIFICATIONS,
@@ -131,6 +136,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   rowPreviewModalCount: 10,
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
+  setGlassThemeVariant: (glassThemeVariant) => set({ glassThemeVariant }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
   setTerminalMaxLines: (terminalMaxLines) => set({ terminalMaxLines }),
   setNotifications: (prefs) =>
@@ -158,6 +164,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       const parsed = JSON.parse(raw) as Partial<PersistedSettings>
       set((state) => ({
         colorScheme: isValidThemeId(parsed.colorScheme) ? parsed.colorScheme : state.colorScheme,
+        glassThemeVariant: parsed.glassThemeVariant ?? state.glassThemeVariant,
         notifications: parsed.notifications
           ? { ...state.notifications, ...parsed.notifications }
           : state.notifications,
@@ -185,6 +192,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 useSettingsStore.subscribe((state) => {
   const payload: PersistedSettings = {
     colorScheme: state.colorScheme,
+    glassThemeVariant: state.glassThemeVariant,
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,

@@ -31,7 +31,7 @@ import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode } from 'phosphor-react-native'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
-import type { ThemeId } from '@/constants/theme'
+import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
@@ -145,18 +145,27 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   rosePineDawn: 'Rosé Pine Dawn',
   tokyoNight: 'Tokyo Night',
   tokyoNightLight: 'Tokyo Night Light',
+  appleGlass: 'Apple Glass',
+}
+
+const GLASS_VARIANT_LABELS: Record<GlassThemeVariant, string> = {
+  aurora: 'Aurora',
+  sunset: 'Sunset',
+  midnight: 'Midnight',
 }
 
 function ThemePicker({
   current,
+  tab,
   onChange,
 }: {
   current: ThemeId
+  tab: 'dark' | 'light'
   onChange: (id: ThemeId) => void
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
-  const themeIds = Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]
+  const themeIds = (Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]).filter((id) => THEMES[id].colorMode === tab)
 
   return (
     <View style={s.themeGrid}>
@@ -171,9 +180,20 @@ function ThemePicker({
             activeOpacity={0.7}
           >
             <View style={[s.themeCardPreview, { backgroundColor: t.bg.primary }]}>
-              <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
-              <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
+              {id === 'appleGlass' ? (
+                <>
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(255,255,255,0.22)' }]} />
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(89,214,255,0.34)' }]} />
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(255,159,122,0.34)' }]} />
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(94,234,212,0.28)' }]} />
+                </>
+              ) : (
+                <>
+                  <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
+                  <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
+                </>
+              )}
             </View>
             <View style={{ backgroundColor: t.bg.secondary }}>
               <Text style={[s.themeCardName, { color: t.text.secondary }]}>
@@ -221,6 +241,8 @@ export default function SettingsScreen() {
     setRowServerChipVariant,
     locale,
     setLocale,
+    glassThemeVariant,
+    setGlassThemeVariant,
   } = useSettingsStore()
   const {
     favoritesEnabled, setFavoritesEnabled,
@@ -233,6 +255,7 @@ export default function SettingsScreen() {
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
   const [qrScannerOpen, setQrScannerOpen] = useState(false)
+  const [themeTab, setThemeTab] = useState<'dark' | 'light'>('dark')
   const { statuses: permStatuses, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
 
   const handleTestNotification = async () => {
@@ -438,7 +461,39 @@ await refreshServerInfo(serverId)
             <View style={[s.row, { borderBottomWidth: 0, paddingBottom: 0 }]}>
               <Text style={s.rowLabel}>{t('appearance.theme')}</Text>
             </View>
-            <ThemePicker current={colorScheme} onChange={setColorScheme} />
+            <View style={s.segmentedTabs}>
+              <TouchableOpacity
+                style={[s.segmentTab, themeTab === 'dark' && s.segmentTabActive]}
+                onPress={() => setThemeTab('dark')}
+              >
+                <Text style={[s.segmentBtnText, themeTab === 'dark' && s.segmentBtnTextActive]}>Dark</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentTab, themeTab === 'light' && s.segmentTabActive]}
+                onPress={() => setThemeTab('light')}
+              >
+                <Text style={[s.segmentBtnText, themeTab === 'light' && s.segmentBtnTextActive]}>Light</Text>
+              </TouchableOpacity>
+            </View>
+            <ThemePicker current={colorScheme} tab={themeTab} onChange={setColorScheme} />
+            {colorScheme === 'appleGlass' ? (
+              <View style={s.glassVariantSection}>
+                <Text style={s.glassVariantLabel}>Glass variations</Text>
+                <View style={s.glassVariantChips}>
+                  {(Object.keys(GLASS_VARIANT_LABELS) as GlassThemeVariant[]).map((variant) => (
+                    <TouchableOpacity
+                      key={variant}
+                      style={[s.glassVariantChip, glassThemeVariant === variant && s.glassVariantChipActive]}
+                      onPress={() => setGlassThemeVariant(variant)}
+                    >
+                      <Text style={[s.segmentBtnText, glassThemeVariant === variant && s.segmentBtnTextActive]}>
+                        {GLASS_VARIANT_LABELS[variant]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </View>
           <SettingsRow
             label="Merge sessions & history as Chats"
@@ -859,12 +914,62 @@ function styles(theme: ReturnType<typeof useTheme>) {
       height: 52,
       padding: spacing.xs,
       gap: 4,
+      overflow: 'hidden',
+    },
+    themePreviewBand: {
+      height: 8,
+      borderRadius: radius.sm,
     },
     themeCardName: {
       fontSize: font.xs,
       fontWeight: '600' as const,
       textAlign: 'center' as const,
       paddingVertical: 4,
+    },
+    segmentedTabs: {
+      flexDirection: 'row',
+      marginHorizontal: spacing.md,
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+    },
+    segmentTab: {
+      flex: 1,
+      paddingVertical: spacing.xs,
+      alignItems: 'center',
+    },
+    segmentTabActive: {
+      backgroundColor: theme.text.accent,
+    },
+    glassVariantSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.xs,
+    },
+    glassVariantLabel: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    glassVariantChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+    },
+    glassVariantChip: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.full,
+      backgroundColor: theme.bg.primary,
+    },
+    glassVariantChipActive: {
+      backgroundColor: theme.text.accent,
     },
   })
 }

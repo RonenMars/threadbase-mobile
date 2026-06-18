@@ -22,6 +22,11 @@ export type Theme = {
     readonly completed: string
     readonly idle: string
   }
+  readonly glass?: {
+    readonly tint: 'light' | 'dark' | 'default'
+    readonly intensity: number
+    readonly overlayColor: string
+  }
 }
 
 export const dark = {
@@ -397,6 +402,103 @@ export const tokyoNightLight = {
   },
 } as const satisfies Theme
 
+// Apple Glass variants share the same frosted base but use different accent
+// gradients and card surfaces.
+export type GlassThemeVariant = 'aurora' | 'sunset' | 'midnight'
+
+export const appleGlassThemes: Record<GlassThemeVariant, Theme> = {
+  aurora: {
+    colorMode: 'dark' as const,
+    bg: {
+      primary: 'transparent',
+      secondary: 'rgba(24, 42, 54, 0.34)',
+      card: 'rgba(255, 255, 255, 0.08)',
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: 'rgba(255, 255, 255, 0.72)',
+      accent: '#59d6ff',
+      onAccent: '#ffffff',
+      danger: '#ff5d5d',
+      warning: '#ffb84d',
+      success: '#34d399',
+    },
+    border: 'rgba(255, 255, 255, 0.16)',
+    status: {
+      running: '#34d399',
+      waiting: '#ffb84d',
+      failed: '#ff5d5d',
+      completed: '#59d6ff',
+      idle: 'rgba(255, 255, 255, 0.5)',
+    },
+    glass: {
+      tint: 'dark' as const,
+      intensity: 72,
+      overlayColor: 'rgba(10, 20, 30, 0.22)',
+    },
+  },
+  sunset: {
+    colorMode: 'dark' as const,
+    bg: {
+      primary: 'transparent',
+      secondary: 'rgba(52, 28, 42, 0.34)',
+      card: 'rgba(255, 255, 255, 0.1)',
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: 'rgba(255, 255, 255, 0.72)',
+      accent: '#ff9f7a',
+      onAccent: '#ffffff',
+      danger: '#ff6b6b',
+      warning: '#ffcc66',
+      success: '#5eead4',
+    },
+    border: 'rgba(255, 255, 255, 0.16)',
+    status: {
+      running: '#5eead4',
+      waiting: '#ffcc66',
+      failed: '#ff6b6b',
+      completed: '#ff9f7a',
+      idle: 'rgba(255, 255, 255, 0.5)',
+    },
+    glass: {
+      tint: 'dark' as const,
+      intensity: 76,
+      overlayColor: 'rgba(34, 12, 24, 0.24)',
+    },
+  },
+  midnight: {
+    colorMode: 'dark' as const,
+    bg: {
+      primary: 'transparent',
+      secondary: 'rgba(18, 22, 46, 0.36)',
+      card: 'rgba(255, 255, 255, 0.07)',
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: 'rgba(255, 255, 255, 0.7)',
+      accent: '#8cb3ff',
+      onAccent: '#ffffff',
+      danger: '#ff7b7b',
+      warning: '#f8d66d',
+      success: '#7dd3fc',
+    },
+    border: 'rgba(255, 255, 255, 0.14)',
+    status: {
+      running: '#7dd3fc',
+      waiting: '#f8d66d',
+      failed: '#ff7b7b',
+      completed: '#8cb3ff',
+      idle: 'rgba(255, 255, 255, 0.48)',
+    },
+    glass: {
+      tint: 'dark' as const,
+      intensity: 70,
+      overlayColor: 'rgba(8, 10, 24, 0.26)',
+    },
+  },
+} as const
+
 export type ThemeId =
   | 'dark'
   | 'light'
@@ -413,6 +515,7 @@ export type ThemeId =
   | 'rosePineDawn'
   | 'tokyoNight'
   | 'tokyoNightLight'
+  | 'appleGlass'
 
 export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   dark,
@@ -429,6 +532,7 @@ export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   rosePineDawn,
   tokyoNight,
   tokyoNightLight,
+  appleGlass: appleGlassThemes.aurora,
 }
 
 export const spacing = {
