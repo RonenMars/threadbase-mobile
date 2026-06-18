@@ -19,6 +19,24 @@ When adding new Maestro flows:
 
 ---
 
+## No Inline Conditional Text in JSX
+
+Extract multi-branch string expressions from JSX props into a named `const` above the return. Inline ternaries that produce UI strings are hard to read and harder to translate.
+
+```tsx
+// bad
+placeholder={isWakingUp ? (isResume ? 'Picking up…' : 'Starting up…') : 'Send input…'}
+
+// good
+const inputPlaceholder = isWakingUp
+  ? (isResume ? 'Picking up…' : 'Starting up…')
+  : 'Send input…'
+// ...
+placeholder={inputPlaceholder}
+```
+
+---
+
 ## Lint Before Commit
 
 Before every `git commit`, run ESLint on the files being committed:
