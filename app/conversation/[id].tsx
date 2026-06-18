@@ -15,6 +15,7 @@ import {
   type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown, ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -41,7 +42,7 @@ import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, MessageContent } from '@/types/api'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
-import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
@@ -152,7 +153,7 @@ export default function ConversationDetailScreen() {
   const [firstLayoutDone, setFirstLayoutDone] = useState(false)
   const favoriteId = buildFavoriteId(serverId, 'conversation', id)
   const isFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === favoriteId))
-  const { pinItem, unpinItem } = useQuickAccessStore()
+  const starScale = useRef(new Animated.Value(1)).current
   // Bug 6: measure the bottom action bar so the list's paddingBottom matches
   // its height. The outer SafeAreaView already reserves the bottom inset, so
   // we only feed bar height here (no additional safe-area math).
@@ -161,6 +162,42 @@ export default function ConversationDetailScreen() {
   // useState's lazy initializer creates the Animated.Value once at mount
   // without touching ref.current during render (which React 19 flags).
   const [pulseAnim] = useState(() => new Animated.Value(1))
+  const animateStar = useCallback(() => {
+    starScale.stopAnimation()
+    starScale.setValue(1)
+    Animated.sequence([
+      Animated.spring(starScale, { toValue: 1.2, useNativeDriver: true, friction: 4, tension: 220 }),
+      Animated.spring(starScale, { toValue: 1, useNativeDriver: true, friction: 4, tension: 220 }),
+    ]).start()
+  }, [starScale])
+
+  const toggleFavorite = useCallback(async () => {
+    const previousFavorites = useQuickAccessStore.getState().favorites
+    const nextFavorites = isFavorite
+      ? previousFavorites.filter((f) => f.id !== favoriteId)
+      : [...previousFavorites, {
+          type: 'conversation' as const,
+          id: favoriteId,
+          label: conversation?.title || conversation?.projectPath || id || '',
+          serverId,
+          conversationId: id,
+        }]
+
+    useQuickAccessStore.setState({ favorites: nextFavorites })
+    try {
+      await AsyncStorage.setItem(
+        QUICK_ACCESS_STORAGE_KEY,
+        JSON.stringify({
+          ...useQuickAccessStore.getState(),
+          favorites: nextFavorites,
+        }),
+      )
+      animateStar()
+    } catch (err) {
+      useQuickAccessStore.setState({ favorites: previousFavorites })
+      Alert.alert('Favorites error', err instanceof Error ? err.message : 'Failed to update favorites')
+    }
+  }, [animateStar, conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId])
 
   // Skeleton stays up until the network fetch lands AND the FlashList has
   // had a beat to lay out (handleContentSizeChange settles or hits its cap).
@@ -411,24 +448,14 @@ export default function ConversationDetailScreen() {
   const headerActions = (
     <View style={styles.headerActions}>
       <Pressable
-        onPress={() => {
-          if (isFavorite) {
-            unpinItem(favoriteId)
-          } else {
-            pinItem({
-              type: 'conversation',
-              id: favoriteId,
-              label: conversation?.title || id,
-              serverId,
-              conversationId: id,
-            })
-          }
-        }}
+        onPress={() => { void toggleFavorite() }}
         hitSlop={8}
         accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
       >
-        <Star size={22} color={isFavorite ? theme.text.accent : theme.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />
+        <Animated.View style={{ transform: [{ scale: starScale }] }}>
+          <Star size={22} color={isFavorite ? theme.text.accent : theme.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />
+        </Animated.View>
       </Pressable>
       <Pressable
         onPress={() => setInfoVisible(true)}

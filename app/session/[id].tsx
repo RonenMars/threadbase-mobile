@@ -17,6 +17,7 @@ import {
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -63,7 +64,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useRenameSession } from '@/hooks/useSessionName'
 import type { SlashCommand } from '@/constants/slashCommands'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
-import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -500,7 +501,7 @@ export default function SessionDetailScreen() {
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const sessionFavoriteId = buildFavoriteId(serverId, 'session', id ?? '')
   const isSessionFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === sessionFavoriteId))
-  const { pinItem: pinFavorite, unpinItem: unpinFavorite } = useQuickAccessStore()
+  const starScale = useSharedValue(1)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
 
@@ -538,6 +539,45 @@ export default function SessionDetailScreen() {
   useEffect(() => {
     queueMicrotask(() => setHasReachedPrompt(false))
   }, [id])
+
+  const starAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: starScale.value }],
+  }))
+
+  const animateStar = useCallback(() => {
+    starScale.value = withSequence(
+      withTiming(1.2, { duration: 90, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) }),
+    )
+  }, [starScale])
+
+  const toggleFavorite = useCallback(async () => {
+    const previousFavorites = useQuickAccessStore.getState().favorites
+    const nextFavorites = isSessionFavorite
+      ? previousFavorites.filter((f) => f.id !== sessionFavoriteId)
+      : [...previousFavorites, {
+          type: 'session' as const,
+          id: sessionFavoriteId,
+          label: sessionName || id || '',
+          serverId,
+          sessionId: id,
+        }]
+
+    useQuickAccessStore.setState({ favorites: nextFavorites })
+    try {
+      await AsyncStorage.setItem(
+        QUICK_ACCESS_STORAGE_KEY,
+        JSON.stringify({
+          ...useQuickAccessStore.getState(),
+          favorites: nextFavorites,
+        }),
+      )
+      animateStar()
+    } catch (err) {
+      useQuickAccessStore.setState({ favorites: previousFavorites })
+      Alert.alert('Favorites error', err instanceof Error ? err.message : 'Failed to update favorites')
+    }
+  }, [animateStar, id, isSessionFavorite, serverId, sessionFavoriteId, sessionName])
   useEffect(() => {
     if (session?.status === 'waiting_input') {
       queueMicrotask(() => setHasReachedPrompt(true))
@@ -792,24 +832,14 @@ export default function SessionDetailScreen() {
   const sessionHeaderActions = (
     <View style={styles.headerActions}>
       <Pressable
-        onPress={() => {
-          if (isSessionFavorite) {
-            unpinFavorite(sessionFavoriteId)
-          } else {
-            pinFavorite({
-              type: 'session',
-              id: sessionFavoriteId,
-              label: sessionName || id || '',
-              serverId,
-              sessionId: id,
-            })
-          }
-        }}
+        onPress={() => { void toggleFavorite() }}
         hitSlop={8}
         accessibilityLabel={isSessionFavorite ? 'Remove from favorites' : 'Add to favorites'}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
       >
-        <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
+        <Animated.View style={starAnimatedStyle}>
+          <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
+        </Animated.View>
       </Pressable>
       <Pressable
         testID="session-info-button"

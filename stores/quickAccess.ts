@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const ASYNC_KEY = 'threadbase_quick_access'
+export const QUICK_ACCESS_STORAGE_KEY = 'threadbase_quick_access'
 
 /**
  * Favorite item with stable identity. New favorites of type `session`,
@@ -131,7 +131,7 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
 
   hydrate: async () => {
     try {
-      const raw = await AsyncStorage.getItem(ASYNC_KEY)
+      const raw = await AsyncStorage.getItem(QUICK_ACCESS_STORAGE_KEY)
       if (!raw) return
       const parsed = JSON.parse(raw) as Partial<PersistedState>
       set((s) => ({
@@ -159,5 +159,5 @@ useQuickAccessStore.subscribe((state) => {
     recentsEnabled: state.recentsEnabled,
     popularEnabled: state.popularEnabled,
   }
-  AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(payload)).catch(() => {})
+  AsyncStorage.setItem(QUICK_ACCESS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})
 })
