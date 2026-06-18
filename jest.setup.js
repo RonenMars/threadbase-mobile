@@ -46,14 +46,19 @@ jest.mock('expo-clipboard', () => ({
 // floods CI logs with "update to PairScannerModal was not wrapped in act(...)"
 // warnings. Returning a synchronous granted-permission tuple avoids the
 // post-teardown setState entirely.
+//
+// The tuple must keep a STABLE reference across renders, mirroring the real
+// hook. Consumers (usePermissionsStatus) put `cameraPermission` in a useEffect
+// dependency array; a fresh object per call would make that effect's setState
+// re-run every render → "Maximum update depth exceeded".
 jest.mock('expo-camera', () => {
   const React = require('react')
+  const cameraPermission = { granted: true, canAskAgain: true, status: 'granted' }
+  const requestCameraPermission = jest.fn().mockResolvedValue(cameraPermission)
+  const cameraPermissionTuple = [cameraPermission, requestCameraPermission]
   return {
     CameraView: ({ children }) => React.createElement('CameraView', null, children),
-    useCameraPermissions: () => [
-      { granted: true, canAskAgain: true, status: 'granted' },
-      jest.fn().mockResolvedValue({ granted: true, canAskAgain: true, status: 'granted' }),
-    ],
+    useCameraPermissions: () => cameraPermissionTuple,
   }
 })
 
@@ -89,6 +94,12 @@ jest.mock('expo-notifications', () => ({
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   setBadgeCountAsync: jest.fn().mockResolvedValue(undefined),
   AndroidImportance: { HIGH: 5, DEFAULT: 3 },
+}))
+
+// ─── expo-image-picker ───────────────────────────────────────────────────────
+jest.mock('expo-image-picker', () => ({
+  getMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
 }))
 
 // ─── @shopify/flash-list ──────────────────────────────────────────────────────
@@ -202,7 +213,8 @@ jest.mock('expo-router/react-navigation', () => ({
 // ─── expo-speech-recognition ─────────────────────────────────────────────────
 jest.mock('expo-speech-recognition', () => ({
   ExpoSpeechRecognitionModule: {
-    requestPermissionsAsync: jest.fn(),
+    getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+    requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
     start: jest.fn(),
     stop: jest.fn(),
   },
