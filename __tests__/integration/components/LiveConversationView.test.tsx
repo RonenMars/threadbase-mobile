@@ -29,6 +29,14 @@ jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({ sendInput: { mutate: mockMutate } }),
 }))
 
+// The composer guards sends on a connected WS client. Report connected so the
+// send path runs under test.
+jest.mock('@/services/ws-client', () => ({
+  wsManager: {
+    getClient: () => ({ status: () => 'connected' }),
+  },
+}))
+
 function renderView() {
   return render(
     <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
@@ -50,8 +58,8 @@ describe('LiveConversationView — optimistic sent message', () => {
     fireEvent.changeText(input, 'hello there')
     fireEvent.press(screen.getByTestId('chat-send-button'))
 
-    // It still fires the send mutation…
-    expect(mockMutate).toHaveBeenCalledWith('hello there')
+    // It still fires the send mutation with the typed text as the payload…
+    expect(mockMutate).toHaveBeenCalledWith('hello there', expect.anything())
     // …and the user's text shows up right away as a bubble, with no live echo.
     expect(screen.getByText('hello there')).toBeTruthy()
   })

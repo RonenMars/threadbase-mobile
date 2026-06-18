@@ -202,7 +202,8 @@ jest.mock('expo-router/react-navigation', () => ({
 // ─── expo-speech-recognition ─────────────────────────────────────────────────
 jest.mock('expo-speech-recognition', () => ({
   ExpoSpeechRecognitionModule: {
-    requestPermissionsAsync: jest.fn(),
+    requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
+    getPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
     start: jest.fn(),
     stop: jest.fn(),
   },
