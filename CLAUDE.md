@@ -37,6 +37,17 @@ placeholder={inputPlaceholder}
 
 ---
 
+## No `unknown` or `any` Without Explicit Permission
+
+Never introduce `unknown` or `any` in new code without the user's explicit approval. If a type boundary genuinely requires one, stop and ask — don't default to it as a workaround for a type error.
+
+Prefer:
+- Proper interface/type definitions
+- Type guards with `typeof` / `instanceof` narrowing
+- Generics
+
+---
+
 ## Lint Before Commit
 
 Before every `git commit`, run ESLint on the files being committed:
