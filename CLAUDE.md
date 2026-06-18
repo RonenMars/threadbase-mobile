@@ -19,6 +19,35 @@ When adding new Maestro flows:
 
 ---
 
+## No Inline Conditional Text in JSX
+
+Extract multi-branch string expressions from JSX props into a named `const` above the return. Inline ternaries that produce UI strings are hard to read and harder to translate.
+
+```tsx
+// bad
+placeholder={isWakingUp ? (isResume ? 'Picking up…' : 'Starting up…') : 'Send input…'}
+
+// good
+const inputPlaceholder = isWakingUp
+  ? (isResume ? 'Picking up…' : 'Starting up…')
+  : 'Send input…'
+// ...
+placeholder={inputPlaceholder}
+```
+
+---
+
+## No `unknown` or `any` Without Explicit Permission
+
+Never introduce `unknown` or `any` in new code without the user's explicit approval. If a type boundary genuinely requires one, stop and ask — don't default to it as a workaround for a type error.
+
+Prefer:
+- Proper interface/type definitions
+- Type guards with `typeof` / `instanceof` narrowing
+- Generics
+
+---
+
 ## Lint Before Commit
 
 Before every `git commit`, run ESLint on the files being committed:
