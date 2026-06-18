@@ -810,6 +810,10 @@ export default function SessionDetailScreen() {
     !isStreaming &&
     !hasReachedPrompt
 
+  const inputPlaceholder = isWakingUp
+    ? (session?.resumedFromConversationId ? 'Picking up where we left off…' : 'Starting up…')
+    : 'Send input to session…'
+
   const infoModal = (
     <InfoModal
       visible={infoVisible}
@@ -1040,7 +1044,7 @@ export default function SessionDetailScreen() {
                 style={[styles.input, isWakingUp && styles.inputDisabled]}
                 value={isWakingUp ? '' : inputText}
                 onChangeText={isWakingUp ? undefined : handleInputChange}
-                placeholder={isWakingUp ? (session?.resumedFromConversationId ? 'Picking up where we left off…' : 'Starting up…') : 'Send input to session…'}
+                placeholder={inputPlaceholder}
                 placeholderTextColor={theme.text.secondary}
                 multiline
                 returnKeyType="done"
