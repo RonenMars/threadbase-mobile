@@ -41,7 +41,8 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
-import type { Message, MessageContent } from '@/types/api'
+import type { Message, MessageContent, Session } from '@/types/api'
+import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
@@ -362,7 +363,7 @@ export default function ConversationDetailScreen() {
   const queryClient = useQueryClient()
 
   const resumeSession = useMutation({
-    mutationFn: async (): Promise<{ sessionId: string; projectId?: string; projectPath?: string | null; conversationId: string }> => {
+    mutationFn: async (): Promise<{ sessionId: string; projectId?: string; projectPath?: string | null; conversationId: string; sessionSnapshot: Session | null }> => {
       const api = createApiForServer(serverId)
       // Backend may return either the modern ResumeConversationResponse or the
       // legacy `{ id }` shape during migration — normalise here.
@@ -376,15 +377,21 @@ export default function ConversationDetailScreen() {
           projectId: resp.projectId,
           projectPath: resp.projectPath,
           conversationId: resp.conversationId,
+          sessionSnapshot: normalizeResumeResponse(resp),
         }
       }
-      return { sessionId: resp.id, projectPath: conversation?.projectPath, conversationId: id }
+      return { sessionId: resp.id, projectPath: conversation?.projectPath, conversationId: id, sessionSnapshot: null }
     },
     onSuccess: async (result) => {
       // Invalidate the unified ProjectChat list so the resumed conversation
       // is replaced by the new session (backend dedupes; UI also dedupes
       // defensively in useProjectChats).
       invalidateProjectChats(queryClient, serverId)
+      // Seed the session detail cache so the session screen renders immediately
+      // without a GET /api/sessions/:id round-trip.
+      if (result.sessionSnapshot) {
+        queryClient.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
+      }
       const params = new URLSearchParams({ server: serverId })
       if (result.projectId) params.set('projectId', result.projectId)
       if (result.projectPath) params.set('projectPath', result.projectPath)
