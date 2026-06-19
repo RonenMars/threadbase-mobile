@@ -14,6 +14,7 @@
   "homepage": "https://github.com/RonenMars/threadbase-mobile#readme",
   "main": "expo-router/entry",
   "scripts": {
+    "prepare": "git config core.hooksPath scripts/git-hooks 2>/dev/null || true",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
