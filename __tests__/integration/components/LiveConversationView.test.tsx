@@ -30,11 +30,21 @@ jest.mock('@/hooks/useSessionActions', () => ({
 }))
 
 // The composer guards sends on a connected WS client. Report connected so the
-// send path runs under test.
+// send path runs under test. send() is called by useTerminalStream.
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
-    getClient: () => ({ status: () => 'connected' }),
+    getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }),
+    onAnyStatusChange: jest.fn(() => jest.fn()),
+    forceReconnect: jest.fn(),
   },
+}))
+
+jest.mock('@/hooks/useSession', () => ({
+  useSessionDetail: () => ({ data: { status: 'waiting_input' } }),
+}))
+
+jest.mock('@/hooks/useTerminalStream', () => ({
+  useTerminalStream: () => ({ lines: [], isStreaming: false }),
 }))
 
 // useComposerState imports expo-speech-recognition at module load time; mock it

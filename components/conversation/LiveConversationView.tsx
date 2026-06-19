@@ -1,12 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Alert, StyleSheet } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import * as Haptics from 'expo-haptics'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useSessionDetail } from '@/hooks/useSession'
+import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
 import { MessageItem } from '@/components/conversation/MessageItem'
+import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -90,6 +93,30 @@ export function LiveConversationView({
   const stillPending = pendingSends.filter((m) => !echoedText.has(userMessageText(m)))
   const allMessages = [...streamed, ...stillPending]
 
+  // Session status for thinking indicator
+  const { data: session } = useSessionDetail(serverId, sessionId)
+  // PTY lines shown inside the thinking bubble while agent is running
+  const { lines: ptyLines, isStreaming } = useTerminalStream(serverId, sessionId)
+
+  // Show thinking bubble when session is running and the last real message isn't an assistant reply
+  const lastMessage = allMessages[allMessages.length - 1]
+  const isAgentThinking =
+    session?.status === 'running' && lastMessage?.role !== 'assistant'
+
+  // 'hidden' → 'thinking' (agent running) → 'fading' (agent done) → 'hidden'
+  const [thinkingState, setThinkingState] = useState<'hidden' | 'thinking' | 'fading'>('hidden')
+
+  useEffect(() => {
+    if (isAgentThinking) {
+      setThinkingState('thinking') // eslint-disable-line react-hooks/set-state-in-effect
+    } else if (thinkingState === 'thinking') {
+      setThinkingState('fading') // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAgentThinking])
+
+  const handleFadeOutComplete = useCallback(() => setThinkingState('hidden'), [])
+
   const { sendInput } = useSessionActions(serverId, sessionId)
 
   const isConnected = () => wsManager.getClient(serverId)?.status() === 'connected'
@@ -152,6 +179,14 @@ export function LiveConversationView({
         )}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
       />
+      {thinkingState !== 'hidden' ? (
+        <ThinkingBubble
+          lines={ptyLines}
+          isStreaming={isStreaming}
+          fadingOut={thinkingState === 'fading'}
+          onFadeOutComplete={handleFadeOutComplete}
+        />
+      ) : null}
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
