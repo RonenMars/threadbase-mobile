@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { spacing } from '@/constants/theme'
@@ -14,6 +14,11 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Prop
   // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
   const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
   const [selected, setSelected] = useState<number | null>(initialSelected)
+
+  // PTY blocks update in place as the terminal cursor moves — resync the highlight.
+  useEffect(() => {
+    if (block.source === 'pty') setSelected(block.selectedIndex ?? null)
+  }, [block.source, block.selectedIndex])
 
   const handlePress = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
