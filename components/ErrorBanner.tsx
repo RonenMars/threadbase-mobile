@@ -7,7 +7,6 @@ import { queryClient } from '@/services/query-client'
 const ERROR_RED = '#ef4444'
 
 const TITLES: Record<QueryCategory, string> = {
-  'project-chats': 'Chats failed to load',
   sessions: 'Sessions failed to load',
   conversations: 'History failed to load',
   messages: 'Messages failed to load',
@@ -17,7 +16,6 @@ const TITLES: Record<QueryCategory, string> = {
 }
 
 const MESSAGES: Record<QueryCategory, string> = {
-  'project-chats': 'The chat list refused to load. Tap Retry.',
   sessions: 'Sessions refused to load. Worth a retry.',
   conversations: 'History didn\'t come through. Retry usually fixes it.',
   messages: 'Messages hit a wall. Tap Retry to try again.',
@@ -35,7 +33,6 @@ function formatDetails(status?: number, message?: string): string | undefined {
 
 function categoryQueryKey(category: QueryCategory): unknown[] {
   switch (category) {
-    case 'project-chats': return ['projectChats']
     case 'sessions': return ['sessions']
     case 'conversations': return ['conversations']
     case 'messages': return ['conversation']

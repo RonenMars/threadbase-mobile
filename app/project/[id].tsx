@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -11,27 +11,27 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
-import { useAllProjectChats } from '@/hooks/useProjectChats'
+import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiConversation } from '@/types/api'
-import type { ProjectChat } from '@/types/projectChat'
+import { useServersStore } from '@/stores/servers'
 
-/**
- * Project drill-down keyed by `projectId`. Optional `?path=` and `?server=`
- * query params are display/debug only — never used as primary identity.
- */
 export default function ProjectDetailScreen() {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation('browse')
   const params = useLocalSearchParams<{ id: string; path?: string; server?: string }>()
-  const projectId = params.id ?? ''
   const projectPath = params.path ? decodeURIComponent(params.path) : ''
   const projectName = projectPath
     ? projectPath.split('/').filter(Boolean).pop() ?? projectPath
-    : projectId
+    : params.id ?? ''
+
+  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const servers = useServersStore((s) => s.servers)
+  const serverId = params.server ?? activeServerIds[0] ?? ''
+  const serverLabel = servers[serverId]?.label
 
   const navigation = useNavigation()
   useEffect(() => {
@@ -41,7 +41,8 @@ export default function ProjectDetailScreen() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
 
-  const { items, isFetching, refresh } = useAllProjectChats()
+  const { conversations, isFetching, refresh, fetchNextPage, hasNextPage } =
+    useProjectConversations(projectPath, serverId, serverLabel)
   const searchResult = useConversationSearch(debouncedQuery)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -54,43 +55,14 @@ export default function ProjectDetailScreen() {
     }
   }, [refresh])
 
-  // Filter the unified list down to this project.
-  const projectItems: ProjectChat[] = useMemo(
-    () => items.filter((it) => it.projectId === projectId),
-    [items, projectId],
-  )
-
-  // ConversationList takes MultiConversation[] for rendering. Map historical
-  // ProjectChat conversations into that shape for display only — backend ids
-  // remain canonical.
-  const projectConversations: MultiConversation[] = useMemo(
-    () =>
-      projectItems
-        .filter((it) => it.type === 'conversation')
-        .map((it) => ({
-          id: it.id,
-          title: it.title,
-          projectPath: it.projectPath ?? '',
-          messageCount: 0,
-          lastActivity: it.latestMessageAt ?? '',
-          serverId: it.serverId,
-          serverLabel: it.serverLabel,
-        })),
-    [projectItems],
-  )
-
   const isSearching = debouncedQuery.length > 0
   const isError = !isSearching && searchResult.isError
 
-  const allSearchResults: MultiConversation[] = isSearching
-    ? (searchResult.data?.conversations ?? [])
-    : projectConversations
-
   const displayedConversations: MultiConversation[] = isSearching
-    ? allSearchResults.filter((c) =>
-        projectItems.some((p) => p.type === 'conversation' && p.id === c.id),
-      )
-    : projectConversations
+    ? (searchResult.data?.conversations ?? [])
+        .filter((c) => conversations.some((p) => p.id === c.id))
+        .map((c) => ({ ...c, serverId, serverLabel }))
+    : conversations
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -114,7 +86,7 @@ export default function ProjectDetailScreen() {
             conversations={displayedConversations}
             onRefresh={handleRefresh}
             refreshing={refreshing || isFetching}
-            onEndReached={() => {}}
+            onEndReached={() => { if (hasNextPage) fetchNextPage() }}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             isLoadingInitial={false}
