@@ -1,0 +1,50 @@
+# CI-significant paths — see docs/ci-significant-paths.md.
+# One prefix (dir, trailing slash) or exact file per line. Blank lines + #-comments ignored.
+# A commit touching NONE of these gets [skip-ci] auto-appended by the commit-msg hook.
+
+# requested base list
+app/
+.github/
+app.json
+android/
+ios/
+e2e/
+package.json
+package-lock.json
+
+# source consumed at runtime / tests
+components/
+hooks/
+services/
+stores/
+constants/
+contexts/
+types/
+lib/
+utils/
+locales/
+plugins/
+assets/
+
+# tests + infra
+__tests__/
+__mocks__/
+test-utils/
+
+# build / lint / type config
+tsconfig.json
+babel.config.js
+metro.config.js
+jest.setup.js
+jest.config.scripts.js
+eslint.config.js
+tailwind.config.js
+react-native.config.js
+global.css
+nativewind-env.d.ts
+
+# native / deploy
+scripts/
+fastlane/
+eas.json
+Gemfile
