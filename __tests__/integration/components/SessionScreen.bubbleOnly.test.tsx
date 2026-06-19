@@ -8,8 +8,20 @@ import { render, screen } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 
 // ── heavy native deps ────────────────────────────────────────────────────────
+jest.mock('expo-speech-recognition', () => ({
+  ExpoSpeechRecognitionModule: {
+    requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
+    getPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+  useSpeechRecognitionEvent: jest.fn(),
+}))
 jest.mock('@/components/conversation/LiveConversationView', () => ({
   LiveConversationView: () => null,
+}))
+jest.mock('@/components/terminal/TerminalView', () => ({
+  TerminalView: () => null,
 }))
 jest.mock('@/components/terminal/MatrixRain', () => ({ MatrixRain: () => null }))
 jest.mock('@/hooks/useSession', () => ({
@@ -53,6 +65,9 @@ jest.mock('@/stores/quickAccess', () => {
 })
 jest.mock('@/hooks/useSessionName', () => ({
   useRenameSession: () => ({ mutate: jest.fn() }),
+}))
+jest.mock('@/stores/settings', () => ({
+  useSettingsStore: () => ({ sessionView: 'chat' }),
 }))
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
