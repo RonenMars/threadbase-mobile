@@ -39,7 +39,9 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useRenameSession } from '@/hooks/useSessionName'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useSettingsStore } from '@/stores/settings'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
+import { TerminalView } from '@/components/terminal/TerminalView'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -401,6 +403,7 @@ export default function SessionDetailScreen() {
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
+  const { sessionView } = useSettingsStore()
 
   const isPending = id?.startsWith('pending_') ?? false
   const { data: session, isLoading } = useSessionDetail(serverId, id)
@@ -617,14 +620,24 @@ export default function SessionDetailScreen() {
       <View style={styles.body}>
         {isLive ? (
           <View style={styles.flex}>
-            <LiveConversationView
-              serverId={serverId}
-              sessionId={id}
-              conversationId={session.conversationId!}
-              disabled={isWakingUp}
-              pendingPlan={planVisible ? pendingPlan : null}
-              onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
-            />
+            {sessionView === 'terminal' ? (
+              <TerminalView
+                serverId={serverId}
+                sessionId={id}
+                disabled={isWakingUp}
+                pendingPlan={planVisible ? pendingPlan : null}
+                onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+              />
+            ) : (
+              <LiveConversationView
+                serverId={serverId}
+                sessionId={id}
+                conversationId={session.conversationId!}
+                disabled={isWakingUp}
+                pendingPlan={planVisible ? pendingPlan : null}
+                onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+              />
+            )}
             {isWakingUp ? (
               <WakingUpOverlay phrase={wakingUpPhrase(id)} />
             ) : null}

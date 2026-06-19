@@ -11,7 +11,12 @@
     "displayedServers": "Displayed Servers",
     "history": "History",
     "help": "Help",
-    "language": "Language"
+    "language": "Language",
+    "session": "Session"
+  },
+  "session": {
+    "terminalView": "Terminal view",
+    "terminalViewNote": "Show the raw terminal output instead of chat bubbles for live sessions."
   },
   "permissions": {
     "camera": "Camera",

@@ -221,6 +221,8 @@ export default function SettingsScreen() {
     setRowServerChipVariant,
     locale,
     setLocale,
+    sessionView,
+    setSessionView,
   } = useSettingsStore()
   const {
     favoritesEnabled, setFavoritesEnabled,
@@ -504,6 +506,14 @@ await refreshServerInfo(serverId)
           <SettingsRow label={t('sessionNaming.aiGeneratedNames')} value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
           <Text style={s.rowNote}>{t('sessionNaming.aiGeneratedNote')}</Text>
         </View>
+
+        <SectionHeader title={t('section.session')} />
+        <SettingsRow
+          label={t('session.terminalView')}
+          value={sessionView === 'terminal'}
+          onValueChange={(v) => setSessionView(v ? 'terminal' : 'chat')}
+        />
+        <Text style={s.rowNote}>{t('session.terminalViewNote')}</Text>
 
         <SectionHeader title={t('section.history')} />
         <View style={s.card}>
