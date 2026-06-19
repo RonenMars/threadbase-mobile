@@ -108,7 +108,7 @@ describe('useComposerState', () => {
   it('handleSlashCommandSelect for a no-args command calls onSend immediately', () => {
     const onSend = jest.fn()
     const { result } = renderComposer(onSend)
-    const cmd = { id: 'compact', label: '/compact', needsArgs: false, description: 'Compact context' }
+    const cmd = { id: 'compact', icon: null as never, title: 'Compact', needsArgs: false, description: 'Compact context' }
     act(() => { result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).toHaveBeenCalledWith('/compact', '/compact')
   })
@@ -116,7 +116,7 @@ describe('useComposerState', () => {
   it('handleSlashCommandSelect for a needs-args command sets pendingArgCommand and does NOT call onSend', () => {
     const onSend = jest.fn()
     const { result } = renderComposer(onSend)
-    const cmd = { id: 'search', label: '/search', needsArgs: true, description: 'Search' }
+    const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
     act(() => { result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).not.toHaveBeenCalled()
     expect(result.current.pendingArgCommand).toEqual(cmd)
@@ -125,7 +125,7 @@ describe('useComposerState', () => {
   it('handleSlashArgConfirm calls onSend with /<id> <arg> and clears pendingArgCommand', () => {
     const onSend = jest.fn()
     const { result } = renderComposer(onSend)
-    const cmd = { id: 'search', label: '/search', needsArgs: true, description: 'Search' }
+    const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
     act(() => { result.current.handleSlashCommandSelect(cmd) })
     act(() => { result.current.handleSlashArgConfirm(cmd, 'foo bar') })
     expect(onSend).toHaveBeenCalledWith('/search foo bar', '/search foo bar')

@@ -75,6 +75,8 @@ interface SettingsStore {
   aiGeneratedNames: boolean
   setAutoNameFromMessage: (v: boolean) => void
   setAiGeneratedNames: (v: boolean) => void
+  sessionView: 'chat' | 'terminal'
+  setSessionView: (v: 'chat' | 'terminal') => void
   hydrate: () => Promise<void>
 }
 
@@ -106,6 +108,7 @@ interface PersistedSettings {
   rowPreviewModalCount: RowPreviewModalCount
   autoNameFromMessage: boolean
   aiGeneratedNames: boolean
+  sessionView: 'chat' | 'terminal'
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -120,6 +123,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   locale: 'en',
   autoNameFromMessage: true,
   aiGeneratedNames: false,
+  sessionView: 'chat',
 
   // Conversation row defaults (locked in plan §13).
   rowTitleSource: 'title',
@@ -144,6 +148,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setLocale: (locale) => set({ locale }),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
+  setSessionView: (sessionView) => set({ sessionView }),
   setRowTitleSource: (rowTitleSource) => set({ rowTitleSource }),
   setRowPreviewMode: (rowPreviewMode) => set({ rowPreviewMode }),
   setRowDensity: (rowDensity) => set({ rowDensity }),
@@ -168,6 +173,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         locale: parsed.locale ?? state.locale,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
+        sessionView: parsed.sessionView === 'terminal' ? 'terminal' : state.sessionView,
         rowTitleSource: parsed.rowTitleSource ?? state.rowTitleSource,
         rowPreviewMode: parsed.rowPreviewMode ?? state.rowPreviewMode,
         rowDensity: parsed.rowDensity ?? state.rowDensity,
@@ -193,6 +199,7 @@ useSettingsStore.subscribe((state) => {
     locale: state.locale,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
+    sessionView: state.sessionView,
     rowTitleSource: state.rowTitleSource,
     rowPreviewMode: state.rowPreviewMode,
     rowDensity: state.rowDensity,

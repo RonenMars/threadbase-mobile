@@ -172,10 +172,7 @@ export function LiveConversationView({
         visible={slashBoardVisible}
         query={inputText.startsWith('/') ? inputText.slice(1) : ''}
         onSelect={handleSlashCommandSelect}
-        onDismiss={() => {
-          setSlashBoardVisible(false)
-          setInputText('')
-        }}
+        onDismiss={() => handleInputChange('')}
       />
 
       <SlashCommandArgModal
