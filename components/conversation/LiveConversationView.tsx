@@ -83,14 +83,17 @@ export function LiveConversationView({
   const newLive = liveMessages.filter((m) => !seenIds.has(m.id))
   const streamed = [...historicalMessages, ...newLive]
 
-  // Drop optimistic turns whose echo has already landed in the stream — a user
-  // message with the same text. Avoids showing the sent bubble twice.
-  const echoedText = new Set(
-    streamed
-      .filter((m) => m.role === 'user')
-      .map((m) => userMessageText(m)),
-  )
-  const stillPending = pendingSends.filter((m) => !echoedText.has(userMessageText(m)))
+  // Drop optimistic turns whose echo has landed in the stream — matched one-for-one
+  // by text so duplicate sends (same text twice) each need their own echo to clear.
+  const echoedUserTexts = streamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
+  const stillPending = (() => {
+    const remaining = [...pendingSends]
+    for (const echoText of echoedUserTexts) {
+      const idx = remaining.findIndex((m) => userMessageText(m) === echoText)
+      if (idx !== -1) remaining.splice(idx, 1)
+    }
+    return remaining
+  })()
   const allMessages = [...streamed, ...stillPending]
 
   // Session status for thinking indicator
@@ -101,19 +104,19 @@ export function LiveConversationView({
   // Show thinking bubble when session is running and the last real message isn't an assistant reply
   const lastMessage = allMessages[allMessages.length - 1]
   const isAgentThinking =
-    session?.status === 'running' && lastMessage?.role !== 'assistant'
+    (session?.status === 'running' || pendingSends.length > 0)
+    && lastMessage?.role !== 'assistant'
 
   // 'hidden' → 'thinking' (agent running) → 'fading' (agent done) → 'hidden'
   const [thinkingState, setThinkingState] = useState<'hidden' | 'thinking' | 'fading'>('hidden')
 
   useEffect(() => {
     if (isAgentThinking) {
-      setThinkingState('thinking') // eslint-disable-line react-hooks/set-state-in-effect
+      setThinkingState('thinking')
     } else if (thinkingState === 'thinking') {
-      setThinkingState('fading') // eslint-disable-line react-hooks/set-state-in-effect
+      setThinkingState('fading')
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAgentThinking])
+  }, [isAgentThinking, thinkingState])
 
   const handleFadeOutComplete = useCallback(() => setThinkingState('hidden'), [])
 

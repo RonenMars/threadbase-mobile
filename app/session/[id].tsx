@@ -493,7 +493,8 @@ export default function SessionDetailScreen() {
 
   const isWakingUp =
     session?.status === 'running' &&
-    !hasReachedPrompt
+    !hasReachedPrompt &&
+    (session?.promptCount ?? 0) === 0
 
   const infoModal = (
     <InfoModal
