@@ -138,7 +138,7 @@ function WakingUpOverlay({ phrase }: { phrase: string }) {
   const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value }))
 
   return (
-    <View style={wakingStyles.overlay}>
+    <View style={wakingStyles.overlay} testID="waking-up-overlay">
       <View style={wakingStyles.card}>
         <Animated.Text style={[wakingStyles.emoji, emojiStyle]}>🤖</Animated.Text>
         <View style={wakingStyles.dots}>

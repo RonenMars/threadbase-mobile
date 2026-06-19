@@ -72,7 +72,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   const visibleLines = lines.slice(-60).map(stripAnsi).filter(l => l.trim().length > 0)
 
   return (
-    <Animated.View style={[styles.wrapper, { opacity }]}>
+    <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
         {hasLines ? (
           <ScrollView
