@@ -122,6 +122,32 @@ export type MessageContent =
   | { type: 'tool_result'; toolName: string; content: string; isError?: boolean }
   | { type: 'diff'; filename: string; hunks: DiffHunk[] }
 
+export interface AskOption {
+  label: string
+  description: string
+  preview?: string
+}
+
+export interface AskQuestion {
+  question: string
+  header: string
+  multiSelect: boolean
+  options: AskOption[]
+}
+
+export interface QuestionWsMessage {
+  type: 'question'
+  sessionId: string
+  toolUseId: string
+  questions: AskQuestion[]
+}
+
+export interface QuestionCancelledWsMessage {
+  type: 'question_cancelled'
+  sessionId: string
+  toolUseId: string
+}
+
 export interface DiffHunk {
   oldStart: number
   oldLines: number
