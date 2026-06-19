@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
+  type LayoutChangeEvent,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -429,6 +430,7 @@ export default function SessionDetailScreen() {
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
   const [planVisible, setPlanVisible] = useState(false)
+  const [aboveBodyHeight, setAboveBodyHeight] = useState(0)
 
   const sessionFavoriteId = buildFavoriteId(serverId, 'session', id ?? '')
   const isSessionFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === sessionFavoriteId))
@@ -608,14 +610,16 @@ export default function SessionDetailScreen() {
 
   return (
     <SafeAreaView style={styles.flex} edges={['top']} testID="session-detail-screen">
-      <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
-      {session ? (
-        <View style={styles.statusBar}>
-          <SessionStatusBadge status={session.status} isRefetching={false} />
-          <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
-          <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
-        </View>
-      ) : null}
+      <View onLayout={(e: LayoutChangeEvent) => setAboveBodyHeight(e.nativeEvent.layout.height)}>
+        <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
+        {session ? (
+          <View style={styles.statusBar}>
+            <SessionStatusBadge status={session.status} isRefetching={false} />
+            <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
+            <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.body}>
         {isLive ? (
@@ -636,6 +640,7 @@ export default function SessionDetailScreen() {
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+                keyboardVerticalOffset={aboveBodyHeight}
               />
             )}
             {isWakingUp ? (

@@ -29,6 +29,8 @@ interface Props {
   /** Plan to preview, surfaced from the session screen's plan_ready listener. */
   pendingPlan?: string | null
   onClosePlan?: () => void
+  /** Height of UI above this view (header + status bar) so KeyboardAvoidingView offsets correctly. */
+  keyboardVerticalOffset?: number
 }
 
 // Concatenate a user message's text blocks for echo matching.
@@ -61,6 +63,7 @@ export function LiveConversationView({
   disabled = false,
   pendingPlan = null,
   onClosePlan,
+  keyboardVerticalOffset = 0,
 }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -169,7 +172,7 @@ export function LiveConversationView({
   }, [allMessages.length])
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardVerticalOffset}>
       <FlashList
         ref={listRef}
         data={allMessages}
