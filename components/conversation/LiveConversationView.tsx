@@ -115,9 +115,9 @@ export function LiveConversationView({
 
   useEffect(() => {
     if (isAgentThinking) {
-      setThinkingState('thinking')
+      setThinkingState('thinking') // eslint-disable-line react-hooks/set-state-in-effect
     } else if (thinkingState === 'thinking') {
-      setThinkingState('fading')
+      setThinkingState('fading') // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [isAgentThinking, thinkingState])
 
