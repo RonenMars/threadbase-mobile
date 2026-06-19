@@ -1,0 +1,12 @@
+{
+  "id": "session-first-run",
+  "status": "running",
+  "ptyAttached": true,
+  "projectPath": "/home/user/my-project",
+  "projectName": "my-project",
+  "branch": "main",
+  "lastOutput": "",
+  "elapsedMs": 500,
+  "promptCount": 0,
+  "startedAt": "2026-05-01T10:00:00.000Z"
+}

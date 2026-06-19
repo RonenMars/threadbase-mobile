@@ -100,6 +100,9 @@ function handleRequest(req, res) {
     if (sessionMatch[1] === 'session-waiting') {
       return json(res, 200, readFixture('session-waiting-input.json'))
     }
+    if (sessionMatch[1] === 'session-first-run') {
+      return json(res, 200, readFixture('session-first-run.json'))
+    }
     return json(res, 200, readFixture('session-detail.json'))
   }
 
