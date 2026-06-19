@@ -19,6 +19,21 @@ When adding new Maestro flows:
 
 ---
 
+## Comments — Non-Trivial Only
+
+Never add comments that restate what the code already says. Only comment when the code is complex, non-obvious, or would surprise a reader without context.
+
+```tsx
+// bad — restates the code
+const count = items.length // get the length of items
+
+// good — explains the non-obvious why
+// FlashList measures items lazily; an explicit key forces re-layout on data swap
+<FlashList key={sessionId} ... />
+```
+
+---
+
 ## No Inline Conditional Text in JSX
 
 Extract multi-branch string expressions from JSX props into a named `const` above the return. Inline ternaries that produce UI strings are hard to read and harder to translate.
