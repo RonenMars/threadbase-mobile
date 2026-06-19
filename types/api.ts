@@ -18,6 +18,8 @@ export interface Session {
   failureReason?: string
   /** Set when this session was started via `/api/sessions/resume`. */
   resumedFromConversationId?: string | null
+  /** Conversation ID for the live JSONL log backing this session. */
+  conversationId?: string | null
 }
 
 export interface MessageSnapshot {

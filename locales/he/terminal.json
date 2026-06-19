@@ -47,7 +47,9 @@
     "alreadyRunningBody": "לסשן זה יש תהליך פעיל בשרת. חידוש כאן יעצור את התהליך וישתחיל סשן טרמינל חדש באפליקציה.",
     "overtake": "השתלט",
     "prompts_one": "פרומפט אחד",
-    "prompts_other": "{{count}} פרומפטים"
+    "prompts_other": "{{count}} פרומפטים",
+    "tabTerminal": "טרמינל",
+    "tabChat": "צ'אט"
   },
   "banner": {
     "streamingInfo": "קריאות כלי ופלט זורמים כאן בזמן אמת. הקלד המשך למטה בזמן ש-Claude עדיין עובד."
