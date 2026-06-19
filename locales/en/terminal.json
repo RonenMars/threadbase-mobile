@@ -47,7 +47,9 @@
     "alreadyRunningBody": "This session has an active process on the server. Resuming here will stop that process and start a new terminal session in the app.",
     "overtake": "Overtake",
     "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts"
+    "prompts_other": "{{count}} prompts",
+    "tabTerminal": "Terminal",
+    "tabChat": "Chat"
   },
   "banner": {
     "streamingInfo": "Tool calls and output stream here in real time. Type a follow-up below while Claude is still working."
