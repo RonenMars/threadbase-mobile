@@ -1,0 +1,48 @@
+{
+  "skill_name": "expo-deploy",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just merged a bunch of fixes into main and I want to get a new build out to my testers on TestFlight. Can you walk me through the whole thing? I'd rather use the CLI if possible but tell me when I need to go to a website.",
+      "expected_output": "Step-by-step guide starting with eas build, monitoring the build, then eas submit, then what to do in App Store Connect / TestFlight. Should mention --auto-submit as a shortcut. Should clearly delineate CLI steps vs web-required steps.",
+      "files": [],
+      "expectations": [
+        "Runs or recommends `eas build --platform ios --profile production`",
+        "Explains how to monitor the build (eas build:list or the build URL)",
+        "Runs or recommends `eas submit --platform ios --profile production --latest`",
+        "Mentions the --auto-submit flag as a shortcut to combine build+submit",
+        "Explains that Apple processing takes 5-30 minutes after submission",
+        "Tells the user to verify the build in TestFlight / App Store Connect",
+        "Clearly separates what can be done via CLI vs what requires a browser"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I kicked off an EAS build like 20 minutes ago and I don't remember the URL. How do I check if it's done? Also once it finishes I want to know my options for getting it to testers without using the terminal.",
+      "expected_output": "Shows how to find the build status via CLI and web dashboard. Then walks through non-CLI options for TestFlight distribution (Expo dashboard submit button, Transporter app, App Store Connect).",
+      "files": [],
+      "expectations": [
+        "Runs or recommends `eas build:list` to find the build and its status",
+        "Mentions the Expo web dashboard as an alternative to check build status",
+        "Provides the Expo dashboard URL pattern or tells user to go to expo.dev",
+        "Explains at least 2 non-CLI options for submitting to TestFlight (e.g. Expo dashboard button, Transporter app, or manual upload via ASC)",
+        "Does NOT default to CLI commands for the submission part since user asked for non-terminal options"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "OK so we've been testing 1.0.0 on TestFlight for a week and everything looks good. I want to do a full App Store release — bump the version to 1.1.0 and release it to production. Give me the full rundown of everything I need to do.",
+      "expected_output": "Complete release workflow: version bump considerations, production build, submission, App Store Connect metadata, review submission. Should mention that version is in app.json and that build numbers auto-increment via EAS.",
+      "files": [],
+      "expectations": [
+        "Addresses the version bump from 1.0.0 to 1.1.0 (updating app.json version field)",
+        "Explains that build numbers auto-increment via EAS (appVersionSource: remote)",
+        "Includes building with production profile",
+        "Includes submitting to App Store Connect",
+        "Walks through the App Store Connect steps: create new version, release notes, screenshots, select build, submit for review",
+        "Mentions Apple review timeline (24-48 hours typical)",
+        "Mentions the choice between manual and automatic release after approval"
+      ]
+    }
+  ]
+}
