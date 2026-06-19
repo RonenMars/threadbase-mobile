@@ -37,6 +37,7 @@
     "lint:i18n": "eslint ./app ./components ./hooks ./services ./constants ./types --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test:scripts": "node_modules/.bin/jest --config jest.config.scripts.js --ci --forceExit",
+    "dev:reset": "rm -rf node_modules && npm ci && cd ios && rm -rf Pods && pod install && cd .. && npx expo start --dev-client --tunnel --clear",
     "kill:metro": "./scripts/kill-metro.sh",
     "ship:ios": "./scripts/ship-ios.sh",
     "ship:android": "./scripts/ship-android.sh",
