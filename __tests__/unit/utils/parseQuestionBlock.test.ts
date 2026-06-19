@@ -26,8 +26,9 @@ describe('parseQuestionBlock', () => {
     ]
     const result = parseQuestionBlock(lines)
     expect(result).not.toBeNull()
-    expect(result!.questionText).toBe('Add fallback to ConversationCache?')
-    expect(result!.options).toEqual([
+    const q = result!.questions[0]
+    expect(q.question).toBe('Add fallback to ConversationCache?')
+    expect(q.options.map(o => o.label)).toEqual([
       'both (Recommended)',
       'indicator only',
       'discriminator only',
@@ -54,8 +55,9 @@ describe('parseQuestionBlock', () => {
       '  no thanks',
     ]
     const result = parseQuestionBlock(lines)
-    expect(result!.options[0]).toBe('yes please')
-    expect(result!.options[1]).toBe('no thanks')
+    const q = result!.questions[0]
+    expect(q.options[0].label).toBe('yes please')
+    expect(q.options[1].label).toBe('no thanks')
   })
 
   it('stops collecting options at a non-option line', () => {
@@ -67,7 +69,7 @@ describe('parseQuestionBlock', () => {
       '  not an option',
     ]
     const result = parseQuestionBlock(lines)
-    expect(result!.options).toEqual(['Option A', 'Option B'])
+    expect(result!.questions[0].options.map(o => o.label)).toEqual(['Option A', 'Option B'])
   })
 
   it('uses last question block when multiple exist', () => {
@@ -80,8 +82,9 @@ describe('parseQuestionBlock', () => {
       '  new option B',
     ]
     const result = parseQuestionBlock(lines)
-    expect(result!.questionText).toBe('Second question?')
-    expect(result!.options).toEqual(['new option A', 'new option B'])
+    const q = result!.questions[0]
+    expect(q.question).toBe('Second question?')
+    expect(q.options.map(o => o.label)).toEqual(['new option A', 'new option B'])
   })
 
   it('strips leading ? and whitespace from question text', () => {
@@ -91,7 +94,7 @@ describe('parseQuestionBlock', () => {
       '  nothing',
     ]
     const result = parseQuestionBlock(lines)
-    expect(result!.questionText).toBe('What should we do?')
+    expect(result!.questions[0].question).toBe('What should we do?')
   })
 
   it('returns null when options array would be empty', () => {
@@ -108,8 +111,9 @@ describe('parseQuestionBlock', () => {
     ]
     const result = parseQuestionBlock(lines)
     expect(result).not.toBeNull()
-    expect(result!.questionText).toBe('Do something?')
-    expect(result!.options).toEqual(['yes please', 'no thanks'])
+    const q = result!.questions[0]
+    expect(q.question).toBe('Do something?')
+    expect(q.options.map(o => o.label)).toEqual(['yes please', 'no thanks'])
     expect(result!.selectedIndex).toBe(0)
   })
 
@@ -121,6 +125,52 @@ describe('parseQuestionBlock', () => {
       '    deeper indented tool output',
     ]
     const result = parseQuestionBlock(lines)
-    expect(result!.options).toEqual(['Option A', 'Option B'])
+    expect(result!.questions[0].options.map(o => o.label)).toEqual(['Option A', 'Option B'])
+  })
+
+  it('parses numbered-list format with no leading ? (skill picker style)', () => {
+    const lines = [
+      'The MultiStore writes to multiple backends. What happens when Neon is unreachable?',
+      '❯ 1. Crashes with unhandled exception',
+      '  2. Falls back to JSON file store',
+      '  3. Retries 3 times then skips',
+      'Enter to select  ↑/↓ to navigate · Esc to cancel',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result).not.toBeNull()
+    const q = result!.questions[0]
+    expect(q.question).toBe('The MultiStore writes to multiple backends. What happens when Neon is unreachable?')
+    expect(q.options.map(o => o.label)).toEqual([
+      'Crashes with unhandled exception',
+      'Falls back to JSON file store',
+      'Retries 3 times then skips',
+    ])
+    expect(result!.selectedIndex).toBe(0)
+  })
+
+  it('strips numbered prefix from options in ? format too', () => {
+    const lines = [
+      '? Which approach?',
+      '❯ 1. First option',
+      '  2. Second option',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result!.questions[0].options.map(o => o.label)).toEqual(['First option', 'Second option'])
+  })
+
+  it('accepts 3-space-indented options (aligned numbered lists)', () => {
+    const lines = ['? Pick one', '❯ 1. First', '   2. Second', '   3. Third']
+    const q = parseQuestionBlock(lines)!.questions[0]
+    expect(q.options.map(o => o.label)).toEqual(['First', 'Second', 'Third'])
+  })
+
+  it('does not treat a box-drawing border as the question (Format 2)', () => {
+    const lines = ['────────────', '❯ Option A', '  Option B']
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('reports source as pty', () => {
+    const lines = ['? Q', '❯ A', '  B']
+    expect(parseQuestionBlock(lines)!.source).toBe('pty')
   })
 })
