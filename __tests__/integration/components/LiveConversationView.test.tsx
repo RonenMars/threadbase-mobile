@@ -37,6 +37,50 @@ jest.mock('@/services/ws-client', () => ({
   },
 }))
 
+// useComposerState imports expo-speech-recognition at module load time; mock it
+// here (not just in jest.setup.js) so Jest hoisting intercepts before require.
+jest.mock('expo-speech-recognition', () => ({
+  ExpoSpeechRecognitionModule: {
+    requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
+    getPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+  useSpeechRecognitionEvent: jest.fn(),
+}))
+
+jest.mock('react-native-keyboard-controller', () => ({
+  KeyboardProvider: ({ children }: { children: unknown }) => children,
+  KeyboardAwareScrollView: ({ children }: { children: unknown }) => children,
+}))
+
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaProvider: ({ children }: { children: unknown }) => children,
+  SafeAreaView: ({ children }: { children: unknown }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
+// useComposerState deps not already covered by jest.setup.js
+jest.mock('@/stores/drafts', () => {
+  const store = (sel: (s: { setDraft: jest.Mock; clearDraft: jest.Mock; hydrate: jest.Mock; getDraft: jest.Mock }) => unknown) =>
+    sel({ setDraft: jest.fn(), clearDraft: jest.fn(), hydrate: jest.fn().mockResolvedValue(undefined), getDraft: jest.fn().mockReturnValue(null) })
+  store.getState = () => ({ getDraft: jest.fn().mockReturnValue(null) })
+  return { useDraftsStore: store }
+})
+jest.mock('@/stores/settings', () => ({
+  useSettingsStore: () => ({ autoNameFromMessage: false }),
+}))
+jest.mock('@/stores/sessionNames', () => ({
+  useSessionNamesStore: (sel: (s: { getName: () => undefined }) => unknown) =>
+    sel({ getName: () => undefined }),
+}))
+jest.mock('@/hooks/useSessionName', () => ({
+  useRenameSession: () => ({ mutate: jest.fn() }),
+}))
+jest.mock('@/hooks/useVoiceInput', () => ({
+  useVoiceInput: () => ({ listening: false, start: jest.fn(), stop: jest.fn() }),
+}))
+
 function renderView() {
   return render(
     <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
