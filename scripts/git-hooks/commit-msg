@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# commit-msg: append [skip-ci] when the commit touches no CI-significant path.
+# A pre-commit hook can't rewrite the message, so this lives in commit-msg.
+# Path list: scripts/git-hooks/ci-paths.txt — rationale: docs/ci-significant-paths.md.
+set -euo pipefail
+
+MSG_FILE="$1"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PATHS_FILE="$REPO_ROOT/scripts/git-hooks/ci-paths.txt"
+
+# Already tagged (e.g. version-bump commits) → leave as-is. Idempotent.
+grep -qF -- '[skip-ci]' "$MSG_FILE" && exit 0
+[ -f "$PATHS_FILE" ] || exit 0
+
+# Staged files. Empty (merge commit, --allow-empty) → nothing to classify, leave as-is.
+staged="$(git diff --cached --name-only --diff-filter=ACMRD)"
+[ -n "$staged" ] || exit 0
+
+# Any staged path under a CI-significant prefix / exact file? → real change, leave as-is.
+while IFS= read -r pattern; do
+  pattern="${pattern%%#*}"; pattern="$(printf '%s' "$pattern" | tr -d '[:space:]')"
+  [ -n "$pattern" ] || continue
+  if [ "${pattern%/}" != "$pattern" ]; then
+    printf '%s\n' "$staged" | grep -q "^${pattern}" && exit 0   # dir prefix
+  else
+    printf '%s\n' "$staged" | grep -qx "$pattern" && exit 0      # exact file
+  fi
+done < "$PATHS_FILE"
+
+# No CI-significant path touched → append [skip-ci] to title and as a body suffix.
+# Title: first non-comment line. Body suffix: appended after a blank line.
+tmp="$(mktemp)"
+awk '
+  !done && !/^#/ && NF { sub(/[[:space:]]*$/, ""); print $0 " [skip-ci]"; done=1; next }
+  { print }
+  END { print ""; print "[skip-ci]" }
+' "$MSG_FILE" > "$tmp"
+mv "$tmp" "$MSG_FILE"
+exit 0

@@ -115,8 +115,12 @@ tb-mobile/
 ## Local Setup
 
 ```bash
-# 1. Install JS dependencies
+# 1. Install JS dependencies (also wires up git hooks via the `prepare` script)
 npm install
+
+# If you skip `npm install`, point git at the committed hooks manually:
+#   git config core.hooksPath scripts/git-hooks
+# (commit-msg hook auto-tags non-CI-significant commits — see docs/ci-significant-paths.md)
 
 # 2. Install iOS native dependencies
 cd ios && pod install && cd ..
