@@ -60,6 +60,20 @@ Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR 
 
 ---
 
+## Keep `ci-paths.txt` in Sync
+
+`scripts/git-hooks/ci-paths.txt` is the canonical list of paths that affect **app functionality, tests, or CI**. The `commit-msg` hook appends `[skip-ci]` to any commit that touches **none** of them, so CI skips the heavy jobs. If the list is stale, a real change can be silently mis-tagged `[skip-ci]` and skip CI.
+
+When you add or move something that affects functionality/tests/CI and it isn't already covered by an entry, add it to `ci-paths.txt`:
+
+- A **new top-level source dir** (imported at runtime or by tests) — e.g. a new `widgets/` or `api/` folder.
+- A **new root-level config** that feeds build/lint/type/test — e.g. a new `*.config.js`, `jest.config.*`, or `*-env.d.ts`.
+- A **new native/deploy input** at the root — e.g. a new ship script dir or lockfile that gates builds.
+
+Then mirror the entry in `docs/ci-significant-paths.md` with a one-line reason (that doc explains *why* each path is on the list). Don't add gitignored paths (e.g. `.env*`) — they can never be staged, so the hook never sees them. See `docs/ci-significant-paths.md` for the full rationale and the deliberate exclusions.
+
+---
+
 ## Icons
 
 **Never use emojis in the app UI.** All icons must come from the [Phosphor Icons](https://phosphoricons.com/) library (`phosphor-react-native`). Use the appropriate Phosphor component (e.g. `<Star />`, `<Clock />`, `<Fire />`, `<GearSix />`, `<PencilSimple />`). This applies to all new code and any code you touch.
