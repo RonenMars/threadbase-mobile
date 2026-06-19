@@ -24,6 +24,13 @@ export class NotFoundError extends Error {
   }
 }
 
+export class SessionNotFoundError extends Error {
+  constructor(public sessionId: string) {
+    super(`Session not found: ${sessionId}`)
+    this.name = 'SessionNotFoundError'
+  }
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.
@@ -97,6 +104,49 @@ async function request<T>(
   }
 
   return response.json() as Promise<T>
+}
+
+// Hard-stops a running PTY session via POST /api/sessions/:id/stop. The server
+// streams ndjson progress (`stopping` then `stopped`/`timeout`) for a live kill,
+// or returns plain JSON `{ status: "already_idle" }` if it was already stopped.
+// Uses a direct fetch rather than request<T>() because that helper parses the
+// body as JSON and throws on the ndjson stream. WS `session_update` drives the
+// status to idle afterwards — callers should not set status locally.
+export async function stopSession(
+  serverId: string,
+  sessionId: string,
+): Promise<'stopped' | 'timeout' | 'already_idle'> {
+  const server = useServersStore.getState().getServer(serverId)
+  if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
+
+  const url = `${server.url.replace(/\/$/, '')}/api/sessions/${encodeURIComponent(sessionId)}/stop`
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${server.apiKey}`,
+      },
+    })
+  } catch (err) {
+    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+  }
+
+  if (response.status === 404) throw new SessionNotFoundError(sessionId)
+  if (response.status === 401) throw new AuthError()
+  if (!response.ok) throw new NetworkError(`stop failed: ${response.status}`)
+
+  const text = await response.text()
+
+  if (response.headers.get('content-type')?.includes('application/json')) {
+    const body = JSON.parse(text) as { status?: string }
+    if (body.status === 'already_idle') return 'already_idle'
+  }
+
+  const last = text.trim().split('\n').filter(Boolean).at(-1)
+  if (!last) return 'stopped'
+  const event = JSON.parse(last) as { event?: string }
+  return event.event === 'timeout' ? 'timeout' : 'stopped'
 }
 
 // Conditional GET that surfaces the response status + ETag to the caller.

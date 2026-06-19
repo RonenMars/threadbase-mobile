@@ -6,6 +6,7 @@
     "copyId": "Copy Session ID",
     "sendInput": "Send Input",
     "cancel": "Cancel Session",
+    "stop": "Stop session",
     "more": "More"
   },
   "voice": {
@@ -22,7 +23,12 @@
     "removeTitle": "Remove Session",
     "removeMessage": "Are you sure you want to remove this session?",
     "removeConfirm": "Remove",
-    "removeDismiss": "Keep"
+    "removeDismiss": "Keep",
+    "stopTitle": "Stop session",
+    "stopMessage": "Stop this session? Claude will be interrupted.",
+    "stopConfirm": "Stop",
+    "stopDismiss": "Keep Running",
+    "stopFailed": "Couldn't stop the session. Check your connection and try again."
   },
   "status": {
     "connecting": "Connecting…",

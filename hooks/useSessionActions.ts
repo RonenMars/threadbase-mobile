@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, NetworkError } from '@/services/api-client'
+import { createApiForServer, NetworkError, stopSession } from '@/services/api-client'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt } from '@/types/api'
 
@@ -88,5 +88,16 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession }
+  // Hard-kills the PTY via /stop. Status is driven idle by the WS session_update
+  // the server broadcasts after the stream closes, so we only refresh the lists.
+  const stopSessionMutation = useMutation({
+    mutationFn: () => stopSession(serverId, sessionId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      qc.invalidateQueries({ queryKey: ['sessions-eager'] })
+      qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+    },
+  })
+
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession, stopSession: stopSessionMutation }
 }
