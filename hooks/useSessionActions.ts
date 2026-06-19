@@ -57,6 +57,11 @@ export function useSessionActions(serverId: string, sessionId: string) {
       api.post(`/api/sessions/${sessionId}/plan-response`, vars),
   })
 
+  const respondToQuestion = useMutation({
+    mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) =>
+      api.post(`/api/sessions/${sessionId}/answer`, vars),
+  })
+
   const adoptSession = useMutation({
     mutationFn: () =>
       api.post<{ sessionId: string }>(`/api/sessions/${sessionId}/adopt`),
@@ -67,5 +72,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, adoptSession }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession }
 }
