@@ -188,6 +188,6 @@ describe('ConversationListItem', () => {
       />,
     )
     const json = JSON.stringify(tree.toJSON())
-    expect(json).toMatch(/Friday|May/) // verbose form present in accessibilityLabel
+    expect(json).toMatch(/2026/) // verbose accessibilityLabel contains the year (locale-invariant)
   })
 })
