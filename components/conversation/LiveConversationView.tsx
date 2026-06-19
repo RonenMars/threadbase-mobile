@@ -175,7 +175,7 @@ export function LiveConversationView({
   }, [allMessages.length])
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardVerticalOffset}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'height' : undefined} keyboardVerticalOffset={keyboardVerticalOffset}>
       <FlashList
         ref={listRef}
         data={allMessages}
