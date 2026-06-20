@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Alert, StyleSheet } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
+import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -68,6 +70,7 @@ export function LiveConversationView({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
+  const qc = useQueryClient()
 
   // Optimistic user turns: shown immediately on send so the bubble doesn't
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
@@ -81,14 +84,14 @@ export function LiveConversationView({
   // Live appended messages (WS)
   const { liveMessages } = useConversationStream(serverId, sessionId, conversationId)
 
-  // Deduplicate: live messages may duplicate the last REST-fetched message
-  const seenIds = new Set(historicalMessages.map((m) => m.id))
-  const newLive = liveMessages.filter((m) => !seenIds.has(m.id))
-  const streamed = [...historicalMessages, ...newLive]
+  // Deduplicate live messages against historical by uuid (not id — REST uses index-based ids
+  // while WS uses uuid or timestamp fallback, so id never matches across sources).
+  const seenUuids = new Set(historicalMessages.map((m) => m.uuid).filter(Boolean))
+  const newLive = liveMessages.filter((m) => !m.uuid || !seenUuids.has(m.uuid))
 
-  // Drop optimistic turns whose echo has landed in the stream — matched one-for-one
-  // by text so duplicate sends (same text twice) each need their own echo to clear.
-  const echoedUserTexts = streamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
+  // Drop optimistic turns whose echo has landed — matched one-for-one by text.
+  const allStreamed = [...historicalMessages, ...newLive]
+  const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
   const stillPending = (() => {
     const remaining = [...pendingSends]
     for (const echoText of echoedUserTexts) {
@@ -97,10 +100,27 @@ export function LiveConversationView({
     }
     return remaining
   })()
-  const allMessages = [...streamed, ...stillPending]
+  // Order: historical → optimistic user bubble → live WS messages.
+  // This ensures the user's send always sits before any live assistant reply,
+  // even when the WS assistant message arrives before the REST echo clears stillPending.
+  const allMessages = [...historicalMessages, ...stillPending, ...newLive]
 
   // Session status for thinking indicator
   const { data: session } = useSessionDetail(serverId, sessionId)
+
+  // Keep session status fresh: subscribe to WS session_update so the cache
+  // updates immediately when the agent finishes (status: running → idle).
+  // Without this, useSessionDetail has no refetchInterval and the thinking
+  // bubble would stay visible until something else invalidates the query.
+  useEffect(() => {
+    const client = wsManager.getClient(serverId)
+    if (!client) return
+    return client.on('session_update', (msg) => {
+      if (msg.type !== 'session_update' || msg.session.id !== sessionId) return
+      qc.setQueryData(['session', serverId, sessionId], msg.session)
+    })
+  }, [serverId, sessionId, qc])
+
   // PTY lines shown inside the thinking bubble while agent is running
   const { lines: ptyLines, isStreaming } = useTerminalStream(serverId, sessionId)
 
@@ -123,7 +143,8 @@ export function LiveConversationView({
 
   const handleFadeOutComplete = useCallback(() => setThinkingState('hidden'), [])
 
-  const { sendInput } = useSessionActions(serverId, sessionId)
+  const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
+  const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
   const isConnected = () => wsManager.getClient(serverId)?.status() === 'connected'
 
@@ -166,13 +187,18 @@ export function LiveConversationView({
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend: send })
 
-  // Auto-scroll to bottom when a new message appears — a live WS message or
-  // the user's own optimistic send.
+  // Auto-scroll to bottom when a new message appears or the thinking bubble shows.
   useEffect(() => {
     if (allMessages.length > 0) {
       listRef.current?.scrollToEnd({ animated: true })
     }
   }, [allMessages.length])
+
+  useEffect(() => {
+    if (thinkingState === 'thinking') {
+      listRef.current?.scrollToEnd({ animated: true })
+    }
+  }, [thinkingState])
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'height' : undefined} keyboardVerticalOffset={keyboardVerticalOffset}>
@@ -184,15 +210,18 @@ export function LiveConversationView({
           <MessageItem message={item} isLast={index === allMessages.length - 1} />
         )}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
+        ListFooterComponent={thinkingState !== 'hidden' ? (
+          <ThinkingBubble
+            lines={ptyLines}
+            isStreaming={isStreaming}
+            fadingOut={thinkingState === 'fading'}
+            onFadeOutComplete={handleFadeOutComplete}
+            onSendKeys={(keys) => sendKeys.mutate(keys)}
+            activeQuestion={activeQuestion}
+            onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+          />
+        ) : null}
       />
-      {thinkingState !== 'hidden' ? (
-        <ThinkingBubble
-          lines={ptyLines}
-          isStreaming={isStreaming}
-          fadingOut={thinkingState === 'fading'}
-          onFadeOutComplete={handleFadeOutComplete}
-        />
-      ) : null}
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}

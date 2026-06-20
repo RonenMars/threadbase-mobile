@@ -130,9 +130,10 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
     [lines, onSendKeys]
   )
 
-  const handleOptionSelect = useCallback((targetIndex: number) => {
+  const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
-    const delta = targetIndex - questionBlock.selectedIndex
+    const start = questionBlock.selectedIndex ?? 0
+    const delta = optionIndex - start
     const arrow = delta > 0 ? '\x1b[B' : '\x1b[A'
     const keys = arrow.repeat(Math.abs(delta)) + '\r'
     onSendKeys(keys)
