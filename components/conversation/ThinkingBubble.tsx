@@ -3,13 +3,8 @@ import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { stripAnsi } from '@/utils/stripAnsi'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
-
-// Strip ANSI escape codes from raw PTY output
-function stripAnsi(s: string) {
-  // eslint-disable-next-line no-control-regex
-  return s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1b\][^\x07]*\x07/g, '')
-}
 
 function DotsAnimation({ style }: { style?: object }) {
   // useMemo so Animated.Value instances are stable across re-renders
