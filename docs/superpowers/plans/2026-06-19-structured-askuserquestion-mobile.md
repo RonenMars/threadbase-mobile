@@ -43,7 +43,7 @@
 **Interfaces:**
 - Produces: `AskOption`, `AskQuestion`, `QuestionWsMessage`, `QuestionCancelledWsMessage`.
 
-- [ ] **Step 1: Add the types**
+- [x] **Step 1: Add the types**
 
 In `types/api.ts`, append:
 
@@ -75,7 +75,7 @@ export interface QuestionCancelledWsMessage {
 }
 ```
 
-- [ ] **Step 2: Add a compile-time test**
+- [x] **Step 2: Add a compile-time test**
 
 Create `__tests__/unit/types/askQuestion.types.test.ts`:
 
@@ -107,12 +107,12 @@ describe('AskQuestion types', () => {
 })
 ```
 
-- [ ] **Step 3: Run test**
+- [x] **Step 3: Run test**
 
 Run: `npx jest __tests__/unit/types/askQuestion.types.test.ts`
 Expected: PASS (and `tsc` clean).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add types/api.ts __tests__/unit/types/askQuestion.types.test.ts
@@ -130,7 +130,7 @@ git commit -m "feat(chat): add structured AskUserQuestion message types"
 **Interfaces:**
 - Produces: `stripAnsi(s: string): string` (handles CSI, OSC with BEL or ST terminator, and 2-char ESC sequences).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `__tests__/unit/utils/stripAnsi.test.ts`:
 
@@ -153,12 +153,12 @@ describe('stripAnsi', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npx jest __tests__/unit/utils/stripAnsi.test.ts`
 Expected: FAIL — cannot find module `@/utils/stripAnsi`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `utils/stripAnsi.ts` (lift the stronger regex from `parseQuestionBlock.ts`):
 
@@ -171,12 +171,12 @@ export function stripAnsi(s: string): string {
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `npx jest __tests__/unit/utils/stripAnsi.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add utils/stripAnsi.ts __tests__/unit/utils/stripAnsi.test.ts
@@ -195,7 +195,7 @@ git commit -m "feat(chat): extract shared stripAnsi util"
 - Consumes: `stripAnsi` from Task 2.
 - Produces: widened `QuestionBlock`, `QuestionItem`, `QuestionOption`; `parseQuestionBlock(lines: string[]): QuestionBlock | null` returning `source:'pty'`.
 
-- [ ] **Step 1: Update the type and adapt existing tests to the new shape**
+- [x] **Step 1: Update the type and adapt existing tests to the new shape**
 
 Replace the `QuestionBlock` interface at the top of `utils/parseQuestionBlock.ts`:
 
@@ -243,7 +243,7 @@ if (options.length > 0) {
 
 and Format 2 likewise with `questionLineIndex: qIdx`.
 
-- [ ] **Step 2: Update existing test assertions to the new shape**
+- [x] **Step 2: Update existing test assertions to the new shape**
 
 In `__tests__/unit/utils/parseQuestionBlock.test.ts`, the existing cases assert `result!.questionText` / `result!.options` (string[]). Change them to read the first question, e.g.:
 
@@ -256,7 +256,7 @@ expect(result!.selectedIndex).toBe(0)
 
 Apply the same `.questions[0]` + `.options.map(o => o.label)` transform to every existing assertion in the file.
 
-- [ ] **Step 3: Add the new hardening cases (failing)**
+- [x] **Step 3: Add the new hardening cases (failing)**
 
 Append to the same test file:
 
@@ -278,12 +278,12 @@ it('reports source as pty', () => {
 })
 ```
 
-- [ ] **Step 4: Run, expect new cases to fail**
+- [x] **Step 4: Run, expect new cases to fail**
 
 Run: `npx jest __tests__/unit/utils/parseQuestionBlock.test.ts`
 Expected: the 3-space and border-rejection cases FAIL (indent rule too strict; border accepted as question).
 
-- [ ] **Step 5: Implement the two rule changes**
+- [x] **Step 5: Implement the two rule changes**
 
 In `utils/parseQuestionBlock.ts`:
 
@@ -302,12 +302,12 @@ if (/Enter to select|↑|↓|Esc to cancel/.test(questionText)) return null
 if (/^[\s│─┌┐└┘├┤┬┴┼╭╮╰╯=_-]+$/.test(questionText)) return null
 ```
 
-- [ ] **Step 6: Run, expect all pass**
+- [x] **Step 6: Run, expect all pass**
 
 Run: `npx jest __tests__/unit/utils/parseQuestionBlock.test.ts`
 Expected: PASS (all existing + 3 new).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add utils/parseQuestionBlock.ts utils/stripAnsi.ts __tests__/unit/utils/parseQuestionBlock.test.ts
@@ -326,7 +326,7 @@ git commit -m "refactor(chat): widen QuestionBlock shape and harden PTY question
 - Consumes: `AskQuestion` (Task 1), `QuestionBlock`/`QuestionItem` (Task 3).
 - Produces: `mapAskQuestionToBlock(toolUseId: string, questions: AskQuestion[]): QuestionBlock` returning `source:'structured'` (no `selectedIndex`/`questionLineIndex`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `__tests__/unit/utils/mapAskQuestionToBlock.test.ts`:
 
@@ -356,12 +356,12 @@ describe('mapAskQuestionToBlock', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npx jest __tests__/unit/utils/mapAskQuestionToBlock.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `utils/mapAskQuestionToBlock.ts`:
 
@@ -383,12 +383,12 @@ export function mapAskQuestionToBlock(toolUseId: string, questions: AskQuestion[
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `npx jest __tests__/unit/utils/mapAskQuestionToBlock.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add utils/mapAskQuestionToBlock.ts __tests__/unit/utils/mapAskQuestionToBlock.test.ts
@@ -407,7 +407,7 @@ git commit -m "feat(chat): map structured AskUserQuestion to QuestionBlock"
 - Consumes: `mapAskQuestionToBlock` (Task 4); the app's WS subscription mechanism. **Read `hooks/useConversationStream.ts` first** to copy its exact WS connection pattern (how it gets the socket for `serverId`/`sessionId` and registers a message handler) — mirror it; do not invent a new transport.
 - Produces: `useActiveQuestion(serverId: string, sessionId: string): { question: QuestionBlock | null; clear: () => void }`. On a `question` message for this `sessionId`, sets `question = mapAskQuestionToBlock(...)`. On `question_cancelled` matching the held `toolUseId`, sets `null`.
 
-- [ ] **Step 1: Write the failing test** (drive the reducer logic directly so it doesn't depend on live WS)
+- [x] **Step 1: Write the failing test** (drive the reducer logic directly so it doesn't depend on live WS)
 
 Create `__tests__/unit/hooks/useActiveQuestion.test.tsx`:
 
@@ -443,12 +443,12 @@ describe('useActiveQuestionReducer', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useActiveQuestion.test.tsx`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement the reducer + the WS-wired hook**
+- [x] **Step 3: Implement the reducer + the WS-wired hook**
 
 Create `hooks/useActiveQuestion.ts`. The reducer is pure and exported for tests; the public hook wires it to the WS exactly as `useConversationStream` does.
 
@@ -486,12 +486,12 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
 
 NOTE: the `useActiveQuestion` wrapper's WS wiring must be copied from `useConversationStream` — replace the `TODO-DURING-IMPL` with the real subscription using that file's exact socket accessor. The reducer (tested above) carries all the logic; the wrapper only plumbs messages in.
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/useActiveQuestion.test.tsx`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add hooks/useActiveQuestion.ts __tests__/unit/hooks/useActiveQuestion.test.tsx
@@ -510,7 +510,7 @@ git commit -m "feat(chat): add useActiveQuestion hook for structured prompts"
 - Consumes: existing `createApiForServer(serverId)` and the `useMutation` pattern already in the file.
 - Produces: `respondToQuestion` mutation with `mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) => api.post(\`/api/sessions/${sessionId}/answer\`, vars)`, exposed on the hook's return object.
 
-- [ ] **Step 1: Write the failing test** (mock the api client, assert the POST shape)
+- [x] **Step 1: Write the failing test** (mock the api client, assert the POST shape)
 
 Create `__tests__/unit/hooks/useSessionActions.respondToQuestion.test.tsx`:
 
@@ -542,12 +542,12 @@ describe('respondToQuestion', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useSessionActions.respondToQuestion.test.tsx`
 Expected: FAIL — `respondToQuestion` is undefined.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `hooks/useSessionActions.ts`, after the `respondToPlan` mutation, add:
 
@@ -560,12 +560,12 @@ const respondToQuestion = useMutation({
 
 and include `respondToQuestion` in the hook's returned object (match how `respondToPlan` is returned).
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/useSessionActions.respondToQuestion.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add hooks/useSessionActions.ts __tests__/unit/hooks/useSessionActions.respondToQuestion.test.tsx
@@ -584,7 +584,7 @@ git commit -m "feat(chat): add respondToQuestion mutation"
 - Consumes: widened `QuestionBlock` (Task 3).
 - Produces: `QuestionCard` props `{ block: QuestionBlock; onSelect: (questionIndex: number, optionIndex: number) => void }`. v1 renders `block.questions[0]` as single-select radios; shows `header` (if present) and each option's `description` (if present). `preview` rendered in a monospace `<Text>` when present.
 
-- [ ] **Step 1: Adapt existing tests to the new props + shape**
+- [x] **Step 1: Adapt existing tests to the new props + shape**
 
 The existing `QuestionCard.test.tsx` builds a `QuestionBlock` with `questionText`/`options: string[]` and calls `onSelect(index)`. Update the fixture to the new shape and the callback to `(0, index)`:
 
@@ -602,7 +602,7 @@ const block = {
 
 Update the press assertion to expect `onSelect).toHaveBeenCalledWith(0, 1)` for the second option.
 
-- [ ] **Step 2: Add new rendering cases (failing)**
+- [x] **Step 2: Add new rendering cases (failing)**
 
 ```ts
 it('renders the header and option descriptions', () => {
@@ -617,21 +617,21 @@ it('renders a preview block when present', () => {
 })
 ```
 
-- [ ] **Step 3: Run, expect new cases to fail**
+- [x] **Step 3: Run, expect new cases to fail**
 
 Run: `npx jest __tests__/unit/components/terminal/QuestionCard.test.tsx`
 Expected: FAIL — header/description/preview not rendered; old prop shape.
 
-- [ ] **Step 4: Implement the widened render**
+- [x] **Step 4: Implement the widened render**
 
 Rewrite `QuestionCard.tsx` body to read `const q = block.questions[0]`, render `q.header` (when truthy) as a chip above the question, map `q.options` to rows showing `option.label` and (when truthy) `option.description` on a secondary line, and render `option.preview` in a `<Text style={styles.preview}>` (monospace) when truthy. Keep the existing radio visuals; selection highlight may key off a local `selected` state (structured questions have no pre-selection — start unselected). Call `onSelect(0, index)` on press. Extract any multi-branch label strings to a named `const` (CLAUDE.md). Add a `preview` style: `{ fontFamily: 'monospace', fontSize: 12, color: '#8b949e', marginTop: 4 }`.
 
-- [ ] **Step 5: Run, expect all pass**
+- [x] **Step 5: Run, expect all pass**
 
 Run: `npx jest __tests__/unit/components/terminal/QuestionCard.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add components/terminal/QuestionCard.tsx __tests__/unit/components/terminal/QuestionCard.test.tsx
@@ -650,7 +650,7 @@ git commit -m "feat(chat): render structured fields in QuestionCard"
 - Consumes: `useActiveQuestion` (Task 5) via a new optional prop `activeQuestion?: QuestionBlock | null` (the parent `LiveConversationView` supplies it from the hook — keeps `ThinkingBubble` pure/testable); `respondToQuestion` via a new optional prop `onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void`.
 - Produces: when `activeQuestion` is present, render `QuestionCard` from it and route selection to `onAnswer`; otherwise fall back to the existing PTY `parseQuestionBlock(lines.slice(-30))` + `onSendKeys` path.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `__tests__/unit/components/conversation/ThinkingBubble.question.test.tsx`:
 
@@ -676,23 +676,23 @@ describe('ThinkingBubble structured question', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npx jest __tests__/unit/components/conversation/ThinkingBubble.question.test.tsx`
 Expected: FAIL — `activeQuestion`/`onAnswer` props not handled.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `ThinkingBubble.tsx`:
 - Extend `Props` with `activeQuestion?: QuestionBlock | null` and `onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void` (import `QuestionBlock` type).
 - Replace the question render block (lines ~62–72, 108–110) with: if `activeQuestion` present, render `<QuestionCard block={activeQuestion} onSelect={(qi, oi) => { const q = activeQuestion.questions[qi]; onAnswer?.(activeQuestion.toolUseId!, { [q.question]: q.options[oi].label }) }} />`; else keep the existing `questionBlock = onSendKeys ? parseQuestionBlock(...) : null` fallback rendering with the old `handleOptionSelect` keystroke path (now adapted to the `(qi, oi)` signature: compute target = oi, `arrow.repeat(Math.abs(oi - (questionBlock.selectedIndex ?? 0))) + '\r'`).
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `npx jest __tests__/unit/components/conversation/ThinkingBubble.question.test.tsx`
 Expected: PASS. Also run the existing ThinkingBubble tests to confirm no regression: `npx jest __tests__/unit/components/conversation/ThinkingBubble`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add components/conversation/ThinkingBubble.tsx __tests__/unit/components/conversation/ThinkingBubble.question.test.tsx
@@ -712,7 +712,7 @@ git commit -m "feat(chat): prefer structured question in ThinkingBubble with PTY
 - Consumes: `useActiveQuestion(serverId, sessionId)` (Task 5), `useSessionActions(...).respondToQuestion` (Task 6).
 - Produces: `LiveConversationView` passes `activeQuestion={question}` and `onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}` into `ThinkingBubble`. `TerminalOutput`'s `handleOptionSelect` is updated to the `(questionIndex, optionIndex)` callback and the widened `QuestionBlock` (read `block.questions[0].options`), still sending keystrokes (raw terminal view keeps PTY path).
 
-- [ ] **Step 1: Adapt `TerminalOutput` to the widened block (compile-level)**
+- [x] **Step 1: Adapt `TerminalOutput` to the widened block (compile-level)**
 
 In `components/terminal/TerminalOutput.tsx`:
 - `questionBlock` stays `parseQuestionBlock(lines.slice(-30))` (now returns the widened shape).
@@ -728,25 +728,25 @@ const handleOptionSelect = useCallback((_qi: number, optionIndex: number) => {
 }, [onSendKeys, questionBlock])
 ```
 
-- [ ] **Step 2: Wire `LiveConversationView`**
+- [x] **Step 2: Wire `LiveConversationView`**
 
 In `components/conversation/LiveConversationView.tsx`, where `ThinkingBubble` is rendered:
 - Add `const { question } = useActiveQuestion(serverId, sessionId)` (use the existing serverId/sessionId in scope).
 - Add `const { respondToQuestion } = useSessionActions(serverId, sessionId)` if `useSessionActions` isn't already used here; otherwise destructure `respondToQuestion` from the existing call.
 - Pass `activeQuestion={question}` and `onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}` to `<ThinkingBubble .../>`.
 
-- [ ] **Step 3: Run unit tests + typecheck**
+- [x] **Step 3: Run unit tests + typecheck**
 
 Run: `npm run test:unit`
 Then: `npx tsc --noEmit` (expect no new type errors from the widened shape).
 Expected: PASS. Fix any call sites still using `.questionText`/`.options: string[]` (search: `git grep -n "\.questionText"` and `git grep -n "questionBlock.options"`).
 
-- [ ] **Step 4: Lint touched files**
+- [x] **Step 4: Lint touched files**
 
 Run: `npx eslint components/conversation/LiveConversationView.tsx components/terminal/TerminalOutput.tsx components/conversation/ThinkingBubble.tsx components/terminal/QuestionCard.tsx hooks/useActiveQuestion.ts hooks/useSessionActions.ts utils/parseQuestionBlock.ts utils/stripAnsi.ts utils/mapAskQuestionToBlock.ts`
 Expected: no errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add components/conversation/LiveConversationView.tsx components/terminal/TerminalOutput.tsx __tests__/unit/components/terminal/TerminalOutput.test.tsx
@@ -773,3 +773,38 @@ git commit -m "feat(chat): supply structured question + answer handler in live v
 **Type consistency:** `QuestionBlock`/`QuestionItem`/`QuestionOption` defined in Task 3, consumed identically in 4/5/7/8/9. `respondToQuestion` signature identical in Task 6 and Task 9. `onSelect(questionIndex, optionIndex)` consistent across Tasks 7/8/9. `AskQuestion`/`AskOption` (Task 1) consumed in Task 4. ✓
 
 **Dependency note:** Tasks are ordered so each builds on prior produces. The mobile path is dormant (no structured events arrive) until the streamer plan ships — verify end-to-end only after both tracks land.
+
+---
+
+## Execution ledger
+
+Worktree: `tb-mobile/.worktrees/fix/chat-flow-states` · Branch: `feat/live-chat-with-flow-fixes`.
+
+| Task | Status | Commit | Review |
+| --- | --- | --- | --- |
+| T1 — structured question types | ✅ done | `5317f424` | clean |
+| T2 — shared `stripAnsi` util | ✅ done | `6caec5f6` | clean (security pass: no ReDoS, display-only sinks) |
+| T3 — widen `QuestionBlock` + harden parser | ✅ done | `4405ae6` | APPROVE (type matches frozen contract, border-reject `-` literal, surgical) |
+| T4 — `mapAskQuestionToBlock` | ✅ done | `734e8bc` | folded into final review |
+| T5 — `useActiveQuestion` | ✅ done | `1e5d441` (+ `ws-client.ts` union widening) | APPROVE (reducer correct, WS pattern mirrored, union widening justified) |
+| T6 — `respondToQuestion` mutation | ✅ done | `ace46d2` | folded into final review |
+| T7 — `QuestionCard` widened render | ✅ done | `d2262bc` + fix `fe2f6cb` | APPROVE w/ 1 must-fix (PTY highlight resync) — fixed |
+| T8 — `ThinkingBubble` prefers structured | ✅ done | `5704a9f` | folded into final review |
+| T9 — `LiveConversationView` + `TerminalOutput` | ✅ done | `68efdaa` | folded into final review |
+
+**Verification gate (committed state):** `tsc --noEmit` clean; full unit suite 45 suites / 456 tests pass; no residual old-shape (`.questionText`) usages.
+
+**Deviations from plan (all approved/justified):**
+- T5 also modified `services/ws-client.ts` to add `QuestionWsMessage | QuestionCancelledWsMessage` to the `WSMessage` union — required so the WS handler can narrow `msg.type` without a forbidden `unknown` cast; reviewer confirmed it's the minimal way to mirror `useConversationStream`.
+- T7 picked up a review-driven follow-up fix (`fe2f6cb`) resyncing the `QuestionCard` highlight when the PTY cursor moves.
+- T9 (`68efdaa`) also carries pre-existing uncommitted live-chat fixes in `LiveConversationView.tsx` (dedup-by-uuid, `[historical, pending, live]` reorder, `session_update` WS subscription, auto-scroll) that were already in the working tree; combined into one commit per user decision (they were already security-reviewed).
+
+**Test invocation in this worktree:** the repo's `testPathIgnorePatterns` contains `/.worktrees/`, so jest finds 0 tests from inside the worktree unless overridden. Use:
+`npx jest --ci --forceExit --testPathIgnorePatterns '/node_modules/' '/.claude/' '/__tests__/unit/scripts/' --testPathPattern '<regex>'`. `--forceExit` is needed for react-query/RNTL tests (else jest hangs at teardown).
+
+### Incident — stray commit on `main` (resolved 2026-06-20)
+
+- **What happened:** the T2 implementer subagent committed the `stripAnsi` work to the `main` checkout (`/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile`, commit `3cd0eb63`) instead of the feature-branch worktree. This violates the never-commit-to-`main` rule.
+- **Recovery:** the commit was cherry-picked onto `feat/live-chat-with-flow-fixes` as `6caec5f6` (verified to add exactly `utils/stripAnsi.ts` + its test), then the `main` checkout was hard-reset to `origin/main` (`3c7c2b76`) — destroying nothing unique, since the only content `3cd0eb63` carried now lives on the feature branch. The untracked `docs/superpowers/specs/2026-06-19-stop-session-client.md` was confirmed unchanged (identical sha256 before/after the reset).
+- **Outcome:** `main` == `origin/main`; the stray commit never reached the remote. No history rewrite was needed on the remote.
+- **Prevention:** every subsequent implementer subagent is dispatched into the isolated worktree with an explicit instruction to never `cd` out of it or commit to `main`.
