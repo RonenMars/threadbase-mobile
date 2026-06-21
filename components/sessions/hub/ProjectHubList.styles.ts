@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
 
-export function makeStyles(theme: Theme) {
+export function makeStyles(theme: Theme, bottomInset: number = 0) {
   return StyleSheet.create({
   container: {
     flex: 1,
@@ -33,6 +33,7 @@ export function makeStyles(theme: Theme) {
   },
   listContent: {
     padding: spacing.sm,
+    paddingBottom: spacing.sm + bottomInset,
   },
   emptyListContent: {
     flexGrow: 1,

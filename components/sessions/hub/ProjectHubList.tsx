@@ -3,6 +3,7 @@ import { FlatList, View, Text, TextInput, SectionList, RefreshControl, Touchable
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useProjectGroups } from './useProjectGroups'
 import { useServerGroups } from './useServerGroups'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
@@ -30,7 +31,8 @@ export function ProjectHubList({
   searchOpen,
 }: ProjectHubListProps) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const insets = useSafeAreaInsets()
+  const styles = makeStyles(theme, insets.bottom)
   const router = useRouter()
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
