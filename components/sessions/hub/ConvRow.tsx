@@ -11,6 +11,7 @@ export function ConvRow({ conv, onLongPress }: ConvRowProps) {
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[conv.serverId]?.color)
   const previewPref = useSettingsStore((s) => s.historyMessageDisplay)
+  console.log(`[ConvRow] id=${conv.id} provider=${conv.provider ?? 'undefined'}`)
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -37,6 +38,7 @@ export function ConvRow({ conv, onLongPress }: ConvRowProps) {
       previewMode={previewPref === 'last' ? 'last' : 'first'}
       density="compact"
       leading="dot"
+      provider={conv.provider}
       onPress={handlePress}
       onLongPress={onLongPress ? handleLongPress : undefined}
     />

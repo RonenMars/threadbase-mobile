@@ -35,6 +35,7 @@ export interface ProjectChatConversation extends ProjectChatBase {
   type: 'conversation'
   status: 'archived' | 'resumable'
   source: 'hdd-cache'
+  provider?: 'threadbase' | 'codex-cli'
   indexedAt?: string | null
   fileMtime?: string | null
   filePath?: string | null

@@ -44,6 +44,7 @@ export interface Conversation {
   lastMessage?: MessageSnapshot
   model?: string
   totalTokens?: number
+  provider?: 'threadbase' | 'codex-cli'
 }
 
 export interface ConversationFilter {
@@ -98,6 +99,8 @@ export interface ConversationDetail extends Conversation {
   resumable?: boolean
   /** Set only when `resumable` is false; explains why. */
   unavailableReason?: UnavailableReason
+  /** Source provider. 'codex-cli' conversations are never resumable. */
+  provider?: 'threadbase' | 'codex-cli'
 }
 
 export interface Message {

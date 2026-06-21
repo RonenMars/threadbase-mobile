@@ -505,11 +505,15 @@ export default function ConversationDetailScreen() {
   // `resumable` is absent on older servers — treat undefined as resumable.
   // When false, the project the session ran in is gone: show the history
   // read-only with a banner explaining why, and disable Resume.
-  const notResumable = conversation.resumable === false
+  // codex-cli conversations are never resumable (Phase 2).
+  const isCodex = conversation.provider === 'codex-cli'
+  const notResumable = isCodex || conversation.resumable === false
   const unavailableMessage = notResumable
-    ? conversation.unavailableReason === 'worktree_removed'
-      ? t('unavailable.worktreeRemoved')
-      : t('unavailable.pathMissing')
+    ? isCodex
+      ? t('unavailable.cannotResume')
+      : conversation.unavailableReason === 'worktree_removed'
+        ? t('unavailable.worktreeRemoved')
+        : t('unavailable.pathMissing')
     : null
 
   return (
@@ -639,6 +643,7 @@ export default function ConversationDetailScreen() {
           { label: 'File Path', value: conversation.filePath },
           { label: 'Branch', value: conversation.branch },
           { label: 'Account', value: conversation.account },
+          { label: 'Provider', value: conversation.provider ?? 'threadbase' },
           { label: 'Model', value: conversation.model },
           { label: 'Message Count', value: String(conversation.messageCount) },
           { label: 'Total Tokens', value: conversation.totalTokens != null ? String(conversation.totalTokens) : undefined },

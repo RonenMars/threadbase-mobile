@@ -66,6 +66,9 @@ export interface ConversationListItemProps {
   showCount?: boolean
   showBranch?: boolean
 
+  /** Source provider — 'codex-cli' shows a Codex badge; 'threadbase' (default) shows nothing. */
+  provider?: 'threadbase' | 'codex-cli'
+
   onPress?: () => void
   onLongPress?: () => void
   onServerPress?: () => void
@@ -114,6 +117,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     highlight,
     showCount = true,
     showBranch = true,
+    provider,
     onPress,
     onLongPress,
     onServerPress,
@@ -261,6 +265,12 @@ export function ConversationListItem(props: ConversationListItemProps) {
               onLongPress={onServerLongPress}
             />
           ) : null}
+          {provider === 'codex-cli' ? (
+            <View style={styles.codexBadge} testID="codex-provider-badge">
+              {console.log(`[ConversationListItem] rendering Codex badge for testID=${testID}`)}
+              <Text style={styles.codexBadgeText}>Codex</Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
     </Wrapper>
@@ -392,6 +402,18 @@ function makeStyles(theme: Theme) {
       fontSize: font.xs - 2,
       fontWeight: '700',
       letterSpacing: 0.5,
+    },
+    codexBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 4,
+      backgroundColor: `${theme.text.accent}20`,
+    },
+    codexBadgeText: {
+      color: theme.text.accent,
+      fontSize: font.xs - 2,
+      fontWeight: '700',
+      letterSpacing: 0.3,
     },
   })
 }

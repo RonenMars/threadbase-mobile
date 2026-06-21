@@ -103,7 +103,8 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
           const raw = await api.get<RawSessionMeta[] | ConversationPage>(
             `/api/conversations?${params.toString()}`,
           )
-          return { serverId, page: adaptPage(raw, pageParam as number, limit) }
+          const page = adaptPage(raw, pageParam as number, limit)
+          return { serverId, page }
         })
       )
 
@@ -205,6 +206,7 @@ interface RawConversationDetail {
     last_prompt?: string
     resumable?: boolean
     unavailable_reason?: UnavailableReason
+    provider?: 'threadbase' | 'codex-cli'
   }
   messages: RawMessage[]
   message_pagination?: ConversationMessagePagination
@@ -291,6 +293,7 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     turn_durations: first.turn_durations,
     resumable: first.meta.resumable,
     unavailableReason: first.meta.unavailable_reason,
+    provider: first.meta.provider,
   }
 }
 
