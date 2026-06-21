@@ -46,6 +46,7 @@
     "sortBy": "Sort by",
     "order": "Order",
     "status": "Status",
+    "provider": "Provider",
     "servers": "Servers",
     "all": "All",
     "none": "None",

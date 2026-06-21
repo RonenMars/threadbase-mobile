@@ -251,7 +251,7 @@ export function FilterSortSheet({
 
       {/* Provider */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Provider</Text>
+        <Text style={styles.sectionTitle}>{t('filter.provider')}</Text>
         <View style={styles.chipRow}>
           {([
             { value: undefined, label: 'All' },
