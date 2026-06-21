@@ -170,6 +170,7 @@ export function ProjectHubList({
           density="comfortable"
           leading="avatar"
           highlight={debouncedQuery}
+          provider={item.provider}
           onPress={() => handleConversationPress(item)}
           onLongPress={() => setActiveConvItem(item)}
         />

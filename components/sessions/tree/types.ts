@@ -40,6 +40,7 @@ export type DrillItem = {
   status?: string
   serverId?: string
   serverLabel?: string
+  provider?: 'claude-code' | 'codex-cli'
   onPress: () => void
 }
 

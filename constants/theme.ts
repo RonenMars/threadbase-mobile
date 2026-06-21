@@ -457,3 +457,8 @@ export const font = {
 } as const
 
 export const TABLET_BREAKPOINT = 768
+
+export const brand = {
+  claude: '#E8622A',
+  codex: '#7B5EA7',
+} as const

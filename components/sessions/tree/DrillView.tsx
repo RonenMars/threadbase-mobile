@@ -57,6 +57,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
     branch: c.branch ?? null,
     serverId: c.serverId,
     serverLabel: c.serverLabel,
+    provider: c.provider,
     onPress: () => router.push(`/conversation/${c.id}?server=${c.serverId}`),
   }))
 

@@ -95,6 +95,7 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
           if (filter?.dateFrom) params.set('dateFrom', filter.dateFrom)
           if (filter?.dateTo) params.set('dateTo', filter.dateTo)
           if (filter?.profileId) params.set('profileId', filter.profileId)
+          if (filter?.provider) params.set('provider', filter.provider)
           params.set('limit', String(limit))
           params.set('offset', String(pageParam))
           if (pageParam === 0 && refreshEpoch > 0) {
@@ -206,7 +207,7 @@ interface RawConversationDetail {
     last_prompt?: string
     resumable?: boolean
     unavailable_reason?: UnavailableReason
-    provider?: 'threadbase' | 'codex-cli'
+    provider?: 'claude-code' | 'codex-cli'
   }
   messages: RawMessage[]
   message_pagination?: ConversationMessagePagination
@@ -415,6 +416,7 @@ async function fetchAllConversationPagesForServer(
 
   const countParams = new URLSearchParams()
   if (filter?.projectPath) countParams.set('project', filter.projectPath)
+  if (filter?.provider) countParams.set('provider', filter.provider)
   const countQs = countParams.toString()
   let total: number
   try {
@@ -442,6 +444,7 @@ async function fetchAllConversationPagesForServer(
 
     const params = new URLSearchParams()
     if (filter?.projectPath) params.set('project', filter.projectPath)
+    if (filter?.provider) params.set('provider', filter.provider)
     params.set('limit', String(limit))
     params.set('offset', String(page * limit))
     const raw = await api.get<RawSessionMeta[] | ConversationPage>(

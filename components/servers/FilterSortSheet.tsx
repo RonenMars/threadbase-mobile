@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
-import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { brand, type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
@@ -23,6 +23,9 @@ interface Props {
   // Filter (sessions)
   selectedStatuses: SessionStatus[]
   onChangeStatuses: (v: SessionStatus[]) => void
+  // Filter (conversations)
+  providerFilter: 'claude-code' | 'codex-cli' | undefined
+  onChangeProviderFilter: (v: 'claude-code' | 'codex-cli' | undefined) => void
 }
 
 const SNAP_POINTS = ['65%', '90%']
@@ -57,13 +60,15 @@ function isDefault(
   displayedServerIds: string[],
   activeServerIds: string[],
   sessionsLayout: SessionsLayout,
+  providerFilter: 'claude-code' | 'codex-cli' | undefined,
 ): boolean {
   return (
     sortBy === DEFAULT_SORT_BY &&
     sortOrder === DEFAULT_SORT_ORDER &&
     selectedStatuses.length === ALL_STATUSES.length &&
     displayedServerIds.length === activeServerIds.length &&
-    sessionsLayout === 'tree'
+    sessionsLayout === 'tree' &&
+    providerFilter === undefined
   )
 }
 
@@ -81,6 +86,8 @@ export function FilterSortSheet({
   onChangeSortOrder,
   selectedStatuses,
   onChangeStatuses,
+  providerFilter,
+  onChangeProviderFilter,
 }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -102,12 +109,13 @@ export function FilterSortSheet({
   const { t } = useTranslation('servers')
   const showServerFilter = activeServerIds.length > 1
 
-  const atDefault = isDefault(sortBy, sortOrder, selectedStatuses, displayedServerIds, activeServerIds, sessionsLayout)
+  const atDefault = isDefault(sortBy, sortOrder, selectedStatuses, displayedServerIds, activeServerIds, sessionsLayout, providerFilter)
 
   const handleReset = () => {
     onChangeSortBy(DEFAULT_SORT_BY)
     onChangeSortOrder(DEFAULT_SORT_ORDER)
     onChangeStatuses(ALL_STATUSES)
+    onChangeProviderFilter(undefined)
     setSessionsLayout('tree')
     if (showServerFilter) setDisplayedServerIds(activeServerIds)
   }
@@ -233,6 +241,35 @@ export function FilterSortSheet({
               >
                 <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
                 <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      </View>
+
+      {/* Provider */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Provider</Text>
+        <View style={styles.chipRow}>
+          {([
+            { value: undefined, label: 'All' },
+            { value: 'claude-code' as const, label: 'Claude', color: brand.claude },
+            { value: 'codex-cli' as const, label: 'Codex', color: brand.codex },
+          ]).map((opt) => {
+            const selected = providerFilter === opt.value
+            return (
+              <TouchableOpacity
+                key={opt.label}
+                onPress={() => onChangeProviderFilter(selected ? undefined : opt.value)}
+                style={[styles.chip, selected && styles.chipSelected, opt.color && selected ? { borderColor: opt.color } : null]}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                testID={`provider-filter-${opt.value ?? 'all'}`}
+              >
+                {opt.color ? <View style={[styles.chipDot, { backgroundColor: opt.color }]} /> : null}
+                <Text style={[styles.chipText, selected && styles.chipTextSelected, opt.color && selected ? { color: opt.color } : null]}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>

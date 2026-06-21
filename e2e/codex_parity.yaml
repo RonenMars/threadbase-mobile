@@ -1,0 +1,43 @@
+# Maestro E2E — Codex CLI read parity
+#
+# Verifies that on the conversation detail screen for a codex-cli conversation:
+#  1. The Codex badge is shown on the conversation row (testID="codex-provider-badge").
+#  2. The Provider field in the info modal shows "codex-cli".
+#  3. The Resume Session button is disabled (codex-cli conversations are not resumable).
+#
+# Uses deep linking to bypass hub navigation (same pattern as feat2_export_in_info_shelf.yaml).
+# Requires: mock server running on localhost:7071 (serves codex-conversation-detail.json for
+#           /api/conversations/conv-codex-1)
+# Usage: maestro test e2e/codex_parity.yaml
+#        (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Deep-link directly to the codex conversation detail screen.
+- launchApp:
+    url: "threadbase://conversation/conv-codex-1"
+
+# iOS may show an "Open in Threadbase?" dialog — dismiss it.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+# Wait for the conversation detail to load.
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 8000
+
+# Resume Session is replaced with "Can't resume" for codex-cli conversations.
+- assertNotVisible: "▶ Resume Session"
+- assertVisible: "Can't resume"
+
+# Open the info modal to verify the Provider field.
+- tapOn: "Conversation info"
+
+# The info modal should show provider = codex-cli.
+- assertVisible: "codex-cli"

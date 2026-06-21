@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { font, spacing, type Theme } from '@/constants/theme'
+import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { formatListTime, formatListTimeAccessible } from './formatListTime'
@@ -66,8 +66,8 @@ export interface ConversationListItemProps {
   showCount?: boolean
   showBranch?: boolean
 
-  /** Source provider — 'codex-cli' shows a Codex badge; 'threadbase' (default) shows nothing. */
-  provider?: 'threadbase' | 'codex-cli'
+  /** Source provider — 'codex-cli' shows a Codex badge; 'claude-code' (default) shows nothing. */
+  provider?: 'claude-code' | 'codex-cli'
 
   onPress?: () => void
   onLongPress?: () => void
@@ -265,10 +265,11 @@ export function ConversationListItem(props: ConversationListItemProps) {
               onLongPress={onServerLongPress}
             />
           ) : null}
-          {provider === 'codex-cli' ? (
-            <View style={styles.codexBadge} testID="codex-provider-badge">
-              {console.log(`[ConversationListItem] rendering Codex badge for testID=${testID}`)}
-              <Text style={styles.codexBadgeText}>Codex</Text>
+          {provider != null ? (
+            <View style={provider === 'codex-cli' ? styles.codexBadge : styles.claudeBadge} testID="provider-badge">
+              <Text style={provider === 'codex-cli' ? styles.codexBadgeText : styles.claudeBadgeText}>
+                {provider === 'codex-cli' ? 'Codex' : 'Claude'}
+              </Text>
             </View>
           ) : null}
         </View>
@@ -407,10 +408,22 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: 5,
       paddingVertical: 2,
       borderRadius: 4,
-      backgroundColor: `${theme.text.accent}20`,
+      backgroundColor: `${brand.codex}20`,
     },
     codexBadgeText: {
-      color: theme.text.accent,
+      color: brand.codex,
+      fontSize: font.xs - 2,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    claudeBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 4,
+      backgroundColor: `${brand.claude}20`,
+    },
+    claudeBadgeText: {
+      color: brand.claude,
       fontSize: font.xs - 2,
       fontWeight: '700',
       letterSpacing: 0.3,

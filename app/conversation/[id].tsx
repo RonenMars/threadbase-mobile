@@ -643,7 +643,7 @@ export default function ConversationDetailScreen() {
           { label: 'File Path', value: conversation.filePath },
           { label: 'Branch', value: conversation.branch },
           { label: 'Account', value: conversation.account },
-          { label: 'Provider', value: conversation.provider ?? 'threadbase' },
+          { label: 'Provider', value: conversation.provider ?? 'claude-code' },
           { label: 'Model', value: conversation.model },
           { label: 'Message Count', value: String(conversation.messageCount) },
           { label: 'Total Tokens', value: conversation.totalTokens != null ? String(conversation.totalTokens) : undefined },

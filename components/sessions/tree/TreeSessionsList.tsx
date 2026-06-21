@@ -117,6 +117,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           density="comfortable"
           leading="avatar"
           highlight={debouncedQuery}
+          provider={c.provider}
           onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
           onLongPress={() => setActiveConvItem(c)}
         />
