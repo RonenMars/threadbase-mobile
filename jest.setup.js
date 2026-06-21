@@ -5,6 +5,10 @@ require('./test-utils/i18n-setup')
 
 global.__DEV__ = true
 
+// gesture-handler v3 calls native installUIRuntimeBindings at import; its
+// jestSetup stubs the native module so that NOOP doesn't throw under Jest.
+require('react-native-gesture-handler/jestSetup')
+
 // ─── expo-router ─────────────────────────────────────────────────────────────
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(() => ({
