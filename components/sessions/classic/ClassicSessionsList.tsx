@@ -2,11 +2,12 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { View, TextInput, FlatList, RefreshControl } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTheme } from '@/contexts/ThemeContext'
-import { styles } from './ClassicSessionsList.styles'
+import { makeStyles } from './ClassicSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { MultiSession, SessionStatus } from '@/types/api'
 
@@ -27,6 +28,8 @@ type Row =
 
 export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const styles = makeStyles(insets.bottom)
   const searchStyles = makeSearchStyles(theme)
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')

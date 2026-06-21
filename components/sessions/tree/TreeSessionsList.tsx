@@ -3,6 +3,7 @@ import { Text, View, TextInput, FlatList, SectionList, RefreshControl } from 're
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { buildTree, compactTree, flattenVisible } from './treeUtils'
 import { TreeRow } from './TreeRow'
 import { DrillView } from './DrillView'
@@ -13,7 +14,7 @@ import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { useServersStore } from '@/stores/servers'
 import { useTheme } from '@/contexts/ThemeContext'
-import { styles } from './TreeSessionsList.styles'
+import { makeStyles } from './TreeSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './types'
 import type { MultiSession, MultiConversation } from '@/types/api'
@@ -22,6 +23,8 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen }: TreeSessionsListProps) {
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const styles = makeStyles(insets.bottom)
   const searchStyles = makeSearchStyles(theme)
   const router = useRouter()
   const { t } = useTranslation('sessions')
