@@ -33,7 +33,7 @@ import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResumeConversationResponse } from '@/types/projectChat'
-import { font, spacing, type Theme } from '@/constants/theme'
+import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
@@ -507,6 +507,8 @@ export default function ConversationDetailScreen() {
   // read-only with a banner explaining why, and disable Resume.
   // codex-cli conversations are never resumable (Phase 2).
   const isCodex = conversation.provider === 'codex-cli'
+  const providerColor = isCodex ? brand.codex : brand.claude
+  const providerDot = <View style={[styles.providerDot, { backgroundColor: providerColor }]} />
   const notResumable = isCodex || conversation.resumable === false
   const unavailableMessage = notResumable
     ? isCodex
@@ -518,7 +520,7 @@ export default function ConversationDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title={conversation.title} right={headerActions} />
+      <ScreenHeader title={conversation.title} titleRight={providerDot} right={headerActions} />
       <View style={styles.inner}>
       {isGated ? (
         <View style={styles.skeletonOverlay} pointerEvents="none">
@@ -658,6 +660,7 @@ function makeStyles(theme: Theme, bottomInset: number = 0) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    providerDot: { width: 8, height: 8, borderRadius: 4 },
     inner: { flex: 1 },
     skeletonOverlay: {
       position: 'absolute',
