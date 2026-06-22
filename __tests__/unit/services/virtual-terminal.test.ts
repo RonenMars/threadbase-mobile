@@ -227,6 +227,19 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
       .toEqual(['Actual content'])
   })
 
+  it('filters "Welcome back <name>!" v2.x greeting', () => {
+    expect(feedAndGet('Welcome back Ronen!')).toEqual([])
+    expect(feedAndGet('Welcome back Ronen!\nActual content')).toEqual(['Actual content'])
+  })
+
+  it('filters "Claude Code v<N>" version line', () => {
+    expect(feedAndGet('Claude Code v2.1.185')).toEqual([])
+  })
+
+  it('filters banner border with embedded version text', () => {
+    expect(feedAndGet('╭─ Claude Code v2.1.185 ──────────────────────────')).toEqual([])
+  })
+
   // ── Thinker / Spinner symbols (from tweakcc defaultSettings) ──
   it('filters lines of pure spinner symbols', () => {
     expect(feedAndGet('· ✢ ✳ ✶')).toEqual([])
@@ -269,6 +282,21 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
     expect(feedAndGet('Haiku 4.5 (200k context) | ~/test')).toEqual([])
   })
 
+  it('filters compact status bar without (context) suffix', () => {
+    expect(feedAndGet('Sonnet 4.6 | ~/Desktop/dev/apps 20:30 | ⚓ 4')).toEqual([])
+    expect(feedAndGet('Sonnet 4.6 | ~/Desktop/dev/ai-tools/tb-mobile  main |...')).toEqual([])
+  })
+
+  it('filters prompt echo and suggestion lines', () => {
+    expect(feedAndGet('> Hi')).toEqual([])
+    expect(feedAndGet('> Try "how do I log an error?"')).toEqual([])
+    expect(feedAndGet('❯ 0q')).toEqual([])
+  })
+
+  it('filters bare pipe fragment lines', () => {
+    expect(feedAndGet('| ~/Desktop/dev/apps |')).toEqual([])
+  })
+
   it('filters Claude model variant lines', () => {
     expect(feedAndGet('Claude 4.6 Opus (1M context)')).toEqual([])
   })
@@ -281,6 +309,16 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
 
   it('filters "Update available!" line', () => {
     expect(feedAndGet('Update available!')).toEqual([])
+  })
+
+  it('filters backgrounded sub-agent status lines', () => {
+    expect(feedAndGet('Backgrounded agent Explore (running)')).toEqual([])
+    expect(feedAndGet('Explore … came to rest')).toEqual([])
+    expect(feedAndGet('Invalid tool parameters')).toEqual([])
+  })
+
+  it('filters the first-run "Tips for getting started" banner', () => {
+    expect(feedAndGet('Tips for getting started:')).toEqual([])
   })
 
   it('filters "Run:" status hints', () => {

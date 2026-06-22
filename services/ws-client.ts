@@ -3,6 +3,8 @@ import type {
   NotificationEvent,
   QuestionWsMessage,
   QuestionCancelledWsMessage,
+  PermissionWsMessage,
+  PermissionCancelledWsMessage,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
 
@@ -18,6 +20,8 @@ export type WSMessage =
   | { type: 'conversation_event'; sessionId: string; line: string }
   | QuestionWsMessage
   | QuestionCancelledWsMessage
+  | PermissionWsMessage
+  | PermissionCancelledWsMessage
 
 type MessageHandler = (msg: WSMessage) => void
 

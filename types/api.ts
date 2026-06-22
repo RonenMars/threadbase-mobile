@@ -148,6 +148,28 @@ export interface QuestionCancelledWsMessage {
   toolUseId: string
 }
 
+// A permission-gate option scraped from the rendered screen. `index` is the
+// ACTUAL on-screen number (e.g. 2, 3), not a 1-based array index — gates can
+// show "2. Yes / 3. No". Answered by sending `${index}\r` via /input { keys }.
+export interface PermissionOption {
+  index: number
+  label: string
+}
+
+// Permission gate detected live by the streamer (OSC 777). Additive WS event.
+export interface PermissionWsMessage {
+  type: 'permission'
+  sessionId: string
+  prompt?: string
+  options: PermissionOption[]
+  cursor?: number
+}
+
+export interface PermissionCancelledWsMessage {
+  type: 'permission_cancelled'
+  sessionId: string
+}
+
 export interface DiffHunk {
   oldStart: number
   oldLines: number

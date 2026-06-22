@@ -13,7 +13,9 @@ import { useComposerState } from '@/hooks/useComposerState'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
+import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
+import { RawKeyBar } from '@/components/terminal/RawKeyBar'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
@@ -230,6 +232,7 @@ export function LiveConversationView({
           />
         ) : null}
       />
+      <RawKeyBar onSendKeys={(keys) => sendKeys.mutate(keys)} />
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
@@ -283,7 +286,10 @@ export function LiveConversationView({
 // (fresh / waiting_input session, JSONL not written). Renders nothing until
 // the PTY produces output, then yields to message bubbles once any land.
 function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme }) {
-  const visibleLines = lines.slice(-200).map(stripAnsi).filter((l) => l.trim().length > 0)
+  const visibleLines = lines
+    .slice(-200)
+    .map((l) => stripBoxDrawing(stripAnsi(l)))
+    .filter((l) => l.length > 0)
   if (visibleLines.length === 0) return null
   const styles = makeStyles(theme)
   return (

@@ -77,10 +77,19 @@ export class VirtualTerminal {
         // Lines made entirely of box-drawing, block elements, or whitespace
         const stripped = line.replace(/[\s=\-─━═│┃┌┐└┘├┤┬┴┼╭╮╯╰╱╲\u2500-\u257F\u2580-\u259F]/g, '')
         if (stripped.length === 0) return false
+        // Banner borders like "╭─ Claude Code v2.1.185 ────" survive the separator
+        // check because text remains after stripping box chars (incl. spaces) — match
+        // the compacted form "ClaudeCodev..." as well as the spaced form.
+        const strippedTrimmed = stripped.trim()
+        if (/^Claude\s*Code\s*v\d/.test(strippedTrimmed)) return false
+        if (/^Welcome\s*back/.test(strippedTrimmed)) return false
 
         // --- Startup banner / Clawd ASCII art ---
         if (/[▛▜▙▟███]{3,}/.test(trimmed)) return false
         if (/Welcome to Claude Code/.test(trimmed)) return false
+        // v2.x greeting and version line
+        if (/^Welcome back\b/.test(trimmed)) return false
+        if (/^Claude Code\s+v\d/.test(trimmed)) return false
 
         // --- Thinker / spinner symbols ---
         // Claude Code uses: · ✢ * ✳ ✶ ✻ ✽ and braille spinners (from tweakcc defaultSettings)
@@ -92,14 +101,16 @@ export class VirtualTerminal {
         if (/^\w+ing…\s*$/.test(trimmed)) return false
 
         // --- Status line / prompt chrome ---
-        // Prompt indicator: ❯ 0q, > 2q, etc.
-        if (/^[❯›>]\s*\d*[a-z]?$/.test(trimmed)) return false
+        // Prompt indicator bare (❯ 0q) AND prompt echo/suggestions ("> Hi", "> Try ...")
+        if (/^[❯›>]\s/.test(trimmed) || /^[❯›>]$/.test(trimmed)) return false
         // Capybara mascot (Bramble)
         if (/\(●oo●\)/.test(trimmed) || /\(◐oo◐\)/.test(trimmed)) return false
-        // Model info line: "Opus 4.6 (1M context) | ~/path..."
-        if (/^(Opus|Sonnet|Haiku)\s+\d+\.\d+\s+\(.*context\)/.test(trimmed)) return false
+        // Model info line: "Opus 4.6 (1M context) | ~/path..." or compact "Sonnet 4.6 | ~/path time | ⚓N"
+        if (/^(Opus|Sonnet|Haiku)\s+\d+\.\d+[\s(|]/.test(trimmed)) return false
         // "Claude" model variant: "Claude 4.6 Opus..."
         if (/^Claude\s+\d+\.\d+\s+(Opus|Sonnet|Haiku)/.test(trimmed)) return false
+        // Bare pipe fragment: "| ~/Desktop/dev/apps |"
+        if (/^\|/.test(trimmed)) return false
         // Accept edits / update available / mode chrome
         if (/^[►▶❯]{1,2}\s*(accept edits|auto|plan)\b/i.test(trimmed)) return false
         if (/Update available!/.test(trimmed)) return false
@@ -116,6 +127,16 @@ export class VirtualTerminal {
         if (/^\.\.\.\s+\+\d+\s+lines\s/.test(trimmed)) return false
         // Rate limit indicators (from tweakcc suppressRateLimitOptions)
         if (/rate limit/i.test(trimmed) && /\d+\s*(req|request|min)/i.test(trimmed)) return false
+
+        // --- Agent-status / boot-tip chrome (sub-agent runs, first-run tips) ---
+        // Backgrounded sub-agent status: "Backgrounded agent Explore (running)",
+        // "Explore … came to rest", and the transient "Invalid tool parameters"
+        // banner the orchestrator prints mid-turn.
+        if (/^Backgrounded agent\b/i.test(trimmed)) return false
+        if (/\b(came to rest|is running|backgrounded)\b/i.test(trimmed) && /^(Explore|Plan|Task|Agent)\b/.test(trimmed)) return false
+        if (/^Invalid tool parameters\b/i.test(trimmed)) return false
+        // First-run boot tips block: "Tips for getting started", "Tip:" lines.
+        if (/^Tips? for getting started/i.test(trimmed)) return false
 
         // --- Input border box remnants ---
         // Lines that are just the border corners/edges after stripping

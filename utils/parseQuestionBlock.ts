@@ -12,13 +12,19 @@ export interface QuestionItem {
   options: QuestionOption[]
 }
 export interface QuestionBlock {
-  source: 'structured' | 'pty'
+  source: 'structured' | 'pty' | 'permission'
   toolUseId?: string
   questions: QuestionItem[]
   /** PTY-scrape only: index of the ❯ cursor row among options of questions[0] */
   selectedIndex?: number
   /** PTY-scrape only: index in source lines[] where the question line sits */
   questionLineIndex?: number
+  /**
+   * Permission-gate only: the REAL on-screen option numbers (not 1-based),
+   * positionally aligned with questions[0].options. Selecting option i is
+   * answered by sending `${permissionIndices[i]}\r` via the keystroke route.
+   */
+  permissionIndices?: number[]
 }
 
 const QUESTION_RE = /^\?\s+(.+)$/
@@ -28,8 +34,83 @@ const UNSELECTED_OPTION_RE = /^ {2,3}(\S.*)$/
 // Strip leading "1. " / "2. " numbering from option text
 const NUMBERED_PREFIX_RE = /^\d+\.\s+/
 
+// Format 3 (AskUserQuestion menu): a "?"-suffixed question with numbered
+// options and Tab/Arrow navigation — there may be NO ❯ cursor at all, so
+// neither Format 1 (needs "? " at line start) nor Format 2 (needs a ❯ line)
+// matches. A numbered option row, optionally cursor-marked: "❯ 1. macOS",
+// "  2. iOS". The box gutter is stripped before matching.
+const QUESTION_SUFFIX_RE = /\?$/
+const NUMBERED_OPTION_RE = /^(❯)?\s*(\d+)\.\s+(.+?)$/
+
+// Permission-gate option labels (Yes / No …). A gate is handled by the
+// structured `permission` WS event, not as a radio QuestionCard — reject it
+// here so it never renders as a fake picker.
+const PERMISSION_OPTION_RE = /^(Yes|No)\b/i
+
 function stripNumberedPrefix(s: string): string {
   return s.replace(NUMBERED_PREFIX_RE, '')
+}
+
+// Strip leading/trailing box-drawing gutters ("│ … │") and surrounding
+// whitespace so a menu drawn inside a box parses like an unboxed one.
+function stripBoxGutter(s: string): string {
+  return s
+    .replace(/^\s*[│|]\s?/, '')
+    .replace(/\s*[│|]\s*$/, '')
+    .trim()
+}
+
+// Detect the structured AskUserQuestion menu: a "?"-suffixed question line
+// followed by numbered options, with or without a ❯ cursor. Returns null for
+// permission gates (Yes/No), @-path lists, and status remnants so they never
+// render as fake radio cards. The server's `question` WS event is the primary
+// path; this is the PTY-scrape fallback for live menus with no JSONL yet.
+function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
+  const inner = stripped.map(stripBoxGutter)
+
+  // Find the LAST "?"-suffixed line that has numbered options below it.
+  for (let q = inner.length - 1; q >= 0; q--) {
+    const questionText = inner[q]
+    if (!QUESTION_SUFFIX_RE.test(questionText)) continue
+    // Guard against chrome masquerading as a question.
+    if (/^[❯›>]\s/.test(questionText)) continue
+    if (/^(Opus|Sonnet|Haiku)\s+\d+\.\d+/.test(questionText)) continue
+    if (/^@\//.test(questionText) || /^\/Users\//.test(questionText)) continue
+
+    const options: QuestionOption[] = []
+    let selectedIndex = 0
+    let sawPermission = false
+
+    for (let i = q + 1; i < inner.length; i++) {
+      const line = inner[i]
+      if (line === '') {
+        if (options.length === 0) continue // gap between question and options
+        break
+      }
+      const m = line.match(NUMBERED_OPTION_RE)
+      if (!m) break // first non-numbered line ends the option block
+      const label = m[3].trim()
+      if (PERMISSION_OPTION_RE.test(label)) {
+        sawPermission = true
+        break
+      }
+      if (/\s+\|\s+~\//.test(label) || /^@\//.test(label) || /^\/Users\//.test(label)) break
+      if (m[1]) selectedIndex = options.length // ❯ cursor
+      options.push({ label })
+    }
+
+    if (sawPermission) return null // permission gate, not a structured question
+    if (options.length >= 2) {
+      return {
+        source: 'pty',
+        questions: [{ question: questionText, multiSelect: false, options }],
+        selectedIndex,
+        questionLineIndex: q,
+      }
+    }
+  }
+
+  return null
 }
 
 export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
@@ -58,7 +139,10 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
         selectedIndex = options.length
         options.push({ label: stripNumberedPrefix(selectedMatch[1].trim()) })
       } else if (unselectedMatch) {
-        options.push({ label: stripNumberedPrefix(unselectedMatch[1].trim()) })
+        const label = stripNumberedPrefix(unselectedMatch[1].trim())
+        // Skip option lines that look like status bar or file paths
+        if (/\s+\|\s+~\//.test(label) || /^@\//.test(label) || /^\/Users\//.test(label)) break
+        options.push({ label })
       } else {
         break
       }
@@ -73,6 +157,12 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
       }
     }
   }
+
+  // --- Format 3: AskUserQuestion menu — "?"-suffixed question + numbered
+  // options, with NO required ❯ cursor (Tab/Arrow navigation). This is the
+  // real structured picker that Formats 1 & 2 both miss. ---
+  const fmt3 = parseAskUserQuestionMenu(stripped)
+  if (fmt3) return fmt3
 
   // --- Format 2: numbered list with ❯ but no leading "?" ---
   // e.g. Claude Code skill picker: line before ❯ is the question text
@@ -95,6 +185,13 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   // Reject footers AND borders/box-drawing/blank-bracket headers — not real questions.
   if (/Enter to select|↑|↓|Esc to cancel/.test(questionText)) return null
   if (/^[\s│─┌┐└┘├┤┬┴┼╭╮╰╯=_-]+$/.test(questionText)) return null
+  // Reject prompt echo/suggestion lines: "> Hi", "> Try \"how do I log an error?\""
+  if (/^[❯›>]\s/.test(questionText)) return null
+  // Reject status bar fragments: "Sonnet 4.6 | ...", "| ~/path |"
+  if (/^(Opus|Sonnet|Haiku)\s+\d+\.\d+/.test(questionText)) return null
+  if (/^\|/.test(questionText)) return null
+  // Reject attachment/file paths
+  if (/^@\//.test(questionText) || /^\/Users\//.test(questionText)) return null
 
   const options: QuestionOption[] = []
   let selectedIndex = 0
@@ -108,13 +205,20 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
       selectedIndex = options.length
       options.push({ label: stripNumberedPrefix(selectedMatch[1].trim()) })
     } else if (unselectedMatch) {
-      options.push({ label: stripNumberedPrefix(unselectedMatch[1].trim()) })
+      const label = stripNumberedPrefix(unselectedMatch[1].trim())
+      // Skip option lines that look like status bar or file paths
+      if (/\s+\|\s+~\//.test(label) || /^@\//.test(label) || /^\/Users\//.test(label)) break
+      options.push({ label })
     } else {
       break
     }
   }
 
   if (options.length === 0) return null
+  // A permission gate ("Do you want to proceed? / ❯ 1. Yes / 2. No …") reaches
+  // here via its ❯ cursor. It's handled by the structured `permission` WS event,
+  // not as a radio card — reject so it doesn't become a fake picker.
+  if (options[0] && PERMISSION_OPTION_RE.test(options[0].label)) return null
 
   return {
     source: 'pty',

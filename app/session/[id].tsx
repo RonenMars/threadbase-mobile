@@ -602,8 +602,14 @@ export default function SessionDetailScreen() {
 
   const isLive =
     session.ptyAttached === true &&
-    (session.status === 'waiting_input' || session.status === 'running') &&
-    !!session.conversationId
+    (session.status === 'waiting_input' || session.status === 'running')
+
+  // A live PTY may not have a conversationId yet (no JSONL written), but it can
+  // already be showing an interactive prompt. LiveConversationView needs the
+  // conversationId for REST history; without it we fall back to TerminalView,
+  // which only needs the live PTY stream and carries the same question + raw-key
+  // affordances — so a prompt is never stranded behind a placeholder.
+  const hasConversationId = !!session.conversationId
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -625,7 +631,7 @@ export default function SessionDetailScreen() {
       <View style={styles.body}>
         {isLive ? (
           <View style={styles.flex}>
-            {sessionView === 'terminal' ? (
+            {sessionView === 'terminal' || !hasConversationId ? (
               <TerminalView
                 serverId={serverId}
                 sessionId={id}

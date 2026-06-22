@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import { wsManager } from '@/services/ws-client'
 import { mapAskQuestionToBlock } from '@/utils/mapAskQuestionToBlock'
+import { mapPermissionToBlock } from '@/utils/mapPermissionToBlock'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
-import type { QuestionWsMessage, QuestionCancelledWsMessage } from '@/types/api'
+import type {
+  QuestionWsMessage,
+  QuestionCancelledWsMessage,
+  PermissionWsMessage,
+  PermissionCancelledWsMessage,
+} from '@/types/api'
 
-type Incoming = QuestionWsMessage | QuestionCancelledWsMessage
+type Incoming =
+  | QuestionWsMessage
+  | QuestionCancelledWsMessage
+  | PermissionWsMessage
+  | PermissionCancelledWsMessage
 
 export function useActiveQuestionReducer(sessionId: string) {
   const [question, setQuestion] = useState<QuestionBlock | null>(null)
@@ -14,6 +24,10 @@ export function useActiveQuestionReducer(sessionId: string) {
       setQuestion(mapAskQuestionToBlock(msg.toolUseId, msg.questions))
     } else if (msg.type === 'question_cancelled') {
       setQuestion(prev => (prev?.toolUseId === msg.toolUseId ? null : prev))
+    } else if (msg.type === 'permission') {
+      setQuestion(mapPermissionToBlock(msg.prompt, msg.options, msg.cursor))
+    } else if (msg.type === 'permission_cancelled') {
+      setQuestion(prev => (prev?.source === 'permission' ? null : prev))
     }
   }, [sessionId])
   const clear = useCallback(() => setQuestion(null), [])
@@ -34,9 +48,17 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
     const unsubCancelled = client?.on('question_cancelled', (msg) => {
       if (msg.type === 'question_cancelled') onMessage(msg)
     })
+    const unsubPermission = client?.on('permission', (msg) => {
+      if (msg.type === 'permission') onMessage(msg)
+    })
+    const unsubPermissionCancelled = client?.on('permission_cancelled', (msg) => {
+      if (msg.type === 'permission_cancelled') onMessage(msg)
+    })
     return () => {
       unsubQuestion?.()
       unsubCancelled?.()
+      unsubPermission?.()
+      unsubPermissionCancelled?.()
     }
   }, [serverId, sessionId, onMessage])
 

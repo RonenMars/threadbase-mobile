@@ -173,4 +173,115 @@ describe('parseQuestionBlock', () => {
     const lines = ['? Q', '❯ A', '  B']
     expect(parseQuestionBlock(lines)!.source).toBe('pty')
   })
+
+  // ── Chrome line guards (Format 2) ──────────────────────────────────────────
+
+  it('returns null when question text is a prompt suggestion line', () => {
+    // "> Try ..." lines are Claude Code prompt suggestions, not real questions
+    const lines = ['> Try "how do I log an error?"', '❯ Tell me more about the']
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('returns null when question text is a prompt echo line', () => {
+    const lines = ['> Hi', '❯ Option A', '  Option B']
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('returns null when question text is a status bar fragment', () => {
+    const lines = ['Sonnet 4.6 | ~/Desktop/dev/apps 20:30 | ⚓ 4', '❯ Option A']
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('returns null when question text is a bare pipe fragment', () => {
+    const lines = ['| ~/Desktop/dev/apps |', '❯ Option A']
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('stops collecting options at a file path line', () => {
+    // Attachment paths should not become option labels
+    const lines = [
+      '? Do something?',
+      '❯ Yes',
+      '  @/Users/ronenmars/Desktop/dev/ai-tools/tb-mobile/.threadbase-uploads/abc.jpg',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result!.questions[0].options.map(o => o.label)).toEqual(['Yes'])
+  })
+
+  it('stops collecting options at a status bar line (pipe-delimited)', () => {
+    const lines = [
+      '? Do something?',
+      '❯ Yes',
+      '  Sonnet 4.6 | ~/Desktop/dev/apps 20:30 | ⚓ 4',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result!.questions[0].options.map(o => o.label)).toEqual(['Yes'])
+  })
+
+  // ── Format 3: AskUserQuestion menu (?-suffix, numbered, no ❯ cursor) ────────
+
+  it('parses the AskUserQuestion menu shape: ?-suffix question, numbered options, NO ❯', () => {
+    // The real menu that Format 1 (needs "? " at start) and Format 2 (needs ❯)
+    // both miss — this is the bug being fixed.
+    const lines = [
+      'Which area are you focused on?',
+      '  1. macOS / Chrome',
+      '  2. iOS / Safari',
+      '  3. Android',
+      '  6. Chat about this',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result).not.toBeNull()
+    const q = result!.questions[0]
+    expect(q.question).toBe('Which area are you focused on?')
+    expect(q.options.map(o => o.label)).toEqual([
+      'macOS / Chrome',
+      'iOS / Safari',
+      'Android',
+      'Chat about this',
+    ])
+  })
+
+  it('reads the ❯ cursor position for a ?-suffixed numbered menu', () => {
+    const lines = [
+      'Which area are you focused on?',
+      '  1. macOS / Chrome',
+      '❯ 2. iOS / Safari',
+      '  3. Android',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result!.selectedIndex).toBe(1)
+  })
+
+  it('parses the AskUserQuestion menu drawn inside a box (│ gutters)', () => {
+    const lines = [
+      '╭──────────────────────────────────────╮',
+      '│ Which area are you focused on?        │',
+      '│   1. macOS / Chrome                   │',
+      '│   2. iOS / Safari                     │',
+      '╰──────────────────────────────────────╯',
+    ]
+    const q = parseQuestionBlock(lines)!.questions[0]
+    expect(q.question).toBe('Which area are you focused on?')
+    expect(q.options.map(o => o.label)).toEqual(['macOS / Chrome', 'iOS / Safari'])
+  })
+
+  it('returns null for a permission gate (numbered Yes/No), leaving it to the permission event', () => {
+    const lines = [
+      'Do you want to proceed?',
+      '❯ 1. Yes',
+      '  2. No, and tell Claude what to do differently',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('returns null for a ?-suffixed line with @-path "options" (not a real menu)', () => {
+    const lines = [
+      'Attach a file?',
+      '  1. @/Users/ronenmars/Desktop/a.jpg',
+      '  2. @/Users/ronenmars/Desktop/b.jpg',
+    ]
+    // The @-path guard stops option collection → <2 options → null.
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
 })

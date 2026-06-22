@@ -4,7 +4,9 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import { stripAnsi } from '@/utils/stripAnsi'
+import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { FEATURE_QUESTIONS } from '@/constants/flags'
 
 function DotsAnimation({ style }: { style?: object }) {
   // useMemo so Animated.Value instances are stable across re-renders
@@ -57,7 +59,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   const hasLines = lines.length > 0
 
   const questionBlock = useMemo(
-    () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
+    () => (FEATURE_QUESTIONS && onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
     [lines, onSendKeys]
   )
 
@@ -70,10 +72,18 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   }, [onSendKeys, questionBlock])
 
   const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
-    if (!activeQuestion?.toolUseId) return
+    if (!activeQuestion) return
+    // Permission gate: answer by sending the REAL on-screen option number + Enter
+    // (e.g. "2\r") via the keystroke route — never a 1-based index, never a POST.
+    if (activeQuestion.source === 'permission') {
+      const realIndex = activeQuestion.permissionIndices?.[optionIndex]
+      if (realIndex !== undefined) onSendKeys?.(`${realIndex}\r`)
+      return
+    }
+    if (!activeQuestion.toolUseId) return
     const q = activeQuestion.questions[questionIndex]
     onAnswer?.(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
-  }, [activeQuestion, onAnswer])
+  }, [activeQuestion, onAnswer, onSendKeys])
 
   useEffect(() => {
     if (!fadingOut) return
@@ -88,12 +98,24 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     if (hasLines) scrollRef.current?.scrollToEnd({ animated: false })
   }, [lines.length, hasLines])
 
-  const visibleLines = lines.slice(-60).map(stripAnsi).filter(l => l.trim().length > 0)
+  const visibleLines = lines
+    .slice(-60)
+    .map(l => stripBoxDrawing(stripAnsi(l)))
+    .filter(l => l.length > 0)
+
+  // When FEATURE_QUESTIONS is off, render the structured question as plain text
+  // inside the bubble so the user can still see what's being asked.
+  const questionTextLines = !FEATURE_QUESTIONS && activeQuestion
+    ? activeQuestion.questions.flatMap(q => [
+        q.question,
+        ...q.options.map((o, i) => `  ${i + 1}. ${o.label}`),
+      ])
+    : []
 
   return (
     <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
-        {hasLines ? (
+        {(hasLines || questionTextLines.length > 0) ? (
           <ScrollView
             ref={scrollRef}
             style={styles.terminalScroll}
@@ -103,15 +125,18 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
             {visibleLines.map((line, i) => (
               <Text key={i} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
             ))}
+            {questionTextLines.map((line, i) => (
+              <Text key={`q${i}`} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
+            ))}
           </ScrollView>
         ) : null}
-        {(isStreaming || !hasLines) ? (
+        {(isStreaming || (!hasLines && questionTextLines.length === 0)) ? (
           <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} />
         ) : null}
       </View>
-      {activeQuestion ? (
+      {FEATURE_QUESTIONS && activeQuestion ? (
         <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
-      ) : questionBlock ? (
+      ) : FEATURE_QUESTIONS && questionBlock ? (
         <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
       ) : null}
     </Animated.View>
