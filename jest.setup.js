@@ -69,6 +69,14 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }))
 
+// ─── expo-device ─────────────────────────────────────────────────────────────
+// Tests exercise the real-device code path (simulators are guarded out).
+jest.mock('expo-device', () => ({
+  get isDevice() {
+    return true
+  },
+}))
+
 // ─── @react-native-async-storage ─────────────────────────────────────────────
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,

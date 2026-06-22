@@ -1,4 +1,5 @@
 import { renderHook, act } from '@testing-library/react-native'
+import * as Device from 'expo-device'
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -50,6 +51,21 @@ describe('useVoiceInput', () => {
     expect(requestPermissions).toHaveBeenCalledTimes(1)
     expect(startModule).toHaveBeenCalledTimes(1)
     expect(result.current.listening).toBe(true)
+  })
+
+  it('start() throws VOICE_UNAVAILABLE on a simulator without invoking native start', async () => {
+    const isDeviceSpy = jest.spyOn(Device, 'isDevice', 'get').mockReturnValue(false)
+    const onTranscript = jest.fn()
+    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+
+    await act(async () => {
+      await expect(result.current.start()).rejects.toThrow('VOICE_UNAVAILABLE')
+    })
+
+    expect(requestPermissions).not.toHaveBeenCalled()
+    expect(startModule).not.toHaveBeenCalled()
+    expect(result.current.listening).toBe(false)
+    isDeviceSpy.mockRestore()
   })
 
   it('start() throws PERMISSION_DENIED when not granted', async () => {
