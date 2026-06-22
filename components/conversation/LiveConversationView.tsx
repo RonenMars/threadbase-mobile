@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Alert, StyleSheet } from 'react-native'
+import { KeyboardAvoidingView, Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
@@ -12,6 +12,7 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
+import { stripAnsi } from '@/utils/stripAnsi'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -210,6 +211,13 @@ export function LiveConversationView({
           <MessageItem message={item} isLast={index === allMessages.length - 1} />
         )}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
+        ListEmptyComponent={
+          // A freshly-started / waiting_input session has no JSONL yet, so there
+          // are no conversation messages (REST) and no conversation_event (WS).
+          // The PTY is still streaming live output, though — surface it so the
+          // chat isn't blank until the first message lands, then bubbles take over.
+          <LivePtyPlaceholder lines={ptyLines} theme={theme} />
+        }
         ListFooterComponent={thinkingState !== 'hidden' ? (
           <ThinkingBubble
             lines={ptyLines}
@@ -271,8 +279,34 @@ export function LiveConversationView({
   )
 }
 
+// Live PTY output shown while a session has no conversation messages yet
+// (fresh / waiting_input session, JSONL not written). Renders nothing until
+// the PTY produces output, then yields to message bubbles once any land.
+function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme }) {
+  const visibleLines = lines.slice(-200).map(stripAnsi).filter((l) => l.trim().length > 0)
+  if (visibleLines.length === 0) return null
+  const styles = makeStyles(theme)
+  return (
+    <ScrollView style={styles.ptyContainer} contentContainerStyle={styles.ptyContent}>
+      {visibleLines.map((line, i) => (
+        <Text key={i} style={styles.ptyLine} numberOfLines={1}>
+          {line}
+        </Text>
+      ))}
+    </ScrollView>
+  )
+}
+
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
+    ptyContainer: { flex: 1, paddingHorizontal: 12 },
+    ptyContent: { paddingVertical: 12 },
+    ptyLine: {
+      fontFamily: 'monospace',
+      fontSize: 11,
+      color: theme.text.secondary,
+      lineHeight: 16,
+    },
   })
 }

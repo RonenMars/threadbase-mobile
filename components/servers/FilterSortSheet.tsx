@@ -45,7 +45,7 @@ const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: 'asc', label: '↑ Oldest first' },
 ]
 
-const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
+export const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
 
 const DEFAULT_SORT_BY: SortBy = 'lastActivity'
 const DEFAULT_SORT_ORDER: SortOrder = 'desc'
@@ -95,6 +95,7 @@ export function FilterSortSheet({
 
   const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
     { value: 'running', label: 'Running', color: theme.status.running },
+    { value: 'waiting_input', label: 'Active', color: theme.status.waiting },
     { value: 'idle', label: 'Idle', color: theme.status.idle },
   ]
 

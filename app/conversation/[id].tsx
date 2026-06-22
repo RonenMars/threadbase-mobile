@@ -21,7 +21,7 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown, ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
@@ -69,6 +69,22 @@ export default function ConversationDetailScreen() {
     totalMessages,
     loadedMessages,
   } = useConversation(serverId, id)
+
+  const isConvNotFound = error instanceof NotFoundError
+  // ponytail: only fires when conversation 404s — avoids extra request on normal loads
+  const { data: liveSession, isLoading: isSessionLoading } = useQuery({
+    queryKey: ['session', serverId, id],
+    queryFn: () => createApiForServer(serverId).get<Session>(`/api/sessions/${id}`),
+    enabled: isConvNotFound,
+    retry: false,
+    meta: { persist: false },
+  })
+
+  useEffect(() => {
+    if (isConvNotFound && liveSession) {
+      router.replace(`/session/${id}?server=${serverId}`)
+    }
+  }, [isConvNotFound, liveSession, id, serverId, router])
   const listRef = useRef<FlashListRef<Message>>(null)
   const hasInitialScrolled = useRef(false)
   const userHasScrolled = useRef(false)
@@ -428,19 +444,31 @@ export default function ConversationDetailScreen() {
   )
 
   if (error) {
-    // A 404 means the conversation's data is gone from the server — retrying
-    // can't recover it, so show a tailored message without a Retry button.
+    // A 404 from /api/conversations/:id doesn't mean "gone" — it may mean the
+    // session is live but hasn't written JSONL yet. Check /api/sessions/:id;
+    // if found, redirect to the live session view (handled by the useEffect above).
+    // While that check is in-flight, show a spinner. Only show "no longer available"
+    // once we've confirmed the session is also absent.
+    if (isConvNotFound && isSessionLoading) {
+      return (
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+          <ScreenHeader right={headerActions} />
+          <View style={styles.centered}>
+            <ActivityIndicator color={theme.text.secondary} />
+          </View>
+        </SafeAreaView>
+      )
+    }
     // Other errors (timeout, network) are transient: keep Retry.
-    const isNotFound = error instanceof NotFoundError
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader right={headerActions} />
         <View style={styles.centered}>
           <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
           <Text style={styles.errorMessage}>
-            {isNotFound ? t('error.notFound') : error.message}
+            {isConvNotFound ? t('error.notFound') : error.message}
           </Text>
-          {isNotFound ? null : (
+          {isConvNotFound ? null : (
             <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
               <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
             </TouchableOpacity>

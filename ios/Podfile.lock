@@ -2949,7 +2949,7 @@ SPEC CHECKSUMS:
   ExpoLinking: f3d1883179d784e3d74c0eaf6ae8b03ec3571da3
   ExpoLocalization: cf50efc436b2ec313510131c1ee0e778366d64b0
   ExpoLogBox: 63977cf56b04547c713535d2d4e9bbf2f012e3c6
-  ExpoModulesCore: 0cc21d3611b5c75e19394626e3eae02dbf4e1c25
+  ExpoModulesCore: 2dd10aa6df6a48d0da22131d9c452438b352a486
   ExpoModulesJSI: 49e5d86ad1a81cd696f07ca9d583b7848baa75cb
   ExpoModulesWorklets: 111c11b9ab7fe23ce3e52bba7bbfcf5ef730139f
   ExpoModulesWorkletsAdapter: 59a69740bd200ff5f983cd97d49c086d47b802f4
@@ -2965,7 +2965,7 @@ SPEC CHECKSUMS:
   EXUpdates: 849f30a2199491cfd02233f82386f534967dca45
   EXUpdatesInterface: 25408a97d682355eb9fb37e5aa6e22caece1881f
   FBLazyVector: 24e62c765683b8d89006a88a2c8f5cf019f0074d
-  hermes-engine: 62bfddd1130c3f49b84175655fd0eb5dfa10a3d8
+  hermes-engine: 48179c31e7be9a702d2e4ab5ccc6ed4cb01e8dde
   RCTDeprecation: a4c521821fab57cbb125b36effe84d897d0dfa12
   RCTRequired: 9f3a7e5645d4bc3f551593de7550bb66ab6e42bc
   RCTSwiftUI: 239ed2eb9e73de5a6f518810630f0c95e01c8702
@@ -2975,7 +2975,7 @@ SPEC CHECKSUMS:
   React: e2dc35338068bbd299c66f043ae0d7f25de8499e
   React-callinvoker: 28b25d21b124c26cebaea713ba7d801b9351dc48
   React-Core: 02ed7d2ffb70437bdf2aba074a13078a7b0b9ff0
-  React-Core-prebuilt: 9045d030ef5f79d17c75cfd2e1d021f4514f747d
+  React-Core-prebuilt: aae9291b654859f6d5057b51c517aef518c4241e
   React-CoreModules: b3a5a42dadcde3b5d47b325bd912eb2ced89e146
   React-cxxreact: fe8f88dda044e5905e99a00f41b7a874c3908716
   React-debug: 92944dc4d89f56d640e75498266cbde557a48189
@@ -3041,7 +3041,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 25c9c516839be2c5e3d3344f95dc7da5f7e63fc2
   ReactCodegen: c8f81e6c6f762dcf442a6203a1fb58f7dafc8014
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
-  ReactNativeDependencies: b4a45e079c83c3b9d8b22faea4ea9f3ceb07e46f
+  ReactNativeDependencies: 75d88023444c6a899e95546612714498048df9d1
   RNCAsyncStorage: 2ad919e88b8bc2cd80e8697ce66d04d006743283
   RNCMaskedView: eb2b2e538afa907f05a5848a1a1ac26092e6fec9
   RNGestureHandler: 2ff61eac036eaf89f6818bf4ed9c39771a17d134
