@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
+import { Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
