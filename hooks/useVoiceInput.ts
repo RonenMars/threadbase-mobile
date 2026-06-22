@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
+import * as Device from 'expo-device'
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -60,6 +61,11 @@ export function useVoiceInput({ onTranscript, contextualStrings }: UseVoiceInput
   )
 
   const start = useCallback(async () => {
+    // Simulators have no real mic; AVAudioEngine input init RPC-times-out and
+    // aborts the process (native SIGABRT, uncatchable from JS). Skip there.
+    if (!Device.isDevice) {
+      throw new Error('VOICE_UNAVAILABLE')
+    }
     const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync()
     if (!granted) {
       throw new Error('PERMISSION_DENIED')
