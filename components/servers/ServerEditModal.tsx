@@ -36,8 +36,7 @@ function splitUrl(full: string): { protocol: 'http' | 'https'; host: string } {
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const { t } = useTranslation(['common', 'servers'])
   const theme = useTheme()
-  const { servers, addServer, editServer } = useServersStore()
-  const server = serverId ? servers[serverId] : null
+  const { addServer, editServer } = useServersStore()
   const isEditMode = serverId !== null
 
   const [label, setLabel] = useState('')
@@ -52,16 +51,20 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
   const styles = makeStyles(theme)
 
-  // Pre-fill fields when opening
+  // Pre-fill fields when opening. Read the server fresh from the store rather than
+  // depending on the `server` reference — background polling replaces that object on
+  // every refresh interval, which would otherwise re-fire this effect and clobber
+  // whatever the user is currently typing.
   useEffect(() => {
     if (visible) {
       queueMicrotask(() => {
-        if (server) {
-          setLabel(server.label ?? '')
-          const { protocol: p, host } = splitUrl(server.url)
+        const current = serverId ? useServersStore.getState().servers[serverId] : null
+        if (current) {
+          setLabel(current.label ?? '')
+          const { protocol: p, host } = splitUrl(current.url)
           setProtocol(p)
           setUrlHost(host)
-          setApiKey(server.apiKey)
+          setApiKey(current.apiKey)
         } else {
           setLabel('')
           setProtocol('http')
@@ -74,7 +77,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         setShowProtocolPicker(false)
       })
     }
-  }, [visible, serverId, server])
+  }, [visible, serverId])
 
   function markDirty() {
     if (!isDirty) setIsDirty(true)
