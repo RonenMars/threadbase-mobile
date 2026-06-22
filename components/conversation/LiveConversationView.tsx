@@ -1,5 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+<<<<<<< HEAD
 import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+=======
+import { Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
+>>>>>>> 5f83d0d2 (fix(keyboard): use react-native-keyboard-controller and safe area padding to prevent input hiding)
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
