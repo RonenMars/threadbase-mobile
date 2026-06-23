@@ -14,6 +14,9 @@ import type {
 import type { SortBy, SortOrder } from '@/types/ui'
 
 const DEFAULT_PAGE_SIZE = 50
+// Per-page timeout for eager sessions fetching — generous (60 s) because a cold
+// scanner or many connected servers can make the first page slow.
+const SESSIONS_FETCH_TIMEOUT_MS = 60000
 
 // The home screen's `SortBy` (UI) uses 'lastActivity'; the wire format is
 // 'lastActivityAt' to match the field on SessionResponse. All other names
@@ -71,7 +74,9 @@ async function fetchAllPagesForServer(
     if (signal?.aborted) throw new Error('aborted')
 
     const qs = buildSessionsQueryString({ limit: DEFAULT_PAGE_SIZE, cursor, sortBy, order, status })
-    const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, { signal })
+    // Sessions fetching can be slow on a cold scanner / many servers — give each
+    // page a generous 60 s timeout instead of the default 8/15 s.
+    const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, { signal, timeoutMs: SESSIONS_FETCH_TIMEOUT_MS })
     for (const s of page.sessions) {
       collected.push({ ...s, serverId, serverLabel })
     }

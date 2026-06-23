@@ -228,10 +228,11 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
       } else if (block.type === 'text' && block.text) {
         content.push({ type: 'text', text: block.text })
       } else if (block.type === 'tool_use') {
-        content.push({ type: 'tool_use', name: block.name ?? '', input: block.input ?? {} })
+        content.push({ type: 'tool_use', id: block.id, name: block.name ?? '', input: block.input ?? {} })
       } else if (block.type === 'tool_result') {
         content.push({
           type: 'tool_result',
+          toolUseId: block.tool_use_id,
           toolName: resolveToolName(block.tool_use_id, m.content),
           content: block.content ?? '',
           isError: block.is_error,

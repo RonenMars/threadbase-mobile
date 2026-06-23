@@ -30,11 +30,11 @@ function parseLineToMessage(line: string): Message | null {
         return [{ type: 'thinking', thinking: b.thinking, signature: typeof b.signature === 'string' ? b.signature : undefined }]
       }
       if (b.type === 'tool_use' && typeof b.name === 'string') {
-        return [{ type: 'tool_use', name: b.name, input: (b.input as Record<string, unknown>) ?? {} }]
+        return [{ type: 'tool_use', id: typeof b.id === 'string' ? b.id : undefined, name: b.name, input: (b.input as Record<string, unknown>) ?? {} }]
       }
       if (b.type === 'tool_result') {
         const content = typeof b.content === 'string' ? b.content : JSON.stringify(b.content)
-        return [{ type: 'tool_result', toolName: '', content, isError: b.is_error === true }]
+        return [{ type: 'tool_result', toolUseId: typeof b.tool_use_id === 'string' ? b.tool_use_id : undefined, toolName: '', content, isError: b.is_error === true }]
       }
       return []
     })
