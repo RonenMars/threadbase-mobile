@@ -39,6 +39,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
     sendInput: { mutate: mockSendInputMutate, isError: false, error: null },
     sendKeys: { mutate: mockSendKeysMutate },
+    respondToQuestion: { mutate: jest.fn() },
   }),
 }))
 
@@ -67,7 +68,8 @@ jest.mock('@/hooks/useComposerState', () => ({
 }))
 
 jest.mock('@/services/ws-client', () => ({
-  wsManager: { getClient: () => ({ status: () => 'connected' }) },
+  // on() is needed now that TerminalView subscribes via useActiveQuestion.
+  wsManager: { getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }) },
 }))
 
 jest.mock('@/components/shared/SlashCommandBoard', () => ({

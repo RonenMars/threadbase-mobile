@@ -16,8 +16,9 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
-import { parseQuestionBlock } from '@/utils/parseQuestionBlock'
+import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { FEATURE_QUESTIONS } from '@/constants/flags'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -60,9 +61,13 @@ interface Props {
   isStreaming: boolean
   onSendInput?: (text: string) => void
   onSendKeys?: (keys: string) => void
+  /** Structured question / permission gate from the WS stream (takes precedence over PTY scrape). */
+  activeQuestion?: QuestionBlock | null
+  /** Answer a structured AskUserQuestion (POST). Permission gates answer via onSendKeys. */
+  onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
 }
 
-export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, onSendKeys }: Props) {
+export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, onSendKeys, activeQuestion, onAnswer }: Props) {
   const { t } = useTranslation('common')
   const listRef = useRef<FlashListRef<TerminalLine>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
@@ -126,17 +131,30 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
   const questionBlock = useMemo(
-    () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
+    () => (FEATURE_QUESTIONS && onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
     [lines, onSendKeys]
   )
 
-  const handleOptionSelect = useCallback((targetIndex: number) => {
+  const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
-    const delta = targetIndex - questionBlock.selectedIndex
+    const start = questionBlock.selectedIndex ?? 0
+    const delta = optionIndex - start
     const arrow = delta > 0 ? '\x1b[B' : '\x1b[A'
     const keys = arrow.repeat(Math.abs(delta)) + '\r'
     onSendKeys(keys)
   }, [onSendKeys, questionBlock])
+
+  const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
+    if (!activeQuestion) return
+    if (activeQuestion.source === 'permission') {
+      const realIndex = activeQuestion.permissionIndices?.[optionIndex]
+      if (realIndex !== undefined) onSendKeys?.(`${realIndex}\r`)
+      return
+    }
+    if (!activeQuestion.toolUseId) return
+    const q = activeQuestion.questions[questionIndex]
+    onAnswer?.(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
+  }, [activeQuestion, onAnswer, onSendKeys])
 
   return (
     <View style={styles.container}>
@@ -154,7 +172,9 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
         contentContainerStyle={styles.listContent}
       />
 
-      {questionBlock && onSendKeys ? (
+      {FEATURE_QUESTIONS && activeQuestion ? (
+        <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
+      ) : questionBlock && onSendKeys ? (
         <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
       ) : null}
 

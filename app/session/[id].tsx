@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
+  type LayoutChangeEvent,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -137,7 +138,7 @@ function WakingUpOverlay({ phrase }: { phrase: string }) {
   const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value }))
 
   return (
-    <View style={wakingStyles.overlay}>
+    <View style={wakingStyles.overlay} testID="waking-up-overlay">
       <View style={wakingStyles.card}>
         <Animated.Text style={[wakingStyles.emoji, emojiStyle]}>🤖</Animated.Text>
         <View style={wakingStyles.dots}>
@@ -429,6 +430,7 @@ export default function SessionDetailScreen() {
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
   const [planVisible, setPlanVisible] = useState(false)
+  const [aboveBodyHeight, setAboveBodyHeight] = useState(0)
 
   const sessionFavoriteId = buildFavoriteId(serverId, 'session', id ?? '')
   const isSessionFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === sessionFavoriteId))
@@ -493,7 +495,8 @@ export default function SessionDetailScreen() {
 
   const isWakingUp =
     session?.status === 'running' &&
-    !hasReachedPrompt
+    !hasReachedPrompt &&
+    (session?.promptCount ?? 0) === 0
 
   const infoModal = (
     <InfoModal
@@ -599,8 +602,14 @@ export default function SessionDetailScreen() {
 
   const isLive =
     session.ptyAttached === true &&
-    (session.status === 'waiting_input' || session.status === 'running') &&
-    !!session.conversationId
+    (session.status === 'waiting_input' || session.status === 'running')
+
+  // A live PTY may not have a conversationId yet (no JSONL written), but it can
+  // already be showing an interactive prompt. LiveConversationView needs the
+  // conversationId for REST history; without it we fall back to TerminalView,
+  // which only needs the live PTY stream and carries the same question + raw-key
+  // affordances — so a prompt is never stranded behind a placeholder.
+  const hasConversationId = !!session.conversationId
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -608,19 +617,21 @@ export default function SessionDetailScreen() {
 
   return (
     <SafeAreaView style={styles.flex} edges={['top']} testID="session-detail-screen">
-      <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
-      {session ? (
-        <View style={styles.statusBar}>
-          <SessionStatusBadge status={session.status} isRefetching={false} />
-          <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
-          <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
-        </View>
-      ) : null}
+      <View onLayout={(e: LayoutChangeEvent) => setAboveBodyHeight(e.nativeEvent.layout.height)}>
+        <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
+        {session ? (
+          <View style={styles.statusBar}>
+            <SessionStatusBadge status={session.status} isRefetching={false} />
+            <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
+            <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.body}>
         {isLive ? (
           <View style={styles.flex}>
-            {sessionView === 'terminal' ? (
+            {sessionView === 'terminal' || !hasConversationId ? (
               <TerminalView
                 serverId={serverId}
                 sessionId={id}
@@ -636,6 +647,7 @@ export default function SessionDetailScreen() {
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+                keyboardVerticalOffset={aboveBodyHeight}
               />
             )}
             {isWakingUp ? (

@@ -12,10 +12,11 @@
 import React from 'react'
 import { FlatList } from 'react-native'
 import { render, act, type RenderResult } from '@testing-library/react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
+import { NotFoundError } from '@/services/api-client'
 
 function makeDetail(messageCount: number) {
   const messages = Array.from({ length: messageCount }, (_, i) => ({
@@ -44,18 +45,42 @@ function makeDetail(messageCount: number) {
   }
 }
 
-jest.mock('@/services/api-client', () => ({
-  createApiForServer: () => ({
-    get: () => Promise.resolve(mockDetailRef.current),
-    // useConversation's first page uses getWithMeta (conditional fetch). This
-    // gating suite only cares about render timing, so return a plain 200 with
-    // no ETag — the same detail payload, wrapped in the meta envelope.
-    getWithMeta: () => Promise.resolve({ status: 200, etag: null, body: mockDetailRef.current }),
-    post: () => Promise.resolve({}),
-  }),
-}))
-
 const mockDetailRef: { current: unknown } = { current: null }
+// null = never fetched; Error instance = throw; object = resolve
+const mockSessionRef: { current: unknown } = { current: null }
+
+jest.mock('@/services/api-client', () => {
+  const { NotFoundError } = jest.requireActual('@/services/api-client')
+  return {
+    NotFoundError,
+    createApiForServer: () => ({
+      get: (path: string) => {
+        if (path.includes('/api/sessions/')) {
+          const v = mockSessionRef.current
+          if (v instanceof Error) return Promise.reject(v)
+          return Promise.resolve(v)
+        }
+        const v = mockDetailRef.current
+        if (v instanceof Error) return Promise.reject(v)
+        return Promise.resolve(v)
+      },
+      // useConversation's first page uses getWithMeta (conditional fetch). This
+      // gating suite only cares about render timing, so return a plain 200 with
+      // no ETag — the same detail payload, wrapped in the meta envelope.
+      getWithMeta: (path: string) => {
+        if (path.includes('/api/sessions/')) {
+          const v = mockSessionRef.current
+          if (v instanceof Error) return Promise.reject(v)
+          return Promise.resolve({ status: 200, etag: null, body: v })
+        }
+        const v = mockDetailRef.current
+        if (v instanceof Error) return Promise.reject(v)
+        return Promise.resolve({ status: 200, etag: null, body: v })
+      },
+      post: () => Promise.resolve({}),
+    }),
+  }
+})
 
 function seedServer() {
   useServersStore.setState({
@@ -234,5 +259,70 @@ describe('conversation detail — resumability gating', () => {
     expect(text).toContain('Resume Session')
     expect(text).not.toContain("Can't resume")
     expect(text).not.toContain('no longer exists')
+  })
+})
+
+describe('conversation detail — 404 live-session fallback', () => {
+  let mockReplace: jest.Mock
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    seedServer()
+    mockReplace = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({
+      push: jest.fn(),
+      replace: mockReplace,
+      back: jest.fn(),
+      navigate: jest.fn(),
+      canGoBack: jest.fn(() => true),
+    })
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'conv-gating', server: 'srv1' })
+  })
+
+  afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
+    mockDetailRef.current = null
+    mockSessionRef.current = null
+  })
+
+  async function flushAllQueries() {
+    for (let i = 0; i < 20; i++) {
+      await act(async () => {
+        jest.advanceTimersByTime(10)
+      })
+    }
+  }
+
+  it('redirects to /session/:id when conversation 404s and session is live (ptyAttached)', async () => {
+    mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
+    mockSessionRef.current = { id: 'conv-gating', status: 'running', ptyAttached: true }
+
+    render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    expect(mockReplace).toHaveBeenCalledWith('/session/conv-gating?server=srv1')
+  })
+
+  it('does NOT redirect when the session is detached/idle — session/[id] would bounce back, looping', async () => {
+    mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
+    mockSessionRef.current = { id: 'conv-gating', status: 'idle', ptyAttached: false }
+
+    render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('shows "no longer available" when both conversation and session are absent', async () => {
+    mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
+    mockSessionRef.current = new NotFoundError('/api/sessions/conv-gating')
+
+    const root = render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    const text = allText(root)
+    expect(text).toContain('no longer available')
+    expect(mockReplace).not.toHaveBeenCalled()
   })
 })

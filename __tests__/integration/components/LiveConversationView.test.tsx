@@ -16,6 +16,7 @@ const mockMutate = jest.fn()
 
 let mockHistorical: Message[] = []
 let mockLive: Message[] = []
+let mockPtyLines: string[] = []
 
 jest.mock('@/hooks/useConversations', () => ({
   useConversation: () => ({ data: { messages: mockHistorical } }),
@@ -44,7 +45,7 @@ jest.mock('@/hooks/useSession', () => ({
 }))
 
 jest.mock('@/hooks/useTerminalStream', () => ({
-  useTerminalStream: () => ({ lines: [], isStreaming: false }),
+  useTerminalStream: () => ({ lines: mockPtyLines, isStreaming: false }),
 }))
 
 // useComposerState imports expo-speech-recognition at module load time; mock it
@@ -103,6 +104,20 @@ describe('LiveConversationView — optimistic sent message', () => {
     mockMutate.mockClear()
     mockHistorical = []
     mockLive = []
+    mockPtyLines = []
+  })
+
+  it('shows live PTY output when there are no conversation messages yet', () => {
+    // Fresh / waiting_input session: no JSONL → no historical/live messages,
+    // but the PTY is streaming. The chat must not be blank.
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = ['Scanning project...', 'Found 12 apps']
+
+    renderView()
+
+    expect(screen.getByText('Scanning project...')).toBeTruthy()
+    expect(screen.getByText('Found 12 apps')).toBeTruthy()
   })
 
   it('shows the sent message in the bubbles immediately, before any WS echo', () => {

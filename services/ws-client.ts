@@ -1,4 +1,11 @@
-import type { Session, NotificationEvent } from '@/types/api'
+import type {
+  Session,
+  NotificationEvent,
+  QuestionWsMessage,
+  QuestionCancelledWsMessage,
+  PermissionWsMessage,
+  PermissionCancelledWsMessage,
+} from '@/types/api'
 import { getDeviceClientId } from './device-id'
 
 export type WSMessage =
@@ -11,6 +18,10 @@ export type WSMessage =
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'conversation_event'; sessionId: string; line: string }
+  | QuestionWsMessage
+  | QuestionCancelledWsMessage
+  | PermissionWsMessage
+  | PermissionCancelledWsMessage
 
 type MessageHandler = (msg: WSMessage) => void
 

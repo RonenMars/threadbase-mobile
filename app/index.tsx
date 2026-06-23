@@ -50,7 +50,7 @@ import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyl
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
-const ALL_STATUSES: SessionStatus[] = ['running', 'idle']
+const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
 
 type ClassicTab = 'sessions' | 'history'
 

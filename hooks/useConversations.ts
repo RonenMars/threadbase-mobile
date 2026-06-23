@@ -383,6 +383,19 @@ export function useConversation(serverId: string, id: string) {
   }
 }
 
+// Sentinel thrown when the /conversations/count request times out so the outer
+// handler can classify the server as "indexing" rather than "unreachable".
+class CountTimeoutError extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause))
+    this.name = 'CountTimeoutError'
+  }
+}
+
+function isCountTimeoutError(err: unknown): boolean {
+  return err instanceof CountTimeoutError
+}
+
 // Drain one server's pages sequentially — keeps server load proportional to
 // progress rather than firing N pages × 3 servers in parallel at every focus.
 async function fetchAllConversationPagesForServer(
@@ -398,12 +411,23 @@ async function fetchAllConversationPagesForServer(
 
   const countParams = new URLSearchParams()
   if (filter?.projectPath) countParams.set('project', filter.projectPath)
-  if (refreshEpoch > 0) countParams.set('refresh', '1')
   const countQs = countParams.toString()
-  const { total } = await api.get<{ total: number }>(
-    `/api/conversations/count${countQs ? `?${countQs}` : ''}`,
-    { signal },
-  )
+  let total: number
+  try {
+    const res = await api.get<{ total: number }>(
+      `/api/conversations/count${countQs ? `?${countQs}` : ''}`,
+      { signal },
+    )
+    total = res.total
+  } catch (err) {
+    // Re-throw aborts as CountTimeoutError so the caller can distinguish
+    // "server is indexing" from "server is unreachable".
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('AbortError') || msg.includes('cancelled') || msg.includes('timed out')) {
+      throw new CountTimeoutError(err)
+    }
+    throw err
+  }
 
   onProgress(0, total)
 
@@ -446,6 +470,7 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
   const [progress, setProgress] = useState<EagerConversationsProgress>({ loaded: 0, total: 0 })
   const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
+  const recordIndexing = useServerFetchStatusStore((s) => s.recordIndexing)
 
   const queryKey = useMemo(
     () => ['conversations-eager', filter, refreshEpoch, ...displayedServerIds],
@@ -505,7 +530,15 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
           lastFailure = result.reason
           // Extract serverId from the rejection — find matching index.
           const idx = settled.indexOf(result)
-          if (idx !== -1) recordFailure(displayedServerIds[idx], result.reason)
+          if (idx !== -1) {
+            // A count-request timeout means the server responded to other requests
+            // but the index scan is still warm — show "indexing", not "unreachable".
+            if (isCountTimeoutError(result.reason)) {
+              recordIndexing(displayedServerIds[idx])
+            } else {
+              recordFailure(displayedServerIds[idx], result.reason)
+            }
+          }
         }
       }
 

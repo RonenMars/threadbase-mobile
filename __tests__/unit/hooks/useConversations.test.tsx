@@ -235,3 +235,48 @@ describe('useEagerConversations — partial failure (Bug 32)', () => {
     expect(statuses['srv-B']?.status).toBe('ok')
   })
 })
+
+describe('useEagerConversations — cold-start count (fix: no refresh=1)', () => {
+  it('never appends refresh=1 to the count URL', async () => {
+    setActiveServers(['srv-X'])
+
+    const countUrls: string[] = []
+    handlers['srv-X'] = (path: string) => {
+      if (path.includes('/api/conversations/count')) {
+        countUrls.push(path)
+        return Promise.resolve({ total: 0 }) as Promise<unknown>
+      }
+      return Promise.resolve([]) as Promise<unknown>
+    }
+
+    const { result } = renderHook(() => useEagerConversations(undefined, 1), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(countUrls.length).toBeGreaterThan(0)
+    for (const url of countUrls) {
+      expect(url).not.toContain('refresh=1')
+    }
+  })
+
+  it('records indexing (not error) when the count request times out', async () => {
+    setActiveServers(['srv-slow'])
+
+    handlers['srv-slow'] = (path: string) => {
+      if (path.includes('/api/conversations/count')) {
+        // Simulate the AbortError message produced by api-client timeout
+        return Promise.reject(new Error('Failed to reach http://stub/api/conversations/count: AbortError: The operation was aborted'))
+      }
+      return Promise.resolve([]) as Promise<unknown>
+    }
+
+    const { result } = renderHook(() => useEagerConversations(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    const statuses = useServerFetchStatusStore.getState().statuses
+    expect(statuses['srv-slow']?.status).toBe('indexing')
+  })
+})

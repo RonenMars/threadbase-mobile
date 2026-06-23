@@ -12,7 +12,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
     mutationFn: (input: string) =>
       api.post(`/api/sessions/${sessionId}/input`, { input }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+      // Session status is updated via WS session_update in _layout.tsx — no invalidate needed.
       // Catch up on any terminal_output the WS missed while connecting/reconnecting.
       qc.invalidateQueries({ queryKey: ['terminal-output', serverId, sessionId] })
     },
@@ -57,6 +57,11 @@ export function useSessionActions(serverId: string, sessionId: string) {
       api.post(`/api/sessions/${sessionId}/plan-response`, vars),
   })
 
+  const respondToQuestion = useMutation({
+    mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) =>
+      api.post(`/api/sessions/${sessionId}/answer`, vars),
+  })
+
   const adoptSession = useMutation({
     mutationFn: () =>
       api.post<{ sessionId: string }>(`/api/sessions/${sessionId}/adopt`),
@@ -67,5 +72,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, adoptSession }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession }
 }
