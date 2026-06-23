@@ -16,6 +16,7 @@ jest.mock('expo-speech-recognition', () => ({
 jest.mock('react-native-keyboard-controller', () => ({
   KeyboardProvider: ({ children }: { children: unknown }) => children,
   KeyboardAwareScrollView: ({ children }: { children: unknown }) => children,
+  KeyboardAvoidingView: ({ children }: { children: unknown }) => children,
 }))
 
 jest.mock('react-native-safe-area-context', () => ({
