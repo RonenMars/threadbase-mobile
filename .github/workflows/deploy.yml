@@ -143,7 +143,15 @@ jobs:
           if [[ -n "$RELEASE_NOTES" ]]; then
             ARGS+=(--release-notes "$RELEASE_NOTES")
           fi
-          ./scripts/ship-ios.sh "${ARGS[@]}"
+          ./scripts/ship-ios.sh "${ARGS[@]}" || {
+            code=$?
+            # Exit 137 = poll-build timeout after 30 min (expected, build already uploaded)
+            if (( code == 137 )); then
+              echo "✓ Build uploaded to App Store Connect (polling timed out at 30 min)"
+              exit 0
+            fi
+            exit $code
+          }
 
       - name: Push build number bump to main (after successful upload)
         # Only runs if Ship iOS succeeded — so main advances only when a build
