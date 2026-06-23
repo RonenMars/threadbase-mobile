@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { X, Eye, EyeSlash, QrCode, XCircle, CaretDown } from 'phosphor-react-native'
+import { X, Eye, EyeSlash, QrCode, XCircle, CaretDown, ClipboardText } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { useServersStore } from '@/stores/servers'
@@ -210,7 +210,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               <View style={styles.fieldLabelRow}>
                 <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
                 <TouchableOpacity onPress={pasteUrl} hitSlop={8}>
-                  <Text style={styles.pasteBtn}>{t('button.paste')}</Text>
+                  <ClipboardText size={18} color={theme.text.accent} />
                 </TouchableOpacity>
               </View>
               <View style={styles.urlRow}>
@@ -254,7 +254,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               <View style={styles.fieldLabelRow}>
                 <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
                 <TouchableOpacity onPress={pasteApiKey} hitSlop={8}>
-                  <Text style={styles.pasteBtn}>{t('button.paste')}</Text>
+                  <ClipboardText size={18} color={theme.text.accent} />
                 </TouchableOpacity>
               </View>
               <View style={styles.apiKeyRow}>
@@ -436,11 +436,6 @@ function makeStyles(theme: Theme) {
       padding: spacing.xs,
       minHeight: 44,
       justifyContent: 'center',
-    },
-    pasteBtn: {
-      color: theme.text.accent,
-      fontSize: font.base,
-      fontWeight: '500',
     },
     errorBox: {
       flexDirection: 'row',
