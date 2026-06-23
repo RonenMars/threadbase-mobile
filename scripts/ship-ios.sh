@@ -166,6 +166,7 @@ echo "▸ [8/$TOTAL_STEPS] Wait for App Store Connect processing (build $BUILD_N
   if (( code == 137 )); then
     echo "⚠️  Build uploaded but polling timed out after 30 minutes (Apple's indexing is slow)."
     echo "   Build is processing in App Store Connect. Check status manually in Xcode Organizer."
+    true  # clear the error; timeout is expected
   else
     exit $code
   fi
