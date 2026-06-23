@@ -23,12 +23,12 @@ xcodebuild \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "${ARCHIVE_PATH}" \
-  -allowProvisioningUpdates \
   -authenticationKeyPath "${ASC_KEY_PATH}" \
   -authenticationKeyID "${ASC_KEY_ID}" \
   -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
   DEVELOPMENT_TEAM="${ASC_TEAM_ID}" \
   CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY="Apple Development" \
   archive | tee build/archive.log
 
 # Export archive with retry logic: network timeouts during export validation
