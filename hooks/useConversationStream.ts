@@ -1,5 +1,6 @@
 // hooks/useConversationStream.ts
 import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
 
@@ -29,11 +30,11 @@ function parseLineToMessage(line: string): Message | null {
         return [{ type: 'thinking', thinking: b.thinking, signature: typeof b.signature === 'string' ? b.signature : undefined }]
       }
       if (b.type === 'tool_use' && typeof b.name === 'string') {
-        return [{ type: 'tool_use', name: b.name, input: (b.input as Record<string, unknown>) ?? {} }]
+        return [{ type: 'tool_use', id: typeof b.id === 'string' ? b.id : undefined, name: b.name, input: (b.input as Record<string, unknown>) ?? {} }]
       }
       if (b.type === 'tool_result') {
         const content = typeof b.content === 'string' ? b.content : JSON.stringify(b.content)
-        return [{ type: 'tool_result', toolName: '', content, isError: b.is_error === true }]
+        return [{ type: 'tool_result', toolUseId: typeof b.tool_use_id === 'string' ? b.tool_use_id : undefined, toolName: '', content, isError: b.is_error === true }]
       }
       return []
     })
@@ -57,6 +58,7 @@ export function useConversationStream(
   sessionId: string | null,
   conversationId: string,
 ) {
+  const qc = useQueryClient()
   const [liveMessages, setLiveMessages] = useState<Message[]>([])
   const seenIds = useRef(new Set<string>())
 
@@ -64,6 +66,8 @@ export function useConversationStream(
     if (!serverId || !sessionId) return
 
     seenIds.current.clear()
+    // On (re)subscribe, force REST refresh to recover messages missed while WS was down.
+    qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
 
     const unsub = wsManager.getClient(serverId)?.on('conversation_event', (msg) => {
       // wsManager.on uses a union type; cast is safe once Task 1 adds the type
@@ -82,7 +86,7 @@ export function useConversationStream(
       setLiveMessages([])
       seenIdsRef.clear()
     }
-  }, [serverId, sessionId, conversationId])
+  }, [serverId, sessionId, conversationId, qc])
 
   return { liveMessages }
 }

@@ -43,9 +43,10 @@ async function request<T>(
   const url = `${server.url.replace(/\/$/, '')}${path}`
 
   // Combine the caller's signal (from React Query) with a per-request timeout
-  // so a single hung page can't strand the eager-pagination loop.
+  // so a single hung page can't strand the eager-pagination loop. A caller can
+  // override the timeout for slow endpoints (e.g. multi-server session fetch).
   const timeoutController = new AbortController()
-  const timeoutMs = retried ? REQUEST_TIMEOUT_MS : FIRST_ATTEMPT_TIMEOUT_MS
+  const timeoutMs = options.timeoutMs ?? (retried ? REQUEST_TIMEOUT_MS : FIRST_ATTEMPT_TIMEOUT_MS)
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs)
   const onCallerAbort = () => timeoutController.abort()
   if (options.signal) {
@@ -177,6 +178,12 @@ export interface RequestOptions {
   signal?: AbortSignal
   /** Extra request headers, e.g. `If-None-Match` for conditional GETs. */
   headers?: Record<string, string>
+  /**
+   * Per-request timeout override (ms) for slow endpoints. When set it replaces
+   * both the first-attempt and retry timeouts. Defaults to the shared
+   * FIRST_ATTEMPT_TIMEOUT_MS / REQUEST_TIMEOUT_MS otherwise.
+   */
+  timeoutMs?: number
 }
 
 export interface ResponseWithMeta<T> {

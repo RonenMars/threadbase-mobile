@@ -55,11 +55,14 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
     const fetchFailed: string[] = []
     const disconnected: string[] = []
     const connecting: string[] = []
+    const indexing: string[] = []
 
     for (const id of activeServerIds) {
       const wsStatus = wsManager.status(id)
-      const fetchOk = (fetchStatuses[id]?.status ?? 'ok') === 'ok'
-      if (wsStatus === 'connected' && fetchOk) healthy.push(id)
+      const fetchStatus = fetchStatuses[id]?.status ?? 'ok'
+      const fetchOk = fetchStatus === 'ok'
+      if (fetchStatus === 'indexing') indexing.push(id)
+      else if (wsStatus === 'connected' && fetchOk) healthy.push(id)
       else if (wsStatus === 'disconnected' && !fetchOk) unreachable.push(id)
       else if (wsStatus === 'connected' && !fetchOk) fetchFailed.push(id)
       else if (wsStatus === 'disconnected' && fetchOk) disconnected.push(id)
@@ -69,7 +72,17 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
     const single = activeServerIds.length === 1
     const label = single ? serverLabel(activeServerIds[0], servers) : ''
 
-    // All servers unhealthy
+    // All servers unhealthy (indexing servers don't count as unreachable)
+    if (healthy.length === 0 && indexing.length === activeServerIds.length) {
+      const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
+      return {
+        severity: 'info',
+        message: indexingLabel
+          ? `${indexingLabel} is building history…`
+          : 'Building session history…',
+      }
+    }
+
     if (healthy.length === 0) {
       if (unreachable.length > 0) {
         return {
@@ -106,6 +119,15 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
 
     // Some healthy, some degraded
     const bad = [...unreachable, ...fetchFailed, ...disconnected]
+    if (indexing.length > 0) {
+      const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
+      return {
+        severity: 'info',
+        message: indexingLabel
+          ? `${indexingLabel} is building history…`
+          : 'Building session history…',
+      }
+    }
     if (unreachable.length > 0) {
       const badLabel = unreachable.length === 1 ? serverLabel(unreachable[0], servers) : null
       return {

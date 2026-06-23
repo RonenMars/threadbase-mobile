@@ -1,0 +1,89 @@
+# Maestro E2E — Chat flow fixes
+#
+# Validates the 6 chat-flow fixes applied to LiveConversationView and related
+# hooks. Uses the local mock server (http://localhost:7071) so no live streamer
+# is required.
+#
+# Fixes covered:
+#   Fix 2 — ThinkingBubble appears while session is running (isAgentThinking)
+#   Fix 3 — WakingUpOverlay does NOT appear for an existing session (promptCount > 0)
+#   Fix 5 — Sent message bubble is visible (optimistic dedup doesn't over-clear)
+#
+# Run with:
+#   npm run test:e2e:mock
+# or directly:
+#   maestro test --debug-output e2e/_artifacts/debug e2e/05_chat_flow.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-flow-00-hub.png
+
+# ── Navigate to running session ────────────────────────────────────────────────
+# first-session-card → session-abc123: status=running, promptCount=3
+# Fix 3: isWakingUp must be FALSE (promptCount > 0 means not first run)
+
+- extendedWaitUntil:
+    visible:
+      id: "first-session-card"
+    timeout: 10000
+
+- tapOn:
+    id: "first-session-card"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 12000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-flow-01-session-open.png
+
+# ── Fix 3: WakingUpOverlay must NOT appear for an existing session ─────────────
+
+- assertNotVisible:
+    id: "waking-up-overlay"
+
+# ── Chat composer is available ─────────────────────────────────────────────────
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-flow-02-composer.png
+
+# ── Fix 5: Send a message — optimistic bubble appears immediately ──────────────
+
+- tapOn:
+    id: "chat-message-input"
+- inputText: "hello from chat-flow e2e"
+
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "chat-send-button"
+
+# Optimistic bubble must appear right away
+- extendedWaitUntil:
+    visible:
+      text: "hello from chat-flow e2e"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-flow-03-message-sent.png
+
+# ── Fix 2: ThinkingBubble is visible while session is running ──────────────────
+# session-abc123 stays at status=running; thinking-bubble testID must be present.
+
+- extendedWaitUntil:
+    visible:
+      id: "thinking-bubble"
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-flow-04-thinking.png

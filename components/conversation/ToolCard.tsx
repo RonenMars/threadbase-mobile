@@ -19,6 +19,38 @@ const TOOL_ICONS: Record<string, string> = {
 type ToolUse = Extract<MessageContent, { type: 'tool_use' }>
 type ToolResult = Extract<MessageContent, { type: 'tool_result' }>
 
+interface RawAskQuestion {
+  question?: unknown
+  header?: unknown
+  options?: unknown
+}
+
+// Render an AskUserQuestion tool input as a readable summary: each question's
+// header/question followed by its option labels as a bulleted list. Returns null
+// when the input has no recognisable questions (caller falls back to JSON).
+function summarizeAskUserQuestion(input: Record<string, unknown>): string | null {
+  const questions = input.questions
+  if (!Array.isArray(questions)) return null
+  const blocks: string[] = []
+  for (const q of questions as RawAskQuestion[]) {
+    if (!q || typeof q !== 'object') continue
+    const header = typeof q.header === 'string' ? q.header.trim() : ''
+    const question = typeof q.question === 'string' ? q.question.trim() : ''
+    if (!question) continue
+    const lines: string[] = []
+    lines.push(header ? `${header}: ${question}` : question)
+    if (Array.isArray(q.options)) {
+      for (const o of q.options) {
+        if (o && typeof o === 'object' && typeof (o as { label?: unknown }).label === 'string') {
+          lines.push(`  • ${(o as { label: string }).label}`)
+        }
+      }
+    }
+    blocks.push(lines.join('\n'))
+  }
+  return blocks.length > 0 ? blocks.join('\n\n') : null
+}
+
 interface Props {
   block: ToolUse | ToolResult
   /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
@@ -34,6 +66,13 @@ export function ToolCard({ block, recycleKey }: Props) {
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
   const icon = TOOL_ICONS[toolName] ?? TOOL_ICONS.default
   const isError = block.type === 'tool_result' && block.isError
+
+  // AskUserQuestion: render a readable summary of the questions + option labels
+  // the user was offered, instead of dumping the raw JSON input.
+  const askSummary =
+    block.type === 'tool_use' && block.name === 'AskUserQuestion'
+      ? summarizeAskUserQuestion(block.input)
+      : null
 
   const hasContent =
     block.type === 'tool_result'
@@ -58,7 +97,11 @@ export function ToolCard({ block, recycleKey }: Props) {
 
       {expanded && hasContent ? (
         <View style={styles.body}>
-          {block.type === 'tool_use' ? (
+          {askSummary ? (
+            <Text style={styles.code} selectable>
+              {askSummary}
+            </Text>
+          ) : block.type === 'tool_use' ? (
             <Text style={styles.code} selectable>
               {JSON.stringify(block.input, null, 2)}
             </Text>

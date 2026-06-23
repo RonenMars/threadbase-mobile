@@ -5,7 +5,7 @@ import { create } from 'zustand'
 // The Hub header dot and ServerStatusModal AND-combine both signals when
 // deciding green/amber/red.
 
-export type ServerFetchStatus = 'ok' | 'error'
+export type ServerFetchStatus = 'ok' | 'error' | 'indexing'
 
 export interface ServerFetchStatusEntry {
   status: ServerFetchStatus
@@ -21,6 +21,7 @@ interface State {
 interface Actions {
   recordSuccess: (serverId: string) => void
   recordFailure: (serverId: string, error: unknown) => void
+  recordIndexing: (serverId: string) => void
   reset: () => void
 }
 
@@ -52,6 +53,13 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
           error: describeError(error),
           lastCheckedAt: Date.now(),
         },
+      },
+    })),
+  recordIndexing: (serverId) =>
+    set((s) => ({
+      statuses: {
+        ...s.statuses,
+        [serverId]: { status: 'indexing', lastCheckedAt: Date.now() },
       },
     })),
   reset: () => set({ statuses: {} }),

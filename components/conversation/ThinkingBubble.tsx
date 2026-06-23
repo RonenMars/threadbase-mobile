@@ -2,12 +2,8 @@ import React, { useEffect, useMemo, useRef } from 'react'
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-
-// Strip ANSI escape codes from raw PTY output
-function stripAnsi(s: string) {
-  // eslint-disable-next-line no-control-regex
-  return s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1b\][^\x07]*\x07/g, '')
-}
+import { stripAnsi } from '@/utils/stripAnsi'
+import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 
 function DotsAnimation({ style }: { style?: object }) {
   // useMemo so Animated.Value instances are stable across re-renders
@@ -46,15 +42,18 @@ interface Props {
   isStreaming: boolean
   fadingOut?: boolean
   onFadeOutComplete?: () => void
+  /** Suppress the raw PTY-line preview (e.g. when a question card renders the
+   *  same prompt below). Dots still show while streaming. */
+  hidePreview?: boolean
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, hidePreview = false }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
   const scrollRef = useRef<ScrollView>(null)
-  const hasLines = lines.length > 0
+  const hasLines = lines.length > 0 && !hidePreview
 
   useEffect(() => {
     if (!fadingOut) return
@@ -69,10 +68,16 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     if (hasLines) scrollRef.current?.scrollToEnd({ animated: false })
   }, [lines.length, hasLines])
 
-  const visibleLines = lines.slice(-60).map(stripAnsi).filter(l => l.trim().length > 0)
+  const visibleLines = hasLines
+    ? lines.slice(-60).map(l => stripBoxDrawing(stripAnsi(l))).filter(l => l.length > 0)
+    : []
+
+  // Nothing to show: preview hidden and not streaming → render nothing rather
+  // than an empty bubble.
+  if (!hasLines && !isStreaming) return null
 
   return (
-    <Animated.View style={[styles.wrapper, { opacity }]}>
+    <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
         {hasLines ? (
           <ScrollView
@@ -98,7 +103,8 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     wrapper: {
       paddingHorizontal: spacing.md,
-      marginVertical: spacing.xs,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
       alignItems: 'flex-start',
     },
     bubble: {

@@ -37,8 +37,12 @@ The format is the giveaway — the legacy UDID is **8 hex chars + dash + 16 hex 
 
 ```bash
 cd <repo-root> && \
-  EXPO_NO_WATCHMAN=1 npx expo run:ios --device "<your-iphone-udid>"
+  npx expo run:ios --device "<your-iphone-udid>"
 ```
+
+> If Watchman acts up on this Mac (see the friction table), prepend
+> `EXPO_NO_WATCHMAN=1`. It's a workaround for a latent TCC bug, not a default —
+> leave it off unless you hit the recrawl/stale-bundle symptoms.
 
 What happens:
 
@@ -61,10 +65,31 @@ If the dev client is still on the phone:
 
 ```bash
 cd <repo-root> && \
-  EXPO_NO_WATCHMAN=1 npx expo start --dev-client
+  npx expo start --dev-client
 ```
 
-Open the Threadbase dev-client app on the phone and tap the LAN URL the terminal prints. Both devices must be on the same Wi-Fi.
+Open the Threadbase dev-client app on the phone and tap the LAN URL the terminal prints. Both devices must be on the same Wi-Fi. (Prepend `EXPO_NO_WATCHMAN=1` only if Watchman misbehaves — see the friction table.)
+
+### Remote / off-network (cloudflared tunnel)
+
+When the phone isn't on the same Wi-Fi as the Mac, front Metro with a tunnel and
+advertise the tunnel URL via `EXPO_PACKAGER_PROXY_URL`. Replace `metro.example.com`
+with your own tunnel hostname (a `cloudflared` ingress pointing at `localhost:8081`):
+
+```bash
+cd <repo-root> && \
+  EXPO_PACKAGER_PROXY_URL=https://metro.example.com \
+  npx expo start --lan
+```
+
+The app then loads the bundle through the tunnel instead of the LAN IP, so the
+devices no longer need to share a network.
+
+> **Feature flags are bundle-time inlined and must be prefixed `EXPO_PUBLIC_`.** To
+> turn on the in-chat question cards, prepend `EXPO_PUBLIC_FEATURE_QUESTIONS=true`
+> to either Metro command. A bare `FEATURE_QUESTIONS=true` (no prefix) is **not**
+> read by the app — the flag stays off. After flipping a flag, add `-c` on the
+> first run to clear Metro's cache so the new value rebuilds into the bundle.
 
 ---
 
@@ -73,13 +98,14 @@ Open the Threadbase dev-client app on the phone and tap the LAN URL the terminal
 | Symptom | Cause | Fix |
 |---|---|---|
 | First launch: **"Untrusted Developer"** alert | iOS doesn't yet trust the signing cert | `Settings → General → VPN & Device Management → Apple Development: <Apple ID> → Trust` |
-| Metro complains about path resolution / fresh node_modules | Watchman TCC bug on this Mac | `EXPO_NO_WATCHMAN=1` (already on the command). Don't drop it. |
+| Metro complains about path resolution / fresh node_modules, or warns `Recrawled this watch N times` | Watchman TCC bug on this Mac (latent — usually surfaces after `npm ci`, a branch switch, or a big rebase) | Prepend `EXPO_NO_WATCHMAN=1` (falls back to Node's `fs` watcher) and add `-c` to clear the poisoned cache. Not needed by default — only when this bites. |
 | `Could not find device with UDID` | Phone unplugged / locked / not trusted | Plug back in, unlock, tap "Trust this computer" if prompted |
-| Bundle fails on different file names every run | Watchman cache out of sync | `watchman watch-del "$PWD" && rm -rf $TMPDIR/metro-*` |
+| Bundle fails on different file names every run | Watchman cache out of sync | `watchman watch-del "$PWD" && rm -rf $TMPDIR/metro-*` (or use `EXPO_NO_WATCHMAN=1`, above) |
 | Build phase missing after `node_modules` refresh | Pods drift | `cd ios && pod install && cd ..` |
 | Node version "incompatible with Expo SDK X" | Brew/asdf node version mismatch | Project Node engines need ≥22.13 or ≥24 for SDK 54+. Check `node -v`. |
 | Hermes crashes on iOS 26 | Old Hermes (0.12.x) | We're on SDK 55+ already (Hermes 0.14+). Don't downgrade. |
-| App stays on splash screen | iPhone + Mac on different Wi-Fi | Same Wi-Fi network required. Metro serves from your Mac's LAN IP, not localhost. |
+| App stays on splash screen | iPhone + Mac on different Wi-Fi | Same Wi-Fi required for the LAN flow (Metro serves from your Mac's LAN IP). Off-network: use the cloudflared tunnel command above (`EXPO_PACKAGER_PROXY_URL`). |
+| App can't reach the bundle over the tunnel | Tunnel not pointed at Metro | Confirm your `cloudflared` ingress maps the tunnel hostname → `localhost:8081` (Metro's port), and that Metro is running. |
 
 ---
 

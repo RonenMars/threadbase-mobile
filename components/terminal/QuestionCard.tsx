@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { spacing } from '@/constants/theme'
@@ -6,32 +6,60 @@ import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 interface Props {
   block: QuestionBlock
-  onSelect: (index: number) => void
+  onSelect: (questionIndex: number, optionIndex: number) => void
 }
 
 export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Props) {
+  const q = block.questions[0]
+  // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
+  const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
+  const [selected, setSelected] = useState<number | null>(initialSelected)
+
+  // PTY blocks update in place as the terminal cursor moves — resync the highlight.
+  // Structured blocks: reset the selection when the question identity changes so a
+  // new question never inherits the previous one's highlighted radio (the parent
+  // also keys this card by question, but reset here so the component is correct
+  // standalone). Keyed on toolUseId + question text.
+  const identity = block.toolUseId ?? block.questions[0]?.question
+  useEffect(() => {
+    if (block.source === 'pty') {
+      setSelected(block.selectedIndex ?? null)
+    } else {
+      setSelected(null)
+    }
+  }, [block.source, block.selectedIndex, identity])
+
   const handlePress = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    onSelect(index)
+    setSelected(index)
+    onSelect(0, index)
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.question}>{block.questionText}</Text>
-      {block.options.map((option, index) => (
+      {q.header ? <Text style={styles.header}>{q.header}</Text> : null}
+      <Text style={styles.question}>{q.question}</Text>
+      {q.options.map((option, index) => (
         <TouchableOpacity
           key={index}
-          style={[styles.option, index === block.selectedIndex && styles.optionSelected]}
+          style={[styles.option, index === selected && styles.optionSelected]}
           onPress={() => handlePress(index)}
           accessibilityRole="button"
-          accessibilityLabel={option}
+          accessibilityLabel={option.label}
+          accessibilityState={{ selected: index === selected }}
         >
-          <View style={[styles.radioOuter, index === block.selectedIndex && styles.radioOuterSelected]}>
-            {index === block.selectedIndex && <View style={styles.radioInner} />}
+          <View style={[styles.radioOuter, index === selected && styles.radioOuterSelected]}>
+            {index === selected && <View style={styles.radioInner} />}
           </View>
-          <Text style={[styles.optionText, index === block.selectedIndex && styles.optionTextSelected]}>
-            {option}
-          </Text>
+          <View style={styles.optionBody}>
+            <Text style={[styles.optionText, index === selected && styles.optionTextSelected]}>
+              {option.label}
+            </Text>
+            {option.description ? (
+              <Text style={styles.optionDescription}>{option.description}</Text>
+            ) : null}
+            {option.preview ? <Text style={styles.preview}>{option.preview}</Text> : null}
+          </View>
         </TouchableOpacity>
       ))}
     </View>
@@ -46,6 +74,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  header: {
+    color: '#58a6ff',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
   question: {
     color: '#e6edf3',
     fontSize: 13,
@@ -55,7 +91,7 @@ const styles = StyleSheet.create({
   },
   option: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: spacing.sm,
     borderRadius: 8,
@@ -74,6 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    marginTop: 1,
   },
   radioOuterSelected: {
     borderColor: '#58a6ff',
@@ -84,14 +121,32 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#58a6ff',
   },
+  optionBody: {
+    flex: 1,
+    // Allow the text to wrap instead of overflowing past the screen edge — a
+    // flex child won't shrink below its content width without an explicit basis.
+    flexShrink: 1,
+    minWidth: 0,
+  },
   optionText: {
     color: '#8b949e',
     fontSize: 13,
-    flex: 1,
     lineHeight: 18,
   },
   optionTextSelected: {
     color: '#e6edf3',
     fontWeight: '500',
+  },
+  optionDescription: {
+    color: '#6e7681',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  preview: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#8b949e',
+    marginTop: 4,
   },
 })

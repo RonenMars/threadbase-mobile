@@ -3,6 +3,7 @@ import { Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
+import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
@@ -20,7 +21,8 @@ interface Props {
 
 export function TerminalView({ serverId, sessionId, disabled = false, pendingPlan = null, onClosePlan }: Props) {
   const { lines, isStreaming } = useTerminalStream(serverId, sessionId)
-  const { sendInput, sendKeys } = useSessionActions(serverId, sessionId)
+  const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
+  const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
   const onSend = (payload: string) => {
     sendInput.mutate(payload, {
@@ -56,6 +58,8 @@ export function TerminalView({ serverId, sessionId, disabled = false, pendingPla
         isStreaming={isStreaming}
         onSendInput={(text) => sendInput.mutate(text)}
         onSendKeys={(keys) => sendKeys.mutate(keys)}
+        activeQuestion={activeQuestion}
+        onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
       />
       <ChatComposer
         value={inputText}

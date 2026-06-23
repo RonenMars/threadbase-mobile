@@ -1,0 +1,84 @@
+
+› Scan the QR code above to open in a development build. (Learn more: https://expo.fyi/start)
+› Metro: exp+threadbase-mobile://expo-development-client/?url=https%3A%2F%2Fmetro.rbv1000.win
+
+› Using development build (Press s to switch to Expo Go)
+› Press ? │ show all commands
+
+Logs for your project will appear below. Press Ctrl+C to exit.
+iOS Bundled 1845ms node_modules/expo-router/entry.js (5476 modules)
+ WARN  Route "./session/[id].tsx" is missing the required default export. Ensure a React component is exported as default.
+ ERROR  [Error: Cannot find native module 'ExpoDevice']
+
+Code: useVoiceInput.ts
+  1 | import { useCallback, useEffect, useRef, useState } from 'react'
+  2 | import { Platform } from 'react-native'
+> 3 | import * as Device from 'expo-device'
+    | ^
+  4 | import {
+  5 |   ExpoSpeechRecognitionModule,
+  6 |   useSpeechRecognitionEvent,
+Call Stack
+  <global> (hooks/useVoiceInput.ts:3)
+  <global> (hooks/useComposerState.ts:4)
+  <global> (components/conversation/LiveConversationView.tsx:12)
+  <global> (app/session/[id].tsx:44)
+ ERROR  [TypeError: undefined is not a function]
+
+Code: NativeProxy.ts
+  63 |   },
+  64 |   installUIRuntimeBindings: () => {
+> 65 |     return RNGestureHandlerModule.installUIRuntimeBindings();
+     |                                                           ^
+  66 |   },
+  67 | } as const;
+  68 |
+Call Stack
+  installUIRuntimeBindings (node_modules/react-native-gesture-handler/src/v3/NativeProxy.ts:65:59)
+  ghQueueMicrotask$argument_0 (node_modules/react-native-gesture-handler/src/handlers/gestures/reanimatedWrapper.ts:95:59)
+  apply (<native>)
+  global.queueMicrotask$argument_0 (node_modules/react-native/Libraries/Core/Timers/immediateShim.js:47:21)
+iOS Bundled 152ms node_modules/@react-native-async-storage/async-storage/src/index.ts (580 modules)
+ ERROR  [TypeError: undefined is not a function]
+
+Code: attachHandlers.ts
+  63 |     }
+  64 |     for (const handler of gesturesToAttach) {
+> 65 |       RNGestureHandlerModule.setGestureHandlerConfig(
+     |                                                     ^
+  66 |         handler.handlerTag,
+  67 |         filterConfig(handler.config, ALLOWED_PROPS)
+  68 |       );
+Call Stack
+  ghQueueMicrotask$argument_0 (node_modules/react-native-gesture-handler/src/handlers/gestures/GestureDetector/attachHandlers.ts:65:53)
+  apply (<native>)
+  global.queueMicrotask$argument_0 (node_modules/react-native/Libraries/Core/Timers/immediateShim.js:47:21)
+ ERROR  [TypeError: undefined is not a function]
+
+Code: updateHandlers.ts
+  66 |       handler.handlers = newGestures[i].handlers;
+  67 |
+> 68 |       RNGestureHandlerModule.setGestureHandlerConfig(
+     |                                                     ^
+  69 |         handler.handlerTag,
+  70 |         filterConfig(handler.config, ALLOWED_PROPS)
+  71 |       );
+Call Stack
+  ghQueueMicrotask$argument_0 (node_modules/react-native-gesture-handler/src/handlers/gestures/GestureDetector/updateHandlers.ts:68:53)
+  apply (<native>)
+  global.queueMicrotask$argument_0 (node_modules/react-native/Libraries/Core/Timers/immediateShim.js:47:21)
+ ERROR  [TypeError: undefined is not a function]
+
+Code: updateHandlers.ts
+  66 |       handler.handlers = newGestures[i].handlers;
+  67 |
+> 68 |       RNGestureHandlerModule.setGestureHandlerConfig(
+     |                                                     ^
+  69 |         handler.handlerTag,
+  70 |         filterConfig(handler.config, ALLOWED_PROPS)
+  71 |       );
+Call Stack
+  ghQueueMicrotask$argument_0 (node_modules/react-native-gesture-handler/src/handlers/gestures/GestureDetector/updateHandlers.ts:68:53)
+  apply (<native>)
+  global.queueMicrotask$argument_0 (node_modules/react-native/Libraries/Core/Timers/immediateShim.js:47:21)
+

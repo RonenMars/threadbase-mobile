@@ -118,9 +118,62 @@ export interface Message {
 export type MessageContent =
   | { type: 'text'; text: string }
   | { type: 'thinking'; thinking: string; signature?: string }
-  | { type: 'tool_use'; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; toolName: string; content: string; isError?: boolean }
+  | { type: 'tool_use'; id?: string; name: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; toolUseId?: string; toolName: string; content: string; isError?: boolean }
   | { type: 'diff'; filename: string; hunks: DiffHunk[] }
+
+export interface AskOption {
+  label: string
+  description: string
+  preview?: string
+}
+
+export interface AskQuestion {
+  question: string
+  header: string
+  multiSelect: boolean
+  options: AskOption[]
+}
+
+export interface QuestionWsMessage {
+  type: 'question'
+  sessionId: string
+  toolUseId: string
+  questions: AskQuestion[]
+}
+
+export interface QuestionCancelledWsMessage {
+  type: 'question_cancelled'
+  sessionId: string
+  toolUseId: string
+}
+
+// A permission-gate option scraped from the rendered screen. `index` is the
+// ACTUAL on-screen number (e.g. 2, 3), not a 1-based array index — gates can
+// show "2. Yes / 3. No". Answered by sending `${index}\r` via /input { keys }.
+export interface PermissionOption {
+  index: number
+  label: string
+  // Literal keystroke bytes to answer this option when the number alone isn't
+  // the answer (a y/N shell prompt answers "y\r", not "1\r"). Additive: present
+  // only on the streamer's unstructured shell-prompt path; OSC-777 gates omit it
+  // and the client answers via `index`.
+  answerKeys?: string
+}
+
+// Permission gate detected live by the streamer (OSC 777). Additive WS event.
+export interface PermissionWsMessage {
+  type: 'permission'
+  sessionId: string
+  prompt?: string
+  options: PermissionOption[]
+  cursor?: number
+}
+
+export interface PermissionCancelledWsMessage {
+  type: 'permission_cancelled'
+  sessionId: string
+}
 
 export interface DiffHunk {
   oldStart: number
