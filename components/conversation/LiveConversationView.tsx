@@ -106,7 +106,17 @@ export function LiveConversationView({
   // Order: historical → optimistic user bubble → live WS messages.
   // This ensures the user's send always sits before any live assistant reply,
   // even when the WS assistant message arrives before the REST echo clears stillPending.
-  const allMessages = [...historicalMessages, ...stillPending, ...newLive]
+  // Dedup by id last: uuid-less messages fall back to `timestamp-type-role` ids
+  // which can collide across REST/WS, and duplicate FlashList keys trigger a
+  // "Maximum update depth exceeded" render loop.
+  const allMessages = (() => {
+    const seen = new Set<string>()
+    return [...historicalMessages, ...stillPending, ...newLive].filter((m) => {
+      if (seen.has(m.id)) return false
+      seen.add(m.id)
+      return true
+    })
+  })()
 
   // Session status for thinking indicator
   const { data: session } = useSessionDetail(serverId, sessionId)

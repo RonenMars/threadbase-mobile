@@ -137,6 +137,11 @@ export class VirtualTerminal {
         if (/^Invalid tool parameters\b/i.test(trimmed)) return false
         // First-run boot tips block: "Tips for getting started", "Tip:" lines.
         if (/^Tips? for getting started/i.test(trimmed)) return false
+        // OSC 777 permission notify leaking as text — the tmux DCS passthrough
+        // (\x1bP…tmux;…\x1b]777;notify;Claude Code;…) isn't recognized by the VT
+        // escape parser, so its payload renders as a literal line. Drop it; the
+        // permission gate is surfaced via the structured `permission` event.
+        if (/]777;notify/.test(trimmed) || /^tmux;\]/.test(trimmed)) return false
 
         // --- Input border box remnants ---
         // Lines that are just the border corners/edges after stripping

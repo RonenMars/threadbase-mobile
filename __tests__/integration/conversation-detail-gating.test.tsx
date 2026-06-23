@@ -294,14 +294,24 @@ describe('conversation detail — 404 live-session fallback', () => {
     }
   }
 
-  it('redirects to /session/:id when conversation 404s but session exists', async () => {
+  it('redirects to /session/:id when conversation 404s and session is live (ptyAttached)', async () => {
+    mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
+    mockSessionRef.current = { id: 'conv-gating', status: 'running', ptyAttached: true }
+
+    render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    expect(mockReplace).toHaveBeenCalledWith('/session/conv-gating?server=srv1')
+  })
+
+  it('does NOT redirect when the session is detached/idle — session/[id] would bounce back, looping', async () => {
     mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
     mockSessionRef.current = { id: 'conv-gating', status: 'idle', ptyAttached: false }
 
     render(<ConversationDetailScreen />, { wrapper: createWrapper() })
     await flushAllQueries()
 
-    expect(mockReplace).toHaveBeenCalledWith('/session/conv-gating?server=srv1')
+    expect(mockReplace).not.toHaveBeenCalled()
   })
 
   it('shows "no longer available" when both conversation and session are absent', async () => {

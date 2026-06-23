@@ -112,6 +112,24 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
       ])
     : []
 
+  // Which card (if any) will render — structured WS question / permission gate
+  // takes precedence over the PTY-scraped block.
+  const card = FEATURE_QUESTIONS && activeQuestion
+    ? <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
+    : FEATURE_QUESTIONS && questionBlock
+      ? <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
+      : null
+
+  // Once a card is showing, hide the live-terminal text + dots entirely and
+  // show only the card — the raw TUI frame is exactly what the card replaces.
+  if (card) {
+    return (
+      <Animated.View style={[styles.cardWrapper, { opacity }]} testID="thinking-bubble">
+        {card}
+      </Animated.View>
+    )
+  }
+
   return (
     <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
@@ -134,11 +152,6 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
           <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} />
         ) : null}
       </View>
-      {FEATURE_QUESTIONS && activeQuestion ? (
-        <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
-      ) : FEATURE_QUESTIONS && questionBlock ? (
-        <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
-      ) : null}
     </Animated.View>
   )
 }
@@ -150,6 +163,13 @@ function makeStyles(theme: Theme) {
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       alignItems: 'flex-start',
+    },
+    // Card case: full-width (the QuestionCard owns its own padding + top border),
+    // so long option labels wrap instead of overflowing the screen edge.
+    cardWrapper: {
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+      alignSelf: 'stretch',
     },
     bubble: {
       backgroundColor: theme.bg.card,

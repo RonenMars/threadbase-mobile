@@ -321,6 +321,13 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
     expect(feedAndGet('Tips for getting started:')).toEqual([])
   })
 
+  it('filters leaked OSC 777 permission-notify remnants (tmux passthrough)', () => {
+    expect(feedAndGet('tmux;]777;notify;Claude Code;Claude needs your permission')).toEqual([])
+    expect(feedAndGet(']777;notify;Claude Code;Claude needs your permission')).toEqual([])
+    // legitimate gate text must survive
+    expect(feedAndGet('Do you want to proceed?')).toEqual(['Do you want to proceed?'])
+  })
+
   it('filters "Run:" status hints', () => {
     expect(feedAndGet('Run: brew...')).toEqual([])
     expect(feedAndGet('Run: npm install')).toEqual([])

@@ -113,6 +113,10 @@ const styles = StyleSheet.create({
   },
   optionBody: {
     flex: 1,
+    // Allow the text to wrap instead of overflowing past the screen edge — a
+    // flex child won't shrink below its content width without an explicit basis.
+    flexShrink: 1,
+    minWidth: 0,
   },
   optionText: {
     color: '#8b949e',

@@ -80,11 +80,16 @@ export default function ConversationDetailScreen() {
     meta: { persist: false },
   })
 
+  // Only redirect to the live session view when the session is actually
+  // attached. An idle, detached session bounces straight back here
+  // (session/[id] redirects ptyAttached===false && idle sessions to
+  // /conversation/:id), so redirecting on mere existence is an infinite loop.
+  const isSessionLive = liveSession?.ptyAttached === true
   useEffect(() => {
-    if (isConvNotFound && liveSession) {
+    if (isConvNotFound && isSessionLive) {
       router.replace(`/session/${id}?server=${serverId}`)
     }
-  }, [isConvNotFound, liveSession, id, serverId, router])
+  }, [isConvNotFound, isSessionLive, id, serverId, router])
   const listRef = useRef<FlashListRef<Message>>(null)
   const hasInitialScrolled = useRef(false)
   const userHasScrolled = useRef(false)
