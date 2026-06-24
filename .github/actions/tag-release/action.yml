@@ -45,7 +45,10 @@ runs:
                  | grep -vE '^\- chore\((ios|android)\): bump' || true)"
         [[ -z "$NOTES" ]] && NOTES="- No user-facing changes recorded."
         git tag "$TAG" "$SHA"
-        git push origin "refs/tags/${TAG}"
+        git push origin "refs/tags/${TAG}" || {
+          echo "Tag ${TAG} already pushed — skipping release"
+          exit 0
+        }
         if gh release view "$TAG" &>/dev/null; then
           echo "Release ${TAG} already exists — skipping"
           exit 0
