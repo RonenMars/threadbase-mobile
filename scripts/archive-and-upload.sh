@@ -28,35 +28,31 @@ xcodebuild \
   -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
   DEVELOPMENT_TEAM="${ASC_TEAM_ID}" \
   CODE_SIGN_STYLE=Automatic \
-  CODE_SIGN_IDENTITY="Apple Development" \
   archive | tee build/archive.log
 
 # Export archive with retry logic: network timeouts during export validation
 # can cause "Error Downloading App Information". Retry up to 3 times.
 MAX_RETRIES=3
-RETRY_COUNT=0
-while (( RETRY_COUNT < MAX_RETRIES )); do
-  RETRY_COUNT=$((RETRY_COUNT + 1))
-  echo "exportArchive attempt $RETRY_COUNT/$MAX_RETRIES..."
+EXPORT_OK=0
+for (( attempt=1; attempt<=MAX_RETRIES; attempt++ )); do
+  echo "exportArchive attempt $attempt/$MAX_RETRIES..."
   if xcodebuild -exportArchive \
     -archivePath "${ARCHIVE_PATH}" \
     -exportOptionsPlist "${EXPORT_OPTIONS_PLIST}" \
     -exportPath build/export \
-    -allowProvisioningUpdates \
     -authenticationKeyPath "${ASC_KEY_PATH}" \
     -authenticationKeyID "${ASC_KEY_ID}" \
     -authenticationKeyIssuerID "${ASC_ISSUER_ID}" | tee build/upload.log; then
+    EXPORT_OK=1
     break
   fi
-
-  # Check if the error is the App Store Connect info download error (exit code 70)
-  if (( RETRY_COUNT < MAX_RETRIES )); then
+  if (( attempt < MAX_RETRIES )); then
     echo "exportArchive failed. Retrying in 10s..."
     sleep 10
   fi
 done
 
-if (( RETRY_COUNT >= MAX_RETRIES )); then
+if (( EXPORT_OK == 0 )); then
   echo "exportArchive failed after $MAX_RETRIES attempts" >&2
   exit 70
 fi
