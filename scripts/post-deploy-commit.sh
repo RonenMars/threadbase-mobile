@@ -110,10 +110,10 @@ EXTRA_MSG="chore(${PLATFORM}): post-ship cleanup [skip-ci]"
 
 ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-git checkout -b "$EXTRA_BRANCH"
+git checkout -B "$EXTRA_BRANCH"
 git add "${DIRTY_FILES[@]}"
 git commit -m "$EXTRA_MSG"
-git push -u origin "$EXTRA_BRANCH"
+git push -u origin "$EXTRA_BRANCH" --force-with-lease || git push -u origin "$EXTRA_BRANCH" --force
 
 echo "  ✓ committed and pushed on branch '$EXTRA_BRANCH'"
 
