@@ -38,5 +38,9 @@
   "time": {
     "now": "الآن",
     "yesterday": "أمس"
+  },
+  "biometricLock": {
+    "title": "Threadbase مقفل",
+    "unlock": "فتح القفل"
   }
 }

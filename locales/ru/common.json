@@ -38,5 +38,9 @@
   "time": {
     "now": "сейчас",
     "yesterday": "Вчера"
+  },
+  "biometricLock": {
+    "title": "Threadbase заблокирован",
+    "unlock": "Разблокировать"
   }
 }

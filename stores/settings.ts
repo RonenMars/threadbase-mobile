@@ -47,6 +47,7 @@ interface SettingsStore {
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
+  biometricLock: boolean
   // Conversation row settings (Conversation list redesign §13).
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
@@ -64,6 +65,7 @@ interface SettingsStore {
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
   setLocale: (locale: string) => void
+  setBiometricLock: (v: boolean) => void
   setRowTitleSource: (v: RowTitleSource) => void
   setRowPreviewMode: (v: RowPreviewMode) => void
   setRowDensity: (v: RowDensity) => void
@@ -99,6 +101,7 @@ interface PersistedSettings {
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
+  biometricLock: boolean
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
   rowDensity: RowDensity
@@ -121,6 +124,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionsLayout: 'classic',
   mergeChats: true,
   locale: 'en',
+  biometricLock: false,
   autoNameFromMessage: true,
   aiGeneratedNames: false,
   sessionView: 'chat',
@@ -146,6 +150,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setMergeChats: (mergeChats) => set({ mergeChats }),
   setLocale: (locale) => set({ locale }),
+  setBiometricLock: (biometricLock) => set({ biometricLock }),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   setSessionView: (sessionView) => set({ sessionView }),
@@ -171,6 +176,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
         mergeChats: parsed.mergeChats ?? state.mergeChats,
         locale: parsed.locale ?? state.locale,
+        biometricLock: parsed.biometricLock ?? state.biometricLock,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
         sessionView: parsed.sessionView === 'terminal' ? 'terminal' : state.sessionView,
@@ -197,6 +203,7 @@ useSettingsStore.subscribe((state) => {
     sessionsLayout: state.sessionsLayout,
     mergeChats: state.mergeChats,
     locale: state.locale,
+    biometricLock: state.biometricLock,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
     sessionView: state.sessionView,

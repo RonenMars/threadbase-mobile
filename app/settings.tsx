@@ -224,6 +224,8 @@ export default function SettingsScreen() {
     setLocale,
     sessionView,
     setSessionView,
+    biometricLock,
+    setBiometricLock,
   } = useSettingsStore()
   const {
     favoritesEnabled, setFavoritesEnabled,
@@ -664,6 +666,16 @@ await refreshServerInfo(serverId)
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+
+        <SectionHeader title="Privacy" />
+        <View style={s.card}>
+          <SettingsRow
+            label="Require Face ID / Fingerprint"
+            value={biometricLock}
+            onValueChange={setBiometricLock}
+            testID="settings-biometric-lock-toggle"
+          />
         </View>
 
         <SectionHeader title={t('section.permissions')} />

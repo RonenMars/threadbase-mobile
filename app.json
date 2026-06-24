@@ -17,6 +17,7 @@
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
+        "NSFaceIDUsageDescription": "Threadbase uses Face ID to protect access to your conversations.",
         "NSCameraUsageDescription": "Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.",
         "NSPhotoLibraryUsageDescription": "Used to attach photos from your library to your Claude Code sessions.",
         "NSMicrophoneUsageDescription": "Threadbase needs the microphone to dictate prompts.",
@@ -33,7 +34,9 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "plugins": [
@@ -59,6 +62,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-local-authentication",
       [
         "expo-speech-recognition",
         {
