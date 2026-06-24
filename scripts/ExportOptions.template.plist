@@ -7,6 +7,5 @@
   <key>signingStyle</key><string>automatic</string>
   <key>uploadSymbols</key><true/>
   <key>stripSwiftSymbols</key><true/>
-  <key>distributionBundleIdentifier</key><string>com.threadbase.ios</string>
 </dict>
 </plist>
