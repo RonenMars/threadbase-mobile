@@ -23,6 +23,7 @@ xcodebuild \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "${ARCHIVE_PATH}" \
+  -allowProvisioningUpdates \
   -authenticationKeyPath "${ASC_KEY_PATH}" \
   -authenticationKeyID "${ASC_KEY_ID}" \
   -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
