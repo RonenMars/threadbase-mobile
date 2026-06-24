@@ -59,6 +59,19 @@ if (( EXPORT_OK == 0 )); then
   exit 70
 fi
 
+# Upload IPA explicitly via altool so we get a real success/failure response.
+# (method: app-store exports only; xcodebuild's built-in upload with
+# method: app-store-connect silently drops builds on Apple's ingestion side.)
+IPA_PATH="$(find build/export -name '*.ipa' | head -1)"
+: "${IPA_PATH:?No IPA found in build/export}"
+echo "Uploading ${IPA_PATH} via altool..."
+xcrun altool --upload-app \
+  --type ios \
+  --file "${IPA_PATH}" \
+  --apiKey "${ASC_KEY_ID}" \
+  --apiIssuer "${ASC_ISSUER_ID}" \
+  --show-progress 2>&1 | tee build/upload.log
+
 echo
 echo "Uploaded. Poll processing state with the App Store Connect API"
 echo "(see Step 6 of the expo-local-build skill)."
