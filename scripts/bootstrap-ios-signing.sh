@@ -26,6 +26,12 @@ umask 077
 printf '%s' "${ASC_AUTH_KEY_B64}" | base64 -d > "${ASC_KEY_PATH}"
 chmod 600 "${ASC_KEY_PATH}"
 
+# altool searches a different path than xcodebuild — mirror the key there too.
+ALTOOL_KEY_DIR="${HOME}/.appstoreconnect/private_keys"
+mkdir -p "${ALTOOL_KEY_DIR}"
+cp "${ASC_KEY_PATH}" "${ALTOOL_KEY_DIR}/AuthKey_${ASC_KEY_ID}.p8"
+chmod 600 "${ALTOOL_KEY_DIR}/AuthKey_${ASC_KEY_ID}.p8"
+
 # Sanity-check the materialized PEM
 if ! head -1 "${ASC_KEY_PATH}" | grep -q '^-----BEGIN PRIVATE KEY-----$'; then
   echo "ERROR: ${ASC_KEY_PATH} doesn't look like a valid PEM." >&2
