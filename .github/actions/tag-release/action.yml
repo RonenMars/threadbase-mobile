@@ -46,6 +46,10 @@ runs:
         [[ -z "$NOTES" ]] && NOTES="- No user-facing changes recorded."
         git tag "$TAG" "$SHA"
         git push origin "refs/tags/${TAG}"
+        if gh release view "$TAG" &>/dev/null; then
+          echo "Release ${TAG} already exists — skipping"
+          exit 0
+        fi
         printf '%s %s\n\n%s\n' "$LABEL" "$VERSION" "$NOTES" \
           | gh release create "$TAG" --target "$SHA" \
               --title "${LABEL} ${VERSION}" --notes-file -
