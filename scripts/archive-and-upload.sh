@@ -41,6 +41,7 @@ for (( attempt=1; attempt<=MAX_RETRIES; attempt++ )); do
     -archivePath "${ARCHIVE_PATH}" \
     -exportOptionsPlist "${EXPORT_OPTIONS_PLIST}" \
     -exportPath build/export \
+    -allowProvisioningUpdates \
     -authenticationKeyPath "${ASC_KEY_PATH}" \
     -authenticationKeyID "${ASC_KEY_ID}" \
     -authenticationKeyIssuerID "${ASC_ISSUER_ID}" | tee build/upload.log; then
