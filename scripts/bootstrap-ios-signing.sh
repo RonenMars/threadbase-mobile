@@ -37,6 +37,24 @@ fi
 mkdir -p build
 sed "s/TEAM_ID_PLACEHOLDER/${ASC_TEAM_ID}/" scripts/ExportOptions.template.plist > build/ExportOptions.plist
 
+# Import signing certificate into a temporary keychain so xcodebuild reuses it
+# instead of creating a new one via the API key on each fresh CI runner.
+if [[ -n "${IOS_DEV_CERT_P12_B64:-}" ]]; then
+  KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+  KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+  CERT_PATH="$RUNNER_TEMP/dev-cert.p12"
+
+  printf '%s' "${IOS_DEV_CERT_P12_B64}" | base64 -d > "${CERT_PATH}"
+  security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+  security set-keychain-settings -lut 21600 "${KEYCHAIN_PATH}"
+  security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+  security import "${CERT_PATH}" -k "${KEYCHAIN_PATH}" -P "${IOS_DEV_CERT_PASSWORD}" -A -t cert -f pkcs12
+  security list-keychain -d user -s "${KEYCHAIN_PATH}" login.keychain-db
+  security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+  rm -f "${CERT_PATH}"
+  echo "  Signing cert imported into keychain: ${KEYCHAIN_PATH}"
+fi
+
 cat > .env.signing <<EOF
 export ASC_KEY_ID="${ASC_KEY_ID}"
 export ASC_ISSUER_ID="${ASC_ISSUER_ID}"
