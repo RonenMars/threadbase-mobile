@@ -17,6 +17,11 @@ ARCHIVE_PATH="${ARCHIVE_PATH:-build/Threadbase.xcarchive}"
 
 mkdir -p build
 
+# Read build number from app.json so the native Xcode project picks it up.
+# expo prebuild is skipped on CI (ios/ is checked in), so we inject it manually.
+BUILD_NUMBER="$(jq -r '.expo.ios.buildNumber' app.json)"
+: "${BUILD_NUMBER:?Could not read buildNumber from app.json}"
+
 xcodebuild \
   -workspace "${WORKSPACE}" \
   -scheme "${SCHEME}" \
@@ -27,6 +32,7 @@ xcodebuild \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="Apple Distribution" \
   PROVISIONING_PROFILE_SPECIFIER="${IOS_PROVISION_PROFILE_UUID}" \
+  CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
   archive | tee build/archive.log
 
 # Export archive with retry logic: network timeouts during export validation
