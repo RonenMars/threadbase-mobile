@@ -4,7 +4,11 @@
 <dict>
   <key>method</key><string>app-store</string>
   <key>teamID</key><string>TEAM_ID_PLACEHOLDER</string>
-  <key>signingStyle</key><string>automatic</string>
+  <key>signingStyle</key><string>manual</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>com.ronenmars.threadbase</key><string>PROVISION_PROFILE_UUID_PLACEHOLDER</string>
+  </dict>
   <key>uploadSymbols</key><true/>
   <key>stripSwiftSymbols</key><true/>
 </dict>

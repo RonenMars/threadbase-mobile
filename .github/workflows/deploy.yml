@@ -86,8 +86,10 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
           ASC_AUTH_KEY_B64: ${{ secrets.ASC_AUTH_KEY_B64 }}
-          IOS_DEV_CERT_P12_B64: ${{ secrets.IOS_DEV_CERT_P12_B64 }}
-          IOS_DEV_CERT_PASSWORD: ${{ secrets.IOS_DEV_CERT_PASSWORD }}
+          IOS_DIST_CERT_P12_B64: ${{ secrets.IOS_DIST_CERT_P12_B64 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          IOS_PROVISION_PROFILE_B64: ${{ secrets.IOS_PROVISION_PROFILE_B64 }}
+          IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
         run: |
           if [[ -f .env.signing ]] && source .env.signing 2>/dev/null && [[ -f "${ASC_KEY_PATH:-}" ]]; then
             echo "Signing already bootstrapped — skipping"
