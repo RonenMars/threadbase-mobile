@@ -42,6 +42,7 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion | Planned (platform/perf, depends on Feature 25) |
 | Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned (platform/deps, low-priority) |
 | Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned (platform/noise, low-priority) |
+| Feature 32 — Handle batched `conversation_events` WS event | Planned (perf, low-priority) |
 
 **Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
@@ -1013,6 +1014,30 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 **Scope:** ~1-2 days for sub-items A and B (the deduplication + parameterization). Sub-item C (visual regression) is its own ~2-3 day project depending on tooling choice. Sub-item D is a 30-minute decision once we know the test cadence.
 
 **Priority:** Medium. Not gating any release, but the longer the two copies diverge the more painful the eventual merge. Worth picking up before we add more Maestro flows that depend on fixtures.
+
+---
+
+### Feature 32 — Handle batched `conversation_events` WS event
+
+**Filed:** 2026-06-25.
+
+**Goal:** Subscribe to the `conversation_events` (plural) batched WS event in `useConversationStream`, in addition to the existing `conversation_event` (singular) handler.
+
+**Why:** The streamer (see [7ed083d](https://github.com/RonenMars/threadbase-streamer/commit/7ed083dd575d6a2b1ff69abf4c27259b32f8ba86)) emits `conversation_events` as a throughput optimization — multiple JSONL lines batched into one WS frame instead of one message per line. The mobile client currently only handles the singular form, so it misses the batched delivery and would lose messages silently if the streamer ever deprecates the singular form.
+
+**Shape:** `{ type: 'conversation_events'; sessionId: string; lines: string[] }` — one message, N lines.
+
+**Direction:**
+- In `hooks/useConversationStream.ts`, alongside the existing `conversation_event` `wsManager.getClient(serverId)?.on(...)` call, add a second subscription on `'conversation_events'` that loops over `evt.lines` and runs the same `parseLineToMessage` → dedup → append path.
+- Both subscriptions share the same `seenIds` ref so dedup still works if both event types arrive for the same line.
+
+**Scope:** ~15 minutes. Two-line addition in one file; no new types needed (WSMessage union already has the singular; add the plural variant to match the streamer).
+
+**Priority:** Low — the singular form still works today. Pick up opportunistically.
+
+**Files likely involved:**
+- `hooks/useConversationStream.ts` — add `conversation_events` subscription
+- `services/ws-client.ts` — add `{ type: 'conversation_events'; sessionId: string; lines: string[] }` to the `WSMessage` union
 
 ---
 
