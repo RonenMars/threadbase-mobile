@@ -117,9 +117,4 @@ describe('TerminalView', () => {
     fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(mockSendInputMutate).toHaveBeenCalledWith('test-payload', expect.anything())
   })
-
-  it('no longer renders the RawKeyBar (blocking prompts use QuestionCard now)', () => {
-    renderView()
-    expect(screen.queryByTestId('raw-key-bar')).toBeNull()
-  })
 })

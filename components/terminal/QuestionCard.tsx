@@ -16,18 +16,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Prop
   const [selected, setSelected] = useState<number | null>(initialSelected)
 
   // PTY blocks update in place as the terminal cursor moves — resync the highlight.
-  // Structured blocks: reset the selection when the question identity changes so a
-  // new question never inherits the previous one's highlighted radio (the parent
-  // also keys this card by question, but reset here so the component is correct
-  // standalone). Keyed on toolUseId + question text.
-  const identity = block.toolUseId ?? block.questions[0]?.question
   useEffect(() => {
-    if (block.source === 'pty') {
-      setSelected(block.selectedIndex ?? null)
-    } else {
-      setSelected(null)
-    }
-  }, [block.source, block.selectedIndex, identity])
+    if (block.source === 'pty') setSelected(block.selectedIndex ?? null)
+  }, [block.source, block.selectedIndex])
 
   const handlePress = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -46,7 +37,6 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Prop
           onPress={() => handlePress(index)}
           accessibilityRole="button"
           accessibilityLabel={option.label}
-          accessibilityState={{ selected: index === selected }}
         >
           <View style={[styles.radioOuter, index === selected && styles.radioOuterSelected]}>
             {index === selected && <View style={styles.radioInner} />}

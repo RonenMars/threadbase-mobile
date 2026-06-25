@@ -1,38 +1,22 @@
-import { render } from '@testing-library/react-native'
+import { render, fireEvent } from '@testing-library/react-native'
 import React from 'react'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
+import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
-// The structured question / permission card no longer lives in ThinkingBubble —
-// it moved to LiveConversationView so it can render independent of the thinking
-// state (an AskUserQuestion parks the agent, which used to hide the bubble +
-// card together). ThinkingBubble is now strictly the dots + PTY preview.
-describe('ThinkingBubble', () => {
-  it('renders the live PTY lines and no question card', () => {
-    const { getByText, getByTestId, queryByLabelText } = render(
-      <ThinkingBubble lines={['Scanning project...']} isStreaming={false} />,
-    )
-    expect(getByTestId('thinking-bubble')).toBeTruthy()
-    expect(getByText('Scanning project...')).toBeTruthy()
-    // No radio option rows are rendered here anymore.
-    expect(queryByLabelText('A')).toBeNull()
-  })
+jest.mock('@/constants/flags', () => ({ FEATURE_QUESTIONS: true }))
 
-  it('hides the PTY preview when hidePreview is set (a card renders the prompt instead)', () => {
-    // The same prompt text shows in the question card below; suppress the raw
-    // terminal echo so it isn't duplicated.
-    const { queryByText, queryByTestId } = render(
-      <ThinkingBubble lines={['Do you want to proceed?']} isStreaming={false} hidePreview />,
-    )
-    expect(queryByText('Do you want to proceed?')).toBeNull()
-    // Not streaming + preview hidden → the bubble renders nothing at all.
-    expect(queryByTestId('thinking-bubble')).toBeNull()
-  })
+const aq: QuestionBlock = {
+  source: 'structured', toolUseId: 't1',
+  questions: [{ question: 'Q?', header: 'H', multiSelect: false, options: [{ label: 'A', description: 'a' }, { label: 'B', description: 'b' }] }],
+}
 
-  it('still shows the dots while streaming even when hidePreview is set', () => {
-    const { getByTestId, queryByText } = render(
-      <ThinkingBubble lines={['Do you want to proceed?']} isStreaming hidePreview />,
+describe('ThinkingBubble structured question', () => {
+  it('renders the structured QuestionCard and routes answers to onAnswer', () => {
+    const onAnswer = jest.fn()
+    const { getByLabelText } = render(
+      <ThinkingBubble lines={[]} isStreaming={false} activeQuestion={aq} onAnswer={onAnswer} />,
     )
-    expect(getByTestId('thinking-bubble')).toBeTruthy()
-    expect(queryByText('Do you want to proceed?')).toBeNull()
+    fireEvent.press(getByLabelText('B'))
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'B' })
   })
 })

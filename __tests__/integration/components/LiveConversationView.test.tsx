@@ -13,16 +13,10 @@ import { createWrapper } from '@/test-utils'
 import type { Message } from '@/types/api'
 
 const mockMutate = jest.fn()
-const mockSendKeys = jest.fn()
-const mockRespondToQuestion = jest.fn()
 
 let mockHistorical: Message[] = []
 let mockLive: Message[] = []
 let mockPtyLines: string[] = []
-let mockActiveQuestion: unknown = null
-let mockSessionStatus = 'waiting_input'
-
-jest.mock('@/constants/flags', () => ({ FEATURE_QUESTIONS: true }))
 
 jest.mock('@/hooks/useConversations', () => ({
   useConversation: () => ({ data: { messages: mockHistorical } }),
@@ -32,16 +26,8 @@ jest.mock('@/hooks/useConversationStream', () => ({
   useConversationStream: () => ({ liveMessages: mockLive }),
 }))
 
-jest.mock('@/hooks/useActiveQuestion', () => ({
-  useActiveQuestion: () => ({ question: mockActiveQuestion }),
-}))
-
 jest.mock('@/hooks/useSessionActions', () => ({
-  useSessionActions: () => ({
-    sendInput: { mutate: mockMutate },
-    sendKeys: { mutate: mockSendKeys },
-    respondToQuestion: { mutate: mockRespondToQuestion },
-  }),
+  useSessionActions: () => ({ sendInput: { mutate: mockMutate } }),
 }))
 
 // The composer guards sends on a connected WS client. Report connected so the
@@ -55,7 +41,7 @@ jest.mock('@/services/ws-client', () => ({
 }))
 
 jest.mock('@/hooks/useSession', () => ({
-  useSessionDetail: () => ({ data: { status: mockSessionStatus } }),
+  useSessionDetail: () => ({ data: { status: 'waiting_input' } }),
 }))
 
 jest.mock('@/hooks/useTerminalStream', () => ({
@@ -116,13 +102,9 @@ function renderView() {
 describe('LiveConversationView — optimistic sent message', () => {
   beforeEach(() => {
     mockMutate.mockClear()
-    mockSendKeys.mockClear()
-    mockRespondToQuestion.mockClear()
     mockHistorical = []
     mockLive = []
     mockPtyLines = []
-    mockActiveQuestion = null
-    mockSessionStatus = 'waiting_input'
   })
 
   it('shows live PTY output when there are no conversation messages yet', () => {
@@ -174,68 +156,5 @@ describe('LiveConversationView — optimistic sent message', () => {
     rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
 
     expect(screen.getAllByText('ping')).toHaveLength(1)
-  })
-})
-
-describe('LiveConversationView — question card + answered bubbles', () => {
-  beforeEach(() => {
-    mockMutate.mockClear()
-    mockSendKeys.mockClear()
-    mockRespondToQuestion.mockClear()
-    mockHistorical = []
-    mockLive = []
-    mockPtyLines = []
-    mockActiveQuestion = null
-    mockSessionStatus = 'waiting_input'
-  })
-
-  it('renders the active question card even when the agent is not running (status parked)', () => {
-    // An AskUserQuestion parks the agent — status is NOT 'running', so the
-    // thinking bubble is hidden. The card must still render so the user can answer.
-    mockSessionStatus = 'waiting_input'
-    mockActiveQuestion = {
-      source: 'structured',
-      toolUseId: 't1',
-      questions: [{ question: 'Pick one?', header: 'H', multiSelect: false, options: [{ label: 'Alpha', description: '' }, { label: 'Beta', description: '' }] }],
-    }
-
-    renderView()
-
-    fireEvent.press(screen.getByLabelText('Beta'))
-    expect(mockRespondToQuestion).toHaveBeenCalledWith({ toolUseId: 't1', answers: { 'Pick one?': 'Beta' } })
-  })
-
-  it('answers a permission/shell prompt via the keystroke route', () => {
-    mockActiveQuestion = {
-      source: 'permission',
-      questions: [{ question: 'Continue? [y/N]', multiSelect: false, options: [{ label: 'Yes', description: '' }, { label: 'No', description: '' }] }],
-      permissionIndices: [1, 2],
-      permissionAnswerKeys: ['y\r', 'n\r'],
-    }
-
-    renderView()
-
-    fireEvent.press(screen.getByLabelText('Yes'))
-    expect(mockSendKeys).toHaveBeenCalledWith('y\r')
-  })
-
-  it('renders an answered AskUserQuestion as plain question + answer bubbles', () => {
-    mockHistorical = [
-      {
-        id: 'm1', uuid: 'm1', role: 'assistant',
-        content: [{ type: 'tool_use', id: 'tt1', name: 'AskUserQuestion', input: { questions: [{ question: 'Which area?', header: 'Area', options: [{ label: 'Botik', description: '' }] }] } }],
-        timestamp: '2026-06-23T10:00:00Z', is_sidechain: false, parent_uuid: null,
-      },
-      {
-        id: 'm2', uuid: 'm2', role: 'user',
-        content: [{ type: 'tool_result', toolUseId: 'tt1', toolName: '', content: '"Area"="Botik"' }],
-        timestamp: '2026-06-23T10:00:01Z', is_sidechain: false, parent_uuid: null,
-      },
-    ]
-
-    renderView()
-
-    expect(screen.getByText('Area\nWhich area?')).toBeTruthy()
-    expect(screen.getByText('"Area"="Botik"')).toBeTruthy()
   })
 })

@@ -118,8 +118,8 @@ export interface Message {
 export type MessageContent =
   | { type: 'text'; text: string }
   | { type: 'thinking'; thinking: string; signature?: string }
-  | { type: 'tool_use'; id?: string; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; toolUseId?: string; toolName: string; content: string; isError?: boolean }
+  | { type: 'tool_use'; name: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; toolName: string; content: string; isError?: boolean }
   | { type: 'diff'; filename: string; hunks: DiffHunk[] }
 
 export interface AskOption {
@@ -154,11 +154,6 @@ export interface QuestionCancelledWsMessage {
 export interface PermissionOption {
   index: number
   label: string
-  // Literal keystroke bytes to answer this option when the number alone isn't
-  // the answer (a y/N shell prompt answers "y\r", not "1\r"). Additive: present
-  // only on the streamer's unstructured shell-prompt path; OSC-777 gates omit it
-  // and the client answers via `index`.
-  answerKeys?: string
 }
 
 // Permission gate detected live by the streamer (OSC 777). Additive WS event.

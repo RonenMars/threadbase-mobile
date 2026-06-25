@@ -12,9 +12,6 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
-import { QuestionCard } from '@/components/terminal/QuestionCard'
-import { FEATURE_QUESTIONS } from '@/constants/flags'
-import { extractAnsweredQuestions } from '@/utils/askUserQuestionBubbles'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
@@ -113,13 +110,11 @@ export function LiveConversationView({
   // "Maximum update depth exceeded" render loop.
   const allMessages = (() => {
     const seen = new Set<string>()
-    const deduped = [...historicalMessages, ...stillPending, ...newLive].filter((m) => {
+    return [...historicalMessages, ...stillPending, ...newLive].filter((m) => {
       if (seen.has(m.id)) return false
       seen.add(m.id)
       return true
     })
-    // Splice answered AskUserQuestion exchanges in as plain Q&A bubbles, in place.
-    return extractAnsweredQuestions(deduped).messages
   })()
 
   // Session status for thinking indicator
@@ -162,30 +157,6 @@ export function LiveConversationView({
 
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
-
-  // Answer the active question card. Permission gates / shell prompts answer via
-  // the keystroke route (literal answerKeys like "y\r", else the real on-screen
-  // index); structured AskUserQuestion answers via POST /answer with the chosen
-  // option label. Lifted out of ThinkingBubble so the card can render anywhere.
-  const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
-    if (!activeQuestion) return
-    if (activeQuestion.source === 'permission') {
-      const keys = activeQuestion.permissionAnswerKeys?.[optionIndex]
-      if (keys !== undefined) {
-        sendKeys.mutate(keys)
-        return
-      }
-      const realIndex = activeQuestion.permissionIndices?.[optionIndex]
-      if (realIndex !== undefined) sendKeys.mutate(`${realIndex}\r`)
-      return
-    }
-    if (!activeQuestion.toolUseId) return
-    const q = activeQuestion.questions[questionIndex]
-    respondToQuestion.mutate({
-      toolUseId: activeQuestion.toolUseId,
-      answers: { [q.question]: q.options[optionIndex].label },
-    })
-  }, [activeQuestion, sendKeys, respondToQuestion])
 
   const isConnected = () => wsManager.getClient(serverId)?.status() === 'connected'
 
@@ -258,34 +229,17 @@ export function LiveConversationView({
           // chat isn't blank until the first message lands, then bubbles take over.
           <LivePtyPlaceholder lines={ptyLines} theme={theme} />
         }
-        ListFooterComponent={
-          <>
-            {thinkingState !== 'hidden' ? (
-              <ThinkingBubble
-                lines={ptyLines}
-                isStreaming={isStreaming}
-                fadingOut={thinkingState === 'fading'}
-                onFadeOutComplete={handleFadeOutComplete}
-                // The card below already renders this prompt — hide the raw PTY
-                // preview so the question isn't shown twice (card + terminal text).
-                hidePreview={FEATURE_QUESTIONS && !!activeQuestion}
-              />
-            ) : null}
-            {/* The question/permission card renders independent of the thinking
-                bubble: an AskUserQuestion or permission gate PARKS the agent
-                (status != running) so the thinking bubble is hidden — the card
-                must still show so the user can answer. `key` remounts the card
-                per question so a new question never inherits the previous one's
-                selected radio. */}
-            {FEATURE_QUESTIONS && activeQuestion ? (
-              <QuestionCard
-                key={activeQuestion.toolUseId ?? activeQuestion.questions[0]?.question ?? 'q'}
-                block={activeQuestion}
-                onSelect={handleStructuredSelect}
-              />
-            ) : null}
-          </>
-        }
+        ListFooterComponent={thinkingState !== 'hidden' ? (
+          <ThinkingBubble
+            lines={ptyLines}
+            isStreaming={isStreaming}
+            fadingOut={thinkingState === 'fading'}
+            onFadeOutComplete={handleFadeOutComplete}
+            onSendKeys={(keys) => sendKeys.mutate(keys)}
+            activeQuestion={activeQuestion}
+            onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+          />
+        ) : null}
       />
       <ChatComposer
         value={inputText}
