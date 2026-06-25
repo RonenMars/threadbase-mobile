@@ -308,6 +308,31 @@ The service-account JSON path is the same one fetched by `scripts/fetch-play-cre
 > The promote script opens an edit, updates the target track to include the
 > existing versionCode, and commits — no binary upload.
 
+### Known gotchas (discovered during first deploy, 2026-06-12)
+
+1. **`build.gradle` versionCode is hardcoded at prebuild time** — `expo prebuild` bakes the versionCode in when it generates `android/`. Since `android/` is committed, Gradle uses whatever value is in `build.gradle`, not `app.json`. `bundle-and-upload-android.sh` syncs the versionCode from `app.json` into `build.gradle` via `sed` before every Gradle run. Without this sync, Gradle returns UP-TO-DATE and the AAB still carries the old versionCode.
+
+2. **Play tracks API 404 on first upload** — `GET /androidpublisher/v3/applications/{pkg}/tracks` returns 404 when no build has ever been published to the app. `check-version-code.sh` treats a 404 as remote versionCode = 0, so the local value always wins. This is expected behavior on a fresh app.
+
+3. **Node 24 heredoc argv shift** — when running `node - arg1`, Node puts `-` at `process.argv[1]` and user args start at `[2]`. All Node scripts in `scripts/` use `process.argv.slice(2)` / `process.argv[2]`. If a script seems to ignore its arguments, this is the first thing to check.
+
+4. **Never trust ambient `GOOGLE_APPLICATION_CREDENTIALS`** — the bootstrap step always writes a fresh credential file from `PLAY_SA_JSON_B64`. An ambient `GOOGLE_APPLICATION_CREDENTIALS` pointing at a stale gcloud ADC credential returns HTML 200 (the gcloud sign-in page) instead of JSON, causing silent parse failures downstream with no obvious error.
+
+5. **versionCode bump rollback on upload failure** — `check-version-code.sh` exits 2 when it bumped `app.json`. `ship-android.sh` traps on exit and calls `git revert HEAD --no-edit` if the upload step fails after the bump, so `app.json` and `build.gradle` are left clean for a retry.
+
+6. **Track name mapping** — Play Console UI names differ from the API track names used by `ship-android.sh --track`:
+
+   | Play Console UI | `--track` value |
+   |---|---|
+   | Internal testing | `internal` |
+   | Closed testing (Alpha) | `alpha` |
+   | Open testing | `beta` |
+   | Production | `production` |
+
+7. **`--skip-bundle` is only safe when versionCode hasn't changed** — the AAB has the versionCode baked in at Gradle build time. Reusing a stale AAB after a versionCode bump will fail with `PERMISSION_DENIED: Version code N has already been used`. Always let Gradle rebuild when the versionCode changes.
+
+---
+
 #### Connectivity failure behaviour
 
 Each `https.request` in `promote-android.js` carries a **30-second timeout**.
@@ -318,6 +343,66 @@ Each `https.request` in `promote-android.js` carries a **30-second timeout**.
 | Server connected but never responds | Timeout fires after 30 s → `req.destroy()` → `ERROR: … timed out after 30s` → exit 1 |
 
 If the script exits with a timeout error, check your network connection and retry. No Play edit is left open — the edit is only committed in the final step, so a mid-flight timeout leaves no side effects in Play Console.
+
+---
+
+## GitHub Actions — iOS signing setup (CI secrets)
+
+The CI pipeline uses **Manual code signing** with a Distribution certificate stored
+as GitHub secrets. This prevents Xcode from creating new "Created via API"
+Development certificates on every ephemeral runner (the cert-proliferation problem
+that `CODE_SIGN_STYLE=Automatic` causes).
+
+### How it works
+
+`scripts/bootstrap-ios-signing.sh` runs before the archive step and:
+1. Imports the Distribution cert (`.p12`) into a temporary keychain
+2. Installs the provisioning profile to `~/Library/MobileDevice/Provisioning Profiles/`
+3. Copies the ASC `.p8` API key to `~/.appstoreconnect/private_keys/` for altool
+
+`scripts/archive-and-upload.sh` then archives with:
+```
+CODE_SIGN_STYLE=Manual
+CODE_SIGN_IDENTITY="Apple Distribution"
+PROVISIONING_PROFILE_SPECIFIER=<UUID>
+CURRENT_PROJECT_VERSION=<buildNumber from app.json>
+```
+
+`ios/Threadbase/Info.plist` uses `$(CURRENT_PROJECT_VERSION)` (not a hardcoded value)
+so the build number injected via the xcodebuild flag actually lands in the IPA.
+Upload is via `xcrun altool --upload-app`.
+
+### Required GitHub secrets
+
+| Secret | What it is |
+|---|---|
+| `ASC_KEY_ID` | App Store Connect API key ID |
+| `ASC_ISSUER_ID` | ASC API issuer ID |
+| `ASC_TEAM_ID` | Apple Developer team ID |
+| `ASC_AUTH_KEY_B64` | Base64 of the `.p8` API key file |
+| `IOS_DIST_CERT_P12_B64` | Base64 of the Distribution cert `.p12` |
+| `IOS_DIST_CERT_PASSWORD` | Password protecting the `.p12` |
+| `IOS_PROVISION_PROFILE_B64` | Base64 of the App Store provisioning profile |
+| `IOS_PROVISION_PROFILE_UUID` | UUID of the provisioning profile |
+| `GH_PAT` | GitHub PAT with `contents: write` for pushing version bumps to main |
+
+### Rotating the Distribution cert or provisioning profile
+
+1. Export a new `.p12` from Keychain Access (right-click the "Apple Distribution" cert → Export)
+2. `base64 -i new-cert.p12 | pbcopy` → update `IOS_DIST_CERT_P12_B64` secret
+3. Update `IOS_DIST_CERT_PASSWORD` if the password changed
+4. Download a new App Store provisioning profile from developer.apple.com (must be manually created, not "Xcode Managed")
+5. `base64 -i profile.mobileprovision | pbcopy` → update `IOS_PROVISION_PROFILE_B64`
+6. Get the UUID: `security cms -D -i profile.mobileprovision | grep -A1 UUID | tail -1 | tr -d ' <>/string'` → update `IOS_PROVISION_PROFILE_UUID`
+
+The provisioning profile must be linked to the same Distribution cert that's in the `.p12`.
+
+### Why not `CODE_SIGN_STYLE=Automatic`?
+
+Automatic signing on ephemeral CI runners creates a new Development certificate
+via the ASC API on every run (because each runner has a fresh keychain with no
+existing cert). With 10+ runs per day, this fills up Apple's cert quota and
+requires manual cleanup. Manual signing with a stored cert avoids this entirely.
 
 ---
 
