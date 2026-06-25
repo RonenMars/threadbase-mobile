@@ -27,24 +27,4 @@ describe('mapPermissionToBlock', () => {
     expect(block.questions[0].question).toBe('Claude needs your permission')
     expect(block.selectedIndex).toBeUndefined()
   })
-
-  it('omits permissionAnswerKeys for an OSC-777 gate (byte-identical to before)', () => {
-    const block = mapPermissionToBlock('Use Bash?', [{ index: 2, label: 'Yes' }], undefined)
-    expect(block.permissionAnswerKeys).toBeUndefined()
-  })
-
-  it('carries literal answerKeys for an unstructured shell prompt (y/N)', () => {
-    // The streamer maps "Continue? [y/N]" to Yes/No with literal keystrokes.
-    const block = mapPermissionToBlock(
-      'Continue? [y/N]',
-      [
-        { index: 1, label: 'Yes', answerKeys: 'y\r' },
-        { index: 2, label: 'No', answerKeys: 'n\r' },
-      ],
-      undefined
-    )
-    expect(block.questions[0].question).toBe('Continue? [y/N]')
-    expect(block.questions[0].options.map(o => o.label)).toEqual(['Yes', 'No'])
-    expect(block.permissionAnswerKeys).toEqual(['y\r', 'n\r'])
-  })
 })

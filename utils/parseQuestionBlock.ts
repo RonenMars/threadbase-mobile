@@ -25,13 +25,6 @@ export interface QuestionBlock {
    * answered by sending `${permissionIndices[i]}\r` via the keystroke route.
    */
   permissionIndices?: number[]
-  /**
-   * Permission-gate only: literal keystroke bytes per option, positionally
-   * aligned with questions[0].options. Set by the streamer's unstructured
-   * shell-prompt path (e.g. "y\r"/"n\r"); when present it's the authoritative
-   * answer for option i, overriding permissionIndices. Absent for OSC-777 gates.
-   */
-  permissionAnswerKeys?: (string | undefined)[]
 }
 
 const QUESTION_RE = /^\?\s+(.+)$/

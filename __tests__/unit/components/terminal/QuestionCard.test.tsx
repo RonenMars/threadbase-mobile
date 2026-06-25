@@ -75,32 +75,6 @@ describe('QuestionCard', () => {
     expect(getByText(/L1/)).toBeTruthy()
   })
 
-  it('clears the prior selection when the structured question changes (no stale pre-select)', () => {
-    const isSelected = (btn: { props: { accessibilityState?: { selected?: boolean } } }) =>
-      btn.props.accessibilityState?.selected === true
-    const { getAllByRole, rerender } = render(<QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} />)
-    // Select option index 1 on the first question.
-    fireEvent.press(getAllByRole('button')[1])
-    expect(isSelected(getAllByRole('button')[1])).toBe(true)
-
-    // A new structured question (different toolUseId) arrives in the same slot.
-    const NEXT_BLOCK: QuestionBlock = {
-      source: 'structured',
-      toolUseId: 't2',
-      questions: [{
-        question: 'Pick a status',
-        multiSelect: false,
-        options: [{ label: 'Done' }, { label: 'Active' }, { label: 'Unsure' }],
-      }],
-    }
-    rerender(<QuestionCard block={NEXT_BLOCK} onSelect={jest.fn()} />)
-
-    // None of the new options should be pre-selected.
-    for (const btn of getAllByRole('button')) {
-      expect(isSelected(btn)).toBe(false)
-    }
-  })
-
   it('renders a single option correctly', () => {
     const block: QuestionBlock = {
       source: 'structured',

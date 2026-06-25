@@ -6,6 +6,7 @@ import { useComposerState } from '@/hooks/useComposerState'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
+import { RawKeyBar } from '@/components/terminal/RawKeyBar'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
@@ -61,6 +62,7 @@ export function TerminalView({ serverId, sessionId, disabled = false, pendingPla
         activeQuestion={activeQuestion}
         onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
       />
+      <RawKeyBar onSendKeys={(keys) => sendKeys.mutate(keys)} />
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}

@@ -147,13 +147,6 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
   const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
     if (!activeQuestion) return
     if (activeQuestion.source === 'permission') {
-      // Literal answer keys (e.g. "y\r" for a y/N shell prompt) take precedence;
-      // otherwise answer by the REAL on-screen number (e.g. "2\r").
-      const keys = activeQuestion.permissionAnswerKeys?.[optionIndex]
-      if (keys !== undefined) {
-        onSendKeys?.(keys)
-        return
-      }
       const realIndex = activeQuestion.permissionIndices?.[optionIndex]
       if (realIndex !== undefined) onSendKeys?.(`${realIndex}\r`)
       return
