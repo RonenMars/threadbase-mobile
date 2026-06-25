@@ -160,11 +160,22 @@ BUILD_NUMBER=$(jq -r '.expo.ios.buildNumber' app.json)
 
 # 8. Wait until VALID (or timeout — bounded by poll-build.sh kill switches)
 echo "▸ [8/$TOTAL_STEPS] Wait for App Store Connect processing (build $BUILD_NUMBER)"
+set +e  # temporarily disable errexit to capture poll-build exit code
 "$SCRIPT_DIR/poll-build.sh" "$BUNDLE_ID" --build-version "$BUILD_NUMBER" --watch --timeout 1800 --interval 30
+POLL_EXIT=$?
+set -e  # re-enable errexit
+if (( POLL_EXIT == 137 )); then
+  # Exit 137 = timeout from watchdog (expected after 30 min); build already uploaded
+  echo "⚠️  Build uploaded but polling timed out after 30 minutes (Apple's indexing is slow)."
+  echo "   Build is processing in App Store Connect. Check status manually in Xcode Organizer."
+elif (( POLL_EXIT != 0 )); then
+  # Real error from poll logic
+  exit $POLL_EXIT
+fi
 
 if [[ "$TARGET" == "testflight" ]]; then
   echo
-  echo "✅ Build is live on TestFlight."
+  echo "✅ Build is live on TestFlight (or processing — check App Store Connect)."
 else
   # 9. Production: submit for App Store review
   echo "▸ [9/$TOTAL_STEPS] Submit for App Store review"

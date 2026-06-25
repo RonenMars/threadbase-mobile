@@ -23,22 +23,48 @@ xcodebuild \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "${ARCHIVE_PATH}" \
-  -allowProvisioningUpdates \
-  -authenticationKeyPath "${ASC_KEY_PATH}" \
-  -authenticationKeyID "${ASC_KEY_ID}" \
-  -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
   DEVELOPMENT_TEAM="${ASC_TEAM_ID}" \
-  CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY="Apple Distribution" \
+  PROVISIONING_PROFILE_SPECIFIER="${IOS_PROVISION_PROFILE_UUID}" \
   archive | tee build/archive.log
 
-xcodebuild -exportArchive \
-  -archivePath "${ARCHIVE_PATH}" \
-  -exportOptionsPlist "${EXPORT_OPTIONS_PLIST}" \
-  -exportPath build/export \
-  -allowProvisioningUpdates \
-  -authenticationKeyPath "${ASC_KEY_PATH}" \
-  -authenticationKeyID "${ASC_KEY_ID}" \
-  -authenticationKeyIssuerID "${ASC_ISSUER_ID}" | tee build/upload.log
+# Export archive with retry logic: network timeouts during export validation
+# can cause "Error Downloading App Information". Retry up to 3 times.
+MAX_RETRIES=3
+EXPORT_OK=0
+for (( attempt=1; attempt<=MAX_RETRIES; attempt++ )); do
+  echo "exportArchive attempt $attempt/$MAX_RETRIES..."
+  if xcodebuild -exportArchive \
+    -archivePath "${ARCHIVE_PATH}" \
+    -exportOptionsPlist "${EXPORT_OPTIONS_PLIST}" \
+    -exportPath build/export | tee build/upload.log; then
+    EXPORT_OK=1
+    break
+  fi
+  if (( attempt < MAX_RETRIES )); then
+    echo "exportArchive failed. Retrying in 10s..."
+    sleep 10
+  fi
+done
+
+if (( EXPORT_OK == 0 )); then
+  echo "exportArchive failed after $MAX_RETRIES attempts" >&2
+  exit 70
+fi
+
+# Upload IPA explicitly via altool so we get a real success/failure response.
+# (method: app-store exports only; xcodebuild's built-in upload with
+# method: app-store-connect silently drops builds on Apple's ingestion side.)
+IPA_PATH="$(find build/export -name '*.ipa' | head -1)"
+: "${IPA_PATH:?No IPA found in build/export}"
+echo "Uploading ${IPA_PATH} via altool..."
+xcrun altool --upload-app \
+  --type ios \
+  --file "${IPA_PATH}" \
+  --apiKey "${ASC_KEY_ID}" \
+  --apiIssuer "${ASC_ISSUER_ID}" \
+  --show-progress 2>&1 | tee build/upload.log
 
 echo
 echo "Uploaded. Poll processing state with the App Store Connect API"
