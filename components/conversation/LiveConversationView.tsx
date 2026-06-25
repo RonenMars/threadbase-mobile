@@ -15,7 +15,6 @@ import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
-import { RawKeyBar } from '@/components/terminal/RawKeyBar'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
@@ -242,7 +241,6 @@ export function LiveConversationView({
           />
         ) : null}
       />
-      <RawKeyBar onSendKeys={(keys) => sendKeys.mutate(keys)} />
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
