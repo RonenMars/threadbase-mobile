@@ -8,7 +8,7 @@ Quick reference for the Mac → iPhone 17 Pro dev loop. Captures the actual UDID
 
 | Phone | iOS | Legacy UDID (use this with Expo / Xcode) | CoreDevice ID (`devicectl`) |
 |---|---|---|---|
-| Ronen Mars's iPhone 17 Pro | 26.5 | `00008150-00115DEA1A40401C` | `187F0489-0B16-585E-B41E-B98CAE88BC47` |
+| Your iPhone | — | `<your-legacy-udid>` | `<your-coredevice-id>` |
 
 **Expo / `xcrun` use the legacy UDID.** The CoreDevice ID is what `xcrun devicectl list devices` shows but is a different namespace and won't work with `expo run:ios --device`.
 
