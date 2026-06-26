@@ -40,7 +40,7 @@ jest.mock('@/hooks/useSession', () => ({
   }),
 }))
 jest.mock('@/hooks/useSessionActions', () => ({
-  useSessionActions: () => ({ sendInput: { mutate: jest.fn() }, adoptSession: { mutate: jest.fn() } }),
+  useSessionActions: () => ({ sendInput: { mutate: jest.fn() }, adoptSession: { mutate: jest.fn() }, stopSession: { mutate: jest.fn(), isPending: false } }),
 }))
 jest.mock('@/services/ws-client', () => ({
   wsManager: { getClient: () => null, forceReconnect: jest.fn() },
