@@ -1,9 +1,13 @@
 import React from 'react'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Alert, Platform } from 'react-native'
 =======
 import { Alert } from 'react-native'
 >>>>>>> 5f83d0d2 (fix(keyboard): use react-native-keyboard-controller and safe area padding to prevent input hiding)
+=======
+import { Alert, Platform } from 'react-native'
+>>>>>>> 56a9c458 (fix(terminal): import Platform in TerminalView)
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
