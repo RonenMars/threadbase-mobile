@@ -1,6 +1,5 @@
 import React from 'react'
 import { Text, View } from 'react-native'
-import { type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/cn'
 

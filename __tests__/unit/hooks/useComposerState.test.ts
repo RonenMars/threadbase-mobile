@@ -1,4 +1,5 @@
 import { renderHook, act } from '@testing-library/react-native'
+import { useComposerState } from '@/hooks/useComposerState'
 
 // ── mocks ────────────────────────────────────────────────────────────────────
 // jest.mock factories are hoisted so we cannot reference outer consts inside them.
@@ -52,9 +53,6 @@ jest.mock('@/services/ws-client', () => ({
 }))
 
 jest.mock('react-native/Libraries/Alert/Alert', () => ({ alert: jest.fn() }))
-
-// ── import after mocks ───────────────────────────────────────────────────────
-import { useComposerState } from '@/hooks/useComposerState'
 
 // ── tests ────────────────────────────────────────────────────────────────────
 

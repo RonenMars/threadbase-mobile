@@ -182,7 +182,6 @@ export function LiveConversationView({
     handleInputChange,
     handleSend,
     slashBoardVisible,
-    setSlashBoardVisible,
     pendingArgCommand,
     setPendingArgCommand,
     handleSlashCommandSelect,
