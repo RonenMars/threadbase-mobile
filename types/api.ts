@@ -118,8 +118,8 @@ export interface Message {
 export type MessageContent =
   | { type: 'text'; text: string }
   | { type: 'thinking'; thinking: string; signature?: string }
-  | { type: 'tool_use'; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; toolName: string; content: string; isError?: boolean }
+  | { type: 'tool_use'; id?: string; name: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; toolUseId?: string; toolName: string; content: string; isError?: boolean }
   | { type: 'diff'; filename: string; hunks: DiffHunk[] }
 
 export interface AskOption {
