@@ -82,8 +82,8 @@ jobs:
 
       - name: Set git identity
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bootstrap iOS signing
         env:
@@ -120,12 +120,13 @@ jobs:
         # update Podfile.lock in place instead of failing the build.
         #
         # When a fallback cache key is restored (cache-hit is false but Pods/ exists
-        # from a restore-keys match), local podspecs can be stale vs node_modules.
-        # Reconcile them before the full install to avoid "changed version" errors.
+        # from a restore-keys match), local podspecs in Pods/Local Podspecs/ can be
+        # stale vs the versions in node_modules. Deleting that dir forces CocoaPods
+        # to re-read podspecs from node_modules on the next install.
         run: |
           cd ios
-          if [[ "${{ steps.pods-cache.outputs.cache-hit }}" != "true" && -d Pods ]]; then
-            bundle exec pod update --no-repo-update 2>/dev/null || true
+          if [[ "${{ steps.pods-cache.outputs.cache-hit }}" != "true" && -d Pods/Local\ Podspecs ]]; then
+            rm -rf Pods/Local\ Podspecs
           fi
           bundle exec pod install
 
@@ -273,8 +274,8 @@ jobs:
 
       - name: Set git identity
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump versionCode (working tree only)
         run: |
