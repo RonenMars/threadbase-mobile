@@ -121,21 +121,24 @@ jobs:
         # Pods/Local Podspecs when node_modules changed, causing "changed version" errors.
         run: cd ios && bundle exec pod install
 
-      - name: Bump build number (working tree only)
+      - name: Validate and bump version + build number (working tree only)
         run: |
           source .env.signing
-          # check-build-number.sh bumps app.json's buildNumber in the working tree
-          # and exits 2 (does not commit). Exit 0 = already ahead, exit 2 = bumped,
-          # anything else = real error. The bumped app.json stays in the working
-          # tree so the ship step builds with the new buildNumber; the push to main
-          # happens only AFTER a successful upload (see step below).
+          # check-build-number.sh compares app.json version + buildNumber against
+          # the latest ASC build, picks the higher version and (max+1) buildNumber,
+          # updates app.json in the working tree, and exits 2 (does not commit).
+          # Exit 0 = already correct, exit 2 = bumped, anything else = real error.
+          # The updated app.json stays in the working tree so the ship step builds
+          # with the resolved values; the push to main happens only AFTER a
+          # successful upload (see step below).
           ./scripts/check-build-number.sh && true || {
             code=$?
             [[ $code -eq 2 ]] || exit $code
           }
-          # Record the resolved buildNumber so the post-ship step can re-derive the
+          # Record both resolved values so the post-ship step can re-derive the
           # bump onto main's own app.json without carrying other working-tree edits.
           echo "BUMPED_BUILD_NUMBER=$(jq -r '.expo.ios.buildNumber' app.json)" >> "$GITHUB_ENV"
+          echo "BUMPED_VERSION=$(jq -r '.expo.version' app.json)" >> "$GITHUB_ENV"
 
       - name: Ship iOS
         env:
@@ -163,14 +166,15 @@ jobs:
             exit $SHIP_EXIT
           fi
 
-      - name: Push build number bump to main (after successful upload)
+      - name: Push version + build number bump to main (after successful upload)
         # Only runs if Ship iOS succeeded — so main advances only when a build
-        # actually uploaded to TestFlight. Re-derives just the buildNumber onto
-        # main's own app.json in a throwaway worktree, so a branch validation build
-        # does NOT leak the branch's code to main — only the version bump lands.
+        # actually uploaded to TestFlight. Re-derives just the version/buildNumber
+        # onto main's own app.json in a throwaway worktree, so a branch validation
+        # build does NOT leak the branch's code to main — only the bump lands.
         if: success()
         env:
           BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
+          BUMPED_VERSION: ${{ env.BUMPED_VERSION }}
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config user.name  "github-actions[bot]"
@@ -179,15 +183,17 @@ jobs:
           git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git"
           git fetch origin main
           MAIN_BN=$(git show origin/main:app.json | jq -r '.expo.ios.buildNumber')
-          if [[ "$BUMPED_BUILD_NUMBER" == "$MAIN_BN" ]]; then
-            echo "main already at buildNumber $MAIN_BN — nothing to push"
+          MAIN_VER=$(git show origin/main:app.json | jq -r '.expo.version')
+          if [[ "$BUMPED_BUILD_NUMBER" == "$MAIN_BN" && "$BUMPED_VERSION" == "$MAIN_VER" ]]; then
+            echo "main already at version $MAIN_VER, buildNumber $MAIN_BN — nothing to push"
             exit 0
           fi
           git worktree add /tmp/bump-main-ios origin/main
           ( cd /tmp/bump-main-ios
-            jq ".expo.ios.buildNumber = \"${BUMPED_BUILD_NUMBER}\"" app.json > app.json.tmp && mv app.json.tmp app.json
+            jq ".expo.version = \"${BUMPED_VERSION}\" | .expo.ios.buildNumber = \"${BUMPED_BUILD_NUMBER}\"" \
+              app.json > app.json.tmp && mv app.json.tmp app.json
             git add app.json
-            git commit -m "chore(ios): bump build number to ${BUMPED_BUILD_NUMBER} [skip-ci]"
+            git commit -m "chore(ios): bump to version ${BUMPED_VERSION} build ${BUMPED_BUILD_NUMBER} [skip-ci]"
             git push origin HEAD:main
           )
           git worktree remove /tmp/bump-main-ios --force

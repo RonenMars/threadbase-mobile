@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
-# check-build-number.sh — verify app.json buildNumber is higher than the latest
-# build in TestFlight/App Store, and auto-bump if it isn't.
+# check-build-number.sh — verify app.json version + buildNumber are ahead of
+# the latest build in TestFlight/App Store, and auto-bump if they aren't.
+#
+# Comparison rules:
+#   ciVersion    = app.json expo.version
+#   ciBuildNumber = app.json expo.ios.buildNumber
+#   appVersion   = highest version string seen across recent ASC builds
+#   appBuildNumber = highest numeric buildNumber seen across recent ASC builds
+#
+#   resolvedVersion   = max(ciVersion, appVersion)            (semver comparison)
+#   resolvedBuild     = max(ciBuildNumber, appBuildNumber) + 1
+#
+#   If ciVersion < appVersion OR ciBuildNumber <= appBuildNumber:
+#     update app.json and exit 2.
+#   Otherwise exit 0 (no changes needed).
 #
 # Requires ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH to be set (source .env.signing).
 #
@@ -23,10 +36,11 @@ command -v node >/dev/null || { echo "node required" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 BUNDLE_ID=$(jq -r '.expo.ios.bundleIdentifier' app.json)
-LOCAL_BUILD=$(jq -r '.expo.ios.buildNumber' app.json)
+CI_VERSION=$(jq -r '.expo.version' app.json)
+CI_BUILD=$(jq -r '.expo.ios.buildNumber' app.json)
 
-echo "▸ Checking TestFlight build numbers for $BUNDLE_ID"
-echo "  local app.json buildNumber: $LOCAL_BUILD"
+echo "▸ Checking App Store Connect build for $BUNDLE_ID"
+echo "  local app.json version: $CI_VERSION  buildNumber: $CI_BUILD"
 
 JWT=$("$SCRIPT_DIR/asc-jwt.sh")
 
@@ -51,74 +65,154 @@ https.get(opts, r => {
 }).on('error', e => { console.error(e.message); process.exit(1); });
 " "$JWT" "$BUNDLE_ID")
 
-# Fetch latest 5 builds sorted by upload date descending
-LATEST_REMOTE=$(node -e "
+# Fetch latest 10 builds sorted by upload date descending.
+# Extract both the CFBundleShortVersionString (version) and CFBundleVersion (buildNumber).
+REMOTE_RAW=$(node -e "
 const https = require('https');
 const jwt = process.argv[1];
 const appId = process.argv[2];
-const opts = {
-  hostname: 'api.appstoreconnect.apple.com',
-  path: '/v1/builds?filter[app]=' + appId + '&sort=-uploadedDate&limit=10&fields[builds]=version,processingState,uploadedDate',
-  headers: { Authorization: 'Bearer ' + jwt }
-};
-let body = '';
-https.get(opts, r => {
-  r.on('data', d => body += d);
-  r.on('end', () => {
-    const d = JSON.parse(body);
-    if (!d.data || !d.data.length) { console.log(0); return; }
-    // Find max numeric build number across all returned builds
-    const max = d.data.reduce((m, b) => {
-      const n = parseInt(b.attributes.version, 10);
-      if (n > m.val) return { val: n, state: b.attributes.processingState, date: b.attributes.uploadedDate };
-      return m;
-    }, { val: 0, state: '', date: '' });
-    console.log(max.val + '\t' + max.state + '\t' + max.date);
+
+function get(path) {
+  return new Promise((res, rej) => {
+    let body = '';
+    https.get({ hostname: 'api.appstoreconnect.apple.com', path, headers: { Authorization: 'Bearer ' + jwt } }, r => {
+      r.on('data', d => body += d);
+      r.on('end', () => res(JSON.parse(body)));
+    }).on('error', rej);
   });
-}).on('error', e => { console.error(e.message); process.exit(1); });
+}
+
+// semver-style numeric comparison: split on '.', compare each segment
+function semverGt(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] || 0, nb = pb[i] || 0;
+    if (na > nb) return true;
+    if (na < nb) return false;
+  }
+  return false;
+}
+
+(async () => {
+  try {
+    const data = await get(
+      '/v1/builds?filter[app]=' + appId +
+      '&sort=-uploadedDate&limit=10' +
+      '&fields[builds]=version,processingState,uploadedDate' +
+      '&include=preReleaseVersion' +
+      '&fields[preReleaseVersions]=version'
+    );
+
+    if (!data.data || !data.data.length) {
+      console.log('0\t1.0.0\tNONE\t');
+      return;
+    }
+
+    // Build a map from preReleaseVersion id → version string
+    const verMap = {};
+    (data.included || []).forEach(inc => {
+      if (inc.type === 'preReleaseVersions') verMap[inc.id] = inc.attributes.version;
+    });
+
+    let maxBuild = 0;
+    let maxVersion = '0.0.0';
+    let maxState = '';
+    let maxDate = '';
+
+    data.data.forEach(b => {
+      const bn = parseInt(b.attributes.version, 10);
+      const prvRel = b.relationships && b.relationships.preReleaseVersion && b.relationships.preReleaseVersion.data;
+      const appVer = prvRel ? (verMap[prvRel.id] || '0.0.0') : '0.0.0';
+
+      if (bn > maxBuild) {
+        maxBuild = bn;
+        maxState = b.attributes.processingState;
+        maxDate  = b.attributes.uploadedDate;
+      }
+      if (semverGt(appVer, maxVersion)) maxVersion = appVer;
+    });
+
+    console.log(maxBuild + '\t' + maxVersion + '\t' + maxState + '\t' + maxDate);
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
+})();
 " "$JWT" "$APP_ID")
 
-REMOTE_BUILD=$(echo "$LATEST_REMOTE" | cut -f1)
-REMOTE_STATE=$(echo "$LATEST_REMOTE" | cut -f2)
-REMOTE_DATE=$(echo "$LATEST_REMOTE" | cut -f3)
+APP_BUILD=$(echo "$REMOTE_RAW"   | cut -f1)
+APP_VERSION=$(echo "$REMOTE_RAW"  | cut -f2)
+REMOTE_STATE=$(echo "$REMOTE_RAW" | cut -f3)
+REMOTE_DATE=$(echo "$REMOTE_RAW"  | cut -f4)
 
-echo "  latest TestFlight buildNumber: $REMOTE_BUILD ($REMOTE_STATE, uploaded $REMOTE_DATE)"
+echo "  latest ASC version: $APP_VERSION  buildNumber: $APP_BUILD ($REMOTE_STATE, uploaded $REMOTE_DATE)"
 
-if (( LOCAL_BUILD > REMOTE_BUILD )); then
-  GAP=$(( LOCAL_BUILD - REMOTE_BUILD ))
-  if (( GAP == 1 )); then
-    echo "  ✓ app.json buildNumber ($LOCAL_BUILD) is one ahead of TestFlight ($REMOTE_BUILD) — no bump needed"
-  else
-    # Local is more than 1 ahead — possible if you bumped multiple times locally
-    # without shipping, but also a sign of skipped/failed uploads. Surface it.
-    echo "  ✓ app.json buildNumber ($LOCAL_BUILD) is $GAP ahead of TestFlight ($REMOTE_BUILD) — no bump needed"
-    echo "    (gap > 1: prior local bumps that never shipped, or remote query missed builds)"
-  fi
+# Resolve version: semver-max(ciVersion, appVersion)
+RESOLVED_VERSION=$(node -e "
+function semverGt(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] || 0, nb = pb[i] || 0;
+    if (na > nb) return true;
+    if (na < nb) return false;
+  }
+  return false;
+}
+const ci = process.argv[1], app = process.argv[2];
+console.log(semverGt(app, ci) ? app : ci);
+" "$CI_VERSION" "$APP_VERSION")
+
+# Resolve build: max(ciBuildNumber, appBuildNumber) + 1
+MAX_BUILD=$(( CI_BUILD > APP_BUILD ? CI_BUILD : APP_BUILD ))
+RESOLVED_BUILD=$(( MAX_BUILD + 1 ))
+
+VERSION_CHANGED=0
+BUILD_CHANGED=0
+
+[[ "$RESOLVED_VERSION" != "$CI_VERSION" ]] && VERSION_CHANGED=1
+# Build always needs to be max+1; if CI is already max+1 exactly, no bump needed
+EXPECTED_BUILD=$(( APP_BUILD + 1 ))
+if (( CI_BUILD < EXPECTED_BUILD )); then
+  BUILD_CHANGED=1
+  RESOLVED_BUILD=$EXPECTED_BUILD
+else
+  RESOLVED_BUILD=$CI_BUILD
+fi
+
+if (( VERSION_CHANGED == 0 && BUILD_CHANGED == 0 )); then
+  echo "  ✓ app.json version ($CI_VERSION) and buildNumber ($CI_BUILD) are already correct — no bump needed"
   exit 0
 fi
 
-NEXT_BUILD=$(( REMOTE_BUILD + 1 ))
-DRIFT=$(( REMOTE_BUILD - LOCAL_BUILD ))
-
 if (( CHECK_ONLY )); then
-  echo "  ✗ app.json buildNumber ($LOCAL_BUILD) must be > $REMOTE_BUILD (latest in TestFlight)" >&2
-  echo "    Bump with: jq '.expo.ios.buildNumber = \"$NEXT_BUILD\"' app.json > app.json.tmp && mv app.json.tmp app.json" >&2
+  (( VERSION_CHANGED )) && echo "  ✗ version should be $RESOLVED_VERSION (CI: $CI_VERSION, ASC: $APP_VERSION)" >&2
+  (( BUILD_CHANGED ))  && echo "  ✗ buildNumber should be $RESOLVED_BUILD (CI: $CI_BUILD, ASC: $APP_BUILD)" >&2
   exit 1
 fi
 
-# A gap > 0 between remote and local is normal (someone shipped from
-# another machine since your last pull); a large gap is a stronger signal
-# that the working copy is stale or someone else's bump never landed in git.
-if (( DRIFT >= 2 )); then
-  echo
-  echo "  ⚠ Suspicious build-number drift: TestFlight is at $REMOTE_BUILD, local app.json is at $LOCAL_BUILD (gap $DRIFT)"
-  echo "    This usually means another machine shipped without committing the app.json bump."
-  echo "    Check: did you run \`git pull --ff-only\` recently? Did a teammate forget to push?"
-  echo
+# Log what's being bumped
+(( VERSION_CHANGED )) && echo "  ⚠ version: $CI_VERSION → $RESOLVED_VERSION (ASC is ahead)"
+(( BUILD_CHANGED ))  && echo "  ⚠ buildNumber: $CI_BUILD → $RESOLVED_BUILD (ASC latest: $APP_BUILD, next required: $EXPECTED_BUILD)"
+
+# Drift warning for large build gaps
+if (( BUILD_CHANGED )); then
+  DRIFT=$(( APP_BUILD - CI_BUILD ))
+  if (( DRIFT >= 2 )); then
+    echo
+    echo "  ⚠ Suspicious build-number drift: ASC is at $APP_BUILD, local app.json is at $CI_BUILD (gap $DRIFT)"
+    echo "    This usually means another machine shipped without committing the app.json bump."
+    echo "    Check: did you run \`git pull --ff-only\` recently?"
+    echo
+  fi
 fi
 
-echo "  ⚠ app.json buildNumber ($LOCAL_BUILD) ≤ TestFlight latest ($REMOTE_BUILD) — auto-bumping to $NEXT_BUILD"
-jq ".expo.ios.buildNumber = \"$NEXT_BUILD\"" app.json > app.json.tmp && mv app.json.tmp app.json
-echo "  ✓ app.json updated to buildNumber $NEXT_BUILD (commit deferred until after successful upload)"
-# Exit 2 signals to ship-ios.sh that app.json was bumped and needs committing.
+jq ".expo.version = \"$RESOLVED_VERSION\" | .expo.ios.buildNumber = \"$RESOLVED_BUILD\"" \
+  app.json > app.json.tmp && mv app.json.tmp app.json
+
+echo "  ✓ app.json updated to version $RESOLVED_VERSION, buildNumber $RESOLVED_BUILD (commit deferred until after successful upload)"
+# Exit 2 signals to deploy.yml that app.json was bumped and needs committing.
 exit 2
