@@ -1,5 +1,5 @@
 import React from 'react'
-import { Alert } from 'react-native'
+import { Alert, Platform } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
