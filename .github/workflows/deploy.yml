@@ -108,7 +108,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ios/Pods
-          key: pods-${{ hashFiles('package-lock.json') }}
+          key: pods-${{ hashFiles('ios/Podfile.lock', 'package-lock.json') }}
 
       - name: Install CocoaPods
         # Not --deployment: prebuilt-artifact pods (hermes, React-Core-prebuilt,
@@ -116,10 +116,9 @@ jobs:
         # CI, which --deployment treats as a fatal lockfile change. Let pod install
         # update Podfile.lock in place instead of failing the build.
         #
-        # Cache key is package-lock.json only — no restore-keys fallback. Local
-        # Podspecs in the cached Pods/ dir are derived from node_modules, so the
-        # cache is only valid when npm deps are unchanged. A Podfile.lock-only key
-        # would allow a stale cache hit when node_modules (and thus podspecs) changed.
+        # No restore-keys fallback: either both lockfiles match (full hit, Pods/ is
+        # fully consistent) or we cold-install. A partial hit would allow a stale
+        # Pods/Local Podspecs when node_modules changed, causing "changed version" errors.
         run: cd ios && bundle exec pod install
 
       - name: Bump build number (working tree only)
