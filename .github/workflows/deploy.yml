@@ -119,13 +119,15 @@ jobs:
         # CI, which --deployment treats as a fatal lockfile change. Let pod install
         # update Podfile.lock in place instead of failing the build.
         #
-        # Always delete Pods/Local Podspecs before install: the cached directory
-        # can hold stale podspec versions whenever node_modules changes (e.g. on a
-        # restore-key partial hit). CocoaPods re-reads them from node_modules on
-        # the next install so this is safe and fast.
+        # On a partial cache hit (restore-keys match, cache-hit=false), Local Podspecs
+        # can be stale vs node_modules. Delete it so CocoaPods re-reads podspecs from
+        # node_modules. On a full hit the key includes package-lock.json so podspecs
+        # are guaranteed fresh — skip the delete to preserve the cache benefit.
         run: |
           cd ios
-          rm -rf "Pods/Local Podspecs"
+          if [[ "${{ steps.pods-cache.outputs.cache-hit }}" != "true" ]]; then
+            rm -rf "Pods/Local Podspecs"
+          fi
           bundle exec pod install
 
       - name: Bump build number (working tree only)
