@@ -95,13 +95,13 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
         </Animated.View>
 
         <Text style={[styles.eyebrow, !paired && styles.eyebrowUnpaired]}>
-          {paired ? t(‘done.eyebrowPaired’) : t(‘done.eyebrowUnpaired’)}
+          {paired ? t('done.eyebrowPaired') : t('done.eyebrowUnpaired')}
         </Text>
         <Text style={styles.headline}>
-          {paired ? t(‘done.headlinePaired’) : t(‘done.headlineUnpaired’)}
+          {paired ? t('done.headlinePaired') : t('done.headlineUnpaired')}
         </Text>
         <Text style={styles.body}>
-          {paired ? t(‘done.bodyPaired’) : t(‘done.bodyUnpaired’)}
+          {paired ? t('done.bodyPaired') : t('done.bodyUnpaired')}
         </Text>
 
         <View style={styles.pill}>
@@ -113,13 +113,13 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
           <Text style={styles.pillText}>
             {paired
               ? `paired · ${serverHost} · ${serverPort}`
-              : t(‘done.pillUnpaired’)}
+              : t('done.pillUnpaired')}
           </Text>
         </View>
       </View>
 
       <PrimaryButton testID="onboarding-done-cta" onPress={onEnter} showIcon={false}>
-        {paired ? t(‘done.ctaPaired’) : t(‘done.ctaUnpaired’)}
+        {paired ? t('done.ctaPaired') : t('done.ctaUnpaired')}
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </View>
