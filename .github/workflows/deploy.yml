@@ -80,6 +80,11 @@ jobs:
         with:
           ruby-version: '3.3'
 
+      - name: Set git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Bootstrap iOS signing
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -99,6 +104,7 @@ jobs:
         run: bundle install
 
       - name: Cache CocoaPods
+        id: pods-cache
         uses: actions/cache@v5
         with:
           path: ios/Pods
@@ -112,7 +118,16 @@ jobs:
         # ReactNativeDependencies, ExpoModulesCore) regenerate fresh checksums on
         # CI, which --deployment treats as a fatal lockfile change. Let pod install
         # update Podfile.lock in place instead of failing the build.
-        run: cd ios && bundle exec pod install
+        #
+        # When a fallback cache key is restored (cache-hit is false but Pods/ exists
+        # from a restore-keys match), local podspecs can be stale vs node_modules.
+        # Reconcile them before the full install to avoid "changed version" errors.
+        run: |
+          cd ios
+          if [[ "${{ steps.pods-cache.outputs.cache-hit }}" != "true" && -d Pods ]]; then
+            bundle exec pod update --no-repo-update 2>/dev/null || true
+          fi
+          bundle exec pod install
 
       - name: Bump build number (working tree only)
         run: |
@@ -255,6 +270,11 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./scripts/bootstrap-android-signing.sh
+
+      - name: Set git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump versionCode (working tree only)
         run: |
