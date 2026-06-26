@@ -6,7 +6,7 @@
     "headline": "Pull a thread.",
     "headlineAccent": "Watch it weave.",
     "body": "A remote control for Claude Code, on the device you actually carry.",
-    "cta": "Begin handshake"
+    "cta": "Get started"
   },
   "addServer": {
     "title": "Add a Server",
@@ -50,7 +50,39 @@
     "openCamera": "Open camera",
     "pairMyLaptop": "Pair my laptop",
     "ready": "✓ ready",
-    "footnote": "// On your desktop, run tb pair to print a token."
+    "footnote": "// On your desktop, run tb pair to print a token.",
+    "manualSectionLabel": "On your Mac",
+    "manualSectionHint": "Open Terminal and run:",
+    "manualSectionPasteHint": "It prints a URL + token — paste both below.",
+    "manualServerUrl": "Server URL",
+    "manualToken": "Token",
+    "manualTokenPlaceholder": "paste token from tb pair output",
+    "manualScanInstead": "Scan a QR instead →",
+    "manualEnterInstead": "Use manual entry instead",
+    "connectIdle": "Connect",
+    "connectOk": "Connected",
+    "connectErr": "Retry",
+    "connectBusy": "…connecting",
+    "connectErrHint": "Token expired? Run tb pair again on your Mac."
+  },
+  "done": {
+    "eyebrowPaired": "HANDSHAKE COMPLETE",
+    "eyebrowUnpaired": "ALL SET",
+    "headlinePaired": "Thread is live.",
+    "headlineUnpaired": "You're in.",
+    "bodyPaired": "Your laptop is listening. Open a session whenever the mood strikes.",
+    "bodyUnpaired": "Skip it for now — you can connect a runtime from Settings whenever you're ready.",
+    "pillUnpaired": "no runtime paired · pair from Settings",
+    "ctaPaired": "Enter Threadbase",
+    "ctaUnpaired": "Continue — I'll pair later"
+  },
+  "notifications": {
+    "allowTitle": "Push notifications",
+    "body": "Threadbase taps you when a session needs a decision, finishes a run, or hits an error — the things worth knowing without watching a terminal.",
+    "continue": "Continue",
+    "skipCta": "Skip — I'll watch the kanban",
+    "enabledStatus": "ENABLED · alerts.threadbase.dev",
+    "tapToAllow": "TAP TO ALLOW"
   },
   "tour": {
     "eyebrow": "> 04 / TOUR",
@@ -71,11 +103,6 @@
     "labelPrompts": "prompts ▸",
     "labelStdout": "◂ stdout",
     "labelClaudeRun": "claude run"
-  },
-  "notifications": {
-    "allowTitle": "Push notifications",
-    "body": "We'll ping you when a session finishes, hits an error, or needs a quick decision — so you don't have to keep the app open.",
-    "continue": "Continue"
   },
   "theme": {
     "eyebrow": "// APPEARANCE",
