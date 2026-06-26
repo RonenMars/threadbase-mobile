@@ -101,5 +101,12 @@
   },
   "fab": {
     "noServerHint": "הוסף שרת בהגדרות כדי להתחיל"
+  },
+  "noServer": {
+    "title": "התחבר לשרת הראשון שלך",
+    "desc": "Threadbase מתחבר למופע tb-streamer פעיל. הוסף את כתובת השרת ומפתח ה-API כדי להתחבר לשרת שלך.",
+    "repoLink": "github.com/RonenMars/threadbase-streamer",
+    "repoUrl": "https://github.com/RonenMars/threadbase-streamer",
+    "cta": "הוסף שרת"
   }
 }

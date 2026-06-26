@@ -1,12 +1,79 @@
 {
-  "title": "الخوادم",
-  "add": "إضافة خادم",
-  "edit": "تعديل الخادم",
-  "remove": "إزالة الخادم",
-  "url": "عنوان URL",
-  "apiKey": "مفتاح API",
-  "connected": "متصل",
-  "disconnected": "غير متصل",
+  "header": {
+    "title": "الخوادم"
+  },
+  "status": {
+    "connected": "متصل",
+    "disconnected": "غير متصل",
+    "connecting": "جارٍ الاتصال…",
+    "error": "خطأ في الاتصال"
+  },
+  "action": {
+    "add": "إضافة خادم",
+    "edit": "تعديل",
+    "remove": "إزالة الخادم",
+    "viewError": "عرض خطأ الاتصال",
+    "connect": "اتصال",
+    "details": "التفاصيل"
+  },
+  "dialog": {
+    "removeTitle": "إزالة الخادم",
+    "removeMessage": "هل أنت متأكد أنك تريد إزالة هذا الخادم؟",
+    "removeConfirm": "إزالة",
+    "removeDismiss": "إلغاء"
+  },
+  "form": {
+    "name": "الاسم",
+    "url": "عنوان URL",
+    "namePlaceholder": "خادمي",
+    "urlPlaceholder": "http://localhost:3000",
+    "labelOptional": "التسمية (اختياري)",
+    "serverUrl": "عنوان الخادم",
+    "apiKey": "مفتاح API",
+    "hint": "شغّل cch serve --tunnel --qr على جهاز Mac للحصول على عنوان قابل للمسح عبر QR."
+  },
+  "manage": {
+    "title": "الخوادم",
+    "addServer": "إضافة خادم",
+    "addServerHint": "اتصل بنسخة tb-streamer",
+    "empty": "لم تتم إضافة أي خوادم بعد."
+  },
+  "filter": {
+    "title": "عوامل التصفية",
+    "filterSort": "تصفية وفرز",
+    "sortTitle": "فرز",
+    "view": "العرض",
+    "sortBy": "الفرز حسب",
+    "order": "الترتيب",
+    "status": "الحالة",
+    "servers": "الخوادم",
+    "all": "الكل",
+    "none": "بلا",
+    "resetDefaults": "إعادة التعيين للافتراضي",
+    "close": "✕",
+    "editOrder": "تعديل الترتيب",
+    "lockOrder": "قفل الترتيب"
+  },
+  "displayedServers": {
+    "all": "الكل",
+    "latestOnly": "الأحدث فقط",
+    "none": "بلا"
+  },
+  "newSessionPicker": {
+    "title": "بدء سيشن على"
+  },
+  "addAction": {
+    "title": "تفضيل عرض الخادم الجديد",
+    "subtitle": "كيف ينبغي تحديث الخوادم المعروضة بعد هذه الإضافة؟",
+    "rememberChoice": "تذكّر هذا الاختيار"
+  },
+  "statusModal": {
+    "title": "حالة الخوادم",
+    "close": "✕",
+    "menuEdit": "تعديل",
+    "menuRefresh": "تحديث",
+    "menuDelete": "حذف"
+  },
   "error": {
     "label": "الخادم غير متاح",
     "subtitle": "تعذّر الاتصال بـ {{server}}. تحقق من أن الخادم يعمل وأن الشبكة متاحة.",
@@ -14,7 +81,7 @@
     "collapse": "إخفاء تفاصيل الخطأ"
   },
   "indexing": {
-    "label": "جارٍ الفحص وفهرسة المحادثات…",
-    "subtitle": "يقوم الخادم بالإحماء وبناء فهرس المحادثات للمرة الأولى. يحدث هذا مرة واحدة فقط — ستظهر السجلات فور الانتهاء."
+    "label": "جارٍ فحص وفهرسة المحادثات…",
+    "subtitle": "يقوم خادمك بالإحماء وبناء فهرس المحادثات للمرة الأولى. يحدث هذا مرة واحدة فقط — سيظهر السجل فور أن يصبح جاهزًا."
   }
 }

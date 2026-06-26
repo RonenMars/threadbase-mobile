@@ -12,9 +12,9 @@
     "title": "Threadbase"
   },
   "quickAccess": {
-    "newSessionHere": "Новый сеанс здесь",
+    "newSessionHere": "Новая сессия здесь",
     "browseDirectory": "Просмотреть директорию",
-    "openSession": "Открыть сеанс",
+    "openSession": "Открыть сессию",
     "unpinFromFavorites": "Открепить из избранного",
     "pinToFavorites": "Закрепить в избранном",
     "cancel": "Отмена",
@@ -37,7 +37,7 @@
     "lastActivity": "ПОСЛЕДНЯЯ АКТИВНОСТЬ"
   },
   "session": {
-    "active": "Активен",
+    "active": "Активна",
     "gotIt": "Понятно"
   }
 }

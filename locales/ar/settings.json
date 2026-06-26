@@ -1,10 +1,95 @@
 {
-  "title": "الإعدادات",
-  "theme": {
-    "label": "المظهر",
-    "light": "فاتح",
+  "header": {
+    "title": "الإعدادات"
+  },
+  "section": {
+    "appearance": "المظهر",
+    "servers": "الخوادم",
+    "notifications": "الإشعارات",
+    "permissions": "الأذونات",
+    "about": "حول",
+    "displayedServers": "الخوادم المعروضة",
+    "history": "السجل",
+    "help": "المساعدة",
+    "language": "اللغة",
+    "session": "السيشن"
+  },
+  "session": {
+    "terminalView": "عرض الطرفية",
+    "terminalViewNote": "أظهر مخرجات الطرفية الخام بدلًا من فقاعات الدردشة للسيشنات المباشرة."
+  },
+  "permissions": {
+    "camera": "الكاميرا",
+    "cameraDesc": "مسح رمز QR للاقتران بالخوادم",
+    "microphone": "الميكروفون",
+    "microphoneDesc": "الإملاء الصوتي للبرومبتات",
+    "photos": "الصور",
+    "photosDesc": "إرفاق صور من مكتبتك",
+    "notifications": "الإشعارات",
+    "notificationsDesc": "تنبيهات لأحداث السيشن",
+    "statusGranted": "مسموح",
+    "statusDenied": "مرفوض",
+    "statusUndetermined": "لم يُطلب بعد",
+    "actionAllow": "السماح",
+    "actionManage": "إدارة"
+  },
+  "appearance": {
+    "theme": "السمة",
     "dark": "داكن",
-    "system": "النظام"
+    "light": "فاتح",
+    "system": "النظام",
+    "layout": "التخطيط",
+    "layoutTree": "شجرة",
+    "layoutHub": "محور",
+    "layoutClassic": "كلاسيكي"
+  },
+  "notifications": {
+    "whenAddingServer": "عند إضافة خادم جديد",
+    "waitingForInput": "في انتظار الإدخال",
+    "sessionCompleted": "اكتمل السيشن",
+    "sessionFailed": "فشل السيشن",
+    "diffReady": "diff جاهز",
+    "showBadgeCount": "إظهار عدّاد الشارة",
+    "quietHours": "ساعات الهدوء",
+    "sendTest": "إرسال إشعار تجريبي"
+  },
+  "notification": {
+    "testTitle": "إشعار تجريبي",
+    "testBody": "إشعارات Threadbase تعمل!"
+  },
+  "addServer": {
+    "selectedAction": "الإجراء المحدد عند الإنشاء",
+    "resetAction": "إعادة التعيين للسؤال في كل مرة"
+  },
+  "history": {
+    "messagePreview": "معاينة الرسالة",
+    "first": "الأولى",
+    "last": "الأخيرة"
+  },
+  "about": {
+    "subtitle": "مركز التحكم بوكلاء الذكاء الاصطناعي"
+  },
+  "help": {
+    "restartOnboarding": "إعادة تشغيل الإعداد التمهيدي",
+    "helpSupport": "المساعدة والدعم"
+  },
+  "servers": {
+    "scanQr": "امسح QR لإضافة خادم"
+  },
+  "sessionNaming": {
+    "title": "تسمية السيشن",
+    "autoNameFromMessage": "تسمية تلقائية من أول رسالة",
+    "aiGeneratedNames": "أسماء سيشن مُولّدة بالذكاء الاصطناعي",
+    "askOnCreateNote": "أظهر مطالبة لتسمية السيشن عند بدء واحد جديد.",
+    "askOnExitNote": "اقترح تسمية السيشن عند مغادرته إن لم تتم تسميته بعد. يُعطَّل عند إيقاف مطالبة الإنشاء.",
+    "autoNameNote": "عيّن اسم السيشن من أول كلمات رسالتك الأولى. بلا ذكاء اصطناعي، وبلا توكنات.",
+    "aiGeneratedNote": "استخدم نموذج ذكاء اصطناعي لإنشاء اسم ذي معنى. يستهلك توكنات من مفتاح API المُهيّأ لديك."
+  },
+  "quickAccess": {
+    "title": "الوصول السريع",
+    "favorites": "المفضلة",
+    "recentSessions": "السيشنات الأخيرة",
+    "popularProjects": "المشاريع الشائعة"
   },
   "language": {
     "label": "اللغة",
@@ -16,32 +101,26 @@
     "restartMessage": "يتطلب التبديل بين لغات RTL و LTR إعادة تشغيل التطبيق لتطبيق تغييرات التخطيط.",
     "restartNow": "أعد التشغيل الآن"
   },
-  "notifications": {
-    "label": "الإشعارات",
-    "enable": "تمكين الإشعارات"
-  },
-  "section": {
-    "permissions": "الأذونات"
-  },
-  "permissions": {
-    "camera": "الكاميرا",
-    "cameraDesc": "مسح رمز QR للاقتران بالخوادم",
-    "microphone": "الميكروفون",
-    "microphoneDesc": "الإملاء الصوتي للمطالبات",
-    "photos": "الصور",
-    "photosDesc": "إرفاق صور من مكتبتك",
-    "notifications": "الإشعارات",
-    "notificationsDesc": "تنبيهات لأحداث الجلسة",
-    "statusGranted": "مسموح",
-    "statusDenied": "مرفوض",
-    "statusUndetermined": "لم يُسأل",
-    "actionAllow": "السماح",
-    "actionManage": "إدارة"
-  },
   "conversationRows": {
+    "title": "صفوف المحادثة",
+    "density": "الكثافة",
+    "pathDisplay": "عرض المسار",
+    "serverIndicator": "مؤشر الخادم",
+    "serverChipStyle": "نمط رقاقة الخادم",
+    "comfortable": "مريحة",
+    "compact": "مدمجة",
+    "smart": "ذكية",
+    "full": "كامل",
+    "lastSegment": "الأخير",
+    "auto": "تلقائي",
+    "always": "دائمًا",
+    "never": "أبدًا",
+    "label": "تسمية",
+    "letter": "حرف",
     "messagePreview": "معاينة الرسالة",
     "previewFirst": "الأولى",
     "previewLast": "الأخيرة",
     "previewOff": "إيقاف"
-  }
+  },
+  "restartTour": "إعادة تشغيل جولة التطبيق"
 }

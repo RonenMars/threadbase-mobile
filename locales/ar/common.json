@@ -18,21 +18,25 @@
   },
   "error": {
     "generic": "حدث خطأ ما",
-    "loadFailed": "فشل التحميل",
+    "loadFailed": "تعذّر التحميل",
     "connectionFailed": "فشل الاتصال"
   },
   "state": {
     "loading": "جارٍ التحميل…",
-    "empty": "لا يوجد شيء هنا",
+    "empty": "لا يوجد شيء هنا بعد",
     "noResults": "لا توجد نتائج"
   },
   "search": {
     "placeholder": "بحث…",
     "clear": "مسح البحث"
   },
+  "nav": {
+    "top": "↑ الأعلى",
+    "bottom": "↓ الأسفل",
+    "backArrow": "‹ رجوع"
+  },
   "time": {
     "now": "الآن",
-    "today": "اليوم",
     "yesterday": "أمس"
   }
 }

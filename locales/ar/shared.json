@@ -1,5 +1,43 @@
 {
-  "ok": "موافق",
-  "yes": "نعم",
-  "no": "لا"
+  "commands": {
+    "title": "الأوامر",
+    "empty": "لا توجد أوامر تطابق \"/{{query}}\"",
+    "argsBadge": "وسائط",
+    "run": "تشغيل /{{command}}"
+  },
+  "banner": {
+    "moreInfo": "مزيد من المعلومات"
+  },
+  "app": {
+    "title": "Threadbase"
+  },
+  "quickAccess": {
+    "newSessionHere": "سيشن جديد هنا",
+    "browseDirectory": "تصفّح المجلد",
+    "openSession": "فتح السيشن",
+    "unpinFromFavorites": "إلغاء التثبيت من المفضلة",
+    "pinToFavorites": "تثبيت في المفضلة",
+    "cancel": "إلغاء",
+    "loadMore": "+ {{count}} إضافية",
+    "emptyFavorites": "لا توجد مفضلة بعد — اضغط مطوّلًا على عنصر لتثبيته.",
+    "pairServer": "أقرِن خادمًا لرؤية {{tab}}.",
+    "loading": "جارٍ التحميل…",
+    "loadFailed": "تعذّر التحميل — اضغط لإعادة المحاولة.",
+    "nothing": "لا شيء بعد.",
+    "favorites": "المفضلة",
+    "popular": "الشائعة",
+    "recents": "الأخيرة"
+  },
+  "conversationInfo": {
+    "title": "معلومات المحادثة",
+    "id": "المعرّف",
+    "titleLabel": "العنوان",
+    "projectPath": "مسار المشروع",
+    "messageCount": "عدد الرسائل",
+    "lastActivity": "آخر نشاط"
+  },
+  "session": {
+    "active": "نشط",
+    "gotIt": "فهمت"
+  }
 }

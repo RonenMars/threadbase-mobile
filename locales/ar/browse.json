@@ -1,6 +1,13 @@
 {
-  "title": "تصفح",
-  "search": "بحث",
-  "recent": "الأخير",
-  "favorites": "المفضلة"
+  "nav": {
+    "back": "‹ رجوع",
+    "recentDirs": "المجلدات الأخيرة ({{count}})",
+    "newFolder": "مجلد جديد",
+    "create": "إنشاء",
+    "startSession": "ابدأ سيشن هنا"
+  },
+  "error": {
+    "loadFailed": "فشل تحميل المحادثات",
+    "retryHint": "اسحب للأسفل لإعادة المحاولة"
+  }
 }

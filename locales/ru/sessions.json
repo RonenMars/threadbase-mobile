@@ -1,10 +1,10 @@
 {
   "header": {
-    "title": "Сеансы",
+    "title": "Сессии",
     "history": "История"
   },
   "search": {
-    "placeholder": "Поиск сеансов и бесед…"
+    "placeholder": "Поиск сессий и бесед…"
   },
   "filter": {
     "label": "Фильтр и сортировка",
@@ -21,34 +21,38 @@
     "az": "А–Я"
   },
   "list": {
-    "sessionCount_one": "{{count}} сеанс",
-    "sessionCount_other": "{{count}} сеансов",
-    "empty": "Нет сеансов",
-    "emptySubtitle": "Запустите сеанс Claude Code,\nчтобы увидеть его здесь",
+    "sessionCount_one": "{{count}} сессия",
+    "sessionCount_few": "{{count}} сессии",
+    "sessionCount_many": "{{count}} сессий",
+    "sessionCount_other": "{{count}} сессий",
+    "empty": "Нет сессий",
+    "emptySubtitle": "Запустите сессию Claude Code,\nчтобы увидеть её здесь",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
     "emptyProjects": "Проектов пока нет"
   },
   "card": {
     "status": {
-      "active": "Активен",
+      "active": "Активна",
       "waiting": "Ожидание ввода",
-      "completed": "Сеанс завершён",
-      "failed": "Ошибка сеанса",
+      "completed": "Сессия завершена",
+      "failed": "Ошибка сессии",
       "starting": "Запуск…",
       "stopping": "Остановка…"
     },
     "connectedTo": "{{server}}",
-    "copyId": "Копировать ID сеанса",
+    "copyId": "Копировать ID сессии",
     "sendInput": "Отправить ввод",
-    "cancel": "Отменить сеанс",
-    "remove": "Удалить сеанс",
+    "cancel": "Отменить сессию",
+    "remove": "Удалить сессию",
     "viewError": "Показать ошибку подключения",
-    "prompts_one": "{{count}} запрос",
-    "prompts_other": "{{count}} запросов"
+    "prompts_one": "{{count}} промпт",
+    "prompts_few": "{{count}} промпта",
+    "prompts_many": "{{count}} промптов",
+    "prompts_other": "{{count}} промптов"
   },
   "takeover": {
-    "prompt": "Другой клиент управляет этим сеансом",
+    "prompt": "Другой клиент управляет этой сессией",
     "takeControl": "Взять управление",
     "dismiss": "Закрыть"
   },
@@ -59,37 +63,47 @@
   },
   "hub": {
     "seeAll_one": "Показать {{count}} беседу →",
-    "seeAll_other": "Показать все {{count}} беседы →",
+    "seeAll_few": "Показать {{count}} беседы →",
+    "seeAll_many": "Показать все {{count}} бесед →",
+    "seeAll_other": "Показать все {{count}} бесед →",
     "msgs_one": "{{count}} сообщение",
+    "msgs_few": "{{count}} сообщения",
+    "msgs_many": "{{count}} сообщений",
     "msgs_other": "{{count}} сообщений",
-    "prompts_one": "{{count}} запрос",
-    "prompts_other": "{{count}} запросов"
+    "prompts_one": "{{count}} промпт",
+    "prompts_few": "{{count}} промпта",
+    "prompts_many": "{{count}} промптов",
+    "prompts_other": "{{count}} промптов"
   },
   "loading": {
-    "title": "Загрузка сеансов",
+    "title": "Загрузка сессий",
     "progress": "{{loaded}} из {{total}}",
     "fetchingOne": "Получение",
     "fetchingN": "Получение {{count}} серверов параллельно",
-    "sessionsLabel": "Сеансы",
+    "sessionsLabel": "Сессии",
     "conversationsLabel": "Беседы",
     "done": "Готово"
   },
   "live": {
     "headerLive_one": "ОНЛАЙН · {{count}}",
+    "headerLive_few": "ОНЛАЙН · {{count}}",
+    "headerLive_many": "ОНЛАЙН · {{count}}",
     "headerLive_other": "ОНЛАЙН · {{count}}",
     "headerIdle_one": "БЕЗ АКТИВНОСТИ · {{count}}",
+    "headerIdle_few": "БЕЗ АКТИВНОСТИ · {{count}}",
+    "headerIdle_many": "БЕЗ АКТИВНОСТИ · {{count}}",
     "headerIdle_other": "БЕЗ АКТИВНОСТИ · {{count}}"
   },
   "rename": {
-    "title": "Переименовать сеанс",
-    "placeholder": "Название сеанса",
+    "title": "Переименовать сессию",
+    "placeholder": "Название сессии",
     "cancel": "Отмена",
     "save": "Сохранить"
   },
   "preview": {
-    "liveUnavailable": "Предпросмотр активного сеанса недоступен — откройте сеанс, чтобы увидеть терминал в реальном времени.",
+    "liveUnavailable": "Предпросмотр активной сессии недоступен — откройте сессию, чтобы увидеть терминал в реальном времени.",
     "noMessages": "Сообщений пока нет.",
-    "openSession": "Открыть сеанс",
+    "openSession": "Открыть сессию",
     "openConversation": "Открыть беседу",
     "pin": "Закрепить",
     "unpin": "Открепить"
@@ -101,5 +115,12 @@
   },
   "fab": {
     "noServerHint": "Добавьте сервер в Настройках, чтобы начать"
+  },
+  "noServer": {
+    "title": "Подключите ваш первый сервер",
+    "desc": "Threadbase подключается к запущенному экземпляру tb-streamer. Добавьте URL сервера и API-ключ, чтобы подключиться к вашему серверу.",
+    "repoLink": "github.com/RonenMars/threadbase-streamer",
+    "repoUrl": "https://github.com/RonenMars/threadbase-streamer",
+    "cta": "Добавить сервер"
   }
 }

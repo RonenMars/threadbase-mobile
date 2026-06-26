@@ -1,14 +1,43 @@
 {
-  "title": "المحادثات",
-  "new": "محادثة جديدة",
-  "messages": "الرسائل",
-  "empty": "لا توجد محادثات",
+  "header": {
+    "title": "المحادثة",
+    "containsImage": "📎 تحتوي على صورة"
+  },
+  "list": {
+    "loadingMore": "جارٍ تحميل المزيد…",
+    "empty": "لا توجد رسائل في هذه المحادثة.",
+    "msgs_zero": "لا رسائل",
+    "msgs_one": "رسالة واحدة",
+    "msgs_two": "رسالتان",
+    "msgs_few": "{{count}} رسائل",
+    "msgs_many": "{{count}} رسالة",
+    "msgs_other": "{{count}} رسالة",
+    "tokens": "{{count}}k توكن"
+  },
   "error": {
+    "loadFailed": "تعذّر تحميل المحادثة",
     "notFound": "لم تعد هذه المحادثة متاحة على الخادم."
   },
   "unavailable": {
     "pathMissing": "تم نقل مجلد المشروع الخاص بهذه المحادثة أو حذفه. يمكنك قراءة السجل، لكن لا يمكن استئنافها.",
-    "worktreeRemoved": "تم تشغيل هذه المحادثة في worktree الخاص بـ git لم يعد موجودًا. يمكنك قراءة السجل، لكن لا يمكن استئنافها.",
+    "worktreeRemoved": "جرى تشغيل هذه المحادثة في شجرة عمل (worktree) خاصة بـ git لم تعد موجودة. يمكنك قراءة السجل، لكن لا يمكن استئنافها.",
     "cannotResume": "لا يمكن الاستئناف"
+  },
+  "action": {
+    "export": "تصدير",
+    "copyPatch": "نسخ الرقعة",
+    "showAllLines": "عرض كل الأسطر ({{count}})",
+    "copyCode": "نسخ",
+    "copiedCode": "تم النسخ",
+    "scrollToBottom": "التمرير للأسفل"
+  },
+  "message": {
+    "code": "كود",
+    "tokens": "{{count}} توكن",
+    "errorBadge": "خطأ"
+  },
+  "thinking": {
+    "label": "الاستدلال",
+    "redacted": "تم حجب الاستدلال"
   }
 }

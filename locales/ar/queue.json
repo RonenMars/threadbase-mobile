@@ -1,5 +1,20 @@
 {
-  "title": "قائمة الانتظار",
-  "empty": "قائمة الانتظار فارغة",
-  "processing": "جارٍ المعالجة"
+  "planPreview": {
+    "title": "معاينة الخطة",
+    "autoProceed": "متابعة تلقائية خلال {{count}} ث",
+    "proceed": "▶ متابعة",
+    "editPrompt": "تعديل البرومبت",
+    "sendEdit": "إرسال التعديل",
+    "cancel": "✕ إلغاء"
+  },
+  "promptQueue": {
+    "title": "قائمة انتظار البرومبتات",
+    "pending_zero": "{{count}} قيد الانتظار",
+    "pending_one": "{{count}} قيد الانتظار",
+    "pending_two": "{{count}} قيد الانتظار",
+    "pending_few": "{{count}} قيد الانتظار",
+    "pending_many": "{{count}} قيد الانتظار",
+    "pending_other": "{{count}} قيد الانتظار",
+    "remove": "✕"
+  }
 }

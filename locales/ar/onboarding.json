@@ -1,7 +1,85 @@
 {
-  "welcome": "مرحبًا",
-  "getStarted": "ابدأ",
-  "skip": "تخطي",
-  "next": "التالي",
-  "finish": "إنهاء"
+  "welcome": {
+    "title": "مرحبًا بك في Threadbase",
+    "subtitle": "اتصل بسيشنات Claude Code الخاصة بك",
+    "eyebrow": "// AMBIENT CODING",
+    "headline": "اسحب خيطًا.",
+    "headlineAccent": "وشاهده يُنسَج.",
+    "body": "جهاز تحكم عن بُعد لـ Claude Code، على الجهاز الذي تحمله فعلًا.",
+    "cta": "ابدأ المصافحة"
+  },
+  "addServer": {
+    "title": "إضافة خادم",
+    "subtitle": "أدخل عنوان خادم Threadbase الخاص بك للبدء"
+  },
+  "browse": {
+    "title": "تصفّح",
+    "empty": "لا توجد ملفات",
+    "emptySubtitle": "هذا المجلد فارغ"
+  },
+  "conversation": {
+    "title": "المحادثة",
+    "empty": "لا توجد رسائل",
+    "emptySubtitle": "لا يوجد سجل محادثات بعد"
+  },
+  "shell": {
+    "back": "رجوع",
+    "skip": "تخطي"
+  },
+  "serverName": {
+    "eyebrow": "> 02 / الاسم",
+    "headline": "سمِّ خادمك.",
+    "body": "اختياري. اختر تسمية تتعرّف عليها في المحور — مثل \"ماك العمل\" أو \"خادم المنزل\". يمكنك تغييرها لاحقًا في الإعدادات.",
+    "fieldLabel": "اسم الخادم",
+    "placeholder": "مثل: ماك العمل",
+    "cta": "متابعة",
+    "skip": "تخطّي الآن"
+  },
+  "connect": {
+    "eyebrow": "> 02 / الإقران",
+    "headline": "اربط بيئة تشغيل.",
+    "modeBlurb": "اختر كيف تريد تسليم الخادم مفاتيحه.",
+    "scanQr": "مسح QR",
+    "scanQrBody": "شغّل tb pair على خادمك لطباعة رمز QR. الأسرع، وبلا كتابة.",
+    "pasteCredentials": "الكتابة / اللصق يدويًا",
+    "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق العنوان والتوكن.",
+    "qrEyebrow": "> 02 / الإقران · QR",
+    "qrHeadline": "امسح للإقران.",
+    "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
+    "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
+    "openCamera": "فتح الكاميرا",
+    "pairMyLaptop": "إقران حاسوبي المحمول",
+    "ready": "✓ جاهز",
+    "footnote": "// على سطح مكتبك، شغّل tb pair لطباعة توكن."
+  },
+  "tour": {
+    "eyebrow": "> 04 / الجولة",
+    "eyebrowProgress": "> 04 / الجولة · {{current}}/{{total}}",
+    "dropIn": "أدخلني",
+    "nextConcept": "المفهوم التالي"
+  },
+  "valueProp": {
+    "eyebrow": "// المظهر",
+    "eyebrowWhy": "> 01 / لماذا",
+    "headline": "حاسوبك المحمول هو بيئة التشغيل. هاتفك هو قمرة القيادة.",
+    "headlineMain": "حاسوبك المحمول هو بيئة التشغيل.",
+    "headlineMuted": "هاتفك هو قمرة القيادة.",
+    "headlineAccent": "vibe.",
+    "body": "يُبقي Threadbase وكلاءك أحياءً على الجهاز الذي يملك المعالج الرسومي والمفاتيح وشجرة الملفات — ويمنحك سطحًا هادئًا لقيادتهم من أي مكان.",
+    "cta": "إقران حاسوبي المحمول",
+    "labelYou": "أنت",
+    "labelPrompts": "برومبتات ▸",
+    "labelStdout": "◂ stdout",
+    "labelClaudeRun": "claude run"
+  },
+  "notifications": {
+    "allowTitle": "إشعارات الدفع",
+    "body": "سننبّهك عندما ينتهي سيشن، أو يواجه خطأ، أو يحتاج قرارًا سريعًا — حتى لا تضطر لإبقاء التطبيق مفتوحًا.",
+    "continue": "متابعة"
+  },
+  "theme": {
+    "eyebrow": "// المظهر",
+    "headlineLine1": "اختر",
+    "body": "اختر سمة ألوان. يمكنك دائمًا تغييرها لاحقًا في الإعدادات."
+  }
 }
