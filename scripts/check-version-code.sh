@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-# check-version-code.sh — verify app.json versionCode is higher than the
-# latest build in Google Play Internal Testing, and auto-bump if it isn't.
+# check-version-code.sh — verify app.json versionCode + versionName are ahead
+# of the latest build in Google Play, and auto-bump if they aren't.
 #
-# Mirrors check-build-number.sh (iOS) but queries the Google Play Developer
-# API instead of App Store Connect. Uses a Google service-account JWT
-# (RS256) to mint a short-lived OAuth2 access token.
+# Comparison rules (mirrors check-build-number.sh for iOS):
+#   ciVersionCode    = app.json expo.android.versionCode
+#   ciVersionName    = app.json expo.version  (and build.gradle versionName)
+#   appVersionCode   = highest versionCode seen across all Play tracks + bundles
+#   appVersionName   = versionName of the bundle with the highest versionCode
 #
-# Requires GOOGLE_APPLICATION_CREDENTIALS to be set (or sourced from
-# .env.signing.android, which doesn't set it directly — so you must also run
-# fetch-play-credentials.sh first).
+#   resolvedCode     = max(ciVersionCode, appVersionCode) + 1
+#   resolvedName     = semver-max(ciVersionName, appVersionName)
+#
+#   Updates app.json + build.gradle in the working tree; exits 2 if changed.
+#
+# Requires GOOGLE_APPLICATION_CREDENTIALS to be set.
 #
 # Usage:
 #   GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json \
@@ -26,12 +31,14 @@ command -v node >/dev/null || { echo "node required" >&2; exit 1; }
 
 PACKAGE_NAME=$(jq -r '.expo.android.package' app.json)
 LOCAL_CODE=$(jq -r '.expo.android.versionCode' app.json)
+LOCAL_NAME=$(jq -r '.expo.version' app.json)
 
 [[ -n "$PACKAGE_NAME" && "$PACKAGE_NAME" != "null" ]] || { echo "expo.android.package missing in app.json" >&2; exit 1; }
 [[ -n "$LOCAL_CODE"   && "$LOCAL_CODE"   != "null" ]] || { echo "expo.android.versionCode missing in app.json" >&2; exit 1; }
+[[ -n "$LOCAL_NAME"   && "$LOCAL_NAME"   != "null" ]] || { echo "expo.version missing in app.json" >&2; exit 1; }
 
-echo "▸ Checking Play versionCode for $PACKAGE_NAME"
-echo "  local app.json versionCode: $LOCAL_CODE"
+echo "▸ Checking Play versionCode + versionName for $PACKAGE_NAME"
+echo "  local app.json versionCode: $LOCAL_CODE  versionName: $LOCAL_NAME"
 
 # Mint an OAuth2 access token from the service-account JSON using Node
 # (pure stdlib — no googleapis package needed).
@@ -131,6 +138,18 @@ function request(method, path, token, payload) {
   });
 }
 
+function semverGt(a, b) {
+  const pa = (a || '0.0.0').split('.').map(Number);
+  const pb = (b || '0.0.0').split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] || 0, nb = pb[i] || 0;
+    if (na > nb) return true;
+    if (na < nb) return false;
+  }
+  return false;
+}
+
 (async () => {
   const pkg   = process.argv[2];
   const token = process.argv[3];
@@ -139,8 +158,10 @@ function request(method, path, token, payload) {
 
   const base = `/androidpublisher/v3/applications/${pkg}`;
   let maxCode = 0;
+  // Track versionName of the bundle with the highest versionCode.
+  let maxCodeName = '';
 
-  // Source 1: edit-less tracks endpoint — live published state.
+  // Source 1: edit-less tracks endpoint — live published state (gives versionCodes only).
   const tracks = await request('GET', `${base}/tracks`, token, null);
   if (tracks.error && !tracks.__notFound) {
     process.stderr.write('tracks.list error: ' + JSON.stringify(tracks.error) + '\n');
@@ -151,13 +172,14 @@ function request(method, path, token, payload) {
       for (const vc of (release.versionCodes || [])) {
         const n = parseInt(vc, 10);
         if (n > maxCode) maxCode = n;
+        // versionName not available from tracks endpoint; resolved via bundles below.
       }
     }
   }
 
   // Source 2: open a throwaway edit and list bundles — catches versionCodes
-  // that were uploaded in a recently-committed edit but haven't propagated
-  // to the tracks endpoint yet (eventual consistency window).
+  // uploaded in recently-committed edits (eventual consistency) AND gives us
+  // versionName per bundle.
   let editId = null;
   try {
     const edit = await request('POST', `${base}/edits`, token, {});
@@ -168,7 +190,12 @@ function request(method, path, token, payload) {
     if (!bundles.error) {
       for (const b of (bundles.bundles || [])) {
         const n = parseInt(b.versionCode, 10);
-        if (n > maxCode) maxCode = n;
+        if (n > maxCode) {
+          maxCode = n;
+          maxCodeName = b.versionName || '';
+        } else if (n === maxCode && !maxCodeName && b.versionName) {
+          maxCodeName = b.versionName;
+        }
       }
     }
   } catch(e) {
@@ -179,7 +206,8 @@ function request(method, path, token, payload) {
     }
   }
 
-  process.stdout.write(String(maxCode));
+  // Output: "<maxCode>\t<maxCodeName>" — name may be empty if no bundles found.
+  process.stdout.write(String(maxCode) + '\t' + maxCodeName);
 })().catch(e => {
   const offline = e.message.includes('ENOTFOUND') || e.message.includes('ECONNREFUSED') || e.message.includes('ETIMEDOUT');
   process.stderr.write(e.message + '\n');
@@ -188,62 +216,108 @@ function request(method, path, token, payload) {
 NODEJS
 
 set +e
-REMOTE_CODE=$(node "$_tmp_query" "$PACKAGE_NAME" "$ACCESS_TOKEN")
+REMOTE_RAW=$(node "$_tmp_query" "$PACKAGE_NAME" "$ACCESS_TOKEN")
 _query_exit=$?
 set -e
 rm -f "$_tmp_query"
 
 if (( _query_exit == 3 )); then
-  echo "  ⚠ Play API unreachable — skipping remote versionCode check, proceeding with local ($LOCAL_CODE)" >&2
+  echo "  ⚠ Play API unreachable — skipping remote version check, proceeding with local (versionCode $LOCAL_CODE, versionName $LOCAL_NAME)" >&2
   exit 0
 fi
 
-echo "  latest Play versionCode (all tracks): $REMOTE_CODE"
+REMOTE_CODE=$(echo "$REMOTE_RAW" | cut -f1)
+REMOTE_NAME=$(echo "$REMOTE_RAW" | cut -f2)
 
+echo "  latest Play versionCode (all tracks): $REMOTE_CODE  versionName: ${REMOTE_NAME:-<unknown>}"
+
+# ── Resolve versionName: semver-max(ciVersionName, appVersionName) ──────────
+RESOLVED_NAME=$(node -e "
+function semverGt(a, b) {
+  const pa = (a || '0.0.0').split('.').map(Number);
+  const pb = (b || '0.0.0').split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] || 0, nb = pb[i] || 0;
+    if (na > nb) return true;
+    if (na < nb) return false;
+  }
+  return false;
+}
+const ci = process.argv[1], app = process.argv[2] || '0.0.0';
+console.log(semverGt(app, ci) ? app : ci);
+" "$LOCAL_NAME" "$REMOTE_NAME")
+
+# ── Resolve versionCode: max(ci, remote) + 1 ────────────────────────────────
 if (( LOCAL_CODE > REMOTE_CODE )); then
   GAP=$(( LOCAL_CODE - REMOTE_CODE ))
   if (( GAP == 1 )); then
-    echo "  ✓ app.json versionCode ($LOCAL_CODE) is one ahead of Play ($REMOTE_CODE) — no bump needed"
+    echo "  ✓ app.json versionCode ($LOCAL_CODE) is one ahead of Play ($REMOTE_CODE) — versionCode OK"
   else
-    echo "  ✓ app.json versionCode ($LOCAL_CODE) is $GAP ahead of Play ($REMOTE_CODE) — no bump needed"
-    echo "    (gap > 1: prior local bumps that never shipped, or remote query missed builds)"
+    echo "  ✓ app.json versionCode ($LOCAL_CODE) is $GAP ahead of Play ($REMOTE_CODE) — versionCode OK"
   fi
+  NEXT_CODE=$LOCAL_CODE
+  CODE_CHANGED=0
+else
+  NEXT_CODE=$(( REMOTE_CODE + 1 ))
+  CODE_CHANGED=1
+  DRIFT=$(( REMOTE_CODE - LOCAL_CODE ))
+  if (( DRIFT >= 2 )); then
+    echo
+    echo "  ⚠ Suspicious versionCode drift: Play is at $REMOTE_CODE, local is at $LOCAL_CODE (gap $DRIFT)"
+    echo "    Check: did you run \`git pull --ff-only\` recently?"
+    echo
+  fi
+fi
+
+NAME_CHANGED=0
+[[ "$RESOLVED_NAME" != "$LOCAL_NAME" ]] && NAME_CHANGED=1
+
+if (( CODE_CHANGED == 0 && NAME_CHANGED == 0 )); then
+  echo "  ✓ app.json versionCode ($LOCAL_CODE) and versionName ($LOCAL_NAME) are already correct — no bump needed"
   exit 0
 fi
 
-NEXT_CODE=$(( REMOTE_CODE + 1 ))
-DRIFT=$(( REMOTE_CODE - LOCAL_CODE ))
-
 if (( CHECK_ONLY )); then
-  echo "  ✗ app.json versionCode ($LOCAL_CODE) must be > $REMOTE_CODE (latest in Play)" >&2
-  echo "    Bump with: jq '.expo.android.versionCode = $NEXT_CODE' app.json > app.json.tmp && mv app.json.tmp app.json" >&2
+  (( CODE_CHANGED )) && echo "  ✗ versionCode should be $NEXT_CODE (CI: $LOCAL_CODE, Play: $REMOTE_CODE)" >&2
+  (( NAME_CHANGED )) && echo "  ✗ versionName should be $RESOLVED_NAME (CI: $LOCAL_NAME, Play: $REMOTE_NAME)" >&2
   exit 1
 fi
 
-if (( DRIFT >= 2 )); then
-  echo
-  echo "  ⚠ Suspicious versionCode drift: Play is at $REMOTE_CODE, local app.json is at $LOCAL_CODE (gap $DRIFT)"
-  echo "    Check: did you run \`git pull --ff-only\` recently?"
-  echo
-fi
+(( CODE_CHANGED )) && echo "  ⚠ versionCode: $LOCAL_CODE → $NEXT_CODE (Play latest: $REMOTE_CODE)"
+(( NAME_CHANGED )) && echo "  ⚠ versionName: $LOCAL_NAME → $RESOLVED_NAME (Play: ${REMOTE_NAME:-<unknown>})"
 
-echo "  ⚠ app.json versionCode ($LOCAL_CODE) ≤ Play latest ($REMOTE_CODE) — auto-bumping to $NEXT_CODE"
-jq ".expo.android.versionCode = $NEXT_CODE" app.json > app.json.tmp && mv app.json.tmp app.json
-echo "  ✓ app.json updated to versionCode $NEXT_CODE"
+# ── Update app.json ──────────────────────────────────────────────────────────
+jq ".expo.version = \"$RESOLVED_NAME\" | .expo.android.versionCode = $NEXT_CODE" \
+  app.json > app.json.tmp && mv app.json.tmp app.json
+echo "  ✓ app.json updated to versionCode $NEXT_CODE, versionName $RESOLVED_NAME"
 
-# Sync build.gradle to match so both files are committed together.
+# ── Sync build.gradle to match ───────────────────────────────────────────────
 GRADLE_BUILD="android/app/build.gradle"
 if [[ -f "$GRADLE_BUILD" ]]; then
   GRADLE_VC=$(grep -oE 'versionCode [0-9]+' "$GRADLE_BUILD" | grep -oE '[0-9]+')
+  GRADLE_VN=$(grep -oE 'versionName "[^"]+"' "$GRADLE_BUILD" | grep -oE '"[^"]+"' | tr -d '"')
+  UPDATED_GRADLE=0
+  TMP_GRADLE="$GRADLE_BUILD.tmp"
+  cp "$GRADLE_BUILD" "$TMP_GRADLE"
+
   if [[ "$GRADLE_VC" != "$NEXT_CODE" ]]; then
-    # Portable in-place edit (BSD sed wants `-i ''`, GNU sed on CI does not); write
-    # to a temp file and move it back to avoid the `-i` incompatibility entirely.
-    sed "s/versionCode $GRADLE_VC/versionCode $NEXT_CODE/" "$GRADLE_BUILD" > "$GRADLE_BUILD.tmp"
-    mv "$GRADLE_BUILD.tmp" "$GRADLE_BUILD"
-    echo "  ✓ build.gradle synced to versionCode $NEXT_CODE"
+    sed "s/versionCode $GRADLE_VC/versionCode $NEXT_CODE/" "$TMP_GRADLE" > "$TMP_GRADLE.2" && mv "$TMP_GRADLE.2" "$TMP_GRADLE"
+    UPDATED_GRADLE=1
+  fi
+  if [[ -n "$GRADLE_VN" && "$GRADLE_VN" != "$RESOLVED_NAME" ]]; then
+    sed "s/versionName \"$GRADLE_VN\"/versionName \"$RESOLVED_NAME\"/" "$TMP_GRADLE" > "$TMP_GRADLE.2" && mv "$TMP_GRADLE.2" "$TMP_GRADLE"
+    UPDATED_GRADLE=1
+  fi
+
+  if (( UPDATED_GRADLE )); then
+    mv "$TMP_GRADLE" "$GRADLE_BUILD"
+    echo "  ✓ build.gradle synced to versionCode $NEXT_CODE, versionName $RESOLVED_NAME"
+  else
+    rm -f "$TMP_GRADLE"
   fi
 fi
 
-echo "  ✓ app.json + build.gradle updated to versionCode $NEXT_CODE (commit deferred until after successful upload)"
-# Exit 2 signals to ship-android.sh that files were bumped and need committing.
+echo "  ✓ app.json + build.gradle updated (commit deferred until after successful upload)"
+# Exit 2 signals to deploy.yml that files were bumped and need committing.
 exit 2
