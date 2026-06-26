@@ -219,7 +219,8 @@ jobs:
 
   deploy-android:
     name: Ship Android
-    if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
+    needs: [deploy-ios]
+    if: ${{ always() && (inputs.platform == 'android' || inputs.platform == 'all') && (needs.deploy-ios.result == 'success' || needs.deploy-ios.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -273,6 +274,15 @@ jobs:
         run: |
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync app.json version from main (picks up any iOS bump)
+        # When platform=all, iOS may have pushed a version bump to main after this
+        # job checked out. Pull the latest app.json from origin/main so
+        # check-version-code.sh sees the updated expo.version before resolving.
+        if: ${{ inputs.platform == 'all' }}
+        run: |
+          git fetch origin main
+          git checkout origin/main -- app.json
 
       - name: Validate and bump versionCode + versionName (working tree only)
         run: |
