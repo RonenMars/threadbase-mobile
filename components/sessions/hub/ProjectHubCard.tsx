@@ -69,7 +69,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
     if (hasLive) return { color: theme.status.waiting, opacity: 1 }
     if (group.sessions.length > 0) return { color: theme.text.accent, opacity: 0.55 }
     return null
-  }, [group.sessions])
+  }, [group.sessions, theme.status.waiting, theme.text.accent])
 
   // Header content — smart path display + activity summary.
   // `projectName` is just the trailing segment derived from the path, so the
