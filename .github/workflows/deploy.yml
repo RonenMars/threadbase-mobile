@@ -193,7 +193,7 @@ jobs:
             jq ".expo.version = \"${BUMPED_VERSION}\" | .expo.ios.buildNumber = \"${BUMPED_BUILD_NUMBER}\"" \
               app.json > app.json.tmp && mv app.json.tmp app.json
             git add app.json
-            git commit -m "chore(ios): bump to version ${BUMPED_VERSION} build ${BUMPED_BUILD_NUMBER} [skip-ci]"
+            git commit -m "chore(ios): bump build number to ${BUMPED_BUILD_NUMBER} [skip-ci]"
             git push origin HEAD:main
           )
           git worktree remove /tmp/bump-main-ios --force

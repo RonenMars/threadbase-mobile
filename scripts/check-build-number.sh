@@ -106,7 +106,7 @@ function semverGt(a, b) {
     );
 
     if (!data.data || !data.data.length) {
-      console.log('0\t1.0.0\tNONE\t');
+      console.log('0\t0.0.0\tNONE\t');
       return;
     }
 
