@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
 =======
 import { Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
@@ -8,6 +9,9 @@ import { Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
 =======
 import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
 >>>>>>> 2550c31e (fix(keyboard): scroll to last message on keyboard show and increase composer bottom gap)
+=======
+import { Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+>>>>>>> b89b63fb (fix(keyboard): remove unused Platform import and hardcode behavior for both views)
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -229,7 +233,7 @@ export function LiveConversationView({
   }, [thinkingState])
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'height' : undefined} keyboardVerticalOffset={keyboardVerticalOffset}>
+    <KeyboardAvoidingView style={styles.container} behavior="height" keyboardVerticalOffset={keyboardVerticalOffset}>
       <FlashList
         ref={listRef}
         data={allMessages}

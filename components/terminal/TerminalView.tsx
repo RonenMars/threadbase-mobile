@@ -1,6 +1,7 @@
 import React from 'react'
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Alert, Platform } from 'react-native'
 =======
 import { Alert } from 'react-native'
@@ -8,6 +9,9 @@ import { Alert } from 'react-native'
 =======
 import { Alert, Platform } from 'react-native'
 >>>>>>> 56a9c458 (fix(terminal): import Platform in TerminalView)
+=======
+import { Alert } from 'react-native'
+>>>>>>> b89b63fb (fix(keyboard): remove unused Platform import and hardcode behavior for both views)
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -61,7 +65,7 @@ export function TerminalView({ serverId, sessionId, disabled = false, pendingPla
   } = useComposerState({ serverId, sessionId, onSend })
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <TerminalOutput
         lines={lines}
         isStreaming={isStreaming}
