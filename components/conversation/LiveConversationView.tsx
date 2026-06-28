@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
 =======
 import { Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
 >>>>>>> 5f83d0d2 (fix(keyboard): use react-native-keyboard-controller and safe area padding to prevent input hiding)
+=======
+import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+>>>>>>> 2550c31e (fix(keyboard): scroll to last message on keyboard show and increase composer bottom gap)
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
