@@ -1,8 +1,8 @@
 # Remote Dev with Metro Tunnels
 
-When your iOS device isn't on the same Wi-Fi as your Mac, Metro can't serve the
-bundle over LAN. The fix: front Metro with an HTTPS tunnel and tell Expo to use
-it via `EXPO_PACKAGER_PROXY_URL`.
+When your device isn't on the same Wi-Fi as the machine running Metro, the app
+can't reach the bundler over LAN. The fix: front Metro with an HTTPS tunnel and
+tell Expo to use it via `EXPO_PACKAGER_PROXY_URL`.
 
 ---
 
@@ -10,105 +10,188 @@ it via `EXPO_PACKAGER_PROXY_URL`.
 
 Expo reads `EXPO_PACKAGER_PROXY_URL` at startup and advertises that URL to the
 app instead of the local LAN IP. The app fetches its JS bundle through the
-tunnel, so device and Mac no longer need to share a network.
+tunnel, so device and dev machine no longer need to share a network.
+
+**Key constraint:** The tunnel and Metro must run on the **same machine** —
+the tunnel proxies `localhost:8081`, so Metro must be local to it.
+
+**Ordering constraint:** `cloudflared` exits immediately if nothing is listening
+on port 8081 yet. Metro, in turn, needs `EXPO_PACKAGER_PROXY_URL` at startup —
+which requires knowing the tunnel URL first. The solutions differ by platform:
+
+- **macOS/Linux:** `npm run dev:tunnel` uses `scripts/start-cloudflared.sh`,
+  which spins up a temporary HTTP listener to get the URL, then hands off to Metro.
+- **Windows:** Start the named tunnel first (it stays up regardless of Metro),
+  then start Metro in a second terminal with the stable URL.
 
 ---
 
-## Setting up the tunnel
+## Pre-configured named tunnel
 
-### Option A — cloudflared (recommended)
+A named Cloudflare tunnel (`threadbase-dev`) is already configured for this
+project in `.cloudflared/config.yml`. It routes
+`https://<your-tunnel-hostname>` → `localhost:8081`.
 
-Cloudflare Tunnel is free, no account required for a temporary hostname, and
-stable enough for dev use.
-
-```bash
-# one-time install
-brew install cloudflare/cloudflare/cloudflared
-
-# start a quick tunnel pointing at Metro's port
-cloudflared tunnel --url http://localhost:8081
-```
-
-`cloudflared` prints a `https://*.trycloudflare.com` URL — copy it.
-
-> For a **stable hostname** across restarts, configure a named tunnel:
-> `cloudflared tunnel create <name>`, add a `config.yml` ingress rule pointing
-> `localhost:8081`, then run `cloudflared tunnel run <name>`. See
-> <https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/>.
-
-### Option B — ngrok
-
-```bash
-# one-time install
-brew install ngrok/ngrok/ngrok
-
-# authenticate (free account at ngrok.com — one-time)
-ngrok config add-authtoken <your-token>
-
-# expose Metro
-ngrok http 8081
-```
-
-ngrok prints a `https://<id>.ngrok-free.app` URL — copy it.
-
-> **Free-tier caveat:** ngrok tunnels expire after ~2 hours. Restart ngrok and
-> update `EXPO_PACKAGER_PROXY_URL` when it does.
+The credentials file (`~/.cloudflared/<TUNNEL-ID>.json`) lives outside the repo
+and is gitignored — it was generated during one-time setup and must not be
+committed.
 
 ---
 
-## Running with the tunnel
+## Running on Windows (PowerShell)
 
-Start your tunnel first (above), then substitute its URL in the commands below.
+Two terminals required — the tunnel must stay running while Metro is up.
 
-### JS-only reload (dev client already installed, no native changes)
+**Terminal 1 — start the named tunnel:**
 
-```bash
-cd <repo-root>
-EXPO_PACKAGER_PROXY_URL=https://<tunnel-hostname> \
-  npx expo start --lan
+```powershell
+cloudflared tunnel --config .cloudflared\config.yml run
 ```
 
-Open the Threadbase dev-client app on the device and connect to the tunnel URL
-the terminal prints.
+**Terminal 2 — start Metro:**
 
-### Full native rebuild + install over USB
-
-Use this after native module changes, `npm install`, or `app.json` changes, or
-when the dev client isn't on the device yet:
-
-```bash
-cd <repo-root>
-EXPO_PACKAGER_PROXY_URL=https://<tunnel-hostname> \
-  npx expo run:ios --device "<your-device-udid>"
+```powershell
+$env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan
 ```
 
-See [dev-on-physical-device-ios.md](dev-on-physical-device-ios.md) for how to
-find your device's UDID.
+With feature flags:
+
+```powershell
+$env:EXPO_PUBLIC_FEATURE_QUESTIONS="true"; $env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan
+```
+
+After **flipping a feature flag**, add `-c` to clear Metro's transform cache:
+
+```powershell
+$env:EXPO_PUBLIC_FEATURE_QUESTIONS="true"; $env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan -c
+```
+
+---
+
+## Running on macOS/Linux
+
+### Quick tunnel (no account needed, temporary URL)
+
+One-time install — see [install-cloudflared.md](install-cloudflared.md).
+
+```bash
+# JS-only (dev client already on device):
+npm run dev:tunnel
+
+# Full native rebuild + install over USB:
+DEVICE_UDID=<your-device-udid> npm run dev:tunnel:native
+
+# With feature flags:
+EXPO_PUBLIC_FEATURE_QUESTIONS=true npm run dev:tunnel
+
+# Feature flag + clear cache:
+EXPO_PUBLIC_FEATURE_QUESTIONS=true npm run dev:tunnel -- -c
+```
+
+`npm run dev:tunnel` automatically:
+1. Starts a temporary HTTP listener on port 8081.
+2. Launches `cloudflared` and waits for the `*.trycloudflare.com` URL.
+3. Kills the placeholder listener.
+4. Starts Metro with `EXPO_PACKAGER_PROXY_URL` set.
+
+### Named tunnel (stable URL)
+
+```bash
+CLOUDFLARED_TUNNEL_NAME=threadbase-dev npm run dev:tunnel
+
+# With native rebuild:
+CLOUDFLARED_TUNNEL_NAME=threadbase-dev DEVICE_UDID=<udid> npm run dev:tunnel:native
+```
+
+---
+
+## Connecting from the dev-client app
+
+Once Metro is running with the tunnel URL, open the **Threadbase** dev-client
+app on your iOS or Android device and tap **Enter URL manually**. Enter:
+
+```
+exp://<your-tunnel-hostname>
+```
+
+The app will fetch the bundle through the tunnel. No shared Wi-Fi needed.
+
+---
+
+## Named tunnel — one-time setup
+
+The tunnel for this project is already configured. These steps are only needed
+when setting up on a new machine or creating a new tunnel.
+
+### Install and authenticate
+
+See [install-cloudflared.md](install-cloudflared.md) for platform-specific
+install instructions.
+
+```bash
+# Skip if ~/.cloudflared/cert.pem already exists (already authenticated).
+cloudflared tunnel login
+```
+
+### Create the tunnel and route DNS
+
+```bash
+# 1. Create the tunnel — prints a tunnel ID (UUID).
+cloudflared tunnel create threadbase-dev
+
+# 2. Route DNS — always use the UUID, not the name, to avoid routing to
+#    a wrong existing tunnel when multiple tunnels share an account.
+cloudflared tunnel route dns <TUNNEL-ID> <your-tunnel-hostname>
+```
+
+> **Gotcha:** `cloudflared tunnel route dns <name> <hostname>` can silently
+> route to an existing tunnel with a conflicting DNS record instead of the one
+> you just created. Always verify with:
+> ```bash
+> cloudflared tunnel info <TUNNEL-ID>
+> ```
+> and confirm the CNAME in your Cloudflare DNS dashboard points to
+> `<TUNNEL-ID>.cfargotunnel.com`.
+
+### Configure the project
+
+Edit `.cloudflared/config.yml`:
+
+```yaml
+tunnel: <TUNNEL-ID>
+credentials-file: /Users/<your-username>/.cloudflared/<TUNNEL-ID>.json  # macOS/Linux
+# credentials-file: C:\Users\<your-username>\.cloudflared\<TUNNEL-ID>.json  # Windows
+
+ingress:
+  - hostname: <your-tunnel-hostname>
+    service: http://localhost:8081
+  - service: http_status:404
+```
+
+The credentials file is gitignored — never commit it.
+
+---
+
+## Killing Metro
+
+**macOS/Linux:**
+```bash
+npm run kill:metro
+```
+
+**Windows** (`npm run kill:metro` uses a bash script and won't work):
+```powershell
+# Find and kill the process on port 8081:
+$pid = (netstat -ano | Select-String ":8081.*LISTENING" | ForEach-Object { ($_ -split '\s+')[-1] } | Select-Object -First 1)
+if ($pid) { taskkill /PID $pid /F }
+```
 
 ---
 
 ## Feature flags
 
-`EXPO_PUBLIC_*` vars are inlined at bundle time. To enable in-chat question
-cards alongside the tunnel:
-
-```bash
-EXPO_PUBLIC_FEATURE_QUESTIONS=true \
-EXPO_PACKAGER_PROXY_URL=https://<tunnel-hostname> \
-  npx expo run:ios --device "<your-device-udid>"
-```
-
-After **flipping a flag**, add `-c` to clear Metro's transform cache so the new
-value is rebuilt into the bundle:
-
-```bash
-EXPO_PUBLIC_FEATURE_QUESTIONS=true \
-EXPO_PACKAGER_PROXY_URL=https://<tunnel-hostname> \
-  npx expo start --lan -c
-```
-
-A bare `FEATURE_QUESTIONS=true` (no `EXPO_PUBLIC_` prefix) is **not** read by
-the app — the flag stays off.
+`EXPO_PUBLIC_*` vars are inlined at bundle time. A bare `FEATURE_QUESTIONS=true`
+(no `EXPO_PUBLIC_` prefix) is **not** read by the app — the flag stays off.
 
 ---
 
@@ -116,7 +199,11 @@ the app — the flag stays off.
 
 | Symptom | Fix |
 |---|---|
-| App shows "Could not connect to development server" | Confirm the tunnel is running and Metro is up on port 8081 |
-| ngrok URL stopped working mid-session | Free tunnel expired (~2 h); restart ngrok, copy new URL, restart Metro with the new `EXPO_PACKAGER_PROXY_URL` |
-| Bundle loads but feature flag not taking effect | You didn't pass `-c`; Metro served a cached bundle with the old value baked in |
-| `cloudflared` exits immediately | Port 8081 not open yet; start Metro first, then run `cloudflared tunnel --url ...` |
+| `cloudflared not found` | See [install-cloudflared.md](install-cloudflared.md) |
+| `cloudflared` exits immediately (macOS) | Port 8081 not open yet; `npm run dev:tunnel` handles this automatically via a placeholder listener |
+| "Failed to get tunnel URL after 30s" | Port 8081 may already be in use; run `npm run kill:metro` first |
+| App shows "Could not connect to development server" | Confirm the cloudflared process is still running in its terminal |
+| Bundle loads but feature flag not taking effect | Add `-c` to clear Metro's cache (see commands above) |
+| Named tunnel routes to wrong tunnel | `route dns <name>` can pick up an existing record; re-route using the UUID: `cloudflared tunnel route dns <TUNNEL-ID> <hostname>` |
+| Named tunnel: connection refused | Credentials file missing — re-run `cloudflared tunnel login` and `cloudflared tunnel create` |
+| `npm run kill:metro` fails on Windows | Use the PowerShell `netstat`/`taskkill` one-liner above |
