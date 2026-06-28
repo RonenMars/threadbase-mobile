@@ -40,6 +40,31 @@ committed.
 
 ## Running on Windows (PowerShell)
 
+### Option A — tunnel as a Windows service (recommended)
+
+Install once from an **Administrator** PowerShell (right-click Start → Terminal (Admin)):
+
+```powershell
+cloudflared --config "C:\path\to\repo\.cloudflared\config.yml" service install
+```
+
+The service starts automatically on boot — no manual tunnel step needed. Just start Metro:
+
+```powershell
+$env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan
+```
+
+To manage the service:
+
+```powershell
+Start-Service cloudflared    # start manually
+Stop-Service cloudflared     # stop
+Restart-Service cloudflared  # restart after config changes
+sc.exe query cloudflared     # check status
+```
+
+### Option B — run the tunnel manually
+
 Two terminals required — the tunnel must stay running while Metro is up.
 
 **Terminal 1 — start the named tunnel:**
@@ -207,3 +232,5 @@ if ($pid) { taskkill /PID $pid /F }
 | Named tunnel routes to wrong tunnel | `route dns <name>` can pick up an existing record; re-route using the UUID: `cloudflared tunnel route dns <TUNNEL-ID> <hostname>` |
 | Named tunnel: connection refused | Credentials file missing — re-run `cloudflared tunnel login` and `cloudflared tunnel create` |
 | `npm run kill:metro` fails on Windows | Use the PowerShell `netstat`/`taskkill` one-liner above |
+| `cloudflared service install` fails silently | Requires Administrator — open Terminal (Admin) and re-run |
+| Service installed but tunnel not routing | Run `Restart-Service cloudflared` after editing `.cloudflared\config.yml` |
