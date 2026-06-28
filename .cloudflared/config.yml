@@ -1,0 +1,11 @@
+# Cloudflare named tunnel config for Threadbase Metro dev server.
+# Tunnel: threadbase-dev
+# Hostname: https://metro-win.rbv1000.win
+
+tunnel: 48762201-c4e6-44e8-a189-4d9d42eb2486
+credentials-file: C:\Users\PC\.cloudflared\48762201-c4e6-44e8-a189-4d9d42eb2486.json
+
+ingress:
+  - hostname: metro-win.rbv1000.win
+    service: http://localhost:8081
+  - service: http_status:404
