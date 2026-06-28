@@ -26,35 +26,70 @@ which requires knowing the tunnel URL first. The solutions differ by platform:
 
 ---
 
-## Pre-configured named tunnel
+## How the Windows tunnel is set up
 
-A named Cloudflare tunnel (`threadbase-dev`) is already configured for this
-project in `.cloudflared/config.yml`. It routes
-`https://<your-tunnel-hostname>` → `localhost:8081`.
+On Windows, Metro runs as an ingress route inside the **system cloudflared
+service** (`~/.cloudflared/config.yml`) alongside other routes on the same
+tunnel. There is no separate `threadbase-dev` tunnel — the Metro hostname is
+just one more entry in the existing service config.
 
-The credentials file (`~/.cloudflared/<TUNNEL-ID>.json`) lives outside the repo
-and is gitignored — it was generated during one-time setup and must not be
-committed.
+`.cloudflared/config.yml` in this repo is a reference template showing the
+ingress block to add. The active config lives at `~/.cloudflared/config.yml`
+and is not committed.
 
 ---
 
 ## Running on Windows (PowerShell)
 
-### Option A — tunnel as a Windows service (recommended)
+### Option A — add Metro to the existing system service (recommended)
 
-Install once from an **Administrator** PowerShell (right-click Start → Terminal (Admin)):
+If cloudflared is already running as a Windows service (check with
+`sc.exe query cloudflared`), add Metro as an ingress route to the system config
+instead of installing a second service.
+
+Edit `~/.cloudflared/config.yml` — add the Metro entry before the catch-all:
+
+```yaml
+ingress:
+  # ... existing routes ...
+  - hostname: <your-metro-hostname>
+    service: http://localhost:8081
+  - service: http_status:404   # must stay last
+```
+
+Then update the DNS CNAME for `<your-metro-hostname>` to point to the tunnel ID
+already in that config file (`<TUNNEL-ID>.cfargotunnel.com`), and restart the
+service from an **Administrator** PowerShell:
+
+```powershell
+Restart-Service cloudflared
+```
+
+The tunnel is now always-on — just start Metro:
+
+```powershell
+$env:EXPO_PACKAGER_PROXY_URL="https://<your-metro-hostname>"; npx expo start --lan
+```
+
+### Option B — install a dedicated service
+
+If no cloudflared service exists yet, install one from an **Administrator**
+PowerShell (right-click Start → Terminal (Admin)):
 
 ```powershell
 cloudflared --config "C:\path\to\repo\.cloudflared\config.yml" service install
 ```
 
-The service starts automatically on boot — no manual tunnel step needed. Just start Metro:
+> See `.cloudflared/config.yml` in this repo for the ingress template and
+> `.cloudflared/config.yml` setup steps in the one-time setup section below.
+
+The service starts automatically on boot. Just start Metro:
 
 ```powershell
-$env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan
+$env:EXPO_PACKAGER_PROXY_URL="https://<your-metro-hostname>"; npx expo start --lan
 ```
 
-To manage the service:
+To manage the service (either option):
 
 ```powershell
 Start-Service cloudflared    # start manually
@@ -63,20 +98,20 @@ Restart-Service cloudflared  # restart after config changes
 sc.exe query cloudflared     # check status
 ```
 
-### Option B — run the tunnel manually
+### Option C — run the tunnel manually
 
 Two terminals required — the tunnel must stay running while Metro is up.
 
-**Terminal 1 — start the named tunnel:**
+**Terminal 1 — start the tunnel:**
 
 ```powershell
-cloudflared tunnel --config .cloudflared\config.yml run
+cloudflared tunnel --config "$env:USERPROFILE\.cloudflared\config.yml" run
 ```
 
 **Terminal 2 — start Metro:**
 
 ```powershell
-$env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan
+$env:EXPO_PACKAGER_PROXY_URL="https://<your-metro-hostname>"; npx expo start --lan
 ```
 
 With feature flags:
@@ -122,10 +157,10 @@ EXPO_PUBLIC_FEATURE_QUESTIONS=true npm run dev:tunnel -- -c
 ### Named tunnel (stable URL)
 
 ```bash
-CLOUDFLARED_TUNNEL_NAME=threadbase-dev npm run dev:tunnel
+CLOUDFLARED_TUNNEL_NAME=<your-tunnel-name> npm run dev:tunnel
 
 # With native rebuild:
-CLOUDFLARED_TUNNEL_NAME=threadbase-dev DEVICE_UDID=<udid> npm run dev:tunnel:native
+CLOUDFLARED_TUNNEL_NAME=<your-tunnel-name> DEVICE_UDID=<udid> npm run dev:tunnel:native
 ```
 
 ---
@@ -162,7 +197,7 @@ cloudflared tunnel login
 
 ```bash
 # 1. Create the tunnel — prints a tunnel ID (UUID).
-cloudflared tunnel create threadbase-dev
+cloudflared tunnel create <your-tunnel-name>
 
 # 2. Route DNS — always use the UUID, not the name, to avoid routing to
 #    a wrong existing tunnel when multiple tunnels share an account.
@@ -233,4 +268,4 @@ if ($pid) { taskkill /PID $pid /F }
 | Named tunnel: connection refused | Credentials file missing — re-run `cloudflared tunnel login` and `cloudflared tunnel create` |
 | `npm run kill:metro` fails on Windows | Use the PowerShell `netstat`/`taskkill` one-liner above |
 | `cloudflared service install` fails silently | Requires Administrator — open Terminal (Admin) and re-run |
-| Service installed but tunnel not routing | Run `Restart-Service cloudflared` after editing `.cloudflared\config.yml` |
+| Service installed but tunnel not routing | Run `Restart-Service cloudflared` after editing `~/.cloudflared/config.yml` |
