@@ -116,6 +116,20 @@ The `[skip-ci]` suffix keeps CI from re-triggering on the bump-only commit. The 
 - Before running any EAS build or submit command, stop and ask the user to confirm — do not proceed automatically
 - Never trigger it as a side-effect of a "ship" or "commit and ship" request
 
+## npm Scripts — Cross-Platform (Windows) Compatibility
+
+`package.json` scripts must work on Windows (`cmd.exe`) as well as macOS/Linux. Never use Unix shell syntax in scripts — `2>/dev/null`, `||  true`, `&&`, `$VAR`, subshells, etc. all break on Windows.
+
+For scripts that need to swallow errors or run shell logic, use a Node.js one-liner:
+
+```json
+"prepare": "node -e \"const {execSync}=require('child_process');try{execSync('git config core.hooksPath scripts/git-hooks',{stdio:'ignore'})}catch(e){}\""
+```
+
+The same applies when adding any new `scripts` entry that involves error suppression or conditional logic.
+
+---
+
 ## Merging PRs — Rebase + Squash, Linear History
 
 Keep `main` a straight line — one commit per PR, no merge commits. Every PR follows the same two operations, in this order:
