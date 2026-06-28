@@ -160,7 +160,7 @@ export function ChatComposer({
   )
 
   return (
-    <View style={[styles.inputArea, { paddingBottom: spacing.sm + insets.bottom }]}>
+    <View style={[styles.inputArea, { paddingBottom: spacing.xl + insets.bottom }]}>
       {errors}
       {chips}
       <View style={styles.inputRow}>
@@ -201,7 +201,7 @@ export function ChatComposer({
               style={[
                 styles.inputArea,
                 styles.inputAreaExpanded,
-                { paddingBottom: spacing.sm + insets.bottom },
+                { paddingBottom: spacing.xl + insets.bottom },
               ]}
             >
               {errors}
