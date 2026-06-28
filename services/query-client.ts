@@ -20,7 +20,6 @@ function clearSlowTimer(hash: string) {
 
 function categoryForHash(hash: string): QueryCategory {
   // React Query serialises queryKey arrays as JSON: ["sessions",...] or ["session",...]
-  if (/^\["projectChats/.test(hash)) return 'project-chats'
   if (/^\["sessions/.test(hash)) return 'sessions'
   if (/^\["conversations/.test(hash)) return 'conversations'
   if (/^\["conversation"/.test(hash)) return 'messages'
@@ -91,8 +90,6 @@ export const queryPersister = createAsyncStoragePersister({
 export const persistBuster = 'v2'
 
 const PERSISTED_QUERY_ROOTS = new Set([
-  'projectChats',
-  'projectChats-all',
   'session',
   'conversation',
   'project',

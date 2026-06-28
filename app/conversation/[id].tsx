@@ -29,7 +29,6 @@ import { useLoadingStateStore } from '@/stores/loading-state'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { useConversation } from '@/hooks/useConversations'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
-import { invalidateProjectChats } from '@/hooks/useProjectChats'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useQueryClient } from '@tanstack/react-query'
@@ -339,10 +338,6 @@ export default function ConversationDetailScreen() {
       return { sessionId: resp.id, projectPath: conversation?.projectPath, conversationId: id, sessionSnapshot: null }
     },
     onSuccess: async (result) => {
-      // Invalidate the unified ProjectChat list so the resumed conversation
-      // is replaced by the new session (backend dedupes; UI also dedupes
-      // defensively in useProjectChats).
-      invalidateProjectChats(queryClient, serverId)
       // Seed the session detail cache so the session screen renders immediately
       // without a GET /api/sessions/:id round-trip.
       if (result.sessionSnapshot) {

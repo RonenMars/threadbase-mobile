@@ -5,19 +5,15 @@ function q(queryKey: readonly unknown[], meta?: unknown) {
 }
 
 describe('shouldPersistQuery (persistence allow-list)', () => {
-  it('allows projectChats per-server queries', () => {
-    expect(shouldPersistQuery(q(['projectChats', 'srv1']))).toBe(true)
-  })
-
-  it('allows the projectChats-all multi-server roll-up', () => {
-    expect(shouldPersistQuery(q(['projectChats-all', 'srv1']))).toBe(true)
-  })
-
   it('allows session/conversation/project/serverInfo lightweight metadata', () => {
     expect(shouldPersistQuery(q(['session', 'srv1', 's1']))).toBe(true)
     expect(shouldPersistQuery(q(['conversation', 'srv1', 'c1']))).toBe(true)
     expect(shouldPersistQuery(q(['project', 'srv1', 'p1']))).toBe(true)
     expect(shouldPersistQuery(q(['serverInfo', 'srv1']))).toBe(true)
+  })
+
+  it('does NOT persist projectChats (removed)', () => {
+    expect(shouldPersistQuery(q(['projectChats', 'srv1']))).toBe(false)
   })
 
   it('does NOT persist sessionMessages by default', () => {

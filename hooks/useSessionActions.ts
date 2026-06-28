@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
-import { invalidateProjectChats } from '@/hooks/useProjectChats'
 import { useSessionsStore } from '@/stores/sessions'
 import type { QueuedPrompt } from '@/types/api'
 
@@ -32,7 +31,6 @@ export function useSessionActions(serverId: string, sessionId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sessions'] })
       qc.invalidateQueries({ queryKey: ['sessions-eager'] })
-      invalidateProjectChats(qc, serverId)
     },
   })
 
@@ -68,7 +66,6 @@ export function useSessionActions(serverId: string, sessionId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sessions'] })
       qc.invalidateQueries({ queryKey: ['sessions-eager'] })
-      invalidateProjectChats(qc, serverId)
     },
   })
 

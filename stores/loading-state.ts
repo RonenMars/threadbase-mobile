@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 
 export type QueryCategory =
-  | 'project-chats'
   | 'sessions'
   | 'conversations'
   | 'messages'
@@ -27,7 +26,6 @@ interface LoadingStateStore {
 
 export const useLoadingStateStore = create<LoadingStateStore>((set) => ({
   slowCounts: {
-    'project-chats': 0,
     sessions: 0,
     conversations: 0,
     messages: 0,
