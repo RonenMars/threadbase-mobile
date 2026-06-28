@@ -160,34 +160,64 @@ export function ChatComposer({
   )
 
   return (
-    <View style={[styles.inputArea, { paddingBottom: spacing.xl + insets.bottom }]}>
+    <View style={[styles.inputArea, { paddingBottom: (Platform.OS === 'android' ? spacing.md : spacing.xl) + insets.bottom }]}>
       {errors}
       {chips}
       <View style={styles.inputRow}>
         {attachButton}
-        <TextInput
-          testID="chat-message-input"
-          style={[styles.input, disabled && styles.disabled]}
-          value={disabled ? '' : value}
-          onChangeText={disabled ? undefined : onChangeText}
-          placeholder={disabled ? t('status.starting') : t('input.placeholder')}
-          placeholderTextColor={theme.text.secondary}
-          multiline
-          scrollEnabled
-          textAlignVertical="top"
-          editable={!disabled}
-        />
-        <TouchableOpacity
-          testID="expand-input-button"
-          accessibilityRole="button"
-          accessibilityLabel="Expand input"
-          style={styles.expandBtn}
-          onPress={() => setExpanded(true)}
-          disabled={disabled}
-          hitSlop={8}
-        >
-          <ArrowsOut size={20} color={theme.text.secondary} />
-        </TouchableOpacity>
+        {Platform.OS === 'android' ? (
+          <View style={styles.inputWrapper}>
+            <TextInput
+              testID="chat-message-input"
+              style={[styles.input, disabled && styles.disabled]}
+              value={disabled ? '' : value}
+              onChangeText={disabled ? undefined : onChangeText}
+              placeholder={disabled ? t('status.starting') : t('input.placeholder')}
+              placeholderTextColor={theme.text.secondary}
+              multiline
+              scrollEnabled
+              textAlignVertical="top"
+              editable={!disabled}
+            />
+            <TouchableOpacity
+              testID="expand-input-button"
+              accessibilityRole="button"
+              accessibilityLabel="Expand input"
+              style={styles.expandBtnAndroid}
+              onPress={() => setExpanded(true)}
+              disabled={disabled}
+              hitSlop={8}
+            >
+              <ArrowsOut size={18} color={theme.text.secondary} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <TextInput
+              testID="chat-message-input"
+              style={[styles.input, disabled && styles.disabled]}
+              value={disabled ? '' : value}
+              onChangeText={disabled ? undefined : onChangeText}
+              placeholder={disabled ? t('status.starting') : t('input.placeholder')}
+              placeholderTextColor={theme.text.secondary}
+              multiline
+              scrollEnabled
+              textAlignVertical="top"
+              editable={!disabled}
+            />
+            <TouchableOpacity
+              testID="expand-input-button"
+              accessibilityRole="button"
+              accessibilityLabel="Expand input"
+              style={styles.expandBtn}
+              onPress={() => setExpanded(true)}
+              disabled={disabled}
+              hitSlop={8}
+            >
+              <ArrowsOut size={20} color={theme.text.secondary} />
+            </TouchableOpacity>
+          </>
+        )}
         {trailingButton}
       </View>
 
@@ -299,6 +329,8 @@ function makeStyles(theme: Theme) {
       padding: spacing.sm,
     },
     expandBtn: { justifyContent: 'flex-end', alignSelf: 'flex-end', paddingBottom: spacing.sm, paddingHorizontal: spacing.xs },
+    inputWrapper: { flex: 1, position: 'relative' },
+    expandBtnAndroid: { position: 'absolute', top: 4, right: 4 },
     expandedToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs },
     iconBtn: {
       width: 52,

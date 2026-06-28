@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+import { Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -221,7 +221,7 @@ export function LiveConversationView({
   }, [thinkingState])
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'height' : undefined} keyboardVerticalOffset={keyboardVerticalOffset}>
+    <KeyboardAvoidingView style={styles.container} behavior="height" keyboardVerticalOffset={keyboardVerticalOffset}>
       <FlashList
         ref={listRef}
         data={allMessages}
