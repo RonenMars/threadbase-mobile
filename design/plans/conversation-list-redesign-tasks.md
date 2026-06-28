@@ -65,7 +65,7 @@ These were called out in the main plan and remain follow-ups. None block shippin
 
 ## On-device verification checklist
 
-Launch command for the physical iPhone 17 Pro lives in [`docs/dev-on-iphone-17-pro.md`](../../docs/dev-on-iphone-17-pro.md). TL;DR:
+Launch command for the physical iPhone lives in [`docs/dev-on-physical-device-ios.md`](../../docs/dev-on-physical-device-ios.md). TL;DR:
 
 ```bash
 cd <repo-root> && \

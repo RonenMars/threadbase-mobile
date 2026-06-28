@@ -154,6 +154,10 @@ npm run ios
 npm run android
 ```
 
+For running on a **physical iOS device** (USB or remote/off-network), see:
+- [docs/dev-on-physical-device-ios.md](docs/dev-on-physical-device-ios.md) — device setup, UDID lookup, daily commands
+- [docs/remote-dev-tunnel.md](docs/remote-dev-tunnel.md) — cloudflared / ngrok tunnel setup for off-network dev
+
 On first launch the app redirects to **Onboarding** if no server is configured. Add a server by:
 1. Scanning the QR code displayed in the Threadbase web UI, **or**
 2. Entering the server URL and API key manually

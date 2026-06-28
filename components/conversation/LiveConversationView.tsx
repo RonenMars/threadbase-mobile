@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Alert, ScrollView, StyleSheet, Text } from 'react-native'
+import { Platform, Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
@@ -197,6 +198,14 @@ export function LiveConversationView({
     micGranted,
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend: send })
+
+  // Auto-scroll to bottom when keyboard opens or app resumes with keyboard already up.
+  useEffect(() => {
+    const onShow = () => listRef.current?.scrollToEnd({ animated: true })
+    const subShow = Keyboard.addListener('keyboardDidShow', onShow)
+    const subChange = Keyboard.addListener('keyboardDidChangeFrame', onShow)
+    return () => { subShow.remove(); subChange.remove() }
+  }, [])
 
   // Auto-scroll to bottom when a new message appears or the thinking bubble shows.
   useEffect(() => {

@@ -241,6 +241,7 @@ jest.mock('react-native-keyboard-controller', () => {
     KeyboardAwareScrollView: React.forwardRef(({ children, contentContainerStyle, ...props }, ref) =>
       React.createElement('ScrollView', { ...props, contentContainerStyle, ref }, children)
     ),
+    KeyboardAvoidingView: ({ children, ...props }) => React.createElement('View', props, children),
   }
 })
 
