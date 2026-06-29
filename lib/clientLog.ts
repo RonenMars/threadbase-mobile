@@ -108,21 +108,37 @@ export function installClientLogCapture() {
   const origWarn = console.warn
   const origError = console.error
 
+  // Re-entrancy guard: React 19's resolveDispatcher calls console.error when
+  // dispatcher is null, which would re-enter this wrapper and cause a crash.
+  let inConsoleCall = false
+
   console.log = (...args: unknown[]) => {
+    if (inConsoleCall) { origLog.apply(console, args as never[]); return }
+    inConsoleCall = true
     clog('info', 'console.log', args.map(safeStringify).join(' '))
     origLog.apply(console, args as never[])
+    inConsoleCall = false
   }
   console.info = (...args: unknown[]) => {
+    if (inConsoleCall) { origInfo.apply(console, args as never[]); return }
+    inConsoleCall = true
     clog('info', 'console.info', args.map(safeStringify).join(' '))
     origInfo.apply(console, args as never[])
+    inConsoleCall = false
   }
   console.warn = (...args: unknown[]) => {
+    if (inConsoleCall) { origWarn.apply(console, args as never[]); return }
+    inConsoleCall = true
     clog('warn', 'console.warn', args.map(safeStringify).join(' '))
     origWarn.apply(console, args as never[])
+    inConsoleCall = false
   }
   console.error = (...args: unknown[]) => {
+    if (inConsoleCall) { origError.apply(console, args as never[]); return }
+    inConsoleCall = true
     clog('error', 'console.error', args.map(safeStringify).join(' '))
     origError.apply(console, args as never[])
+    inConsoleCall = false
   }
 
   const errorUtils = (globalThis as unknown as { ErrorUtils?: {
