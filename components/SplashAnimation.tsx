@@ -483,11 +483,11 @@ export function SplashAnimation({ onComplete }: Props) {
         {/* Text */}
         {/* eslint-disable-next-line i18next/no-literal-string */}
         <Animated.Text style={[styles.brandText, textAnimStyle]}>
-          threadbase
+          Threadbase
         </Animated.Text>
 
-        {/* Matrix characters */}
-        {THREAD_LINES.map((line, lineIdx) =>
+        {/* ponytail: matrix rain kept but hidden; re-enable by removing false && */}
+        {false && THREAD_LINES.map((line, lineIdx) =>
           matrixChars
             .filter((_, i) => {
               const countPerLine = Math.floor((screenWidth * line.widthPct) / 8)
