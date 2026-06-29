@@ -44,9 +44,9 @@ const P3_DURATION = 500  // text animation duration
 const P4_START = 2500    // vertical line exit
 const P4_DURATION = 500  // vertical line exit duration
 
-const P5_START = 3000    // matrix rain + sweep bar start
-const P5_DURATION = 2500 // matrix rain + sweep bar duration (extended by 0.5s)
-const FADE_OUT_START = P5_START + P5_DURATION // final fade out starts right after phase 5
+const P5_START = 3000    // matrix rain + sweep bar start (kept for hidden animations)
+const P5_DURATION = 2500 // matrix rain + sweep bar duration (kept for hidden animations)
+const FADE_OUT_START = P3_START + P3_DURATION + 300 // exit right after logo text is revealed
 const FADE_OUT_DUR = 200   // fade out duration
 
 const DIGITS = '0123456789'
