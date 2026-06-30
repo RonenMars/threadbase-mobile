@@ -26,19 +26,25 @@ which requires knowing the tunnel URL first. The solutions differ by platform:
 
 ---
 
-## How the Windows tunnel is set up
+## Tunnel setup by platform
 
-On Windows, Metro runs as an ingress route inside the **system cloudflared
-service** alongside other routes on the same tunnel. There is no separate
-`threadbase-dev` tunnel — the Metro hostname is just one more entry in the
-existing service config.
+`.cloudflared/config.yml` in this repo is a cross-platform reference template
+— fill in your tunnel ID and hostname, then follow the platform notes below.
 
-`.cloudflared/config.yml` in this repo is a reference template showing the
-ingress block to add. The active config is the **SYSTEM profile** config at
-`C:\Windows\system32\config\systemprofile\.cloudflared\config.yml` — not your
-user profile. The Windows cloudflared service runs as SYSTEM, so it reads only
-the SYSTEM profile path. Editing `~\.cloudflared\config.yml` has no effect on
-the service. The active config is not committed.
+**macOS/Linux:** copy the template to `~/.cloudflared/config.yml`. For quick
+tunnels (no account), `npm run dev:tunnel` handles everything automatically.
+For named tunnels, place the filled-in config at the path above and run
+`cloudflared tunnel run <name>` or use the `CLOUDFLARED_TUNNEL_NAME` env var
+with `npm run dev:tunnel`.
+
+**Windows:** The cloudflared service runs as SYSTEM and reads its config from
+the SYSTEM profile — **not** your user profile. The active config lives at:
+```
+C:\Windows\system32\config\systemprofile\.cloudflared\config.yml
+```
+Editing `~\.cloudflared\config.yml` has no effect on the service. Metro runs
+as an ingress route inside this always-on service — there is no separate
+tunnel for Metro. The active config is not committed to the repo.
 
 ---
 
@@ -103,9 +109,10 @@ Restart-Service cloudflared  # restart after config changes
 sc.exe query cloudflared     # check status
 ```
 
-### Option C — run the tunnel manually
+### Option C — run the tunnel manually (Windows only)
 
-Two terminals required — the tunnel must stay running while Metro is up.
+macOS/Linux users should use `npm run dev:tunnel` instead — it handles the
+ordering problem automatically. On Windows, two terminals are required.
 
 **Terminal 1 — start the tunnel:**
 
@@ -201,10 +208,12 @@ when setting up on a new machine or creating a new tunnel.
 ### Install and authenticate
 
 See [install-cloudflared.md](install-cloudflared.md) for platform-specific
-install instructions.
+install instructions. The `cloudflared` CLI works the same on all platforms.
 
 ```bash
-# Skip if ~/.cloudflared/cert.pem already exists (already authenticated).
+# Skip if already authenticated (cert file already exists):
+#   macOS/Linux: ~/.cloudflared/cert.pem
+#   Windows:     %USERPROFILE%\.cloudflared\cert.pem
 cloudflared tunnel login
 ```
 
@@ -230,20 +239,14 @@ cloudflared tunnel route dns <TUNNEL-ID> <your-tunnel-hostname>
 
 ### Configure the project
 
-Edit `.cloudflared/config.yml`:
+The repo's `.cloudflared/config.yml` is a cross-platform reference template.
+Fill in your tunnel ID and hostname, then place the filled-in file at the
+right path for your platform:
 
-```yaml
-tunnel: <TUNNEL-ID>
-credentials-file: /Users/<your-username>/.cloudflared/<TUNNEL-ID>.json  # macOS/Linux
-# credentials-file: C:\Users\<your-username>\.cloudflared\<TUNNEL-ID>.json  # Windows
+- **macOS/Linux:** `~/.cloudflared/config.yml`
+- **Windows (service):** `C:\Windows\system32\config\systemprofile\.cloudflared\config.yml`
 
-ingress:
-  - hostname: <your-tunnel-hostname>
-    service: http://localhost:8081
-  - service: http_status:404
-```
-
-The credentials file is gitignored — never commit it.
+The credentials file (`.cloudflared/<TUNNEL-ID>.json`) is gitignored — never commit it.
 
 ---
 
@@ -275,7 +278,7 @@ if ($pid) { taskkill /PID $pid /F }
 | Symptom | Fix |
 |---|---|
 | `cloudflared not found` | See [install-cloudflared.md](install-cloudflared.md) |
-| `cloudflared` exits immediately (macOS) | Port 8081 not open yet; `npm run dev:tunnel` handles this automatically via a placeholder listener |
+| `cloudflared` exits immediately (macOS/Linux) | Port 8081 not open yet; `npm run dev:tunnel` handles this automatically via a placeholder listener |
 | "Failed to get tunnel URL after 30s" | Port 8081 may already be in use; run `npm run kill:metro` first |
 | App shows "Could not connect to development server" right after connecting | Initial bundle not ready yet — wait for Metro to print `Bundled`, then tap **Reload JS** |
 | App shows "Could not connect to development server" | Confirm the cloudflared process is still running in its terminal |
