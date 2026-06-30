@@ -1041,6 +1041,35 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ---
 
+### Feature 33 — Repair stale `demo-server-*.yaml` E2E flows (selector drift + Maestro 2.x syntax)
+
+**Filed:** 2026-06-30.
+
+**Goal:** Make the demo-server Maestro flows (`demo-server-connect-only.yaml`, `demo-server-test.yaml`) run green again against the live demo server (`threadbase-demo.fly.dev`). They were written against an older onboarding/chat UI and an older Maestro, and now fail on dead selectors and unsupported syntax — independently of the build/driver blockers tracked in the E2E failure report.
+
+**Why:** With `.env.demo` + a Release build in place, `setup-demo.yaml` and the `shots-*.yaml` screenshot flows already work, but the two `demo-server-*` flows still reference UI that has since been renamed or removed, so they can never pass as-is. This is repair of *existing* flows, distinct from Feature 17's goal of *adding new* coverage.
+
+**Known breakage (audited 2026-06-30 against current source/locales):**
+- `demo-server-connect-only.yaml`
+  - `id: "message-input"` → renamed to **`chat-message-input`** (`ChatComposer.tsx`).
+  - `id: "send-message-button"` → renamed to **`chat-send-button`**.
+  - `id: "terminal-output"` → no such testID exists (only a React Query key); pick a real anchor or drop the assertion.
+  - `text: "New chat"` → string gone; the FAB is `fab-new-session`.
+- `demo-server-test.yaml`
+  - **`assertVisible: { timeout: }` is not supported in Maestro 2.x** — replace with bare `assertVisible` (7s auto-retry) or `extendedWaitUntil` (per `e2e/README.md` "Maestro 2.x notes").
+  - `text: "Welcome to Threadbase"` → that string is `welcome.title` in `locales/en/onboarding.json` but `WelcomeStep.tsx` renders `welcome.headline` ("Pull a thread."), not the title — assertion never matches. Assert the rendered headline or the `onboarding-welcome-cta` testID instead.
+  - `text: "New chat"` → gone (as above); `text: "Type a message"` → composer placeholder is now `"Send a message…"`.
+
+**Scope:** ~30 min, flow-file edits only — no app-source changes. Verify with `npm run test:e2e:demo` once a Release build is installed.
+
+**Files likely involved:**
+- `e2e/demo-server-connect-only.yaml`, `e2e/demo-server-test.yaml` — selector + syntax fixes
+- `e2e/README.md` — refresh the demo-flow notes if selectors are documented there
+
+**Related:** the E2E failure report (`E2E-TESTS-FAILURE-REPORT.md`, §9) diagnosed this drift and the build/driver blockers; the `ensure-release-build.js` bundle-id/app-name/detection fix (separate commit) unblocks the Release-build half. Feature 17 covers net-new flows.
+
+---
+
 ## Shipped
 
 Historical implementation plans archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/). Each was the source of truth for that feature's build sequence at the time it shipped — useful when revisiting the area, but not active work.
