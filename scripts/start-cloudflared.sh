@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Start a cloudflared quick tunnel pointing at Metro (port 8081), then launch
-# Metro (or a full native build) with EXPO_PACKAGER_PROXY_URL set automatically.
+# Start Metro (or a full native build) advertising a cloudflared tunnel URL via
+# EXPO_PACKAGER_PROXY_URL, so a device off the LAN can reach the bundler.
 #
-# The chicken-and-egg problem: cloudflared exits if nothing listens on 8081,
-# but Metro needs EXPO_PACKAGER_PROXY_URL at startup (so the URL must be known
-# first). This script solves it by briefly running a dummy HTTP listener to keep
-# cloudflared alive while the tunnel URL is extracted, then switching to Metro.
+# Preferred path: a *named* tunnel (stable hostname, e.g. metro.rbv1000.win)
+# already routed to localhost:8081 in ~/.cloudflared/config.yml and run as a
+# long-lived service. The script reuses that URL — it does not start cloudflared.
+#
+# Fallback (no named tunnel configured): a *quick* tunnel (*.trycloudflare.com).
+# cloudflared exits if nothing listens on 8081, so a dummy HTTP listener keeps it
+# alive while the URL is extracted, then it's swapped for Metro.
 #
 # Usage:
 #   npm run dev:tunnel                       # JS-only (dev client already installed)
@@ -30,9 +33,11 @@ Options:
 Environment:
   DEVICE_UDID     Legacy device UDID for --native. Find with: npm run dev:list-devices
 
-Named tunnel (stable URL):
-  If CLOUDFLARED_TUNNEL_NAME is set, runs a named tunnel instead of a quick tunnel.
-  Requires one-time setup — see docs/remote-dev-tunnel.md for steps.
+Tunnel selection:
+  Uses the named tunnel URL from EXPO_PACKAGER_PROXY_URL (env or .env), or the
+  metro hostname routed to :8081 in ~/.cloudflared/config.yml. The named tunnel
+  is assumed already running. If none is configured, falls back to a quick
+  *.trycloudflare.com tunnel. See docs/remote-dev-tunnel.md for setup.
 EOF
 }
 
@@ -59,7 +64,6 @@ fi
 
 # --- Determine tunnel mode ---
 
-TUNNEL_NAME="${CLOUDFLARED_TUNNEL_NAME:-}"
 TUNNEL_LOG=$(mktemp)
 TUNNEL_PID=""
 DUMMY_PID=""
@@ -71,23 +75,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [[ -n "$TUNNEL_NAME" ]]; then
-  # Named tunnel — stable URL, no dummy listener needed.
-  # The named tunnel keeps running regardless of whether Metro is up yet.
-  echo "▸ Starting named tunnel: $TUNNEL_NAME"
-  cloudflared tunnel run "$TUNNEL_NAME" >"$TUNNEL_LOG" 2>&1 &
-  TUNNEL_PID=$!
+# Prefer the named tunnel: a stable hostname (e.g. metro.rbv1000.win) that's
+# already routed to localhost:8081 in ~/.cloudflared/config.yml and run as a
+# long-lived service. We don't start cloudflared here — we just reuse the URL.
+# Source order: EXPO_PACKAGER_PROXY_URL (env), then .env, then config.yml ingress.
+NAMED_URL="${EXPO_PACKAGER_PROXY_URL:-}"
+if [[ -z "$NAMED_URL" && -f .env ]]; then
+  NAMED_URL=$(grep -E '^EXPO_PACKAGER_PROXY_URL=' .env | head -1 | cut -d= -f2- | tr -d '"' || true)
+fi
+if [[ -z "$NAMED_URL" && -f "$HOME/.cloudflared/config.yml" ]]; then
+  METRO_HOST=$(grep -B1 'service: *http://127.0.0.1:8081' "$HOME/.cloudflared/config.yml" \
+    | grep -o 'hostname: *[^ ]*' | awk '{print $2}' | head -1 || true)
+  [[ -n "$METRO_HOST" ]] && NAMED_URL="https://$METRO_HOST"
+fi
 
-  # Named tunnels don't print a trycloudflare.com URL — read the hostname
-  # from the config file or the DNS route set up during one-time setup.
-  TUNNEL_URL=$(cloudflared tunnel info "$TUNNEL_NAME" 2>/dev/null \
-    | grep -o 'https://[^ ]*' | head -1 || true)
-
-  if [[ -z "$TUNNEL_URL" ]]; then
-    echo "Could not resolve tunnel URL for '$TUNNEL_NAME'."
-    echo "Run the one-time DNS setup described in docs/remote-dev-tunnel.md."
-    exit 1
-  fi
+if [[ -n "$NAMED_URL" ]]; then
+  echo "▸ Using named tunnel: $NAMED_URL"
+  echo "  (assumed already running via ~/.cloudflared/config.yml — not started here)"
+  TUNNEL_URL="$NAMED_URL"
 else
   # Quick tunnel — temporary *.trycloudflare.com URL, no account needed.
   # cloudflared exits immediately if port 8081 has no listener, so spin up a
@@ -127,7 +132,10 @@ if [[ "$NATIVE" == "1" ]]; then
   echo "▸ Building and installing on device: $DEVICE_UDID"
   EXPO_PACKAGER_PROXY_URL="$TUNNEL_URL" npx expo run:ios --device "$DEVICE_UDID"
 else
-  ARGS="--dev-client --lan"
+  # No --lan: with EXPO_PACKAGER_PROXY_URL set, Metro advertises the tunnel URL
+  # as the manifest/bundle authority (matches the working scripts/dev-metro.js
+  # path). --lan overrides that with the LAN IP and breaks off-network loads.
+  ARGS="--dev-client"
   [[ "$CLEAR_CACHE" == "1" ]] && ARGS="$ARGS -c"
   echo "▸ Starting Metro"
   EXPO_PACKAGER_PROXY_URL="$TUNNEL_URL" npx expo start $ARGS
