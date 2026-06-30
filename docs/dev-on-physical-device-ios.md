@@ -95,6 +95,67 @@ and the full `EXPO_PACKAGER_PROXY_URL` command variants.
 | Node version "incompatible with Expo SDK X" | Node version mismatch | SDK 54+ needs Node ≥22.13 or ≥24. Check `node -v`. |
 | Hermes crashes on iOS 26 | Old Hermes (0.12.x) | We're on SDK 55+ (Hermes 0.14+). Don't downgrade. |
 | App stays on splash screen | Device + Mac on different Wi-Fi | Use the tunnel flow — see [remote-dev-tunnel.md](remote-dev-tunnel.md) |
+| `Loading from Metro…` forever (device on cellular) | QR encodes a LAN/CGNAT IP the device can't route to over cellular | Put device on the same Wi-Fi, or use the tunnel — see "Picking the right Metro address" below |
+| `Failed to load app … App Transport Security policy requires a secure connection` | Metro advertised a `100.x` (Tailscale) or other non-LAN `http://` host; iOS ATS blocks plaintext to it | Force Metro onto the LAN/hotspot IP, or use the `https` tunnel — see "Picking the right Metro address" below |
+
+---
+
+## Picking the right Metro address
+
+When you `expo start` and scan the QR, Metro bakes **one** host into the URL the
+device loads. Two things break it:
+
+1. **Wrong interface.** If Tailscale (or any VPN) is up, Metro often picks the
+   `100.x` CGNAT address (`100.64.0.0/10`) instead of your real LAN/hotspot IP.
+2. **iOS ATS.** iOS blocks plaintext `http://` loads except to recognised private
+   ranges (`10.x`, `172.16–31.x`, `192.168.x`) covered by `NSAllowsLocalNetworking`.
+   The Tailscale `100.x` range is **not** covered, so the dev client throws
+   *"App Transport Security policy requires the use of a secure connection."*
+
+A phone hotspot hands out `172.20.10.x` (a real private range that passes ATS), so
+the fix when sharing a hotspot is usually just to point Metro at that IP instead of
+the Tailscale one.
+
+### Two knobs
+
+| | `REACT_NATIVE_PACKAGER_HOSTNAME` | `EXPO_PACKAGER_PROXY_URL` |
+|---|---|---|
+| Changes | the **host** in the URL (scheme stays `http`, port stays `8081`) | the **entire** URL Expo advertises |
+| Path to Metro | device → Metro **directly** | device → proxy/tunnel → Metro |
+| Scheme | `http` | usually `https` |
+| Needs same network | yes | no (works over cellular) |
+| Solves ATS error? | only if host is `10/172.16–31/192.168.x` | yes — `https` satisfies ATS |
+| Speed | fastest (no extra hop) | slower (extra hop) |
+| Set by | you, manually | `npm run dev:tunnel` |
+
+### Same Wi-Fi / hotspot — force the LAN IP (fastest)
+
+Find the interface the device can reach (hotspot is usually `172.20.10.x`):
+
+```bash
+ipconfig getifaddr en0   # try en1 if empty; or: ifconfig | grep "inet 172.20.10"
+```
+
+Start Metro bound to it:
+
+```bash
+REACT_NATIVE_PACKAGER_HOSTNAME=172.20.10.x npx expo start -c
+```
+
+The QR now encodes `http://172.20.10.x:8081`, which the device can route to and
+iOS allows. Use this whenever Metro keeps grabbing the Tailscale `100.x` interface.
+
+### Different network / cellular — use the tunnel
+
+When the device can't reach the Mac directly, or you want `https` to sidestep ATS
+entirely, use the proxy URL via the tunnel:
+
+```bash
+npm run dev:tunnel -- -c
+```
+
+This sets `EXPO_PACKAGER_PROXY_URL` to the cloudflared `https://…` hostname. Full
+setup and command variants: **[remote-dev-tunnel.md](remote-dev-tunnel.md)**.
 
 ---
 
