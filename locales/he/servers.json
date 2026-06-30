@@ -34,7 +34,8 @@
   },
   "manage": {
     "title": "שרתים",
-    "addServer": "+ הוסף שרת",
+    "addServer": "הוסף שרת",
+    "addServerHint": "התחבר למופע tb-streamer",
     "empty": "עדיין לא נוספו שרתים."
   },
   "filter": {
@@ -63,12 +64,15 @@
   },
   "addAction": {
     "title": "העדפת תצוגת שרת חדש",
-    "subtitle": "איך שרתים מוצגים צריכים להתעדכן אחרי הוספה זו?",
+    "subtitle": "כיצד יש לעדכן את השרתים המוצגים לאחר הוספה זו?",
     "rememberChoice": "זכור את הבחירה הזו"
   },
   "statusModal": {
     "title": "סטטוס שרת",
-    "close": "✕"
+    "close": "✕",
+    "menuEdit": "ערוך",
+    "menuRefresh": "רענן",
+    "menuDelete": "מחק"
   },
   "error": {
     "label": "השרת אינו זמין",

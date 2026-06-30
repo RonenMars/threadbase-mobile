@@ -4,7 +4,7 @@
     "recentDirs": "Недавние директории ({{count}})",
     "newFolder": "Новая папка",
     "create": "Создать",
-    "startSession": "Начать сеанс здесь"
+    "startSession": "Начать сессию здесь"
   },
   "error": {
     "loadFailed": "Не удалось загрузить беседы",

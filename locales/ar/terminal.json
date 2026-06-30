@@ -1,17 +1,61 @@
 {
+  "header": {
+    "session": "السيشن"
+  },
+  "action": {
+    "copyId": "نسخ معرّف السيشن",
+    "sendInput": "إرسال إدخال",
+    "cancel": "إلغاء السيشن",
+    "more": "المزيد"
+  },
+  "voice": {
+    "start": "بدء الإملاء",
+    "stop": "إيقاف الإملاء",
+    "permissionDeniedTitle": "تم رفض إذن الميكروفون",
+    "permissionDeniedBody": "يحتاج Threadbase إلى الوصول للميكروفون لإملاء البرومبتات. فعّله في الإعدادات."
+  },
+  "dialog": {
+    "cancelTitle": "إلغاء السيشن",
+    "cancelMessage": "هل أنت متأكد أنك تريد إلغاء هذا السيشن؟",
+    "cancelConfirm": "إلغاء السيشن",
+    "cancelDismiss": "إبقاؤه يعمل",
+    "removeTitle": "إزالة السيشن",
+    "removeMessage": "هل أنت متأكد أنك تريد إزالة هذا السيشن؟",
+    "removeConfirm": "إزالة",
+    "removeDismiss": "إبقاء"
+  },
+  "status": {
+    "connecting": "جارٍ الاتصال…",
+    "reconnecting": "جارٍ إعادة الاتصال…",
+    "disconnected": "غير متصل",
+    "waking": "جارٍ الإيقاظ…",
+    "starting": "جارٍ بدء السيشن…"
+  },
   "input": {
-    "placeholder": "أدخل رسالة…",
+    "placeholder": "أرسل رسالة…",
     "send": "إرسال"
   },
-  "output": {
-    "thinking": "جارٍ التفكير…",
-    "typing": "جارٍ الكتابة…"
-  },
   "session": {
+    "notFound": "السيشن غير موجود",
+    "failedToStart": "فشل بدء السيشن",
+    "noTerminal": "لا توجد مخرجات طرفية",
+    "noTerminalBody": "لا يحتوي هذا السيشن على طرفية نشطة.\nاستأنف السيشن لبدء طرفية جديدة.",
     "runningElsewhere": "يعمل في طرفية أخرى",
-    "runningElsewhereBody": "بدأ هذا الجلسة خارج التطبيق وتظهر للقراءة فقط. أوقفها في الطرفية الأخرى — ستُفتح المحادثة هنا تلقائيًا عند الانتهاء.",
+    "runningElsewhereBody": "بدأ هذا السيشن خارج التطبيق ويُتتبَّع للقراءة فقط. أوقفه في الطرفية الأخرى ثم عُد — ستُفتح المحادثة هنا تلقائيًا فور انتهائه.",
     "openConversation": "فتح المحادثة",
+    "alreadyRunningTitle": "السيشن قيد التشغيل بالفعل",
+    "alreadyRunningBody": "يحتوي هذا السيشن على عملية نشطة على الخادم. سيؤدي الاستئناف هنا إلى إيقاف تلك العملية وبدء سيشن طرفية جديد في التطبيق.",
+    "overtake": "الاستحواذ",
+    "prompts_zero": "لا برومبتات",
+    "prompts_one": "برومبت واحد",
+    "prompts_two": "برومبتان",
+    "prompts_few": "{{count}} برومبتات",
+    "prompts_many": "{{count}} برومبتًا",
+    "prompts_other": "{{count}} برومبت",
     "tabTerminal": "الطرفية",
-    "tabChat": "المحادثة"
+    "tabChat": "الدردشة"
+  },
+  "banner": {
+    "streamingInfo": "تُبَثّ استدعاءات الأدوات والمخرجات هنا في الوقت الفعلي. اكتب متابعة بالأسفل بينما لا يزال Claude يعمل."
   }
 }
