@@ -16,6 +16,7 @@
   "scripts": {
     "prepare": "node -e \"const {execSync}=require('child_process');try{execSync('git config core.hooksPath scripts/git-hooks',{stdio:'ignore'})}catch(e){}\"",
     "start": "expo start",
+    "dev:metro": "node scripts/dev-metro.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "jest --watchAll",
