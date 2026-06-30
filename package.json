@@ -143,7 +143,7 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/.claude/",
-      "/.worktrees/",
+      "<rootDir>/.worktrees/",
       "/__tests__/unit/scripts/"
     ],
     "setupFilesAfterEnv": [
