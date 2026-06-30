@@ -1043,7 +1043,7 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 ### Feature 33 — Repair stale `demo-server-*.yaml` E2E flows (selector drift + Maestro 2.x syntax)
 
-**Filed:** 2026-06-30.
+**Filed:** 2026-06-30. **Status:** **Implemented (pending verification run).** All breakage below was fixed in the E2E-remediation branch (2026-06-30): `demo-server-connect-only.yaml` now uses `chat-message-input` / `chat-send-button` / `onboarding-notifications-cta` and asserts `session-detail-screen` instead of the non-existent `terminal-output`; `demo-server-test.yaml` was rewritten to delegate onboarding to `setup-demo.yaml`, drop the unsupported `assertVisible: { timeout: }` syntax, and use the FAB → browse → "Start Session Here" → `chat-*` path. `prod-server-connect-only.yaml` got the same `Skip → onboarding-notifications-cta` and `send-message-button → chat-send-button` fixes. Still needs a green run on a supported (iOS ≤ 18) sim with a Release build to close it out.
 
 **Goal:** Make the demo-server Maestro flows (`demo-server-connect-only.yaml`, `demo-server-test.yaml`) run green again against the live demo server (`threadbase-demo.fly.dev`). They were written against an older onboarding/chat UI and an older Maestro, and now fail on dead selectors and unsupported syntax — independently of the build/driver blockers tracked in the E2E failure report.
 

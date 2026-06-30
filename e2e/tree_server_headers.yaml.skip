@@ -1,4 +1,11 @@
 # Maestro E2E — Tree view server-header rows
+#
+# SKIPPED — tracks BACKLOG Bug 19 ("can't return to hub after pairing a second
+# server"). This `.skip` is the ONLY copy of the flow (no live `.yaml` exists),
+# so it is intentionally retained rather than deleted. Re-enable per the Bug 19
+# notes once the navigation issue is fixed: rename to `tree_server_headers.yaml`
+# and add it to the `test:e2e:mock` arglist in package.json.
+#
 # Verifies that the tree-view session list emits a `server-header-<id>` row
 # above each server's section when 2+ servers are paired, and emits no header
 # when only 1 server is paired.

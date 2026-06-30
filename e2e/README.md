@@ -38,10 +38,16 @@ Maestro drives the actual iOS binary, so it must be installed on a booted simula
 
 Debug builds boot into the Expo Dev Launcher (a SwiftUI screen that asks which JS bundle to load) and there's no clean way for Maestro to get past it — see [`docs/expo-dev-launcher.md`](../docs/expo-dev-launcher.md) for the full explanation. Release builds embed the JS bundle directly and skip the launcher.
 
+> **Use an iOS ≤ 18 simulator.** Maestro 2.0.10's XCUITest driver races/dies during
+> the `simctl uninstall/install` that `clearState: true` performs on **iOS 26.x**
+> (Xcode 26), failing every flow with `Unable to clear state … Failed to connect to
+> /127.0.0.1:7001`. `e2e/check-sim.js` enforces this and will refuse to run on iOS 26
+> (override with `E2E_ALLOW_UNSUPPORTED_IOS=1`). See `E2E-TESTS-FAILURE-REPORT.md`.
+> When a newer Maestro gains iOS 26 support, bump `MAX_SUPPORTED_IOS_MAJOR` in `check-sim.js`.
+
 ```bash
-# Boot a simulator first (any iPhone, iOS 17+). The repo currently targets
-# iPhone 17 Pro / iOS 26.4 in CI; any sim with iOS ≥ 17 will work locally.
-xcrun simctl list devices available | grep "iPhone 17 Pro"
+# Boot a simulator on iOS 18 or older (iOS 17.x works; iOS 26.x does NOT — see above).
+xcrun simctl list devices available | grep -iE "iOS 1[78]"
 xcrun simctl boot <UDID>
 
 # Build + install the Release app onto the booted sim
