@@ -7,8 +7,8 @@
 > rebuild attempts hit a transient `@babel/code-frame` resolution issue. Run
 > `./scripts/run-pagination-e2e.sh` against a Release build to verify.
 
-Tests that the conversation list paginates correctly in both **classic** and
-**hub** layouts. Validates two things at once:
+Tests that the conversation list paginates correctly in the **hub** layout.
+Validates two things at once:
 
 1. **Visual** — high-index conversations become visible after scrolling, proving the rendering pipeline handles every page.
 2. **Network** — the mock server sees multiple `/api/conversations` requests with monotonically increasing `offset` query params, proving the client actually fetches subsequent pages instead of stopping at the first one.
@@ -19,9 +19,8 @@ Tests that the conversation list paginates correctly in both **classic** and
 |---|---|
 | `e2e/pagination-mock-server.js` | Mock streamer serving 346 conversations + 5 sessions on port `7072`. Logs every request to an in-memory array, exposed via `GET /__mock/requests`. |
 | `e2e/scripts/reset-pagination-mock.js` | Maestro `runScript` JS that POSTs to the mock's `/__mock/reset` endpoint at the start of each flow. |
-| `e2e/pagination-classic.yaml` | Maestro flow: paired against mock → switch to classic layout → scrollUntilVisible on conversations #0, #100, #250, #345. |
 | `e2e/pagination-hub.yaml` | Maestro flow: paired against mock → hub layout → all 5 project rows visible → drill into `alpha-service` → scrollUntilVisible conversation #100, #345. |
-| `scripts/run-pagination-e2e.sh` | Harness — boots the mock, runs both flows on the booted iOS simulator, asserts the mock's request log shows pagination (≥ 2 distinct offsets, at least one > 0), tears down. |
+| `scripts/run-pagination-e2e.sh` | Harness — boots the mock, runs the hub flow on the booted iOS simulator, asserts the mock's request log shows pagination (≥ 2 distinct offsets, at least one > 0), tears down. |
 
 ## Prerequisites
 
@@ -32,15 +31,13 @@ Tests that the conversation list paginates correctly in both **classic** and
 ## Run
 
 ```bash
-# Both flows + network assertion
+# Hub flow + network assertion
 ./scripts/run-pagination-e2e.sh
-
-# Classic only
-./scripts/run-pagination-e2e.sh classic
-
-# Hub only
-./scripts/run-pagination-e2e.sh hub
 ```
+
+> The classic-layout flow was removed: its conversation rows never had stable
+> `testID`s (`classic-conv-*`), so it could not assert reliably. Pagination is
+> exercised by the hub flow, which shares the same network-pagination assertion.
 
 ## Exit codes
 
@@ -55,10 +52,6 @@ Tests that the conversation list paginates correctly in both **classic** and
 
 Maestro writes per-step screenshots to `e2e/_artifacts/`:
 
-- `pagination-classic-01-top.png` — top of conversation list (#0 visible)
-- `pagination-classic-02-mid.png` — scrolled to #100 (page 3)
-- `pagination-classic-03-deep.png` — scrolled to #250 (page 6)
-- `pagination-classic-04-last.png` — scrolled to #345 (page 7, last)
 - `pagination-hub-01-top.png` — hub with first project row
 - `pagination-hub-02-all-projects.png` — after scrolling to verify all 5 projects
 - `pagination-hub-03-project-top.png` — drilled into alpha-service

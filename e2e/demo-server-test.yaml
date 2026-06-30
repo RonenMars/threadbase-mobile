@@ -1,69 +1,51 @@
 appId: ${APP_BUNDLE_ID}
 ---
-# Test demo server connection and basic session creation
+# Lightweight demo-server smoke: onboard against the demo server, create a
+# session, send one message, confirm we stayed on the session screen.
+# Heavier coverage (info modal, back-nav, re-enter) lives in
+# demo-server-connect-only.yaml.
+#
 # Server: set DEMO_SERVER_URL env var (pass via -e DEMO_SERVER_URL=... to maestro)
 # API Key: tb_public_demo_reviewer_key
+#
+# Onboarding (welcome → … → hub) is delegated to setup-demo.yaml so this flow
+# only owns the session-create + send assertions and can't rot when the
+# onboarding carousel changes.
 
-- launchApp:
-    clearState: true
+- runFlow: setup-demo.yaml
 
-# Wait for onboarding screen to load
-- assertVisible:
-    text: "Welcome to Threadbase"
-    timeout: 10000
-
-# Look for the manual setup UI (server URL input should be visible)
-- assertVisible:
-    id: "onboarding-connect-url-input"
-
-# Enter server URL
+# ── Create a session from the hub ─────────────────────────────────────────────
 - tapOn:
-    id: "onboarding-connect-url-input"
-- inputText: ${DEMO_SERVER_URL}
+    id: "fab-new-session"
 
-# Enter API key
+- extendedWaitUntil:
+    visible:
+      id: "browse-first-directory"
+    timeout: 5000
 - tapOn:
-    id: "onboarding-connect-token-input"
-- inputText: "tb_public_demo_reviewer_key"
+    id: "browse-first-directory"
 
-# Tap Connect button
 - tapOn:
-    id: "onboarding-connect-handshake-cta"
+    text: "Start Session Here"
 
-# Wait for connection to succeed and main screen to load
-- assertVisible:
-    text: "Conversations"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
     timeout: 15000
 
-# Should land on the main hub/conversations list
-# Create a new session by tapping the "New chat" or similar button
+# ── Send one message ──────────────────────────────────────────────────────────
 - tapOn:
-    text: "New chat"
-    timeout: 5000
-
-# Wait for session screen to appear
-- assertVisible:
-    id: "session-detail-screen"
-    timeout: 10000
-
-# Type a message in the input
-- tapOn:
-    text: "Type a message"
+    id: "chat-message-input"
 - inputText: "Hello from App Review test!"
 
-# Tap the send button (likely a paper plane icon or Send text)
-- tapOn:
-    text: "Send"
-    optional: true
-
-# Alternative: look for accessible send button if text doesn't work
-- tapOn:
-    accessibilityLabel: "Send message"
-    optional: true
-
-# Wait a moment for the message to appear
+- hideKeyboard
 - waitForAnimationToEnd
 
-# Verify we're still on the session screen (test passed if we got this far)
+- tapOn:
+    id: "chat-send-button"
+
+- waitForAnimationToEnd
+
+# Still on the session screen — test passed if we got this far.
 - assertVisible:
     id: "session-detail-screen"

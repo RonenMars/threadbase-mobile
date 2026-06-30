@@ -29,7 +29,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
 | Bug 16 | Back from never-typed-in new session leaves an empty session alive | Open — not diagnosed |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
-| Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), needs CI re-wiring + `.skip` removal |
+| Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), `.skip` deleted; still needs CI re-wiring |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
 | Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
 | Bug 21 | "Open Session" from Recents lands on "Session not found" | Open — not diagnosed |
@@ -607,7 +607,7 @@ If all of the above are still empty at exit time, the session is a discard.
 
 ## Bug 18 — Maestro flow `server_drag_reorder.yaml.skip` crashes the app at the `swipe` step
 
-**Filed:** 2026-05-24. **Status:** **Partial.** A working flow was recreated as `e2e/server_drag_reorder.yaml` (commit `cd6d753`, `test(e2e): add server drag-reorder maestro flow`), but the old `e2e/server_drag_reorder.yaml.skip` is still in the tree and the new flow is not yet in the `npm run test:e2e:mock` arglist in `package.json`. Remaining work: (1) verify `server_drag_reorder.yaml` passes locally against the mock fixture, (2) add it to the `maestro test ...` arglist alongside the other flows, (3) `git rm e2e/server_drag_reorder.yaml.skip`.
+**Filed:** 2026-05-24. **Status:** **Partial.** A working flow was recreated as `e2e/server_drag_reorder.yaml` (commit `cd6d753`, `test(e2e): add server drag-reorder maestro flow`). The stale `e2e/server_drag_reorder.yaml.skip` has now been deleted (2026-06-30, E2E remediation). Remaining work: (1) verify `server_drag_reorder.yaml` passes locally against the mock fixture, (2) add it to the `maestro test ...` arglist alongside the other flows. (Step 3 — removing the `.skip` — is done.)
 
 **Symptom:** The flow runs `setup.yaml`, taps the filter-sort button, then the conditional `runFlow` enters the multi-server branch even on a single-server fixture. The first `swipe` against `id: "drag-handle-srv_a"` causes the app to crash within ~4 s. Maestro log: *"App crashed or stopped while executing flow, please check diagnostic logs: ~/Library/Logs/DiagnosticReports directory"*.
 
@@ -627,7 +627,7 @@ If all of the above are still empty at exit time, the session is a discard.
 
 **Files likely involved:**
 
-- `e2e/server_drag_reorder.yaml.skip` — the flow
+- `e2e/server_drag_reorder.yaml` — the flow (the `.skip` variant was deleted)
 - `e2e/setup.yaml` — server-pairing seed
 - `e2e/mock-server.js` — multi-server fixture support
 - `components/servers/DisplayedServersList.tsx` — drag-handle testID emission

@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# Pagination e2e runner — boots the pagination mock-server, runs the two
-# maestro flows (classic + hub views), asserts the visual progression
-# completed, then asserts the mock's request log shows pagination actually
-# fired (multiple /api/conversations requests with monotonically increasing
-# offsets).
+# Pagination e2e runner — boots the pagination mock-server, runs the hub
+# maestro flow, asserts the visual progression completed, then asserts the
+# mock's request log shows pagination actually fired (multiple
+# /api/conversations requests with monotonically increasing offsets).
 #
 # Usage:
-#   ./scripts/run-pagination-e2e.sh                 # run both flows
-#   ./scripts/run-pagination-e2e.sh classic         # classic only
-#   ./scripts/run-pagination-e2e.sh hub             # hub only
+#   ./scripts/run-pagination-e2e.sh                 # run the hub flow
+#   ./scripts/run-pagination-e2e.sh hub             # same
 #
 # Exit codes:
 #   0 — both visual and network assertions passed
@@ -73,6 +71,14 @@ fi
 echo "  targeting iOS simulator: $IOS_UDID"
 echo ""
 
+# Gate on a supported iOS runtime + a Release build, same as the npm E2E
+# scripts. pagination-hub.yaml uses clearState and the Release onboarding path,
+# so a dev-client build or an iOS-26 sim would fail it (see check-sim.js /
+# ensure-release-build.js).
+node e2e/check-sim.js
+node e2e/ensure-release-build.js
+echo ""
+
 run_flow() {
   local flow="$1"
   local label="$2"
@@ -87,13 +93,14 @@ run_flow() {
 
 FLOWS_OK=1
 case "$WHICH" in
-  classic) run_flow "e2e/pagination-classic.yaml" "classic" || FLOWS_OK=0 ;;
-  hub)     run_flow "e2e/pagination-hub.yaml" "hub"         || FLOWS_OK=0 ;;
-  both)
-    run_flow "e2e/pagination-classic.yaml" "classic" || FLOWS_OK=0
-    run_flow "e2e/pagination-hub.yaml" "hub"          || FLOWS_OK=0
+  classic)
+    echo "✗ the classic flow was removed — its conversation rows never had stable"
+    echo "  testIDs (classic-conv-*), so the flow could never assert reliably."
+    echo "  Use 'hub' instead; pagination is covered by e2e/pagination-hub.yaml."
+    exit 2
     ;;
-  *) echo "usage: $0 [classic|hub|both]"; exit 2 ;;
+  hub|both) run_flow "e2e/pagination-hub.yaml" "hub" || FLOWS_OK=0 ;;
+  *) echo "usage: $0 [hub|both]"; exit 2 ;;
 esac
 
 if [[ $FLOWS_OK -eq 0 ]]; then

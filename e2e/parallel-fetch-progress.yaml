@@ -16,6 +16,11 @@
 # Run: npm run test:e2e:parallel-fetch
 
 appId: com.ronenmars.threadbase
+env:
+  # Metro dev-server URL as it appears in the Expo dev-client picker. Override
+  # to match this machine's IP: `maestro test -e METRO_URL=http://<ip>:8081 …`
+  # (the npm script passes it for you).
+  METRO_URL: http://localhost:8081
 ---
 - runScript: scripts/reset-progress-mock.js
 
@@ -27,7 +32,7 @@ appId: com.ronenmars.threadbase
 - extendedWaitUntil:
     visible: "DEVELOPMENT SERVERS"
     timeout: 10000
-- tapOn: "http://192.168.68.112:8081"
+- tapOn: "${METRO_URL}"
 
 # 2. Dev menu intro — tap Continue
 - extendedWaitUntil:

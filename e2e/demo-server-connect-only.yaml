@@ -95,9 +95,9 @@ appId: ${APP_BUNDLE_ID}
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Skip the notifications step
+# Advance past the notifications step (the CTA is "Continue", not "Skip")
 - tapOn:
-    text: "Skip"
+    id: "onboarding-notifications-cta"
 
 # Wait for Done step (step 4/4)
 - waitForAnimationToEnd:
@@ -156,7 +156,7 @@ appId: ${APP_BUNDLE_ID}
 
 # Type a test prompt
 - tapOn:
-    id: "message-input"
+    id: "chat-message-input"
 - inputText: "What is 2+2?"
 
 # Hide keyboard so send button is visible
@@ -167,15 +167,16 @@ appId: ${APP_BUNDLE_ID}
 
 # Tap send button to send the message
 - tapOn:
-    id: "send-message-button"
+    id: "chat-send-button"
 
 # Wait for response to start streaming
 - waitForAnimationToEnd:
     timeout: 20000
 
-# Verify terminal output is visible (indicates response is rendering)
+# Still on the session screen after sending (there is no `terminal-output`
+# testID — assert the session view instead)
 - assertVisible:
-    id: "terminal-output"
+    id: "session-detail-screen"
 
 # Test the info button functionality
 - tapOn:
