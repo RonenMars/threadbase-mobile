@@ -13,6 +13,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useKeyboardState } from 'react-native-keyboard-controller'
 import {
   ImageIcon as PhosphorImage,
   X,
@@ -62,6 +63,14 @@ export function ChatComposer({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const insets = useSafeAreaInsets()
+  // When the keyboard is up, behavior="padding" already lifts the composer above
+  // it — the home indicator is covered, so the resting insets.bottom + xl spacing
+  // would double-count and leave a visible gap. Use a small fixed gap instead;
+  // restore the full safe-area padding only when the keyboard is closed.
+  const keyboardVisible = useKeyboardState((s) => s.isVisible)
+  const inputAreaPaddingBottom = keyboardVisible
+    ? spacing.sm
+    : (Platform.OS === 'android' ? spacing.md : spacing.xl) + insets.bottom
   const [expanded, setExpanded] = useState(false)
 
   const hasContent = value.trim().length > 0 || attachments.length > 0
@@ -160,7 +169,7 @@ export function ChatComposer({
   )
 
   return (
-    <View style={[styles.inputArea, { paddingBottom: (Platform.OS === 'android' ? spacing.md : spacing.xl) + insets.bottom }]}>
+    <View style={[styles.inputArea, { paddingBottom: inputAreaPaddingBottom }]}>
       {errors}
       {chips}
       <View style={styles.inputRow}>
@@ -226,12 +235,12 @@ export function ChatComposer({
           style={styles.modalContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+          <SafeAreaView style={styles.flex} edges={['top']}>
             <View
               style={[
                 styles.inputArea,
                 styles.inputAreaExpanded,
-                { paddingBottom: spacing.xl + insets.bottom },
+                { paddingBottom: inputAreaPaddingBottom },
               ]}
             >
               {errors}
