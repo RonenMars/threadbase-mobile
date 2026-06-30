@@ -128,16 +128,10 @@ cloudflared tunnel --config "$env:USERPROFILE\.cloudflared\config.yml" run
 $env:EXPO_PACKAGER_PROXY_URL="https://<your-metro-hostname>"; npx expo start --lan
 ```
 
-With feature flags:
+Add `-c` to clear Metro's transform cache:
 
 ```powershell
-$env:EXPO_PUBLIC_FEATURE_QUESTIONS="true"; $env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan
-```
-
-After **flipping a feature flag**, add `-c` to clear Metro's transform cache:
-
-```powershell
-$env:EXPO_PUBLIC_FEATURE_QUESTIONS="true"; $env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan -c
+$env:EXPO_PACKAGER_PROXY_URL="https://<your-tunnel-hostname>"; npx expo start --lan -c
 ```
 
 ---
@@ -155,11 +149,8 @@ npm run dev:tunnel
 # Full native rebuild + install over USB:
 DEVICE_UDID=<your-device-udid> npm run dev:tunnel:native
 
-# With feature flags:
-EXPO_PUBLIC_FEATURE_QUESTIONS=true npm run dev:tunnel
-
-# Feature flag + clear cache:
-EXPO_PUBLIC_FEATURE_QUESTIONS=true npm run dev:tunnel -- -c
+# Clear Metro cache:
+npm run dev:tunnel -- -c
 ```
 
 `npm run dev:tunnel` automatically:
@@ -265,13 +256,6 @@ npm run kill:metro
 $pid = (netstat -ano | Select-String ":8081.*LISTENING" | ForEach-Object { ($_ -split '\s+')[-1] } | Select-Object -First 1)
 if ($pid) { taskkill /PID $pid /F }
 ```
-
----
-
-## Feature flags
-
-`EXPO_PUBLIC_*` vars are inlined at bundle time. A bare `FEATURE_QUESTIONS=true`
-(no `EXPO_PUBLIC_` prefix) is **not** read by the app — the flag stays off.
 
 ---
 

@@ -164,10 +164,9 @@ Two effects `scrollToEnd` on `allMessages.length` change and on entering `thinki
 
 ---
 
-## Question cards (feature-flagged)
+## Question cards
 
-Gated entirely behind `FEATURE_QUESTIONS` (`constants/flags.ts`, env var
-`EXPO_PUBLIC_FEATURE_QUESTIONS`, default **off**). `ThinkingBubble` can render an
+`ThinkingBubble` can render an
 interactive `QuestionCard` (`components/terminal/`) from **two sources**:
 
 | Source | Path | Answer mechanism |

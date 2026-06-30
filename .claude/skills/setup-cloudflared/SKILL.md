@@ -39,7 +39,6 @@ steps below.
 
 ```bash
 npm run dev:tunnel                           # JS-only
-EXPO_PUBLIC_FEATURE_QUESTIONS=true npm run dev:tunnel   # with feature flags
 npm run dev:tunnel -- -c                     # clear Metro cache
 DEVICE_UDID=<udid> npm run dev:tunnel:native # full native rebuild
 ```
@@ -126,14 +125,7 @@ Terminal 2:
 $env:EXPO_PACKAGER_PROXY_URL="https://<your-metro-hostname>"; npx expo start --lan
 ```
 
-### With feature flags (PowerShell)
-
-All env var values must be quoted. Semicolons separate assignments:
-```powershell
-$env:EXPO_PUBLIC_FEATURE_QUESTIONS="true"; $env:EXPO_PACKAGER_PROXY_URL="https://<hostname>"; npx expo start --lan
-```
-
-Note: `$env:VAR=true` (unquoted) fails — PowerShell tries to execute `true` as a command.
+Note: when setting env vars, `$env:VAR=true` (unquoted) fails — PowerShell tries to execute `true` as a command. Quote the value.
 
 ### Kill Metro on Windows
 

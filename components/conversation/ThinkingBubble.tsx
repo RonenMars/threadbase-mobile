@@ -6,7 +6,6 @@ import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlo
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
-import { FEATURE_QUESTIONS } from '@/constants/flags'
 
 function DotsAnimation({ style }: { style?: object }) {
   // useMemo so Animated.Value instances are stable across re-renders
@@ -59,7 +58,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   const hasLines = lines.length > 0
 
   const questionBlock = useMemo(
-    () => (FEATURE_QUESTIONS && onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
+    () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
     [lines, onSendKeys]
   )
 
@@ -103,20 +102,11 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     .map(l => stripBoxDrawing(stripAnsi(l)))
     .filter(l => l.length > 0)
 
-  // When FEATURE_QUESTIONS is off, render the structured question as plain text
-  // inside the bubble so the user can still see what's being asked.
-  const questionTextLines = !FEATURE_QUESTIONS && activeQuestion
-    ? activeQuestion.questions.flatMap(q => [
-        q.question,
-        ...q.options.map((o, i) => `  ${i + 1}. ${o.label}`),
-      ])
-    : []
-
   // Which card (if any) will render — structured WS question / permission gate
   // takes precedence over the PTY-scraped block.
-  const card = FEATURE_QUESTIONS && activeQuestion
+  const card = activeQuestion
     ? <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
-    : FEATURE_QUESTIONS && questionBlock
+    : questionBlock
       ? <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
       : null
 
@@ -133,7 +123,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   return (
     <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
-        {(hasLines || questionTextLines.length > 0) ? (
+        {hasLines ? (
           <ScrollView
             ref={scrollRef}
             style={styles.terminalScroll}
@@ -143,12 +133,9 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
             {visibleLines.map((line, i) => (
               <Text key={i} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
             ))}
-            {questionTextLines.map((line, i) => (
-              <Text key={`q${i}`} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
-            ))}
           </ScrollView>
         ) : null}
-        {(isStreaming || (!hasLines && questionTextLines.length === 0)) ? (
+        {(isStreaming || !hasLines) ? (
           <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} />
         ) : null}
       </View>
