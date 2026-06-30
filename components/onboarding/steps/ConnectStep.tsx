@@ -183,8 +183,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
         <PrimaryButton onPress={() => setScannerOpen(true)}>{t('connect.openCamera')}</PrimaryButton>
         <TouchableOpacity onPress={() => setMode('manual')} style={styles.linkBtn}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <Text style={styles.linkText}>Use manual entry instead</Text>
+          <Text style={styles.linkText}>{t('connect.manualEnterInstead')}</Text>
         </TouchableOpacity>
         <View style={{ height: 14 }} />
 
@@ -208,24 +207,19 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       <Text style={styles.headline}>{t('connect.headline')}</Text>
 
       <TouchableOpacity onPress={() => setMode('qr-explain')} style={styles.linkBtnTop}>
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.linkText}>Scan a QR instead →</Text>
+        <Text style={styles.linkText}>{t('connect.manualScanInstead')}</Text>
       </TouchableOpacity>
 
       <TerminalCard>
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.sectionLabel}>On your Mac</Text>
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={styles.sectionHint}>Open Terminal and run:</Text>
+        <Text style={styles.sectionLabel}>{t('connect.manualSectionLabel')}</Text>
+        <Text style={styles.sectionHint}>{t('connect.manualSectionHint')}</Text>
         <CopyableCommand command="tb pair" />
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Text style={[styles.sectionHint, { marginTop: 6 }]}>It prints a URL + token — paste both below.</Text>
+        <Text style={[styles.sectionHint, { marginTop: 6 }]}>{t('connect.manualSectionPasteHint')}</Text>
       </TerminalCard>
 
       <View style={styles.form}>
         <View style={styles.formLabelRow}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <Text style={styles.formLabel}>Server URL</Text>
+          <Text style={styles.formLabel}>{t('connect.manualServerUrl')}</Text>
           <InfoTooltip
             linkLabel="Networking guide"
             linkUrl="https://github.com/RonenMars/threadbase-streamer#networking"
@@ -249,8 +243,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         />
 
         <View style={styles.formLabelRow}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <Text style={styles.formLabel}>Token</Text>
+          <Text style={styles.formLabel}>{t('connect.manualToken')}</Text>
           <InfoTooltip
             linkLabel="Pairing docs"
             linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
@@ -267,7 +260,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           secureTextEntry
-          placeholder="paste from terminal"
+          placeholder={t('connect.manualTokenPlaceholder')}
           placeholderTextColor={colors.fg4}
           style={styles.formInput}
           editable={!busy}
@@ -297,6 +290,14 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
                 {t('connect.ready')}
               </Animated.Text>
             )}
+            {phase === 'err' && (
+              <Animated.Text
+                entering={FadeIn.duration(200)}
+                style={[styles.logLine, { color: colors.fg3, marginTop: 6 }]}
+              >
+                {t('connect.connectErrHint')}
+              </Animated.Text>
+            )}
           </View>
         )}
       </View>
@@ -308,14 +309,13 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         onPress={handleConnect}
         disabled={!valid || busy}
       >
-        {/* eslint-disable-next-line i18next/no-literal-string */}
         {phase === 'idle'
-          ? 'Connect'
+          ? t('connect.connectIdle')
           : phase === 'ok'
-            ? 'Connected'
+            ? t('connect.connectOk')
             : phase === 'err'
-              ? 'Retry'
-              : '…connecting'}
+              ? t('connect.connectErr')
+              : t('connect.connectBusy')}
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </KeyboardAwareScrollView>

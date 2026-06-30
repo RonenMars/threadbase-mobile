@@ -6,7 +6,7 @@
     "headline": "משוך חוט.",
     "headlineAccent": "צפה בו נארג.",
     "body": "שלט רחוק ל-Claude Code, על המכשיר שאתה באמת נושא איתך.",
-    "cta": "התחל לחיצת יד"
+    "cta": "בוא נתחיל"
   },
   "addServer": {
     "title": "הוסף שרת",
@@ -50,7 +50,31 @@
     "openCamera": "פתח מצלמה",
     "pairMyLaptop": "זווג את המחשב הנייד שלי",
     "ready": "✓ מוכן",
-    "footnote": "// על שולחן העבודה שלך, הרץ tb pair כדי להדפיס טוקן."
+    "footnote": "// על שולחן העבודה שלך, הרץ tb pair כדי להדפיס טוקן.",
+    "manualSectionLabel": "על ה-Mac שלך",
+    "manualSectionHint": "פתח טרמינל והרץ:",
+    "manualSectionPasteHint": "הוא מדפיס URL + טוקן — הדבק את שניהם למטה.",
+    "manualServerUrl": "כתובת שרת",
+    "manualToken": "טוקן",
+    "manualTokenPlaceholder": "הדבק טוקן מהפלט של tb pair",
+    "manualScanInstead": "סרוק QR במקום →",
+    "manualEnterInstead": "השתמש בהזנה ידנית במקום",
+    "connectIdle": "התחבר",
+    "connectOk": "מחובר",
+    "connectErr": "נסה שוב",
+    "connectBusy": "…מתחבר",
+    "connectErrHint": "הטוקן פג תוקף? הרץ tb pair שוב על ה-Mac שלך."
+  },
+  "done": {
+    "eyebrowPaired": "לחיצת היד הושלמה",
+    "eyebrowUnpaired": "הכל מוכן",
+    "headlinePaired": "החוט חי.",
+    "headlineUnpaired": "אתה בפנים.",
+    "bodyPaired": "המחשב הנייד שלך מאזין. פתח סשן כשתרצה.",
+    "bodyUnpaired": "דלג לעת עתה — תוכל לחבר סביבת ריצה מההגדרות בכל עת.",
+    "pillUnpaired": "אין סביבת ריצה מחוברת · חבר מהגדרות",
+    "ctaPaired": "כנס ל-Threadbase",
+    "ctaUnpaired": "המשך — אחבר מאוחר יותר"
   },
   "tour": {
     "eyebrow": "> 04 / סיור",
@@ -74,8 +98,11 @@
   },
   "notifications": {
     "allowTitle": "התראות דחיפה",
-    "body": "נשלח לך פינג כאשר סשן מסתיים, נתקל בשגיאה או זקוק להחלטה מהירה — כך שאתה לא צריך לשמור את האפליקציה פתוחה.",
-    "continue": "המשך"
+    "body": "Threadbase שולח לך הודעה כשסשן צריך החלטה, מסיים ריצה, או נתקל בשגיאה — הדברים שכדאי לדעת בלי לפקח על טרמינל.",
+    "continue": "המשך",
+    "skipCta": "דלג — אצפה בקנבן",
+    "enabledStatus": "מופעל · alerts.threadbase.dev",
+    "tapToAllow": "הקש כדי לאפשר"
   },
   "theme": {
     "eyebrow": "// מראה",

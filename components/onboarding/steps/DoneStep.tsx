@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
+  const { t } = useTranslation('onboarding')
   const paired = serverHost != null && serverPort != null
   const popScale = useSharedValue(0.8)
   const popOpacity = useSharedValue(0)
@@ -93,15 +95,13 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
         </Animated.View>
 
         <Text style={[styles.eyebrow, !paired && styles.eyebrowUnpaired]}>
-          {paired ? 'HANDSHAKE COMPLETE' : 'ALL SET'}
+          {paired ? t('done.eyebrowPaired') : t('done.eyebrowUnpaired')}
         </Text>
         <Text style={styles.headline}>
-          {paired ? 'Thread is live.' : "You're in."}
+          {paired ? t('done.headlinePaired') : t('done.headlineUnpaired')}
         </Text>
         <Text style={styles.body}>
-          {paired
-            ? 'Your laptop is listening. Open a session whenever the mood strikes.'
-            : "Skip it for now — you can connect a runtime from Settings whenever you’re ready."}
+          {paired ? t('done.bodyPaired') : t('done.bodyUnpaired')}
         </Text>
 
         <View style={styles.pill}>
@@ -113,13 +113,13 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
           <Text style={styles.pillText}>
             {paired
               ? `paired · ${serverHost} · ${serverPort}`
-              : 'no runtime paired · pair from Settings'}
+              : t('done.pillUnpaired')}
           </Text>
         </View>
       </View>
 
       <PrimaryButton testID="onboarding-done-cta" onPress={onEnter} showIcon={false}>
-        {paired ? 'Enter Threadbase' : 'Enter without pairing'}
+        {paired ? t('done.ctaPaired') : t('done.ctaUnpaired')}
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </View>

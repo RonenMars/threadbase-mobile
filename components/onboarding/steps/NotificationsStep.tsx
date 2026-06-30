@@ -122,8 +122,7 @@ export function NotificationsStep({ onNext }: Props) {
         <View style={styles.allowText}>
           <Text style={styles.allowTitle}>{t('notifications.allowTitle')}</Text>
           <Text style={styles.allowStatus}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            {enabled ? 'ENABLED · alerts.threadbase.dev' : 'TAP TO ALLOW'}
+            {enabled ? t('notifications.enabledStatus') : t('notifications.tapToAllow')}
           </Text>
         </View>
         <View
@@ -153,8 +152,7 @@ export function NotificationsStep({ onNext }: Props) {
       <View style={styles.flex} />
 
       <PrimaryButton testID="onboarding-notifications-cta" onPress={onNext}>
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        {enabled ? 'Continue' : "Skip — I'll watch the kanban"}
+        {enabled ? t('notifications.continue') : t('notifications.skipCta')}
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </View>

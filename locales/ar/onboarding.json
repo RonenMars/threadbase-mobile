@@ -6,7 +6,7 @@
     "headline": "اسحب خيطًا.",
     "headlineAccent": "وشاهده يُنسَج.",
     "body": "جهاز تحكم عن بُعد لـ Claude Code، على الجهاز الذي تحمله فعلًا.",
-    "cta": "ابدأ المصافحة"
+    "cta": "هيا نبدأ"
   },
   "addServer": {
     "title": "إضافة خادم",
@@ -36,21 +36,53 @@
     "skip": "تخطّي الآن"
   },
   "connect": {
-    "eyebrow": "> 02 / الإقران",
-    "headline": "اربط بيئة تشغيل.",
-    "modeBlurb": "اختر كيف تريد تسليم الخادم مفاتيحه.",
+    "eyebrow": "> 02 / إقران",
+    "headline": "اتصل ببيئة التشغيل.",
+    "modeBlurb": "اختر كيف تريد تسليم المفاتيح للخادم.",
     "scanQr": "مسح QR",
-    "scanQrBody": "شغّل tb pair على خادمك لطباعة رمز QR. الأسرع، وبلا كتابة.",
-    "pasteCredentials": "الكتابة / اللصق يدويًا",
-    "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق العنوان والتوكن.",
-    "qrEyebrow": "> 02 / الإقران · QR",
+    "scanQrBody": "شغّل tb pair على خادمك لطباعة QR. أسرع طريقة، بدون كتابة.",
+    "pasteCredentials": "الإدخال اليدوي",
+    "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق URL والرمز.",
+    "qrEyebrow": "> 02 / إقران · QR",
     "qrHeadline": "امسح للإقران.",
     "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
     "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
     "openCamera": "فتح الكاميرا",
     "pairMyLaptop": "إقران حاسوبي المحمول",
     "ready": "✓ جاهز",
-    "footnote": "// على سطح مكتبك، شغّل tb pair لطباعة توكن."
+    "footnote": "// على سطح مكتبك، شغّل tb pair لطباعة توكن.",
+    "manualSectionLabel": "على Mac الخاص بك",
+    "manualSectionHint": "افتح Terminal وشغّل:",
+    "manualSectionPasteHint": "يطبع URL + رمزًا — الصق كليهما أدناه.",
+    "manualServerUrl": "عنوان الخادم",
+    "manualToken": "الرمز",
+    "manualTokenPlaceholder": "الصق الرمز من مخرجات tb pair",
+    "manualScanInstead": "مسح QR بدلًا من ذلك →",
+    "manualEnterInstead": "استخدام الإدخال اليدوي بدلًا من ذلك",
+    "connectIdle": "اتصال",
+    "connectOk": "متصل",
+    "connectErr": "إعادة المحاولة",
+    "connectBusy": "…جارٍ الاتصال",
+    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مرة أخرى على Mac الخاص بك."
+  },
+  "done": {
+    "eyebrowPaired": "اكتمل الإقران",
+    "eyebrowUnpaired": "جاهز",
+    "headlinePaired": "الخيط حي.",
+    "headlineUnpaired": "أنت داخل.",
+    "bodyPaired": "جهازك المحمول يستمع. افتح سيشن متى أردت.",
+    "bodyUnpaired": "تخطَّ الآن — يمكنك توصيل بيئة تشغيل من الإعدادات في أي وقت.",
+    "pillUnpaired": "لا توجد بيئة تشغيل · قرن من الإعدادات",
+    "ctaPaired": "ادخل Threadbase",
+    "ctaUnpaired": "متابعة — سأقرن لاحقًا"
+  },
+  "notifications": {
+    "allowTitle": "الإشعارات الفورية",
+    "body": "Threadbase يُنبّهك عندما يحتاج سيشن قرارًا، أو ينتهي تشغيلًا، أو يواجه خطأ — الأشياء التي تستحق المعرفة دون مراقبة الطرفية.",
+    "continue": "متابعة",
+    "skipCta": "تخطي — سأراقب الكانبان",
+    "enabledStatus": "مفعّل · alerts.threadbase.dev",
+    "tapToAllow": "اضغط للسماح"
   },
   "tour": {
     "eyebrow": "> 04 / الجولة",
@@ -71,11 +103,6 @@
     "labelPrompts": "برومبتات ▸",
     "labelStdout": "◂ stdout",
     "labelClaudeRun": "claude run"
-  },
-  "notifications": {
-    "allowTitle": "إشعارات الدفع",
-    "body": "سننبّهك عندما ينتهي سيشن، أو يواجه خطأ، أو يحتاج قرارًا سريعًا — حتى لا تضطر لإبقاء التطبيق مفتوحًا.",
-    "continue": "متابعة"
   },
   "theme": {
     "eyebrow": "// المظهر",
