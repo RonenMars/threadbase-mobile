@@ -1,0 +1,25 @@
+# Threadbase Metro tunnel config — reference template.
+#
+# macOS/Linux:
+#   Copy this file to ~/.cloudflared/config.yml and fill in your values.
+#   The credentials file is placed in the same directory by `cloudflared tunnel create`.
+#
+# Windows:
+#   The cloudflared Windows service runs as SYSTEM and reads its config from
+#   the SYSTEM profile — NOT your user profile (~\.cloudflared\config.yml).
+#   Edit the active config at:
+#     C:\Windows\system32\config\systemprofile\.cloudflared\config.yml
+#   After editing, restart the service (Administrator PowerShell):
+#     Restart-Service cloudflared
+
+tunnel: <TUNNEL-ID>
+
+# macOS/Linux:
+credentials-file: ~/.cloudflared/<TUNNEL-ID>.json
+# Windows (SYSTEM profile — used by the service):
+# credentials-file: C:\Windows\system32\config\systemprofile\.cloudflared\<TUNNEL-ID>.json
+
+ingress:
+  - hostname: <your-metro-hostname>
+    service: http://localhost:8081
+  - service: http_status:404
