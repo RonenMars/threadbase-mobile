@@ -18,6 +18,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
@@ -55,6 +56,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
   const setCacheReady = useServersStore((s) => s.setCacheReady)
+  const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -136,6 +138,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const unsubCacheReady = wsManager.onAll('cache_ready', (msg) => {
       if (msg.type !== 'cache_ready') return
       setCacheReady(msg.serverId)
+      recordFetchSuccess(msg.serverId)
     })
 
     // Register push tokens for all servers
