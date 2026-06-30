@@ -18,7 +18,6 @@ import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
-import { FEATURE_QUESTIONS } from '@/constants/flags'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -131,7 +130,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
   const questionBlock = useMemo(
-    () => (FEATURE_QUESTIONS && onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
+    () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
     [lines, onSendKeys]
   )
 
@@ -172,7 +171,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
         contentContainerStyle={styles.listContent}
       />
 
-      {FEATURE_QUESTIONS && activeQuestion ? (
+      {activeQuestion ? (
         <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
       ) : questionBlock && onSendKeys ? (
         <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />

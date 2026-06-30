@@ -3,8 +3,6 @@ import React from 'react'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
-jest.mock('@/constants/flags', () => ({ FEATURE_QUESTIONS: true }))
-
 const aq: QuestionBlock = {
   source: 'structured', toolUseId: 't1',
   questions: [{ question: 'Q?', header: 'H', multiSelect: false, options: [{ label: 'A', description: 'a' }, { label: 'B', description: 'b' }] }],
