@@ -28,13 +28,15 @@ which requires knowing the tunnel URL first. The solutions differ by platform:
 
 ## Tunnel setup by platform
 
-`.cloudflared/config.yml` in this repo is a cross-platform reference template
-— fill in your tunnel ID and hostname, then follow the platform notes below.
+`.cloudflared/config.example.yml` is a committed cross-platform template —
+like `.env.example`, it shows the structure but is never used directly.
+`.cloudflared/config.yml` is gitignored and holds the real values for your
+machine. Copy the example, fill in your tunnel ID and hostname, then follow
+the platform notes below.
 
-**macOS/Linux:** copy the template to `~/.cloudflared/config.yml`. For quick
-tunnels (no account), `npm run dev:tunnel` handles everything automatically.
-For named tunnels, place the filled-in config at the path above and run
-`cloudflared tunnel run <name>` or use the `CLOUDFLARED_TUNNEL_NAME` env var
+**macOS/Linux:** place the filled-in `config.yml` at `~/.cloudflared/config.yml`.
+For quick tunnels (no account), `npm run dev:tunnel` handles everything
+automatically. For named tunnels, use the `CLOUDFLARED_TUNNEL_NAME` env var
 with `npm run dev:tunnel`.
 
 **Windows:** The cloudflared service runs as SYSTEM and reads its config from
@@ -88,11 +90,11 @@ If no cloudflared service exists yet, install one from an **Administrator**
 PowerShell (right-click Start → Terminal (Admin)):
 
 ```powershell
-cloudflared --config "C:\path\to\repo\.cloudflared\config.yml" service install
+cloudflared --config "C:\path\to\repo\.cloudflared\config.example.yml" service install
 ```
 
-> See `.cloudflared/config.yml` in this repo for the ingress template and
-> `.cloudflared/config.yml` setup steps in the one-time setup section below.
+> See `.cloudflared/config.example.yml` in this repo for the ingress template
+> and the one-time setup section below for fill-in instructions.
 
 The service starts automatically on boot. Just start Metro:
 
@@ -239,9 +241,9 @@ cloudflared tunnel route dns <TUNNEL-ID> <your-tunnel-hostname>
 
 ### Configure the project
 
-The repo's `.cloudflared/config.yml` is a cross-platform reference template.
-Fill in your tunnel ID and hostname, then place the filled-in file at the
-right path for your platform:
+Copy `.cloudflared/config.example.yml` to `.cloudflared/config.yml` and fill
+in your tunnel ID and hostname (the example file has the structure; `config.yml`
+is gitignored). Then place the filled-in file at the right path for your platform:
 
 - **macOS/Linux:** `~/.cloudflared/config.yml`
 - **Windows (service):** `C:\Windows\system32\config\systemprofile\.cloudflared\config.yml`
