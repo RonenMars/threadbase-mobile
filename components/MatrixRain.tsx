@@ -1,5 +1,4 @@
 import React from 'react'
-import { useWindowDimensions } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   SharedValue,

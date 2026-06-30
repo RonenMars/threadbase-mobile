@@ -29,15 +29,18 @@ export function RainAndSweep({ dissolveOpacity, textFadeOut, onComplete }: Props
   const matrixProgress = useSharedValue(0)
   const doneSignal = useSharedValue(0)
 
+  // eslint-disable-next-line react-hooks/immutability
   useEffect(() => {
     matrixProgress.value = withDelay(
       P5_START,
       withTiming(1, { duration: P5_DURATION, easing: Easing.linear })
     )
+    // eslint-disable-next-line react-hooks/immutability
     dissolveOpacity.value = withDelay(
       P5_START,
       withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) })
     )
+    // eslint-disable-next-line react-hooks/immutability
     textFadeOut.value = withDelay(
       P5_START,
       withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) })
