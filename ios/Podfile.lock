@@ -251,14 +251,14 @@ PODS:
     - ExpoModulesJSI
     - ExpoModulesWorklets
     - RNWorklets
-  - ExpoNotifications (56.0.17):
+  - ExpoNotifications (56.0.18):
     - ExpoModulesCore
   - ExpoRouter (56.2.11):
     - ExpoModulesCore
     - RNScreens
   - ExpoSecureStore (56.0.4):
     - ExpoModulesCore
-  - ExpoSpeechRecognition (56.0.0):
+  - ExpoSpeechRecognition (56.0.1):
     - ExpoModulesCore
   - ExpoSplashScreen (56.0.10):
     - ExpoModulesCore
@@ -1752,6 +1752,28 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-netinfo (12.0.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-pager-view (8.0.1):
     - hermes-engine
     - RCTRequired
@@ -2620,6 +2642,7 @@ DEPENDENCIES:
   - React-mutationobservernativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-keyboard-controller (from `../node_modules/react-native-keyboard-controller`)
+  - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2838,6 +2861,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-get-random-values"
   react-native-keyboard-controller:
     :path: "../node_modules/react-native-keyboard-controller"
+  react-native-netinfo:
+    :path: "../node_modules/@react-native-community/netinfo"
   react-native-pager-view:
     :path: "../node_modules/react-native-pager-view"
   react-native-safe-area-context:
@@ -2959,10 +2984,10 @@ SPEC CHECKSUMS:
   ExpoModulesJSI: abc606cf32f6eeb4e2ad44ec3fc4b24143abd8f6
   ExpoModulesWorklets: 25d712f4e0a4eb37397d46c0ff5b450eca897fd1
   ExpoModulesWorkletsAdapter: c141a7854ac985cda989175ae6944c1bfe3ff91b
-  ExpoNotifications: 261ea4618d5e266647dd7c294a78a38e7f92131c
+  ExpoNotifications: 87875dae0faded5284004bc1204990947d3f64e0
   ExpoRouter: 5539806fcab8d38c639c9c255a6d73caa839436a
   ExpoSecureStore: f1bd083c1b7b8d4142013ffcc0082d377d9f49f4
-  ExpoSpeechRecognition: 255445556dbf20df46cc7585d0f5827e4825df8a
+  ExpoSpeechRecognition: 119acf84448579e53f841d040aad76982f945e2d
   ExpoSplashScreen: 3fe3a57d56d7242a9109d9714a6f9fa1e256538b
   ExpoSymbols: 377747de25bcb1ab68ec68f23d81fb81d43eae83
   ExpoSystemUI: 8f4fb641c6a6ebe2a01dda0fbd3fdd952ab5823a
@@ -3012,6 +3037,7 @@ SPEC CHECKSUMS:
   React-mutationobservernativemodule: a42d1626651ccd7d0dc02a56e69d4ec77c248893
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
   react-native-keyboard-controller: 91fb57a926597b9d16c8438bc88f1142a169715c
+  react-native-netinfo: 2f906d5d9a639090ed1c079135d6485a95f749f1
   react-native-pager-view: d96d949dba87a182577231468bb88cdb0be5954c
   react-native-safe-area-context: 6b4966397ada0f7dd481e4486a2ef936834861a1
   React-NativeModulesApple: deba264b03bd79c6bd61014fa30e40321b5e443a
