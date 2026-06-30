@@ -14,8 +14,6 @@ const BUFFER: Entry[] = []
 const FLUSH_INTERVAL_MS = 1500
 const MAX_BATCH = 50
 
-// Captured before installClientLogCapture() can replace console.warn, so the
-// "dropping batch" warning in flush() doesn't feed back through clog → BUFFER.
 const _origWarn = console.warn
 
 let flushTimer: ReturnType<typeof setTimeout> | null = null
@@ -44,7 +42,6 @@ async function flush() {
   if (BUFFER.length === 0) return
   const target = resolveFlushTarget()
   if (!target) {
-    // Use the pre-hijack warn so this doesn't feed back through clog → BUFFER.
     _origWarn(`[clientLog] dropping batch of ${BUFFER.length}: no server hydrated and no EXPO_PUBLIC_DEV_STREAMER_URL/KEY`)
     BUFFER.length = 0
     return
@@ -60,7 +57,6 @@ async function flush() {
       body: JSON.stringify({ entries: batch }),
     })
   } catch {
-    // Re-queue on transport failure; cap the buffer so we don't grow unbounded.
     BUFFER.unshift(...batch)
     if (BUFFER.length > 500) BUFFER.length = 500
   }
@@ -73,13 +69,7 @@ export function clog(
   msg: string,
   fields?: Record<string, unknown>,
 ) {
-  // No-op in production builds. clientLog is a development diagnostic; shipping
-  // every console call + every QuickAccess render over the wire from TestFlight
-  // is bandwidth, battery, and streamer-disk cost for no debugging value.
   if (!__DEV__) return
-  // No-op under Jest: scheduling a 1500ms flush timer makes the worker emit
-  // `console.warn` after the test has finished, which trips Jest's
-  // "Cannot log after tests are done" guard and fails CI.
   if (process.env.JEST_WORKER_ID !== undefined) return
   BUFFER.push({
     level,
@@ -110,8 +100,6 @@ function safeStringify(v: unknown): string {
 
 export function installClientLogCapture() {
   if (installed) return
-  // Skip the console.* hijack entirely in production — RN's console pipeline
-  // should stay untouched in release builds where we don't watch logs anyway.
   if (!__DEV__) return
   installed = true
 
