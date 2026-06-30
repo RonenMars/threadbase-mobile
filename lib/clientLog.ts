@@ -14,6 +14,10 @@ const BUFFER: Entry[] = []
 const FLUSH_INTERVAL_MS = 1500
 const MAX_BATCH = 50
 
+// Captured before installClientLogCapture() can replace console.warn, so the
+// "dropping batch" warning in flush() doesn't feed back through clog → BUFFER.
+const _origWarn = console.warn
+
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 let installed = false
 
@@ -40,11 +44,9 @@ async function flush() {
   if (BUFFER.length === 0) return
   const target = resolveFlushTarget()
   if (!target) {
-    // Surfaces the pre-hydration drop window in Metro so this failure mode is
-    // diagnosable. Use console.warn directly — going through clog would loop.
-    if (typeof console !== 'undefined' && console.warn) {
-      console.warn(`[clientLog] dropping batch of ${BUFFER.length}: no server hydrated and no EXPO_PUBLIC_DEV_STREAMER_URL/KEY`)
-    }
+    // Use the pre-hijack warn so this doesn't feed back through clog → BUFFER.
+    _origWarn(`[clientLog] dropping batch of ${BUFFER.length}: no server hydrated and no EXPO_PUBLIC_DEV_STREAMER_URL/KEY`)
+    BUFFER.length = 0
     return
   }
   const batch = BUFFER.splice(0, MAX_BATCH)

@@ -1,8 +1,13 @@
 # Metro ingress entry for the Threadbase dev server.
 #
 # On Windows, Metro is served as an ingress route inside the system-level
-# cloudflared service config (~/.cloudflared/config.yml), not as a separate
-# tunnel. Add the block below to that file before the catch-all
+# cloudflared service. The Windows service runs as SYSTEM, so it reads its
+# config from the SYSTEM profile — NOT your user profile (~\.cloudflared\).
+#
+# Active config path (edit this, not ~\.cloudflared\config.yml):
+#   C:\Windows\system32\config\systemprofile\.cloudflared\config.yml
+#
+# Add the block below to that file before the catch-all
 # `service: http_status:404` line, then restart the service:
 #
 #   Restart-Service cloudflared   (Administrator PowerShell)
@@ -10,6 +15,6 @@
 # The tunnel ID, credentials-file, and other ingress rules are already in the
 # system config — only the Metro entry needs to be added.
 
-# ingress entry to add to ~/.cloudflared/config.yml:
+# ingress entry to add to the SYSTEM profile config.yml:
 #   - hostname: <your-metro-hostname>
 #     service: http://localhost:8081

@@ -29,13 +29,16 @@ which requires knowing the tunnel URL first. The solutions differ by platform:
 ## How the Windows tunnel is set up
 
 On Windows, Metro runs as an ingress route inside the **system cloudflared
-service** (`~/.cloudflared/config.yml`) alongside other routes on the same
-tunnel. There is no separate `threadbase-dev` tunnel — the Metro hostname is
-just one more entry in the existing service config.
+service** alongside other routes on the same tunnel. There is no separate
+`threadbase-dev` tunnel — the Metro hostname is just one more entry in the
+existing service config.
 
 `.cloudflared/config.yml` in this repo is a reference template showing the
-ingress block to add. The active config lives at `~/.cloudflared/config.yml`
-and is not committed.
+ingress block to add. The active config is the **SYSTEM profile** config at
+`C:\Windows\system32\config\systemprofile\.cloudflared\config.yml` — not your
+user profile. The Windows cloudflared service runs as SYSTEM, so it reads only
+the SYSTEM profile path. Editing `~\.cloudflared\config.yml` has no effect on
+the service. The active config is not committed.
 
 ---
 
@@ -47,7 +50,9 @@ If cloudflared is already running as a Windows service (check with
 `sc.exe query cloudflared`), add Metro as an ingress route to the system config
 instead of installing a second service.
 
-Edit `~/.cloudflared/config.yml` — add the Metro entry before the catch-all:
+Edit `C:\Windows\system32\config\systemprofile\.cloudflared\config.yml` (the
+SYSTEM profile — **not** `~\.cloudflared\config.yml`) and add the Metro entry
+before the catch-all:
 
 ```yaml
 ingress:
@@ -168,13 +173,23 @@ CLOUDFLARED_TUNNEL_NAME=<your-tunnel-name> DEVICE_UDID=<udid> npm run dev:tunnel
 ## Connecting from the dev-client app
 
 Once Metro is running with the tunnel URL, open the **Threadbase** dev-client
-app on your iOS or Android device and tap **Enter URL manually**. Enter:
+app on your iOS or Android device. The app connects via a deep link:
 
 ```
-exp://<your-tunnel-hostname>
+exp+threadbase://expo-development-client/?url=https%3A%2F%2F<your-tunnel-hostname>
+```
+
+Or tap **Enter URL manually** and enter the bare HTTPS URL:
+
+```
+https://<your-tunnel-hostname>
 ```
 
 The app will fetch the bundle through the tunnel. No shared Wi-Fi needed.
+
+> **Note:** The deep link scheme is `exp+threadbase` (the app's `scheme` from
+> `app.json`), not `exp+threadbase-mobile` (the slug). Expo CLI may print the
+> slug-based URL — if that doesn't open the app, use the scheme-based one above.
 
 ---
 
@@ -262,10 +277,12 @@ if ($pid) { taskkill /PID $pid /F }
 | `cloudflared not found` | See [install-cloudflared.md](install-cloudflared.md) |
 | `cloudflared` exits immediately (macOS) | Port 8081 not open yet; `npm run dev:tunnel` handles this automatically via a placeholder listener |
 | "Failed to get tunnel URL after 30s" | Port 8081 may already be in use; run `npm run kill:metro` first |
+| App shows "Could not connect to development server" right after connecting | Initial bundle not ready yet — wait for Metro to print `Bundled`, then tap **Reload JS** |
 | App shows "Could not connect to development server" | Confirm the cloudflared process is still running in its terminal |
 | Bundle loads but feature flag not taking effect | Add `-c` to clear Metro's cache (see commands above) |
 | Named tunnel routes to wrong tunnel | `route dns <name>` can pick up an existing record; re-route using the UUID: `cloudflared tunnel route dns <TUNNEL-ID> <hostname>` |
 | Named tunnel: connection refused | Credentials file missing — re-run `cloudflared tunnel login` and `cloudflared tunnel create` |
 | `npm run kill:metro` fails on Windows | Use the PowerShell `netstat`/`taskkill` one-liner above |
 | `cloudflared service install` fails silently | Requires Administrator — open Terminal (Admin) and re-run |
-| Service installed but tunnel not routing | Run `Restart-Service cloudflared` after editing `~/.cloudflared/config.yml` |
+| Service installed but tunnel not routing | The Windows service reads the SYSTEM profile config, not your user profile. Edit `C:\Windows\system32\config\systemprofile\.cloudflared\config.yml`, then run `Restart-Service cloudflared` |
+| Edited `~\.cloudflared\config.yml` but tunnel still returns 404 | Wrong file — the service uses the SYSTEM profile path above |
