@@ -1,13 +1,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer } from '@/services/api-client'
+import { createApiForServer, NetworkError } from '@/services/api-client'
 import { useSessionsStore } from '@/stores/sessions'
 import type { QueuedPrompt } from '@/types/api'
+
+// networkMode stays default 'online': a send fired while offline auto-pauses and
+// is replayed by resumePausedMutations() on reconnect. retry bridges the
+// mid-flight radio-drop case — fetch started, then dropped → NetworkError —
+// where the mutation would otherwise land in error instead of pausing.
+const retryOnNetwork = {
+  retry: (count: number, err: Error) => err instanceof NetworkError && count < 2,
+  retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 8000),
+}
 
 export function useSessionActions(serverId: string, sessionId: string) {
   const qc = useQueryClient()
   const api = createApiForServer(serverId)
 
   const sendInput = useMutation({
+    ...retryOnNetwork,
     mutationFn: (input: string) =>
       api.post(`/api/sessions/${sessionId}/input`, { input }),
     onSuccess: () => {
@@ -19,6 +29,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
 
   // Send raw key sequences (arrow keys, Enter) without bracketed-paste wrapping.
   const sendKeys = useMutation({
+    ...retryOnNetwork,
     mutationFn: (keys: string) =>
       api.post(`/api/sessions/${sessionId}/input`, { keys }),
     onSuccess: () => {
@@ -51,11 +62,13 @@ export function useSessionActions(serverId: string, sessionId: string) {
   })
 
   const respondToPlan = useMutation({
+    ...retryOnNetwork,
     mutationFn: (vars: { action: 'proceed' | 'cancel' | 'edit'; editedPrompt?: string }) =>
       api.post(`/api/sessions/${sessionId}/plan-response`, vars),
   })
 
   const respondToQuestion = useMutation({
+    ...retryOnNetwork,
     mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) =>
       api.post(`/api/sessions/${sessionId}/answer`, vars),
   })

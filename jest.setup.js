@@ -9,6 +9,20 @@ global.__DEV__ = true
 // jestSetup stubs the native module so that NOOP doesn't throw under Jest.
 require('react-native-gesture-handler/jestSetup')
 
+// query-client wires onlineManager to NetInfo at import; without a stub the
+// native module yields undefined state and the listener throws. Default to
+// "connected"; per-file mocks (e.g. query-client.test) override to drive
+// connectivity transitions.
+jest.mock('@react-native-community/netinfo', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: jest.fn(() => jest.fn()),
+    fetch: jest.fn(() =>
+      Promise.resolve({ isConnected: true, isInternetReachable: true }),
+    ),
+  },
+}))
+
 // ─── expo-router ─────────────────────────────────────────────────────────────
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(() => ({

@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { QueryClient } from '@tanstack/react-query'
+import NetInfo from '@react-native-community/netinfo'
+import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
+import { AppState, type AppStateStatus } from 'react-native'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 
 const ONE_MINUTE = 1000 * 60
@@ -40,6 +42,32 @@ export const queryClient = new QueryClient({
       refetchOnReconnect: true,
     },
   },
+})
+
+// React Native has no browser online/offline events, so onlineManager never
+// learns about radio state on its own — refetchOnReconnect would never fire and
+// mutations (networkMode 'online') could not detect offline. Drive it from
+// NetInfo. isInternetReachable is null (unknown) on cold start; treat null as
+// online so we don't falsely pause every query for the first second.
+onlineManager.setEventListener((setOnline) => {
+  return NetInfo.addEventListener((state) => {
+    const online = state?.isConnected !== false && state?.isInternetReachable !== false
+    const wasOnline = onlineManager.isOnline()
+    setOnline(online)
+    // Replay mutations that auto-paused while offline once we reconnect.
+    if (online && !wasOnline) {
+      queryClient.resumePausedMutations()
+    }
+  })
+})
+
+// AppState replaces the browser's visibilitychange so refetchOnWindowFocus
+// (default true) fires when the app returns to the foreground.
+focusManager.setEventListener((handleFocus) => {
+  const sub = AppState.addEventListener('change', (status: AppStateStatus) => {
+    handleFocus(status === 'active')
+  })
+  return () => sub.remove()
 })
 
 queryClient.getQueryCache().subscribe((event) => {
