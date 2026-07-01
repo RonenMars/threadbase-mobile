@@ -9,7 +9,8 @@ import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 export function mapPermissionToBlock(
   prompt: string | undefined,
   options: PermissionOption[],
-  cursor: number | undefined
+  cursor: number | undefined,
+  detail?: string
 ): QuestionBlock {
   const selectedIndex = cursor !== undefined ? options.findIndex(o => o.index === cursor) : -1
   return {
@@ -17,6 +18,7 @@ export function mapPermissionToBlock(
     questions: [
       {
         question: prompt || 'Claude needs your permission',
+        ...(detail ? { detail } : {}),
         multiSelect: false,
         options: options.map(o => ({ label: o.label })),
       },

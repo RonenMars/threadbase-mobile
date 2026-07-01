@@ -168,6 +168,8 @@ export interface PermissionWsMessage {
   type: 'permission'
   sessionId: string
   prompt?: string
+  /** Descriptive block above the prompt (tool title + command + action), newline-joined. */
+  detail?: string
   options: PermissionOption[]
   cursor?: number
 }

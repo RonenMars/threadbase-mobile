@@ -25,7 +25,7 @@ export function useActiveQuestionReducer(sessionId: string) {
     } else if (msg.type === 'question_cancelled') {
       setQuestion(prev => (prev?.toolUseId === msg.toolUseId ? null : prev))
     } else if (msg.type === 'permission') {
-      setQuestion(mapPermissionToBlock(msg.prompt, msg.options, msg.cursor))
+      setQuestion(mapPermissionToBlock(msg.prompt, msg.options, msg.cursor, msg.detail))
     } else if (msg.type === 'permission_cancelled') {
       setQuestion(prev => (prev?.source === 'permission' ? null : prev))
     }
