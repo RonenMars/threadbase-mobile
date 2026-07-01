@@ -42,6 +42,8 @@
     "dev:list-devices": "./scripts/list-ios-devices.sh",
     "dev:device": "./scripts/dev-device.sh",
     "dev:js": "./scripts/dev-device.sh --js-only",
+    "dev:android": "expo run:android",
+    "dev:android:js": "node scripts/dev-metro.js --android",
     "dev:tunnel": "./scripts/start-cloudflared.sh",
     "dev:tunnel:native": "./scripts/start-cloudflared.sh --native",
     "dev:reset": "rm -rf node_modules && npm ci && cd ios && rm -rf Pods && pod install && cd .. && npx expo start --dev-client --tunnel --clear",

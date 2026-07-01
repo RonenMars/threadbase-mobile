@@ -92,7 +92,7 @@ when the dev client isn't on the phone yet:
 
 ```bash
 cd <repo-root>
-npx expo run:android
+npm run android        # alias: npm run dev:android — both = expo run:android
 ```
 
 What happens: Gradle build → installs the APK over adb → starts Metro on 8081 →
@@ -126,8 +126,14 @@ adb -s <serial> shell input keyevent 82
 
 ```bash
 cd <repo-root>
-npx expo start --dev-client
+npx expo start --dev-client            # LAN
+npm run dev:android:js                 # Metro over the tunnel, auto-opens on Android
 ```
+
+`dev:android:js` runs `dev-metro.js --android` — it injects `EXPO_PACKAGER_PROXY_URL`
+from `.env` so Metro advertises the tunnel host, then opens on the Android dev
+client. This is the fast JS-only reload loop (no rebuild). Append `-- -c` to clear
+the Metro cache.
 
 ### Off-network / remote — the tunnel
 
