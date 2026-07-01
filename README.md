@@ -154,8 +154,9 @@ npm run ios
 npm run android
 ```
 
-For running on a **physical iOS device** (USB or remote/off-network), see:
-- [docs/dev-on-physical-device-ios.md](docs/dev-on-physical-device-ios.md) — device setup, UDID lookup, daily commands
+For running on a **physical device** (USB or remote/off-network), see:
+- [docs/dev-on-physical-device-ios.md](docs/dev-on-physical-device-ios.md) — iOS: device setup, UDID lookup, daily commands
+- [docs/dev-on-physical-device-android.md](docs/dev-on-physical-device-android.md) — Android: HyperOS setup, wireless adb, native/JS mismatch debugging
 - [docs/remote-dev-tunnel.md](docs/remote-dev-tunnel.md) — cloudflared / ngrok tunnel setup for off-network dev
 
 On first launch the app redirects to **Onboarding** if no server is configured. Add a server by:

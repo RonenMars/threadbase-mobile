@@ -57,3 +57,15 @@ fi
 **Related fix in tb-streamer:** see "SSH passphrase prompt leaks into streamed terminal output" in the tb-streamer troubleshooting guide.
 
 ---
+
+## Running on a physical device
+
+### `NativeModule.X is null` on a physical Android device (e.g. `RNCNetInfo is null`)
+
+**When:** After adding or upgrading a *native* dependency, you restart Metro and reload the JS on the phone, but the app throws `NativeModule.RNCNetInfo is null` (or similar for any native module).
+
+**Cause:** Native/JS version mismatch. The phone's installed APK predates the native module, while the fresh JS bundle (served over LAN or the `metro.rbv1000.win` tunnel) calls into it. The tunnel and Cloudflare only serve the JS bundle — never the native APK — so this is **not** a Metro or Cloudflare cache issue.
+
+**Fix:** Rebuild the APK and reinstall it on the device (`npx expo run:android`), not clearing a bundle cache. Full walkthrough, plus HyperOS install gotchas, wireless adb, and log-watching: **[dev-on-physical-device-android.md](dev-on-physical-device-android.md)**. For iOS see **[dev-on-physical-device-ios.md](dev-on-physical-device-ios.md)**.
+
+---
