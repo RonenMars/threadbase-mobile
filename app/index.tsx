@@ -44,7 +44,7 @@ import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
-import { font, spacing, type Theme } from '@/constants/theme'
+import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -140,10 +140,12 @@ export default function ProjectsHub() {
 
   // Filter state (sessions)
   const [selectedStatuses, setSelectedStatuses] = useState<SessionStatus[]>(ALL_STATUSES)
+  const [providerFilter, setProviderFilter] = useState<'claude-code' | 'codex-cli' | undefined>(undefined)
   const isSheetActive =
     sortBy !== 'lastActivity' ||
     sortOrder !== 'desc' ||
     selectedStatuses.length < ALL_STATUSES.length ||
+    providerFilter !== undefined ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
   // Classic tab
@@ -204,7 +206,7 @@ export default function ProjectsHub() {
   }, [refetchSessions])
 
   const { conversations, loaded: convLoaded, total: convTotal, isDone: convDone, isCounting: convCounting } =
-    useEagerConversations(undefined, refreshEpoch)
+    useEagerConversations(providerFilter ? { provider: providerFilter } : undefined, refreshEpoch)
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
 
@@ -456,6 +458,8 @@ export default function ProjectsHub() {
         onChangeSortOrder={setSortOrder}
         selectedStatuses={selectedStatuses}
         onChangeStatuses={setSelectedStatuses}
+        providerFilter={providerFilter}
+        onChangeProviderFilter={(v) => setProviderFilter(v === undefined ? undefined : v)}
       />
       <NewSessionServerPicker
         visible={pickerVisible}
@@ -609,6 +613,13 @@ function MergedClassicList({
           <Text style={styles.convCardTitle} numberOfLines={1}>
             {item.title || item.projectPath}
           </Text>
+          {item.provider != null ? (
+            <View style={item.provider === 'codex-cli' ? styles.convCardCodexBadge : styles.convCardClaudeBadge}>
+              <Text style={item.provider === 'codex-cli' ? styles.convCardCodexBadgeText : styles.convCardClaudeBadgeText}>
+                {item.provider === 'codex-cli' ? 'Codex' : 'Claude'}
+              </Text>
+            </View>
+          ) : null}
         </View>
         {item.preview ? (
           <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
@@ -854,6 +865,30 @@ function makeStyles(theme: Theme) {
   convCardMeta: {
     color: theme.text.secondary,
     fontSize: font.xs,
+  },
+  convCardCodexBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: `${brand.codex}20`,
+  },
+  convCardCodexBadgeText: {
+    color: brand.codex,
+    fontSize: font.xs - 2,
+    fontWeight: '700' as const,
+    letterSpacing: 0.3,
+  },
+  convCardClaudeBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: `${brand.claude}20`,
+  },
+  convCardClaudeBadgeText: {
+    color: brand.claude,
+    fontSize: font.xs - 2,
+    fontWeight: '700' as const,
+    letterSpacing: 0.3,
   },
   fabToast: {
     position: 'absolute',

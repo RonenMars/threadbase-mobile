@@ -47,6 +47,7 @@ export function DrillRow({ item }: Props) {
       density="compact"
       leading="dot"
       previewMode={previewMode}
+      provider={item.provider}
       onPress={item.onPress}
     />
   )

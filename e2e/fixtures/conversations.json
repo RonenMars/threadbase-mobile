@@ -28,5 +28,15 @@
     "branch": "main",
     "messageCount": 5,
     "lastActivity": "2026-05-01T11:30:00.000Z"
+  },
+  {
+    "id": "conv-codex-1",
+    "serverId": "server-one",
+    "serverLabel": "Local Dev",
+    "title": "Codex task",
+    "projectPath": "/home/user/codex-project",
+    "messageCount": 2,
+    "lastActivity": "2026-06-18T20:22:04.000Z",
+    "provider": "codex-cli"
   }
 ]

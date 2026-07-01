@@ -83,6 +83,9 @@ function handleRequest(req, res) {
     if (conversationMatch[1] === 'conv-111') {
       return json(res, 200, readFixture('conversation-detail.json'))
     }
+    if (conversationMatch[1] === 'conv-codex-1') {
+      return json(res, 200, readFixture('codex-conversation-detail.json'))
+    }
     return json(res, 200, {
       meta: { id: conversationMatch[1], project_name: 'Empty conversation' },
       messages: [],

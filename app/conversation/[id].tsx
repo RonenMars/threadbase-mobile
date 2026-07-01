@@ -33,7 +33,7 @@ import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResumeConversationResponse } from '@/types/projectChat'
-import { font, spacing, type Theme } from '@/constants/theme'
+import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
@@ -505,16 +505,22 @@ export default function ConversationDetailScreen() {
   // `resumable` is absent on older servers — treat undefined as resumable.
   // When false, the project the session ran in is gone: show the history
   // read-only with a banner explaining why, and disable Resume.
-  const notResumable = conversation.resumable === false
+  // codex-cli conversations are never resumable (Phase 2).
+  const isCodex = conversation.provider === 'codex-cli'
+  const providerColor = isCodex ? brand.codex : brand.claude
+  const providerDot = <View style={[styles.providerDot, { backgroundColor: providerColor }]} />
+  const notResumable = isCodex || conversation.resumable === false
   const unavailableMessage = notResumable
-    ? conversation.unavailableReason === 'worktree_removed'
-      ? t('unavailable.worktreeRemoved')
-      : t('unavailable.pathMissing')
+    ? isCodex
+      ? t('unavailable.cannotResume')
+      : conversation.unavailableReason === 'worktree_removed'
+        ? t('unavailable.worktreeRemoved')
+        : t('unavailable.pathMissing')
     : null
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title={conversation.title} right={headerActions} />
+      <ScreenHeader title={conversation.title} titleRight={providerDot} right={headerActions} />
       <View style={styles.inner}>
       {isGated ? (
         <View style={styles.skeletonOverlay} pointerEvents="none">
@@ -639,6 +645,7 @@ export default function ConversationDetailScreen() {
           { label: 'File Path', value: conversation.filePath },
           { label: 'Branch', value: conversation.branch },
           { label: 'Account', value: conversation.account },
+          { label: 'Provider', value: conversation.provider ?? 'claude-code' },
           { label: 'Model', value: conversation.model },
           { label: 'Message Count', value: String(conversation.messageCount) },
           { label: 'Total Tokens', value: conversation.totalTokens != null ? String(conversation.totalTokens) : undefined },
@@ -653,6 +660,7 @@ function makeStyles(theme: Theme, bottomInset: number = 0) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    providerDot: { width: 8, height: 8, borderRadius: 4 },
     inner: { flex: 1 },
     skeletonOverlay: {
       position: 'absolute',

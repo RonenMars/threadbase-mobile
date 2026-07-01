@@ -44,6 +44,7 @@ export interface Conversation {
   lastMessage?: MessageSnapshot
   model?: string
   totalTokens?: number
+  provider?: 'claude-code' | 'codex-cli'
 }
 
 export interface ConversationFilter {
@@ -51,6 +52,7 @@ export interface ConversationFilter {
   dateFrom?: string
   dateTo?: string
   profileId?: string
+  provider?: 'claude-code' | 'codex-cli'
 }
 
 export interface ConversationPage {
@@ -98,6 +100,8 @@ export interface ConversationDetail extends Conversation {
   resumable?: boolean
   /** Set only when `resumable` is false; explains why. */
   unavailableReason?: UnavailableReason
+  /** Source provider. 'codex-cli' conversations are never resumable. */
+  provider?: 'claude-code' | 'codex-cli'
 }
 
 export interface Message {
