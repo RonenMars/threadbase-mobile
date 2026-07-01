@@ -69,3 +69,21 @@ fi
 **Fix:** Rebuild the APK and reinstall it on the device (`npx expo run:android`), not clearing a bundle cache. Full walkthrough, plus HyperOS install gotchas, wireless adb, and log-watching: **[dev-on-physical-device-android.md](dev-on-physical-device-android.md)**. For iOS see **[dev-on-physical-device-ios.md](dev-on-physical-device-ios.md)**.
 
 ---
+
+## Native builds / prebuild
+
+### `expo prebuild` wiped the committed native config (SwiftUICore hook, gradle tuning) — SDK 57+
+
+**When:** You run `npx expo prebuild` (or `expo prebuild --platform ios/android`) by hand on this repo after upgrading to Expo SDK 57, and the next build fails — e.g. the Xcode 26 SwiftUICore link error returns, or Android release builds OOM in R8/lint.
+
+**Cause:** Since SDK 57, `expo prebuild` **defaults to `--clean`**: it clears and regenerates `ios/` and `android/` from scratch. This repo checks those directories into git with hand-maintained native config that prebuild does not reproduce:
+- `ios/Podfile` post_install — Xcode 26 SwiftUICore linker workaround.
+- `android/build.gradle` — bouncycastle version pins (JitPack metadata-timeout workaround).
+- `android/gradle.properties` — `-Xmx6144m -XX:MaxMetaspaceSize=2048m` heap tuning for R8/lint.
+- `plugins/withAndroidReleaseSigning.js` re-injects the signing block, but is template-shaped for a specific SDK.
+
+**Fix:** Always run `npx expo prebuild --no-clean` on this repo so it patches the existing folders in place instead of regenerating them. If you already ran a clean prebuild, `git checkout -- ios android` to restore the committed config, then `cd ios && pod install`.
+
+**Note:** The `ship-ios.sh` / `ship-android.sh` scripts are unaffected — they only prebuild when the native dir is missing (`[[ ! -d ios ]]`), where there is nothing to clean.
+
+---
