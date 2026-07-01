@@ -20,6 +20,7 @@ e2e/_artifacts/
 *.p12
 *.key
 *.mobileprovision
+scripts/.signing-secrets
 *.orig.*
 web-build/
 # android/ and ios/ are tracked — CNG is not used in this project
@@ -30,6 +31,7 @@ android/.kotlin/
 # Keep committed templates — real env files stay ignored.
 !.env.example
 !fastlane/.env.example
+!scripts/.env.signing-op.example
 
 # macOS metadata
 .DS_Store
