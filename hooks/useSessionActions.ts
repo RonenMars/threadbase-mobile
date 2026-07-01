@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer, NetworkError } from '@/services/api-client'
 import { useSessionsStore } from '@/stores/sessions'
-import type { QueuedPrompt } from '@/types/api'
+import type { MultiSession, QueuedPrompt } from '@/types/api'
 
 // networkMode stays default 'online': a send fired while offline auto-pauses and
 // is replayed by resumePausedMutations() on reconnect. retry bridges the
@@ -40,8 +40,14 @@ export function useSessionActions(serverId: string, sessionId: string) {
   const cancelSession = useMutation({
     mutationFn: () => api.post(`/api/sessions/${sessionId}/cancel`),
     onSuccess: () => {
+      // Targeted update: flip this session to idle in every sessions-eager cache entry
+      // instead of invalidating the whole list (which triggers a full multi-server re-fetch).
+      qc.setQueriesData<MultiSession[]>({ queryKey: ['sessions-eager'] }, (prev) =>
+        prev?.map((s) =>
+          s.id === sessionId && s.serverId === serverId ? { ...s, status: 'idle' } : s,
+        ),
+      )
       qc.invalidateQueries({ queryKey: ['sessions'] })
-      qc.invalidateQueries({ queryKey: ['sessions-eager'] })
     },
   })
 
