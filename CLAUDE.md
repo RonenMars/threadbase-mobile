@@ -116,6 +116,8 @@ The `[skip-ci]` suffix keeps CI from re-triggering on the bump-only commit. The 
 - Before running any EAS build or submit command, stop and ask the user to confirm — do not proceed automatically
 - Never trigger it as a side-effect of a "ship" or "commit and ship" request
 
+**`expo prebuild` defaults to `--clean` since SDK 57:** A bare `npx expo prebuild` now wipes and regenerates the committed `ios/` and `android/` directories, discarding the hand-maintained native config (the `ios/Podfile` SwiftUICore/Xcode-26 hook, the bouncycastle pins and `-Xmx` heap tuning in `android/`, etc.). When running prebuild manually on this repo, **always pass `--no-clean`** to patch the existing folders in place. The `ship-*` scripts are unaffected — they only prebuild when the native dir is missing (`[[ ! -d ios ]]`), where there is nothing to clean.
+
 ## npm Scripts — Cross-Platform (Windows) Compatibility
 
 `package.json` scripts must work on Windows (`cmd.exe`) as well as macOS/Linux. Never use Unix shell syntax in scripts — `2>/dev/null`, `||  true`, `&&`, `$VAR`, subshells, etc. all break on Windows.
