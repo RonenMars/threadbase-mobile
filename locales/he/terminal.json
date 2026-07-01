@@ -6,7 +6,8 @@
     "copyId": "העתק מזהה סשן",
     "sendInput": "שלח קלט",
     "cancel": "בטל סשן",
-    "more": "עוד"
+    "more": "עוד",
+    "stop": "עצור סשן"
   },
   "voice": {
     "start": "התחל הכתבה",
@@ -22,7 +23,12 @@
     "removeTitle": "הסר סשן",
     "removeMessage": "האם אתה בטוח שברצונך להסיר את הסשן הזה?",
     "removeConfirm": "הסר",
-    "removeDismiss": "שמור"
+    "removeDismiss": "שמור",
+    "stopTitle": "עצור סשן",
+    "stopMessage": "לעצור את הסשן הזה? קלוד יופסק.",
+    "stopConfirm": "עצור",
+    "stopDismiss": "המשך ריצה",
+    "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב."
   },
   "status": {
     "connecting": "מתחבר…",
