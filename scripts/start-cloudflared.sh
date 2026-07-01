@@ -138,5 +138,17 @@ else
   ARGS="--dev-client"
   [[ "$CLEAR_CACHE" == "1" ]] && ARGS="$ARGS -c"
   echo "▸ Starting Metro"
-  EXPO_PACKAGER_PROXY_URL="$TUNNEL_URL" npx expo start $ARGS
+  # Expo CLI occasionally crashes with `Error: read EIO` on its stdin TTY
+  # stream (Node/Expo CLI bug, unrelated to this script) — retry instead of
+  # killing the whole tunnel session.
+  RESTARTS=0
+  while true; do
+    EXPO_PACKAGER_PROXY_URL="$TUNNEL_URL" npx expo start $ARGS && break
+    RESTARTS=$((RESTARTS + 1))
+    if [[ "$RESTARTS" -ge 5 ]]; then
+      echo "Metro exited 5 times in a row — giving up."
+      exit 1
+    fi
+    echo "▸ Metro exited unexpectedly (restart $RESTARTS/5), restarting..."
+  done
 fi
