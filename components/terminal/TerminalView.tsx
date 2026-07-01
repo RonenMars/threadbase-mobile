@@ -53,7 +53,7 @@ export function TerminalView({ serverId, sessionId, disabled = false, pendingPla
   } = useComposerState({ serverId, sessionId, onSend })
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
       <TerminalOutput
         lines={lines}
         isStreaming={isStreaming}
