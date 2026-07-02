@@ -187,6 +187,35 @@ describe('WSClient – send', () => {
   })
 })
 
+describe('WSClient – connect-attempt timeout', () => {
+  it('abandons a connect attempt that never opens and schedules a retry', () => {
+    wsClient.connect('http://test.local', 'key')
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+    const hungSocket = mockSocket
+
+    // Neither onopen nor onerror/onclose ever fires (black-holed handshake).
+    // The client must not sit in 'connecting' forever — after the connect
+    // timeout it should abandon the socket and retry via backoff.
+    jest.advanceTimersByTime(15_000)
+    expect(hungSocket.close).toHaveBeenCalled()
+
+    // Backoff retry produces a fresh connect attempt.
+    jest.advanceTimersByTime(1_000)
+    expect(MockWebSocket).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not abandon a socket that opened in time', () => {
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+
+    jest.advanceTimersByTime(60_000)
+    expect(mockSocket.close).not.toHaveBeenCalled()
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+    expect(wsClient.status()).toBe('connected')
+  })
+})
+
 describe('WSClient – forceReconnect', () => {
   it('opens a new socket immediately, bypassing backoff', () => {
     wsClient.connect('http://test.local', 'key')
@@ -220,9 +249,11 @@ describe('WSClient – forceReconnect', () => {
     // The forced reconnect happened immediately.
     expect(MockWebSocket).toHaveBeenCalledTimes(2)
 
-    // Advancing past the longest backoff window must not produce another
-    // connect — forceReconnect should have cancelled the scheduled timer.
-    jest.advanceTimersByTime(60_000)
+    // The 1s backoff scheduled by the error must not produce another connect —
+    // forceReconnect should have cancelled the scheduled timer. (Stay under the
+    // 15s connect-attempt timeout: the mock socket never opens, so advancing
+    // past it would legitimately trigger an abandon-and-retry.)
+    jest.advanceTimersByTime(14_000)
     expect(MockWebSocket).toHaveBeenCalledTimes(2)
   })
 })

@@ -43,7 +43,12 @@ jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({ sendInput: { mutate: jest.fn() }, adoptSession: { mutate: jest.fn() }, stopSession: { mutate: jest.fn(), isPending: false } }),
 }))
 jest.mock('@/services/ws-client', () => ({
-  wsManager: { getClient: () => null, forceReconnect: jest.fn() },
+  wsManager: {
+    getClient: () => null,
+    forceReconnect: jest.fn(),
+    status: () => 'connected',
+    onAnyStatusChange: () => () => {},
+  },
 }))
 jest.mock('@/stores/servers', () => ({
   useServersStore: (sel: (s: { activeServerIds: string[] }) => unknown) =>

@@ -2,6 +2,12 @@
   "header": {
     "session": "Сессия"
   },
+  "connection": {
+    "reconnectingTitle": "Переподключение…",
+    "reconnectingMessage": "Соединение потеряно — содержимое ниже может быть устаревшим.",
+    "stalledTitle": "Поток остановился",
+    "stalledMessage": "Подключено, но вывод давно не поступал."
+  },
   "action": {
     "copyId": "Копировать ID сессии",
     "sendInput": "Отправить ввод",

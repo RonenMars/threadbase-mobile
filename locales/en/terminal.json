@@ -2,6 +2,12 @@
   "header": {
     "session": "Session"
   },
+  "connection": {
+    "reconnectingTitle": "Reconnecting…",
+    "reconnectingMessage": "Connection lost — the content below may be stale.",
+    "stalledTitle": "Stream stalled",
+    "stalledMessage": "Connected, but no output has arrived for a while."
+  },
   "action": {
     "copyId": "Copy Session ID",
     "sendInput": "Send Input",

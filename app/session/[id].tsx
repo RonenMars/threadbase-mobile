@@ -33,6 +33,9 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
+import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
+import { useWsStatus } from '@/hooks/useWsStatus'
+import { useStreamStalled } from '@/hooks/useStreamStalled'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -425,6 +428,17 @@ export default function SessionDetailScreen() {
     return () => sub.remove()
   }, [serverId, id, isPending, qc])
 
+  // Connection staleness: a dead WS must not masquerade as a live session.
+  // wsStatus drives the "Reconnecting…" banner + dimmed content; the stalled
+  // flag catches the half-dead socket (connected but no frames) sooner than
+  // the 45s silence watchdog.
+  const wsStatus = useWsStatus(serverId)
+  const streamStalled = useStreamStalled(
+    serverId,
+    id ?? '',
+    wsStatus === 'connected' && session?.status === 'running' && session?.ptyAttached === true,
+  )
+
   const [infoVisible, setInfoVisible] = useState(false)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
@@ -666,6 +680,12 @@ export default function SessionDetailScreen() {
       <View style={styles.body}>
         {isLive ? (
           <View style={styles.flex}>
+            {wsStatus !== 'connected' ? (
+              <ConnectionBanner variant="reconnecting" />
+            ) : streamStalled ? (
+              <ConnectionBanner variant="stalled" />
+            ) : null}
+            <View style={wsStatus !== 'connected' ? [styles.flex, styles.staleContent] : styles.flex}>
             {sessionView === 'terminal' || !hasConversationId ? (
               <TerminalView
                 serverId={serverId}
@@ -684,6 +704,7 @@ export default function SessionDetailScreen() {
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
               />
             )}
+            </View>
             {isWakingUp ? (
               <WakingUpOverlay phrase={wakingUpPhrase(id)} />
             ) : null}
@@ -756,6 +777,8 @@ function makeStyles(theme: Theme) {
     elapsed: { color: theme.text.secondary, fontSize: font.sm },
     prompts: { color: theme.text.secondary, fontSize: font.sm },
     body: { flex: 1 },
+    // Content is frozen while the WS is down — make it read as stale, not live.
+    staleContent: { opacity: 0.45 },
     placeholder: {
       flex: 1,
       justifyContent: 'center',
