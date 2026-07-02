@@ -2,6 +2,12 @@
   "header": {
     "session": "السيشن"
   },
+  "connection": {
+    "reconnectingTitle": "جارٍ إعادة الاتصال…",
+    "reconnectingMessage": "انقطع الاتصال — قد يكون المحتوى أدناه قديمًا.",
+    "stalledTitle": "توقف البث",
+    "stalledMessage": "متصل، لكن لم يصل أي إخراج منذ فترة."
+  },
   "action": {
     "copyId": "نسخ معرّف السيشن",
     "sendInput": "إرسال إدخال",

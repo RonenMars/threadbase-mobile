@@ -26,6 +26,43 @@ export type WSMessage =
 type MessageHandler = (msg: WSMessage) => void
 
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000, 30000]
+// A TCP/TLS handshake that is black-holed (packets dropped, no RST) can hang
+// for 60s+ before the platform fires onerror. Abandon the attempt sooner so
+// the backoff machinery keeps redialing instead of sitting in 'connecting'.
+const CONNECT_TIMEOUT_MS = 15_000
+
+// ── Connection log ───────────────────────────────────────────────────────────
+// In-memory ring buffer of connection lifecycle events so the next dead-socket
+// incident is diagnosable from a running app. No persistence by design.
+export interface ConnectionLogEntry {
+  ts: number
+  serverId: string
+  event:
+    | 'connect'
+    | 'open'
+    | 'error'
+    | 'close'
+    | 'connect_timeout'
+    | 'schedule_reconnect'
+    | 'force_reconnect'
+    | 'disconnect'
+  attempt?: number
+}
+
+const CONNECTION_LOG_MAX = 200
+const connectionLog: ConnectionLogEntry[] = []
+
+function logConnection(serverId: string, event: ConnectionLogEntry['event'], attempt?: number) {
+  connectionLog.push(attempt === undefined ? { ts: Date.now(), serverId, event } : { ts: Date.now(), serverId, event, attempt })
+  if (connectionLog.length > CONNECTION_LOG_MAX) connectionLog.shift()
+  if (__DEV__) {
+    console.log(`[ws:${serverId}] ${event}${attempt === undefined ? '' : ` attempt=${attempt}`}`)
+  }
+}
+
+export function getConnectionLog(): readonly ConnectionLogEntry[] {
+  return connectionLog
+}
 
 class WSClient {
   private socket: WebSocket | null = null
@@ -34,8 +71,12 @@ class WSClient {
   private handlers: Map<string, Set<MessageHandler>> = new Map()
   private reconnectAttempt = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private connectTimer: ReturnType<typeof setTimeout> | null = null
   private _status: 'connecting' | 'connected' | 'disconnected' = 'disconnected'
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
+
+  // Label for the connection log only — the manager passes its serverId.
+  constructor(private serverId = 'default') {}
 
   connect(url: string, apiKey: string) {
     this.url = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
@@ -51,8 +92,10 @@ class WSClient {
       this.socket.close()
       this.socket = null
     }
+    this._clearConnectTimer()
 
     this._setStatus('connecting')
+    logConnection(this.serverId, 'connect', this.reconnectAttempt)
 
     try {
       this.socket = new WebSocket(this.url)
@@ -61,7 +104,21 @@ class WSClient {
       return
     }
 
+    // Abandon the attempt if the handshake neither opens nor errors in time.
+    this.connectTimer = setTimeout(() => {
+      logConnection(this.serverId, 'connect_timeout', this.reconnectAttempt)
+      if (this.socket) {
+        this.socket.onclose = null
+        this.socket.onerror = null
+        this.socket.close()
+        this.socket = null
+      }
+      this._scheduleReconnect()
+    }, CONNECT_TIMEOUT_MS)
+
     this.socket.onopen = () => {
+      this._clearConnectTimer()
+      logConnection(this.serverId, 'open')
       this.reconnectAttempt = 0
       this._setStatus('connected')
       // Send auth as first message, then register this device so the server
@@ -91,12 +148,23 @@ class WSClient {
     }
 
     this.socket.onerror = () => {
+      this._clearConnectTimer()
+      logConnection(this.serverId, 'error', this.reconnectAttempt)
       this._scheduleReconnect()
     }
 
     this.socket.onclose = () => {
+      this._clearConnectTimer()
+      logConnection(this.serverId, 'close')
       this._setStatus('disconnected')
       this._scheduleReconnect()
+    }
+  }
+
+  private _clearConnectTimer() {
+    if (this.connectTimer) {
+      clearTimeout(this.connectTimer)
+      this.connectTimer = null
     }
   }
 
@@ -104,6 +172,7 @@ class WSClient {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
     const delay = BACKOFF_MS[Math.min(this.reconnectAttempt, BACKOFF_MS.length - 1)]
     this.reconnectAttempt++
+    logConnection(this.serverId, 'schedule_reconnect', this.reconnectAttempt)
     this.reconnectTimer = setTimeout(() => this._doConnect(), delay)
   }
 
@@ -113,10 +182,12 @@ class WSClient {
   }
 
   disconnect() {
+    logConnection(this.serverId, 'disconnect')
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
+    this._clearConnectTimer()
     if (this.socket) {
       this.socket.onclose = null
       this.socket.close()
@@ -131,6 +202,7 @@ class WSClient {
   // but is in fact dead, and we can't wait 1–30s for the next backoff tick.
   forceReconnect() {
     if (!this.url) return
+    logConnection(this.serverId, 'force_reconnect')
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
@@ -177,7 +249,7 @@ class WSClientManager {
   connect(serverId: string, url: string, apiKey: string) {
     // Disconnect existing client for this server if any
     this.disconnect(serverId)
-    const client = new WSClient()
+    const client = new WSClient(serverId)
     this.clients.set(serverId, client)
     // Wire this client's status changes into the manager-level listeners.
     client.onStatusChange((s) => {

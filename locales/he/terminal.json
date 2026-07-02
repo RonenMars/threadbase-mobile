@@ -2,6 +2,12 @@
   "header": {
     "session": "סשן"
   },
+  "connection": {
+    "reconnectingTitle": "מתחבר מחדש…",
+    "reconnectingMessage": "החיבור אבד — התוכן שלמטה עשוי להיות לא מעודכן.",
+    "stalledTitle": "הזרם נעצר",
+    "stalledMessage": "מחובר, אך לא התקבל פלט כבר זמן מה."
+  },
   "action": {
     "copyId": "העתק מזהה סשן",
     "sendInput": "שלח קלט",

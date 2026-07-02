@@ -114,6 +114,9 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
         // dead without having fired onclose (iOS silently kills TCP). Force a
         // reconnect so the backoff machinery re-subscribes and resumes streaming.
         wsManager.forceReconnect(serverId)
+        // Re-arm: if the forced redial also dies silently (no message, no
+        // 'connected' event), keep retrying instead of going dark after one shot.
+        resetSilenceTimer()
       }, WS_SILENCE_TIMEOUT_MS)
     }
 

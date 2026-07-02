@@ -80,9 +80,18 @@ export function useConversationStream(
       setLiveMessages((prev) => [...prev, message])
     })
 
+    // conversation_events emitted while the WS was dead are never replayed —
+    // refetch the REST history whenever the connection comes back so bubbles
+    // missed during the outage land (mirrors useTerminalStream's re-subscribe).
+    const unsubStatus = wsManager.onAnyStatusChange((sid, status) => {
+      if (sid !== serverId || status !== 'connected') return
+      qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
+    })
+
     const seenIdsRef = seenIds.current
     return () => {
       unsub?.()
+      unsubStatus()
       setLiveMessages([])
       seenIdsRef.clear()
     }
