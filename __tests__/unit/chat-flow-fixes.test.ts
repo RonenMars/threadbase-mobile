@@ -28,15 +28,18 @@ function userMessageText(m: Message): string {
 }
 
 // ── Fix 1+2: isAgentThinking ────────────────────────────────────────────────
-// Condition: (session?.status === 'running' || pendingSends.length > 0)
-//            && lastMessage?.role !== 'assistant'
+// Condition: session?.status === 'running'
+//            || (pendingSends.length > 0 && lastMessage?.role !== 'assistant')
+// While running the bubble always shows — mid-turn assistant messages
+// (interim replies, sub-agent dispatches) must not hide it. The last-message
+// gate applies only to the optimistic-send window where status lags.
 
 function isAgentThinking(
   status: string | undefined,
   pendingSendsCount: number,
   lastMessageRole: 'user' | 'assistant' | undefined,
 ): boolean {
-  return (status === 'running' || pendingSendsCount > 0) && lastMessageRole !== 'assistant'
+  return status === 'running' || (pendingSendsCount > 0 && lastMessageRole !== 'assistant')
 }
 
 describe('isAgentThinking (Fix 1+2)', () => {
@@ -52,12 +55,12 @@ describe('isAgentThinking (Fix 1+2)', () => {
     expect(isAgentThinking('running', 0, 'user')).toBe(true)
   })
 
-  it('false when running but last message is assistant reply', () => {
-    expect(isAgentThinking('running', 0, 'assistant')).toBe(false)
+  it('true when running even after an interim assistant message (sub-agent run)', () => {
+    expect(isAgentThinking('running', 0, 'assistant')).toBe(true)
   })
 
-  it('false when pending sends but last message is assistant reply', () => {
-    expect(isAgentThinking('running', 1, 'assistant')).toBe(false)
+  it('false when send echoed (assistant replied) and status no longer running', () => {
+    expect(isAgentThinking('waiting_input', 1, 'assistant')).toBe(false)
   })
 
   it('false when no messages at all and session is idle', () => {
