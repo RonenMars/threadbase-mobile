@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
@@ -12,6 +11,7 @@ import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
@@ -85,19 +85,20 @@ const copyStyles = StyleSheet.create({
 
 export function ConnectStep({ onPaired, onAdvance }: Props) {
   const { t } = useTranslation('onboarding')
-  const [url, setUrl] = useState('')
+  const [protocol, setProtocol] = useState<'http' | 'https'>('http')
+  const [urlHost, setUrlHost] = useState('')
   const [token, setToken] = useState('')
   const [mode, setMode] = useState<Mode>('choose')
   const [scannerOpen, setScannerOpen] = useState(false)
   const { phase, log, pair } = useTBPair()
 
-  const valid = url.startsWith('http') && token.length >= 8
+  const valid = urlHost.trim().length > 0 && token.length >= 8
   const busy = phase !== 'idle' && phase !== 'err'
 
   const handleConnect = () => {
     if (!valid || busy) return
     pair({
-      url,
+      url: `${protocol}://${urlHost.trim()}`,
       token,
       onSuccess: (result) => {
         onPaired(result)
@@ -108,7 +109,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
   const handleScanSuccess = (result: ExchangeResult) => {
     setScannerOpen(false)
-    setUrl(result.url)
+    const { protocol: p, host } = splitUrl(result.url)
+    setProtocol(p)
+    setUrlHost(host)
     setToken(result.apiKey)
     setMode('manual')
     pair({
@@ -218,52 +221,36 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       </TerminalCard>
 
       <View style={styles.form}>
-        <View style={styles.formLabelRow}>
-          <Text style={styles.formLabel}>{t('connect.manualServerUrl')}</Text>
-          <InfoTooltip
-            linkLabel="Networking guide"
-            linkUrl="https://github.com/RonenMars/threadbase-streamer#networking"
-          >
-            {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-            <Text>Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.</Text>
-          </InfoTooltip>
-        </View>
-        <TextInput
-          testID="onboarding-connect-url-input"
-          value={url}
-          onChangeText={setUrl}
-          spellCheck={false}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          style={styles.formInput}
+        <ServerFormFields
+          protocol={protocol}
+          onProtocolChange={setProtocol}
+          urlHost={urlHost}
+          onUrlHostChange={setUrlHost}
+          apiKey={token}
+          onApiKeyChange={setToken}
+          keyFieldLabel={t('connect.manualToken')}
+          urlAccessory={
+            <InfoTooltip
+              linkLabel="Networking guide"
+              linkUrl="https://github.com/RonenMars/threadbase-streamer#networking"
+            >
+              {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
+              <Text>Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.</Text>
+            </InfoTooltip>
+          }
+          keyAccessory={
+            <InfoTooltip
+              linkLabel="Pairing docs"
+              linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
+            >
+              {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
+              <Text>A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.</Text>
+            </InfoTooltip>
+          }
           editable={!busy}
-          placeholder="http://192.168.x.x:8766"
-          placeholderTextColor={colors.fg4}
-        />
-
-        <View style={styles.formLabelRow}>
-          <Text style={styles.formLabel}>{t('connect.manualToken')}</Text>
-          <InfoTooltip
-            linkLabel="Pairing docs"
-            linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
-          >
-            {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-            <Text>A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.</Text>
-          </InfoTooltip>
-        </View>
-        <TextInput
-          testID="onboarding-connect-token-input"
-          value={token}
-          onChangeText={setToken}
-          spellCheck={false}
-          autoCapitalize="none"
-          autoCorrect={false}
-          secureTextEntry
-          placeholder={t('connect.manualTokenPlaceholder')}
-          placeholderTextColor={colors.fg4}
-          style={styles.formInput}
-          editable={!busy}
+          urlInputTestID="onboarding-connect-url-input"
+          keyInputTestID="onboarding-connect-token-input"
+          onSubmitEditing={handleConnect}
         />
 
         {log.length > 0 && (
@@ -361,30 +348,6 @@ const styles = StyleSheet.create({
   form: {
     gap: 10,
     marginTop: 16,
-  },
-  formLabel: {
-    color: colors.fg1,
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  formLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  formInput: {
-    backgroundColor: colors.ink3,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: colors.ink6,
-    color: colors.fg0,
-    fontFamily: fonts.sans,
-    fontSize: 17,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 56,
   },
   logWrap: {
     marginTop: 10,

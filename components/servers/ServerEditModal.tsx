@@ -3,17 +3,16 @@ import {
   Modal,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   StyleSheet,
   Alert,
 } from 'react-native'
-import * as Clipboard from 'expo-clipboard'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { X, Eye, EyeSlash, QrCode, XCircle, CaretDown, ClipboardText } from 'phosphor-react-native'
+import { X, QrCode, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -27,12 +26,6 @@ interface Props {
   onClose: () => void
 }
 
-function splitUrl(full: string): { protocol: 'http' | 'https'; host: string } {
-  if (full.startsWith('https://')) return { protocol: 'https', host: full.slice(8).replace(/\/+$/, '') }
-  if (full.startsWith('http://')) return { protocol: 'http', host: full.slice(7).replace(/\/+$/, '') }
-  return { protocol: 'http', host: full.replace(/\/+$/, '') }
-}
-
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const { t } = useTranslation(['common', 'servers'])
   const theme = useTheme()
@@ -42,9 +35,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const [label, setLabel] = useState('')
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
   const [urlHost, setUrlHost] = useState('')
-  const [showProtocolPicker, setShowProtocolPicker] = useState(false)
   const [apiKey, setApiKey] = useState('')
-  const [showApiKey, setShowApiKey] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
@@ -73,30 +64,12 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         }
         setError(null)
         setIsDirty(false)
-        setShowApiKey(false)
-        setShowProtocolPicker(false)
       })
     }
   }, [visible, serverId])
 
   function markDirty() {
     if (!isDirty) setIsDirty(true)
-  }
-
-  async function pasteUrl() {
-    const text = await Clipboard.getStringAsync()
-    if (!text) return
-    const { protocol: p, host } = splitUrl(text.trim())
-    setProtocol(p)
-    setUrlHost(host)
-    markDirty()
-  }
-
-  async function pasteApiKey() {
-    const text = await Clipboard.getStringAsync()
-    if (!text) return
-    setApiKey(text.trim())
-    markDirty()
   }
 
   function handleDismiss() {
@@ -188,101 +161,28 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
             </View>
 
             <View style={styles.body}>
-              {/* Label row — QR icon right-aligned */}
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>{t('servers:form.labelOptional')}</Text>
-                <TouchableOpacity
-                  onPress={() => setScannerOpen(true)}
-                  hitSlop={12}
-                  accessibilityLabel="Scan QR code"
-                >
-                  <QrCode size={18} color={theme.text.accent} />
-                </TouchableOpacity>
-              </View>
-              <TextInput
-                style={styles.input}
-                value={label}
-                onChangeText={(v) => { setLabel(v); markDirty() }}
-                placeholder="e.g. Work Mac, Home Server"
-                placeholderTextColor={theme.text.secondary}
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="next"
-              />
-
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>{t('servers:form.serverUrl')}</Text>
-                <TouchableOpacity onPress={pasteUrl} hitSlop={8}>
-                  <ClipboardText size={18} color={theme.text.accent} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.urlRow}>
-                <View>
+              {/* key remount on open resets internal eye/protocol-picker state */}
+              <ServerFormFields
+                key={String(visible)}
+                label={label}
+                onLabelChange={(v) => { setLabel(v); markDirty() }}
+                labelAccessory={
                   <TouchableOpacity
-                    style={styles.protocolBtn}
-                    onPress={() => { setShowProtocolPicker((v) => !v); markDirty() }}
+                    onPress={() => setScannerOpen(true)}
+                    hitSlop={12}
+                    accessibilityLabel="Scan QR code"
                   >
-                    <Text style={styles.protocolText}>{protocol}://</Text>
-                    <CaretDown size={10} color={theme.text.secondary} weight="bold" />
+                    <QrCode size={18} color={theme.text.accent} />
                   </TouchableOpacity>
-                  {showProtocolPicker && (
-                    <View style={styles.protocolOptions}>
-                      {(['http', 'https'] as const).map((opt) => (
-                        <TouchableOpacity
-                          key={opt}
-                          style={styles.protocolOption}
-                          onPress={() => { setProtocol(opt); setShowProtocolPicker(false); markDirty() }}
-                        >
-                          <Text style={[styles.protocolOptionText, protocol === opt && styles.protocolOptionSelected]}>
-                            {opt}://
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                <TextInput
-                  style={[styles.input, styles.urlInput]}
-                  value={urlHost}
-                  onChangeText={(v) => { setUrlHost(v); markDirty() }}
-                  placeholder="192.168.1.10:8766"
-                  placeholderTextColor={theme.text.secondary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                  returnKeyType="next"
-                />
-              </View>
-
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>{t('servers:form.apiKey')}</Text>
-                <TouchableOpacity onPress={pasteApiKey} hitSlop={8}>
-                  <ClipboardText size={18} color={theme.text.accent} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.apiKeyRow}>
-                <TextInput
-                  style={[styles.input, styles.apiKeyInput]}
-                  value={apiKey}
-                  onChangeText={(v) => { setApiKey(v); markDirty() }}
-                  placeholder="Paste your API token here"
-                  placeholderTextColor={theme.text.secondary}
-                  secureTextEntry={!showApiKey}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="done"
-                  onSubmitEditing={handleSave}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowApiKey((v) => !v)}
-                  hitSlop={8}
-                  style={styles.eyeBtn}
-                >
-                  {showApiKey
-                    ? <EyeSlash size={18} color={theme.text.secondary} />
-                    : <Eye size={18} color={theme.text.secondary} />}
-                </TouchableOpacity>
-              </View>
+                }
+                protocol={protocol}
+                onProtocolChange={(p) => { setProtocol(p); markDirty() }}
+                urlHost={urlHost}
+                onUrlHostChange={(v) => { setUrlHost(v); markDirty() }}
+                apiKey={apiKey}
+                onApiKeyChange={(v) => { setApiKey(v); markDirty() }}
+                onSubmitEditing={handleSave}
+              />
 
               {error ? (
                 <View style={styles.errorBox}>
@@ -356,89 +256,6 @@ function makeStyles(theme: Theme) {
     body: {
       padding: spacing.md,
       gap: spacing.sm,
-    },
-    fieldLabelRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    fieldLabel: {
-      color: theme.text.secondary,
-      fontSize: font.base,
-      fontWeight: '500',
-      marginBottom: 2,
-    },
-    input: {
-      backgroundColor: theme.bg.primary,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      color: theme.text.primary,
-      fontSize: font.base,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      minHeight: 44,
-    },
-    urlRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: spacing.sm,
-      zIndex: 1,
-    },
-    urlInput: {
-      flex: 1,
-    },
-    protocolBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: theme.bg.primary,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      paddingHorizontal: spacing.sm,
-      minHeight: 44,
-    },
-    protocolText: {
-      color: theme.text.primary,
-      fontSize: font.base,
-    },
-    protocolOptions: {
-      position: 'absolute',
-      top: 46,
-      left: 0,
-      right: 0,
-      backgroundColor: theme.bg.card,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      zIndex: 10,
-      overflow: 'hidden',
-    },
-    protocolOption: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    protocolOptionText: {
-      color: theme.text.primary,
-      fontSize: font.base,
-    },
-    protocolOptionSelected: {
-      color: theme.text.accent,
-      fontWeight: '600',
-    },
-    apiKeyRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    apiKeyInput: {
-      flex: 1,
-    },
-    eyeBtn: {
-      padding: spacing.xs,
-      minHeight: 44,
-      justifyContent: 'center',
     },
     errorBox: {
       flexDirection: 'row',
