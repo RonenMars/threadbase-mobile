@@ -242,6 +242,17 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
         })
       }
     }
+    // The server carries assistant prose in the top-level `text` field, never
+    // as a text block inside `content` — merge it in or the prose is lost
+    // whenever the turn also has tool/thinking blocks. Assistant-only: user
+    // tool_result messages echo their result string in `text` too, and merging
+    // that would render the result twice.
+    if (m.role === 'assistant' && m.text && !content.some((b) => b.type === 'text' && b.text === m.text)) {
+      const firstNonThinking = content.findIndex((b) => b.type !== 'thinking')
+      const textBlock: MessageContent = { type: 'text', text: m.text }
+      if (firstNonThinking === -1) content.push(textBlock)
+      else content.splice(firstNonThinking, 0, textBlock)
+    }
   } else {
     if (m.text) content.push({ type: 'text', text: m.text })
     if (m.tool_calls) {
