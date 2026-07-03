@@ -48,6 +48,7 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: write
+      pull-requests: write
     env:
       # expo-modules-jsi's Package.swift declares swift-tools-version 6.2, which
       # needs Xcode 26+. The macos-15 runner defaults to Xcode 16.4 (Swift 6.1),
@@ -178,11 +179,15 @@ jobs:
         env:
           BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
           BUMPED_VERSION: ${{ env.BUMPED_VERSION }}
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          # Push with the PAT so the branch push triggers the Lint/Type check
+          # workflows auto-merge waits on (GITHUB_TOKEN pushes don't trigger
+          # workflows). gh uses GITHUB_TOKEN — the PAT can't create PRs.
+          GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git remote set-url origin "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${{ github.repository }}.git"
           git fetch origin main
           MAIN_BN=$(git show origin/main:app.json | jq -r '.expo.ios.buildNumber')
           MAIN_VER=$(git show origin/main:app.json | jq -r '.expo.version')
@@ -233,6 +238,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Warn when building a non-main ref
         if: ${{ inputs.deploy_ref != 'main' }}
@@ -331,11 +337,15 @@ jobs:
         env:
           BUMPED_VERSION_CODE: ${{ env.BUMPED_VERSION_CODE }}
           BUMPED_VERSION_NAME: ${{ env.BUMPED_VERSION_NAME }}
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          # Push with the PAT so the branch push triggers the Lint/Type check
+          # workflows auto-merge waits on (GITHUB_TOKEN pushes don't trigger
+          # workflows). gh uses GITHUB_TOKEN — the PAT can't create PRs.
+          GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git remote set-url origin "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${{ github.repository }}.git"
           git fetch origin main
           MAIN_VC=$(git show origin/main:app.json | jq -r '.expo.android.versionCode')
           MAIN_VN=$(git show origin/main:app.json | jq -r '.expo.version')
