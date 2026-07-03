@@ -89,7 +89,7 @@
     "expo-updates": "~57.0.4",
     "i18next": "^26.0.8",
     "intl-pluralrules": "^2.0.1",
-    "nativewind": "^4.2.3",
+    "nativewind": "^4.2.6",
     "phosphor-react-native": "^3.0.6",
     "prism-react-renderer": "^2.4.1",
     "react": "19.2.3",
