@@ -2544,7 +2544,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNWorklets (0.10.0):
+  - RNWorklets (0.10.1):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2566,10 +2566,10 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNWorklets/apple (= 0.10.0)
-    - RNWorklets/common (= 0.10.0)
+    - RNWorklets/apple (= 0.10.1)
+    - RNWorklets/common (= 0.10.1)
     - Yoga
-  - RNWorklets/apple (0.10.0):
+  - RNWorklets/apple (0.10.1):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2592,7 +2592,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNWorklets/common (0.10.0):
+  - RNWorklets/common (0.10.1):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -3044,7 +3044,7 @@ SPEC CHECKSUMS:
   ExpoLinking: db6d7a9e9348cca9ada7c39127ab30963deddba3
   ExpoLocalization: 543cb852ec9d4a6c732344f94ebd96d18897eaab
   ExpoLogBox: b39a76aab749833d58111c3be1264bb90f3b92d4
-  ExpoModulesCore: 4f9e604f88875716117529545cf615e6a0fab1b2
+  ExpoModulesCore: ad043f1c5f96533cbda39c24fafd27b9c439717f
   ExpoModulesJSI: ef7f197a8e7eeb245557f560ade794bfc1abdc79
   ExpoModulesWorklets: 10c1c68a4abbae5e279f8ed5f6c6fc5078bbba1e
   ExpoModulesWorkletsAdapter: 442c516a02a58a9579d00577df0ba561e4be948a
@@ -3060,7 +3060,7 @@ SPEC CHECKSUMS:
   EXUpdates: 6bfc710fb7d7219ec3da729e72ae003e523f0c17
   EXUpdatesInterface: 492cdb30f3889cc35d9e737a4b5fc3aec39d1131
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
-  hermes-engine: b0d2f3ed9be0e673ceb1f091ba0d6094ec484ccf
+  hermes-engine: 82b14fe6a4b57b835581d32346f9e8d04a067b68
   RCTDeprecation: 2a74a2c57675e64419bd89078efde81f7c1de90b
   RCTRequired: 30451112e6fef4e6f31b4e7eee0845156e35e4b0
   RCTSwiftUI: 5aaf0b07e747ba749dc6acc94d8bd41eea4b570f
@@ -3145,7 +3145,7 @@ SPEC CHECKSUMS:
   RNReanimated: a9bf68fb5f19ce1c363b7d1413dcf8ee323185b8
   RNScreens: f94000b3cb1eb14cbb8d08dd6074fdd6ccf0e6b0
   RNSVG: 3fe8590403ac9f107b4d14591bc6e54da4894e5c
-  RNWorklets: ae7f2b95d75b903387e6359583f2fd67bc9a93ff
+  RNWorklets: 43af89f696342f91118a2f1f3a879056e2f47331
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
   Yoga: fe50ab299e578f397fef753cf309c6703a4db29b
 
