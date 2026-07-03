@@ -452,23 +452,12 @@ export default function SessionDetailScreen() {
   const renameSession = useRenameSession(serverId)
   const sessionName = getName(serverId, id) ?? session?.projectName
 
-  const { stopSession } = useSessionActions(serverId, id ?? '')
-  const confirmStopSession = () => {
-    Alert.alert(
-      t('terminal:dialog.stopTitle'),
-      t('terminal:dialog.stopMessage'),
-      [
-        { text: t('terminal:dialog.stopDismiss'), style: 'cancel' },
-        {
-          text: t('terminal:dialog.stopConfirm'),
-          style: 'destructive',
-          onPress: () =>
-            stopSession.mutate(undefined, {
-              onError: () => Alert.alert(t('terminal:dialog.stopTitle'), t('terminal:dialog.stopFailed')),
-            }),
-        },
-      ],
-    )
+  const { sendKeys } = useSessionActions(serverId, id ?? '')
+  // Esc interrupts the agent's current response without killing the PTY session.
+  const stopResponse = () => {
+    sendKeys.mutate('\x1b', {
+      onError: () => Alert.alert(t('terminal:dialog.stopTitle'), t('terminal:dialog.stopFailed')),
+    })
   }
 
   useEffect(() => {
@@ -582,20 +571,20 @@ export default function SessionDetailScreen() {
     )
   }
 
-  const canStopSession = session.status === 'running' || session.status === 'waiting_input'
+  const canStopResponse = session.status === 'running'
 
   const sessionHeaderActions = (
     <View style={styles.headerActions}>
-      {canStopSession ? (
+      {canStopResponse ? (
         <Pressable
           testID="session-stop-button"
-          onPress={confirmStopSession}
-          disabled={stopSession.isPending}
+          onPress={stopResponse}
+          disabled={sendKeys.isPending}
           hitSlop={8}
           accessibilityLabel={t('terminal:action.stop')}
-          style={({ pressed }) => ({ opacity: pressed || stopSession.isPending ? 0.5 : 1 })}
+          style={({ pressed }) => ({ opacity: pressed || sendKeys.isPending ? 0.5 : 1 })}
         >
-          {stopSession.isPending ? (
+          {sendKeys.isPending ? (
             <ActivityIndicator size="small" color={theme.text.danger} />
           ) : (
             <StopCircle size={22} color={theme.text.danger} weight="fill" />

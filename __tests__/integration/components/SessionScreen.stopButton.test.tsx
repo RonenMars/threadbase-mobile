@@ -1,18 +1,17 @@
 /**
- * SessionScreen — hard-stop button (#173).
+ * SessionScreen — stop-response button.
  *
- * Guards: the stop button shows only while the PTY is live (running /
- * waiting_input), confirming its Alert fires the stopSession mutation, and it
- * is hidden once the session is idle.
+ * Guards: the stop button shows only while the agent is actively responding
+ * (status running), pressing it sends Esc to interrupt the response without
+ * killing the PTY session, and it is hidden while waiting_input or idle.
  */
 import React from 'react'
-import { Alert } from 'react-native'
 import { render, screen, fireEvent } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 
 // Mutable so individual tests can vary the session status the screen sees.
-let mockStatus: 'running' | 'waiting_input' | 'idle' = 'waiting_input'
-const mockStopMutate = jest.fn()
+let mockStatus: 'running' | 'waiting_input' | 'idle' = 'running'
+const mockSendKeysMutate = jest.fn()
 
 // ── heavy native deps ────────────────────────────────────────────────────────
 jest.mock('expo-speech-recognition', () => ({
@@ -49,8 +48,8 @@ jest.mock('@/hooks/useSession', () => ({
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
     sendInput: { mutate: jest.fn() },
+    sendKeys: { mutate: mockSendKeysMutate, isPending: false },
     adoptSession: { mutate: jest.fn() },
-    stopSession: { mutate: mockStopMutate, isPending: false },
   }),
 }))
 jest.mock('@/services/ws-client', () => ({
@@ -97,31 +96,30 @@ jest.mock('@tanstack/react-query', () => ({
 // eslint-disable-next-line import/first
 import SessionDetailScreen from '@/app/session/[id]'
 
-describe('SessionScreen — hard-stop button', () => {
+describe('SessionScreen — stop-response button', () => {
   beforeEach(() => {
-    mockStatus = 'waiting_input'
-    mockStopMutate.mockClear()
+    mockStatus = 'running'
+    mockSendKeysMutate.mockClear()
   })
 
-  it('renders the stop button while the session is live', () => {
+  it('renders the stop button while the agent is responding', () => {
     render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.getByTestId('session-stop-button')).toBeTruthy()
   })
 
-  it('confirming the stop dialog fires the stopSession mutation', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+  it('pressing stop sends Esc instead of killing the session', () => {
     render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
     fireEvent.press(screen.getByTestId('session-stop-button'))
-    expect(alertSpy).toHaveBeenCalledTimes(1)
 
-    // Pull the confirm button out of the Alert's button array and invoke it.
-    const buttons = alertSpy.mock.calls[0][2] ?? []
-    const confirm = buttons.find((b) => b.style !== 'cancel')
-    confirm?.onPress?.()
+    expect(mockSendKeysMutate).toHaveBeenCalledTimes(1)
+    expect(mockSendKeysMutate.mock.calls[0][0]).toBe('\x1b')
+  })
 
-    expect(mockStopMutate).toHaveBeenCalledTimes(1)
-    alertSpy.mockRestore()
+  it('hides the stop button while waiting for input', () => {
+    mockStatus = 'waiting_input'
+    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(screen.queryByTestId('session-stop-button')).toBeNull()
   })
 
   it('hides the stop button once the session is idle', () => {
