@@ -11,7 +11,6 @@ A companion mobile app for monitoring and controlling [Claude Code](https://clau
 - **Multi-server support** — manage several Threadbase installations at once
 - **Push notifications** — alerts for input-needed / completed / failed sessions, with quiet hours
 - **QR-code pairing** — add a server by scanning a QR code, or enter URL + API key manually
-- **Secure storage** — API keys in iOS Keychain / Android Keystore
 
 ## Tech Stack
 
