@@ -144,6 +144,61 @@ describe('useConversation — ETag conditional fetch (Task C)', () => {
   })
 })
 
+describe('useConversation — assistant prose alongside tool blocks', () => {
+  it('keeps top-level text when the assistant message also has tool_use blocks', async () => {
+    setActiveServers(['srv_e'])
+    const page = {
+      meta: { id: 'c5', project_name: 'proj-c5', message_count: 1 },
+      messages: [
+        {
+          message_index: 0,
+          role: 'assistant',
+          text: 'Let me check that file.',
+          content: [
+            { type: 'thinking', thinking: 'hmm' },
+            { type: 'tool_use', id: 'tu_1', name: 'Read', input: {} },
+          ],
+          timestamp: '2026-06-11T10:00:00.000Z',
+        },
+      ],
+      message_pagination: { total: 1, before_index: 1, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_e = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = renderHook(() => useConversation('srv_e', 'c5'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    const blocks = result.current.data!.messages[0].content
+    expect(blocks.map((b) => b.type)).toEqual(['thinking', 'text', 'tool_use'])
+    expect(blocks[1]).toMatchObject({ type: 'text', text: 'Let me check that file.' })
+  })
+
+  it('does not merge text into user tool_result messages (avoids duplicate rendering)', async () => {
+    setActiveServers(['srv_f'])
+    const page = {
+      meta: { id: 'c6', project_name: 'proj-c6', message_count: 1 },
+      messages: [
+        {
+          message_index: 0,
+          role: 'user',
+          text: 'file contents here',
+          is_tool_result: true,
+          content: [{ type: 'tool_result', tool_use_id: 'tu_1', content: 'file contents here' }],
+          timestamp: '2026-06-11T10:00:00.000Z',
+        },
+      ],
+      message_pagination: { total: 1, before_index: 1, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_f = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = renderHook(() => useConversation('srv_f', 'c6'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    const blocks = result.current.data!.messages[0].content
+    expect(blocks.map((b) => b.type)).toEqual(['tool_result'])
+  })
+})
+
 describe('useConversations — partial failure (Bug 32)', () => {
   it('returns conversations from healthy server when other server fails', async () => {
     setActiveServers(['srv-A', 'srv-B'])
