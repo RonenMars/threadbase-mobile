@@ -29,6 +29,7 @@ export function ProjectHubList({
   refreshing,
   onRefresh,
   searchOpen,
+  isBackgroundRefreshing,
 }: ProjectHubListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -272,6 +273,7 @@ export function ProjectHubList({
                   collapsible={serverGroups.length > 1}
                   isExpanded={!collapsedServers.has(item.serverId)}
                   onToggle={() => toggleServer(item.serverId)}
+                  isRefreshing={isBackgroundRefreshing}
                 />
               )
             }
