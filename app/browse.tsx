@@ -22,8 +22,9 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
-import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 
 const MAX_RECENT_DIRS = 8
 
@@ -62,6 +63,7 @@ export default function BrowseScreen() {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
+  const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
 
   const { data: allSessions = [] } = useSessions()
   const recentDirs = useMemo<RecentDir[]>(() => {
@@ -212,7 +214,11 @@ export default function BrowseScreen() {
   const handleStartSession = useCallback(() => {
     const displayName = currentPath ? currentPath.split('/').pop() : '~'
     startSession.mutate(
-      { path: currentPath, projectName: displayName },
+      {
+        path: currentPath,
+        projectName: displayName,
+        ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
+      },
       {
         onSuccess: (session) => {
           navigateToNewSession(session)
@@ -222,12 +228,16 @@ export default function BrowseScreen() {
         },
       },
     )
-  }, [currentPath, startSession, navigateToNewSession])
+  }, [currentPath, selectedProvider, startSession, navigateToNewSession])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
       startSession.mutate(
-        { path: dir.path, projectName: dir.name },
+        {
+          path: dir.path,
+          projectName: dir.name,
+          ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
+        },
         {
           onSuccess: (session) => {
             navigateToNewSession(session)
@@ -238,7 +248,7 @@ export default function BrowseScreen() {
         },
       )
     },
-    [startSession, navigateToNewSession],
+    [selectedProvider, startSession, navigateToNewSession],
   )
 
   const renderItem = useCallback(
@@ -388,6 +398,40 @@ export default function BrowseScreen() {
           </TouchableOpacity>
         </View>
       ) : (
+        <>
+        <View style={styles.providerSelector}>
+          {([
+            { value: CLAUDE_CODE_PROVIDER, label: 'Claude', color: brand.claude },
+            { value: CODEX_CLI_PROVIDER, label: 'Codex', color: brand.codex },
+          ]).map((option) => {
+            const selected = selectedProvider === option.value
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.providerOption,
+                  selected && styles.providerOptionSelected,
+                  selected ? { borderColor: option.color } : null,
+                ]}
+                onPress={() => setSelectedProvider(option.value)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                testID={`start-provider-${option.value}`}
+              >
+                <View style={[styles.providerDot, { backgroundColor: option.color }]} />
+                <Text
+                  style={[
+                    styles.providerOptionText,
+                    selected && styles.providerOptionTextSelected,
+                    selected ? { color: option.color } : null,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.newFolderToggle}
@@ -408,6 +452,7 @@ export default function BrowseScreen() {
             )}
           </TouchableOpacity>
         </View>
+        </>
       )}
       {isBrowseSlow ? <BrowseSlowBanner onAbort={() => router.back()} /> : null}
     </SafeAreaView>
@@ -497,6 +542,43 @@ function makeStyles(theme: Theme) {
   skeletons: {
     padding: spacing.lg,
   },
+  providerSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  providerOption: {
+    flex: 1,
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.bg.secondary,
+    gap: spacing.xs,
+  },
+  providerOptionSelected: {
+    backgroundColor: theme.bg.card,
+  },
+  providerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  providerOptionText: {
+    color: theme.text.secondary,
+    fontSize: font.sm,
+    fontWeight: '600',
+  },
+  providerOptionTextSelected: {
+    color: theme.text.primary,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -574,4 +656,3 @@ function makeStyles(theme: Theme) {
     fontWeight: '600',
   },
 })}
-

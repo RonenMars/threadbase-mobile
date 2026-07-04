@@ -1,7 +1,10 @@
+import type { ProviderName } from '@/constants/providers'
+
 export type SessionStatus = 'running' | 'waiting_input' | 'idle'
 
 export interface Session {
   id: string
+  provider?: ProviderName
   status: SessionStatus
   ptyAttached: boolean
   /** Stable backend identity. Optional during migration; will be required. */
@@ -44,7 +47,7 @@ export interface Conversation {
   lastMessage?: MessageSnapshot
   model?: string
   totalTokens?: number
-  provider?: 'claude-code' | 'codex-cli'
+  provider?: ProviderName
 }
 
 export interface ConversationFilter {
@@ -52,7 +55,7 @@ export interface ConversationFilter {
   dateFrom?: string
   dateTo?: string
   profileId?: string
-  provider?: 'claude-code' | 'codex-cli'
+  provider?: ProviderName
 }
 
 export interface ConversationPage {
@@ -101,7 +104,7 @@ export interface ConversationDetail extends Conversation {
   /** Set only when `resumable` is false; explains why. */
   unavailableReason?: UnavailableReason
   /** Source provider. 'codex-cli' conversations are never resumable. */
-  provider?: 'claude-code' | 'codex-cli'
+  provider?: ProviderName
 }
 
 export interface Message {
