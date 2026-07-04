@@ -43,6 +43,7 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned (platform/deps, low-priority) |
 | Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned (platform/noise, low-priority) |
 | Feature 32 — Handle batched `conversation_events` WS event | Planned (perf, low-priority) |
+| Feature 34 — Structured prompt cards for Codex sessions | Planned (cross-repo, streamer-side) |
 
 **Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
@@ -1067,6 +1068,20 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 - `e2e/README.md` — refresh the demo-flow notes if selectors are documented there
 
 **Related:** the E2E failure report (`E2E-TESTS-FAILURE-REPORT.md`, §9) diagnosed this drift and the build/driver blockers; the `ensure-release-build.js` bundle-id/app-name/detection fix (separate commit) unblocks the Release-build half. Feature 17 covers net-new flows.
+
+---
+
+### Feature 34 — Structured prompt cards for Codex sessions
+
+**Filed:** 2026-07-04.
+
+**Goal:** Give Codex live sessions (added in [threadbase-streamer PR #159](https://github.com/RonenMars/threadbase-streamer/pull/159), mobile-side selector in [PR #263](https://github.com/RonenMars/threadbase-mobile/pull/263)) the same native `QuestionCard` UI that Claude Code sessions get for permission gates and `AskUserQuestion` menus, instead of raw terminal text the user has to type into manually.
+
+**Why:** `useActiveQuestion.ts` already listens for the generic `question` / `question_cancelled` / `permission` / `permission_cancelled` WS events and renders them provider-agnostically — no mobile change needed there. The gap is entirely upstream: the streamer's `CodexPtyRunner` never emits these events, because Codex's rendered-screen approval/choice prompts aren't detected yet the way Claude's are (`src/services/questions/*` in tb-streamer).
+
+**This is a cross-repo, streamer-side feature — no tb-mobile code changes are expected.** Full scoping, reusable-vs-Claude-only file assessment, and open questions requiring a live Codex probe live in [threadbase-streamer `docs/plans/2026-07-04-codex-structured-prompts-followup.md`](https://github.com/RonenMars/threadbase-streamer/blob/main/docs/plans/2026-07-04-codex-structured-prompts-followup.md).
+
+**Priority:** Low — Codex sessions are otherwise fully usable (start/watch/type/stop/resume); this is a UX polish gap, not a broken flow.
 
 ---
 

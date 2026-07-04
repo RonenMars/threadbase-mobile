@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import type { BrowseResponse, MkdirResponse, Session } from '@/types/api'
+import type { ProviderName } from '@/constants/providers'
 
 export function useBrowse(serverId: string, path: string) {
   const api = createApiForServer(serverId)
@@ -29,7 +30,7 @@ export function useStartSession(serverId: string) {
   const qc = useQueryClient()
   const api = createApiForServer(serverId)
 
-  return useMutation<Session, Error, { path: string; projectName?: string }>({
+  return useMutation<Session, Error, { path: string; projectName?: string; provider?: ProviderName }>({
     mutationFn: (vars) => api.post<Session>('/api/sessions/start', vars),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sessions'] })

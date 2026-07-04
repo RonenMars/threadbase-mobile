@@ -203,6 +203,31 @@ describe('BrowseScreen — recent directories accordion', () => {
     )
   })
 
+  it('starts a Claude session by default without sending a provider', () => {
+    const { getByText } = renderScreen()
+
+    fireEvent.press(getByText('Start Session Here'))
+
+    expect(mockStartMutate).toHaveBeenCalledTimes(1)
+    expect(mockStartMutate).toHaveBeenCalledWith(
+      { path: '', projectName: '~' },
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+    )
+  })
+
+  it('sends codex-cli when Codex is selected for a new session', () => {
+    const { getByTestId, getByText } = renderScreen()
+
+    fireEvent.press(getByTestId('start-provider-codex-cli'))
+    fireEvent.press(getByText('Start Session Here'))
+
+    expect(mockStartMutate).toHaveBeenCalledTimes(1)
+    expect(mockStartMutate).toHaveBeenCalledWith(
+      { path: '', projectName: '~', provider: 'codex-cli' },
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+    )
+  })
+
   it('collapses the recent list when the header is tapped', () => {
     mockSessions.current = [
       makeSession({
