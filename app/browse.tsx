@@ -546,10 +546,9 @@ function makeStyles(theme: Theme) {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
   },
   providerOption: {
     flex: 1,
@@ -628,8 +627,6 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
     gap: spacing.md,
   },
   newFolderToggle: {
