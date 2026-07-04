@@ -4,7 +4,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [main]
+    # `main` for post-merge validation; `chore/bump-**` so deploy's PAT-pushed
+    # version-bump branches trigger CI directly. The bump PR itself is opened
+    # with GITHUB_TOKEN, whose pull_request event GitHub suppresses to avoid
+    # recursion — so without this the required Lint/Type check contexts never
+    # report and auto-merge blocks forever.
+    branches: [main, 'chore/bump-**']
   schedule:
     # Monthly E2E run: 00:00 UTC on the 1st of each month
     - cron: '0 0 1 * *'
