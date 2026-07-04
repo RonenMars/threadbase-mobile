@@ -1,5 +1,6 @@
 import React from 'react'
 import { ActivityIndicator, View, Text, TouchableOpacity } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { makeStyles } from './ServerHeaderRow.styles'
 
@@ -16,10 +17,14 @@ interface Props {
 export function ServerHeaderRow({ serverId, serverLabel, totalCount, collapsible, isExpanded, onToggle, isRefreshing }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const { t } = useTranslation('sessions')
 
-  const spinner = isRefreshing
-    ? <ActivityIndicator size="small" color={theme.text.secondary} testID={`server-header-refreshing-${serverId}`} />
-    : null
+  const spinner = isRefreshing ? (
+    <>
+      <Text style={styles.syncChip} numberOfLines={1}>{t('sync.cachedData')}</Text>
+      <ActivityIndicator size="small" color={theme.text.secondary} testID={`server-header-refreshing-${serverId}`} />
+    </>
+  ) : null
 
   if (collapsible) {
     return (

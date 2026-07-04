@@ -108,5 +108,9 @@
     "repoLink": "github.com/RonenMars/threadbase-streamer",
     "repoUrl": "https://github.com/RonenMars/threadbase-streamer",
     "cta": "Add Server"
+  },
+  "sync": {
+    "cachedData": "Showing cached data",
+    "cachedDataSyncing": "Showing cached data — syncing…"
   }
 }

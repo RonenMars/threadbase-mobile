@@ -27,6 +27,7 @@ import { ConversationList } from '@/components/conversation/ConversationList'
 import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
@@ -211,6 +212,11 @@ export default function ProjectsHub() {
   const isColdStart = !hasLoadedOnce
   const showLoadingModal = isColdStart && (!sessionsDone || showConvProgress)
   const isBackgroundRefreshing = hasLoadedOnce && (!sessionsDone || !convDone)
+  // Single-server has no server-name rows to host the cached-data chip, so the
+  // notice overlays the list: centered banner in Hub/Tree, caption under the
+  // header fallback spinner in Classic. Multi-server is covered by the chips.
+  const showSyncNotice = isBackgroundRefreshing && activeServerIds.length <= 1
+  const syncNoticeVariant = sessionsLayout === 'tree' || sessionsLayout === 'hub' ? 'banner' : 'caption'
 
   // Sessions cluster to the top of the merged list under the LIVE header
   // (running / waiting_input first, then idle), regardless of conversation
@@ -356,6 +362,7 @@ export default function ProjectsHub() {
       />
 
       {/* Content */}
+      <View style={styles.contentArea}>
       {activeServerIds.length === 0 && !hasEverHadServer ? (
         <NoServersWelcome />
       ) : sessionsLayout === 'tree' ? (
@@ -443,6 +450,8 @@ export default function ProjectsHub() {
           )}
         </View>
       )}
+      <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
+      </View>
 
       {/* FAB */}
       {fabNoServerToast && (
@@ -817,6 +826,9 @@ function makeStyles(theme: Theme) {
     height: 5,
     borderRadius: 2.5,
     backgroundColor: theme.text.accent,
+  },
+  contentArea: {
+    flex: 1,
   },
   classicContainer: {
     flex: 1,

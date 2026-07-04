@@ -1,5 +1,6 @@
 import React from 'react'
 import { ActivityIndicator, View, Text, TouchableOpacity } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import Svg, { Path } from 'react-native-svg'
 import { useTheme } from '@/contexts/ThemeContext'
 import { makeStyles } from './ServerRootRow.styles'
@@ -18,6 +19,7 @@ interface Props {
 export function ServerRootRow({ node, serverLabel, collapsible, isExpanded, onToggle, onSelectLeaf, isRefreshing }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const { t } = useTranslation('sessions')
   const hasDirectItems = (node.sessions.length + node.conversations.length) > 0
 
   const handlePress = () => {
@@ -46,7 +48,13 @@ export function ServerRootRow({ node, serverLabel, collapsible, isExpanded, onTo
         ) : null}
       </View>
       {isRefreshing ? (
-        <ActivityIndicator size="small" color={theme.text.secondary} testID="server-root-refreshing" />
+        <>
+          {/* single-server Tree shows the cached-data banner above the list instead */}
+          {collapsible ? (
+            <Text style={styles.syncChip} numberOfLines={1}>{t('sync.cachedData')}</Text>
+          ) : null}
+          <ActivityIndicator size="small" color={theme.text.secondary} testID="server-root-refreshing" />
+        </>
       ) : null}
       {!collapsible && hasDirectItems ? (
         <Svg width={14} height={14} viewBox="0 0 16 16" fill="#2e7d4f">
