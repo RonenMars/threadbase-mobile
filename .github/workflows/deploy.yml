@@ -173,8 +173,11 @@ jobs:
         # onto main's own app.json in a throwaway worktree, so a branch validation
         # build does NOT leak the branch's code to main — only the bump lands.
         # Direct pushes to main are blocked by the ruleset (required status
-        # checks), so the bump lands via an auto-merged PR; [skip-ci] commits
-        # still report Lint/Type check green, so auto-merge fires unattended.
+        # checks), so the bump lands via an admin squash-merge with the PAT
+        # (admin repo role bypasses the ruleset). No CI run on the bump branch is
+        # needed — a bot/PAT push does not reliably trigger push-triggered
+        # workflows, so --auto would wait forever on Lint/Type check contexts that
+        # never get created.
         if: success()
         env:
           BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
@@ -209,7 +212,11 @@ jobs:
           gh pr create --base main --head "$BRANCH" --title "$TITLE" \
             --body "Automated version bump after successful TestFlight upload (build ${BUMPED_BUILD_NUMBER})." \
             || echo "PR already exists for $BRANCH"
-          gh pr merge "$BRANCH" --squash --auto
+          # Admin squash-merge with the PAT: its admin repo role bypasses the
+          # required-check ruleset. GITHUB_TOKEN (github-actions[bot]) is not
+          # admin and cannot bypass, and --auto never fires because the PAT push
+          # to chore/bump-** does not trigger CI, so Lint/Type check never report.
+          GH_TOKEN="$GH_PUSH_TOKEN" gh pr merge "$BRANCH" --squash --delete-branch --admin
 
       - name: Ensure tag-release action present (from main)
         # The composite action is resolved from the checked-out tree. A deploy_ref
@@ -331,8 +338,11 @@ jobs:
         # fields onto main's own files in a throwaway worktree, so a branch
         # validation build does NOT leak the branch's code to main.
         # Direct pushes to main are blocked by the ruleset (required status
-        # checks), so the bump lands via an auto-merged PR; [skip-ci] commits
-        # still report Lint/Type check green, so auto-merge fires unattended.
+        # checks), so the bump lands via an admin squash-merge with the PAT
+        # (admin repo role bypasses the ruleset). No CI run on the bump branch is
+        # needed — a bot/PAT push does not reliably trigger push-triggered
+        # workflows, so --auto would wait forever on Lint/Type check contexts that
+        # never get created.
         if: success()
         env:
           BUMPED_VERSION_CODE: ${{ env.BUMPED_VERSION_CODE }}
@@ -375,7 +385,11 @@ jobs:
           gh pr create --base main --head "$BRANCH" --title "$TITLE" \
             --body "Automated version bump after successful Play upload (versionCode ${BUMPED_VERSION_CODE})." \
             || echo "PR already exists for $BRANCH"
-          gh pr merge "$BRANCH" --squash --auto
+          # Admin squash-merge with the PAT: its admin repo role bypasses the
+          # required-check ruleset. GITHUB_TOKEN (github-actions[bot]) is not
+          # admin and cannot bypass, and --auto never fires because the PAT push
+          # to chore/bump-** does not trigger CI, so Lint/Type check never report.
+          GH_TOKEN="$GH_PUSH_TOKEN" gh pr merge "$BRANCH" --squash --delete-branch --admin
 
       - name: Ensure tag-release action present (from main)
         # The composite action is resolved from the checked-out tree. A deploy_ref
