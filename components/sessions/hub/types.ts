@@ -17,6 +17,7 @@ export interface ProjectHubListProps {
   refreshing: boolean
   onRefresh: () => void
   searchOpen: boolean
+  isBackgroundRefreshing?: boolean
 }
 
 export interface ProjectHubCardProps {

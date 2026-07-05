@@ -23,6 +23,16 @@ export function makeStyles(theme: Theme) {
     fontSize: font.xs,
     color: theme.text.secondary,
   },
+  syncChip: {
+    fontSize: font.xs - 1,
+    fontWeight: '500',
+    color: theme.status.waiting,
+    backgroundColor: theme.status.waiting + '21',
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    flexShrink: 1,
+  },
   chevron: {
     fontSize: 18,
     color: theme.text.secondary,

@@ -136,5 +136,9 @@
     "repoLink": "github.com/RonenMars/threadbase-streamer",
     "repoUrl": "https://github.com/RonenMars/threadbase-streamer",
     "cta": "إضافة خادم"
+  },
+  "sync": {
+    "cachedData": "عرض بيانات مخزنة مؤقتًا",
+    "cachedDataSyncing": "عرض بيانات مخزنة مؤقتًا — جارٍ المزامنة…"
   }
 }

@@ -50,4 +50,5 @@ export interface TreeSessionsListProps {
   refreshing: boolean
   onRefresh: () => void
   searchOpen?: boolean
+  isBackgroundRefreshing?: boolean
 }

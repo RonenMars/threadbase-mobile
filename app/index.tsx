@@ -9,7 +9,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
-  AppState,
+  ActivityIndicator,
   FlatList,
   RefreshControl,
 } from 'react-native'
@@ -27,6 +27,7 @@ import { ConversationList } from '@/components/conversation/ConversationList'
 import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
@@ -182,16 +183,10 @@ export default function ProjectsHub() {
   // Conversations data
   const [refreshEpoch, setRefreshEpoch] = useState(0)
   const [convLoaderMode, setConvLoaderMode] = useState<'full' | 'minimal'>('full')
-  const nextLoaderModeRef = useRef<'full' | 'minimal'>('minimal')
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        nextLoaderModeRef.current = 'full'
-      }
-    })
-    return () => sub.remove()
-  }, [])
+  // Cold-start gate: flips true once the first full load completes, and
+  // never resets for the lifetime of this JS instance. Background refetches
+  // (focusManager on app resume) then show a small spinner, not the modal.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
   // Unified refresh — always reloads both sessions and conversations.
   const handleRefresh = useCallback(async () => {
@@ -209,6 +204,19 @@ export default function ProjectsHub() {
     useEagerConversations(providerFilter ? { provider: providerFilter } : undefined, refreshEpoch)
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
+
+  if (sessionsDone && convDone && !hasLoadedOnce) {
+    setHasLoadedOnce(true)
+  }
+
+  const isColdStart = !hasLoadedOnce
+  const showLoadingModal = isColdStart && (!sessionsDone || showConvProgress)
+  const isBackgroundRefreshing = hasLoadedOnce && (!sessionsDone || !convDone)
+  // Single-server has no server-name rows to host the cached-data chip, so the
+  // notice overlays the list: centered banner in Hub/Tree, caption under the
+  // header fallback spinner in Classic. Multi-server is covered by the chips.
+  const showSyncNotice = isBackgroundRefreshing && activeServerIds.length <= 1
+  const syncNoticeVariant = sessionsLayout === 'tree' || sessionsLayout === 'hub' ? 'banner' : 'caption'
 
   // Sessions cluster to the top of the merged list under the LIVE header
   // (running / waiting_input first, then idle), regardless of conversation
@@ -300,6 +308,12 @@ export default function ProjectsHub() {
 
         {/* Right: actions */}
         <View style={styles.headerRight}>
+          {/* Background-refetch fallback spinner — only for the two
+              view/server-count combos with no server-name row to anchor it
+              (single-server Hub and Classic; Tree always has ServerRootRow) */}
+          {isBackgroundRefreshing && activeServerIds.length <= 1 && sessionsLayout !== 'tree' ? (
+            <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
+          ) : null}
           <Pressable
             onPress={() => setStatusModalOpen(true)}
             hitSlop={8}
@@ -348,6 +362,7 @@ export default function ProjectsHub() {
       />
 
       {/* Content */}
+      <View style={styles.contentArea}>
       {activeServerIds.length === 0 && !hasEverHadServer ? (
         <NoServersWelcome />
       ) : sessionsLayout === 'tree' ? (
@@ -357,6 +372,7 @@ export default function ProjectsHub() {
           refreshing={manualRefreshing}
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
+          isBackgroundRefreshing={isBackgroundRefreshing}
         />
       ) : sessionsLayout === 'hub' ? (
         <ProjectHubList
@@ -367,6 +383,7 @@ export default function ProjectsHub() {
           refreshing={manualRefreshing}
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
+          isBackgroundRefreshing={isBackgroundRefreshing}
         />
       ) : (
         <View style={styles.classicContainer}>
@@ -379,6 +396,7 @@ export default function ProjectsHub() {
               searchOpen={searchOpen}
               searchQuery={classicConvSearch}
               onSearchChange={setClassicConvSearch}
+              isBackgroundRefreshing={isBackgroundRefreshing}
             />
           ) : (
             <>
@@ -432,6 +450,8 @@ export default function ProjectsHub() {
           )}
         </View>
       )}
+      <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
+      </View>
 
       {/* FAB */}
       {fabNoServerToast && (
@@ -470,7 +490,7 @@ export default function ProjectsHub() {
       />
 
       <LoadingOverlay
-        visible={!sessionsDone || showConvProgress}
+        visible={showLoadingModal}
         sessionsDone={sessionsDone}
         loaded={sessionsLoaded}
         total={sessionsTotal}
@@ -492,6 +512,7 @@ function MergedClassicList({
   searchOpen,
   searchQuery,
   onSearchChange,
+  isBackgroundRefreshing,
 }: {
   items: MergedItem[]
   refreshing: boolean
@@ -499,6 +520,7 @@ function MergedClassicList({
   searchOpen: boolean
   searchQuery: string
   onSearchChange: (q: string) => void
+  isBackgroundRefreshing?: boolean
 }) {
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -671,6 +693,7 @@ function MergedClassicList({
                 collapsible={visibleServerCount > 1}
                 isExpanded={!collapsedServers.has(item.serverId)}
                 onToggle={() => toggleServer(item.serverId)}
+                isRefreshing={isBackgroundRefreshing}
               />
             )
           }
@@ -803,6 +826,9 @@ function makeStyles(theme: Theme) {
     height: 5,
     borderRadius: 2.5,
     backgroundColor: theme.text.accent,
+  },
+  contentArea: {
+    flex: 1,
   },
   classicContainer: {
     flex: 1,

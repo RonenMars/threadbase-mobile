@@ -21,7 +21,7 @@ import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
-export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen }: TreeSessionsListProps) {
+export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen, isBackgroundRefreshing }: TreeSessionsListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(insets.bottom)
@@ -336,6 +336,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
                   isExpanded={item.isExpanded}
                   onToggle={() => handleToggleServer(item.serverId)}
                   onSelectLeaf={(node) => handleSelectLeaf(node, item.serverId)}
+                  isRefreshing={isBackgroundRefreshing}
                 />
               )
             }
