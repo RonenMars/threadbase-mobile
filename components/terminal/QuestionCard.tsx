@@ -29,6 +29,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Prop
   return (
     <View style={styles.container}>
       {q.header ? <Text style={styles.header}>{q.header}</Text> : null}
+      {q.detail ? <Text style={styles.detail}>{q.detail}</Text> : null}
       <Text style={styles.question}>{q.question}</Text>
       {q.options.map((option, index) => (
         <TouchableOpacity
@@ -71,6 +72,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
+  },
+  detail: {
+    fontFamily: 'monospace',
+    color: '#8b949e',
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: spacing.sm,
   },
   question: {
     color: '#e6edf3',

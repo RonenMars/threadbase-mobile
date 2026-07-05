@@ -27,4 +27,29 @@ describe('mapPermissionToBlock', () => {
     expect(block.questions[0].question).toBe('Claude needs your permission')
     expect(block.selectedIndex).toBeUndefined()
   })
+
+  it('carries the descriptive `detail` block through, keeping the prompt as the question', () => {
+    const block = mapPermissionToBlock(
+      'Do you want to proceed?',
+      [
+        { index: 1, label: 'Yes' },
+        { index: 2, label: 'No' },
+      ],
+      1,
+      'Bash command\ngit push origin main\nPush the merge commit to origin/main'
+    )
+    expect(block.questions[0].question).toBe('Do you want to proceed?')
+    expect(block.questions[0].detail).toBe(
+      'Bash command\ngit push origin main\nPush the merge commit to origin/main'
+    )
+  })
+
+  it('omits `detail` when none was provided', () => {
+    const block = mapPermissionToBlock(
+      'Do you want to proceed?',
+      [{ index: 1, label: 'Yes' }],
+      undefined
+    )
+    expect(block.questions[0].detail).toBeUndefined()
+  })
 })

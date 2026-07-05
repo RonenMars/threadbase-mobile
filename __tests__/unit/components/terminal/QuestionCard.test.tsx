@@ -75,6 +75,22 @@ describe('QuestionCard', () => {
     expect(getByText(/L1/)).toBeTruthy()
   })
 
+  it('renders the permission-gate `detail` block above the question', () => {
+    const block: QuestionBlock = {
+      source: 'permission',
+      permissionIndices: [1, 2],
+      questions: [{
+        question: 'Do you want to proceed?',
+        detail: 'Bash command\ngit push origin main\nPush the merge commit to origin/main',
+        multiSelect: false,
+        options: [{ label: 'Yes' }, { label: 'No' }],
+      }],
+    }
+    const { getByText } = render(<QuestionCard block={block} onSelect={jest.fn()} />)
+    expect(getByText(/git push origin main/)).toBeTruthy()
+    expect(getByText('Do you want to proceed?')).toBeTruthy()
+  })
+
   it('renders a single option correctly', () => {
     const block: QuestionBlock = {
       source: 'structured',

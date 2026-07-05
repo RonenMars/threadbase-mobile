@@ -8,6 +8,8 @@ export interface QuestionOption {
 export interface QuestionItem {
   question: string
   header?: string
+  /** Permission-gate only: descriptive block (tool + command + action) shown above the question. */
+  detail?: string
   multiSelect: boolean
   options: QuestionOption[]
 }
