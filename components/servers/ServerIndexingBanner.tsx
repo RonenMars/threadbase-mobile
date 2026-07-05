@@ -107,6 +107,7 @@ export function ServerIndexingBanner() {
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const cacheReady = useServersStore((s) => s.cacheReady)
+  const scanProgress = useServersStore((s) => s.scanProgress)
 
   const isIndexing = displayedServerIds.some(
     (id) => servers[id]?.isConnected && !cacheReady[id],
@@ -117,6 +118,13 @@ export function ServerIndexingBanner() {
   // Track fills the banner minus horizontal padding.
   const trackWidth = screenWidth - spacing.lg * 2
 
+  const progress = displayedServerIds
+    .filter((id) => servers[id]?.isConnected && !cacheReady[id])
+    .map((id) => scanProgress[id])
+    .find((p) => p && p.total > 0)
+
+  const fillWidth = progress ? trackWidth * (progress.scanned / progress.total) : 0
+
   return (
     <View
       style={styles.banner}
@@ -126,7 +134,16 @@ export function ServerIndexingBanner() {
       {/* Text */}
       <View style={styles.textBlock}>
         <Text style={styles.title}>{t('indexing.label')}</Text>
-        <Text style={styles.subtitle}>{t('indexing.subtitle')}</Text>
+        {progress ? (
+          <Text style={styles.subtitle}>
+            {t('indexing.progress', {
+              scanned: progress.scanned.toLocaleString(),
+              total: progress.total.toLocaleString(),
+            })}
+          </Text>
+        ) : (
+          <Text style={styles.subtitle}>{t('indexing.subtitle')}</Text>
+        )}
       </View>
 
       {/* Pulse dots */}
@@ -136,9 +153,13 @@ export function ServerIndexingBanner() {
         ))}
       </View>
 
-      {/* Scan-beam track */}
+      {/* Scan-beam track: determinate fill when progress known, indeterminate otherwise */}
       <View style={[styles.track, { width: trackWidth }]}>
-        <ScanBeam trackWidth={trackWidth} />
+        {progress ? (
+          <View style={[styles.fill, { width: fillWidth }]} />
+        ) : (
+          <ScanBeam trackWidth={trackWidth} />
+        )}
       </View>
     </View>
   )
@@ -185,6 +206,14 @@ function makeStyles(theme: Theme) {
       backgroundColor: theme.border,
       overflow: 'hidden',
       marginTop: 2,
+    },
+    fill: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      height: TRACK_HEIGHT,
+      borderRadius: TRACK_HEIGHT,
+      backgroundColor: theme.text.accent,
     },
     beam: {
       position: 'absolute',

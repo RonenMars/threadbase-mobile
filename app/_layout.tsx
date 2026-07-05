@@ -57,6 +57,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const setConnected = useServersStore((s) => s.setConnected)
   const setCacheReady = useServersStore((s) => s.setCacheReady)
   const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
+  const setScanProgress = useServersStore((s) => s.setScanProgress)
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -140,6 +141,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       setCacheReady(msg.serverId)
       recordFetchSuccess(msg.serverId)
     })
+    const unsubScanProgress = wsManager.onAll('scan_progress', (msg) => {
+      if (msg.type !== 'scan_progress') return
+      setScanProgress(msg.serverId, msg.scanned, msg.total)
+    })
 
     // Register push tokens for all servers
     registerPushTokenForAll(activeServerIds).catch(() => {})
@@ -149,6 +154,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubReady()
       unsubStatus()
       unsubCacheReady()
+      unsubScanProgress()
       wsManager.disconnectAll()
     }
     // router from expo-router is a stable singleton; setConnected/setCacheReady
