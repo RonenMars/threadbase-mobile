@@ -6,7 +6,7 @@ on:
       platform:
         description: 'Platform to deploy'
         required: true
-        default: ios
+        default: all
         type: choice
         options:
           - ios
