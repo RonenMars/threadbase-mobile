@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.ronenmars.threadbase",
-      "versionCode": 23,
+      "versionCode": 25,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"
