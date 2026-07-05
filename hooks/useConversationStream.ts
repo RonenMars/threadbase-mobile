@@ -61,11 +61,13 @@ export function useConversationStream(
   const qc = useQueryClient()
   const [liveMessages, setLiveMessages] = useState<Message[]>([])
   const seenIds = useRef(new Set<string>())
+  const prevSessionStatus = useRef<string | null>(null)
 
   useEffect(() => {
     if (!serverId || !sessionId) return
 
     seenIds.current.clear()
+    prevSessionStatus.current = null
     // On (re)subscribe, force REST refresh to recover messages missed while WS was down.
     qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
 
@@ -88,10 +90,24 @@ export function useConversationStream(
       qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
     })
 
+    // Safety net for a dead server-side tail pipeline: if conversation_event
+    // frames stop arriving, nothing above refetches while the screen stays
+    // open. session_update still flips when a turn ends (PTY prompt marker),
+    // so a running → not-running transition pulls whatever REST has.
+    const unsubSession = wsManager.getClient(serverId)?.on('session_update', (msg) => {
+      if (msg.type !== 'session_update' || msg.session.id !== sessionId) return
+      const prev = prevSessionStatus.current
+      prevSessionStatus.current = msg.session.status
+      if (prev === 'running' && msg.session.status !== 'running') {
+        qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
+      }
+    })
+
     const seenIdsRef = seenIds.current
     return () => {
       unsub?.()
       unsubStatus()
+      unsubSession?.()
       setLiveMessages([])
       seenIdsRef.clear()
     }
