@@ -1,7 +1,8 @@
 import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
-import { Pressable } from 'react-native'
+import { Pressable, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
   Stack,
   useGlobalSearchParams,
@@ -34,6 +35,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
 import { shouldSkipAutoNav } from '@/lib/sessionNavGuard'
+import { useTranslation } from 'react-i18next'
 
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
@@ -180,6 +182,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function BiometricLockGate({ children }: { children: React.ReactNode }) {
+  const { locked, authenticate } = useBiometricLock()
+  const { t } = useTranslation('common')
+  if (!locked) return <>{children}</>
+  return (
+    <View style={lockStyles.container}>
+      <Text style={lockStyles.title}>{t('biometricLock.title')}</Text>
+      <TouchableOpacity style={lockStyles.btn} onPress={authenticate}>
+        <Text style={lockStyles.btnText}>{t('biometricLock.unlock')}</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+const lockStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0d1117', alignItems: 'center', justifyContent: 'center', gap: 24 },
+  title: { color: '#e6edf3', fontSize: 20, fontWeight: '600' },
+  btn: { backgroundColor: '#238636', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 8 },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+})
+
 function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
   const theme = useTheme()
   return (
@@ -275,10 +298,12 @@ export default function RootLayout() {
             }}
           >
             <AuthGate>
-              <SlowQueryBanner />
-              <ErrorBanner />
-              <ThemedStatusBar />
-              <ThemedStack router={router} />
+              <BiometricLockGate>
+                <SlowQueryBanner />
+                <ErrorBanner />
+                <ThemedStatusBar />
+                <ThemedStack router={router} />
+              </BiometricLockGate>
             </AuthGate>
           </PersistQueryClientProvider>
         </SafeAreaProvider>

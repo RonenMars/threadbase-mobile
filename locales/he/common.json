@@ -38,5 +38,9 @@
   "time": {
     "now": "עכשיו",
     "yesterday": "אתמול"
+  },
+  "biometricLock": {
+    "title": "Threadbase נעול",
+    "unlock": "פתח"
   }
 }

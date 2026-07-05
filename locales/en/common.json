@@ -38,5 +38,9 @@
   "time": {
     "now": "now",
     "yesterday": "Yesterday"
+  },
+  "biometricLock": {
+    "title": "Threadbase is locked",
+    "unlock": "Unlock"
   }
 }
