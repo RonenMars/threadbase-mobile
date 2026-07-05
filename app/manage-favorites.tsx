@@ -7,11 +7,13 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import type { MultiConversation } from '@/types/api'
 
 export default function ManageFavoritesScreen() {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const { t } = useTranslation('sessions')
   const router = useRouter()
@@ -53,7 +55,8 @@ export default function ManageFavoritesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <View style={styles.row}>
+            <View style={[styles.row, isGlass && styles.rowGlass]}>
+              <GlassFill />
               <DotsSixVertical size={18} color={theme.text.secondary} style={styles.drag} />
               {item.type === 'dir'
                 ? <Folder size={16} color={theme.text.secondary} />
@@ -85,6 +88,10 @@ function makeStyles(theme: Theme) {
     marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: theme.border,
+    overflow: 'hidden',
+  },
+  rowGlass: {
+    backgroundColor: 'transparent',
   },
   drag: { opacity: 0.4 },
   label: { flex: 1, color: theme.text.primary, fontSize: font.base },

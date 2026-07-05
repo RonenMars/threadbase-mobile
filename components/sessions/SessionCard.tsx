@@ -10,7 +10,8 @@ import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { Badge } from '@/components/ui/Badge'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -40,6 +41,7 @@ function formatElapsed(ms: number): string {
 export function SessionCard({ session, isFirstSession = false }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
@@ -112,7 +114,8 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const timeLabel = lastActivityTs ? formatListTime(lastActivityTs) : null
 
   return (
-    <Animated.View entering={isNew ? FadeInDown : undefined} style={styles.cardWrap}>
+    <Animated.View entering={isNew ? FadeInDown : undefined} style={[styles.cardWrap, isGlass && styles.cardWrapGlass]}>
+      <GlassFill />
       <TouchableOpacity
         testID={isFirstSession ? "first-session-card" : undefined}
         onPress={handlePress}
@@ -176,6 +179,9 @@ function makeStyles(theme: Theme) {
     borderWidth: 1,
     borderColor: theme.border,
     overflow: 'hidden', // clip the spine to the card's rounded corners
+  },
+  cardWrapGlass: {
+    backgroundColor: 'transparent',
   },
   touchable: {
     // Touchable is the press target; the row inside lays out spine + body.

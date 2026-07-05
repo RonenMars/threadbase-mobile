@@ -31,9 +31,10 @@ import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode } from 'phosphor-react-native'
-import { THEMES, font, radius, spacing } from '@/constants/theme'
-import type { ThemeId } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/theme'
+import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
 function addServerActionLabel(action: AddServerAction): string {
@@ -146,23 +147,34 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   rosePineDawn: 'Rosé Pine Dawn',
   tokyoNight: 'Tokyo Night',
   tokyoNightLight: 'Tokyo Night Light',
+  appleGlass: 'Apple Glass',
+}
+
+const GLASS_VARIANT_LABELS: Record<GlassThemeVariant, string> = {
+  aurora: 'Aurora',
+  sunset: 'Sunset',
+  midnight: 'Midnight',
 }
 
 function ThemePicker({
   current,
+  tab,
+  glassVariant,
   onChange,
 }: {
   current: ThemeId
+  tab: 'dark' | 'light'
+  glassVariant: GlassThemeVariant
   onChange: (id: ThemeId) => void
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
-  const themeIds = Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]
+  const themeIds = (Object.keys(THEMES) as Exclude<ThemeId, 'system'>[]).filter((id) => THEMES[id].colorMode === tab)
 
   return (
     <View style={s.themeGrid}>
       {themeIds.map((id) => {
-        const t = THEMES[id]
+        const t = id === 'appleGlass' ? appleGlassThemes[glassVariant] : THEMES[id]
         const isSelected = current === id || (current === 'system' && id === 'dark')
         return (
           <TouchableOpacity
@@ -172,9 +184,20 @@ function ThemePicker({
             activeOpacity={0.7}
           >
             <View style={[s.themeCardPreview, { backgroundColor: t.bg.primary }]}>
-              <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
-              <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
+              {id === 'appleGlass' ? (
+                <>
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(255,255,255,0.22)' }]} />
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(89,214,255,0.34)' }]} />
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(255,159,122,0.34)' }]} />
+                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(94,234,212,0.28)' }]} />
+                </>
+              ) : (
+                <>
+                  <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
+                  <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
+                </>
+              )}
             </View>
             <View style={{ backgroundColor: t.bg.secondary }}>
               <Text style={[s.themeCardName, { color: t.text.secondary }]}>
@@ -190,6 +213,7 @@ function ThemePicker({
 
 export default function SettingsScreen() {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const { t } = useTranslation('settings')
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, addServer, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
@@ -226,6 +250,8 @@ export default function SettingsScreen() {
     setSessionView,
     biometricLock,
     setBiometricLock,
+    glassThemeVariant,
+    setGlassThemeVariant,
   } = useSettingsStore()
   const {
     favoritesEnabled, setFavoritesEnabled,
@@ -238,6 +264,7 @@ export default function SettingsScreen() {
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
   const [qrScannerOpen, setQrScannerOpen] = useState(false)
+  const [themeTab, setThemeTab] = useState<'dark' | 'light'>(() => theme.colorMode === 'light' ? 'light' : 'dark')
   const { statuses: permStatuses, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
 
   const handleTestNotification = async () => {
@@ -364,17 +391,19 @@ await refreshServerInfo(serverId)
           )
         })}
         <TouchableOpacity
-          style={s.addServerBtn}
+          style={[s.addServerBtn, isGlass && s.cardGlass]}
           onPress={() => setEditServerId('new')}
         >
+          <GlassFill />
           <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           testID="settings-scan-qr-btn"
-          style={s.scanQrBtn}
+          style={[s.scanQrBtn, isGlass && s.cardGlass]}
           onPress={() => setQrScannerOpen(true)}
           accessibilityLabel={t('servers.scanQr')}
         >
+          <GlassFill />
           <QrCode size={18} color={theme.text.accent} />
           <Text style={s.scanQrText}>{t('servers.scanQr')}</Text>
         </TouchableOpacity>
@@ -388,10 +417,12 @@ await refreshServerInfo(serverId)
         />
 
         <SectionHeader title={t('section.appearance')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('section.language')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, locale === 'en' && s.segmentBtnActive]}
                 onPress={() => handleLanguageChange('en')}
@@ -428,7 +459,8 @@ await refreshServerInfo(serverId)
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('appearance.layout')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, sessionsLayout === 'tree' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('tree')}
@@ -459,7 +491,39 @@ await refreshServerInfo(serverId)
             <View style={[s.row, { borderBottomWidth: 0, paddingBottom: 0 }]}>
               <Text style={s.rowLabel}>{t('appearance.theme')}</Text>
             </View>
-            <ThemePicker current={colorScheme} onChange={setColorScheme} />
+            <View style={s.segmentedTabs}>
+              <TouchableOpacity
+                style={[s.segmentTab, themeTab === 'dark' && s.segmentTabActive]}
+                onPress={() => setThemeTab('dark')}
+              >
+                <Text style={[s.segmentBtnText, themeTab === 'dark' && s.segmentBtnTextActive]}>{t('appearance.dark')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.segmentTab, themeTab === 'light' && s.segmentTabActive]}
+                onPress={() => setThemeTab('light')}
+              >
+                <Text style={[s.segmentBtnText, themeTab === 'light' && s.segmentBtnTextActive]}>{t('appearance.light')}</Text>
+              </TouchableOpacity>
+            </View>
+            <ThemePicker current={colorScheme} tab={themeTab} glassVariant={glassThemeVariant} onChange={setColorScheme} />
+            {colorScheme === 'appleGlass' ? (
+              <View style={s.glassVariantSection}>
+                <Text style={s.glassVariantLabel}>{t('appearance.glassVariations')}</Text>
+                <View style={s.glassVariantChips}>
+                  {(Object.keys(GLASS_VARIANT_LABELS) as GlassThemeVariant[]).map((variant) => (
+                    <TouchableOpacity
+                      key={variant}
+                      style={[s.glassVariantChip, glassThemeVariant === variant && s.glassVariantChipActive]}
+                      onPress={() => setGlassThemeVariant(variant)}
+                    >
+                      <Text style={[s.segmentBtnText, glassThemeVariant === variant && s.segmentBtnTextActive]}>
+                        {GLASS_VARIANT_LABELS[variant]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </View>
           <SettingsRow
             label="Merge sessions & history as Chats"
@@ -470,7 +534,8 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('notifications.whenAddingServer')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <TouchableOpacity
             style={s.row}
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
@@ -489,7 +554,8 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('section.notifications')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
           <SettingsRow label={t('notifications.sessionCompleted')} value={notifications.sessionComplete} onValueChange={(v) => setNotifications({ sessionComplete: v })} />
           <SettingsRow label={t('notifications.sessionFailed')} value={notifications.sessionFailed} onValueChange={(v) => setNotifications({ sessionFailed: v })} />
@@ -519,7 +585,8 @@ await refreshServerInfo(serverId)
         />
 
         <SectionHeader title={t('sessionNaming.title')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <SettingsRow label={t('sessionNaming.autoNameFromMessage')} value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
           <Text style={s.rowNote}>{t('sessionNaming.autoNameNote')}</Text>
           <SettingsRow label={t('sessionNaming.aiGeneratedNames')} value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
@@ -535,10 +602,12 @@ await refreshServerInfo(serverId)
         <Text style={s.rowNote}>{t('session.terminalViewNote')}</Text>
 
         <SectionHeader title={t('section.history')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('history.messagePreview')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, historyMessageDisplay === 'first' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('first')}
@@ -556,10 +625,12 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('conversationRows.title')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.density')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowDensity === 'comfortable' && s.segmentBtnActive]}
                 onPress={() => setRowDensity('comfortable')}
@@ -576,7 +647,8 @@ await refreshServerInfo(serverId)
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.messagePreview')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'first' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('first')}
@@ -605,7 +677,8 @@ await refreshServerInfo(serverId)
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.pathDisplay')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'smart' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('smart')}
@@ -628,7 +701,8 @@ await refreshServerInfo(serverId)
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.serverIndicator')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'auto' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('auto')}
@@ -651,7 +725,8 @@ await refreshServerInfo(serverId)
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.serverChipStyle')}</Text>
-            <View style={s.segmentedControl}>
+            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerChipVariant === 'label' && s.segmentBtnActive]}
                 onPress={() => setRowServerChipVariant('label')}
@@ -679,7 +754,8 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('section.permissions')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <PermissionRow
             label={t('permissions.camera')}
             description={t('permissions.cameraDesc')}
@@ -708,7 +784,8 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('section.about')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <Text style={s.aboutText}>
             {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${
               Platform.OS === 'ios'
@@ -720,7 +797,8 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('section.help')} />
-        <View style={s.card}>
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
             <Text style={s.rowValue}>›</Text>
@@ -761,6 +839,7 @@ function ActionSegment({
   onChange: (v: AddServerAction) => void
 }) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
   const options: { id: AddServerAction; label: string }[] = [
     { id: 'ask', label: 'Ask' },
@@ -769,7 +848,8 @@ function ActionSegment({
     { id: 'keep', label: 'Keep' },
   ]
   return (
-    <View style={s.segmentedControl}>
+    <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
+      <GlassFill />
       {options.map((option) => (
         <TouchableOpacity
           key={option.id}
@@ -806,6 +886,12 @@ function styles(theme: ReturnType<typeof useTheme>) {
       borderColor: theme.border,
       overflow: 'hidden',
     },
+    cardGlass: {
+      backgroundColor: 'transparent',
+    },
+    segmentedControlGlass: {
+      backgroundColor: 'transparent',
+    },
     addServerBtn: {
       backgroundColor: theme.bg.card,
       borderRadius: radius.md,
@@ -816,6 +902,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
       minHeight: 44,
       justifyContent: 'center',
+      overflow: 'hidden',
     },
     addServerText: {
       color: theme.text.accent,
@@ -834,6 +921,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
       padding: spacing.md,
       minHeight: 44,
       marginTop: spacing.xs,
+      overflow: 'hidden',
     },
     scanQrText: {
       color: theme.text.accent,
@@ -898,12 +986,62 @@ function styles(theme: ReturnType<typeof useTheme>) {
       height: 52,
       padding: spacing.xs,
       gap: 4,
+      overflow: 'hidden',
+    },
+    themePreviewBand: {
+      height: 8,
+      borderRadius: radius.sm,
     },
     themeCardName: {
       fontSize: font.xs,
       fontWeight: '600' as const,
       textAlign: 'center' as const,
       paddingVertical: 4,
+    },
+    segmentedTabs: {
+      flexDirection: 'row',
+      marginHorizontal: spacing.md,
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+    },
+    segmentTab: {
+      flex: 1,
+      paddingVertical: spacing.xs,
+      alignItems: 'center',
+    },
+    segmentTabActive: {
+      backgroundColor: theme.text.accent,
+    },
+    glassVariantSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.xs,
+    },
+    glassVariantLabel: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    glassVariantChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+    },
+    glassVariantChip: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.full,
+      backgroundColor: theme.bg.primary,
+    },
+    glassVariantChipActive: {
+      backgroundColor: theme.text.accent,
     },
   })
 }

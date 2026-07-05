@@ -5,7 +5,8 @@ import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
 import { flexRow } from '@/lib/rtl'
 
@@ -247,12 +248,14 @@ function ContentBlock({ block, isUser }: { block: MessageContent; isUser?: boole
 export const MessageBubble = React.memo(function MessageBubble({ message }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const isUser = message.role === 'user'
 
   return (
     <View style={[styles.container, isUser ? styles.containerUser : styles.containerAssistant]}>
-      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
+      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
+        {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
           <ContentBlock key={i} block={block} isUser={isUser} />
         ))}
@@ -278,6 +281,7 @@ function makeStyles(theme: Theme) {
       borderRadius: radius.lg,
       padding: spacing.md,
       gap: spacing.xs,
+      overflow: 'hidden',
     },
     bubbleUser: {
       alignSelf: 'flex-end',
@@ -289,6 +293,9 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       borderColor: theme.border,
       borderBottomLeftRadius: radius.sm,
+    },
+    bubbleAssistantGlass: {
+      backgroundColor: 'transparent',
     },
     messageText: {
       color: theme.text.primary,

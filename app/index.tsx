@@ -46,7 +46,8 @@ import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -71,6 +72,7 @@ function SessionNamesSyncer({ serverId }: { serverId: string }) {
 
 export default function ProjectsHub() {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['sessions', 'shared', 'settings'])
   const router = useRouter()
@@ -401,7 +403,8 @@ export default function ProjectsHub() {
           ) : (
             <>
               {/* Segmented control */}
-              <View style={styles.segmentRow}>
+              <View style={[styles.segmentRow, isGlass && styles.segmentRowGlass]}>
+                <GlassFill />
                 <TouchableOpacity
                   style={[styles.segmentTab, classicTab === 'sessions' && styles.segmentTabActive]}
                   onPress={() => setClassicTab('sessions')}
@@ -523,6 +526,7 @@ function MergedClassicList({
   isBackgroundRefreshing?: boolean
 }) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const searchStyles = makeSearchStyles(theme)
   const { t } = useTranslation('sessions')
@@ -628,13 +632,14 @@ function MergedClassicList({
   const renderConvCard = useCallback(
     (item: MultiConversation) => (
       <TouchableOpacity
-        style={styles.convCard}
+        style={[styles.convCard, isGlass && styles.convCardGlass]}
         activeOpacity={0.75}
         onPress={() => router.push(`/conversation/${item.id}?server=${item.serverId}`)}
         onLongPress={() => setActiveConvItem(item)}
         accessibilityLabel={item.title || item.projectPath}
         testID={`conversation-row-${item.id}`}
       >
+        <GlassFill />
         <View style={styles.convCardTitleRow}>
           <FolderSimple size={18} color={theme.text.secondary} weight="fill" />
           <Text style={styles.convCardTitle} numberOfLines={1}>
@@ -656,7 +661,7 @@ function MergedClassicList({
         </Text>
       </TouchableOpacity>
     ),
-    [router, t, styles, theme],
+    [router, t, styles, theme, isGlass],
   )
 
   return (
@@ -844,6 +849,9 @@ function makeStyles(theme: Theme) {
     borderColor: theme.border,
     overflow: 'hidden',
   },
+  segmentRowGlass: {
+    backgroundColor: 'transparent',
+  },
   segmentTab: {
     flex: 1,
     flexDirection: 'row',
@@ -877,6 +885,10 @@ function makeStyles(theme: Theme) {
     borderColor: theme.border,
     gap: spacing.xs,
     marginBottom: spacing.sm,
+  },
+  convCardGlass: {
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
   },
   convCardTitleRow: {
     flexDirection: 'row',

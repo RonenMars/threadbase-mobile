@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRecyclingState } from '@shopify/flash-list'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import type { MessageContent } from '@/types/api'
 
 type ThinkingBlock = Extract<MessageContent, { type: 'thinking' }>
@@ -17,12 +18,14 @@ interface Props {
 export function ThinkingCard({ block, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
   const isRedacted = !block.thinking && !!block.signature
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isGlass && styles.containerGlass]}>
+      <GlassFill />
       <TouchableOpacity
         style={styles.header}
         onPress={() => setExpanded((v) => !v)}
@@ -53,6 +56,9 @@ function makeStyles(theme: Theme) {
       backgroundColor: theme.bg.card,
       overflow: 'hidden',
       marginVertical: spacing.xs,
+    },
+    containerGlass: {
+      backgroundColor: 'transparent',
     },
     header: {
       flexDirection: 'row',

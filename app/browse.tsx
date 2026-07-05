@@ -23,7 +23,8 @@ import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 
 const MAX_RECENT_DIRS = 8
@@ -51,6 +52,7 @@ function buildSessionRoute(
 
 export default function BrowseScreen() {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
@@ -300,13 +302,14 @@ export default function BrowseScreen() {
       {recentDirs.length > 0 ? (
         <View style={styles.recents}>
           <TouchableOpacity
-            style={styles.recentsHeader}
+            style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass]}
             onPress={() => setIsRecentsOpen((open) => !open)}
             accessibilityRole="button"
             accessibilityLabel={
               isRecentsOpen ? 'Hide recent directories' : 'Show recent directories'
             }
           >
+            <GlassFill />
             <Text style={styles.recentsHeaderText}>
               {t('nav.recentDirs', { count: recentDirs.length })}
             </Text>
@@ -389,7 +392,8 @@ export default function BrowseScreen() {
             autoFocus
             onSubmitEditing={handleCreateFolder}
           />
-          <TouchableOpacity style={styles.newFolderBtn} onPress={handleCreateFolder}>
+          <TouchableOpacity style={[styles.newFolderBtn, isGlass && styles.cardGlass]} onPress={handleCreateFolder}>
+            <GlassFill />
             {createDir.isPending ? (
               <ActivityIndicator size="small" color={theme.text.accent} />
             ) : (
@@ -502,6 +506,10 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     backgroundColor: theme.bg.secondary,
+    overflow: 'hidden',
+  },
+  recentsHeaderGlass: {
+    backgroundColor: 'transparent',
   },
   recentsHeaderText: {
     color: theme.text.secondary,
@@ -616,6 +624,10 @@ function makeStyles(theme: Theme) {
     backgroundColor: theme.bg.card,
     height: 40,
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  cardGlass: {
+    backgroundColor: 'transparent',
   },
   newFolderBtnText: {
     color: theme.text.accent,
