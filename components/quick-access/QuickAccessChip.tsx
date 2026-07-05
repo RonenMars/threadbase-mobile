@@ -2,7 +2,8 @@ import React from 'react'
 import { Platform, Pressable, Text, StyleSheet } from 'react-native'
 import { Folder, Lightning, X } from 'phosphor-react-native'
 import { font, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 
 export type QuickAccessTab = 'favorites' | 'recents' | 'popular'
 
@@ -26,6 +27,7 @@ interface Props {
 
 export function QuickAccessChip({ item, tab, editMode, onPress, onDelete }: Props) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const isPinned = tab === 'favorites'
 
@@ -34,11 +36,13 @@ export function QuickAccessChip({ item, tab, editMode, onPress, onDelete }: Prop
       style={({ pressed }) => [
         styles.chip,
         isPinned && styles.chipPinned,
+        isGlass && styles.chipGlass,
         pressed && !editMode && styles.chipPressed,
       ]}
       onPress={onPress}
       accessibilityLabel={item.label}
     >
+      <GlassFill />
       {item.type === 'dir' ? (
         <Folder size={13} color={isPinned ? theme.text.accent : theme.text.secondary} />
       ) : (
@@ -81,10 +85,14 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       borderColor: 'rgba(99,179,255,0.18)',
       backgroundColor: theme.bg.card,
+      overflow: 'hidden',
     },
     chipPinned: {
       borderColor: theme.text.accent,
       backgroundColor: 'rgba(99,179,255,0.10)',
+    },
+    chipGlass: {
+      backgroundColor: 'transparent',
     },
     chipPressed: { opacity: 0.65 },
     label: {

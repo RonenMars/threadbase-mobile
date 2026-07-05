@@ -9,6 +9,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { brand, type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
 
@@ -98,6 +99,7 @@ export function FilterSortSheet({
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
   const theme = useTheme()
+  const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
 
   const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
@@ -331,6 +333,7 @@ export function FilterSortSheet({
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
+      backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
       {isEditingOrder ? (

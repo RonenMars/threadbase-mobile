@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-
 import { CaretDown, CaretUp } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 
 interface BannerAction {
   label: string
@@ -25,12 +26,14 @@ interface Props {
 export function Banner({ title, message, accent, icon, action, secondaryAction, details, style }: Props) {
   const { t } = useTranslation('shared')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
     <View style={s.overlay} pointerEvents="box-none">
-      <View style={[s.card, { borderColor: accent }, style]}>
+      <View style={[s.card, isGlass && s.cardGlass, { borderColor: accent }, style]}>
+        <GlassFill />
         {icon}
         <Text style={s.title}>{title}</Text>
         <Text style={[s.message, { color: accent }]}>{message}</Text>
@@ -101,8 +104,12 @@ function styles(theme: Theme) {
       backgroundColor: theme.bg.card,
       borderWidth: 1,
       borderRadius: 12,
+      overflow: 'hidden',
       paddingVertical: 16,
       paddingHorizontal: 24,
+    },
+    cardGlass: {
+      backgroundColor: 'transparent',
     },
     title: {
       color: theme.text.primary,

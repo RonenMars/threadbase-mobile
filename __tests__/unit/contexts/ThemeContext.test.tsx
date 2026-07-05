@@ -2,7 +2,7 @@ import React from 'react'
 import { renderHook } from '@testing-library/react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
-import { dark, dracula, catppuccin, nord, light } from '@/constants/theme'
+import { dark, dracula, catppuccin, nord, light, appleGlassThemes } from '@/constants/theme'
 
 // Use the real ThemeContext so the provider/hook contract tests remain meaningful
 jest.unmock('@/contexts/ThemeContext')
@@ -12,7 +12,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
-  useSettingsStore.setState({ colorScheme: 'dark' })
+  useSettingsStore.setState({ colorScheme: 'dark', glassThemeVariant: 'aurora' })
 })
 
 describe('useTheme', () => {
@@ -60,6 +60,13 @@ describe('useTheme', () => {
     useSettingsStore.setState({ colorScheme: 'system' })
     const { result } = renderHook(() => useTheme(), { wrapper })
     expect(result.current.bg.primary).toBe(dark.bg.primary)
+  })
+
+  it('returns selected Apple Glass variant when colorScheme is appleGlass', () => {
+    useSettingsStore.setState({ colorScheme: 'appleGlass', glassThemeVariant: 'sunset' })
+    const { result } = renderHook(() => useTheme(), { wrapper })
+    expect(result.current.bg.secondary).toBe(appleGlassThemes.sunset.bg.secondary)
+    expect(result.current.glass?.overlayColor).toBe(appleGlassThemes.sunset.glass?.overlayColor)
   })
 
   it('throws when used outside ThemeProvider', () => {
