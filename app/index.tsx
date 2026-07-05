@@ -578,17 +578,22 @@ function MergedClassicList({
       buckets.get(sid)?.push(item)
     }
 
+    // Collapse only applies when more than one server actually has items;
+    // with a single visible server a stale collapsed flag would otherwise
+    // hide its sessions with no way to expand (header isn't collapsible).
+    const serversWithItems = activeServerIds.filter((id) => (buckets.get(id)?.length ?? 0) > 0)
+    const collapseApplies = serversWithItems.length > 1
+
     const result: ClassicFlatItem[] = []
-    for (const id of activeServerIds) {
+    for (const id of serversWithItems) {
       const bucket = buckets.get(id) ?? []
-      if (bucket.length === 0) continue
       result.push({
         kind: 'header',
         serverId: id,
         serverLabel: servers[id]?.label ?? id,
         totalCount: bucket.length,
       })
-      if (!collapsedServers.has(id)) result.push(...bucket)
+      if (!collapseApplies || !collapsedServers.has(id)) result.push(...bucket)
     }
     return result
   }, [filteredItems, showServerHeaders, activeServerIds, servers, collapsedServers, sessionsCollapsed])

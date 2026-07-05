@@ -194,18 +194,21 @@ export function ProjectHubList({
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
     | { kind: 'group'; group: ProjectGroup }
 
-  const hubFlatData = useMemo((): HubFlatItem[] =>
-    showServerHeaders
+  const hubFlatData = useMemo((): HubFlatItem[] => {
+    // Collapse only applies with more than one visible server; with a single
+    // one a stale collapsed flag would hide its groups with no way to expand
+    // (the header isn't collapsible below).
+    const collapseApplies = serverGroups.length > 1
+    return showServerHeaders
       ? serverGroups.flatMap((sg) => {
-          const expanded = !collapsedServers.has(sg.serverId)
+          const expanded = !collapseApplies || !collapsedServers.has(sg.serverId)
           return [
             { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
             ...(expanded ? sg.groups.map((g) => ({ kind: 'group' as const, group: g })) : []),
           ]
         })
-      : groups.map((g) => ({ kind: 'group' as const, group: g })),
-    [showServerHeaders, serverGroups, groups, collapsedServers],
-  )
+      : groups.map((g) => ({ kind: 'group' as const, group: g }))
+  }, [showServerHeaders, serverGroups, groups, collapsedServers])
 
   return (
     <View style={styles.container}>
