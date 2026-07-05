@@ -134,11 +134,17 @@ export function LiveConversationView({
   // PTY lines shown inside the thinking bubble while agent is running
   const { lines: ptyLines, isStreaming } = useTerminalStream(serverId, sessionId)
 
-  // Show thinking bubble when session is running and the last real message isn't an assistant reply
+  // Show thinking bubble whenever the session is running. Mid-turn assistant
+  // messages (interim replies, sub-agent dispatches) land while Claude is
+  // still working — gating on "last message isn't assistant" hid the bubble
+  // for the rest of the turn, so long sub-agent runs showed no activity at
+  // all. The running → waiting_input flip is what ends the turn.
+  // The last-message gate stays only for the optimistic-send window, where
+  // status can lag behind the echo.
   const lastMessage = allMessages[allMessages.length - 1]
   const isAgentThinking =
-    (session?.status === 'running' || pendingSends.length > 0)
-    && lastMessage?.role !== 'assistant'
+    session?.status === 'running'
+    || (pendingSends.length > 0 && lastMessage?.role !== 'assistant')
 
   // 'hidden' → 'thinking' (agent running) → 'fading' (agent done) → 'hidden'
   const [thinkingState, setThinkingState] = useState<'hidden' | 'thinking' | 'fading'>('hidden')
