@@ -2,7 +2,8 @@ import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import type { ViewStyle } from 'react-native'
 import { Terminal } from 'phosphor-react-native'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import { font, spacing, radius, type Theme } from '@/constants/theme'
 
 interface EmptyStateProps {
@@ -13,11 +14,13 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, subtitle, style }: EmptyStateProps) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
 
   return (
     <View style={[s.container, style]}>
-      <View style={s.iconWrap}>
+      <View style={[s.iconWrap, isGlass && s.iconWrapGlass]}>
+        <GlassFill />
         <Terminal size={32} color={theme.text.accent} weight="light" />
       </View>
       <Text style={s.title}>{title}</Text>
@@ -43,9 +46,13 @@ function styles(theme: Theme) {
       backgroundColor: theme.bg.card,
       borderWidth: 1,
       borderColor: theme.border,
+      overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.sm,
+    },
+    iconWrapGlass: {
+      backgroundColor: 'transparent',
     },
     title: {
       color: theme.text.primary,

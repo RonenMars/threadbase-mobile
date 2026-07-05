@@ -3,8 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated, Easing } fro
 import { Trash, PencilSimple, ArrowsClockwise, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { GlassFill } from '@/components/ui/GlassFill'
 import type { ServerConfig } from '@/types/api'
 
 interface Props {
@@ -21,6 +22,7 @@ const REFRESH_TIMEOUT_MS = 12000
 export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefresh, onViewError }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const progress = useMemo(() => new Animated.Value(1), [])
   const progressAnim = useRef<Animated.CompositeAnimation | null>(null)
   const resultOpacity = useMemo(() => new Animated.Value(0), [])
@@ -71,7 +73,8 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
   }
 
   return (
-    <View style={[styles.card, showBottomLine && styles.cardNoBottomPad]}>
+    <View style={[styles.card, isGlass && styles.cardGlass, showBottomLine && styles.cardNoBottomPad]}>
+      <GlassFill />
       <View style={styles.header}>
         <View style={[styles.statusDot, server.isConnected ? styles.dotConnected : styles.dotDisconnected]} />
         <Text style={styles.label} numberOfLines={1}>
@@ -164,6 +167,9 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.sm,
       padding: spacing.md,
       paddingBottom: spacing.sm,
+    },
+    cardGlass: {
+      backgroundColor: 'transparent',
     },
     cardNoBottomPad: {
       paddingBottom: 0,

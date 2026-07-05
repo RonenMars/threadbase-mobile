@@ -6,6 +6,7 @@ import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 
 export type SortType = 'lastActivity' | 'startedAt'
@@ -49,6 +50,7 @@ export function ServerFilterSheet({
   onChangeSortType,
 }: Props) {
   const theme = useTheme()
+  const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const STATUS_OPTIONS = getStatusOptions(theme)
   const { t } = useTranslation(['servers', 'common'])
@@ -95,6 +97,7 @@ export function ServerFilterSheet({
       onClose={onClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
+      backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={styles.content}>

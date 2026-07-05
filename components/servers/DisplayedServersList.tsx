@@ -13,7 +13,8 @@ import { DotsSixVertical } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { ServerConfig } from '@/types/api'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 
 interface Props {
   activeServerIds: string[]
@@ -42,6 +43,7 @@ interface JigglingRowProps {
 
 function JigglingRow({ server, index, drag, isActive, isEditingOrder }: JigglingRowProps) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const rotation = useSharedValue(0)
 
@@ -74,10 +76,11 @@ function JigglingRow({ server, index, drag, isActive, isEditingOrder }: Jiggling
       <TouchableOpacity
         onLongPress={drag}
         disabled={isActive}
-        style={[styles.row, isActive && styles.rowActive]}
+        style={[styles.row, isGlass && styles.rowGlass, isActive && styles.rowActive]}
         activeOpacity={0.8}
         testID={`server-row-${server.id}`}
       >
+        <GlassFill />
         <View style={styles.serverInfo}>
           <Text style={styles.serverLabel} numberOfLines={1}>
             {server.label || server.url}
@@ -107,6 +110,7 @@ export function DisplayedServersList({
 }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const latestServerId = activeServerIds[activeServerIds.length - 1]
 
@@ -159,7 +163,8 @@ export function DisplayedServersList({
         if (!server) return null
         const selected = selectedServerIds.includes(id)
         return (
-          <View key={id} style={styles.row}>
+          <View key={id} style={[styles.row, isGlass && styles.rowGlass]}>
+            <GlassFill />
             <View style={styles.serverInfo}>
               <Text style={styles.serverLabel} numberOfLines={1}>
                 {server.label || server.url}
@@ -217,12 +222,16 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       backgroundColor: theme.bg.card,
       borderRadius: radius.md,
+      overflow: 'hidden',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.md,
+    },
+    rowGlass: {
+      backgroundColor: 'transparent',
     },
     rowActive: {
       opacity: 0.7,

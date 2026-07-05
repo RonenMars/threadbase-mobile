@@ -3,7 +3,8 @@ import { View, Text, Pressable, Modal, StyleSheet } from 'react-native'
 import { ArrowRight, FolderOpen, Star, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import type { ChipItem } from './QuickAccessChip'
 import { flexRow } from '@/lib/rtl'
 
@@ -22,13 +23,15 @@ export function QuickAccessActionSheet({
 }: Props) {
   const { t } = useTranslation('shared')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   if (!item) return null
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, isGlass && styles.sheetGlass]}>
+        <GlassFill />
         <Text style={styles.title} numberOfLines={1}>{item.label}</Text>
 
         {item.type === 'dir' ? (
@@ -73,6 +76,10 @@ function makeStyles(theme: Theme) {
       paddingBottom: 28,
       borderTopWidth: 1,
       borderColor: theme.border,
+    },
+    sheetGlass: {
+      backgroundColor: 'transparent',
+      overflow: 'hidden',
     },
     title: {
       color: theme.text.secondary,

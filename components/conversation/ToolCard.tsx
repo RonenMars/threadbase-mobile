@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 import type { MessageContent } from '@/types/api'
 
 const TOOL_ICONS: Record<string, string> = {
@@ -60,6 +61,7 @@ interface Props {
 export function ToolCard({ block, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
 
@@ -82,10 +84,11 @@ export function ToolCard({ block, recycleKey }: Props) {
   return (
     <TouchableOpacity
       onPress={() => hasContent && setExpanded((v) => !v)}
-      style={[styles.card, isError && styles.cardError]}
+      style={[styles.card, isError && styles.cardError, isGlass && styles.cardGlass]}
       accessibilityLabel={`${toolName} tool ${expanded ? 'collapse' : 'expand'}`}
       accessibilityRole="button"
     >
+      <GlassFill />
       <View style={styles.header}>
         <Text style={styles.icon}>{icon}</Text>
         <Text style={styles.name}>{toolName}</Text>
@@ -124,6 +127,9 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       borderColor: theme.border,
       overflow: 'hidden',
+    },
+    cardGlass: {
+      backgroundColor: 'transparent',
     },
     cardError: {
       borderColor: theme.status.failed,

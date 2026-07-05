@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import { useConversation } from '@/hooks/useConversations'
 import { useSettingsStore } from '@/stores/settings'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
@@ -36,6 +37,7 @@ const SNAP_POINTS = ['60%', '90%']
 export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
+  const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const sheetRef = useRef<BottomSheet>(null)
   const router = useRouter()
@@ -79,6 +81,7 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={{ backgroundColor: theme.bg.card }}
+      backgroundComponent={glassBackground}
       handleIndicatorStyle={{ backgroundColor: theme.border }}
     >
       <View style={styles.pinned}>

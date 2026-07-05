@@ -23,7 +23,8 @@ import { ServerEditModal } from '@/components/servers/ServerEditModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { AddServerButton } from '@/components/servers/AddServerButton'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { GlassFill } from '@/components/ui/GlassFill'
 
 interface Props {
   visible: boolean
@@ -227,6 +228,7 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
 export function ServersStatusModal({ visible, onClose }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const router = useRouter()
   const { servers, activeServerIds, removeServer, refreshServerInfo } = useServersStore()
@@ -283,7 +285,8 @@ export function ServersStatusModal({ visible, onClose }: Props) {
       statusBarTranslucent
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
+          <GlassFill />
           <View style={styles.header}>
             <Cloud size={18} color={theme.text.secondary} weight="regular" />
             <Text style={styles.title}>
@@ -379,6 +382,10 @@ function makeStyles(theme: Theme) {
       padding: spacing.md,
       gap: spacing.sm,
       maxHeight: '75%',
+    },
+    sheetGlass: {
+      backgroundColor: 'transparent',
+      overflow: 'hidden',
     },
     scrollView: {
       flexGrow: 0,
@@ -486,13 +493,18 @@ function makeStyles(theme: Theme) {
     },
     dropBackdrop: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      // Stronger scrim under glass so the modal beneath is occluded and the
+      // stacked menu stays readable.
+      backgroundColor: theme.glass ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.45)',
       justifyContent: 'flex-end',
       paddingBottom: 40,
       paddingHorizontal: spacing.md,
     },
     dropSheet: {
-      backgroundColor: theme.bg.card,
+      // A stacked popup must be opaque — a translucent menu over the (also
+      // translucent) Servers Status modal lets text bleed through. Use a solid
+      // dark surface under glass instead of the see-through bg.card token.
+      backgroundColor: theme.glass?.opaqueSurface ?? theme.bg.card,
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: theme.border,

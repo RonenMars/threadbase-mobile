@@ -4,6 +4,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorho
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import { useSessionActions } from '@/hooks/useSessionActions'
 
 const AUTO_PROCEED_TIMEOUT_MS = 60000
@@ -18,6 +19,7 @@ interface Props {
 
 export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }: Props) {
   const theme = useTheme()
+  const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const { t } = useTranslation('queue')
   const sheetRef = useRef<BottomSheet>(null)
@@ -78,6 +80,7 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
       snapPoints={['75%', '95%']}
       enablePanDownToClose={false}
       backgroundStyle={styles.sheetBg}
+      backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
       keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
