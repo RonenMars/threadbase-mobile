@@ -7,7 +7,7 @@ import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 
-function DotsAnimation({ style }: { style?: object }) {
+function DotsAnimation({ style, color }: { style?: object; color: string }) {
   // useMemo so Animated.Value instances are stable across re-renders
   const dots = useMemo(() => [
     new Animated.Value(0.3),
@@ -33,7 +33,7 @@ function DotsAnimation({ style }: { style?: object }) {
   return (
     <View style={[{ flexDirection: 'row', gap: 4 }, style]}>
       {dots.map((dot, i) => (
-        <Animated.Text key={i} style={{ opacity: dot, fontSize: 18 }}>•</Animated.Text>
+        <Animated.Text key={i} style={{ opacity: dot, fontSize: 18, color }}>•</Animated.Text>
       ))}
     </View>
   )
@@ -136,7 +136,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
           </ScrollView>
         ) : null}
         {(isStreaming || !hasLines) ? (
-          <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} />
+          <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} color={theme.text.accent} />
         ) : null}
       </View>
     </Animated.View>
