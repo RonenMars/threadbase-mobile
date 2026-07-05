@@ -64,13 +64,14 @@ export function ChatComposer({
   const styles = makeStyles(theme)
   const insets = useSafeAreaInsets()
   // When the keyboard is up, behavior="padding" already lifts the composer above
-  // it — the home indicator is covered, so the resting insets.bottom + xl spacing
-  // would double-count and leave a visible gap. Use a small fixed gap instead;
-  // restore the full safe-area padding only when the keyboard is closed.
+  // it — the home indicator is covered, so any resting safe-area padding would
+  // double-count and leave a visible gap. Use a small fixed gap instead; when
+  // the keyboard is closed, the safe-area inset alone clears the home
+  // indicator (floored at spacing.sm for devices reporting a zero inset).
   const keyboardVisible = useKeyboardState((s) => s.isVisible)
   const inputAreaPaddingBottom = keyboardVisible
     ? spacing.sm
-    : (Platform.OS === 'android' ? spacing.md : spacing.xl) + insets.bottom
+    : Math.max(insets.bottom, spacing.sm)
   const [expanded, setExpanded] = useState(false)
 
   const hasContent = value.trim().length > 0 || attachments.length > 0

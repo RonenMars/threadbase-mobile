@@ -19,7 +19,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown, ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -49,8 +49,7 @@ const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`
 export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
-  const insets = useSafeAreaInsets()
-  const styles = useMemo(() => makeStyles(theme, insets.bottom), [theme, insets.bottom])
+  const styles = useMemo(() => makeStyles(theme), [theme])
   const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
   const router = useRouter()
 
@@ -656,7 +655,7 @@ export default function ConversationDetailScreen() {
   )
 }
 
-function makeStyles(theme: Theme, bottomInset: number = 0) {
+function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -713,7 +712,6 @@ function makeStyles(theme: Theme, bottomInset: number = 0) {
       flexDirection: 'row',
       gap: spacing.sm,
       padding: spacing.md,
-      paddingBottom: spacing.md + bottomInset,
       borderTopWidth: 1,
       borderTopColor: theme.border,
     },
