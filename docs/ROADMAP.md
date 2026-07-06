@@ -90,9 +90,9 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 
 **Goal:** Replace today's manual `/expo-local-ship` flow (build → archive → upload to TestFlight) with an automated CI pipeline that builds and submits to both App Store and Google Play on a release trigger (tag push, manual workflow dispatch, or merge to a release branch).
 
-Today's setup (per [README](../README.md#building-for-release) + the `expo-local-ship` skill):
-- Local-only: bumps `app.json` build number, archives with Xcode CLI, uploads via `xcrun altool`.
-- TestFlight only — no App Store production submission, no Android pipeline.
+Today's setup (per [README](../README.md#shipping) + the local ship scripts):
+- Local-only: bumps `app.json` build/version numbers, archives with native tooling, and uploads through the configured iOS/Android release paths.
+- Alpha/beta distribution exists through TestFlight and Google Play Alpha, but there is no automated production store submission pipeline.
 - Cloud builds via EAS (`/ship-expo-cloud`) exist but are opt-in and still need a human in the loop.
 
 **Direction (decide on pickup):**
@@ -104,8 +104,8 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 3. **Mixed.** EAS for iOS (which is the part most painful locally — codesigning, provisioning, Xcode versions), local-style for Android (cheaper, simpler). Avoids EAS minutes for the easier platform.
 
 **Open questions / prerequisites:**
-- **App Store production listing.** Today we ship TestFlight only. Need to populate App Store Connect (screenshots, description, privacy policy URL, support URL, ratings questionnaire) before the first prod submission can succeed. This is *not* infra work — it's content + legal — and probably gates the iOS half of this feature.
-- **Google Play listing.** Same — Play Console requires a complete store listing (graphics, content rating, target audience, data safety) before the first internal/closed/open/prod track upload is accepted.
+- **App Store production listing.** Today iOS distribution is through TestFlight. Need to populate App Store Connect (screenshots, description, privacy policy URL, support URL, ratings questionnaire) before the first prod submission can succeed. This is *not* infra work — it's content + legal — and probably gates the iOS half of this feature.
+- **Google Play production listing.** Android alpha distribution exists, but production rollout still needs a complete Play Console listing (graphics, content rating, target audience, data safety).
 - **Android build path.** The repo's iOS build setup is mature; Android has `npm run android` + Expo prebuild but no documented release archive flow. Verify `eas build --platform android` works end-to-end before betting on it, or document the local Gradle release flow first.
 - **Signing.** iOS: confirm whether we keep the existing Apple ID + app-specific password setup, or move to Apple's App Store Connect API key (recommended for CI — no per-run 2FA prompts). Android: generate + securely store the upload keystore; document rotation policy.
 - **Versioning.** Today the build number bumps in `app.json` per ship. Decide CI strategy: auto-increment from CI run number, derive from git tag, or read+bump from `app.json`. Consistency between iOS `buildNumber` and Android `versionCode` matters.
@@ -142,7 +142,7 @@ Today's setup (per [README](../README.md#building-for-release) + the `expo-local
 
 **Likely areas (to verify in the audit):**
 - **QR vs. manual entry.** Today they're parallel paths; which one converts better? Should one be primary?
-- **Default server URL.** `EXPO_PUBLIC_DEFAULT_SERVER_URL` (= `http://localhost:7070`) is a dev convenience; in prod it's likely useless or actively confusing. Hide it on release builds?
+- **Default server URL.** `EXPO_PUBLIC_DEFAULT_SERVER_URL` (= `http://localhost:8766`) is a dev convenience; in prod it's likely useless or actively confusing. Hide it on release builds or steer users toward the URL printed by `tb-streamer pair`?
 - **Pairing protocol.** NaCl key exchange (`services/pair-exchange.ts`) — does the user see any meaningful state during the handshake, or just a spinner? What's the error UX if it fails?
 - **Transitions.** Animation system at `components/onboarding/animations.ts` — feels deliberate but worth checking it's coherent end-to-end on Android too (the recent SDK 55 downgrade may have regressed something).
 - **Theme.** Onboarding has its own `theme.ts` — verify it stays in step with the main app theme after the recent theming-system work, or intentionally deviates for a "welcome" tone.
