@@ -8,19 +8,19 @@ const qMsg: QuestionWsMessage = {
 }
 
 describe('useActiveQuestionReducer', () => {
-  it('sets the active question on a matching question message', () => {
-    const { result } = renderHook(() => useActiveQuestionReducer('s1'))
+  it('sets the active question on a matching question message', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     act(() => result.current.onMessage(qMsg))
     expect(result.current.question?.toolUseId).toBe('t1')
     expect(result.current.question?.source).toBe('structured')
   })
-  it('ignores a question for another session', () => {
-    const { result } = renderHook(() => useActiveQuestionReducer('OTHER'))
+  it('ignores a question for another session', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('OTHER'))
     act(() => result.current.onMessage(qMsg))
     expect(result.current.question).toBeNull()
   })
-  it('clears on question_cancelled matching the held toolUseId', () => {
-    const { result } = renderHook(() => useActiveQuestionReducer('s1'))
+  it('clears on question_cancelled matching the held toolUseId', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     act(() => result.current.onMessage(qMsg))
     const cancel: QuestionCancelledWsMessage = { type: 'question_cancelled', sessionId: 's1', toolUseId: 't1' }
     act(() => result.current.onMessage(cancel))

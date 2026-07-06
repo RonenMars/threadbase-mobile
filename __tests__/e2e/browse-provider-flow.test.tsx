@@ -65,11 +65,11 @@ beforeEach(() => {
   mockStartMutate.mockClear()
 })
 
-function renderScreen() {
+async function renderScreen() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  return await render(
     <ThemeProvider>
       <QueryClientProvider client={qc}>
         <BrowseScreen />
@@ -79,10 +79,10 @@ function renderScreen() {
 }
 
 describe('BrowseScreen e2e provider flow', () => {
-  it('starts Claude by default without an explicit provider', () => {
-    const { getByText } = renderScreen()
+  it('starts Claude by default without an explicit provider', async () => {
+    const { getByText } = await renderScreen()
 
-    fireEvent.press(getByText('Start Session Here'))
+    await fireEvent.press(getByText('Start Session Here'))
 
     expect(mockStartMutate).toHaveBeenCalledWith(
       { path: '', projectName: '~' },
@@ -90,11 +90,11 @@ describe('BrowseScreen e2e provider flow', () => {
     )
   })
 
-  it('sends codex-cli when Codex is selected', () => {
-    const { getByTestId, getByText } = renderScreen()
+  it('sends codex-cli when Codex is selected', async () => {
+    const { getByTestId, getByText } = await renderScreen()
 
-    fireEvent.press(getByTestId('start-provider-codex-cli'))
-    fireEvent.press(getByText('Start Session Here'))
+    await fireEvent.press(getByTestId('start-provider-codex-cli'))
+    await fireEvent.press(getByText('Start Session Here'))
 
     expect(mockStartMutate).toHaveBeenCalledWith(
       { path: '', projectName: '~', provider: 'codex-cli' },

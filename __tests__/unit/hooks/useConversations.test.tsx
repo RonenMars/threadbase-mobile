@@ -99,7 +99,7 @@ describe('useConversation — ETag conditional fetch (Task C)', () => {
       return Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c1', ['hello']) })
     }
 
-    const { result } = renderHook(() => useConversation('srv_a', 'c1'), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversation('srv_a', 'c1'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     expect(result.current.data?.messages.length).toBe(1)
@@ -112,7 +112,7 @@ describe('useConversation — ETag conditional fetch (Task C)', () => {
     metaHandlers.srv_b = () =>
       Promise.resolve({ status: 200, etag: null, body: rawConversationPage('c2', ['a', 'b']) })
 
-    const { result } = renderHook(() => useConversation('srv_b', 'c2'), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversation('srv_b', 'c2'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     expect(result.current.data?.messages.length).toBe(2)
@@ -124,7 +124,7 @@ describe('useConversation — ETag conditional fetch (Task C)', () => {
     page.meta = { ...page.meta, resumable: false, unavailable_reason: 'worktree_removed' } as any
     metaHandlers.srv_c = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
 
-    const { result } = renderHook(() => useConversation('srv_c', 'c3'), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversation('srv_c', 'c3'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     expect(result.current.data?.resumable).toBe(false)
@@ -136,7 +136,7 @@ describe('useConversation — ETag conditional fetch (Task C)', () => {
     metaHandlers.srv_d = () =>
       Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c4', ['hi']) })
 
-    const { result } = renderHook(() => useConversation('srv_d', 'c4'), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversation('srv_d', 'c4'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     expect(result.current.data?.resumable).toBeUndefined()
@@ -165,7 +165,7 @@ describe('useConversation — assistant prose alongside tool blocks', () => {
     }
     metaHandlers.srv_e = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
 
-    const { result } = renderHook(() => useConversation('srv_e', 'c5'), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversation('srv_e', 'c5'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     const blocks = result.current.data!.messages[0].content
@@ -191,7 +191,7 @@ describe('useConversation — assistant prose alongside tool blocks', () => {
     }
     metaHandlers.srv_f = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
 
-    const { result } = renderHook(() => useConversation('srv_f', 'c6'), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversation('srv_f', 'c6'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     const blocks = result.current.data!.messages[0].content
@@ -207,7 +207,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
       Promise.resolve([rawSession('a1'), rawSession('a2')]) as Promise<unknown>
     handlers['srv-B'] = () => Promise.reject(new Error('boom'))
 
-    const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
 
     await waitFor(() => expect(result.current.data?.pages.length).toBe(1))
 
@@ -223,7 +223,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
     handlers['srv-A'] = () => Promise.resolve([rawSession('a1')]) as Promise<unknown>
     handlers['srv-B'] = () => Promise.reject(new Error('host unreachable'))
 
-    const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     const statuses = useServerFetchStatusStore.getState().statuses
@@ -236,7 +236,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
     setActiveServers(['srv-A'])
     handlers['srv-A'] = () => Promise.reject(new Error('down'))
 
-    const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.data).toBeUndefined()
   })
@@ -249,7 +249,7 @@ describe('useConversationSearch — partial failure (Bug 32)', () => {
     handlers['srv-A'] = () => Promise.resolve([rawSession('a1', 'alpha')]) as Promise<unknown>
     handlers['srv-B'] = () => Promise.reject(new Error('5xx'))
 
-    const { result } = renderHook(() => useConversationSearch('alpha'), {
+    const { result } = await renderHook(() => useConversationSearch('alpha'), {
       wrapper: createWrapper(),
     })
     await waitFor(() => expect(result.current.data).toBeDefined())
@@ -278,7 +278,7 @@ describe('useEagerConversations — partial failure (Bug 32)', () => {
       return Promise.resolve([rawSession('b1')]) as Promise<unknown>
     }
 
-    const { result } = renderHook(() => useEagerConversations(), {
+    const { result } = await renderHook(() => useEagerConversations(), {
       wrapper: createWrapper(),
     })
     await waitFor(() => expect(result.current.isDone).toBe(true))
@@ -304,7 +304,7 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
       return Promise.resolve([]) as Promise<unknown>
     }
 
-    const { result } = renderHook(() => useEagerConversations(undefined, 1), {
+    const { result } = await renderHook(() => useEagerConversations(undefined, 1), {
       wrapper: createWrapper(),
     })
     await waitFor(() => expect(result.current.isDone).toBe(true))
@@ -326,7 +326,7 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
       return Promise.resolve([]) as Promise<unknown>
     }
 
-    const { result } = renderHook(() => useEagerConversations(), {
+    const { result } = await renderHook(() => useEagerConversations(), {
       wrapper: createWrapper(),
     })
     await waitFor(() => expect(result.current.isDone).toBe(true))

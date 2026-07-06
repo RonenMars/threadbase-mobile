@@ -27,19 +27,19 @@ const { __wsTest } = jest.requireMock('@/services/ws-client') as {
   __wsTest: { emitStatus: (sid: string, s: string) => void }
 }
 
-function setup() {
+async function setup() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
-  const rendered = renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
+  const rendered = await renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
   return { invalidateSpy, ...rendered }
 }
 
 describe('useConversationStream – reconnect recovery', () => {
-  it('refetches the conversation when the WS comes back to connected', () => {
-    const { invalidateSpy } = setup()
+  it('refetches the conversation when the WS comes back to connected', async () => {
+    const { invalidateSpy } = await setup()
     // Mount performs the initial invalidation.
     expect(invalidateSpy).toHaveBeenCalledTimes(1)
 
@@ -48,8 +48,8 @@ describe('useConversationStream – reconnect recovery', () => {
     expect(invalidateSpy).toHaveBeenLastCalledWith({ queryKey: ['conversation', 'srv-1', 'conv-1'] })
   })
 
-  it('ignores other servers and non-connected statuses', () => {
-    const { invalidateSpy } = setup()
+  it('ignores other servers and non-connected statuses', async () => {
+    const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
     act(() => __wsTest.emitStatus('srv-2', 'connected'))
@@ -58,8 +58,8 @@ describe('useConversationStream – reconnect recovery', () => {
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
-  it('stops listening after unmount', () => {
-    const { invalidateSpy, unmount } = setup()
+  it('stops listening after unmount', async () => {
+    const { invalidateSpy, unmount } = await setup()
     invalidateSpy.mockClear()
     unmount()
 

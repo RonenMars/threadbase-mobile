@@ -74,7 +74,7 @@ describe('useEagerSessions', () => {
       .mockResolvedValueOnce(pageOf(['a3', 'a4'], { nextCursor: 'c2', total: 6 }))
       .mockResolvedValueOnce(pageOf(['a5', 'a6'], { nextCursor: null, total: 6 }))
 
-    const { result } = renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
     await waitFor(() => expect(result.current.isDone).toBe(true))
 
@@ -111,7 +111,7 @@ describe('useEagerSessions', () => {
       .mockReturnValueOnce(aPromise)
       .mockResolvedValueOnce(pageOf(['b1'], { nextCursor: null, total: 1 }))
 
-    const { result } = renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
     // Before A resolves: both servers in-flight, B may already have landed.
     // inFlightCount starts at 2 and drops as each server finishes.
@@ -136,7 +136,7 @@ describe('useEagerSessions', () => {
     setActiveServers([{ id: 'srv-A', label: 'A' }])
     mockGet.mockResolvedValueOnce(pageOf([], { nextCursor: null, total: 0 }))
 
-    const { result } = renderHook(
+    const { result } = await renderHook(
       () => useEagerSessions({ filter: { status: ['running', 'waiting_input'] } }),
       { wrapper: createWrapper() },
     )
@@ -156,7 +156,7 @@ describe('useEagerSessions', () => {
       .mockRejectedValueOnce(new Error('boom'))
       .mockResolvedValueOnce(pageOf(['b1'], { nextCursor: null, total: 1 }))
 
-    const { result } = renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
     await waitFor(() => expect(result.current.isDone).toBe(true))
     // The query itself succeeds — partial results are not a fatal error.
@@ -171,7 +171,7 @@ describe('useEagerSessions', () => {
       .mockResolvedValueOnce(pageOf(['a1'], { nextCursor: null, total: 1 }))
       .mockResolvedValueOnce(pageOf(['a1'], { nextCursor: null, total: 1 }))
 
-    const { result, rerender } = renderHook(
+    const { result, rerender } = await renderHook(
       ({ sortBy }: { sortBy: 'lastActivity' | 'projectName' }) =>
         useEagerSessions({ sort: { sortBy, order: 'desc' } }),
       { wrapper: createWrapper(), initialProps: { sortBy: 'lastActivity' } },

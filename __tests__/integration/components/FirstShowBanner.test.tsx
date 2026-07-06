@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe('FirstShowBanner', () => {
   it('renders the hint text when not yet dismissed', async () => {
-    const { findByText } = render(
+    const { findByText } = await render(
       <FirstShowBanner storageKey="test_banner" text="Tap any message to see actions." />
     )
     expect(await findByText('Tap any message to see actions.')).toBeTruthy()
@@ -19,7 +19,7 @@ describe('FirstShowBanner', () => {
 
   it('does not render when already dismissed in AsyncStorage', async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue('seen')
-    const { queryByText } = render(
+    const { queryByText } = await render(
       <FirstShowBanner storageKey="test_banner" text="Some hint" />
     )
     await waitFor(() => {
@@ -28,11 +28,11 @@ describe('FirstShowBanner', () => {
   })
 
   it('hides the banner and saves seen when dismiss button is pressed', async () => {
-    const { findByTestId, queryByText } = render(
+    const { findByTestId, queryByText } = await render(
       <FirstShowBanner storageKey="test_banner" text="Some hint" />
     )
     const btn = await findByTestId('first-show-banner-dismiss')
-    fireEvent.press(btn)
+    await fireEvent.press(btn)
     await waitFor(() => {
       expect(queryByText('Some hint')).toBeNull()
     })

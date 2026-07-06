@@ -15,7 +15,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('respondToQuestion', () => {
   it('POSTs toolUseId + answers to /answer', async () => {
-    const { result } = renderHook(() => useSessionActions('srv1', 'sess1'), { wrapper })
+    const { result } = await renderHook(() => useSessionActions('srv1', 'sess1'), { wrapper })
     await act(async () => {
       result.current.respondToQuestion.mutate({ toolUseId: 't1', answers: { 'Q?': 'A' } })
     })

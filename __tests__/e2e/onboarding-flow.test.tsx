@@ -43,38 +43,38 @@ beforeEach(() => {
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 describe('Onboarding – initial render', () => {
-  it('displays app title', () => {
-    const { getByText } = render(<OnboardingScreen />)
+  it('displays app title', async () => {
+    const { getByText } = await render(<OnboardingScreen />)
     expect(getByText('Threadbase')).toBeTruthy()
   })
 
-  it('shows Server URL input', () => {
-    const { getByPlaceholderText } = render(<OnboardingScreen />)
+  it('shows Server URL input', async () => {
+    const { getByPlaceholderText } = await render(<OnboardingScreen />)
     expect(getByPlaceholderText('192.168.x.x:8766')).toBeTruthy()
   })
 
-  it('shows API key input', () => {
-    const { getByPlaceholderText } = render(<OnboardingScreen />)
+  it('shows API key input', async () => {
+    const { getByPlaceholderText } = await render(<OnboardingScreen />)
     expect(getByPlaceholderText('Paste your API token here')).toBeTruthy()
   })
 
-  it('shows Connect button', () => {
-    const { getByText } = render(<OnboardingScreen />)
+  it('shows Connect button', async () => {
+    const { getByText } = await render(<OnboardingScreen />)
     expect(getByText('Connect')).toBeTruthy()
   })
 
-  it('shows Hide toggle (DEV mode shows key by default)', () => {
-    const { getByText } = render(<OnboardingScreen />)
+  it('shows Hide toggle (DEV mode shows key by default)', async () => {
+    const { getByText } = await render(<OnboardingScreen />)
     expect(getByText('Hide')).toBeTruthy()
   })
 
-  it('shows the cch hint text', () => {
-    const { getByText } = render(<OnboardingScreen />)
+  it('shows the cch hint text', async () => {
+    const { getByText } = await render(<OnboardingScreen />)
     expect(getByText(/cch serve/)).toBeTruthy()
   })
 
-  it('shows optional Label field', () => {
-    const { getByPlaceholderText } = render(<OnboardingScreen />)
+  it('shows optional Label field', async () => {
+    const { getByPlaceholderText } = await render(<OnboardingScreen />)
     expect(getByPlaceholderText(/Work Mac/)).toBeTruthy()
   })
 })
@@ -82,16 +82,16 @@ describe('Onboarding – initial render', () => {
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
 describe('Onboarding – API key visibility toggle', () => {
-  it('switches from Hide to Show when pressed', () => {
-    const { getByText } = render(<OnboardingScreen />)
-    fireEvent.press(getByText('Hide'))
+  it('switches from Hide to Show when pressed', async () => {
+    const { getByText } = await render(<OnboardingScreen />)
+    await fireEvent.press(getByText('Hide'))
     expect(getByText('Show')).toBeTruthy()
   })
 
-  it('switches back to Hide when pressed again', () => {
-    const { getByText } = render(<OnboardingScreen />)
-    fireEvent.press(getByText('Hide'))
-    fireEvent.press(getByText('Show'))
+  it('switches back to Hide when pressed again', async () => {
+    const { getByText } = await render(<OnboardingScreen />)
+    await fireEvent.press(getByText('Hide'))
+    await fireEvent.press(getByText('Show'))
     expect(getByText('Hide')).toBeTruthy()
   })
 })
@@ -106,13 +106,13 @@ describe('Onboarding – successful connection', () => {
       json: jest.fn().mockResolvedValue([]),
     })
 
-    const { getByText, getByPlaceholderText } = render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText } = await render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.100:7070')
-    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'valid-key')
+    await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.100:7070')
+    await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'valid-key')
 
     await act(async () => {
-      fireEvent.press(getByText('Connect'))
+      await fireEvent.press(getByText('Connect'))
     })
 
     await waitFor(() => {
@@ -127,13 +127,13 @@ describe('Onboarding – error handling', () => {
   it('shows auth error message on 401 response', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 401, json: jest.fn().mockResolvedValue({}) })
 
-    const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
-    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'wrong-key')
+    await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
+    await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'wrong-key')
 
     await act(async () => {
-      fireEvent.press(getByText('Connect'))
+      await fireEvent.press(getByText('Connect'))
     })
 
     expect(await findByText(/Invalid API key/)).toBeTruthy()
@@ -143,13 +143,13 @@ describe('Onboarding – error handling', () => {
   it('shows generic network error for non-localhost URL', async () => {
     mockFetch.mockRejectedValue(new TypeError('Network request failed'))
 
-    const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
-    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
+    await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
+    await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
 
     await act(async () => {
-      fireEvent.press(getByText('Connect'))
+      await fireEvent.press(getByText('Connect'))
     })
 
     expect(await findByText(/Could not reach the server/)).toBeTruthy()
@@ -158,13 +158,13 @@ describe('Onboarding – error handling', () => {
   it('shows localhost-specific warning when URL contains localhost', async () => {
     mockFetch.mockRejectedValue(new TypeError('Network request failed'))
 
-    const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
 
     // Keep default localhost URL, just add API key
-    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
+    await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
 
     await act(async () => {
-      fireEvent.press(getByText('Connect'))
+      await fireEvent.press(getByText('Connect'))
     })
 
     expect(await findByText(/localhost/)).toBeTruthy()
@@ -173,13 +173,13 @@ describe('Onboarding – error handling', () => {
   it('shows network error on 500 response (non-ok is treated as network error)', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: jest.fn().mockResolvedValue({}) })
 
-    const { getByText, getByPlaceholderText, findByText } = render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
 
-    fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
-    fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'key')
+    await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
+    await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'key')
 
     await act(async () => {
-      fireEvent.press(getByText('Connect'))
+      await fireEvent.press(getByText('Connect'))
     })
 
     // Non-ok responses throw NetworkError which shows the generic network message

@@ -22,8 +22,8 @@ const servers: Record<string, ServerConfig> = {
 }
 
 describe('NewSessionServerPicker', () => {
-  it('renders nothing when not visible', () => {
-    const { queryByText } = render(
+  it('renders nothing when not visible', async () => {
+    const { queryByText } = await render(
       <NewSessionServerPicker
         visible={false}
         serverIds={['alpha', 'beta']}
@@ -35,8 +35,8 @@ describe('NewSessionServerPicker', () => {
     expect(queryByText('Start session on')).toBeNull()
   })
 
-  it('renders one row per provided serverId in order', () => {
-    const { getByText, queryByText } = render(
+  it('renders one row per provided serverId in order', async () => {
+    const { getByText, queryByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
@@ -55,8 +55,8 @@ describe('NewSessionServerPicker', () => {
     expect(queryByText('Gamma Box')).toBeNull()
   })
 
-  it('skips serverIds that are missing from the servers map', () => {
-    const { getByText, queryByText } = render(
+  it('skips serverIds that are missing from the servers map', async () => {
+    const { getByText, queryByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'missing']}
@@ -69,9 +69,9 @@ describe('NewSessionServerPicker', () => {
     expect(queryByText('missing')).toBeNull()
   })
 
-  it('calls onPick with the tapped server id', () => {
+  it('calls onPick with the tapped server id', async () => {
     const onPick = jest.fn()
-    const { getByText } = render(
+    const { getByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
@@ -80,15 +80,15 @@ describe('NewSessionServerPicker', () => {
         onClose={jest.fn()}
       />
     )
-    fireEvent.press(getByText('Alpha Box'))
+    await fireEvent.press(getByText('Alpha Box'))
     expect(onPick).toHaveBeenCalledWith('alpha')
     expect(onPick).toHaveBeenCalledTimes(1)
   })
 
-  it('calls onClose when Cancel is pressed', () => {
+  it('calls onClose when Cancel is pressed', async () => {
     const onClose = jest.fn()
     const onPick = jest.fn()
-    const { getByText } = render(
+    const { getByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
@@ -97,7 +97,7 @@ describe('NewSessionServerPicker', () => {
         onClose={onClose}
       />
     )
-    fireEvent.press(getByText('Cancel'))
+    await fireEvent.press(getByText('Cancel'))
     expect(onClose).toHaveBeenCalledTimes(1)
     expect(onPick).not.toHaveBeenCalled()
   })

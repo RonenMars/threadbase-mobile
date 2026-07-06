@@ -56,8 +56,8 @@ jest.mock('react-native/Libraries/Alert/Alert', () => ({ alert: jest.fn() }))
 
 // ── tests ────────────────────────────────────────────────────────────────────
 
-function renderComposer(onSend = jest.fn()) {
-  return renderHook(() =>
+async function renderComposer(onSend = jest.fn()) {
+  return await renderHook(() =>
     useComposerState({ serverId: 'srv1', sessionId: 'sess1', onSend }),
   )
 }
@@ -65,37 +65,37 @@ function renderComposer(onSend = jest.fn()) {
 describe('useComposerState', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('handleInputChange updates inputText and shows slash board when text starts with /', () => {
-    const { result } = renderComposer()
+  it('handleInputChange updates inputText and shows slash board when text starts with /', async () => {
+    const { result } = await renderComposer()
     act(() => { result.current.handleInputChange('/compact') })
     expect(result.current.inputText).toBe('/compact')
     expect(result.current.slashBoardVisible).toBe(true)
   })
 
-  it('handleInputChange hides slash board for normal text', () => {
-    const { result } = renderComposer()
+  it('handleInputChange hides slash board for normal text', async () => {
+    const { result } = await renderComposer()
     act(() => { result.current.handleInputChange('hello') })
     expect(result.current.slashBoardVisible).toBe(false)
   })
 
-  it('handleSend calls onSend with trimmed text and clears the input', () => {
+  it('handleSend calls onSend with trimmed text and clears the input', async () => {
     const onSend = jest.fn()
-    const { result } = renderComposer(onSend)
+    const { result } = await renderComposer(onSend)
     act(() => { result.current.handleInputChange('  hello world  ') })
     act(() => { result.current.handleSend() })
     expect(onSend).toHaveBeenCalledWith('hello world', 'hello world')
     expect(result.current.inputText).toBe('')
   })
 
-  it('handleSend does nothing when input is empty and no attachments', () => {
+  it('handleSend does nothing when input is empty and no attachments', async () => {
     const onSend = jest.fn()
-    const { result } = renderComposer(onSend)
+    const { result } = await renderComposer(onSend)
     act(() => { result.current.handleSend() })
     expect(onSend).not.toHaveBeenCalled()
   })
 
-  it('removeAttachment removes the attachment with the matching id', () => {
-    const { result } = renderComposer()
+  it('removeAttachment removes the attachment with the matching id', async () => {
+    const { result } = await renderComposer()
     // Access the function — it must exist and be callable
     expect(typeof result.current.removeAttachment).toBe('function')
     // Verify it doesn't throw when called with an unknown id
@@ -103,26 +103,26 @@ describe('useComposerState', () => {
     expect(result.current.attachments).toHaveLength(0)
   })
 
-  it('handleSlashCommandSelect for a no-args command calls onSend immediately', () => {
+  it('handleSlashCommandSelect for a no-args command calls onSend immediately', async () => {
     const onSend = jest.fn()
-    const { result } = renderComposer(onSend)
+    const { result } = await renderComposer(onSend)
     const cmd = { id: 'compact', icon: null as never, title: 'Compact', needsArgs: false, description: 'Compact context' }
     act(() => { result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).toHaveBeenCalledWith('/compact', '/compact')
   })
 
-  it('handleSlashCommandSelect for a needs-args command sets pendingArgCommand and does NOT call onSend', () => {
+  it('handleSlashCommandSelect for a needs-args command sets pendingArgCommand and does NOT call onSend', async () => {
     const onSend = jest.fn()
-    const { result } = renderComposer(onSend)
+    const { result } = await renderComposer(onSend)
     const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
     act(() => { result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).not.toHaveBeenCalled()
     expect(result.current.pendingArgCommand).toEqual(cmd)
   })
 
-  it('handleSlashArgConfirm calls onSend with /<id> <arg> and clears pendingArgCommand', () => {
+  it('handleSlashArgConfirm calls onSend with /<id> <arg> and clears pendingArgCommand', async () => {
     const onSend = jest.fn()
-    const { result } = renderComposer(onSend)
+    const { result } = await renderComposer(onSend)
     const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
     act(() => { result.current.handleSlashCommandSelect(cmd) })
     act(() => { result.current.handleSlashArgConfirm(cmd, 'foo bar') })

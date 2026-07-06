@@ -12,8 +12,8 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
-function renderWithTheme(ui: React.ReactElement) {
-  return render(<ThemeProvider>{ui}</ThemeProvider>)
+async function renderWithTheme(ui: React.ReactElement) {
+  return await render(<ThemeProvider>{ui}</ThemeProvider>)
 }
 
 const mockReplace = jest.fn()
@@ -71,36 +71,36 @@ beforeEach(() => {
 // ── Server section ────────────────────────────────────────────────────────────
 
 describe('Settings – server section', () => {
-  it('displays the server URL', () => {
-    const { getAllByText } = renderWithTheme(<SettingsScreen />)
+  it('displays the server URL', async () => {
+    const { getAllByText } = await renderWithTheme(<SettingsScreen />)
     expect(getAllByText('http://my-server.local:7070').length).toBeGreaterThan(0)
   })
 
-  it('displays server machine name', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('displays server machine name', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText(/dev-mac/)).toBeTruthy()
   })
 
-  it('displays server version', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('displays server version', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText(/2\.1\.0/)).toBeTruthy()
   })
 
-  it('shows Delete server button', () => {
-    const { getByLabelText } = renderWithTheme(<SettingsScreen />)
+  it('shows Delete server button', async () => {
+    const { getByLabelText } = await renderWithTheme(<SettingsScreen />)
     expect(getByLabelText('Delete server')).toBeTruthy()
   })
 
-  it('shows Add Server button', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('shows Add Server button', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText('+ Add Server')).toBeTruthy()
   })
 
-  it('opens add server modal from settings', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('opens add server modal from settings', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     // Pressing "+ Add Server" now opens the ServerEditModal (sets editServerId to 'new')
     // rather than navigating to onboarding. Just verify the button is pressable.
-    fireEvent.press(getByText('+ Add Server'))
+    await fireEvent.press(getByText('+ Add Server'))
     expect(mockPush).not.toHaveBeenCalled()
   })
 })
@@ -108,8 +108,8 @@ describe('Settings – server section', () => {
 // ── Notifications section ────────────────────────────────────────���────────────
 
 describe('Settings – notifications section', () => {
-  it('shows all notification toggle labels', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('shows all notification toggle labels', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText('Waiting for Input')).toBeTruthy()
     expect(getByText('Session Completed')).toBeTruthy()
     expect(getByText('Session Failed')).toBeTruthy()
@@ -118,17 +118,17 @@ describe('Settings – notifications section', () => {
     expect(getByText('Quiet Hours')).toBeTruthy()
   })
 
-  it('shows Send Test Notification button', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('shows Send Test Notification button', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText('Send Test Notification')).toBeTruthy()
   })
 
   it('calls scheduleNotificationAsync when test notification is pressed', async () => {
     const Notifications = require('expo-notifications')
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
 
     await act(async () => {
-      fireEvent.press(getByText('Send Test Notification'))
+      await fireEvent.press(getByText('Send Test Notification'))
     })
 
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalled()
@@ -138,13 +138,13 @@ describe('Settings – notifications section', () => {
 // ── About section ─────────────────────────────────────────────────────────────
 
 describe('Settings – about section', () => {
-  it('shows app version', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('shows app version', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText(/Threadbase Mobile v1\.0\.0/)).toBeTruthy()
   })
 
-  it('shows app tagline', () => {
-    const { getByText } = renderWithTheme(<SettingsScreen />)
+  it('shows app tagline', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText('AI Agent Control Center')).toBeTruthy()
   })
 })
@@ -152,10 +152,10 @@ describe('Settings – about section', () => {
 // ── Remove server flow ───────────────────────────────────────────────────────
 
 describe('Settings – remove server flow', () => {
-  it('shows Alert confirmation dialog when Delete server is pressed', () => {
+  it('shows Alert confirmation dialog when Delete server is pressed', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-    const { getByLabelText } = renderWithTheme(<SettingsScreen />)
-    fireEvent.press(getByLabelText('Delete server'))
+    const { getByLabelText } = await renderWithTheme(<SettingsScreen />)
+    await fireEvent.press(getByLabelText('Delete server'))
     expect(alertSpy).toHaveBeenCalledWith(
       'Remove Server',
       expect.any(String),
@@ -170,10 +170,10 @@ describe('Settings – remove server flow', () => {
       confirm?.onPress?.()
     })
 
-    const { getByLabelText } = renderWithTheme(<SettingsScreen />)
+    const { getByLabelText } = await renderWithTheme(<SettingsScreen />)
 
     await act(async () => {
-      fireEvent.press(getByLabelText('Delete server'))
+      await fireEvent.press(getByLabelText('Delete server'))
     })
 
     await waitFor(() => {
@@ -187,8 +187,8 @@ describe('Settings – remove server flow', () => {
       cancel?.onPress?.()
     })
 
-    const { getByLabelText } = renderWithTheme(<SettingsScreen />)
-    fireEvent.press(getByLabelText('Delete server'))
+    const { getByLabelText } = await renderWithTheme(<SettingsScreen />)
+    await fireEvent.press(getByLabelText('Delete server'))
 
     await act(async () => {})
     expect(mockReplace).not.toHaveBeenCalled()

@@ -35,19 +35,19 @@ function sessionUpdate(id: string, status: Session['status']) {
   return { type: 'session_update', session: { id, status } as Session }
 }
 
-function setup() {
+async function setup() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
-  const rendered = renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
+  const rendered = await renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
   return { invalidateSpy, ...rendered }
 }
 
 describe('useConversationStream – refetch on session status transition', () => {
-  it('refetches the conversation when the session leaves running', () => {
-    const { invalidateSpy } = setup()
+  it('refetches the conversation when the session leaves running', async () => {
+    const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
     act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
@@ -58,8 +58,8 @@ describe('useConversationStream – refetch on session status transition', () =>
     expect(invalidateSpy).toHaveBeenLastCalledWith({ queryKey: ['conversation', 'srv-1', 'conv-1'] })
   })
 
-  it('refetches on running → idle too', () => {
-    const { invalidateSpy } = setup()
+  it('refetches on running → idle too', async () => {
+    const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
     act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
@@ -67,16 +67,16 @@ describe('useConversationStream – refetch on session status transition', () =>
     expect(invalidateSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('does not refetch without a prior running status (e.g. first update is waiting_input)', () => {
-    const { invalidateSpy } = setup()
+  it('does not refetch without a prior running status (e.g. first update is waiting_input)', async () => {
+    const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
     act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
-  it('ignores other sessions and repeated non-running statuses', () => {
-    const { invalidateSpy } = setup()
+  it('ignores other sessions and repeated non-running statuses', async () => {
+    const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
     act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'running')))
@@ -86,8 +86,8 @@ describe('useConversationStream – refetch on session status transition', () =>
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
-  it('stops listening after unmount', () => {
-    const { invalidateSpy, unmount } = setup()
+  it('stops listening after unmount', async () => {
+    const { invalidateSpy, unmount } = await setup()
     invalidateSpy.mockClear()
 
     act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))

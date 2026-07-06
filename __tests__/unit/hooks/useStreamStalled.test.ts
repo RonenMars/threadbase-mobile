@@ -40,16 +40,16 @@ afterEach(() => {
 })
 
 describe('useStreamStalled', () => {
-  it('flags a stall after 15s without a terminal frame', () => {
-    const { result } = renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
+  it('flags a stall after 15s without a terminal frame', async () => {
+    const { result } = await renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
     expect(result.current).toBe(false)
 
     act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS))
     expect(result.current).toBe(true)
   })
 
-  it('a terminal frame for the session defers and clears the stall', () => {
-    const { result } = renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
+  it('a terminal frame for the session defers and clears the stall', async () => {
+    const { result } = await renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
 
     act(() => jest.advanceTimersByTime(10_000))
     act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'x' }))
@@ -65,8 +65,8 @@ describe('useStreamStalled', () => {
     expect(result.current).toBe(false)
   })
 
-  it('ignores frames for other sessions', () => {
-    const { result } = renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
+  it('ignores frames for other sessions', async () => {
+    const { result } = await renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
 
     act(() => jest.advanceTimersByTime(10_000))
     act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'other', data: 'x' }))
@@ -74,8 +74,8 @@ describe('useStreamStalled', () => {
     expect(result.current).toBe(true)
   })
 
-  it('stays false while disabled and resets when disabled after a stall', () => {
-    const { result, rerender } = renderHook(
+  it('stays false while disabled and resets when disabled after a stall', async () => {
+    const { result, rerender } = await renderHook(
       ({ enabled }: { enabled: boolean }) => useStreamStalled('srv-1', 'sess-1', enabled),
       { initialProps: { enabled: true } },
     )

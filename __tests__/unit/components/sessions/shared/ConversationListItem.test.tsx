@@ -30,8 +30,8 @@ describe('ConversationListItem', () => {
     jest.useRealTimers()
   })
 
-  it('renders a title when provided', () => {
-    const tree = render(
+  it('renders a title when provided', async () => {
+    const tree = await render(
       <ConversationListItem
         title="Fix metro bundler crash"
         timestamp={NOW.getTime() - 5 * 60 * 1000}
@@ -46,8 +46,8 @@ describe('ConversationListItem', () => {
     expect(text).toContain('42 msgs')
   })
 
-  it('falls back to path suffix when no title', () => {
-    const tree = render(
+  it('falls back to path suffix when no title', async () => {
+    const tree = await render(
       <ConversationListItem
         path="/Users/ronenmars/Desktop/dev/ai-tools/tb-streamer"
         timestamp={NOW.getTime() - 60 * 60 * 1000}
@@ -57,10 +57,10 @@ describe('ConversationListItem', () => {
     expect(text).toContain('tb-streamer')
   })
 
-  it('disambiguates colliding paths via smart mode siblings', () => {
+  it('disambiguates colliding paths via smart mode siblings', async () => {
     const a = '/Users/ronenmars/Desktop/dev/ai-tools/tb-streamer'
     const b = '/Users/ronenmars/work/archive/tb-streamer'
-    const tree = render(
+    const tree = await render(
       <ConversationListItem path={a} siblings={[a, b]} timestamp={NOW.getTime() - 60_000} />,
     )
     const text = collectText(tree.toJSON() as unknown as Json)
@@ -68,8 +68,8 @@ describe('ConversationListItem', () => {
     expect(text).toContain('ai-tools/tb-streamer')
   })
 
-  it('renders a LIVE pill when live=true', () => {
-    const tree = render(
+  it('renders a LIVE pill when live=true', async () => {
+    const tree = await render(
       <ConversationListItem
         title="active session"
         timestamp={NOW.getTime() - 60_000}
@@ -82,8 +82,8 @@ describe('ConversationListItem', () => {
     expect(text).not.toContain('14:35')
   })
 
-  it('shows the server chip when multi-server and showServer=auto', () => {
-    const tree = render(
+  it('shows the server chip when multi-server and showServer=auto', async () => {
+    const tree = await render(
       <ConversationListItem
         title="x"
         timestamp={NOW.getTime() - 60_000}
@@ -96,8 +96,8 @@ describe('ConversationListItem', () => {
     expect(text).toContain('tb-ak')
   })
 
-  it('hides the server chip when only one active server (auto)', () => {
-    const tree = render(
+  it('hides the server chip when only one active server (auto)', async () => {
+    const tree = await render(
       <ConversationListItem
         title="x"
         timestamp={NOW.getTime() - 60_000}
@@ -109,8 +109,8 @@ describe('ConversationListItem', () => {
     expect(text).not.toContain('tb-ak')
   })
 
-  it('honors showServer=always even with one active server', () => {
-    const tree = render(
+  it('honors showServer=always even with one active server', async () => {
+    const tree = await render(
       <ConversationListItem
         title="x"
         timestamp={NOW.getTime() - 60_000}
@@ -123,8 +123,8 @@ describe('ConversationListItem', () => {
     expect(text).toContain('tb-ak')
   })
 
-  it('renders the preview line in auto mode (short conversation → first)', () => {
-    const tree = render(
+  it('renders the preview line in auto mode (short conversation → first)', async () => {
+    const tree = await render(
       <ConversationListItem
         title="topic"
         timestamp={NOW.getTime() - 60_000}
@@ -138,8 +138,8 @@ describe('ConversationListItem', () => {
     expect(text).not.toContain("I've patched metro")
   })
 
-  it('omits the preview line when previewMode=none', () => {
-    const tree = render(
+  it('omits the preview line when previewMode=none', async () => {
+    const tree = await render(
       <ConversationListItem
         title="topic"
         timestamp={NOW.getTime() - 60_000}
@@ -151,8 +151,8 @@ describe('ConversationListItem', () => {
     expect(text).not.toContain('this should be hidden')
   })
 
-  it('highlights matches in both title and preview when highlight is set', () => {
-    const tree = render(
+  it('highlights matches in both title and preview when highlight is set', async () => {
+    const tree = await render(
       <ConversationListItem
         title="Fix Metro path issue"
         firstMessage={{ text: 'the metro bundler is broken' }}
@@ -165,8 +165,8 @@ describe('ConversationListItem', () => {
     expect(text).toContain('metro bundler')
   })
 
-  it('chip density omits the trailing meta column', () => {
-    const tree = render(
+  it('chip density omits the trailing meta column', async () => {
+    const tree = await render(
       <ConversationListItem
         title="quick chip"
         timestamp={NOW.getTime() - 60_000}
@@ -180,8 +180,8 @@ describe('ConversationListItem', () => {
     expect(text).not.toContain('14:34')
   })
 
-  it('renders an accessible time label on the time text', () => {
-    const tree = render(
+  it('renders an accessible time label on the time text', async () => {
+    const tree = await render(
       <ConversationListItem
         title="x"
         timestamp={NOW.getTime() - 5 * 60 * 1000}

@@ -10,20 +10,20 @@ const STATUSES: [SessionStatus, string][] = [
 ]
 
 describe('SessionStatusBadge', () => {
-  test.each(STATUSES)('renders correct label for status "%s"', (status, label) => {
-    const { getByText } = render(<SessionStatusBadge status={status} />)
+  test.each(STATUSES)('renders correct label for status "%s"', async (status, label) => {
+    const { getByText } = await render(<SessionStatusBadge status={status} />)
     expect(getByText(label)).toBeTruthy()
   })
 
-  it('renders without crashing for every status', () => {
+  it('renders without crashing for every status', async () => {
     STATUSES.forEach(([status]) => {
       expect(() => render(<SessionStatusBadge status={status} />)).not.toThrow()
     })
   })
 
-  it('renders a dot indicator alongside the label', () => {
+  it('renders a dot indicator alongside the label', async () => {
     // The component renders an Animated.View (dot) + Text (label)
-    const { getByText, toJSON } = render(<SessionStatusBadge status="running" />)
+    const { getByText, toJSON } = await render(<SessionStatusBadge status="running" />)
     expect(getByText('Running')).toBeTruthy()
     // Tree should be non-null
     expect(toJSON()).not.toBeNull()

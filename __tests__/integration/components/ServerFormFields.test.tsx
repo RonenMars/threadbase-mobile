@@ -5,11 +5,11 @@ import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormField
 
 const getStringAsync = Clipboard.getStringAsync as jest.Mock
 
-function renderFields(overrides: Partial<React.ComponentProps<typeof ServerFormFields>> = {}) {
+async function renderFields(overrides: Partial<React.ComponentProps<typeof ServerFormFields>> = {}) {
   const onProtocolChange = jest.fn()
   const onUrlHostChange = jest.fn()
   const onApiKeyChange = jest.fn()
-  const utils = render(
+  const utils = await render(
     <ServerFormFields
       protocol="http"
       onProtocolChange={onProtocolChange}
@@ -33,9 +33,9 @@ describe('ServerFormFields', () => {
   describe('paste URL', () => {
     it('clears the field first, then pastes the clipboard value', async () => {
       getStringAsync.mockResolvedValue('https://my-server:9099/')
-      const { getByTestId, onUrlHostChange, onProtocolChange } = renderFields()
+      const { getByTestId, onUrlHostChange, onProtocolChange } = await renderFields()
 
-      fireEvent.press(getByTestId('server-form-paste-url'))
+      await fireEvent.press(getByTestId('server-form-paste-url'))
 
       await waitFor(() => expect(onUrlHostChange).toHaveBeenCalledWith('my-server:9099'))
       expect(onUrlHostChange.mock.calls[0][0]).toBe('')
@@ -43,9 +43,9 @@ describe('ServerFormFields', () => {
     })
 
     it('leaves the field cleared when the clipboard is empty', async () => {
-      const { getByTestId, onUrlHostChange, onProtocolChange } = renderFields()
+      const { getByTestId, onUrlHostChange, onProtocolChange } = await renderFields()
 
-      fireEvent.press(getByTestId('server-form-paste-url'))
+      await fireEvent.press(getByTestId('server-form-paste-url'))
 
       await waitFor(() => expect(getStringAsync).toHaveBeenCalled())
       expect(onUrlHostChange).toHaveBeenCalledTimes(1)
@@ -57,18 +57,18 @@ describe('ServerFormFields', () => {
   describe('paste API key', () => {
     it('clears the field first, then pastes the trimmed clipboard value', async () => {
       getStringAsync.mockResolvedValue('  secret-token  ')
-      const { getByTestId, onApiKeyChange } = renderFields()
+      const { getByTestId, onApiKeyChange } = await renderFields()
 
-      fireEvent.press(getByTestId('server-form-paste-key'))
+      await fireEvent.press(getByTestId('server-form-paste-key'))
 
       await waitFor(() => expect(onApiKeyChange).toHaveBeenCalledWith('secret-token'))
       expect(onApiKeyChange.mock.calls[0][0]).toBe('')
     })
 
     it('leaves the field cleared when the clipboard is empty', async () => {
-      const { getByTestId, onApiKeyChange } = renderFields()
+      const { getByTestId, onApiKeyChange } = await renderFields()
 
-      fireEvent.press(getByTestId('server-form-paste-key'))
+      await fireEvent.press(getByTestId('server-form-paste-key'))
 
       await waitFor(() => expect(getStringAsync).toHaveBeenCalled())
       expect(onApiKeyChange).toHaveBeenCalledTimes(1)
@@ -76,32 +76,32 @@ describe('ServerFormFields', () => {
     })
   })
 
-  it('auto-splits a full URL typed into the host field', () => {
-    const { getByTestId, onUrlHostChange, onProtocolChange } = renderFields()
+  it('auto-splits a full URL typed into the host field', async () => {
+    const { getByTestId, onUrlHostChange, onProtocolChange } = await renderFields()
 
-    fireEvent.changeText(getByTestId('url-input'), 'http://localhost:7071')
+    await fireEvent.changeText(getByTestId('url-input'), 'http://localhost:7071')
 
     expect(onProtocolChange).toHaveBeenCalledWith('http')
     expect(onUrlHostChange).toHaveBeenCalledWith('localhost:7071')
   })
 
-  it('hides the label field when onLabelChange is not provided', () => {
-    const { queryByText } = renderFields()
+  it('hides the label field when onLabelChange is not provided', async () => {
+    const { queryByText } = await renderFields()
     expect(queryByText('Label (optional)')).toBeNull()
   })
 
-  it('shows the label field when onLabelChange is provided', () => {
-    const { getByText } = renderFields({ onLabelChange: jest.fn() })
+  it('shows the label field when onLabelChange is provided', async () => {
+    const { getByText } = await renderFields({ onLabelChange: jest.fn() })
     expect(getByText('Label (optional)')).toBeTruthy()
   })
 })
 
 describe('splitUrl', () => {
-  it('splits https URLs and strips trailing slashes', () => {
+  it('splits https URLs and strips trailing slashes', async () => {
     expect(splitUrl('https://host:1/')).toEqual({ protocol: 'https', host: 'host:1' })
   })
 
-  it('defaults to http for bare hosts', () => {
+  it('defaults to http for bare hosts', async () => {
     expect(splitUrl('host:1')).toEqual({ protocol: 'http', host: 'host:1' })
   })
 })

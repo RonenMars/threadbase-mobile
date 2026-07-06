@@ -72,11 +72,11 @@ jest.mock('@/hooks/useSession', () => ({
   useSessions: () => ({ data: [], refetch: jest.fn(), isPending: false }),
 }))
 
-function renderScreen() {
+async function renderScreen() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  return await render(
     <ThemeProvider>
       <QueryClientProvider client={qc}>
         <BrowseScreen />
@@ -95,17 +95,17 @@ beforeEach(() => {
 describe('BrowseScreen — outside-browse-root prefill fallback', () => {
   it('falls back to the browse root when the prefilled path is outside it', async () => {
     mockPathParam.current = '/home/demo/projects/threadbase-mobile'
-    const { getByTestId, getByText } = renderScreen()
+    const { getByTestId, getByText } = await renderScreen()
     await waitFor(() => {
       expect(getByTestId('browse-cwd-~')).toBeTruthy()
     })
     expect(getByText('projectA')).toBeTruthy()
   })
 
-  it('does not fall back on unrelated errors — surfaces them instead', () => {
+  it('does not fall back on unrelated errors — surfaces them instead', async () => {
     mockPathParam.current = '/home/demo/projects/threadbase-mobile'
     mockSubdirError.current = 'Server returned 500'
-    const { getByTestId, getByText, queryByTestId } = renderScreen()
+    const { getByTestId, getByText, queryByTestId } = await renderScreen()
     expect(getByTestId('browse-cwd-/home/demo/projects/threadbase-mobile')).toBeTruthy()
     expect(queryByTestId('browse-cwd-~')).toBeNull()
     expect(getByText('Server returned 500')).toBeTruthy()

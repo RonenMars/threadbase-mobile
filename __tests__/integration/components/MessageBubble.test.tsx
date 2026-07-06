@@ -25,13 +25,13 @@ const makeMessage = (overrides: Partial<Message> = {}): Message => ({
 });
 
 describe("MessageBubble – text content", () => {
-  it("renders user message text", () => {
-    const { getByText } = render(<MessageBubble message={makeMessage()} />);
+  it("renders user message text", async () => {
+    const { getByText } = await render(<MessageBubble message={makeMessage()} />);
     expect(getByText("Hello!")).toBeTruthy();
   });
 
-  it("renders assistant message text", () => {
-    const { getByText } = render(
+  it("renders assistant message text", async () => {
+    const { getByText } = await render(
       <MessageBubble
         message={makeMessage({
           role: "assistant",
@@ -42,15 +42,15 @@ describe("MessageBubble – text content", () => {
     expect(getByText("How can I help?")).toBeTruthy();
   });
 
-  it("renders token count when provided", () => {
-    const { getByText } = render(
+  it("renders token count when provided", async () => {
+    const { getByText } = await render(
       <MessageBubble message={makeMessage({ tokens: 42 })} />,
     );
     expect(getByText("42 tokens")).toBeTruthy();
   });
 
-  it("does not render token count when absent", () => {
-    const { queryByText } = render(
+  it("does not render token count when absent", async () => {
+    const { queryByText } = await render(
       <MessageBubble message={makeMessage({ tokens: undefined })} />,
     );
     expect(queryByText(/tokens/)).toBeNull();
@@ -58,22 +58,22 @@ describe("MessageBubble – text content", () => {
 });
 
 describe("MessageBubble – code blocks", () => {
-  it("renders code block with Copy button", () => {
+  it("renders code block with Copy button", async () => {
     const msgWithCode = makeMessage({
       content: [{ type: "text", text: '```\nconsole.log("hi")\n```' }],
     });
-    const { getByText } = render(<MessageBubble message={msgWithCode} />);
+    const { getByText } = await render(<MessageBubble message={msgWithCode} />);
     expect(getByText("Copy")).toBeTruthy();
     expect(getByText("Code")).toBeTruthy();
   });
 
-  it("does not re-run Prism when re-rendered with the same message", () => {
+  it("does not re-run Prism when re-rendered with the same message", async () => {
     mockHighlightRenders.count = 0;
     const msgWithCode = makeMessage({
       content: [{ type: "text", text: "```js\nconst x = 1\n```" }],
     });
 
-    const { rerender } = render(<MessageBubble message={msgWithCode} />);
+    const { rerender } = await render(<MessageBubble message={msgWithCode} />);
     expect(mockHighlightRenders.count).toBe(1);
 
     rerender(<MessageBubble message={msgWithCode} />);
@@ -83,8 +83,8 @@ describe("MessageBubble – code blocks", () => {
 });
 
 describe("MessageBubble – tool_use", () => {
-  it("renders tool use tag with emoji", () => {
-    const { getByText } = render(
+  it("renders tool use tag with emoji", async () => {
+    const { getByText } = await render(
       <MessageBubble
         message={makeMessage({
           content: [

@@ -27,8 +27,8 @@ function render(element: React.ReactElement) {
 }
 
 describe('TimeBucketPills component', () => {
-  it('renders all five buckets by default', () => {
-    const tree = render(<TimeBucketPills active="all" onChange={() => {}} />)
+  it('renders all five buckets by default', async () => {
+    const tree = await render(<TimeBucketPills active="all" onChange={() => {}} />)
     const text = collectText(tree.toJSON() as unknown as Json)
     expect(text).toContain('All')
     expect(text).toContain('Today')
@@ -37,16 +37,16 @@ describe('TimeBucketPills component', () => {
     expect(text).toContain('Custom')
   })
 
-  it('omits Custom when showCustom=false', () => {
-    const tree = render(
+  it('omits Custom when showCustom=false', async () => {
+    const tree = await render(
       <TimeBucketPills active="all" onChange={() => {}} showCustom={false} />,
     )
     const text = collectText(tree.toJSON() as unknown as Json)
     expect(text).not.toContain('Custom')
   })
 
-  it('renders counts on each pill when provided', () => {
-    const tree = render(
+  it('renders counts on each pill when provided', async () => {
+    const tree = await render(
       <TimeBucketPills
         active="all"
         counts={{ all: 142, today: 3, '7d': 18, '30d': 47 }}
@@ -60,8 +60,8 @@ describe('TimeBucketPills component', () => {
     expect(text).toContain('47')
   })
 
-  it('abbreviates thousands as Nk', () => {
-    const tree = render(
+  it('abbreviates thousands as Nk', async () => {
+    const tree = await render(
       <TimeBucketPills active="all" counts={{ all: 1450 }} onChange={() => {}} />,
     )
     const text = collectText(tree.toJSON() as unknown as Json)
@@ -70,7 +70,7 @@ describe('TimeBucketPills component', () => {
 })
 
 describe('bucketTimestamps helper', () => {
-  it('counts items into the correct buckets', () => {
+  it('counts items into the correct buckets', async () => {
     const items = [
       { t: NOW - 30 * 60 * 1000 }, // today
       { t: NOW - 12 * 3600 * 1000 }, // today
@@ -85,7 +85,7 @@ describe('bucketTimestamps helper', () => {
     expect(counts['30d']).toBe(4)
   })
 
-  it('skips null and unparseable timestamps', () => {
+  it('skips null and unparseable timestamps', async () => {
     const items = [{ t: null }, { t: 'not-a-date' }, { t: NOW - 60_000 }]
     const counts = bucketTimestamps(items, (i) => i.t as never, NOW)
     expect(counts.all).toBe(1)
@@ -101,7 +101,7 @@ describe('filterByBucket helper', () => {
     { id: 'older', t: NOW - 60 * 86_400_000 },
   ]
 
-  it('returns all when bucket=all', () => {
+  it('returns all when bucket=all', async () => {
     expect(filterByBucket(items, 'all', (i) => i.t, NOW).map((x) => x.id)).toEqual([
       'today-1',
       'today-2',
@@ -111,14 +111,14 @@ describe('filterByBucket helper', () => {
     ])
   })
 
-  it('today bucket only includes today items', () => {
+  it('today bucket only includes today items', async () => {
     expect(filterByBucket(items, 'today', (i) => i.t, NOW).map((x) => x.id)).toEqual([
       'today-1',
       'today-2',
     ])
   })
 
-  it('7d bucket includes today + within last 6 days', () => {
+  it('7d bucket includes today + within last 6 days', async () => {
     expect(filterByBucket(items, '7d', (i) => i.t, NOW).map((x) => x.id)).toEqual([
       'today-1',
       'today-2',
@@ -126,7 +126,7 @@ describe('filterByBucket helper', () => {
     ])
   })
 
-  it('30d bucket includes today + within last 29 days', () => {
+  it('30d bucket includes today + within last 29 days', async () => {
     expect(filterByBucket(items, '30d', (i) => i.t, NOW).map((x) => x.id)).toEqual([
       'today-1',
       'today-2',
@@ -135,7 +135,7 @@ describe('filterByBucket helper', () => {
     ])
   })
 
-  it('custom bucket returns all (range picker not yet implemented)', () => {
+  it('custom bucket returns all (range picker not yet implemented)', async () => {
     expect(filterByBucket(items, 'custom', (i) => i.t, NOW).length).toBe(5)
   })
 })

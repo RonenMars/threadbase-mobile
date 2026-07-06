@@ -91,11 +91,11 @@ const makeSession = (overrides: Partial<MultiSession>): MultiSession => ({
   ...overrides,
 })
 
-function renderScreen() {
+async function renderScreen() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  return await render(
     <ThemeProvider>
       <QueryClientProvider client={qc}>
         <BrowseScreen />
@@ -114,12 +114,12 @@ beforeEach(() => {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('BrowseScreen — recent directories accordion', () => {
-  it('hides the accordion when no prior sessions exist on this server', () => {
-    const { queryByText } = renderScreen()
+  it('hides the accordion when no prior sessions exist on this server', async () => {
+    const { queryByText } = await renderScreen()
     expect(queryByText(/Recent directories/)).toBeNull()
   })
 
-  it('hides the accordion when only other servers have sessions', () => {
+  it('hides the accordion when only other servers have sessions', async () => {
     mockSessions.current = [
       makeSession({
         id: 'a',
@@ -128,12 +128,12 @@ describe('BrowseScreen — recent directories accordion', () => {
         projectName: 'proj',
       }),
     ]
-    const { queryByText } = renderScreen()
+    const { queryByText } = await renderScreen()
     expect(queryByText(/Recent directories/)).toBeNull()
     expect(queryByText('/elsewhere/proj')).toBeNull()
   })
 
-  it('renders unique recent directories for the current server', () => {
+  it('renders unique recent directories for the current server', async () => {
     mockSessions.current = [
       makeSession({
         id: 'a',
@@ -163,7 +163,7 @@ describe('BrowseScreen — recent directories accordion', () => {
       }),
     ]
 
-    const { getByText, queryByText } = renderScreen()
+    const { getByText, queryByText } = await renderScreen()
 
     expect(getByText('Recent directories (2)')).toBeTruthy()
     expect(getByText('/home/user/projects/alpha')).toBeTruthy()
@@ -171,7 +171,7 @@ describe('BrowseScreen — recent directories accordion', () => {
     expect(queryByText('/home/user/projects/gamma')).toBeNull()
   })
 
-  it('caps the list at 8 entries even when more sessions exist', () => {
+  it('caps the list at 8 entries even when more sessions exist', async () => {
     mockSessions.current = Array.from({ length: 12 }, (_, i) =>
       makeSession({
         id: `s${i}`,
@@ -180,11 +180,11 @@ describe('BrowseScreen — recent directories accordion', () => {
         startedAt: `2024-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
       }),
     )
-    const { getByText } = renderScreen()
+    const { getByText } = await renderScreen()
     expect(getByText('Recent directories (8)')).toBeTruthy()
   })
 
-  it('starts a session at the absolute path when a recent row is tapped', () => {
+  it('starts a session at the absolute path when a recent row is tapped', async () => {
     mockSessions.current = [
       makeSession({
         id: 'a',
@@ -193,7 +193,7 @@ describe('BrowseScreen — recent directories accordion', () => {
       }),
     ]
 
-    const { getByText } = renderScreen()
+    const { getByText } = await renderScreen()
     fireEvent.press(getByText('/home/user/projects/alpha'))
 
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
@@ -203,8 +203,8 @@ describe('BrowseScreen — recent directories accordion', () => {
     )
   })
 
-  it('starts a Claude session by default without sending a provider', () => {
-    const { getByText } = renderScreen()
+  it('starts a Claude session by default without sending a provider', async () => {
+    const { getByText } = await renderScreen()
 
     fireEvent.press(getByText('Start Session Here'))
 
@@ -215,8 +215,8 @@ describe('BrowseScreen — recent directories accordion', () => {
     )
   })
 
-  it('sends codex-cli when Codex is selected for a new session', () => {
-    const { getByTestId, getByText } = renderScreen()
+  it('sends codex-cli when Codex is selected for a new session', async () => {
+    const { getByTestId, getByText } = await renderScreen()
 
     fireEvent.press(getByTestId('start-provider-codex-cli'))
     fireEvent.press(getByText('Start Session Here'))
@@ -228,7 +228,7 @@ describe('BrowseScreen — recent directories accordion', () => {
     )
   })
 
-  it('collapses the recent list when the header is tapped', () => {
+  it('collapses the recent list when the header is tapped', async () => {
     mockSessions.current = [
       makeSession({
         id: 'a',
@@ -237,7 +237,7 @@ describe('BrowseScreen — recent directories accordion', () => {
       }),
     ]
 
-    const { getByText, queryByText } = renderScreen()
+    const { getByText, queryByText } = await renderScreen()
 
     // Initially expanded
     expect(getByText('/home/user/projects/alpha')).toBeTruthy()

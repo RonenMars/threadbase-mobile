@@ -97,8 +97,8 @@ jest.mock('@/hooks/useVoiceInput', () => ({
   useVoiceInput: () => ({ listening: false, start: jest.fn(), stop: jest.fn() }),
 }))
 
-function renderView() {
-  return render(
+async function renderView() {
+  return await render(
     <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
     { wrapper: createWrapper() },
   )
@@ -112,7 +112,7 @@ describe('LiveConversationView — optimistic sent message', () => {
     mockPtyLines = []
   })
 
-  it('shows live PTY output when there are no conversation messages yet', () => {
+  it('shows live PTY output when there are no conversation messages yet', async () => {
     // Fresh / waiting_input session: no JSONL → no historical/live messages,
     // but the PTY is streaming. The chat must not be blank.
     mockHistorical = []
@@ -125,7 +125,7 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getByText('Found 12 apps')).toBeTruthy()
   })
 
-  it('shows the sent message in the bubbles immediately, before any WS echo', () => {
+  it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
     renderView()
 
     const input = screen.getByTestId('chat-message-input')
@@ -138,8 +138,8 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getByText('hello there')).toBeTruthy()
   })
 
-  it('does not duplicate the message once the WS echo arrives with the same text', () => {
-    const { rerender } = renderView()
+  it('does not duplicate the message once the WS echo arrives with the same text', async () => {
+    const { rerender } = await renderView()
 
     const input = screen.getByTestId('chat-message-input')
     fireEvent.changeText(input, 'ping')

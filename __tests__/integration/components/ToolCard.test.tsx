@@ -21,75 +21,75 @@ describe('ToolCard – tool names and icons', () => {
     ['Grep', '🔎'],
   ]
 
-  test.each(iconMap)('shows "%s" icon for tool "%s"', (name, icon) => {
+  test.each(iconMap)('shows "%s" icon for tool "%s"', async (name, icon) => {
     const block: ToolUse = { type: 'tool_use', name, input: {} }
-    const { getByText } = render(<ToolCard block={block} />)
+    const { getByText } = await render(<ToolCard block={block} />)
     expect(getByText(icon)).toBeTruthy()
   })
 
-  it('shows default 🔧 icon for unknown tools', () => {
+  it('shows default 🔧 icon for unknown tools', async () => {
     const block: ToolUse = { type: 'tool_use', name: 'Agent', input: {} }
-    const { getByText } = render(<ToolCard block={block} />)
+    const { getByText } = await render(<ToolCard block={block} />)
     expect(getByText('🔧')).toBeTruthy()
   })
 
-  it('renders tool name', () => {
-    const { getByText } = render(<ToolCard block={bashUse} />)
+  it('renders tool name', async () => {
+    const { getByText } = await render(<ToolCard block={bashUse} />)
     expect(getByText('Bash')).toBeTruthy()
   })
 
-  it('renders toolName from tool_result', () => {
-    const { getByText } = render(<ToolCard block={bashResult} />)
+  it('renders toolName from tool_result', async () => {
+    const { getByText } = await render(<ToolCard block={bashResult} />)
     expect(getByText('Bash')).toBeTruthy()
   })
 })
 
 describe('ToolCard – error state', () => {
-  it('shows Error badge for tool_result with isError', () => {
-    const { getByText } = render(<ToolCard block={bashError} />)
+  it('shows Error badge for tool_result with isError', async () => {
+    const { getByText } = await render(<ToolCard block={bashError} />)
     expect(getByText('Error')).toBeTruthy()
   })
 
-  it('does not show Error badge for normal results', () => {
-    const { queryByText } = render(<ToolCard block={bashResult} />)
+  it('does not show Error badge for normal results', async () => {
+    const { queryByText } = await render(<ToolCard block={bashResult} />)
     expect(queryByText('Error')).toBeNull()
   })
 })
 
 describe('ToolCard – expand / collapse', () => {
-  it('shows chevron when there is content', () => {
-    const { getByText } = render(<ToolCard block={bashResult} />)
+  it('shows chevron when there is content', async () => {
+    const { getByText } = await render(<ToolCard block={bashResult} />)
     expect(getByText('▼')).toBeTruthy()
   })
 
-  it('does not show chevron when content is empty', () => {
-    const { queryByText } = render(<ToolCard block={emptyResult} />)
+  it('does not show chevron when content is empty', async () => {
+    const { queryByText } = await render(<ToolCard block={emptyResult} />)
     expect(queryByText('▼')).toBeNull()
     expect(queryByText('▲')).toBeNull()
   })
 
-  it('expands to show tool_result content on press', () => {
-    const { getByRole, getByText, queryByText } = render(<ToolCard block={bashResult} />)
+  it('expands to show tool_result content on press', async () => {
+    const { getByRole, getByText, queryByText } = await render(<ToolCard block={bashResult} />)
     expect(queryByText(/total 8/)).toBeNull()
-    fireEvent.press(getByRole('button'))
+    await fireEvent.press(getByRole('button'))
     expect(getByText('total 8\ndrwxr-xr-x 5 user group')).toBeTruthy()
   })
 
-  it('expands to show JSON input for tool_use', () => {
-    const { getByRole, getByText } = render(<ToolCard block={bashUse} />)
-    fireEvent.press(getByRole('button'))
+  it('expands to show JSON input for tool_use', async () => {
+    const { getByRole, getByText } = await render(<ToolCard block={bashUse} />)
+    await fireEvent.press(getByRole('button'))
     expect(getByText(JSON.stringify({ command: 'ls -la' }, null, 2))).toBeTruthy()
   })
 
-  it('toggles chevron from ▼ to ▲ on expand', () => {
-    const { getByRole, getByText } = render(<ToolCard block={bashResult} />)
+  it('toggles chevron from ▼ to ▲ on expand', async () => {
+    const { getByRole, getByText } = await render(<ToolCard block={bashResult} />)
     expect(getByText('▼')).toBeTruthy()
-    fireEvent.press(getByRole('button'))
+    await fireEvent.press(getByRole('button'))
     expect(getByText('▲')).toBeTruthy()
   })
 
-  it('does not expand when content is empty', () => {
-    const { queryByText, toJSON } = render(<ToolCard block={emptyResult} />)
+  it('does not expand when content is empty', async () => {
+    const { queryByText, toJSON } = await render(<ToolCard block={emptyResult} />)
     // No expandable content – component should still render
     expect(queryByText('Read')).toBeTruthy()
     expect(toJSON()).not.toBeNull()
@@ -97,13 +97,13 @@ describe('ToolCard – expand / collapse', () => {
 })
 
 describe('ToolCard – accessibility', () => {
-  it('has role=button', () => {
-    const { getByRole } = render(<ToolCard block={bashUse} />)
+  it('has role=button', async () => {
+    const { getByRole } = await render(<ToolCard block={bashUse} />)
     expect(getByRole('button')).toBeTruthy()
   })
 
-  it('accessibility label includes tool name', () => {
-    const { getByLabelText } = render(<ToolCard block={bashUse} />)
+  it('accessibility label includes tool name', async () => {
+    const { getByLabelText } = await render(<ToolCard block={bashUse} />)
     expect(getByLabelText('Bash tool expand')).toBeTruthy()
   })
 })

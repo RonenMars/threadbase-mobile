@@ -41,7 +41,7 @@ describe('useVoiceInput', () => {
   it('start() requests permission and sets listening=true on grant', async () => {
     requestPermissions.mockResolvedValue({ granted: true })
     const onTranscript = jest.fn()
-    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript }))
 
     expect(result.current.listening).toBe(false)
     await act(async () => {
@@ -56,7 +56,7 @@ describe('useVoiceInput', () => {
   it('start() throws VOICE_UNAVAILABLE on a simulator without invoking native start', async () => {
     const isDeviceSpy = jest.spyOn(Device, 'isDevice', 'get').mockReturnValue(false)
     const onTranscript = jest.fn()
-    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript }))
 
     await act(async () => {
       await expect(result.current.start()).rejects.toThrow('VOICE_UNAVAILABLE')
@@ -71,7 +71,7 @@ describe('useVoiceInput', () => {
   it('start() throws PERMISSION_DENIED when not granted', async () => {
     requestPermissions.mockResolvedValue({ granted: false })
     const onTranscript = jest.fn()
-    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript }))
 
     await act(async () => {
       await expect(result.current.start()).rejects.toThrow('PERMISSION_DENIED')
@@ -83,7 +83,7 @@ describe('useVoiceInput', () => {
 
   it('stop() flips listening=false', async () => {
     requestPermissions.mockResolvedValue({ granted: true })
-    const { result } = renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
 
     await act(async () => {
       await result.current.start()
@@ -101,7 +101,7 @@ describe('useVoiceInput', () => {
   it("'result' event invokes onTranscript with the first alternative's transcript", async () => {
     requestPermissions.mockResolvedValue({ granted: true })
     const onTranscript = jest.fn()
-    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript }))
 
     await act(async () => {
       await result.current.start()
@@ -116,7 +116,7 @@ describe('useVoiceInput', () => {
 
   it("'end' event flips listening=false", async () => {
     requestPermissions.mockResolvedValue({ granted: true })
-    const { result } = renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
 
     await act(async () => {
       await result.current.start()
@@ -129,8 +129,8 @@ describe('useVoiceInput', () => {
     expect(result.current.listening).toBe(false)
   })
 
-  it('unmount calls ExpoSpeechRecognitionModule.stop() exactly once', () => {
-    const { unmount } = renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
+  it('unmount calls ExpoSpeechRecognitionModule.stop() exactly once', async () => {
+    const { unmount } = await renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
     stopModule.mockClear()
     unmount()
     expect(stopModule).toHaveBeenCalledTimes(1)
@@ -138,7 +138,7 @@ describe('useVoiceInput', () => {
 
   it('silence timer: 30s with no result auto-stops; listening goes false', async () => {
     requestPermissions.mockResolvedValue({ granted: true })
-    const { result } = renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
 
     await act(async () => {
       await result.current.start()
@@ -157,7 +157,7 @@ describe('useVoiceInput', () => {
   it('silence timer resets on each result event (29s + result + 29s → still listening)', async () => {
     requestPermissions.mockResolvedValue({ granted: true })
     const onTranscript = jest.fn()
-    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript }))
 
     await act(async () => {
       await result.current.start()

@@ -10,27 +10,27 @@ beforeEach(() => {
 
 describe('useHubTour', () => {
   it('starts at step 0 when tour has not been seen', async () => {
-    const { result } = renderHook(() => useHubTour())
+    const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
     expect(result.current?.stepIndex).toBe(0)
   })
 
   it('returns null when tour has already been seen', async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue('seen')
-    const { result } = renderHook(() => useHubTour())
+    const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
     expect(result.current).toBeNull()
   })
 
   it('advances to step 1 when advanceStep is called', async () => {
-    const { result } = renderHook(() => useHubTour())
+    const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
     act(() => { result.current?.advanceStep() })
     expect(result.current?.stepIndex).toBe(1)
   })
 
   it('returns null after all 3 steps are advanced past', async () => {
-    const { result } = renderHook(() => useHubTour())
+    const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
     act(() => { result.current?.advanceStep() })
     act(() => { result.current?.advanceStep() })
@@ -40,7 +40,7 @@ describe('useHubTour', () => {
   })
 
   it('returns null and marks seen when skipTour is called', async () => {
-    const { result } = renderHook(() => useHubTour())
+    const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
     act(() => { result.current?.skipTour() })
     expect(result.current).toBeNull()

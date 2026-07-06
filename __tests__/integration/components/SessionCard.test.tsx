@@ -38,71 +38,71 @@ beforeEach(() => {
 })
 
 describe('SessionCard', () => {
-  it('renders the project name', () => {
-    const { getByText } = render(<SessionCard session={makeSession()} />)
+  it('renders the project name', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession()} />)
     expect(getByText('my-project')).toBeTruthy()
   })
 
-  it('renders the status badge', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ status: 'running' })} />)
+  it('renders the status badge', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ status: 'running' })} />)
     expect(getByText('Running')).toBeTruthy()
   })
 
-  it('renders elapsed time in correct format', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ elapsedMs: 65000 })} />)
+  it('renders elapsed time in correct format', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ elapsedMs: 65000 })} />)
     expect(getByText('1m 5s')).toBeTruthy()
   })
 
-  it('renders elapsed seconds when under a minute', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ elapsedMs: 30000 })} />)
+  it('renders elapsed seconds when under a minute', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ elapsedMs: 30000 })} />)
     expect(getByText('30s')).toBeTruthy()
   })
 
-  it('renders hours format for long sessions', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ elapsedMs: 3660000 })} />)
+  it('renders hours format for long sessions', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ elapsedMs: 3660000 })} />)
     expect(getByText('1h 1m')).toBeTruthy()
   })
 
-  it('renders prompt count', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ promptCount: 5 })} />)
+  it('renders prompt count', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ promptCount: 5 })} />)
     expect(getByText('5 prompts')).toBeTruthy()
   })
 
-  it('renders last output text', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ lastOutput: 'Test output line' })} />)
+  it('renders last output text', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ lastOutput: 'Test output line' })} />)
     expect(getByText('Test output line')).toBeTruthy()
   })
 
-  it('renders branch badge when branch is set', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ branch: 'feature/new-api' })} />)
+  it('renders branch badge when branch is set', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ branch: 'feature/new-api' })} />)
     expect(getByText('feature/new-api')).toBeTruthy()
   })
 
-  it('does not render branch badge when branch is absent', () => {
-    const { queryByText } = render(<SessionCard session={makeSession({ branch: undefined })} />)
+  it('does not render branch badge when branch is absent', async () => {
+    const { queryByText } = await render(<SessionCard session={makeSession({ branch: undefined })} />)
     expect(queryByText('feature/new-api')).toBeNull()
   })
 
-  it('renders machine badge when machineName is set', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ machineName: 'my-mac' })} />)
+  it('renders machine badge when machineName is set', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ machineName: 'my-mac' })} />)
     expect(getByText('my-mac')).toBeTruthy()
   })
 
-  it('shows waiting_input status label', () => {
-    const { getByText } = render(<SessionCard session={makeSession({ status: 'waiting_input' })} />)
+  it('shows waiting_input status label', async () => {
+    const { getByText } = await render(<SessionCard session={makeSession({ status: 'waiting_input' })} />)
     expect(getByText('Active')).toBeTruthy()
   })
 
-  it('navigates to session detail on press', () => {
+  it('navigates to session detail on press', async () => {
     const session = makeSession({ id: 'abc-123' })
-    const { getByRole } = render(<SessionCard session={session} />)
-    fireEvent.press(getByRole('button'))
+    const { getByRole } = await render(<SessionCard session={session} />)
+    await fireEvent.press(getByRole('button'))
     expect(mockPush).toHaveBeenCalledWith('/session/abc-123?server=server-1')
   })
 
-  it('has correct accessibility label', () => {
+  it('has correct accessibility label', async () => {
     const session = makeSession({ projectName: 'my-project', status: 'running', elapsedMs: 30000 })
-    const { getByLabelText } = render(<SessionCard session={session} />)
+    const { getByLabelText } = await render(<SessionCard session={session} />)
     expect(getByLabelText('Session my-project, status running, 30s')).toBeTruthy()
   })
 })

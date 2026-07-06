@@ -29,7 +29,7 @@ describe('sendInput offline pause + reconnect resume', () => {
   })
 
   it('pauses the send while offline (mutationFn never runs) and replays on reconnect', async () => {
-    const { result } = renderHook(() => useSessionActions('srv1', 'sess1'), { wrapper })
+    const { result } = await renderHook(() => useSessionActions('srv1', 'sess1'), { wrapper })
 
     onlineManager.setOnline(false)
     await act(async () => {

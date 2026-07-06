@@ -16,8 +16,8 @@ const servers = { srv_a: serverA, srv_b: serverB }
 const activeServerIds = ['srv_a', 'srv_b']
 
 describe('DisplayedServersList — normal mode', () => {
-  it('renders a Switch for each server', () => {
-    const { getByTestId } = render(
+  it('renders a Switch for each server', async () => {
+    const { getByTestId } = await render(
       <DisplayedServersList
         activeServerIds={activeServerIds}
         servers={servers}
@@ -31,8 +31,8 @@ describe('DisplayedServersList — normal mode', () => {
 })
 
 describe('DisplayedServersList — edit order mode', () => {
-  it('does not render Switch components when isEditingOrder is true', () => {
-    const { queryByTestId } = render(
+  it('does not render Switch components when isEditingOrder is true', async () => {
+    const { queryByTestId } = await render(
       <DisplayedServersList
         activeServerIds={activeServerIds}
         servers={servers}
@@ -46,8 +46,8 @@ describe('DisplayedServersList — edit order mode', () => {
     expect(queryByTestId('server-toggle-srv_b')).toBeNull()
   })
 
-  it('renders drag handle for each server when isEditingOrder is true', () => {
-    const { getByTestId } = render(
+  it('renders drag handle for each server when isEditingOrder is true', async () => {
+    const { getByTestId } = await render(
       <DisplayedServersList
         activeServerIds={activeServerIds}
         servers={servers}
@@ -61,8 +61,8 @@ describe('DisplayedServersList — edit order mode', () => {
     expect(getByTestId('drag-handle-srv_b')).toBeTruthy()
   })
 
-  it('does not render quick-action buttons when isEditingOrder is true', () => {
-    const { queryByTestId } = render(
+  it('does not render quick-action buttons when isEditingOrder is true', async () => {
+    const { queryByTestId } = await render(
       <DisplayedServersList
         activeServerIds={activeServerIds}
         servers={servers}

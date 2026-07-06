@@ -12,45 +12,45 @@ jest.mock('expo-clipboard', () => ({
 }))
 
 describe('ConnectStep – manual mode', () => {
-  it('shows "Type / paste manually" card in choose mode', () => {
-    const { getByText } = render(
+  it('shows "Type / paste manually" card in choose mode', async () => {
+    const { getByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
     expect(getByText('Type / paste manually')).toBeTruthy()
   })
 
-  it('shows "On your Mac" section header in manual mode', () => {
-    const { getByText } = render(
+  it('shows "On your Mac" section header in manual mode', async () => {
+    const { getByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
-    fireEvent.press(getByText('Type / paste manually'))
+    await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText('On your Mac')).toBeTruthy()
   })
 
-  it('shows copyable tb pair command in manual mode', () => {
-    const { getByText } = render(
+  it('shows copyable tb pair command in manual mode', async () => {
+    const { getByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
-    fireEvent.press(getByText('Type / paste manually'))
+    await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText(/tb pair/)).toBeTruthy()
   })
 
-  it('shows "Server URL" and "Token" field labels (not faux-shell labels)', () => {
-    const { getByText, queryByText } = render(
+  it('shows "Server URL" and "Token" field labels (not faux-shell labels)', async () => {
+    const { getByText, queryByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
-    fireEvent.press(getByText('Type / paste manually'))
+    await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText('Server URL')).toBeTruthy()
     expect(getByText('Token')).toBeTruthy()
     expect(queryByText(/\$ tb pair --server/)).toBeNull()
     expect(queryByText(/\$ tb pair --token/)).toBeNull()
   })
 
-  it('CTA shows "Connect" not "Open handshake"', () => {
-    const { getByText, queryByText } = render(
+  it('CTA shows "Connect" not "Open handshake"', async () => {
+    const { getByText, queryByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
-    fireEvent.press(getByText('Type / paste manually'))
+    await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText('Connect')).toBeTruthy()
     expect(queryByText('Open handshake')).toBeNull()
   })
