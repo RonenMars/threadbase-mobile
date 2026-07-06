@@ -17,7 +17,7 @@ describe('useMinDisplayTime', () => {
 
   it('stays gated when timer fires but isReady is still false', async () => {
     const { result } = await renderHook(() => useMinDisplayTime(false, 1200, 'a'))
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(1200)
     })
     expect(result.current).toBe(true)
@@ -25,7 +25,7 @@ describe('useMinDisplayTime', () => {
 
   it('stays gated when isReady is true but timer is still pending', async () => {
     const { result } = await renderHook(() => useMinDisplayTime(true, 1200, 'a'))
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(500)
     })
     expect(result.current).toBe(true)
@@ -36,11 +36,11 @@ describe('useMinDisplayTime', () => {
       ({ isReady }: { isReady: boolean }) => useMinDisplayTime(isReady, 1200, 'a'),
       { initialProps: { isReady: false } },
     )
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(1200)
     })
     expect(result.current).toBe(true)
-    rerender({ isReady: true })
+    await rerender({ isReady: true })
     expect(result.current).toBe(false)
   })
 
@@ -49,20 +49,20 @@ describe('useMinDisplayTime', () => {
       ({ resetKey }: { resetKey: string }) => useMinDisplayTime(true, 1200, resetKey),
       { initialProps: { resetKey: 'a' } },
     )
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(1200)
     })
     expect(result.current).toBe(false)
 
-    rerender({ resetKey: 'b' })
+    await rerender({ resetKey: 'b' })
     expect(result.current).toBe(true)
 
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(1199)
     })
     expect(result.current).toBe(true)
 
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(1)
     })
     expect(result.current).toBe(false)
@@ -75,7 +75,7 @@ describe('useMinDisplayTime', () => {
       { initialProps: { isReady: false } },
     )
     expect(result.current).toBe(true)
-    rerender({ isReady: true })
+    await rerender({ isReady: true })
     expect(result.current).toBe(false)
     expect(setTimeoutSpy).not.toHaveBeenCalled()
     setTimeoutSpy.mockRestore()
@@ -84,7 +84,7 @@ describe('useMinDisplayTime', () => {
   it('clears the pending timer on unmount', async () => {
     const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout')
     const { unmount } = await renderHook(() => useMinDisplayTime(false, 1200, 'a'))
-    unmount()
+    await unmount()
     expect(clearTimeoutSpy).toHaveBeenCalled()
     clearTimeoutSpy.mockRestore()
   })

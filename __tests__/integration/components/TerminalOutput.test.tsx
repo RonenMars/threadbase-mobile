@@ -21,9 +21,7 @@ describe('TerminalOutput – rendering', () => {
   })
 
   it('renders empty state without crash', async () => {
-    expect(() =>
-      render(<TerminalOutput lines={[]} isStreaming={false} />)
-    ).not.toThrow()
+    await render(<TerminalOutput lines={[]} isStreaming={false} />)
   })
 })
 
@@ -52,15 +50,11 @@ describe('TerminalOutput – ANSI stripping', () => {
 
 describe('TerminalOutput – streaming indicator', () => {
   it('renders without crash when isStreaming=true', async () => {
-    expect(() =>
-      render(<TerminalOutput lines={[]} isStreaming={true} />)
-    ).not.toThrow()
+    await render(<TerminalOutput lines={[]} isStreaming={true} />)
   })
 
   it('renders without crash when isStreaming=false', async () => {
-    expect(() =>
-      render(<TerminalOutput lines={[]} isStreaming={false} />)
-    ).not.toThrow()
+    await render(<TerminalOutput lines={[]} isStreaming={false} />)
   })
 })
 

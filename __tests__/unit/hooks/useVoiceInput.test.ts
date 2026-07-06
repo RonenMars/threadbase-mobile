@@ -90,7 +90,7 @@ describe('useVoiceInput', () => {
     })
     expect(result.current.listening).toBe(true)
 
-    act(() => {
+    await act(() => {
       result.current.stop()
     })
 
@@ -107,7 +107,7 @@ describe('useVoiceInput', () => {
       await result.current.start()
     })
 
-    act(() => {
+    await act(() => {
       fireEvent('result', { results: [{ transcript: 'hello world' }] })
     })
 
@@ -123,7 +123,7 @@ describe('useVoiceInput', () => {
     })
     expect(result.current.listening).toBe(true)
 
-    act(() => {
+    await act(() => {
       fireEvent('end', {})
     })
     expect(result.current.listening).toBe(false)
@@ -132,7 +132,7 @@ describe('useVoiceInput', () => {
   it('unmount calls ExpoSpeechRecognitionModule.stop() exactly once', async () => {
     const { unmount } = await renderHook(() => useVoiceInput({ onTranscript: jest.fn() }))
     stopModule.mockClear()
-    unmount()
+    await unmount()
     expect(stopModule).toHaveBeenCalledTimes(1)
   })
 
@@ -146,7 +146,7 @@ describe('useVoiceInput', () => {
     expect(result.current.listening).toBe(true)
     stopModule.mockClear()
 
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(30_000)
     })
 
@@ -164,16 +164,16 @@ describe('useVoiceInput', () => {
     })
     stopModule.mockClear()
 
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(29_000)
     })
     expect(result.current.listening).toBe(true)
 
-    act(() => {
+    await act(() => {
       fireEvent('result', { results: [{ transcript: 'still here' }] })
     })
 
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(29_000)
     })
 

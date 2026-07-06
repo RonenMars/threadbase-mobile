@@ -50,10 +50,10 @@ describe('useConversationStream – refetch on session status transition', () =>
     const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
     expect(invalidateSpy).not.toHaveBeenCalled()
 
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
     expect(invalidateSpy).toHaveBeenCalledTimes(1)
     expect(invalidateSpy).toHaveBeenLastCalledWith({ queryKey: ['conversation', 'srv-1', 'conv-1'] })
   })
@@ -62,8 +62,8 @@ describe('useConversationStream – refetch on session status transition', () =>
     const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
     expect(invalidateSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -71,7 +71,7 @@ describe('useConversationStream – refetch on session status transition', () =>
     const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
@@ -79,10 +79,10 @@ describe('useConversationStream – refetch on session status transition', () =>
     const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'running')))
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'idle')))
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'running')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'idle')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
@@ -90,9 +90,9 @@ describe('useConversationStream – refetch on session status transition', () =>
     const { invalidateSpy, unmount } = await setup()
     invalidateSpy.mockClear()
 
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
-    unmount()
-    act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
+    await unmount()
+    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 })

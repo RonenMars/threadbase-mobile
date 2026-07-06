@@ -40,10 +40,10 @@ describe('useWsStatus', () => {
     const { result } = await renderHook(() => useWsStatus('srv-1'))
     expect(result.current).toBe('connected')
 
-    act(() => __wsTest.emitStatus('srv-1', 'disconnected'))
+    await act(() => __wsTest.emitStatus('srv-1', 'disconnected'))
     expect(result.current).toBe('disconnected')
 
-    act(() => __wsTest.emitStatus('srv-1', 'connecting'))
+    await act(() => __wsTest.emitStatus('srv-1', 'connecting'))
     expect(result.current).toBe('connecting')
   })
 
@@ -51,14 +51,14 @@ describe('useWsStatus', () => {
     __wsTest.setStatus('connected')
     const { result } = await renderHook(() => useWsStatus('srv-1'))
 
-    act(() => __wsTest.emitStatus('srv-2', 'disconnected'))
+    await act(() => __wsTest.emitStatus('srv-2', 'disconnected'))
     expect(result.current).toBe('connected')
   })
 
   it('unsubscribes on unmount', async () => {
     const { unmount } = await renderHook(() => useWsStatus('srv-1'))
     expect(__wsTest.listenerCount()).toBe(1)
-    unmount()
+    await unmount()
     expect(__wsTest.listenerCount()).toBe(0)
   })
 })

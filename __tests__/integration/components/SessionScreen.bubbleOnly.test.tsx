@@ -87,14 +87,14 @@ jest.mock('@tanstack/react-query', () => ({
 import SessionDetailScreen from '@/app/session/[id]'
 
 describe('SessionScreen — bubble-only live view', () => {
-  it('does not render a terminal tab bar in the live branch', () => {
-    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+  it('does not render a terminal tab bar in the live branch', async () => {
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.queryByTestId('session-tab-terminal')).toBeNull()
     expect(screen.queryByTestId('session-tab-chat')).toBeNull()
   })
 
-  it('does not render the terminal message-input in the live branch', () => {
-    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+  it('does not render the terminal message-input in the live branch', async () => {
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.queryByTestId('message-input')).toBeNull()
   })
 })

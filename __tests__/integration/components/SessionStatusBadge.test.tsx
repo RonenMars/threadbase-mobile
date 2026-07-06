@@ -16,9 +16,9 @@ describe('SessionStatusBadge', () => {
   })
 
   it('renders without crashing for every status', async () => {
-    STATUSES.forEach(([status]) => {
-      expect(() => render(<SessionStatusBadge status={status} />)).not.toThrow()
-    })
+    for (const [status] of STATUSES) {
+      await render(<SessionStatusBadge status={status} />)
+    }
   })
 
   it('renders a dot indicator alongside the label', async () => {

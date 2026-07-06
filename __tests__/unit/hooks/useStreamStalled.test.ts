@@ -44,33 +44,33 @@ describe('useStreamStalled', () => {
     const { result } = await renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
     expect(result.current).toBe(false)
 
-    act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS))
+    await act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS))
     expect(result.current).toBe(true)
   })
 
   it('a terminal frame for the session defers and clears the stall', async () => {
     const { result } = await renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
 
-    act(() => jest.advanceTimersByTime(10_000))
-    act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'x' }))
-    act(() => jest.advanceTimersByTime(10_000))
+    await act(() => jest.advanceTimersByTime(10_000))
+    await act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'x' }))
+    await act(() => jest.advanceTimersByTime(10_000))
     expect(result.current).toBe(false)
 
     // Stall fires 15s after the LAST frame…
-    act(() => jest.advanceTimersByTime(5_000))
+    await act(() => jest.advanceTimersByTime(5_000))
     expect(result.current).toBe(true)
 
     // …and clears immediately on the next frame.
-    act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'y' }))
+    await act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'y' }))
     expect(result.current).toBe(false)
   })
 
   it('ignores frames for other sessions', async () => {
     const { result } = await renderHook(() => useStreamStalled('srv-1', 'sess-1', true))
 
-    act(() => jest.advanceTimersByTime(10_000))
-    act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'other', data: 'x' }))
-    act(() => jest.advanceTimersByTime(5_000))
+    await act(() => jest.advanceTimersByTime(10_000))
+    await act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'other', data: 'x' }))
+    await act(() => jest.advanceTimersByTime(5_000))
     expect(result.current).toBe(true)
   })
 
@@ -80,14 +80,14 @@ describe('useStreamStalled', () => {
       { initialProps: { enabled: true } },
     )
 
-    act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS))
+    await act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS))
     expect(result.current).toBe(true)
 
-    rerender({ enabled: false })
-    act(() => jest.runOnlyPendingTimers())
+    await rerender({ enabled: false })
+    await act(() => jest.runOnlyPendingTimers())
     expect(result.current).toBe(false)
 
-    act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS * 2))
+    await act(() => jest.advanceTimersByTime(STREAM_STALL_TIMEOUT_MS * 2))
     expect(result.current).toBe(false)
   })
 })

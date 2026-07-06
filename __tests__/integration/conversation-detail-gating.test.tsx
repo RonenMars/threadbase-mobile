@@ -201,6 +201,17 @@ function allText(root: RenderResult): string {
   return walk(root.toJSON())
 }
 
+async function flushQueriesAndLiftSkeleton() {
+  for (let i = 0; i < 20; i++) {
+    await act(async () => {
+      jest.advanceTimersByTime(10)
+    })
+  }
+  await act(async () => {
+    jest.advanceTimersByTime(600)
+  })
+}
+
 describe('conversation detail — resumability gating', () => {
   beforeEach(() => {
     jest.useFakeTimers()
@@ -218,10 +229,7 @@ describe('conversation detail — resumability gating', () => {
       meta: { ...makeDetail(4).meta, resumable: false, unavailable_reason: 'worktree_removed' },
     }
     const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
-    await renderScreenAndFindList(root)
-    await act(async () => {
-      jest.advanceTimersByTime(600) // lift the skeleton gate
-    })
+    await flushQueriesAndLiftSkeleton()
 
     const text = allText(root)
     expect(text).toContain('git worktree that no longer exists')
@@ -235,10 +243,7 @@ describe('conversation detail — resumability gating', () => {
       meta: { ...makeDetail(4).meta, resumable: false, unavailable_reason: 'path_missing' },
     }
     const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
-    await renderScreenAndFindList(root)
-    await act(async () => {
-      jest.advanceTimersByTime(600)
-    })
+    await flushQueriesAndLiftSkeleton()
 
     const text = allText(root)
     expect(text).toContain('project folder for this conversation was moved or deleted')
@@ -251,10 +256,7 @@ describe('conversation detail — resumability gating', () => {
       meta: { ...makeDetail(4).meta, resumable: true },
     }
     const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
-    await renderScreenAndFindList(root)
-    await act(async () => {
-      jest.advanceTimersByTime(600)
-    })
+    await flushQueriesAndLiftSkeleton()
 
     const text = allText(root)
     expect(text).toContain('Resume Session')
@@ -299,7 +301,7 @@ describe('conversation detail — 404 live-session fallback', () => {
     mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
     mockSessionRef.current = { id: 'conv-gating', status: 'running', ptyAttached: true }
 
-    render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
     await flushAllQueries()
 
     expect(mockReplace).toHaveBeenCalledWith('/session/conv-gating?server=srv1')
@@ -309,7 +311,7 @@ describe('conversation detail — 404 live-session fallback', () => {
     mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
     mockSessionRef.current = { id: 'conv-gating', status: 'idle', ptyAttached: false }
 
-    render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
     await flushAllQueries()
 
     expect(mockReplace).not.toHaveBeenCalled()

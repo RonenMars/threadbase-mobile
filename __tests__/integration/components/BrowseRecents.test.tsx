@@ -194,7 +194,7 @@ describe('BrowseScreen — recent directories accordion', () => {
     ]
 
     const { getByText } = await renderScreen()
-    fireEvent.press(getByText('/home/user/projects/alpha'))
+    await fireEvent.press(getByText('/home/user/projects/alpha'))
 
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
     expect(mockStartMutate).toHaveBeenCalledWith(
@@ -206,7 +206,7 @@ describe('BrowseScreen — recent directories accordion', () => {
   it('starts a Claude session by default without sending a provider', async () => {
     const { getByText } = await renderScreen()
 
-    fireEvent.press(getByText('Start Session Here'))
+    await fireEvent.press(getByText('Start Session Here'))
 
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
     expect(mockStartMutate).toHaveBeenCalledWith(
@@ -218,8 +218,8 @@ describe('BrowseScreen — recent directories accordion', () => {
   it('sends codex-cli when Codex is selected for a new session', async () => {
     const { getByTestId, getByText } = await renderScreen()
 
-    fireEvent.press(getByTestId('start-provider-codex-cli'))
-    fireEvent.press(getByText('Start Session Here'))
+    await fireEvent.press(getByTestId('start-provider-codex-cli'))
+    await fireEvent.press(getByText('Start Session Here'))
 
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
     expect(mockStartMutate).toHaveBeenCalledWith(
@@ -243,11 +243,11 @@ describe('BrowseScreen — recent directories accordion', () => {
     expect(getByText('/home/user/projects/alpha')).toBeTruthy()
 
     // Tap header → collapse
-    fireEvent.press(getByText('Recent directories (1)'))
+    await fireEvent.press(getByText('Recent directories (1)'))
     expect(queryByText('/home/user/projects/alpha')).toBeNull()
 
     // Tap header → expand again
-    fireEvent.press(getByText('Recent directories (1)'))
+    await fireEvent.press(getByText('Recent directories (1)'))
     expect(getByText('/home/user/projects/alpha')).toBeTruthy()
   })
 })

@@ -119,18 +119,18 @@ describe('LiveConversationView — optimistic sent message', () => {
     mockLive = []
     mockPtyLines = ['Scanning project...', 'Found 12 apps']
 
-    renderView()
+    await renderView()
 
     expect(screen.getByText('Scanning project...')).toBeTruthy()
     expect(screen.getByText('Found 12 apps')).toBeTruthy()
   })
 
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
-    renderView()
+    await renderView()
 
     const input = screen.getByTestId('chat-message-input')
-    fireEvent.changeText(input, 'hello there')
-    fireEvent.press(screen.getByTestId('chat-send-button'))
+    await fireEvent.changeText(input, 'hello there')
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
 
     // It still fires the send mutation with the typed text as the payload…
     expect(mockMutate).toHaveBeenCalledWith('hello there', expect.anything())
@@ -142,8 +142,8 @@ describe('LiveConversationView — optimistic sent message', () => {
     const { rerender } = await renderView()
 
     const input = screen.getByTestId('chat-message-input')
-    fireEvent.changeText(input, 'ping')
-    fireEvent.press(screen.getByTestId('chat-send-button'))
+    await fireEvent.changeText(input, 'ping')
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(screen.getByText('ping')).toBeTruthy()
 
     // The streamer echoes the user turn back over the WS.

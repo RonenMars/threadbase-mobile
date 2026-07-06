@@ -71,7 +71,7 @@ describe('useTheme', () => {
 
   it('throws when used outside ThemeProvider', async () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
-    expect(() => renderHook(() => useTheme())).toThrow('useTheme must be used within ThemeProvider')
+    await expect(renderHook(() => useTheme())).rejects.toThrow('useTheme must be used within ThemeProvider')
     spy.mockRestore()
   })
 })

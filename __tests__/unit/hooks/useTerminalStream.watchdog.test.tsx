@@ -83,10 +83,10 @@ describe('useTerminalStream – silence watchdog', () => {
   it('forces a reconnect after 45s of total WS silence', async () => {
     await renderStream()
 
-    act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS - 1))
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS - 1))
     expect(__wsTest.forceReconnect).not.toHaveBeenCalled()
 
-    act(() => jest.advanceTimersByTime(1))
+    await act(() => jest.advanceTimersByTime(1))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(1)
     expect(__wsTest.forceReconnect).toHaveBeenCalledWith('srv-1')
   })
@@ -94,16 +94,16 @@ describe('useTerminalStream – silence watchdog', () => {
   it('any inbound message resets the silence timer', async () => {
     await renderStream()
 
-    act(() => jest.advanceTimersByTime(30_000))
+    await act(() => jest.advanceTimersByTime(30_000))
     // A message for an unrelated session still proves the socket is alive.
-    act(() => __wsTest.emit({ type: 'session_update', sessionId: 'other' }))
+    await act(() => __wsTest.emit({ type: 'session_update', sessionId: 'other' }))
 
     // 30s since the message (60s since mount) — must NOT have fired.
-    act(() => jest.advanceTimersByTime(30_000))
+    await act(() => jest.advanceTimersByTime(30_000))
     expect(__wsTest.forceReconnect).not.toHaveBeenCalled()
 
     // 45s after the last message — fires.
-    act(() => jest.advanceTimersByTime(15_000))
+    await act(() => jest.advanceTimersByTime(15_000))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(1)
   })
 
@@ -111,8 +111,8 @@ describe('useTerminalStream – silence watchdog', () => {
     await renderStream()
 
     for (let i = 0; i < 5; i++) {
-      act(() => jest.advanceTimersByTime(40_000))
-      act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'x' }))
+      await act(() => jest.advanceTimersByTime(40_000))
+      await act(() => __wsTest.emit({ type: 'terminal_output', sessionId: 'sess-1', data: 'x' }))
     }
     expect(__wsTest.forceReconnect).not.toHaveBeenCalled()
   })
@@ -120,31 +120,31 @@ describe('useTerminalStream – silence watchdog', () => {
   it('re-arms after firing so a still-dead connection is retried', async () => {
     await renderStream()
 
-    act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(1)
 
     // Connection stays dark (no messages, no status change) — the watchdog
     // must keep retrying instead of going silent after the first attempt.
-    act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(2)
   })
 
   it('re-arms via the connected status event after a successful reconnect', async () => {
     await renderStream()
 
-    act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(1)
 
-    act(() => __wsTest.emitStatus('srv-1', 'connected'))
-    act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
+    await act(() => __wsTest.emitStatus('srv-1', 'connected'))
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(2)
   })
 
   it('unmount clears the watchdog', async () => {
     const { unmount } = await renderStream()
-    unmount()
+    await unmount()
 
-    act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS * 2))
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS * 2))
     expect(__wsTest.forceReconnect).not.toHaveBeenCalled()
   })
 })

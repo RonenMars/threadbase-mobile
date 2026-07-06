@@ -102,29 +102,29 @@ describe('SessionScreen — stop-response button', () => {
     mockSendKeysMutate.mockClear()
   })
 
-  it('renders the stop button while the agent is responding', () => {
-    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+  it('renders the stop button while the agent is responding', async () => {
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.getByTestId('session-stop-button')).toBeTruthy()
   })
 
-  it('pressing stop sends Esc instead of killing the session', () => {
-    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+  it('pressing stop sends Esc instead of killing the session', async () => {
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
-    fireEvent.press(screen.getByTestId('session-stop-button'))
+    await fireEvent.press(screen.getByTestId('session-stop-button'))
 
     expect(mockSendKeysMutate).toHaveBeenCalledTimes(1)
     expect(mockSendKeysMutate.mock.calls[0][0]).toBe('\x1b')
   })
 
-  it('hides the stop button while waiting for input', () => {
+  it('hides the stop button while waiting for input', async () => {
     mockStatus = 'waiting_input'
-    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.queryByTestId('session-stop-button')).toBeNull()
   })
 
-  it('hides the stop button once the session is idle', () => {
+  it('hides the stop button once the session is idle', async () => {
     mockStatus = 'idle'
-    render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.queryByTestId('session-stop-button')).toBeNull()
   })
 })

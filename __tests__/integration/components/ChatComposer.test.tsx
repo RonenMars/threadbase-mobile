@@ -28,49 +28,49 @@ function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProp
   }
 }
 
-function renderComposer(overrides?: Partial<ChatComposerProps>) {
+async function renderComposer(overrides?: Partial<ChatComposerProps>) {
   const props = makeProps(overrides)
-  return { props, ...renderWithI18n(<ChatComposer {...props} />) }
+  return { props, ...(await renderWithI18n(<ChatComposer {...props} />)) }
 }
 
 describe('ChatComposer', () => {
-  it('renders the text input and forwards typing', () => {
-    const { props } = renderComposer()
+  it('renders the text input and forwards typing', async () => {
+    const { props } = await renderComposer()
     const input = screen.getByTestId('chat-message-input')
-    fireEvent.changeText(input, 'hi')
+    await fireEvent.changeText(input, 'hi')
     expect(props.onChangeText).toHaveBeenCalledWith('hi')
   })
 
-  it('calls onSend when the send button is pressed with text present', () => {
-    const { props } = renderComposer({ value: 'hello' })
-    fireEvent.press(screen.getByTestId('chat-send-button'))
+  it('calls onSend when the send button is pressed with text present', async () => {
+    const { props } = await renderComposer({ value: 'hello' })
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(props.onSend).toHaveBeenCalled()
   })
 
-  it('calls onAttach when the attach button is pressed', () => {
-    const { props } = renderComposer()
-    fireEvent.press(screen.getByTestId('chat-attach-button'))
+  it('calls onAttach when the attach button is pressed', async () => {
+    const { props } = await renderComposer()
+    await fireEvent.press(screen.getByTestId('chat-attach-button'))
     expect(props.onAttach).toHaveBeenCalled()
   })
 
-  it('shows the mic button and toggles it when no text and mic granted', () => {
-    const { props } = renderComposer({ micGranted: true })
-    fireEvent.press(screen.getByTestId('chat-mic-button'))
+  it('shows the mic button and toggles it when no text and mic granted', async () => {
+    const { props } = await renderComposer({ micGranted: true })
+    await fireEvent.press(screen.getByTestId('chat-mic-button'))
     expect(props.onToggleMic).toHaveBeenCalled()
   })
 
-  it('opens and closes the full-screen expand modal', () => {
-    renderComposer({ value: 'draft' })
+  it('opens and closes the full-screen expand modal', async () => {
+    await renderComposer({ value: 'draft' })
     expect(screen.queryByTestId('message-input-expanded')).toBeNull()
-    fireEvent.press(screen.getByTestId('expand-input-button'))
+    await fireEvent.press(screen.getByTestId('expand-input-button'))
     expect(screen.getByTestId('message-input-expanded')).toBeTruthy()
-    fireEvent.press(screen.getByTestId('minimize-input-button'))
+    await fireEvent.press(screen.getByTestId('minimize-input-button'))
     expect(screen.queryByTestId('message-input-expanded')).toBeNull()
   })
 
-  it('disables controls when disabled (waking up)', () => {
-    const { props } = renderComposer({ disabled: true, value: 'x' })
-    fireEvent.press(screen.getByTestId('chat-send-button'))
+  it('disables controls when disabled (waking up)', async () => {
+    const { props } = await renderComposer({ disabled: true, value: 'x' })
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(props.onSend).not.toHaveBeenCalled()
   })
 })

@@ -25,16 +25,16 @@ describe('useHubTour', () => {
   it('advances to step 1 when advanceStep is called', async () => {
     const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
-    act(() => { result.current?.advanceStep() })
+    await act(() => { result.current?.advanceStep() })
     expect(result.current?.stepIndex).toBe(1)
   })
 
   it('returns null after all 3 steps are advanced past', async () => {
     const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
-    act(() => { result.current?.advanceStep() })
-    act(() => { result.current?.advanceStep() })
-    act(() => { result.current?.advanceStep() })
+    await act(() => { result.current?.advanceStep() })
+    await act(() => { result.current?.advanceStep() })
+    await act(() => { result.current?.advanceStep() })
     expect(result.current).toBeNull()
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(HUB_TOUR_KEY, 'seen')
   })
@@ -42,7 +42,7 @@ describe('useHubTour', () => {
   it('returns null and marks seen when skipTour is called', async () => {
     const { result } = await renderHook(() => useHubTour())
     await act(async () => {})
-    act(() => { result.current?.skipTour() })
+    await act(() => { result.current?.skipTour() })
     expect(result.current).toBeNull()
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(HUB_TOUR_KEY, 'seen')
   })

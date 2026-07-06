@@ -76,8 +76,8 @@ describe("MessageBubble – code blocks", () => {
     const { rerender } = await render(<MessageBubble message={msgWithCode} />);
     expect(mockHighlightRenders.count).toBe(1);
 
-    rerender(<MessageBubble message={msgWithCode} />);
-    rerender(<MessageBubble message={msgWithCode} />);
+    await rerender(<MessageBubble message={msgWithCode} />);
+    await rerender(<MessageBubble message={msgWithCode} />);
     expect(mockHighlightRenders.count).toBe(1);
   });
 });

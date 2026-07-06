@@ -180,7 +180,7 @@ describe('useEagerSessions', () => {
     await waitFor(() => expect(result.current.isDone).toBe(true))
     expect(mockGet).toHaveBeenCalledTimes(1)
 
-    rerender({ sortBy: 'projectName' })
+    await rerender({ sortBy: 'projectName' })
 
     await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
     const secondCall = mockGet.mock.calls[1][0] as string

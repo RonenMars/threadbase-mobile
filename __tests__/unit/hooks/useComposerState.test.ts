@@ -67,22 +67,22 @@ describe('useComposerState', () => {
 
   it('handleInputChange updates inputText and shows slash board when text starts with /', async () => {
     const { result } = await renderComposer()
-    act(() => { result.current.handleInputChange('/compact') })
+    await act(() => { result.current.handleInputChange('/compact') })
     expect(result.current.inputText).toBe('/compact')
     expect(result.current.slashBoardVisible).toBe(true)
   })
 
   it('handleInputChange hides slash board for normal text', async () => {
     const { result } = await renderComposer()
-    act(() => { result.current.handleInputChange('hello') })
+    await act(() => { result.current.handleInputChange('hello') })
     expect(result.current.slashBoardVisible).toBe(false)
   })
 
   it('handleSend calls onSend with trimmed text and clears the input', async () => {
     const onSend = jest.fn()
     const { result } = await renderComposer(onSend)
-    act(() => { result.current.handleInputChange('  hello world  ') })
-    act(() => { result.current.handleSend() })
+    await act(() => { result.current.handleInputChange('  hello world  ') })
+    await act(() => { result.current.handleSend() })
     expect(onSend).toHaveBeenCalledWith('hello world', 'hello world')
     expect(result.current.inputText).toBe('')
   })
@@ -90,7 +90,7 @@ describe('useComposerState', () => {
   it('handleSend does nothing when input is empty and no attachments', async () => {
     const onSend = jest.fn()
     const { result } = await renderComposer(onSend)
-    act(() => { result.current.handleSend() })
+    await act(() => { result.current.handleSend() })
     expect(onSend).not.toHaveBeenCalled()
   })
 
@@ -99,7 +99,7 @@ describe('useComposerState', () => {
     // Access the function — it must exist and be callable
     expect(typeof result.current.removeAttachment).toBe('function')
     // Verify it doesn't throw when called with an unknown id
-    act(() => { result.current.removeAttachment('nonexistent') })
+    await act(() => { result.current.removeAttachment('nonexistent') })
     expect(result.current.attachments).toHaveLength(0)
   })
 
@@ -107,7 +107,7 @@ describe('useComposerState', () => {
     const onSend = jest.fn()
     const { result } = await renderComposer(onSend)
     const cmd = { id: 'compact', icon: null as never, title: 'Compact', needsArgs: false, description: 'Compact context' }
-    act(() => { result.current.handleSlashCommandSelect(cmd) })
+    await act(() => { result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).toHaveBeenCalledWith('/compact', '/compact')
   })
 
@@ -115,7 +115,7 @@ describe('useComposerState', () => {
     const onSend = jest.fn()
     const { result } = await renderComposer(onSend)
     const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
-    act(() => { result.current.handleSlashCommandSelect(cmd) })
+    await act(() => { result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).not.toHaveBeenCalled()
     expect(result.current.pendingArgCommand).toEqual(cmd)
   })
@@ -124,8 +124,8 @@ describe('useComposerState', () => {
     const onSend = jest.fn()
     const { result } = await renderComposer(onSend)
     const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
-    act(() => { result.current.handleSlashCommandSelect(cmd) })
-    act(() => { result.current.handleSlashArgConfirm(cmd, 'foo bar') })
+    await act(() => { result.current.handleSlashCommandSelect(cmd) })
+    await act(() => { result.current.handleSlashArgConfirm(cmd, 'foo bar') })
     expect(onSend).toHaveBeenCalledWith('/search foo bar', '/search foo bar')
     expect(result.current.pendingArgCommand).toBeNull()
   })

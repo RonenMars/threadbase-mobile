@@ -43,7 +43,7 @@ describe('useConversationStream – reconnect recovery', () => {
     // Mount performs the initial invalidation.
     expect(invalidateSpy).toHaveBeenCalledTimes(1)
 
-    act(() => __wsTest.emitStatus('srv-1', 'connected'))
+    await act(() => __wsTest.emitStatus('srv-1', 'connected'))
     expect(invalidateSpy).toHaveBeenCalledTimes(2)
     expect(invalidateSpy).toHaveBeenLastCalledWith({ queryKey: ['conversation', 'srv-1', 'conv-1'] })
   })
@@ -52,18 +52,18 @@ describe('useConversationStream – reconnect recovery', () => {
     const { invalidateSpy } = await setup()
     invalidateSpy.mockClear()
 
-    act(() => __wsTest.emitStatus('srv-2', 'connected'))
-    act(() => __wsTest.emitStatus('srv-1', 'connecting'))
-    act(() => __wsTest.emitStatus('srv-1', 'disconnected'))
+    await act(() => __wsTest.emitStatus('srv-2', 'connected'))
+    await act(() => __wsTest.emitStatus('srv-1', 'connecting'))
+    await act(() => __wsTest.emitStatus('srv-1', 'disconnected'))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
   it('stops listening after unmount', async () => {
     const { invalidateSpy, unmount } = await setup()
     invalidateSpy.mockClear()
-    unmount()
+    await unmount()
 
-    act(() => __wsTest.emitStatus('srv-1', 'connected'))
+    await act(() => __wsTest.emitStatus('srv-1', 'connected'))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 })
