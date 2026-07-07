@@ -35,7 +35,10 @@ function handleRequest(req, res) {
   console.log(`${method} ${p}`)
 
   const auth = req.headers['authorization'] ?? ''
-  if (!auth.startsWith('Bearer ') || auth.slice(7).trim() === '') {
+  const bearerToken = auth.startsWith('Bearer ') ? auth.slice(7).trim() : ''
+  // A fixed bad-token value lets e2e flows deterministically exercise the
+  // "invalid credentials" path (any other non-empty token is accepted).
+  if (bearerToken === '' || bearerToken === 'wrong-token-000') {
     return json(res, 401, { error: 'Unauthorized' })
   }
 

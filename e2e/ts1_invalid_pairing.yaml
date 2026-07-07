@@ -1,0 +1,144 @@
+# Maestro E2E — TS1: TC-TS1-003 Invalid credentials and unreachable server
+# Source: production-test-suites/ts1-onboarding-and-pairing.md
+#
+# Walks: bad token -> error -> unreachable URL -> error -> corrected values ->
+# success, all without restarting the app, mirroring how a real tester edits
+# and retries a form rather than backspacing everything as one motion.
+#
+# Requires:
+#   MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Port 7071 is "reachable"; port 7072 is intentionally never queried by this
+# flow's unreachable-server step, which instead targets a closed port
+# (7099) so the fetch fails to connect rather than 404ing.
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "onboarding-welcome-cta"
+- tapOn:
+    id: "onboarding-welcome-cta"
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: "onboarding-connect-paste-card"
+- tapOn:
+    id: "onboarding-connect-paste-card"
+- waitForAnimationToEnd
+
+# --- Attempt 1: reachable URL, invalid token -> expect "token rejected" ---
+- tapOn:
+    id: "onboarding-connect-url-input"
+- inputText: "http://localhost:7071"
+- waitForAnimationToEnd
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-token-input"
+- inputText: "wrong-token-000"
+- waitForAnimationToEnd
+- hideKeyboard
+- waitForAnimationToEnd
+
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-01-bad-token-entered
+
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+
+- extendedWaitUntil:
+    visible: ".*token rejected.*"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-02-token-rejected
+
+# Onboarding must not have advanced past Connect.
+- assertVisible:
+    id: "onboarding-connect-handshake-cta"
+
+# --- Attempt 2: correct token, unreachable URL -> expect "connection refused" ---
+- tapOn:
+    id: "onboarding-connect-url-input"
+- eraseText
+- waitForAnimationToEnd
+- inputText: "http://localhost:7099"
+- waitForAnimationToEnd
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-token-input"
+- eraseText
+- waitForAnimationToEnd
+- inputText: "mock-key-123"
+- waitForAnimationToEnd
+- hideKeyboard
+- waitForAnimationToEnd
+
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-03-unreachable-url-entered
+
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+
+- extendedWaitUntil:
+    visible: ".*connection refused.*"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-04-connection-refused
+
+- assertVisible:
+    id: "onboarding-connect-handshake-cta"
+
+# --- Attempt 3: correct URL and token -> succeeds, no app restart needed ---
+- tapOn:
+    id: "onboarding-connect-url-input"
+- eraseText
+- waitForAnimationToEnd
+- inputText: "http://localhost:7071"
+- waitForAnimationToEnd
+- hideKeyboard
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-token-input"
+- eraseText
+- waitForAnimationToEnd
+- inputText: "mock-key-123"
+- waitForAnimationToEnd
+- hideKeyboard
+- waitForAnimationToEnd
+
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-05-corrected-values
+
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-06-retry-succeeded
