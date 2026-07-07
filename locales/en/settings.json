@@ -15,8 +15,9 @@
     "session": "Session"
   },
   "session": {
-    "terminalView": "Terminal view",
-    "terminalViewNote": "Show the raw terminal output instead of chat bubbles for live sessions."
+    "chatView": "Chat view",
+    "chatViewNote": "Show live sessions as chat bubbles instead of raw terminal output. Beta — may be buggy and not always work.",
+    "betaBadge": "Beta"
   },
   "permissions": {
     "camera": "Camera",

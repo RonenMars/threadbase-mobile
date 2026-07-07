@@ -35,6 +35,7 @@ import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/the
 import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
 function addServerActionLabel(action: AddServerAction): string {
@@ -57,17 +58,22 @@ function SettingsRow({
   value,
   onValueChange,
   testID,
+  badge,
 }: {
   label: string
   value: boolean
   onValueChange: (v: boolean) => void
   testID?: string
+  badge?: string
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
   return (
     <View style={s.row} testID={testID}>
-      <Text style={s.rowLabel}>{label}</Text>
+      <View style={s.rowLabelGroup}>
+        <Text style={s.rowLabel}>{label}</Text>
+        {badge ? <Badge label={badge} bg={theme.text.accent} color="#fff" /> : null}
+      </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
@@ -600,11 +606,12 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.session')} />
         <SettingsRow
-          label={t('session.terminalView')}
-          value={sessionView === 'terminal'}
-          onValueChange={(v) => setSessionView(v ? 'terminal' : 'chat')}
+          label={t('session.chatView')}
+          value={sessionView === 'chat'}
+          onValueChange={(v) => setSessionView(v ? 'chat' : 'terminal')}
+          badge={t('session.betaBadge')}
         />
-        <Text style={s.rowNote}>{t('session.terminalViewNote')}</Text>
+        <Text style={s.rowNote}>{t('session.chatViewNote')}</Text>
 
         <SectionHeader title={t('section.history')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
@@ -943,6 +950,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
       borderBottomColor: theme.border,
     },
     rowLabel: { color: theme.text.primary, fontSize: font.base },
+    rowLabelGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     rowValue: { color: theme.text.secondary, fontSize: font.sm },
     rowNote: { color: theme.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
     accordionBody: {
