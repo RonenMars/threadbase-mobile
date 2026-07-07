@@ -190,9 +190,9 @@ describe('Onboarding – error handling', () => {
 // ── First-launch flow ─────────────────────────────────────────────────────────
 
 describe('Onboarding – first-launch flow', () => {
-  it('TOTAL_STEPS is 4', () => {
+  it('TOTAL_STEPS is 3', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { TOTAL_STEPS } = require('@/components/onboarding/OnboardingNavigator')
-    expect(TOTAL_STEPS).toBe(4)
+    expect(TOTAL_STEPS).toBe(3)
   })
 })

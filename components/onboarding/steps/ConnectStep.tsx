@@ -310,7 +310,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, paddingHorizontal: 22, paddingTop: 4 },
   rootContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 4 },
   eyebrow: {
     color: colors.amber400,
