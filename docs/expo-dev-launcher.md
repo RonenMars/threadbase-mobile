@@ -64,61 +64,40 @@ This works conceptually, but:
 
 ### (c) Skip Stage 1 entirely (chosen path)
 
-Build the **Release** configuration of the app. Release builds:
+Use `npm run ios` (a thin wrapper around `npx expo run:ios`). `app.json` sets `"launchMode": "most-recent"` on the `expo-dev-client` plugin, which makes the Dev Client skip its launcher UI and load the last-opened bundle directly:
 
-- Embed the JS bundle into the `.app` itself (`main.jsbundle`)
-- Skip the dev launcher (the launcher only inserts itself in Debug)
-- Boot straight into the onboarding screen
-- Don't need Metro running
+- Still a Debug build (fast rebuilds, JS reload-on-save)
+- Skips the dev launcher screen entirely
+- Boots straight into the onboarding screen
+- Needs Metro running (`npm start` or `npm run ios` starts it)
 
-This is what real production users see, and what every Maestro E2E setup typically does.
+This is Expo's documented `launchMode: "most-recent"` option for the `expo-dev-client` config plugin — see [`bypass-expo-dev-launcher-methods.md`](./bypass-expo-dev-launcher-methods.md) (Method 1) for this and the other bypass approaches we considered.
 
 ## The 192.168.68.111 detail
 
-The cached URL is your **LAN IP** (192.168.68.x is a typical home router subnet), not `localhost`. That's because dev-client auto-discovers the Metro bundler that started it. When you originally ran `expo start`, Metro advertised your LAN IP, the launcher cached it, and the simulator is still trying to phone home to a Metro instance that may not exist anymore. The launcher's "green dot" is misleading — it means Bonjour saw something at some point, not that the server is currently up.
-
-If you ever want to make Debug-mode E2E work, the cleanest path would be a `predev-launcher.yaml` fixture that clears that cached URL via the app's URL scheme (`threadbase://expo-go?url=http://localhost:8081`), then taps Connect. But that's a separate, optional improvement and not the default approach.
+The cached URL is your **LAN IP** (192.168.68.x is a typical home router subnet), not `localhost`. That's because dev-client auto-discovers the Metro bundler that started it. When you originally ran `expo start`, Metro advertised your LAN IP, the launcher cached it, and the simulator is still trying to phone home to a Metro instance that may not exist anymore. The launcher's "green dot" is misleading — it means Bonjour saw something at some point, not that the server is currently up. This is exactly the flakiness `launchMode: "most-recent"` avoids by skipping the launcher's server-picker UI entirely.
 
 ## TL;DR
 
-| | Debug build | Release build |
+| | Debug build, default launcher | Debug build, `launchMode: "most-recent"` |
 |---|---|---|
 | Boots into dev launcher | Yes | No |
-| Needs Metro running | Yes | No |
-| JS reload-on-save | Yes | No |
-| Good for daily dev | ✅ | ❌ |
+| Needs Metro running | Yes | Yes |
+| JS reload-on-save | Yes | Yes |
+| Good for daily dev | ✅ | ✅ |
 | Good for E2E | ❌ (without ugly bypass) | ✅ |
-| Build time | ~3-5 min | ~6-12 min |
-| Run time per test | Fast (HMR) | Same as prod |
+| Build time | ~3-5 min | ~3-5 min |
 
-## How to build a Release configuration
+## How to build and run
 
 ```bash
-npx expo run:ios --configuration Release --device <booted-sim-udid>
+npm run ios
 ```
 
-To find a booted sim UDID:
+This runs `npx expo run:ios` against the sim, which builds/installs the Debug app and starts Metro. With `launchMode: "most-recent"` set in `app.json`, the app skips the launcher and loads the last-opened bundle directly.
+
+To find a booted sim UDID (useful for `npm run ios -- --device <udid>`):
 
 ```bash
 xcrun simctl list devices booted
 ```
-
-Or skip the install step (useful when you just want the `.app` artifact, e.g. to inspect or to install manually later):
-
-```bash
-npx expo run:ios --configuration Release --device <udid> --no-install --no-bundler
-```
-
-The built `.app` lands at:
-
-```
-~/Library/Developer/Xcode/DerivedData/Threadbase-<hash>/Build/Products/Release-iphonesimulator/Threadbase.app
-```
-
-Install it onto a booted sim manually:
-
-```bash
-xcrun simctl install booted /path/to/Threadbase.app
-```
-
-After install, launching it (either via Maestro's `launchApp` or `xcrun simctl launch booted com.ronenmars.threadbase`) drops you straight into the actual app, skipping the dev launcher entirely.

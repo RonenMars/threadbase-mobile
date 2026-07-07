@@ -31,12 +31,12 @@ Verify (the suite is written for **Maestro 2.x**):
 maestro --version
 ```
 
-### Build a Release `.app`
+### Build the app
 
 Maestro drives the actual iOS binary, so it must be installed on a booted simulator.
-**Use a Release build, not Debug.**
+**Use `npm run ios`, not a Debug build launched the default way.**
 
-Debug builds boot into the Expo Dev Launcher (a SwiftUI screen that asks which JS bundle to load) and there's no clean way for Maestro to get past it — see [`docs/expo-dev-launcher.md`](../docs/expo-dev-launcher.md) for the full explanation. Release builds embed the JS bundle directly and skip the launcher.
+The default Debug build boots into the Expo Dev Launcher (a SwiftUI screen that asks which JS bundle to load) and there's no clean way for Maestro to get past it — see [`docs/expo-dev-launcher.md`](../docs/expo-dev-launcher.md) for the full explanation. `npm run ios` skips it: `app.json` sets `"launchMode": "most-recent"` on the `expo-dev-client` plugin, so the app loads the last-opened bundle directly instead of showing the launcher.
 
 > **Use an iOS ≤ 18 simulator.** Maestro 2.0.10's XCUITest driver races/dies during
 > the `simctl uninstall/install` that `clearState: true` performs on **iOS 26.x**
@@ -50,13 +50,13 @@ Debug builds boot into the Expo Dev Launcher (a SwiftUI screen that asks which J
 xcrun simctl list devices available | grep -iE "iOS 1[78]"
 xcrun simctl boot <UDID>
 
-# Build + install the Release app onto the booted sim
-npx expo run:ios --configuration Release --device <UDID>
+# Build + install the app onto the booted sim, skipping the dev launcher
+npm run ios
 ```
 
 The first build takes 5–10 min. Incremental rebuilds are ~1–2 min.
 
-> The `npx expo run:ios` step tends to hang after install while tailing app logs. Once you see `Opening on iPhone 17 Pro`, the install is complete — Ctrl-C is safe.
+> The `npm run ios` step tends to hang after install while tailing app logs. Once you see `Opening on iPhone 17 Pro`, the install is complete — Ctrl-C is safe.
 
 ## Run the suite
 
@@ -80,7 +80,7 @@ This:
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/info` | Server identity (returned to onboarding handshake) |
-| `GET /api/profiles` | Pairing handshake (Release builds make a real HTTP call) |
+| `GET /api/profiles` | Pairing handshake (the app makes a real HTTP call) |
 | `GET /api/sessions` | List of sessions (fixtures/sessions.json) |
 | `GET /api/sessions/:id` | Single session (fixtures/session-detail.json) |
 | `GET /api/sessions/:id/output` | Terminal output history |

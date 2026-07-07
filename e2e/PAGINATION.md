@@ -2,10 +2,11 @@
 
 > **Status (2026-05-24, initial commit):** mock-server + harness + network
 > assertion are smoke-tested standalone and confirmed working. The maestro
-> flow itself has not yet been run end-to-end against a clean Release build
-> on this machine — the local sim was in Debug state at commit time and
-> rebuild attempts hit a transient `@babel/code-frame` resolution issue. Run
-> `./scripts/run-pagination-e2e.sh` against a Release build to verify.
+> flow itself has not yet been run end-to-end against the app built with
+> `npm run ios` on this machine — the local sim was in default-launcher
+> Debug state at commit time and rebuild attempts hit a transient
+> `@babel/code-frame` resolution issue. Run `./scripts/run-pagination-e2e.sh`
+> against an `npm run ios` build to verify.
 
 Tests that the conversation list paginates correctly in the **hub** layout.
 Validates two things at once:
@@ -24,7 +25,7 @@ Validates two things at once:
 
 ## Prerequisites
 
-- A **Release-configuration** build of the app installed on a booted iOS simulator. Debug builds go through the expo-dev-launcher and dev-menu modal, which interferes with these flows. Rebuild with `npx expo run:ios --configuration Release` if the sim has a Debug build.
+- The app installed on a booted iOS simulator via `npm run ios`. This skips the expo-dev-launcher screen (via `launchMode: "most-recent"` in `app.json`), which otherwise interferes with these flows. Rebuild with `npm run ios` if the sim has a default-launcher Debug build installed.
 - `maestro` CLI installed (`maestro --version` should report 2.0+).
 - Port `7072` free.
 
