@@ -74,7 +74,7 @@ function SettingsRow({
         <Text style={s.rowLabel}>{label}</Text>
         {badge ? (
           <View style={{ marginTop: -10 }}>
-            <Badge label={badge} bg={theme.text.beta} color={theme.bg.primary} />
+            <Badge label={badge} bg={theme.text.beta} color="#1a1a1a" />
           </View>
         ) : null}
       </View>
