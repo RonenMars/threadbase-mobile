@@ -14,7 +14,7 @@ import {
   InteractionManager,
 } from 'react-native'
 import Constants from 'expo-constants'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
 import * as Updates from 'expo-updates'
@@ -214,6 +214,7 @@ function ThemePicker({
 export default function SettingsScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const { t } = useTranslation('settings')
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, addServer, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
@@ -361,11 +362,15 @@ await refreshServerInfo(serverId)
   }
 
   const s = useMemo(() => styles(theme), [theme])
+  // Transparent header (glass themes) doesn't reserve layout space, so the
+  // ScrollView starts under it; push content down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassContentStyle = isGlass ? { paddingTop: s.content.padding + insets.top + headerHeight } : null
 
   return (
     <SafeAreaView style={s.container} edges={[]}>
       <ScrollView
-        contentContainerStyle={s.content}
+        contentContainerStyle={[s.content, glassContentStyle]}
         refreshControl={
           <RefreshControl
             refreshing={isPullRefreshing}
