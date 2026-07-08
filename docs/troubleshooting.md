@@ -87,3 +87,15 @@ fi
 **Note:** The `ship-ios.sh` / `ship-android.sh` scripts are unaffected — they only prebuild when the native dir is missing (`[[ ! -d ios ]]`), where there is nothing to clean.
 
 ---
+
+## iOS Simulator console noise
+
+### `CHHapticPattern` / `CHHapticEngine` "hapticpatternlibrary.plist" errors flooding the log
+
+**When:** Running the app in the iOS Simulator, the console fills with repeated `[CoreHaptics] CHHapticPattern.mm:487 +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data` / `UIKBFeedbackGenerator: Error creating CHHapticPattern` errors whenever a haptic feedback call fires (e.g. `Haptics.impactAsync()`).
+
+**Cause:** The Simulator doesn't ship the `hapticpatternlibrary.plist` that real devices have for the Core Haptics pattern library. Any `UIFeedbackGenerator` call hits this and logs the failure, but it's silently swallowed — no crash, no visible effect on the app. Simulator-only; doesn't happen on a real device (which has the physical Taptic Engine's pattern library).
+
+**Fix:** None needed — don't add app code to suppress it. If it's genuinely annoying during dev, filter it at the terminal/log level instead: pipe `xcodebuild`/`simctl log stream` output through `grep -v CHHapticPattern` locally rather than touching the app.
+
+---
