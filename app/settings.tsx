@@ -72,7 +72,11 @@ function SettingsRow({
     <View style={s.row} testID={testID}>
       <View style={s.rowLabelGroup}>
         <Text style={s.rowLabel}>{label}</Text>
-        {badge ? <Badge label={badge} bg={theme.text.accent} color="#fff" /> : null}
+        {badge ? (
+          <View style={{ marginTop: -10 }}>
+            <Badge label={badge} bg={theme.text.beta} color={theme.bg.primary} />
+          </View>
+        ) : null}
       </View>
       <Switch
         value={value}
