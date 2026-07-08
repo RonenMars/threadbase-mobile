@@ -19,6 +19,7 @@
     "chatViewNote": "Show live sessions as chat bubbles instead of raw terminal output. Beta — may be buggy and not always work.",
     "betaBadge": "Beta"
   },
+  "comingSoonBadge": "Coming soon",
   "permissions": {
     "camera": "Camera",
     "cameraDesc": "QR code scanning to pair with servers",
