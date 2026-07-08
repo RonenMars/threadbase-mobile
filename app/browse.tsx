@@ -222,8 +222,11 @@ export default function BrowseScreen() {
         ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
       },
       {
-        onSuccess: (session) => {
-          navigateToNewSession(session)
+        onSuccess: (result) => {
+          // 'pending' means the server timed out waiting for the PTY to become
+          // ready; the WS session_ready listener in app/_layout.tsx navigates
+          // once it actually is.
+          if (result.kind === 'ready') navigateToNewSession(result.session)
         },
         onError: (err) => {
           Alert.alert('Failed to start session', err.message)
@@ -241,8 +244,8 @@ export default function BrowseScreen() {
           ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
         },
         {
-          onSuccess: (session) => {
-            navigateToNewSession(session)
+          onSuccess: (result) => {
+            if (result.kind === 'ready') navigateToNewSession(result.session)
           },
           onError: (err) => {
             Alert.alert('Failed to start session', err.message)
