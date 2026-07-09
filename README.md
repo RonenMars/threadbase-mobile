@@ -72,6 +72,8 @@ npm run android
 
 For physical devices or off-network dev, see `docs/dev-on-physical-device-ios.md`, `docs/dev-on-physical-device-android.md`, and `docs/remote-dev-tunnel.md`.
 
+**Web (early spike, not full parity):** `npx expo start --web`. See [docs/expo-web-support.md](docs/expo-web-support.md) for status and known blockers.
+
 On first launch, add a server via QR scan or manual entry during Onboarding.
 
 ## 📁 Project Structure
@@ -131,6 +133,7 @@ npm run typecheck
 - [docs/BACKLOG.md](docs/BACKLOG.md) — open bugs
 - [docs/IDEAS.md](docs/IDEAS.md) — unprioritized ideas
 - [docs/lessons/](docs/lessons/) — hard-won gotchas
+- [docs/expo-web-support.md](docs/expo-web-support.md) — web platform status and known blockers
 
 ## 🔐 Privacy
 
