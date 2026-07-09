@@ -239,6 +239,34 @@ describe('WSClient – forceReconnect', () => {
     expect(() => wsClient.forceReconnect()).not.toThrow()
   })
 
+  it('does not deliver messages arriving late on the old socket after reconnect', () => {
+    const handler = jest.fn()
+    const unsub = wsClient.on('session_update', handler)
+
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+    const staleSocket = mockSocket
+    // Capture the callback the way a real WebSocket implementation would:
+    // the underlying platform holds its own reference to the listener and
+    // can still invoke it even after `.onmessage = null` is set — closing a
+    // socket does not synchronously guarantee in-flight events are dropped.
+    const staleOnMessage = staleSocket.onmessage!
+
+    wsClient.forceReconnect()
+    expect(mockSocket).not.toBe(staleSocket)
+
+    // A message already in flight before forceReconnect() (e.g. buffered
+    // while the app was suspended) can still land on the stale socket's
+    // original callback. It must not reach handlers.
+    staleOnMessage({
+      data: JSON.stringify({ type: 'session_update', session: { id: 'stale' } }),
+    })
+
+    expect(handler).not.toHaveBeenCalled()
+    unsub()
+  })
+
   it('clears any pending reconnect timer', () => {
     wsClient.connect('http://test.local', 'key')
     // Trigger an error to schedule a backoff reconnect.
