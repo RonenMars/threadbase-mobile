@@ -9,6 +9,21 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { createWrapper } from '@/test-utils'
 
+// Captures the scan_progress handler registered by useEagerConversations so
+// tests can simulate a broadcast arriving mid-count.
+let scanProgressHandler: ((msg: { type: string; serverId: string; scanned: number; total: number }) => void) | null = null
+
+jest.mock('@/services/ws-client', () => ({
+  wsManager: {
+    onAll: (type: string, handler: (msg: any) => void) => {
+      if (type === 'scan_progress') scanProgressHandler = handler
+      return () => {
+        if (type === 'scan_progress') scanProgressHandler = null
+      }
+    },
+  },
+}))
+
 // Inline the raw snake_case shape — it's private to useConversations.ts and we
 // don't want to export it just for tests.
 interface RawSessionMeta {
@@ -333,5 +348,37 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
 
     const statuses = useServerFetchStatusStore.getState().statuses
     expect(statuses['srv-slow']?.status).toBe('indexing')
+  })
+})
+
+describe('useEagerConversations — warm-up scan_progress surfaces a live count', () => {
+  it('reflects scan_progress broadcasts while /count is still pending', async () => {
+    setActiveServers(['srv-warm'])
+
+    let resolveCount: ((v: unknown) => void) | undefined
+    handlers['srv-warm'] = (path: string) => {
+      if (path.includes('/api/conversations/count')) {
+        return new Promise((resolve) => {
+          resolveCount = resolve
+        })
+      }
+      return Promise.resolve([]) as Promise<unknown>
+    }
+
+    const { result } = await renderHook(() => useEagerConversations(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(scanProgressHandler).not.toBeNull())
+    expect(result.current.isCounting).toBe(true)
+
+    scanProgressHandler?.({ type: 'scan_progress', serverId: 'srv-warm', scanned: 42, total: 120 })
+
+    await waitFor(() => expect(result.current.total).toBe(120))
+    expect(result.current.loaded).toBe(42)
+    expect(result.current.isCounting).toBe(false)
+
+    resolveCount?.({ total: 5 })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
   })
 })
