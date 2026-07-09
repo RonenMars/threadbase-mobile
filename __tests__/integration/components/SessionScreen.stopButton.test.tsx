@@ -1,9 +1,12 @@
 /**
  * SessionScreen — stop-response button.
  *
- * Guards: the stop button shows only while the agent is actively responding
- * (status running), pressing it sends Esc to interrupt the response without
- * killing the PTY session, and it is hidden while waiting_input or idle.
+ * Guards: the stop button shows while the agent is actively responding
+ * (status running) or while output is actively streaming. Pressing it sends
+ * Esc to interrupt the response without killing the PTY session. It is
+ * hidden once idle/waiting-for-input with nothing streaming. (Cancelling a
+ * pending question/permission prompt is a separate action on the question
+ * card itself — see QuestionCard.test.tsx.)
  */
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react-native'
@@ -12,6 +15,8 @@ import { createWrapper } from '@/test-utils'
 // Mutable so individual tests can vary the session status the screen sees.
 let mockStatus: 'running' | 'waiting_input' | 'idle' = 'running'
 const mockSendKeysMutate = jest.fn()
+// Mutable so individual tests can vary streaming state independent of status.
+let mockIsStreaming = false
 
 // ── heavy native deps ────────────────────────────────────────────────────────
 jest.mock('expo-speech-recognition', () => ({
@@ -51,6 +56,9 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendKeys: { mutate: mockSendKeysMutate, isPending: false },
     adoptSession: { mutate: jest.fn() },
   }),
+}))
+jest.mock('@/hooks/useTerminalStream', () => ({
+  useTerminalStream: () => ({ lines: [], isStreaming: mockIsStreaming, isLoadingHistory: false, clear: jest.fn() }),
 }))
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
@@ -99,6 +107,7 @@ import SessionDetailScreen from '@/app/session/[id]'
 describe('SessionScreen — stop-response button', () => {
   beforeEach(() => {
     mockStatus = 'running'
+    mockIsStreaming = false
     mockSendKeysMutate.mockClear()
   })
 
@@ -126,5 +135,12 @@ describe('SessionScreen — stop-response button', () => {
     mockStatus = 'idle'
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.queryByTestId('session-stop-button')).toBeNull()
+  })
+
+  it('shows the stop button when output is streaming even if status is not running', async () => {
+    mockStatus = 'waiting_input'
+    mockIsStreaming = true
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(screen.getByTestId('session-stop-button')).toBeTruthy()
   })
 })

@@ -101,4 +101,25 @@ describe('QuestionCard', () => {
     expect(getByText('Confirm?')).toBeTruthy()
     expect(getByText('Yes')).toBeTruthy()
   })
+
+  it('does not render a Cancel button when onCancel is not provided', async () => {
+    const { queryByText } = await render(<QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} />)
+    expect(queryByText('Cancel')).toBeNull()
+  })
+
+  it('renders a Cancel button when onCancel is provided', async () => {
+    const { getByText } = await render(
+      <QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} onCancel={jest.fn()} />
+    )
+    expect(getByText('Cancel')).toBeTruthy()
+  })
+
+  it('calls onCancel when the Cancel button is pressed', async () => {
+    const onCancel = jest.fn()
+    const { getByText } = await render(
+      <QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} onCancel={onCancel} />
+    )
+    await fireEvent.press(getByText('Cancel'))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
 })

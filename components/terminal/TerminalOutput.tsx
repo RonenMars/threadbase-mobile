@@ -172,9 +172,17 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
       />
 
       {activeQuestion ? (
-        <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
+        <QuestionCard
+          block={activeQuestion}
+          onSelect={handleStructuredSelect}
+          onCancel={onSendKeys ? () => onSendKeys('\x1b') : undefined}
+        />
       ) : questionBlock && onSendKeys ? (
-        <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
+        <QuestionCard
+          block={questionBlock}
+          onSelect={handleOptionSelect}
+          onCancel={() => onSendKeys('\x1b')}
+        />
       ) : null}
 
       <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
