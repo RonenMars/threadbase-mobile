@@ -4,20 +4,40 @@ Threadbase Mobile can run as a web app via Expo's `web` platform target, reusing
 same React Native codebase (Expo Router, Zustand stores, components) instead of a
 separate web project.
 
-## Running locally
+## Prerequisites
+
+`web` must be present in `app.json`'s `expo.platforms` array, and `react-dom`,
+`react-native-web`, and `@expo/metro-runtime` must be installed:
+
+```bash
+npx expo install react-dom react-native-web @expo/metro-runtime
+```
+
+(Both are already done on the `feat/expo-web` branch — this is only needed if
+starting from a checkout that predates it.)
+
+## Running locally (dev server, live reload)
 
 ```bash
 npx expo start --web
 ```
 
-Opens the Metro dev server with live reload at `http://localhost:8081`.
+Starts the Metro dev server and opens `http://localhost:8081` in your default
+browser (press `w` in the terminal if it doesn't open automatically). Code changes
+hot-reload like any other Expo dev session — this is the normal way to work on web
+features day to day.
 
-To produce a static build (e.g. to sanity-check a production bundle):
+## Running a static production build
+
+Use this to sanity-check a real production bundle rather than the dev server (e.g.
+before shipping, or to reproduce a bug that only shows up in the optimized build):
 
 ```bash
-npx expo export --platform web
-npx serve dist -p 4173
+npx expo export --platform web   # bundles into ./dist
+npx serve dist -p 4173           # serves ./dist at http://localhost:4173
 ```
+
+`npx serve` is a one-off dev dependency install on first run; nothing to configure.
 
 ## Status: early spike, not full parity
 
