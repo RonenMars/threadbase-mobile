@@ -96,3 +96,109 @@ describe("MessageBubble – tool_use", () => {
     expect(getByText("🔧 Bash")).toBeTruthy();
   });
 });
+
+describe("MessageBubble – search highlight", () => {
+  it("wraps the matched needle in a styled nested Text, leaving surrounding text plain", async () => {
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({ content: [{ type: "text", text: "a wombat sighting" }] })}
+        highlight="wombat"
+      />,
+    );
+    const match = getByText("wombat");
+    expect(match).toBeTruthy();
+    expect(match.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: expect.any(String) }),
+    );
+  });
+
+  it("matches case-insensitively", async () => {
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({ content: [{ type: "text", text: "a WOMBAT sighting" }] })}
+        highlight="wombat"
+      />,
+    );
+    expect(getByText("WOMBAT")).toBeTruthy();
+  });
+
+  it("wraps every occurrence within the same message", async () => {
+    const { getAllByText } = await render(
+      <MessageBubble
+        message={makeMessage({ content: [{ type: "text", text: "wombat then another wombat" }] })}
+        highlight="wombat"
+      />,
+    );
+    expect(getAllByText("wombat").length).toBe(2);
+  });
+
+  it("renders plain text when no highlight prop is given (memo/perf regression guard)", async () => {
+    const { getByText } = await render(<MessageBubble message={makeMessage()} />);
+    const node = getByText("Hello!");
+    // A single plain Text child — not split into multiple nested Text nodes.
+    expect(node.children.length).toBe(1);
+  });
+
+  it("does not highlight when the needle is absent from the text", async () => {
+    const { getByText, queryAllByText } = await render(
+      <MessageBubble
+        message={makeMessage({ content: [{ type: "text", text: "nothing to see here" }] })}
+        highlight="wombat"
+      />,
+    );
+    expect(getByText("nothing to see here")).toBeTruthy();
+    expect(queryAllByText("wombat").length).toBe(0);
+  });
+
+  it("highlights the prose match while the fenced code block renders untouched", async () => {
+    const { getByText, queryByText } = await render(
+      <MessageBubble
+        message={makeMessage({
+          content: [{ type: "text", text: "a wombat above\n```\nplain code\n```" }],
+        })}
+        highlight="wombat"
+      />,
+    );
+    // Prose match is wrapped in the accent match style.
+    const match = getByText("wombat");
+    expect(match.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: expect.any(String) }),
+    );
+    // The CodeBlock still renders as normal — highlighting the prose part
+    // doesn't reach into or disturb the fenced code renderer.
+    expect(queryByText("Code")).toBeTruthy();
+    expect(queryByText("Copy")).toBeTruthy();
+  });
+
+  it("does not treat a needle inside a fenced code block as a highlight target", async () => {
+    const { getByText, queryAllByText } = await render(
+      <MessageBubble
+        message={makeMessage({
+          content: [{ type: "text", text: "see below\n```\nwombat_var = 1\n```" }],
+        })}
+        highlight="wombat"
+      />,
+    );
+    expect(getByText("see below")).toBeTruthy();
+    // No node anywhere carries the highlight's exact match style with the
+    // isolated needle text — the code renderer tokenizes the line as a whole,
+    // never routing through highlightSegments.
+    const highlighted = queryAllByText("wombat").filter(
+      (n) => (n.props.style as { backgroundColor?: string } | undefined)?.backgroundColor,
+    );
+    expect(highlighted.length).toBe(0);
+  });
+
+  it("uses the on-accent match style for a user-role message", async () => {
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({ role: "user", content: [{ type: "text", text: "a wombat sighting" }] })}
+        highlight="wombat"
+      />,
+    );
+    const match = getByText("wombat");
+    expect(match.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: "rgba(255,255,255,0.35)" }),
+    );
+  });
+});

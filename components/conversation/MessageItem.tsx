@@ -28,7 +28,16 @@ export function renderContent(block: MessageContent, index: number, recycleKey: 
 // child use `useRecyclingState` to reset its state when the cell is reassigned.
 // Memoized so screen re-renders during the initial settle don't re-render
 // (and re-highlight) every visible row.
-export const MessageItem = React.memo(function MessageItem({ message, isLast }: { message: Message; isLast?: boolean }) {
+export const MessageItem = React.memo(function MessageItem({
+  message,
+  isLast,
+  highlight,
+}: {
+  message: Message
+  isLast?: boolean
+  /** Search keyword to highlight — set only on the active search-target row. */
+  highlight?: string
+}) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -37,11 +46,15 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
   )
   // Bug 6 e2e: tag the final row so the Maestro flow can assert the last
   // message lands above (not behind) the Export + Resume action bar.
-  const lastTestId = isLast ? 'conversation-last-message' : undefined
+  // search-anchor e2e: tag the active search-match row so a flow can assert
+  // the anchor scroll landed on it. `highlight` takes priority — a row is
+  // never simultaneously the conversation tail and a mid-conversation
+  // search anchor in any fixture this app ships.
+  const rowTestId = highlight ? 'search-anchor-message' : isLast ? 'conversation-last-message' : undefined
 
   if (hasToolOrDiff) {
     return (
-      <View style={styles.toolContainer} testID={lastTestId}>
+      <View style={styles.toolContainer} testID={rowTestId}>
         {message.has_images ? (
           <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
         ) : null}
@@ -53,6 +66,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
                 key={i}
                 message={{ ...message, content: [block] }}
                 recycleKey={message.id}
+                highlight={highlight}
               />
             )
           }
@@ -64,11 +78,11 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
 
   if (message.content.length === 0) return null
   return (
-    <View testID={lastTestId}>
+    <View testID={rowTestId}>
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
-      <MessageBubble message={message} recycleKey={message.id} />
+      <MessageBubble message={message} recycleKey={message.id} highlight={highlight} />
     </View>
   )
 })

@@ -25,6 +25,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MultiConversation } from '@/types/api'
+import { conversationHref } from '@/lib/conversationHref'
 
 const CONV_SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `conv-sk-${i}`)
 
@@ -82,7 +83,7 @@ const ConversationRow = React.memo(function ConversationRow({
       showServer={serverIndicator}
       serverChipVariant={chipVariant}
       highlight={highlight}
-      onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
+      onPress={() => router.push(conversationHref(c.id, c.serverId, highlight))}
     />
   )
 })

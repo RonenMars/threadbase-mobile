@@ -1,0 +1,18 @@
+{
+  "conversations": [
+    {
+      "id": "conv-search-anchor",
+      "serverId": "server-one",
+      "serverLabel": "Local Dev",
+      "title": "Search anchor e2e fixture",
+      "projectPath": "/home/user/search-anchor-fixture",
+      "branch": "main",
+      "messageCount": 250,
+      "lastActivity": "2026-05-20T11:00:00.000Z",
+      "preview": "Where did we set the wombat timeout for the retry loop?"
+    }
+  ],
+  "hasMore": false,
+  "offset": 0,
+  "total": 1
+}

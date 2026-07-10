@@ -35,5 +35,11 @@
   "thinking": {
     "label": "Reasoning",
     "redacted": "Reasoning redacted"
+  },
+  "search": {
+    "matchCount": "{{current}} of {{total}}",
+    "previousMatch": "Previous match",
+    "nextMatch": "Next match",
+    "clearSearch": "Clear search"
   }
 }

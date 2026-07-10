@@ -14,6 +14,8 @@ interface Props {
   message: Message
   /** Reserved for parity with other cards; MessageBubble no longer caches expanded state. */
   recycleKey?: string
+  /** Search keyword to highlight in plain text blocks — never applied to code/tool content. */
+  highlight?: string
 }
 
 function decodeEntities(s: string) {
@@ -25,12 +27,48 @@ function decodeEntities(s: string) {
     .replace(/&amp;/g, '&')
 }
 
-function TextContent({ text, isUser }: { text: string; isUser?: boolean }) {
+// Case-insensitive substring highlighter — lifted from ConversationListItem's
+// row-preview highlighter (components/sessions/shared/ConversationListItem.tsx)
+// and parameterized by style so this and the list row can use different match
+// treatments (a bubble needs a style that stays readable on the accent-colored
+// user bubble; the list row never renders on an accent background).
+function highlightSegments(
+  text: string,
+  needle: string,
+  matchStyle: ReturnType<typeof makeStyles>['match'] | ReturnType<typeof makeStyles>['matchOnAccent'],
+): React.ReactNode {
+  const trimmed = needle.trim()
+  if (!trimmed) return text
+  const lower = text.toLowerCase()
+  const lowerNeedle = trimmed.toLowerCase()
+  const out: React.ReactNode[] = []
+  let i = 0
+  while (i < text.length) {
+    const found = lower.indexOf(lowerNeedle, i)
+    if (found === -1) {
+      out.push(text.slice(i))
+      break
+    }
+    if (found > i) out.push(text.slice(i, found))
+    out.push(
+      <Text key={`m${found}`} style={matchStyle}>
+        {text.slice(found, found + lowerNeedle.length)}
+      </Text>,
+    )
+    i = found + lowerNeedle.length
+  }
+  return out
+}
+
+function TextContent({ text, isUser, highlight }: { text: string; isUser?: boolean; highlight?: string }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const body = highlight
+    ? highlightSegments(text, highlight, isUser ? styles.matchOnAccent : styles.match)
+    : text
   return (
     <Text style={[styles.messageText, isUser && { color: theme.text.onAccent }]} selectable>
-      {text}
+      {body}
     </Text>
   )
 }
@@ -206,7 +244,15 @@ function parseTextParts(text: string): ParsedPart[] {
   })
 }
 
-function TextBlockBody({ text, isUser }: { text: string; isUser?: boolean }) {
+function TextBlockBody({
+  text,
+  isUser,
+  highlight,
+}: {
+  text: string
+  isUser?: boolean
+  highlight?: string
+}) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   // The fence split + per-block parse runs on every render otherwise —
@@ -219,18 +265,26 @@ function TextBlockBody({ text, isUser }: { text: string; isUser?: boolean }) {
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
         ) : (
-          <TextContent key={i} text={part.text} isUser={isUser} />
+          <TextContent key={i} text={part.text} isUser={isUser} highlight={highlight} />
         ),
       )}
     </View>
   )
 }
 
-function ContentBlock({ block, isUser }: { block: MessageContent; isUser?: boolean }) {
+function ContentBlock({
+  block,
+  isUser,
+  highlight,
+}: {
+  block: MessageContent
+  isUser?: boolean
+  highlight?: string
+}) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} isUser={isUser} />
+    return <TextBlockBody text={block.text} isUser={isUser} highlight={highlight} />
   }
   if (block.type === 'tool_use') {
     return (
@@ -245,7 +299,7 @@ function ContentBlock({ block, isUser }: { block: MessageContent; isUser?: boole
 // Memoized: message objects are stable by reference for already-loaded pages
 // (adaptRawMessage output is reused between renders), so screen-level state
 // changes don't re-render — and re-highlight — every visible row.
-export const MessageBubble = React.memo(function MessageBubble({ message }: Props) {
+export const MessageBubble = React.memo(function MessageBubble({ message, highlight }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -257,7 +311,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: Prop
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
         {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} isUser={isUser} />
+          <ContentBlock key={i} block={block} isUser={isUser} highlight={highlight} />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
@@ -301,6 +355,17 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.base,
       lineHeight: 22,
+    },
+    // Accent-tinted background for a match inside an assistant bubble.
+    match: {
+      backgroundColor: `${theme.text.accent}38`,
+      borderRadius: 3,
+    },
+    // A match inside a user bubble sits on the accent color itself, so an
+    // accent-alpha highlight would be invisible — a light overlay instead.
+    matchOnAccent: {
+      backgroundColor: 'rgba(255,255,255,0.35)',
+      borderRadius: 3,
     },
     codeBlock: {
       backgroundColor: theme.bg.primary,

@@ -20,6 +20,7 @@ import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './ty
 import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { conversationHref } from '@/lib/conversationHref'
 
 export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen, isBackgroundRefreshing }: TreeSessionsListProps) {
   const theme = useTheme()
@@ -118,7 +119,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           leading="avatar"
           highlight={debouncedQuery}
           provider={c.provider}
-          onPress={() => router.push(`/conversation/${c.id}?server=${c.serverId}`)}
+          onPress={() => router.push(conversationHref(c.id, c.serverId, debouncedQuery))}
           onLongPress={() => setActiveConvItem(c)}
         />
       )
@@ -384,7 +385,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
             onBrowse={() => setActiveConvItem(null)}
             onOpenSession={() => {
               setActiveConvItem(null)
-              router.push(`/conversation/${activeConvItem.id}?server=${activeConvItem.serverId}`)
+              router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, debouncedQuery))
             }}
             onTogglePin={() => {
               if (isFav) {

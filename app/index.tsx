@@ -42,6 +42,7 @@ import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { clientLog } from '@/lib/clientLog'
+import { conversationHref } from '@/lib/conversationHref'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
@@ -333,6 +334,7 @@ export default function ProjectsHub() {
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, searchOpen && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel="Search"
+            testID="header-search-btn"
           >
             <MagnifyingGlass size={20} color={searchOpen ? theme.text.primary : theme.text.secondary} />
           </Pressable>
@@ -634,7 +636,7 @@ function MergedClassicList({
       <TouchableOpacity
         style={[styles.convCard, isGlass && styles.convCardGlass]}
         activeOpacity={0.75}
-        onPress={() => router.push(`/conversation/${item.id}?server=${item.serverId}`)}
+        onPress={() => router.push(conversationHref(item.id, item.serverId, searchQuery))}
         onLongPress={() => setActiveConvItem(item)}
         accessibilityLabel={item.title || item.projectPath}
         testID={`conversation-row-${item.id}`}
@@ -661,7 +663,7 @@ function MergedClassicList({
         </Text>
       </TouchableOpacity>
     ),
-    [router, t, styles, theme, isGlass],
+    [router, t, styles, theme, isGlass, searchQuery],
   )
 
   return (
@@ -669,6 +671,7 @@ function MergedClassicList({
       {searchOpen ? (
         <View style={searchStyles.searchBar}>
           <TextInput
+            testID="hub-search-input"
             style={searchStyles.searchInput}
             value={searchQuery}
             onChangeText={onSearchChange}
@@ -744,7 +747,7 @@ function MergedClassicList({
             onBrowse={() => setActiveConvItem(null)}
             onOpenSession={() => {
               setActiveConvItem(null)
-              router.push(`/conversation/${activeConvItem.id}?server=${activeConvItem.serverId}`)
+              router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, searchQuery))
             }}
             onTogglePin={() => {
               if (isFav) {

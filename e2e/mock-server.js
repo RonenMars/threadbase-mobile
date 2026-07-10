@@ -65,11 +65,31 @@ function handleRequest(req, res) {
     return json(res, 200, readFixture('conversations.json'))
   }
 
+  // Search: metadata-only match list, mirroring the real streamer's
+  // /api/search contract (no message-level index — see search-target below).
+  if (method === 'GET' && p === '/api/search') {
+    return json(res, 200, readFixture('search-results.json'))
+  }
+
+  // Search-target resolver: the search-anchor e2e flow's fixture conversation
+  // resolves "wombat" to message_index 210 (the last of two matches).
+  // Everything else 404s with the real streamer's error shape.
+  const searchTargetMatch = p.match(/^\/api\/conversations\/([^/]+)\/search-target$/)
+  if (method === 'GET' && searchTargetMatch) {
+    if (searchTargetMatch[1] === 'conv-search-anchor' && url.searchParams.get('q') === 'wombat') {
+      return json(res, 200, readFixture('conv-search-target.json'))
+    }
+    return json(res, 404, { error: 'No message body matches query', code: 'search_target_not_found' })
+  }
+
   // Conversation detail.
   // - bug6 fixture (`conversation-detail-many.json`) has 30 messages to force
   //   vertical scroll past the bottom action bar.
   // - feat2 fixture (`conversation-detail.json`) is a minimal payload for the
   //   export-in-info-shelf flow.
+  // - search-anchor fixture (`conv-search-anchor.json`) has 250 messages;
+  //   serves the anchored window [150,250) when requested with anchor_index,
+  //   otherwise the plain last-80-message tail like a real streamer would.
   // - Unknown ids get an empty body — the screen renders the empty-state copy.
   const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
   if (method === 'GET' && conversationMatch) {
@@ -88,6 +108,19 @@ function handleRequest(req, res) {
     }
     if (conversationMatch[1] === 'conv-codex-1') {
       return json(res, 200, readFixture('codex-conversation-detail.json'))
+    }
+    if (conversationMatch[1] === 'conv-search-anchor') {
+      if (url.searchParams.has('anchor_index')) {
+        return json(res, 200, readFixture('conv-search-anchor.json'))
+      }
+      // Non-anchored requests (tail view, or an older mobile build that never
+      // sends anchor_index) get an empty-but-valid tail so the screen doesn't
+      // depend on this fixture outside the search-anchor flow.
+      return json(res, 200, {
+        meta: { id: conversationMatch[1], project_name: 'Search anchor e2e fixture', message_count: 250 },
+        messages: [],
+        message_pagination: { total: 250, before_index: 250, from_index: 250, has_more_older: false, next_before_index: null },
+      })
     }
     return json(res, 200, {
       meta: { id: conversationMatch[1], project_name: 'Empty conversation' },

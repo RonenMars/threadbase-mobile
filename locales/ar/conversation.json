@@ -39,5 +39,11 @@
   "thinking": {
     "label": "الاستدلال",
     "redacted": "تم حجب الاستدلال"
+  },
+  "search": {
+    "matchCount": "{{current}} من {{total}}",
+    "previousMatch": "التطابق السابق",
+    "nextMatch": "التطابق التالي",
+    "clearSearch": "مسح البحث"
   }
 }
