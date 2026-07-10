@@ -22,11 +22,32 @@ function json(res, status, body) {
   res.end(typeof body === 'string' ? body : JSON.stringify(body))
 }
 
-function makeHandler() {
-  return (req, res) => handleRequest(req, res)
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    req.on('data', (chunk) => chunks.push(chunk))
+    req.on('end', () => {
+      try {
+        const raw = Buffer.concat(chunks).toString('utf-8')
+        resolve(raw ? JSON.parse(raw) : {})
+      } catch {
+        reject(new Error('Invalid JSON body'))
+      }
+    })
+    req.on('error', reject)
+  })
 }
 
-function handleRequest(req, res) {
+function makeHandler() {
+  return (req, res) => {
+    handleRequest(req, res).catch((err) => {
+      console.error('mock-server error:', err)
+      json(res, 500, { error: 'Internal mock server error' })
+    })
+  }
+}
+
+async function handleRequest(req, res) {
   const method = req.method
   const host = req.headers.host ?? 'localhost'
   const url = new URL(req.url, `http://${host}`)
@@ -71,12 +92,32 @@ function handleRequest(req, res) {
     return json(res, 200, readFixture('search-results.json'))
   }
 
-  // Search-target resolver: the search-anchor e2e flow's fixture conversation
-  // resolves "wombat" to message_index 210 (the last of two matches).
-  // Everything else 404s with the real streamer's error shape.
+  // Search-target resolver: HTTP QUERY (RFC 10008) — the query travels as a
+  // JSON body ({ q }) instead of a URL param, matching the real streamer.
+  // The search-anchor e2e flow's fixture conversation resolves "wombat" to
+  // message_index 210 (the last of two matches). Everything else 404s with
+  // the real streamer's error shape.
   const searchTargetMatch = p.match(/^\/api\/conversations\/([^/]+)\/search-target$/)
-  if (method === 'GET' && searchTargetMatch) {
-    if (searchTargetMatch[1] === 'conv-search-anchor' && url.searchParams.get('q') === 'wombat') {
+  if (method === 'QUERY' && searchTargetMatch) {
+    const contentType = (req.headers['content-type'] ?? '').split(';')[0].trim()
+    if (contentType && contentType !== 'application/json') {
+      res.setHeader('Accept-Query', 'application/json')
+      return json(res, 415, { error: 'Unsupported Content-Type; expected application/json', code: 'unsupported_media_type' })
+    }
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      res.setHeader('Accept-Query', 'application/json')
+      return json(res, 422, { error: 'Malformed JSON body', code: 'invalid_query' })
+    }
+    const q = typeof body.q === 'string' ? body.q.trim() : ''
+    if (!q) {
+      res.setHeader('Accept-Query', 'application/json')
+      return json(res, 422, { error: 'Missing or empty query field: q', code: 'invalid_query' })
+    }
+    res.setHeader('Accept-Query', 'application/json')
+    if (searchTargetMatch[1] === 'conv-search-anchor' && q === 'wombat') {
       return json(res, 200, readFixture('conv-search-target.json'))
     }
     return json(res, 404, { error: 'No message body matches query', code: 'search_target_not_found' })

@@ -84,8 +84,9 @@ export default function ConversationDetailScreen() {
   const targetQuery = useQuery({
     queryKey: ['searchTarget', serverId, id, searchQuery],
     queryFn: () =>
-      createApiForServer(serverId).get<SearchTargetResponse>(
-        `/api/conversations/${encodeURIComponent(id)}/search-target?q=${encodeURIComponent(searchQuery as string)}`,
+      createApiForServer(serverId).query<SearchTargetResponse>(
+        `/api/conversations/${encodeURIComponent(id)}/search-target`,
+        { q: searchQuery },
       ),
     enabled: Boolean(searchQuery) && !hasAnchorParam && Boolean(serverId && id),
     retry: false,

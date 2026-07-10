@@ -40,12 +40,13 @@ function makeDetail(fromIndex: number, count: number, total: number, extra: Reco
   }
 }
 
-// path-keyed responders — search-target, the tail page, and the anchored page
-// are distinguishable only by their query string.
+// path-keyed responders — search-target (via QUERY), the tail page, and the
+// anchored page are distinguishable by request shape.
 let mockSearchTargetResponder: (() => unknown) | null = null
 let mockTailResponder: (() => unknown) | null = null
 let mockAnchoredResponder: (() => unknown) | null = null
 const mockRequestedPaths: string[] = []
+const mockQueryCalls: { path: string; body: unknown }[] = []
 
 jest.mock('@/services/api-client', () => {
   const { NotFoundError } = jest.requireActual('@/services/api-client')
@@ -54,11 +55,6 @@ jest.mock('@/services/api-client', () => {
     createApiForServer: () => ({
       get: (path: string) => {
         mockRequestedPaths.push(path)
-        if (path.includes('/search-target')) {
-          if (!mockSearchTargetResponder) return Promise.reject(new Error('no search-target responder'))
-          const v = mockSearchTargetResponder()
-          return v instanceof Error ? Promise.reject(v) : Promise.resolve(v)
-        }
         if (path.includes('anchor_index=') || path.includes('after_index=')) {
           if (!mockAnchoredResponder) return Promise.reject(new Error('no anchored responder'))
           const v = mockAnchoredResponder()
@@ -75,6 +71,14 @@ jest.mock('@/services/api-client', () => {
         return v instanceof Error
           ? Promise.reject(v)
           : Promise.resolve({ status: 200, etag: null, body: v })
+      },
+      // HTTP QUERY (RFC 10008) — the search-target resolver's only caller.
+      query: (path: string, body: unknown) => {
+        mockRequestedPaths.push(path)
+        mockQueryCalls.push({ path, body })
+        if (!mockSearchTargetResponder) return Promise.reject(new Error('no search-target responder'))
+        const v = mockSearchTargetResponder()
+        return v instanceof Error ? Promise.reject(v) : Promise.resolve(v)
       },
       post: () => Promise.resolve({}),
     }),
@@ -114,6 +118,7 @@ beforeEach(() => {
   mockTailResponder = null
   mockAnchoredResponder = null
   mockRequestedPaths.length = 0
+  mockQueryCalls.length = 0
 })
 
 afterEach(() => {
@@ -143,7 +148,8 @@ describe('conversation detail — search-anchored navigation', () => {
     await flushQueries()
 
     await waitFor(() => {
-      expect(mockRequestedPaths.some((p) => p.includes('/search-target?q=needle'))).toBe(true)
+      // Resolver call: QUERY with the search term in the JSON body, not the URL.
+      expect(mockQueryCalls.some((c) => c.path.includes('/search-target') && (c.body as { q?: string })?.q === 'needle')).toBe(true)
       expect(mockRequestedPaths.some((p) => p.includes('anchor_index=150'))).toBe(true)
     })
     expect(mockRequestedPaths.some((p) => p.includes('msg_limit=80') && !p.includes('anchor'))).toBe(false)
