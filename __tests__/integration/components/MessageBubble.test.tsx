@@ -1,7 +1,8 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import { render } from "@testing-library/react-native";
-import { MessageBubble, lineYForChar } from "@/components/conversation/MessageBubble";
+import { MessageBubble } from "@/components/conversation/MessageBubble";
+import { dark } from "@/constants/theme";
 import type { Message } from "@/types/api";
 
 const mockHighlightRenders = { count: 0 };
@@ -190,39 +191,31 @@ describe("MessageBubble – search highlight", () => {
     expect(highlighted.length).toBe(0);
   });
 
-  it("uses the on-accent match style for a user-role message", async () => {
-    const { getByText } = await render(
+  it("uses the same highlight fill for user and assistant matches", async () => {
+    const user = await render(
       <MessageBubble
         message={makeMessage({ role: "user", content: [{ type: "text", text: "a wombat sighting" }] })}
         highlight="wombat"
       />,
     );
-    const match = getByText("wombat");
-    expect(StyleSheet.flatten(match.props.style)).toEqual(
-      expect.objectContaining({ backgroundColor: "rgba(255,255,255,0.35)" }),
+    const assistant = await render(
+      <MessageBubble
+        message={makeMessage({ role: "assistant", content: [{ type: "text", text: "a wombat sighting" }] })}
+        highlight="wombat"
+      />,
     );
-  });
-});
-
-describe("lineYForChar", () => {
-  const lines = [
-    { y: 0, text: "0123456789" }, // chars 0–9
-    { y: 22, text: "abcdefghij" }, // chars 10–19
-    { y: 44, text: "klm" }, // chars 20–22
-  ];
-
-  it("maps a char offset to its containing line's y", () => {
-    expect(lineYForChar(lines, 0)).toBe(0);
-    expect(lineYForChar(lines, 9)).toBe(0);
-    expect(lineYForChar(lines, 10)).toBe(22);
-    expect(lineYForChar(lines, 20)).toBe(44);
-  });
-
-  it("falls back to the last line when the offset overruns the reported text", () => {
-    expect(lineYForChar(lines, 999)).toBe(44);
-  });
-
-  it("returns null for an empty line layout", () => {
-    expect(lineYForChar([], 5)).toBeNull();
+    const userStyle = StyleSheet.flatten(user.getByText("wombat").props.style) as {
+      backgroundColor?: string;
+      color?: string;
+    };
+    const assistantStyle = StyleSheet.flatten(assistant.getByText("wombat").props.style) as {
+      backgroundColor?: string;
+      color?: string;
+    };
+    expect(userStyle.backgroundColor).toBe(assistantStyle.backgroundColor);
+    expect(userStyle.color).toBe(assistantStyle.color);
+    // A solid fill with a distinct text color, not a translucent tint.
+    expect(userStyle.backgroundColor).toBe(dark.text.highlight);
+    expect(userStyle.color).toBe(dark.text.onHighlight);
   });
 });

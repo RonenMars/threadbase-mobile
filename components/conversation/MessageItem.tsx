@@ -9,12 +9,18 @@ import type { Message, MessageContent } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 
-export function renderContent(block: MessageContent, index: number, recycleKey: string) {
+export function renderContent(
+  block: MessageContent,
+  index: number,
+  recycleKey: string,
+  highlight?: string,
+  matchAnchor?: MatchAnchor,
+) {
   if (block.type === 'thinking') {
     return <ThinkingCard key={index} block={block} recycleKey={recycleKey} />
   }
   if (block.type === 'tool_use' || block.type === 'tool_result') {
-    return <ToolCard key={index} block={block} recycleKey={recycleKey} />
+    return <ToolCard key={index} block={block} recycleKey={recycleKey} highlight={highlight} matchAnchor={matchAnchor} />
   }
   if (block.type === 'diff') {
     return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
@@ -80,7 +86,7 @@ export const MessageItem = React.memo(function MessageItem({
               />
             )
           }
-          return renderContent(block, i, message.id)
+          return renderContent(block, i, message.id, highlight, matchAnchor)
         })}
       </View>
     )

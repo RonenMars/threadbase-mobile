@@ -4,14 +4,12 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  type NativeSyntheticEvent,
-  type TextLayoutEventData,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
-import { HighlightText } from 'one-more-highlight/native'
+import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -33,22 +31,6 @@ export interface MatchAnchor {
   rowRef: React.RefObject<View | null>
   /** Receives the matched line's y offset within the row once text lays out. */
   onLayout: (y: number) => void
-}
-
-// Maps a character offset to the y of the rendered line containing it, by
-// accumulating per-line text lengths from Text's onTextLayout event. Falls
-// back to the last line when the offset overruns (platforms can drop trailing
-// whitespace from a line's reported text).
-export function lineYForChar(
-  lines: readonly { y: number; text: string }[],
-  charIndex: number,
-): number | null {
-  let consumed = 0
-  for (const line of lines) {
-    consumed += line.text.length
-    if (charIndex < consumed) return line.y
-  }
-  return lines.length > 0 ? lines[lines.length - 1].y : null
 }
 
 function decodeEntities(s: string) {
@@ -77,19 +59,16 @@ function TextContent({
   const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
   const needle = highlight?.trim()
   if (needle) {
-    // Locate the first match's line via onTextLayout, then measure the Text's
-    // own offset within the row — the sum is the match's y inside the row,
-    // which the conversation screen uses to aim the anchor scroll at the
-    // keyword itself. Lowercase indexOf mirrors HighlightText's default
-    // case-insensitive matching.
+    // The library reports the first match's line-y within the root Text; add
+    // the Text's own offset within the row to get the match's y inside the
+    // row, which the conversation screen uses to aim the anchor scroll at the
+    // keyword itself.
     const reportMatchLayout = matchAnchor
-      ? (e: NativeSyntheticEvent<TextLayoutEventData>) => {
-          const charIndex = text.toLowerCase().indexOf(needle.toLowerCase())
+      ? (matches: readonly MatchLayout[]) => {
+          const first = matches[0]
           const row = matchAnchor.rowRef.current
-          if (charIndex === -1 || !row || !textRef.current) return
-          const lineY = lineYForChar(e.nativeEvent.lines, charIndex)
-          if (lineY == null) return
-          textRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + lineY))
+          if (!first || !row || !textRef.current) return
+          textRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + first.y))
         }
       : undefined
     return (
@@ -97,9 +76,10 @@ function TextContent({
         ref={textRef}
         text={text}
         searchWords={[needle]}
-        highlightStyle={isUser ? styles.matchOnAccent : styles.match}
+        highlightStyle={styles.match}
         style={textStyle}
-        textProps={{ selectable: true, onTextLayout: reportMatchLayout }}
+        textProps={{ selectable: true }}
+        onMatchesLayout={reportMatchLayout}
       />
     )
   }
@@ -397,15 +377,12 @@ function makeStyles(theme: Theme) {
       fontSize: font.base,
       lineHeight: 22,
     },
-    // Accent-tinted background for a match inside an assistant bubble.
+    // Solid high-contrast highlighter fill, identical in every bubble type —
+    // a dedicated per-theme token so it pops on both the assistant card bg and
+    // the accent-colored user bubble.
     match: {
-      backgroundColor: `${theme.text.accent}38`,
-      borderRadius: 3,
-    },
-    // A match inside a user bubble sits on the accent color itself, so an
-    // accent-alpha highlight would be invisible — a light overlay instead.
-    matchOnAccent: {
-      backgroundColor: 'rgba(255,255,255,0.35)',
+      backgroundColor: theme.text.highlight,
+      color: theme.text.onHighlight,
       borderRadius: 3,
     },
     codeBlock: {

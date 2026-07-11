@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useRecyclingState } from '@shopify/flash-list'
+import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import type { MatchAnchor } from '@/components/conversation/MessageBubble'
 import type { MessageContent } from '@/types/api'
 
 const TOOL_ICONS: Record<string, string> = {
@@ -56,14 +58,20 @@ interface Props {
   block: ToolUse | ToolResult
   /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
   recycleKey?: string
+  /** Search keyword — set only on the active search-target row. When it matches the
+   * card's body, the card force-opens and highlights the keyword. */
+  highlight?: string
+  /** Reports the highlighted match's y within the row, for anchored scrolling. */
+  matchAnchor?: MatchAnchor
 }
 
-export function ToolCard({ block, recycleKey }: Props) {
+export function ToolCard({ block, recycleKey, highlight, matchAnchor }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
+  const bodyRef = useRef<Text>(null)
 
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
   const icon = TOOL_ICONS[toolName] ?? TOOL_ICONS.default
@@ -76,16 +84,39 @@ export function ToolCard({ block, recycleKey }: Props) {
       ? summarizeAskUserQuestion(block.input)
       : null
 
+  const bodyText =
+    askSummary ??
+    (block.type === 'tool_use' ? JSON.stringify(block.input, null, 2) : block.content)
+
   const hasContent =
     block.type === 'tool_result'
       ? !!block.content
       : Object.keys(block.input).length > 0
 
+  // The search backend counts tool payloads as matches, so a message can be
+  // the anchor purely because its keyword sits in this collapsed body. Open it
+  // (overriding the recycled collapsed state) so the highlighted match shows.
+  const needle = highlight?.trim()
+  const matchesBody = !!needle && bodyText.toLowerCase().includes(needle.toLowerCase())
+  const isOpen = expanded || matchesBody
+
+  // Once the body lays out (which only happens after the match force-opens it),
+  // report the keyword's y within the row so the screen can aim the anchor
+  // scroll at it — same pattern as MessageBubble's TextContent.
+  const reportMatchLayout = matchAnchor
+    ? (matches: readonly MatchLayout[]) => {
+        const first = matches[0]
+        const row = matchAnchor.rowRef.current
+        if (!first || !row || !bodyRef.current) return
+        bodyRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + first.y))
+      }
+    : undefined
+
   return (
     <TouchableOpacity
       onPress={() => hasContent && setExpanded((v) => !v)}
       style={[styles.card, isError && styles.cardError, isGlass && styles.cardGlass]}
-      accessibilityLabel={`${toolName} tool ${expanded ? 'collapse' : 'expand'}`}
+      accessibilityLabel={`${toolName} tool ${isOpen ? 'collapse' : 'expand'}`}
       accessibilityRole="button"
     >
       <GlassFill />
@@ -94,23 +125,25 @@ export function ToolCard({ block, recycleKey }: Props) {
         <Text style={styles.name}>{toolName}</Text>
         {isError ? <Text style={styles.errorBadge}>{t('message.errorBadge')}</Text> : null}
         {hasContent ? (
-          <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+          <Text style={styles.chevron}>{isOpen ? '▲' : '▼'}</Text>
         ) : null}
       </View>
 
-      {expanded && hasContent ? (
+      {isOpen && hasContent ? (
         <View style={styles.body}>
-          {askSummary ? (
-            <Text style={styles.code} selectable>
-              {askSummary}
-            </Text>
-          ) : block.type === 'tool_use' ? (
-            <Text style={styles.code} selectable>
-              {JSON.stringify(block.input, null, 2)}
-            </Text>
+          {matchesBody ? (
+            <HighlightText
+              ref={bodyRef}
+              text={bodyText}
+              searchWords={[needle]}
+              highlightStyle={styles.match}
+              style={[styles.code, isError && styles.errorText]}
+              textProps={{ selectable: true }}
+              onMatchesLayout={reportMatchLayout}
+            />
           ) : (
             <Text style={[styles.code, isError && styles.errorText]} selectable>
-              {block.content}
+              {bodyText}
             </Text>
           )}
         </View>
@@ -165,6 +198,12 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontFamily: 'monospace',
       fontSize: font.xs,
+    },
+    // Solid high-contrast highlighter fill — shared per-theme token.
+    match: {
+      backgroundColor: theme.text.highlight,
+      color: theme.text.onHighlight,
+      borderRadius: 3,
     },
     errorText: {
       color: theme.status.failed,

@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import type { MessageContent } from '@/types/api'
 
@@ -93,6 +94,38 @@ describe('ToolCard – expand / collapse', () => {
     // No expandable content – component should still render
     expect(queryByText('Read')).toBeTruthy()
     expect(toJSON()).not.toBeNull()
+  })
+})
+
+describe('ToolCard – search highlight', () => {
+  it('force-opens and highlights a match inside a collapsed tool_result body', async () => {
+    // Collapsed by default; the needle only appears in the body.
+    const { getByText } = await render(<ToolCard block={bashResult} highlight="drwxr" />)
+    const match = getByText('drwxr')
+    expect(StyleSheet.flatten(match.props.style)).toEqual(
+      expect.objectContaining({ backgroundColor: expect.any(String) }),
+    )
+    // Chevron reflects the forced-open state.
+    expect(getByText('▲')).toBeTruthy()
+  })
+
+  it('highlights a match inside a tool_use JSON body', async () => {
+    const { getByText } = await render(<ToolCard block={bashUse} highlight="ls -la" />)
+    const match = getByText('ls -la')
+    expect(StyleSheet.flatten(match.props.style)).toEqual(
+      expect.objectContaining({ backgroundColor: expect.any(String) }),
+    )
+  })
+
+  it('stays collapsed when the needle is absent from the body', async () => {
+    const { queryByText } = await render(<ToolCard block={bashResult} highlight="nonexistent" />)
+    expect(queryByText(/total 8/)).toBeNull()
+    expect(queryByText('▼')).toBeTruthy()
+  })
+
+  it('stays collapsed with no highlight prop', async () => {
+    const { queryByText } = await render(<ToolCard block={bashResult} />)
+    expect(queryByText(/total 8/)).toBeNull()
   })
 })
 
