@@ -837,11 +837,7 @@ export default function ConversationDetailScreen() {
         </View>
       ) : null}
       {isLoadingMessages && totalMessages > 0 ? (
-        <ProgressBar
-          loaded={loadedMessages}
-          total={totalMessages}
-          label="messages"
-        />
+        <ProgressBar loaded={loadedMessages} total={totalMessages} />
       ) : null}
       {unavailableMessage ? (
         <View style={styles.unavailableBanner}>

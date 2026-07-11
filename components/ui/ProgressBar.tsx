@@ -1,43 +1,57 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, Animated } from 'react-native'
+import React, { useEffect } from 'react'
+import { StyleSheet, View } from 'react-native'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
+import { type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
   loaded: number
   total: number
-  label: string
-  isCounting?: boolean
 }
 
-export function ProgressBar({ loaded, total, label, isCounting = false }: Props) {
-  const [animWidth] = useState(() => new Animated.Value(0))
+const BAR_HEIGHT = 3
+
+export function ProgressBar({ loaded, total }: Props) {
+  const theme = useTheme()
+  const s = makeStyles(theme)
+
   const progress = total > 0 ? Math.min(loaded / total, 1) : 0
+  const fill = useSharedValue(0)
 
   useEffect(() => {
-    Animated.timing(animWidth, {
-      toValue: progress,
-      duration: 200,
-      useNativeDriver: false,
-    }).start()
-    // animWidth is a stable Animated.Value from useState lazy init.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progress])
+    fill.value = withTiming(progress, { duration: 400 })
+  }, [progress, fill])
+
+  const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }))
 
   return (
-    <View className="px-3 pt-4 pb-3 gap-2" testID="conv-loading-progress">
-      <Text className="text-text-secondary text-font-sm text-center">
-        {loaded.toLocaleString()} / {total.toLocaleString()} {label}
-      </Text>
-      <View className="h-1 bg-bg-card rounded-full overflow-hidden">
-        <Animated.View
-          className="h-full bg-text-accent rounded-full"
-          style={{
-            width: animWidth.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0%', '100%'],
-            }),
-          }}
-        />
+    <View className="px-4 py-2" testID="conv-loading-progress">
+      <View style={s.track}>
+        <Animated.View style={[s.fill, fillStyle]} />
       </View>
     </View>
   )
+}
+
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    track: {
+      height: BAR_HEIGHT,
+      borderRadius: BAR_HEIGHT / 2,
+      backgroundColor: theme.bg.card,
+      overflow: 'hidden',
+    },
+    fill: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      borderRadius: BAR_HEIGHT / 2,
+      backgroundColor: theme.text.accent,
+    },
+  })
 }

@@ -40,8 +40,8 @@
   },
   "search": {
     "matchCount": "{{current}} из {{total}}",
-    "previousMatch": "Предыдущее совпадение",
-    "nextMatch": "Следующее совпадение",
+    "previousMatch": "Предыдущий результат",
+    "nextMatch": "Следующий результат",
     "clearSearch": "Очистить поиск"
   }
 }
