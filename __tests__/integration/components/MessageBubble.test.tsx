@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import { render } from "@testing-library/react-native";
-import { MessageBubble } from "@/components/conversation/MessageBubble";
+import { MessageBubble, lineYForChar } from "@/components/conversation/MessageBubble";
 import type { Message } from "@/types/api";
 
 const mockHighlightRenders = { count: 0 };
@@ -201,5 +201,28 @@ describe("MessageBubble – search highlight", () => {
     expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: "rgba(255,255,255,0.35)" }),
     );
+  });
+});
+
+describe("lineYForChar", () => {
+  const lines = [
+    { y: 0, text: "0123456789" }, // chars 0–9
+    { y: 22, text: "abcdefghij" }, // chars 10–19
+    { y: 44, text: "klm" }, // chars 20–22
+  ];
+
+  it("maps a char offset to its containing line's y", () => {
+    expect(lineYForChar(lines, 0)).toBe(0);
+    expect(lineYForChar(lines, 9)).toBe(0);
+    expect(lineYForChar(lines, 10)).toBe(22);
+    expect(lineYForChar(lines, 20)).toBe(44);
+  });
+
+  it("falls back to the last line when the offset overruns the reported text", () => {
+    expect(lineYForChar(lines, 999)).toBe(44);
+  });
+
+  it("returns null for an empty line layout", () => {
+    expect(lineYForChar([], 5)).toBeNull();
   });
 });

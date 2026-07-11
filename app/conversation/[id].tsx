@@ -179,6 +179,16 @@ export default function ConversationDetailScreen() {
   // One-shot retry after the initial settle, guarding against FlashList not
   // having measured the anchor row yet on the first attempt.
   const anchorRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Where the active match's first line sits inside its row, reported by the
+  // highlighted MessageBubble's text-layout measurement. Lets scrollToAnchor
+  // aim at the keyword itself — centering the row alone leaves the keyword
+  // off-screen when the row is taller than the viewport.
+  const matchLayoutRef = useRef<{ messageIndex: number; y: number } | null>(null)
+  // Set when a jump ran before the match was measured; the measurement
+  // callback then re-scrolls precisely once. Cleared when the user drags.
+  const pendingMatchScrollRef = useRef(false)
+  const scrollToAnchorRef = useRef<(animated: boolean) => void>(() => {})
+  const listHeightRef = useRef(0)
   // Hard ceiling on how long the skeleton may wait for layout to settle —
   // code/image-heavy pages keep resizing and would otherwise reset the settle
   // debounce indefinitely. Starts at the first onContentSizeChange.
@@ -283,6 +293,8 @@ export default function ConversationDetailScreen() {
       anchorRetryRef.current = null
     }
     lastUpwardAtRef.current = 0
+    matchLayoutRef.current = null
+    pendingMatchScrollRef.current = fetchAnchorIndex != null
     // Re-anchoring (prev/next stepping outside the loaded window) needs the
     // same fresh initial-scroll sequence as opening the conversation, since it
     // switches to a brand new anchored query. Keyed on the *fetch* anchor, not
@@ -323,16 +335,68 @@ export default function ConversationDetailScreen() {
     listRef.current?.scrollToEnd({ animated })
   }, [])
 
-  // Finds the anchor row in the currently loaded window and scrolls to it,
-  // centered. A stale/out-of-window index (shouldn't happen, but the window
-  // can theoretically degrade to a tail fallback) lands at the last row
-  // instead of crashing.
+  // Finds the anchor row in the currently loaded window and scrolls to it.
+  // Once the highlighted bubble has reported where the keyword sits inside
+  // the row (matchLayoutRef), the scroll places that line a third down the
+  // viewport — FlashList positions rows and knows nothing about the keyword's
+  // y inside one, so centering the row alone strands the keyword off-screen
+  // for rows taller than the viewport. Until the measurement lands (or when
+  // the match is inside a code block, which never reports), fall back to
+  // centering the row. A stale/out-of-window index (shouldn't happen, but the
+  // window can theoretically degrade to a tail fallback) lands at the last
+  // row instead of crashing.
   const scrollToAnchor = useCallback((animated: boolean) => {
     if (anchorIndex == null || !conversation?.messages.length) return
     let index = conversation.messages.findIndex((m) => m.messageIndex === anchorIndex)
     if (index === -1) index = conversation.messages.length - 1
-    listRef.current?.scrollToIndex({ index, animated, viewPosition: 0.45 })
+    const match = matchLayoutRef.current
+    if (match?.messageIndex === anchorIndex && listHeightRef.current > 0) {
+      // FlashList v2: finalOffset = rowTop + viewOffset at viewPosition 0, so
+      // the match line (rowTop + match.y) lands listHeight/3 from the top.
+      // Overshoot past the scrollable range is clamped by FlashList itself.
+      listRef.current?.scrollToIndex({
+        index,
+        animated,
+        viewPosition: 0,
+        viewOffset: match.y - listHeightRef.current / 3,
+      })
+    } else {
+      listRef.current?.scrollToIndex({ index, animated, viewPosition: 0.45 })
+    }
   }, [anchorIndex, conversation])
+
+  useEffect(() => {
+    scrollToAnchorRef.current = scrollToAnchor
+  }, [scrollToAnchor])
+
+  // Reports arrive from the highlighted row's text parts as they lay out;
+  // when several parts contain the keyword, the topmost (first) match wins.
+  const handleMatchLayout = useCallback((messageIndex: number, y: number) => {
+    const current = matchLayoutRef.current
+    matchLayoutRef.current =
+      current?.messageIndex === messageIndex
+        ? { messageIndex, y: Math.min(current.y, y) }
+        : { messageIndex, y }
+    // A jump that ran before this measurement landed mid-row — re-aim once.
+    // Deferred through the shared retry timer rather than scrolled inline:
+    // FlashList runs each scrollToIndex as a multi-step loop, and an inline
+    // call here would race the still-animating rough jump that triggered the
+    // render this measurement came from. 300ms lets that animation finish;
+    // a drag meanwhile clears the timer (and userHasScrolled re-guards the
+    // orphan case where the settle retry overwrites this timer handle).
+    if (pendingMatchScrollRef.current) {
+      pendingMatchScrollRef.current = false
+      if (anchorRetryRef.current) clearTimeout(anchorRetryRef.current)
+      anchorRetryRef.current = setTimeout(() => {
+        anchorRetryRef.current = null
+        if (!userHasScrolled.current) scrollToAnchorRef.current(false)
+      }, 300)
+    }
+  }, [])
+
+  const handleListLayout = useCallback((e: LayoutChangeEvent) => {
+    listHeightRef.current = e.nativeEvent.layout.height
+  }, [])
 
   // Keep re-pinning to the target (bottom, or the search anchor row) every
   // time content grows, until the user actually drags. The target keeps
@@ -385,6 +449,7 @@ export default function ConversationDetailScreen() {
   const handleScrollBeginDrag = useCallback(() => {
     hasInitialScrolled.current = true
     userHasScrolled.current = true
+    pendingMatchScrollRef.current = false
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
@@ -531,8 +596,9 @@ export default function ConversationDetailScreen() {
       message={item}
       isLast={item.id === lastMessageId}
       highlight={isAnchored && searchQuery && item.messageIndex === anchorIndex ? searchQuery : undefined}
+      onMatchLayout={handleMatchLayout}
     />
-  ), [lastMessageId, isAnchored, searchQuery, anchorIndex])
+  ), [lastMessageId, isAnchored, searchQuery, anchorIndex, handleMatchLayout])
 
   // Steps the active match by `delta` (wrapping), then either scrolls to it
   // within the already-loaded window or re-anchors (switches anchorIndex,
@@ -547,7 +613,14 @@ export default function ConversationDetailScreen() {
     if (loadedRowIndex !== -1) {
       // In the loaded window: just scroll to it. The fetch anchor stays put so
       // no refetch/re-gate happens; only the highlighted match + counter move.
+      // The stepped-to row's keyword position isn't measured yet (the
+      // highlight mounts there after this render), so scroll to the row and
+      // let the pending flag re-aim at the keyword once it reports. Stepping
+      // hands scroll control back to the app, so the drag flag resets — the
+      // re-aim must fire even when the user dragged before tapping prev/next.
       listRef.current?.scrollToIndex({ index: loadedRowIndex, animated: true, viewPosition: 0.45 })
+      pendingMatchScrollRef.current = true
+      userHasScrolled.current = false
     } else {
       // Outside the loaded window: advance the fetch anchor, which triggers a
       // fresh anchored fetch and the reset effect above re-runs the initial
@@ -697,6 +770,17 @@ export default function ConversationDetailScreen() {
 
   const showMatchNav = matchIndexes != null && matchIndexes.length > 0 && activeMatchPos != null
 
+  // The counter's numerator steps through match_indexes, so the denominator
+  // must count the same list. The streamer caps match_indexes (last 1000)
+  // while total_matches stays uncapped — showing the uncapped total would
+  // drift the position ("1 of 1500" while actually at the 501st navigable
+  // match). When capped, show the navigable count with a "+" for the rest.
+  const navigableMatches = matchIndexes?.length ?? 0
+  const matchTotalLabel =
+    totalMatches != null && totalMatches > navigableMatches
+      ? `${navigableMatches}+`
+      : String(totalMatches ?? navigableMatches)
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={conversation.title} titleRight={providerDot} right={headerActions} />
@@ -705,7 +789,7 @@ export default function ConversationDetailScreen() {
           <Text style={styles.matchNavCount} testID="search-match-count">
             {t('search.matchCount', {
               current: (activeMatchPos as number) + 1,
-              total: totalMatches ?? matchIndexes!.length,
+              total: matchTotalLabel,
             })}
           </Text>
           <View style={styles.matchNavActions}>
@@ -765,7 +849,7 @@ export default function ConversationDetailScreen() {
         </View>
       ) : null}
       {hasMessages ? (
-        <View style={styles.listWrapper}>
+        <View style={styles.listWrapper} onLayout={handleListLayout}>
           <FlashList
             ref={listRef}
             data={conversation.messages}

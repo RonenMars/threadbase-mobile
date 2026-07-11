@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { MessageBubble } from '@/components/conversation/MessageBubble'
+import { MessageBubble, type MatchAnchor } from '@/components/conversation/MessageBubble'
 import { ThinkingCard } from '@/components/conversation/ThinkingCard'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
@@ -32,15 +32,24 @@ export const MessageItem = React.memo(function MessageItem({
   message,
   isLast,
   highlight,
+  onMatchLayout,
 }: {
   message: Message
   isLast?: boolean
   /** Search keyword to highlight — set only on the active search-target row. */
   highlight?: string
+  /** Reports the highlighted match's y offset within this row, for anchored scrolling. */
+  onMatchLayout?: (messageIndex: number, y: number) => void
 }) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const rowRef = useRef<View>(null)
+  const messageIndex = message.messageIndex
+  const matchAnchor: MatchAnchor | undefined =
+    highlight && onMatchLayout && messageIndex != null
+      ? { rowRef, onLayout: (y: number) => onMatchLayout(messageIndex, y) }
+      : undefined
   const hasToolOrDiff = message.content.some(
     (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
   )
@@ -54,7 +63,7 @@ export const MessageItem = React.memo(function MessageItem({
 
   if (hasToolOrDiff) {
     return (
-      <View style={styles.toolContainer} testID={rowTestId}>
+      <View style={styles.toolContainer} testID={rowTestId} ref={rowRef}>
         {message.has_images ? (
           <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
         ) : null}
@@ -67,6 +76,7 @@ export const MessageItem = React.memo(function MessageItem({
                 message={{ ...message, content: [block] }}
                 recycleKey={message.id}
                 highlight={highlight}
+                matchAnchor={matchAnchor}
               />
             )
           }
@@ -78,11 +88,11 @@ export const MessageItem = React.memo(function MessageItem({
 
   if (message.content.length === 0) return null
   return (
-    <View testID={rowTestId}>
+    <View testID={rowTestId} ref={rowRef}>
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
-      <MessageBubble message={message} recycleKey={message.id} highlight={highlight} />
+      <MessageBubble message={message} recycleKey={message.id} highlight={highlight} matchAnchor={matchAnchor} />
     </View>
   )
 })

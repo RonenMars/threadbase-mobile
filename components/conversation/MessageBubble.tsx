@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  type NativeSyntheticEvent,
+  type TextLayoutEventData,
+} from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +24,31 @@ interface Props {
   recycleKey?: string
   /** Search keyword to highlight in plain text blocks — never applied to code/tool content. */
   highlight?: string
+  /** Set on the anchored search row: reports where the match sits inside the row. */
+  matchAnchor?: MatchAnchor
+}
+
+export interface MatchAnchor {
+  /** The row's outer View — the match's y is measured relative to it. */
+  rowRef: React.RefObject<View | null>
+  /** Receives the matched line's y offset within the row once text lays out. */
+  onLayout: (y: number) => void
+}
+
+// Maps a character offset to the y of the rendered line containing it, by
+// accumulating per-line text lengths from Text's onTextLayout event. Falls
+// back to the last line when the offset overruns (platforms can drop trailing
+// whitespace from a line's reported text).
+export function lineYForChar(
+  lines: readonly { y: number; text: string }[],
+  charIndex: number,
+): number | null {
+  let consumed = 0
+  for (const line of lines) {
+    consumed += line.text.length
+    if (charIndex < consumed) return line.y
+  }
+  return lines.length > 0 ? lines[lines.length - 1].y : null
 }
 
 function decodeEntities(s: string) {
@@ -28,19 +60,46 @@ function decodeEntities(s: string) {
     .replace(/&amp;/g, '&')
 }
 
-function TextContent({ text, isUser, highlight }: { text: string; isUser?: boolean; highlight?: string }) {
+function TextContent({
+  text,
+  isUser,
+  highlight,
+  matchAnchor,
+}: {
+  text: string
+  isUser?: boolean
+  highlight?: string
+  matchAnchor?: MatchAnchor
+}) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const textRef = useRef<Text>(null)
   const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
   const needle = highlight?.trim()
   if (needle) {
+    // Locate the first match's line via onTextLayout, then measure the Text's
+    // own offset within the row — the sum is the match's y inside the row,
+    // which the conversation screen uses to aim the anchor scroll at the
+    // keyword itself. Lowercase indexOf mirrors HighlightText's default
+    // case-insensitive matching.
+    const reportMatchLayout = matchAnchor
+      ? (e: NativeSyntheticEvent<TextLayoutEventData>) => {
+          const charIndex = text.toLowerCase().indexOf(needle.toLowerCase())
+          const row = matchAnchor.rowRef.current
+          if (charIndex === -1 || !row || !textRef.current) return
+          const lineY = lineYForChar(e.nativeEvent.lines, charIndex)
+          if (lineY == null) return
+          textRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + lineY))
+        }
+      : undefined
     return (
       <HighlightText
+        ref={textRef}
         text={text}
         searchWords={[needle]}
         highlightStyle={isUser ? styles.matchOnAccent : styles.match}
         style={textStyle}
-        textProps={{ selectable: true }}
+        textProps={{ selectable: true, onTextLayout: reportMatchLayout }}
       />
     )
   }
@@ -226,10 +285,12 @@ function TextBlockBody({
   text,
   isUser,
   highlight,
+  matchAnchor,
 }: {
   text: string
   isUser?: boolean
   highlight?: string
+  matchAnchor?: MatchAnchor
 }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -243,7 +304,7 @@ function TextBlockBody({
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
         ) : (
-          <TextContent key={i} text={part.text} isUser={isUser} highlight={highlight} />
+          <TextContent key={i} text={part.text} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
         ),
       )}
     </View>
@@ -254,15 +315,17 @@ function ContentBlock({
   block,
   isUser,
   highlight,
+  matchAnchor,
 }: {
   block: MessageContent
   isUser?: boolean
   highlight?: string
+  matchAnchor?: MatchAnchor
 }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} isUser={isUser} highlight={highlight} />
+    return <TextBlockBody text={block.text} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
   }
   if (block.type === 'tool_use') {
     return (
@@ -277,7 +340,7 @@ function ContentBlock({
 // Memoized: message objects are stable by reference for already-loaded pages
 // (adaptRawMessage output is reused between renders), so screen-level state
 // changes don't re-render — and re-highlight — every visible row.
-export const MessageBubble = React.memo(function MessageBubble({ message, highlight }: Props) {
+export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -289,7 +352,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
         {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} isUser={isUser} highlight={highlight} />
+          <ContentBlock key={i} block={block} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>

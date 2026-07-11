@@ -5,7 +5,7 @@
  * cleanly to the normal tail view when no target resolves.
  */
 import React from 'react'
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native'
 import { useLocalSearchParams } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
@@ -257,6 +257,106 @@ describe('conversation detail — search-anchored navigation', () => {
 
     await waitFor(() => {
       expect(mockRequestedPaths.some((p) => p.includes('anchor_index=5'))).toBe(true)
+    })
+  })
+
+  // Invariant: exactly one row is the
+  // active search anchor at any time — a double-writer (or a recycled cell
+  // leaking its highlight) would break stepping and the keyword-aimed scroll.
+  it('marks exactly one row as the search anchor, before and after stepping', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'needle',
+    })
+    mockSearchTargetResponder = () => ({
+      query: 'needle',
+      message_index: 150,
+      uuid: 'uuid-150',
+      snippet: 'a needle appears',
+      match_indexes: [148, 150],
+      total_matches: 2,
+    })
+    // Small window so the anchor rows are inside the FlatList mock's initial
+    // render batch — a 120-row window leaves them unmounted under jest.
+    mockAnchoredResponder = () => makeDetail(145, 10, 300, { anchor_index: 150 })
+
+    const { getByTestId, queryAllByTestId } = await render(<ConversationDetailScreen />, {
+      wrapper: createWrapper(),
+    })
+    await flushQueries()
+
+    await waitFor(() => {
+      const anchors = queryAllByTestId('search-anchor-message')
+      expect(anchors).toHaveLength(1)
+      expect(within(anchors[0]).getByText('message 150')).toBeTruthy()
+    })
+
+    await act(async () => {
+      fireEvent.press(getByTestId('search-match-prev'))
+    })
+    await flushQueries()
+
+    await waitFor(() => {
+      const anchors = queryAllByTestId('search-anchor-message')
+      expect(anchors).toHaveLength(1)
+      expect(within(anchors[0]).getByText('message 148')).toBeTruthy()
+    })
+  })
+
+  // Documents that counting is per-message: a message
+  // containing the needle twice is still one match, and the counter's
+  // numerator and denominator both walk match_indexes.
+  it('counts matches per message, not per occurrence', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'needle',
+    })
+    mockSearchTargetResponder = () => ({
+      query: 'needle',
+      message_index: 150,
+      uuid: 'uuid-150',
+      snippet: 'a needle appears',
+      match_indexes: [148, 150],
+      total_matches: 2,
+    })
+    const detail = makeDetail(145, 10, 300, { anchor_index: 150 })
+    detail.messages[5].text = 'a needle here and another needle there'
+    mockAnchoredResponder = () => detail
+
+    const { getByTestId } = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+
+    await waitFor(() => {
+      expect(getByTestId('search-match-count')).toHaveTextContent('2 of 2')
+    })
+  })
+
+  // The streamer caps match_indexes (last 1000) but reports the uncapped
+  // total_matches. The denominator must count the navigable list, not the
+  // uncapped total — with a "+" signalling the truncation.
+  it('caps the counter denominator at the navigable list when total_matches exceeds it', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'needle',
+    })
+    mockSearchTargetResponder = () => ({
+      query: 'needle',
+      message_index: 150,
+      uuid: 'uuid-150',
+      snippet: 'a needle appears',
+      match_indexes: [148, 150],
+      total_matches: 5,
+    })
+    mockAnchoredResponder = () => makeDetail(145, 10, 300, { anchor_index: 150 })
+
+    const { getByTestId } = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+
+    await waitFor(() => {
+      expect(getByTestId('search-match-count')).toHaveTextContent('2 of 2+')
     })
   })
 
