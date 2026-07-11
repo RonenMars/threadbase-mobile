@@ -4,6 +4,7 @@ import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
+import { HighlightText } from 'one-more-highlight/native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -27,48 +28,25 @@ function decodeEntities(s: string) {
     .replace(/&amp;/g, '&')
 }
 
-// Case-insensitive substring highlighter — lifted from ConversationListItem's
-// row-preview highlighter (components/sessions/shared/ConversationListItem.tsx)
-// and parameterized by style so this and the list row can use different match
-// treatments (a bubble needs a style that stays readable on the accent-colored
-// user bubble; the list row never renders on an accent background).
-function highlightSegments(
-  text: string,
-  needle: string,
-  matchStyle: ReturnType<typeof makeStyles>['match'] | ReturnType<typeof makeStyles>['matchOnAccent'],
-): React.ReactNode {
-  const trimmed = needle.trim()
-  if (!trimmed) return text
-  const lower = text.toLowerCase()
-  const lowerNeedle = trimmed.toLowerCase()
-  const out: React.ReactNode[] = []
-  let i = 0
-  while (i < text.length) {
-    const found = lower.indexOf(lowerNeedle, i)
-    if (found === -1) {
-      out.push(text.slice(i))
-      break
-    }
-    if (found > i) out.push(text.slice(i, found))
-    out.push(
-      <Text key={`m${found}`} style={matchStyle}>
-        {text.slice(found, found + lowerNeedle.length)}
-      </Text>,
-    )
-    i = found + lowerNeedle.length
-  }
-  return out
-}
-
 function TextContent({ text, isUser, highlight }: { text: string; isUser?: boolean; highlight?: string }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const body = highlight
-    ? highlightSegments(text, highlight, isUser ? styles.matchOnAccent : styles.match)
-    : text
+  const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
+  const needle = highlight?.trim()
+  if (needle) {
+    return (
+      <HighlightText
+        text={text}
+        searchWords={[needle]}
+        highlightStyle={isUser ? styles.matchOnAccent : styles.match}
+        style={textStyle}
+        textProps={{ selectable: true }}
+      />
+    )
+  }
   return (
-    <Text style={[styles.messageText, isUser && { color: theme.text.onAccent }]} selectable>
-      {body}
+    <Text style={textStyle} selectable>
+      {text}
     </Text>
   )
 }

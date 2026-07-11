@@ -1,4 +1,5 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import { render } from "@testing-library/react-native";
 import { MessageBubble } from "@/components/conversation/MessageBubble";
 import type { Message } from "@/types/api";
@@ -107,7 +108,7 @@ describe("MessageBubble – search highlight", () => {
     );
     const match = getByText("wombat");
     expect(match).toBeTruthy();
-    expect(match.props.style).toEqual(
+    expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: expect.any(String) }),
     );
   });
@@ -161,7 +162,7 @@ describe("MessageBubble – search highlight", () => {
     );
     // Prose match is wrapped in the accent match style.
     const match = getByText("wombat");
-    expect(match.props.style).toEqual(
+    expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: expect.any(String) }),
     );
     // The CodeBlock still renders as normal — highlighting the prose part
@@ -184,7 +185,7 @@ describe("MessageBubble – search highlight", () => {
     // isolated needle text — the code renderer tokenizes the line as a whole,
     // never routing through highlightSegments.
     const highlighted = queryAllByText("wombat").filter(
-      (n) => (n.props.style as { backgroundColor?: string } | undefined)?.backgroundColor,
+      (n) => (StyleSheet.flatten(n.props.style) as { backgroundColor?: string } | undefined)?.backgroundColor,
     );
     expect(highlighted.length).toBe(0);
   });
@@ -197,7 +198,7 @@ describe("MessageBubble – search highlight", () => {
       />,
     );
     const match = getByText("wombat");
-    expect(match.props.style).toEqual(
+    expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: "rgba(255,255,255,0.35)" }),
     );
   });
