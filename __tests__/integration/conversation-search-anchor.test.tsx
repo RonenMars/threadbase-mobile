@@ -5,7 +5,7 @@
  * cleanly to the normal tail view when no target resolves.
  */
 import React from 'react'
-import { act, render, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native'
 import { useLocalSearchParams } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
@@ -185,6 +185,79 @@ describe('conversation detail — search-anchored navigation', () => {
       expect(mockRequestedPaths.some((p) => p.includes('msg_limit=80'))).toBe(true)
     })
     expect(mockRequestedPaths.some((p) => p.includes('/search-target'))).toBe(false)
+  })
+
+  it('does not re-fetch when stepping to a match already in the loaded window', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'needle',
+    })
+    // Two matches, both inside the 120-message window fetched around index 150.
+    mockSearchTargetResponder = () => ({
+      query: 'needle',
+      message_index: 150,
+      uuid: 'uuid-150',
+      snippet: 'a needle appears',
+      match_indexes: [148, 150],
+      total_matches: 2,
+    })
+    mockAnchoredResponder = () =>
+      makeDetail(90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 })
+
+    const { getByTestId } = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+    await waitFor(() => {
+      expect(getByTestId('search-match-nav')).toBeTruthy()
+    })
+    const anchoredFetchesBefore = mockRequestedPaths.filter((p) => p.includes('anchor_index=')).length
+
+    // Step prev to match 148 — it's already in the loaded window (90..209), so
+    // no new anchored fetch should fire (regression: endless skeleton when a
+    // pointless re-fetch produces an unchanged window that never re-lays-out).
+    await act(async () => {
+      fireEvent.press(getByTestId('search-match-prev'))
+    })
+    await flushQueries()
+
+    const anchoredFetchesAfter = mockRequestedPaths.filter((p) => p.includes('anchor_index=')).length
+    expect(anchoredFetchesAfter).toBe(anchoredFetchesBefore)
+  })
+
+  it('re-fetches a fresh window when stepping to a match outside the loaded window', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'needle',
+    })
+    // Two matches far apart: 150 is in the initial window, 5 is not.
+    mockSearchTargetResponder = () => ({
+      query: 'needle',
+      message_index: 150,
+      uuid: 'uuid-150',
+      snippet: 'a needle appears',
+      match_indexes: [5, 150],
+      total_matches: 2,
+    })
+    mockAnchoredResponder = () =>
+      makeDetail(90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 })
+
+    const { getByTestId } = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+    await waitFor(() => {
+      expect(getByTestId('search-match-nav')).toBeTruthy()
+    })
+
+    // Step prev to match 5 — outside the loaded window (90..209) — so a new
+    // anchored window centered on 5 must be requested.
+    await act(async () => {
+      fireEvent.press(getByTestId('search-match-prev'))
+    })
+    await flushQueries()
+
+    await waitFor(() => {
+      expect(mockRequestedPaths.some((p) => p.includes('anchor_index=5'))).toBe(true)
+    })
   })
 
   it('skips the resolver and anchors directly when anchor_index is already in the params', async () => {

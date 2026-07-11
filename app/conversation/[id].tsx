@@ -122,6 +122,21 @@ export default function ConversationDetailScreen() {
       : undefined
   const isAnchored = anchorIndex != null
 
+  // The window we actually fetch is keyed separately from the active match:
+  // stepping prev/next to a match that's already in the loaded window must
+  // NOT re-fetch (or re-gate the skeleton) — only stepping outside the window
+  // re-anchors. This is pinned to the anchor the current window was fetched
+  // for; `goToMatch` advances it (via setFetchAnchor) only in the out-of-window
+  // branch. It is seeded here — at render, React-blessed "reset state on key
+  // change" pattern — to the initial (tail-most) anchor when a fresh match set
+  // resolves, so it never tracks the moving `anchorIndex`.
+  const [fetchAnchor, setFetchAnchor] = useState<{ forIndexes: number[]; index: number } | null>(null)
+  if (matchIndexes && anchorIndex != null && fetchAnchor?.forIndexes !== matchIndexes) {
+    setFetchAnchor({ forIndexes: matchIndexes, index: anchorIndex })
+  }
+  const fetchAnchorIndex =
+    matchIndexes && fetchAnchor?.forIndexes === matchIndexes ? fetchAnchor.index : anchorIndex
+
   const {
     data: conversation,
     isLoading,
@@ -135,7 +150,7 @@ export default function ConversationDetailScreen() {
     isFetchingNewerPage,
     totalMessages,
     loadedMessages,
-  } = useConversation(serverId, id, { anchorIndex, enabled: !isResolvingTarget })
+  } = useConversation(serverId, id, { anchorIndex: fetchAnchorIndex, enabled: !isResolvingTarget })
 
   const isConvNotFound = error instanceof NotFoundError
   // ponytail: only fires when conversation 404s — avoids extra request on normal loads
@@ -270,8 +285,12 @@ export default function ConversationDetailScreen() {
     lastUpwardAtRef.current = 0
     // Re-anchoring (prev/next stepping outside the loaded window) needs the
     // same fresh initial-scroll sequence as opening the conversation, since it
-    // switches to a brand new anchored query.
-  }, [id, anchorIndex])
+    // switches to a brand new anchored query. Keyed on the *fetch* anchor, not
+    // the active-match anchor: an in-window step changes the highlighted match
+    // without re-fetching, and must not re-gate the skeleton (the window's
+    // content size doesn't change, so onContentSizeChange never fires to lift
+    // it again — the endless-skeleton bug).
+  }, [id, fetchAnchorIndex])
 
   // Clean up the Bug 10 hide timer on unmount so we don't fire a setState
   // after the screen has been popped from the stack.
@@ -526,11 +545,15 @@ export default function ConversationDetailScreen() {
     const nextIndex = matchIndexes[nextPos]
     const loadedRowIndex = conversation?.messages.findIndex((m) => m.messageIndex === nextIndex) ?? -1
     if (loadedRowIndex !== -1) {
+      // In the loaded window: just scroll to it. The fetch anchor stays put so
+      // no refetch/re-gate happens; only the highlighted match + counter move.
       listRef.current?.scrollToIndex({ index: loadedRowIndex, animated: true, viewPosition: 0.45 })
+    } else {
+      // Outside the loaded window: advance the fetch anchor, which triggers a
+      // fresh anchored fetch and the reset effect above re-runs the initial
+      // scroll sequence, landing on the new anchor once it loads.
+      setFetchAnchor({ forIndexes: matchIndexes, index: nextIndex })
     }
-    // Outside the loaded window: anchorIndex changing to nextIndex triggers a
-    // fresh anchored fetch and the reset effect above re-runs the initial
-    // scroll sequence, landing on the new anchor once it loads.
   }, [matchIndexes, activeMatchPos, conversation])
 
   const handleFooterLayout = useCallback((e: LayoutChangeEvent) => {
