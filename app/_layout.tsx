@@ -9,6 +9,9 @@ import {
   useRootNavigationState,
   useRouter,
   useSegments,
+  ThemeProvider as NavThemeProvider,
+  DefaultTheme as NavDefaultTheme,
+  DarkTheme as NavDarkTheme,
 } from 'expo-router'
 import { CaretLeft } from 'phosphor-react-native'
 import { StatusBar } from 'expo-status-bar'
@@ -205,9 +208,21 @@ const lockStyles = StyleSheet.create({
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 })
 
-function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
+export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
   const theme = useTheme()
   const isGlass = useIsGlass()
+  // expo-router 57.0.4 paints the native screen container with the
+  // react-navigation theme's `colors.background`. Its default is opaque light
+  // grey, which covers our glass gradient backdrop. Feed it a transparent
+  // background under glass (theme.bg.primary otherwise) so the gradient shows.
+  const navBase = theme.colorMode === 'light' ? NavDefaultTheme : NavDarkTheme
+  const navTheme = {
+    ...navBase,
+    colors: {
+      ...navBase.colors,
+      background: isGlass ? 'transparent' : theme.bg.primary,
+    },
+  }
   const stack = (
     <Stack
       screenOptions={{
@@ -267,30 +282,32 @@ function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
 
   if (isGlass) {
     return (
-      <View style={styles.flex}>
-        {/* Vivid backdrop — gives the frosted surfaces something colorful to
-            blur. Deep indigo → violet → magenta on the diagonal, dark enough
-            to keep white text readable. */}
-        <LinearGradient
-          colors={['#1b1d4d', '#3a1d6e', '#6e2b6e', '#1a1330']}
-          locations={[0, 0.4, 0.7, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* Soft accent glow in the upper area for extra depth under the blur. */}
-        <LinearGradient
-          colors={['rgba(10,132,255,0.35)', 'transparent']}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 0.55 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {stack}
-      </View>
+      <NavThemeProvider value={navTheme}>
+        <View style={styles.flex}>
+          {/* Vivid backdrop — gives the frosted surfaces something colorful to
+              blur. Deep indigo → violet → magenta on the diagonal, dark enough
+              to keep white text readable. */}
+          <LinearGradient
+            colors={['#1b1d4d', '#3a1d6e', '#6e2b6e', '#1a1330']}
+            locations={[0, 0.4, 0.7, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Soft accent glow in the upper area for extra depth under the blur. */}
+          <LinearGradient
+            colors={['rgba(10,132,255,0.35)', 'transparent']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 0.55 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {stack}
+        </View>
+      </NavThemeProvider>
     )
   }
 
-  return stack
+  return <NavThemeProvider value={navTheme}>{stack}</NavThemeProvider>
 }
 
 const styles = StyleSheet.create({
