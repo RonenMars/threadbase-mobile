@@ -731,6 +731,14 @@ export default function SessionDetailScreen() {
             {session.projectPath ? (
               <Text style={styles.placeholderPath}>{session.projectPath}</Text>
             ) : null}
+            {(session.promptCount ?? 0) > 0 ? (
+              <TouchableOpacity
+                style={styles.viewConversationBtn}
+                onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
+              >
+                <Text style={styles.viewConversationBtnText}>{t('session.openConversation')}</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : null}
       </View>
