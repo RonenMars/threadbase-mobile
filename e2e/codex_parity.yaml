@@ -16,8 +16,7 @@ appId: com.ronenmars.threadbase
 - runFlow: setup.yaml
 
 # Deep-link directly to the codex conversation detail screen.
-- launchApp:
-    url: "threadbase://conversation/conv-codex-1"
+- openLink: "threadbase://conversation/conv-codex-1"
 
 # iOS may show an "Open in Threadbase?" dialog — dismiss it.
 - runFlow:
