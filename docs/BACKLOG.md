@@ -47,6 +47,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 33 | Browse→session navigation: simplify the transitionEnd dismiss-then-push dance | Open — investigation |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
+| E2E | Mock Maestro suite — remaining flow failures + env gotchas | Open — see [e2e-remaining-work.md](./e2e-remaining-work.md) |
 
 **Suggested next-up order:** **Bug 32** (one bad server hides everything — mechanical `Promise.allSettled` fix, ship standalone) → Bug 13 + Bug 14 + Bug 15 + Bug 16 (all on the browse → start-session → PTY → back handoff, likely shared root cause — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → **Bug 17 → Bug 10 + Bug 11** (same conversation FlashList; smooth-scroll fix may change at-bottom detection the scroll-button bugs rely on) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
 
