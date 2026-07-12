@@ -1,0 +1,117 @@
+# Maestro E2E — Anchored search navigation with keyword highlight
+#
+# Validates the search → anchored-open → highlight → prev/next flow:
+#   - Searching "wombat" surfaces the fixture conversation (metadata-only
+#     match — /api/search never returns a message index).
+#   - Tapping the result resolves the target via /search-target (message_index
+#     210, the LAST of two matches) and opens the conversation with a single
+#     anchored request (window [150,250) — never a sequential tail-then-page
+#     crawl), landing directly on the far-from-tail match with the "wombat"
+#     keyword highlighted.
+#   - The match-nav bar shows "2 of 2" (starts on the last match) and stepping
+#     Previous moves to "1 of 2" and re-anchors to the earlier match (index 15,
+#     outside the loaded window — exercises the re-anchor path, not just
+#     scrollToIndex within the window already loaded).
+#
+# Run with:
+#   npm run test:e2e:mock
+# or directly:
+#   maestro test --debug-output e2e/_artifacts/debug e2e/06_search_anchor.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+# ── Open search and look for the fixture conversation ──────────────────────────
+
+- tapOn:
+    id: "header-search-btn"
+
+- tapOn:
+    id: "hub-search-input"
+
+- inputText: "wombat"
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-search-anchor"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/search-anchor-00-results.png
+
+# ── Tap the result — resolves the target, opens anchored on the last match ────
+
+- tapOn:
+    id: "conversation-row-conv-search-anchor"
+
+- extendedWaitUntil:
+    visible:
+      id: "search-match-nav"
+    timeout: 12000
+
+- takeScreenshot: e2e/_artifacts/screenshots/search-anchor-01-opened.png
+
+# The counter starts on the LAST chronological match (2 of 2) — matches the
+# streamer resolver's "anchor = last match" contract.
+
+- assertVisible:
+    id: "search-match-count"
+    text: "2 of 2"
+
+# Landed directly on the far-from-tail match with no visible tail flash: the
+# anchor row (message_index 210) is on screen and its keyword is highlighted.
+
+- assertVisible:
+    id: "search-anchor-message"
+
+- assertVisible: "wombat timeout"
+
+- takeScreenshot: e2e/_artifacts/screenshots/search-anchor-02-highlighted.png
+
+# ── Step Previous — re-anchors outside the loaded window (index 15) ───────────
+
+- tapOn:
+    id: "search-match-prev"
+
+- extendedWaitUntil:
+    visible:
+      text: "1 of 2"
+    timeout: 8000
+
+- extendedWaitUntil:
+    visible: "wombat mascot"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/search-anchor-03-prev-match.png
+
+# ── Step Next — wraps back to the last match ───────────────────────────────────
+
+- tapOn:
+    id: "search-match-next"
+
+- extendedWaitUntil:
+    visible:
+      text: "2 of 2"
+    timeout: 8000
+
+- extendedWaitUntil:
+    visible:
+      id: "search-anchor-message"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/search-anchor-04-next-match.png
+
+# ── Clear search — leaves the anchored/highlighted view ────────────────────────
+
+- tapOn:
+    id: "search-match-clear"
+
+- assertNotVisible:
+    id: "search-match-nav"
+
+- takeScreenshot: e2e/_artifacts/screenshots/search-anchor-05-cleared.png

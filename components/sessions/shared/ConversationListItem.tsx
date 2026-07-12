@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { HighlightText } from 'one-more-highlight/native'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
@@ -154,10 +155,19 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const indentPx = leading === 'depth' ? Math.max(0, depth) * 16 : 0
 
   // Title-line highlight (case-insensitive substring tint).
+  const highlightNeedle = highlight?.trim()
   const renderTitle = () => {
     if (!primaryText) return null
-    if (!highlight) return <Text style={styles.title} numberOfLines={1}>{primaryText}</Text>
-    return <Text style={styles.title} numberOfLines={1}>{highlightSegments(primaryText, highlight, styles)}</Text>
+    if (!highlightNeedle) return <Text style={styles.title} numberOfLines={1}>{primaryText}</Text>
+    return (
+      <HighlightText
+        text={primaryText}
+        searchWords={[highlightNeedle]}
+        highlightStyle={styles.match}
+        style={styles.title}
+        textProps={{ numberOfLines: 1 }}
+      />
+    )
   }
 
   const showPreview = !isChip && previewMode !== 'none'
@@ -276,30 +286,6 @@ export function ConversationListItem(props: ConversationListItemProps) {
       ) : null}
     </Wrapper>
   )
-}
-
-function highlightSegments(text: string, needle: string, styles: ReturnType<typeof makeStyles>): React.ReactNode {
-  const trimmed = needle.trim()
-  if (!trimmed) return text
-  const lower = text.toLowerCase()
-  const lowerNeedle = trimmed.toLowerCase()
-  const out: React.ReactNode[] = []
-  let i = 0
-  while (i < text.length) {
-    const found = lower.indexOf(lowerNeedle, i)
-    if (found === -1) {
-      out.push(text.slice(i))
-      break
-    }
-    if (found > i) out.push(text.slice(i, found))
-    out.push(
-      <Text key={`m${found}`} style={styles.match}>
-        {text.slice(found, found + lowerNeedle.length)}
-      </Text>,
-    )
-    i = found + lowerNeedle.length
-  }
-  return out
 }
 
 function makeStyles(theme: Theme) {

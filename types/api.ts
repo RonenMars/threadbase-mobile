@@ -110,6 +110,11 @@ export interface ConversationDetail extends Conversation {
 export interface Message {
   id: string
   uuid?: string | null
+  /**
+   * Absolute chronological index from the server (`message_index`). Absent on
+   * locally-constructed messages (live stream, optimistic sends).
+   */
+  messageIndex?: number
   role: 'user' | 'assistant'
   content: MessageContent[]
   timestamp: string

@@ -201,6 +201,10 @@ export interface ConversationMessagePagination {
   from_index: number
   has_more_older: boolean
   next_before_index: number | null
+  // Present only on anchored/after windows (newer streamers).
+  anchor_index?: number
+  has_more_newer?: boolean
+  next_after_index?: number | null
 }
 
 interface RawConversationDetail {
@@ -267,6 +271,7 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
   return {
     id: `${convId}-${idx}`,
     uuid: m.uuid,
+    messageIndex: idx,
     role: m.role as 'user' | 'assistant',
     content,
     timestamp: m.timestamp,
@@ -311,6 +316,14 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
 }
 
 const CONVERSATION_MESSAGE_LIMIT = 80
+const CONVERSATION_ANCHORED_LIMIT = 120
+
+/**
+ * -1 = first page (tail, or anchored window when an anchor is set); a plain
+ * number = before_index cursor for older pages; { after } = after_index cursor
+ * for newer pages (only reachable from an anchored first page).
+ */
+type ConversationPageParam = number | { after: number }
 
 // First-page ETags, keyed by `${serverId}::${id}`. The server sets an ETag on
 // the first-page (newest) response of /api/conversations/{id}; echoing it back
@@ -320,17 +333,51 @@ const CONVERSATION_MESSAGE_LIMIT = 80
 // pages are immutable history and never revalidate).
 const firstPageEtags = new Map<string, string>()
 
-export function useConversation(serverId: string, id: string) {
+export function useConversation(
+  serverId: string,
+  id: string,
+  opts?: { anchorIndex?: number; enabled?: boolean },
+) {
+  const anchorIndex = opts?.anchorIndex
   const api = createApiForServer(serverId)
   const queryClient = useQueryClient()
-  const queryKey = ['conversation', serverId, id] as const
+  // The tail view keeps the exact historical key (persisted caches and prefix
+  // invalidations depend on it); anchored views get their own cache entry so
+  // the two never share incompatible first pages.
+  const queryKey =
+    anchorIndex != null
+      ? (['conversation', serverId, id, `anchor-${anchorIndex}`] as const)
+      : (['conversation', serverId, id] as const)
   const query = useInfiniteQuery({
     queryKey,
-    initialPageParam: -1,
+    initialPageParam: -1 as ConversationPageParam,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
-      params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
+
+      // Newer-direction page (only reachable from an anchored first page).
+      // Plain fetch: anchored/after windows never answer 304.
+      if (typeof pageParam === 'object') {
+        params.set('msg_limit', String(CONVERSATION_ANCHORED_LIMIT))
+        params.set('after_index', String(pageParam.after))
+        return api.get<RawConversationDetail>(
+          `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+        )
+      }
+
       const isFirstPage = pageParam === -1
+
+      // Anchored first page: a bounded window centered on the anchor. Bypasses
+      // the ETag path entirely — it must not read or write the tail page's
+      // validator.
+      if (isFirstPage && anchorIndex != null) {
+        params.set('msg_limit', String(CONVERSATION_ANCHORED_LIMIT))
+        params.set('anchor_index', String(anchorIndex))
+        return api.get<RawConversationDetail>(
+          `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+        )
+      }
+
+      params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
       if (!isFirstPage) {
         params.set('before_index', String(pageParam))
       }
@@ -353,7 +400,8 @@ export function useConversation(serverId: string, id: string) {
       if (res.status === 304) {
         // Unchanged: reuse the previously cached first page so merge output is
         // identical. If somehow nothing is cached, fall back to a full fetch.
-        const cached = queryClient.getQueryData<InfiniteData<RawConversationDetail, number>>(queryKey)
+        const cached =
+          queryClient.getQueryData<InfiniteData<RawConversationDetail, ConversationPageParam>>(queryKey)
         const cachedFirst = cached?.pages?.[0]
         if (cachedFirst) return cachedFirst
         return api.get<RawConversationDetail>(path)
@@ -371,7 +419,15 @@ export function useConversation(serverId: string, id: string) {
       if (!p?.has_more_older || p.next_before_index == null) return undefined
       return p.next_before_index
     },
-    enabled: Boolean(serverId && id),
+    // Newer direction ("previous" in react-query terms — pages are ordered
+    // newest-chunk first). Only anchored/after pages carry has_more_newer, so
+    // this is inert for the tail view.
+    getPreviousPageParam: (first): ConversationPageParam | undefined => {
+      const p = first.message_pagination
+      if (!p?.has_more_newer || p.next_after_index == null) return undefined
+      return { after: p.next_after_index }
+    },
+    enabled: Boolean(serverId && id) && (opts?.enabled ?? true),
   })
 
   const data = useMemo(() => {
@@ -395,6 +451,11 @@ export function useConversation(serverId: string, id: string) {
     fetchNextPage: query.fetchNextPage,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
+    // Direction-named aliases: react-query's "previous" pages are the NEWER
+    // windows (pages are ordered newest-chunk first).
+    fetchNewerPage: query.fetchPreviousPage,
+    hasNewerPage: query.hasPreviousPage,
+    isFetchingNewerPage: query.isFetchingPreviousPage,
     totalMessages,
     loadedMessages,
   }

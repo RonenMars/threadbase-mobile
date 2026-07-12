@@ -1,9 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
+import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -14,6 +20,17 @@ interface Props {
   message: Message
   /** Reserved for parity with other cards; MessageBubble no longer caches expanded state. */
   recycleKey?: string
+  /** Search keyword to highlight in plain text blocks — never applied to code/tool content. */
+  highlight?: string
+  /** Set on the anchored search row: reports where the match sits inside the row. */
+  matchAnchor?: MatchAnchor
+}
+
+export interface MatchAnchor {
+  /** The row's outer View — the match's y is measured relative to it. */
+  rowRef: React.RefObject<View | null>
+  /** Receives the matched line's y offset within the row once text lays out. */
+  onLayout: (y: number) => void
 }
 
 function decodeEntities(s: string) {
@@ -25,11 +42,49 @@ function decodeEntities(s: string) {
     .replace(/&amp;/g, '&')
 }
 
-function TextContent({ text, isUser }: { text: string; isUser?: boolean }) {
+function TextContent({
+  text,
+  isUser,
+  highlight,
+  matchAnchor,
+}: {
+  text: string
+  isUser?: boolean
+  highlight?: string
+  matchAnchor?: MatchAnchor
+}) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const textRef = useRef<Text>(null)
+  const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
+  const needle = highlight?.trim()
+  if (needle) {
+    // The library reports the first match's line-y within the root Text; add
+    // the Text's own offset within the row to get the match's y inside the
+    // row, which the conversation screen uses to aim the anchor scroll at the
+    // keyword itself.
+    const reportMatchLayout = matchAnchor
+      ? (matches: readonly MatchLayout[]) => {
+          const first = matches[0]
+          const row = matchAnchor.rowRef.current
+          if (!first || !row || !textRef.current) return
+          textRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + first.y))
+        }
+      : undefined
+    return (
+      <HighlightText
+        ref={textRef}
+        text={text}
+        searchWords={[needle]}
+        highlightStyle={styles.match}
+        style={textStyle}
+        textProps={{ selectable: true }}
+        onMatchesLayout={reportMatchLayout}
+      />
+    )
+  }
   return (
-    <Text style={[styles.messageText, isUser && { color: theme.text.onAccent }]} selectable>
+    <Text style={textStyle} selectable>
       {text}
     </Text>
   )
@@ -206,7 +261,17 @@ function parseTextParts(text: string): ParsedPart[] {
   })
 }
 
-function TextBlockBody({ text, isUser }: { text: string; isUser?: boolean }) {
+function TextBlockBody({
+  text,
+  isUser,
+  highlight,
+  matchAnchor,
+}: {
+  text: string
+  isUser?: boolean
+  highlight?: string
+  matchAnchor?: MatchAnchor
+}) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   // The fence split + per-block parse runs on every render otherwise —
@@ -219,18 +284,28 @@ function TextBlockBody({ text, isUser }: { text: string; isUser?: boolean }) {
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
         ) : (
-          <TextContent key={i} text={part.text} isUser={isUser} />
+          <TextContent key={i} text={part.text} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
         ),
       )}
     </View>
   )
 }
 
-function ContentBlock({ block, isUser }: { block: MessageContent; isUser?: boolean }) {
+function ContentBlock({
+  block,
+  isUser,
+  highlight,
+  matchAnchor,
+}: {
+  block: MessageContent
+  isUser?: boolean
+  highlight?: string
+  matchAnchor?: MatchAnchor
+}) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} isUser={isUser} />
+    return <TextBlockBody text={block.text} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
   }
   if (block.type === 'tool_use') {
     return (
@@ -245,7 +320,7 @@ function ContentBlock({ block, isUser }: { block: MessageContent; isUser?: boole
 // Memoized: message objects are stable by reference for already-loaded pages
 // (adaptRawMessage output is reused between renders), so screen-level state
 // changes don't re-render — and re-highlight — every visible row.
-export const MessageBubble = React.memo(function MessageBubble({ message }: Props) {
+export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -257,7 +332,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: Prop
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
         {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} isUser={isUser} />
+          <ContentBlock key={i} block={block} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
@@ -301,6 +376,14 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.base,
       lineHeight: 22,
+    },
+    // Solid high-contrast highlighter fill, identical in every bubble type —
+    // a dedicated per-theme token so it pops on both the assistant card bg and
+    // the accent-colored user bubble.
+    match: {
+      backgroundColor: theme.text.highlight,
+      color: theme.text.onHighlight,
+      borderRadius: 3,
     },
     codeBlock: {
       backgroundColor: theme.bg.primary,

@@ -20,6 +20,7 @@ import type { ProjectGroup } from './useProjectGroups'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { conversationHref } from '@/lib/conversationHref'
 
 export function ProjectHubList({
   sessions,
@@ -80,9 +81,9 @@ export function ProjectHubList({
 
   const handleConversationPress = useCallback(
     (item: MultiConversation) => {
-      router.push(`/conversation/${item.id}?server=${item.serverId}`)
+      router.push(conversationHref(item.id, item.serverId, debouncedQuery))
     },
-    [router],
+    [router, debouncedQuery],
   )
 
   const handleSessionPress = useCallback(
@@ -313,7 +314,7 @@ export function ProjectHubList({
             onBrowse={() => setActiveConvItem(null)}
             onOpenSession={() => {
               setActiveConvItem(null)
-              router.push(`/conversation/${activeConvItem.id}?server=${activeConvItem.serverId}`)
+              router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, debouncedQuery))
             }}
             onTogglePin={() => {
               if (isFav) {

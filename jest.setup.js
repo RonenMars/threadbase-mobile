@@ -134,7 +134,19 @@ jest.mock('@shopify/flash-list', () => {
   const { FlatList } = require('react-native')
   return {
     __esModule: true,
-    FlashList: React.forwardRef((props, ref) => React.createElement(FlatList, { ...props, ref })),
+    // Real FlashList's imperative scroll methods resolve offscreen indices
+    // internally and never throw FlatList's getItemLayout invariant. Expose
+    // no-op scroll stubs on the ref so tests that call scrollToIndex/End/Offset
+    // (e.g. search-match nav) don't trip that FlatList-only invariant.
+    FlashList: React.forwardRef((props, ref) => {
+      const innerRef = React.useRef(null)
+      React.useImperativeHandle(ref, () => ({
+        scrollToIndex: () => {},
+        scrollToEnd: () => {},
+        scrollToOffset: () => {},
+      }))
+      return React.createElement(FlatList, { ...props, ref: innerRef })
+    }),
     // Stubs for FlashList v2 hooks consumers (ToolCard, ThinkingCard, DiffViewer).
     // Both reduce to plain React.useState under test: dep-based reset and
     // layout notifications don't apply to a FlatList-based mock.

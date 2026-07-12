@@ -35,5 +35,11 @@
   "thinking": {
     "label": "חשיבה",
     "redacted": "חשיבה נמחקה"
+  },
+  "search": {
+    "matchCount": "{{current}} מתוך {{total}}",
+    "previousMatch": "התאמה קודמת",
+    "nextMatch": "התאמה הבאה",
+    "clearSearch": "נקה חיפוש"
   }
 }

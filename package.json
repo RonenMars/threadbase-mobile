@@ -24,7 +24,7 @@
     "test:unit": "jest --ci --testPathPattern='__tests__/unit'",
     "test:integration": "jest --ci --testPathPattern='__tests__/integration'",
     "test:e2e": "jest --ci --testPathPattern='__tests__/e2e'",
-    "test:e2e:mock": "node e2e/check-sim.js && node e2e/ensure-release-build.js && (MOCK_PORTS=7071,7072 node e2e/mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/launch.yaml e2e/browse.yaml e2e/bug6_bottom_bar_inset.yaml e2e/pty_turn_divider.yaml e2e/feat1_tree_drill_new_session.yaml e2e/feat2_export_in_info_shelf.yaml e2e/codex_parity.yaml e2e/voice_dictation.yaml e2e/settings_qr_scanner.yaml e2e/05_chat_flow.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
+    "test:e2e:mock": "node e2e/check-sim.js && node e2e/ensure-release-build.js && (MOCK_PORTS=7071,7072 node e2e/mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/launch.yaml e2e/browse.yaml e2e/bug6_bottom_bar_inset.yaml e2e/pty_turn_divider.yaml e2e/feat1_tree_drill_new_session.yaml e2e/feat2_export_in_info_shelf.yaml e2e/codex_parity.yaml e2e/voice_dictation.yaml e2e/settings_qr_scanner.yaml e2e/05_chat_flow.yaml e2e/06_search_anchor.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
     "test:e2e:parallel-fetch": "node e2e/check-sim.js && (MOCK_PORT=7073 MOCK_TOTAL_CONVERSATIONS=30 MOCK_TOTAL_SESSIONS=25 MOCK_PAGE_DELAY_MS=3000 node e2e/pagination-mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/parallel-fetch-progress.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
     "test:e2e:parallel-fetch:non-merged": "node e2e/check-sim.js && (MOCK_PORT=7073 MOCK_TOTAL_CONVERSATIONS=30 MOCK_TOTAL_SESSIONS=25 MOCK_PAGE_DELAY_MS=3000 node e2e/pagination-mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/non-merged-conv-loading.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
     "test:e2e:ts1": "node e2e/check-sim.js && node e2e/ensure-release-build.js && (MOCK_PORTS=7071,7072 node e2e/mock-server.js & MOCK_PID=$!; sleep 1; maestro test --debug-output e2e/_artifacts/debug e2e/ts1_onboarding_pairing.yaml; STATUS=$?; kill $MOCK_PID 2>/dev/null || true; exit $STATUS)",
@@ -96,6 +96,7 @@
     "i18next": "^26.3.6",
     "intl-pluralrules": "^2.0.1",
     "nativewind": "^4.2.6",
+    "one-more-highlight": "^1.3.0",
     "phosphor-react-native": "^3.0.6",
     "prism-react-renderer": "^2.4.1",
     "react": "19.2.3",
@@ -156,7 +157,7 @@
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@shopify/flash-list|@gorhom|react-native-draggable-flatlist|nativewind)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@shopify/flash-list|@gorhom|react-native-draggable-flatlist|nativewind|one-more-highlight|escape-string-regexp)"
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",

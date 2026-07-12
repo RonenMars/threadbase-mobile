@@ -105,6 +105,35 @@ function rawConversationPage(id: string, texts: string[]) {
   }
 }
 
+// Builds an anchored-window fixture: `count` messages starting at `fromIndex`,
+// out of `total` overall. Pagination fields mirror what the streamer emits
+// for msg_limit + anchor_index (or after_index).
+function rawAnchoredPage(
+  id: string,
+  fromIndex: number,
+  count: number,
+  total: number,
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    meta: { id, project_name: `proj-${id}`, message_count: total },
+    messages: Array.from({ length: count }, (_, i) => ({
+      message_index: fromIndex + i,
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: [{ type: 'text', text: `msg ${fromIndex + i}` }],
+      timestamp: '2026-06-11T10:00:00.000Z',
+    })),
+    message_pagination: {
+      total,
+      before_index: fromIndex + count,
+      from_index: fromIndex,
+      has_more_older: fromIndex > 0,
+      next_before_index: fromIndex > 0 ? fromIndex : null,
+      ...extra,
+    },
+  }
+}
+
 describe('useConversation — ETag conditional fetch (Task C)', () => {
   it('fetches the first page via getWithMeta and renders messages', async () => {
     setActiveServers(['srv_a'])
@@ -211,6 +240,137 @@ describe('useConversation — assistant prose alongside tool blocks', () => {
 
     const blocks = result.current.data!.messages[0].content
     expect(blocks.map((b) => b.type)).toEqual(['tool_result'])
+  })
+})
+
+describe('useConversation — messageIndex on adapted rows', () => {
+  it('sets messageIndex from the server message_index on a tail page', async () => {
+    setActiveServers(['srv_idx_tail'])
+    metaHandlers.srv_idx_tail = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_idx', ['a', 'b', 'c']) })
+
+    const { result } = await renderHook(() => useConversation('srv_idx_tail', 'c_idx'), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data!.messages.map((m) => m.messageIndex)).toEqual([0, 1, 2])
+  })
+
+  it('sets messageIndex from the server message_index on an anchored page', async () => {
+    setActiveServers(['srv_idx_anchor'])
+    let lastPath = ''
+    handlers.srv_idx_anchor = (path) => {
+      lastPath = path
+      return Promise.resolve(rawAnchoredPage('c_idx_a', 90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 }))
+    }
+
+    const { result } = await renderHook(
+      () => useConversation('srv_idx_anchor', 'c_idx_a', { anchorIndex: 150 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(lastPath).toContain('msg_limit=120')
+    expect(lastPath).toContain('anchor_index=150')
+    expect(result.current.data!.messages[0].messageIndex).toBe(90)
+    expect(result.current.data!.messages[59].messageIndex).toBe(149)
+  })
+})
+
+describe('useConversation — anchored window (bidirectional pagination)', () => {
+  it('fetches the anchored first page via plain get, bypassing the ETag path', async () => {
+    setActiveServers(['srv_anchor'])
+    let lastPath = ''
+    handlers.srv_anchor = (path) => {
+      lastPath = path
+      return Promise.resolve(rawAnchoredPage('c_a', 90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 }))
+    }
+    // Prove the ETag path is never touched: a meta handler that throws would
+    // fail the test if getWithMeta were called for the anchored first page.
+    metaHandlers.srv_anchor = () => Promise.reject(new Error('must not call getWithMeta for anchored page'))
+
+    const { result } = await renderHook(
+      () => useConversation('srv_anchor', 'c_a', { anchorIndex: 150 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(lastPath).toBe('/api/conversations/c_a?msg_limit=120&anchor_index=150')
+    expect(result.current.data!.messages.length).toBe(120)
+    expect(result.current.hasNewerPage).toBe(true)
+  })
+
+  it('chains older pagination from an anchored first page via before_index', async () => {
+    setActiveServers(['srv_anchor_older'])
+    const paths: string[] = []
+    handlers.srv_anchor_older = (path) => {
+      paths.push(path)
+      if (path.includes('anchor_index')) {
+        return Promise.resolve(rawAnchoredPage('c_ao', 90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 }))
+      }
+      // Older page request: before_index=90.
+      return Promise.resolve(rawAnchoredPage('c_ao', 0, 90, 300, { has_more_older: false, next_before_index: null }))
+    }
+
+    const { result } = await renderHook(
+      () => useConversation('srv_anchor_older', 'c_ao', { anchorIndex: 150 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    expect(result.current.hasNextPage).toBe(true)
+
+    await result.current.fetchNextPage()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(210))
+
+    expect(paths.some((p) => p.includes('before_index=90'))).toBe(true)
+    const indexes = result.current.data!.messages.map((m) => m.messageIndex)
+    expect(indexes).toEqual(Array.from({ length: 210 }, (_, i) => i))
+  })
+
+  it('chains newer pagination from an anchored first page via after_index', async () => {
+    setActiveServers(['srv_anchor_newer'])
+    const paths: string[] = []
+    handlers.srv_anchor_newer = (path) => {
+      paths.push(path)
+      if (path.includes('anchor_index')) {
+        return Promise.resolve(rawAnchoredPage('c_an', 90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 }))
+      }
+      // Newer page request: after_index=210, reaching the tail.
+      return Promise.resolve(rawAnchoredPage('c_an', 210, 90, 300, { has_more_older: true, next_before_index: 210, has_more_newer: false, next_after_index: null }))
+    }
+
+    const { result } = await renderHook(
+      () => useConversation('srv_anchor_newer', 'c_an', { anchorIndex: 150 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    expect(result.current.hasNewerPage).toBe(true)
+
+    await result.current.fetchNewerPage()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(210))
+
+    expect(paths.some((p) => p.includes('after_index=210'))).toBe(true)
+    const indexes = result.current.data!.messages.map((m) => m.messageIndex)
+    expect(indexes).toEqual(Array.from({ length: 210 }, (_, i) => i + 90))
+    expect(result.current.hasNewerPage).toBe(false)
+  })
+
+  it('keeps the tail-view query key and ETag path unchanged when no anchor is given', async () => {
+    setActiveServers(['srv_no_anchor'])
+    let getWithMetaCalled = false
+    metaHandlers.srv_no_anchor = () => {
+      getWithMetaCalled = true
+      return Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_na', ['x']) })
+    }
+
+    const { result } = await renderHook(() => useConversation('srv_no_anchor', 'c_na'), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(getWithMetaCalled).toBe(true)
+    expect(result.current.hasNewerPage).toBeFalsy()
   })
 })
 

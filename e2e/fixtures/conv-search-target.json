@@ -1,0 +1,11 @@
+{
+  "query": "wombat",
+  "message_index": 210,
+  "uuid": "uuid-210",
+  "snippet": "…set the wombat timeout for the retry loop?",
+  "match_indexes": [
+    15,
+    210
+  ],
+  "total_matches": 2
+}

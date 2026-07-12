@@ -18,7 +18,7 @@ import {
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { CaretDown, ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
+import { CaretDown, CaretUp, ExportIcon, InfoIcon, Star, X } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -40,22 +40,102 @@ import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, Session } from '@/types/api'
 import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import { flexRow } from '@/lib/rtl'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
 
 
+interface SearchTargetResponse {
+  query: string
+  message_index: number
+  uuid: string | null
+  snippet: string
+  match_indexes: number[]
+  total_matches: number
+}
+
 export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
-  const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
+  const { id, server, search, anchor_index } = useLocalSearchParams<{
+    id: string
+    server?: string
+    search?: string
+    anchor_index?: string
+  }>()
   const router = useRouter()
 
   // Fall back to first server if no server param provided
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
+
+  const searchQuery = typeof search === 'string' && search.trim().length > 0 ? search : undefined
+  const anchorParam = typeof anchor_index === 'string' ? Number.parseInt(anchor_index, 10) : NaN
+  const hasAnchorParam = Number.isFinite(anchorParam)
+
+  // Resolves an active search query to the message to scroll to and highlight.
+  // Skipped when the caller already supplied anchor_index directly. A 404
+  // (search_target_not_found on a newer streamer, or route-not-found on an
+  // older one) leaves `targetQuery.data` undefined — the conversation then
+  // opens at its normal tail with no highlight, never blocking navigation.
+  const targetQuery = useQuery({
+    queryKey: ['searchTarget', serverId, id, searchQuery],
+    queryFn: () =>
+      createApiForServer(serverId).query<SearchTargetResponse>(
+        `/api/conversations/${encodeURIComponent(id)}/search-target`,
+        { q: searchQuery },
+      ),
+    enabled: Boolean(searchQuery) && !hasAnchorParam && Boolean(serverId && id),
+    retry: false,
+    staleTime: Infinity,
+    meta: { persist: false },
+  })
+
+  // Active-match navigation state. Only meaningful once a target is resolved
+  // (or the caller passed anchor_index directly with no match list — single
+  // target, no prev/next). Index into `matchIndexes` of the currently
+  // highlighted match; defaults to the last entry (tail-most match) until the
+  // user steps with prev/next. Tracked as an override rather than derived-then
+  // -synced-via-effect so a fresh `matchIndexes` array (new search) resets it
+  // without a render-triggering setState in an effect.
+  const matchIndexes = hasAnchorParam ? undefined : targetQuery.data?.match_indexes
+  const totalMatches = hasAnchorParam ? undefined : targetQuery.data?.total_matches
+  const [matchPosOverride, setMatchPosOverride] = useState<{ forIndexes: number[]; pos: number } | null>(null)
+  const activeMatchPos =
+    matchIndexes && matchPosOverride?.forIndexes === matchIndexes
+      ? matchPosOverride.pos
+      : matchIndexes && matchIndexes.length > 0
+        ? matchIndexes.length - 1
+        : null
+
+  // Settle-then-apply: resolving the target must complete before the anchored
+  // (or tail) fetch fires, or the user briefly sees the tail before the jump.
+  const isResolvingTarget = Boolean(searchQuery) && !hasAnchorParam && targetQuery.isPending
+
+  const anchorIndex = hasAnchorParam
+    ? anchorParam
+    : activeMatchPos != null && matchIndexes
+      ? matchIndexes[activeMatchPos]
+      : undefined
+  const isAnchored = anchorIndex != null
+
+  // The window we actually fetch is keyed separately from the active match:
+  // stepping prev/next to a match that's already in the loaded window must
+  // NOT re-fetch (or re-gate the skeleton) — only stepping outside the window
+  // re-anchors. This is pinned to the anchor the current window was fetched
+  // for; `goToMatch` advances it (via setFetchAnchor) only in the out-of-window
+  // branch. It is seeded here — at render, React-blessed "reset state on key
+  // change" pattern — to the initial (tail-most) anchor when a fresh match set
+  // resolves, so it never tracks the moving `anchorIndex`.
+  const [fetchAnchor, setFetchAnchor] = useState<{ forIndexes: number[]; index: number } | null>(null)
+  if (matchIndexes && anchorIndex != null && fetchAnchor?.forIndexes !== matchIndexes) {
+    setFetchAnchor({ forIndexes: matchIndexes, index: anchorIndex })
+  }
+  const fetchAnchorIndex =
+    matchIndexes && fetchAnchor?.forIndexes === matchIndexes ? fetchAnchor.index : anchorIndex
 
   const {
     data: conversation,
@@ -65,9 +145,12 @@ export default function ConversationDetailScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    fetchNewerPage,
+    hasNewerPage,
+    isFetchingNewerPage,
     totalMessages,
     loadedMessages,
-  } = useConversation(serverId, id)
+  } = useConversation(serverId, id, { anchorIndex: fetchAnchorIndex, enabled: !isResolvingTarget })
 
   const isConvNotFound = error instanceof NotFoundError
   // ponytail: only fires when conversation 404s — avoids extra request on normal loads
@@ -93,6 +176,19 @@ export default function ConversationDetailScreen() {
   const hasInitialScrolled = useRef(false)
   const userHasScrolled = useRef(false)
   const initialScrollSettleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // One-shot retry after the initial settle, guarding against FlashList not
+  // having measured the anchor row yet on the first attempt.
+  const anchorRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Where the active match's first line sits inside its row, reported by the
+  // highlighted MessageBubble's text-layout measurement. Lets scrollToAnchor
+  // aim at the keyword itself — centering the row alone leaves the keyword
+  // off-screen when the row is taller than the viewport.
+  const matchLayoutRef = useRef<{ messageIndex: number; y: number } | null>(null)
+  // Set when a jump ran before the match was measured; the measurement
+  // callback then re-scrolls precisely once. Cleared when the user drags.
+  const pendingMatchScrollRef = useRef(false)
+  const scrollToAnchorRef = useRef<(animated: boolean) => void>(() => {})
+  const listHeightRef = useRef(0)
   // Hard ceiling on how long the skeleton may wait for layout to settle —
   // code/image-heavy pages keep resizing and would otherwise reset the settle
   // debounce indefinitely. Starts at the first onContentSizeChange.
@@ -192,8 +288,21 @@ export default function ConversationDetailScreen() {
       clearTimeout(scrollTopHideTimerRef.current)
       scrollTopHideTimerRef.current = null
     }
+    if (anchorRetryRef.current) {
+      clearTimeout(anchorRetryRef.current)
+      anchorRetryRef.current = null
+    }
     lastUpwardAtRef.current = 0
-  }, [id])
+    matchLayoutRef.current = null
+    pendingMatchScrollRef.current = fetchAnchorIndex != null
+    // Re-anchoring (prev/next stepping outside the loaded window) needs the
+    // same fresh initial-scroll sequence as opening the conversation, since it
+    // switches to a brand new anchored query. Keyed on the *fetch* anchor, not
+    // the active-match anchor: an in-window step changes the highlighted match
+    // without re-fetching, and must not re-gate the skeleton (the window's
+    // content size doesn't change, so onContentSizeChange never fires to lift
+    // it again — the endless-skeleton bug).
+  }, [id, fetchAnchorIndex])
 
   // Clean up the Bug 10 hide timer on unmount so we don't fire a setState
   // after the screen has been popped from the stack.
@@ -206,6 +315,10 @@ export default function ConversationDetailScreen() {
       if (firstLayoutCapRef.current) {
         clearTimeout(firstLayoutCapRef.current)
         firstLayoutCapRef.current = null
+      }
+      if (anchorRetryRef.current) {
+        clearTimeout(anchorRetryRef.current)
+        anchorRetryRef.current = null
       }
     }
   }, [])
@@ -222,26 +335,93 @@ export default function ConversationDetailScreen() {
     listRef.current?.scrollToEnd({ animated })
   }, [])
 
-  // Keep re-pinning to the bottom every time content grows, until the user
-  // actually drags. scrollToEnd targets the current bottom and the bottom
-  // keeps moving as lazy rows / tool cards / images finish laying out. After
-  // 150ms of no size changes we treat the initial scroll as "settled" and
-  // flip `firstLayoutDone` so the Bug-1 skeleton overlay lifts. Heavy pages
+  // Finds the anchor row in the currently loaded window and scrolls to it.
+  // Once the highlighted bubble has reported where the keyword sits inside
+  // the row (matchLayoutRef), the scroll places that line a third down the
+  // viewport — FlashList positions rows and knows nothing about the keyword's
+  // y inside one, so centering the row alone strands the keyword off-screen
+  // for rows taller than the viewport. Until the measurement lands (or when
+  // the match is inside a code block, which never reports), fall back to
+  // centering the row. A stale/out-of-window index (shouldn't happen, but the
+  // window can theoretically degrade to a tail fallback) lands at the last
+  // row instead of crashing.
+  const scrollToAnchor = useCallback((animated: boolean) => {
+    if (anchorIndex == null || !conversation?.messages.length) return
+    let index = conversation.messages.findIndex((m) => m.messageIndex === anchorIndex)
+    if (index === -1) index = conversation.messages.length - 1
+    const match = matchLayoutRef.current
+    if (match?.messageIndex === anchorIndex && listHeightRef.current > 0) {
+      // FlashList v2: finalOffset = rowTop + viewOffset at viewPosition 0, so
+      // the match line (rowTop + match.y) lands listHeight/3 from the top.
+      // Overshoot past the scrollable range is clamped by FlashList itself.
+      listRef.current?.scrollToIndex({
+        index,
+        animated,
+        viewPosition: 0,
+        viewOffset: match.y - listHeightRef.current / 3,
+      })
+    } else {
+      listRef.current?.scrollToIndex({ index, animated, viewPosition: 0.45 })
+    }
+  }, [anchorIndex, conversation])
+
+  useEffect(() => {
+    scrollToAnchorRef.current = scrollToAnchor
+  }, [scrollToAnchor])
+
+  // Reports arrive from the highlighted row's text parts as they lay out;
+  // when several parts contain the keyword, the topmost (first) match wins.
+  const handleMatchLayout = useCallback((messageIndex: number, y: number) => {
+    const current = matchLayoutRef.current
+    matchLayoutRef.current =
+      current?.messageIndex === messageIndex
+        ? { messageIndex, y: Math.min(current.y, y) }
+        : { messageIndex, y }
+    // A jump that ran before this measurement landed mid-row — re-aim once.
+    // Deferred through the shared retry timer rather than scrolled inline:
+    // FlashList runs each scrollToIndex as a multi-step loop, and an inline
+    // call here would race the still-animating rough jump that triggered the
+    // render this measurement came from. 300ms lets that animation finish;
+    // a drag meanwhile clears the timer (and userHasScrolled re-guards the
+    // orphan case where the settle retry overwrites this timer handle).
+    if (pendingMatchScrollRef.current) {
+      pendingMatchScrollRef.current = false
+      if (anchorRetryRef.current) clearTimeout(anchorRetryRef.current)
+      anchorRetryRef.current = setTimeout(() => {
+        anchorRetryRef.current = null
+        if (!userHasScrolled.current) scrollToAnchorRef.current(false)
+      }, 300)
+    }
+  }, [])
+
+  const handleListLayout = useCallback((e: LayoutChangeEvent) => {
+    listHeightRef.current = e.nativeEvent.layout.height
+  }, [])
+
+  // Keep re-pinning to the target (bottom, or the search anchor row) every
+  // time content grows, until the user actually drags. The target keeps
+  // moving as lazy rows / tool cards / images finish laying out. After 150ms
+  // of no size changes we treat the initial scroll as "settled" and flip
+  // `firstLayoutDone` so the Bug-1 skeleton overlay lifts. Heavy pages
   // (code blocks, images) can keep resizing and resetting that debounce, so
   // a one-shot cap started at the FIRST size change flips `firstLayoutDone`
-  // after 500ms no matter what — the list may keep settling to the bottom
-  // visibly, but the skeleton must not wait for layout to fully quiesce.
+  // after 500ms no matter what — the list may keep settling visibly, but the
+  // skeleton must not wait for layout to fully quiesce.
   //
-  // Bug 17: once the initial scroll has settled, stop firing per-chunk
-  // scrollToEnd calls. FlashList's `maintainVisibleContentPosition`
+  // Bug 17 (tail view only): once the initial scroll has settled, stop firing
+  // per-chunk scrollToEnd calls. FlashList's `maintainVisibleContentPosition`
   // (`autoscrollToBottomThreshold: 0.2`) anchors the bottom natively as
   // content grows during streaming or pagination, so JS-side scroll calls
-  // here just stack and produce visible jumps.
+  // here just stack and produce visible jumps. The anchored view disables
+  // that native behavior (it would fight the anchor jump — see the FlashList
+  // props below), so the anchor keeps a bounded one-shot post-settle retry
+  // instead, covering the case where the row wasn't measured yet.
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     contentHeightRef.current = h
     if (userHasScrolled.current) return
     if (hasInitialScrolled.current) return
-    scrollToBottom(false)
+    if (isAnchored) scrollToAnchor(false)
+    else scrollToBottom(false)
     if (!firstLayoutCapRef.current) {
       firstLayoutCapRef.current = setTimeout(() => {
         firstLayoutCapRef.current = null
@@ -250,20 +430,33 @@ export default function ConversationDetailScreen() {
     }
     if (initialScrollSettleRef.current) clearTimeout(initialScrollSettleRef.current)
     initialScrollSettleRef.current = setTimeout(() => {
-      scrollToBottom(true)
+      if (isAnchored) {
+        scrollToAnchor(true)
+        anchorRetryRef.current = setTimeout(() => {
+          anchorRetryRef.current = null
+          if (!userHasScrolled.current) scrollToAnchor(false)
+        }, 250)
+      } else {
+        scrollToBottom(true)
+      }
       hasInitialScrolled.current = true
       initialScrollSettleRef.current = null
       setFirstLayoutDone(true)
     }, 150)
-  }, [scrollToBottom])
+  }, [scrollToBottom, scrollToAnchor, isAnchored])
 
   // User touched the list — stop the auto-scroll loop immediately.
   const handleScrollBeginDrag = useCallback(() => {
     hasInitialScrolled.current = true
     userHasScrolled.current = true
+    pendingMatchScrollRef.current = false
     if (initialScrollSettleRef.current) {
       clearTimeout(initialScrollSettleRef.current)
       initialScrollSettleRef.current = null
+    }
+    if (anchorRetryRef.current) {
+      clearTimeout(anchorRetryRef.current)
+      anchorRetryRef.current = null
     }
   }, [])
 
@@ -312,7 +505,20 @@ export default function ConversationDetailScreen() {
     ) {
       void fetchNextPage()
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+    // Newer-direction backfill: only reachable from an anchored window
+    // (hasNewerPage is unset on the tail view). Appends at the bottom, no
+    // scroll-position shift.
+    if (
+      userHasScrolled.current &&
+      nearBottom &&
+      !nearTop &&
+      hasNewerPage &&
+      !isFetchingNewerPage
+    ) {
+      void fetchNewerPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, hasNewerPage, isFetchingNewerPage, fetchNewerPage])
 
   const queryClient = useQueryClient()
 
@@ -389,8 +595,39 @@ export default function ConversationDetailScreen() {
     <MessageItem
       message={item}
       isLast={item.id === lastMessageId}
+      highlight={isAnchored && searchQuery && item.messageIndex === anchorIndex ? searchQuery : undefined}
+      onMatchLayout={handleMatchLayout}
     />
-  ), [lastMessageId])
+  ), [lastMessageId, isAnchored, searchQuery, anchorIndex, handleMatchLayout])
+
+  // Steps the active match by `delta` (wrapping), then either scrolls to it
+  // within the already-loaded window or re-anchors (switches anchorIndex,
+  // which reruns the same settle-then-apply initial-scroll sequence as the
+  // very first jump).
+  const goToMatch = useCallback((delta: 1 | -1) => {
+    if (!matchIndexes || matchIndexes.length === 0 || activeMatchPos == null) return
+    const nextPos = (activeMatchPos + delta + matchIndexes.length) % matchIndexes.length
+    setMatchPosOverride({ forIndexes: matchIndexes, pos: nextPos })
+    const nextIndex = matchIndexes[nextPos]
+    const loadedRowIndex = conversation?.messages.findIndex((m) => m.messageIndex === nextIndex) ?? -1
+    if (loadedRowIndex !== -1) {
+      // In the loaded window: just scroll to it. The fetch anchor stays put so
+      // no refetch/re-gate happens; only the highlighted match + counter move.
+      // The stepped-to row's keyword position isn't measured yet (the
+      // highlight mounts there after this render), so scroll to the row and
+      // let the pending flag re-aim at the keyword once it reports. Stepping
+      // hands scroll control back to the app, so the drag flag resets — the
+      // re-aim must fire even when the user dragged before tapping prev/next.
+      listRef.current?.scrollToIndex({ index: loadedRowIndex, animated: true, viewPosition: 0.45 })
+      pendingMatchScrollRef.current = true
+      userHasScrolled.current = false
+    } else {
+      // Outside the loaded window: advance the fetch anchor, which triggers a
+      // fresh anchored fetch and the reset effect above re-runs the initial
+      // scroll sequence, landing on the new anchor once it loads.
+      setFetchAnchor({ forIndexes: matchIndexes, index: nextIndex })
+    }
+  }, [matchIndexes, activeMatchPos, conversation])
 
   const handleFooterLayout = useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height
@@ -400,6 +637,20 @@ export default function ConversationDetailScreen() {
   const listContentStyle = useMemo(
     () => [styles.listContent, { paddingBottom: footerHeight + spacing.lg }],
     [footerHeight, styles],
+  )
+
+  // Disabled when anchored: startRenderingFromBottom would paint the tail for
+  // one frame before the anchor jump (visible flash), and
+  // autoscrollToBottomThreshold would re-pin to bottom as later rows near the
+  // window's end finish laying out, fighting the anchor scroll. Older-page
+  // prepends still need the anchor to stay put, so the object itself is kept
+  // — just without those two bottom-tracking behaviors.
+  const maintainVisibleContentPosition = useMemo(
+    () =>
+      isAnchored
+        ? {}
+        : { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true },
+    [isAnchored],
   )
 
   // Distinguish row shapes so FlashList only recycles cells of the same kind.
@@ -517,9 +768,61 @@ export default function ConversationDetailScreen() {
         : t('unavailable.pathMissing')
     : null
 
+  const showMatchNav = matchIndexes != null && matchIndexes.length > 0 && activeMatchPos != null
+
+  // The counter's numerator steps through match_indexes, so the denominator
+  // must count the same list. The streamer caps match_indexes (last 1000)
+  // while total_matches stays uncapped — showing the uncapped total would
+  // drift the position ("1 of 1500" while actually at the 501st navigable
+  // match). When capped, show the navigable count with a "+" for the rest.
+  const navigableMatches = matchIndexes?.length ?? 0
+  const matchTotalLabel =
+    totalMatches != null && totalMatches > navigableMatches
+      ? `${navigableMatches}+`
+      : String(totalMatches ?? navigableMatches)
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={conversation.title} titleRight={providerDot} right={headerActions} />
+      {showMatchNav ? (
+        <View style={styles.matchNavBar} testID="search-match-nav">
+          <Text style={styles.matchNavCount} testID="search-match-count">
+            {t('search.matchCount', {
+              current: (activeMatchPos as number) + 1,
+              total: matchTotalLabel,
+            })}
+          </Text>
+          <View style={styles.matchNavActions}>
+            <TouchableOpacity
+              onPress={() => goToMatch(-1)}
+              hitSlop={8}
+              accessibilityLabel={t('search.previousMatch')}
+              testID="search-match-prev"
+              style={styles.matchNavBtn}
+            >
+              <CaretUp size={18} color={theme.text.primary} weight="bold" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => goToMatch(1)}
+              hitSlop={8}
+              accessibilityLabel={t('search.nextMatch')}
+              testID="search-match-next"
+              style={styles.matchNavBtn}
+            >
+              <CaretDown size={18} color={theme.text.primary} weight="bold" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.setParams({ search: '', anchor_index: '' })}
+              hitSlop={8}
+              accessibilityLabel={t('search.clearSearch')}
+              testID="search-match-clear"
+              style={styles.matchNavBtn}
+            >
+              <X size={18} color={theme.text.secondary} weight="bold" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
       <View style={styles.inner}>
       {isGated ? (
         <View style={styles.skeletonOverlay} pointerEvents="none">
@@ -534,11 +837,7 @@ export default function ConversationDetailScreen() {
         </View>
       ) : null}
       {isLoadingMessages && totalMessages > 0 ? (
-        <ProgressBar
-          loaded={loadedMessages}
-          total={totalMessages}
-          label="messages"
-        />
+        <ProgressBar loaded={loadedMessages} total={totalMessages} />
       ) : null}
       {unavailableMessage ? (
         <View style={styles.unavailableBanner}>
@@ -546,7 +845,7 @@ export default function ConversationDetailScreen() {
         </View>
       ) : null}
       {hasMessages ? (
-        <View style={styles.listWrapper}>
+        <View style={styles.listWrapper} onLayout={handleListLayout}>
           <FlashList
             ref={listRef}
             data={conversation.messages}
@@ -558,12 +857,16 @@ export default function ConversationDetailScreen() {
             onScroll={handleScroll}
             onScrollBeginDrag={handleScrollBeginDrag}
             scrollEventThrottle={100}
-            maintainVisibleContentPosition={{
-              autoscrollToBottomThreshold: 0.2,
-              startRenderingFromBottom: true,
-            }}
+            maintainVisibleContentPosition={maintainVisibleContentPosition}
             ListHeaderComponent={
               isFetchingNextPage ? (
+                <View style={styles.headerLoading}>
+                  <ActivityIndicator color={theme.text.secondary} />
+                </View>
+              ) : null
+            }
+            ListFooterComponent={
+              isFetchingNewerPage ? (
                 <View style={styles.headerLoading}>
                   <ActivityIndicator color={theme.text.secondary} />
                 </View>
@@ -660,6 +963,32 @@ function makeStyles(theme: Theme) {
     container: { flex: 1, backgroundColor: theme.bg.primary },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     providerDot: { width: 8, height: 8, borderRadius: 4 },
+    matchNavBar: {
+      flexDirection: flexRow(),
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: theme.bg.card,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    matchNavCount: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      fontWeight: '600',
+    },
+    matchNavActions: {
+      flexDirection: flexRow(),
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    matchNavBtn: {
+      minWidth: 32,
+      minHeight: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     inner: { flex: 1 },
     skeletonOverlay: {
       position: 'absolute',

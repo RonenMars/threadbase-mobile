@@ -37,5 +37,11 @@
   "thinking": {
     "label": "Рассуждение",
     "redacted": "Рассуждение скрыто"
+  },
+  "search": {
+    "matchCount": "{{current}} из {{total}}",
+    "previousMatch": "Предыдущий результат",
+    "nextMatch": "Следующий результат",
+    "clearSearch": "Очистить поиск"
   }
 }

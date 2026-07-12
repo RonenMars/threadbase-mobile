@@ -246,6 +246,8 @@ export interface ServerApi {
   get: <T>(path: string, options?: RequestOptions) => Promise<T>
   /** Conditional GET exposing status + ETag; `body` is null on 304. */
   getWithMeta: <T>(path: string, options?: RequestOptions) => Promise<ResponseWithMeta<T>>
+  /** HTTP QUERY (RFC 10008) — safe/idempotent/cacheable like GET, JSON body like POST. */
+  query: <T>(path: string, body: unknown, options?: RequestOptions) => Promise<T>
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   delete: <T>(path: string, options?: RequestOptions) => Promise<T>
@@ -255,6 +257,7 @@ export function createApiForServer(serverId: string): ServerApi {
   return {
     get: <T>(path: string, options?: RequestOptions) => request<T>('GET', path, undefined, serverId, options),
     getWithMeta: <T>(path: string, options?: RequestOptions) => requestWithMeta<T>(path, serverId, options),
+    query: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('QUERY', path, body, serverId, options),
     post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('POST', path, body, serverId, options),
     patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, body, serverId, options),
     delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, undefined, serverId, options),
@@ -270,6 +273,10 @@ export const api: ServerApi = {
   getWithMeta: <T>(path: string, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]
     return first ? requestWithMeta<T>(path, first, options) : Promise.reject(new NetworkError('No servers configured'))
+  },
+  query: <T>(path: string, body: unknown, options?: RequestOptions) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? request<T>('QUERY', path, body, first, options) : Promise.reject(new NetworkError('No servers configured'))
   },
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]
