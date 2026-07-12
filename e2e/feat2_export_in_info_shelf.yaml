@@ -38,10 +38,13 @@ appId: com.ronenmars.threadbase
     commands:
       - tapOn: "Open"
 
-# Conversation screen renders the in-list scroll button OR the footer's
-# Resume Session button — assert the latter to confirm we are on the
-# conversation route.
-- assertVisible: "Resume Session"
+# Confirm we are on the conversation route: the footer action bar mounts
+# with a stable testID (the Resume button text carries a ▶ prefix and lives
+# in an Animated.Text, so match the container testID instead).
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 8000
 
 # Export must NOT be a bottom-bar sibling of Resume Session anymore.
 - assertNotVisible:

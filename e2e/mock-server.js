@@ -4,6 +4,7 @@
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
+const { WebSocketServer } = require('ws')
 
 // Comma-separated list of ports; first is primary, additional ports serve the
 // same fixtures so e2e flows can pair multiple servers.
@@ -230,6 +231,27 @@ async function handleRequest(req, res) {
 
 for (const port of PORTS) {
   const server = http.createServer(makeHandler())
+
+  // The app opens ws://host/ws?key=<apiKey> for live session updates
+  // (services/ws-client.ts). Without a handler the socket never opens and the
+  // hub shows "Disconnected — showing cached sessions", which fails the live
+  // flows. Accept the upgrade, keep the socket open, and push an initial
+  // session_list so the hub renders live data.
+  const wss = new WebSocketServer({ noServer: true })
+  server.on('upgrade', (req, socket, head) => {
+    if (!req.url || !req.url.startsWith('/ws')) {
+      socket.destroy()
+      return
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      const sessions = JSON.parse(readFixture('sessions.json'))
+      ws.send(JSON.stringify({ type: 'session_list', sessions }))
+      ws.send(JSON.stringify({ type: 'cache_ready' }))
+      // Swallow client messages (auth/register); the flows don't need replies.
+      ws.on('message', () => {})
+    })
+  })
+
   server.listen(port, () => {
     console.log(`Mock server listening on http://localhost:${port}`)
   })
