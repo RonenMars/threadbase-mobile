@@ -90,7 +90,7 @@
     "expo-status-bar": "~57.0.0",
     "expo-system-ui": "~57.0.0",
     "expo-updates": "~57.0.4",
-    "i18next": "^26.0.8",
+    "i18next": "^26.3.6",
     "intl-pluralrules": "^2.0.1",
     "nativewind": "^4.2.6",
     "phosphor-react-native": "^3.0.6",
