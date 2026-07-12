@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store'
+import * as SecureStore from './secure-store'
 import { randomBytes } from 'tweetnacl'
 
 const KEY = 'threadbase_device_client_id'

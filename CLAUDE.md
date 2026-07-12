@@ -89,6 +89,14 @@ Then mirror the entry in `docs/ci-significant-paths.md` with a one-line reason (
 
 ---
 
+## Web Platform (Expo Web)
+
+The app supports an early-spike `web` platform (`npx expo start --web`) reusing the same Expo Router/RN codebase — not a separate project. Status, verified fixes, and the list of known native-only-dependency blockers (SecureStore, biometrics, speech recognition, camera, notifications, keyboard controller, bottom sheet) live in `docs/expo-web-support.md`. Keep that doc updated as blockers are fixed or new ones are found — don't let it drift from actual behavior.
+
+Any `expo-secure-store` usage must go through `services/secure-store.ts` (not the package directly) so the `.web.ts` localStorage shim applies on web via Metro's platform-extension resolution.
+
+---
+
 ## Icons
 
 **Never use emojis in the app UI.** All icons must come from the [Phosphor Icons](https://phosphoricons.com/) library (`phosphor-react-native`). Use the appropriate Phosphor component (e.g. `<Star />`, `<Clock />`, `<Fire />`, `<GearSix />`, `<PencilSimple />`). This applies to all new code and any code you touch.

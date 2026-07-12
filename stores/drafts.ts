@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import * as SecureStore from 'expo-secure-store'
+import * as SecureStore from '@/services/secure-store'
 
 const SECURE_KEY = 'threadbase_session_drafts'
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import * as SecureStore from 'expo-secure-store'
+import * as SecureStore from '@/services/secure-store'
 import type { ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'

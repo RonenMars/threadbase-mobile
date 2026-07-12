@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as SecureStore from 'expo-secure-store'
+import * as SecureStore from '@/services/secure-store'
 import { useServersStore } from '@/stores/servers'
 import type { PairResult } from '@/hooks/useTBPair'
 import { OnboardingShell } from './OnboardingShell'
