@@ -21,6 +21,8 @@ beforeEach(() => {
     completedSessionFadeMs: 60000,
     terminalMaxLines: 5000,
     notifications: { ...DEFAULT_NOTIFICATIONS },
+    crashReportingEnabled: false,
+    crashReportingNoticeDismissed: false,
   })
 })
 
@@ -154,5 +156,46 @@ describe('SettingsStore – notifications', () => {
     expect(n.sessionComplete).toBe(true)
     expect(n.sessionFailed).toBe(true)
     expect(n.showBadge).toBe(false)
+  })
+})
+
+describe('SettingsStore – crashReportingEnabled (opt-in consent)', () => {
+  it('defaults to OFF for new installations', () => {
+    expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
+    expect(useSettingsStore.getState().crashReportingNoticeDismissed).toBe(false)
+  })
+
+  it('can be enabled and disabled', () => {
+    useSettingsStore.getState().setCrashReportingEnabled(true)
+    expect(useSettingsStore.getState().crashReportingEnabled).toBe(true)
+    useSettingsStore.getState().setCrashReportingEnabled(false)
+    expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
+  })
+
+  it('persists the consent preference to AsyncStorage', async () => {
+    useSettingsStore.getState().setCrashReportingEnabled(true)
+    await Promise.resolve()
+    const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
+    const payload = JSON.parse(raw[1])
+    expect(payload.crashReportingEnabled).toBe(true)
+  })
+
+  it('restores the consent preference on hydrate', async () => {
+    const stored = JSON.stringify({
+      crashReportingEnabled: true,
+      crashReportingNoticeDismissed: true,
+      notifications: DEFAULT_NOTIFICATIONS,
+    })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().crashReportingEnabled).toBe(true)
+    expect(useSettingsStore.getState().crashReportingNoticeDismissed).toBe(true)
+  })
+
+  it('stays OFF when hydrate finds no stored value', async () => {
+    const stored = JSON.stringify({ notifications: DEFAULT_NOTIFICATIONS })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
   })
 })

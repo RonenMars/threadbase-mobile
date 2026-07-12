@@ -92,7 +92,14 @@
           }
         }
       ],
-      "./plugins/withAndroidReleaseSigning"
+      "./plugins/withAndroidReleaseSigning",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "threadbase",
+          "project": "threadbase-mobile"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -12,7 +12,9 @@
     "history": "History",
     "help": "Help",
     "language": "Language",
-    "session": "Session"
+    "session": "Session",
+    "privacy": "Privacy",
+    "crashReporting": "Crash Reporting"
   },
   "session": {
     "chatView": "Chat view",
@@ -75,6 +77,18 @@
   "help": {
     "restartOnboarding": "Restart onboarding",
     "helpSupport": "Help & Support"
+  },
+  "crashReporting": {
+    "title": "Share anonymous crash reports",
+    "description": "Send sanitized technical crash information to help improve Threadbase. Prompts, terminal output, source code, credentials, server addresses, and session content are never included.",
+    "privacyPolicy": "Privacy policy",
+    "testCrash": "Test crash reporting",
+    "testCrashConfirmTitle": "Send a test crash?",
+    "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
+    "testCrashSend": "Send test crash",
+    "noticeTitle": "Crash reporting is available",
+    "noticeMessage": "Threadbase can now send sanitized crash reports if you opt in. It stays off until you turn it on in Settings. No prompts, terminal output, or session content are ever included.",
+    "noticeDismiss": "Got it"
   },
   "servers": {
     "scanQr": "Scan QR to add server"

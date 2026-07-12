@@ -42,5 +42,10 @@
   "biometricLock": {
     "title": "Threadbase נעול",
     "unlock": "פתח"
+  },
+  "errorBoundary": {
+    "title": "משהו קרס",
+    "message": "האפליקציה נתקלה בשגיאה בלתי צפויה. טעינה מחדש בדרך כלל פותרת זאת.",
+    "reload": "טען מחדש את Threadbase"
   }
 }

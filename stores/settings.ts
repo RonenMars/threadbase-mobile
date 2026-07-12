@@ -40,6 +40,10 @@ interface SettingsStore {
   mergeChats: boolean
   locale: string
   biometricLock: boolean
+  /** Opt-in crash reporting (Sentry). Default OFF. See services/sentry.ts. */
+  crashReportingEnabled: boolean
+  /** Whether the post-upgrade crash-reporting notice has been dismissed. */
+  crashReportingNoticeDismissed: boolean
   // Conversation row settings (Conversation list redesign §13).
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
@@ -59,6 +63,8 @@ interface SettingsStore {
   setMergeChats: (v: boolean) => void
   setLocale: (locale: string) => void
   setBiometricLock: (v: boolean) => void
+  setCrashReportingEnabled: (v: boolean) => void
+  setCrashReportingNoticeDismissed: (v: boolean) => void
   setRowTitleSource: (v: RowTitleSource) => void
   setRowPreviewMode: (v: RowPreviewMode) => void
   setRowDensity: (v: RowDensity) => void
@@ -96,6 +102,8 @@ interface PersistedSettings {
   mergeChats: boolean
   locale: string
   biometricLock: boolean
+  crashReportingEnabled: boolean
+  crashReportingNoticeDismissed: boolean
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
   rowDensity: RowDensity
@@ -120,6 +128,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   mergeChats: true,
   locale: 'en',
   biometricLock: false,
+  crashReportingEnabled: false,
+  crashReportingNoticeDismissed: false,
   autoNameFromMessage: true,
   aiGeneratedNames: false,
   sessionView: 'terminal',
@@ -147,6 +157,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setMergeChats: (mergeChats) => set({ mergeChats }),
   setLocale: (locale) => set({ locale }),
   setBiometricLock: (biometricLock) => set({ biometricLock }),
+  setCrashReportingEnabled: (crashReportingEnabled) => set({ crashReportingEnabled }),
+  setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
+    set({ crashReportingNoticeDismissed }),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   setSessionView: (sessionView) => set({ sessionView }),
@@ -176,6 +189,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         mergeChats: parsed.mergeChats ?? state.mergeChats,
         locale: parsed.locale ?? state.locale,
         biometricLock: parsed.biometricLock ?? state.biometricLock,
+        crashReportingEnabled: parsed.crashReportingEnabled ?? state.crashReportingEnabled,
+        crashReportingNoticeDismissed:
+          parsed.crashReportingNoticeDismissed ?? state.crashReportingNoticeDismissed,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
         sessionView: parsed.sessionView === 'chat' ? 'chat' : state.sessionView,
@@ -204,6 +220,8 @@ useSettingsStore.subscribe((state) => {
     mergeChats: state.mergeChats,
     locale: state.locale,
     biometricLock: state.biometricLock,
+    crashReportingEnabled: state.crashReportingEnabled,
+    crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
     sessionView: state.sessionView,

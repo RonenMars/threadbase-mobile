@@ -41,6 +41,9 @@ import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
 import { shouldSkipAutoNav } from '@/lib/sessionNavGuard'
 import { useTranslation } from 'react-i18next'
+import { RootErrorBoundary } from '@/components/RootErrorBoundary'
+import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
+import { wrap as sentryWrap } from '@/services/sentry'
 
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
@@ -65,6 +68,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const setCacheReady = useServersStore((s) => s.setCacheReady)
   const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
+
+  // Initialize/tear down crash reporting in lockstep with the consent setting.
+  useCrashReportingSync()
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -268,6 +274,10 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={{ title: 'Manage Favorites', headerShown: true }}
       />
       <Stack.Screen
+        name="help-feedback"
+        options={{ title: i18n.t('feedback:screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
         name="project/[id]"
         options={({ route }) => {
           const params = route.params as { id?: string; path?: string }
@@ -319,7 +329,7 @@ function ThemedStatusBar() {
   return <StatusBar style={theme.colorMode === 'light' ? 'dark' : 'light'} />
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const router = useRouter()
   const [splashDone, setSplashDone] = useState(!!g.__splashShown)
 
@@ -335,6 +345,7 @@ export default function RootLayout() {
   return (
     <I18nextProvider i18n={i18n}>
     <ThemeProvider>
+      <RootErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardProvider>
         <SafeAreaProvider>
@@ -364,7 +375,13 @@ export default function RootLayout() {
         </SafeAreaProvider>
         </KeyboardProvider>
       </GestureHandlerRootView>
+      </RootErrorBoundary>
     </ThemeProvider>
     </I18nextProvider>
   )
 }
+
+// Wrap the root with Sentry so native/JS crashes and touch/nav context (already
+// stripped to a privacy-safe minimum by our init config) are captured. `wrap`
+// is a passthrough when Sentry is not initialized (consent off / no DSN).
+export default sentryWrap(RootLayout)

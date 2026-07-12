@@ -42,5 +42,10 @@
   "biometricLock": {
     "title": "Threadbase مقفل",
     "unlock": "فتح القفل"
+  },
+  "errorBoundary": {
+    "title": "حدث عطل",
+    "message": "واجه التطبيق خطأً غير متوقع. عادةً ما تؤدي إعادة التحميل إلى حلّه.",
+    "reload": "إعادة تحميل Threadbase"
   }
 }

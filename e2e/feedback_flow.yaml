@@ -1,0 +1,63 @@
+# Maestro E2E — Help & Feedback flow
+# Verifies the primary feedback journey: Settings → Help & Feedback → Report a
+# bug → fill the form → confirm the diagnostics preview is present. It does NOT
+# submit, so no real feedback report is ever sent.
+#
+# Requires: mock server running on localhost:7071
+# Usage: maestro test e2e/feedback_flow.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# Hub is mounted — open Settings via the Gear in the header.
+- assertVisible:
+    id: "hub-screen"
+
+- tapOn:
+    id: "hub-settings-btn"
+
+# Open Help & Feedback from the Help section.
+- extendedWaitUntil:
+    visible:
+      id: "settings-help-feedback-row"
+    timeout: 4000
+
+- tapOn:
+    id: "settings-help-feedback-row"
+
+# Landing screen — the three feedback entry points are present.
+- extendedWaitUntil:
+    visible:
+      id: "feedback-landing-bug"
+    timeout: 4000
+
+- takeScreenshot: e2e/_artifacts/screenshots/feedback-landing
+
+# Enter the bug-report form.
+- tapOn:
+    id: "feedback-landing-bug"
+
+- extendedWaitUntil:
+    visible:
+      id: "feedback-description-input"
+    timeout: 4000
+
+# Type a description.
+- tapOn:
+    id: "feedback-description-input"
+- inputText: "The tree view flickers on cold launch."
+
+# The diagnostics opt-in is on by default; its preview toggle is present.
+- assertVisible:
+    id: "feedback-diagnostics-toggle"
+
+# Expand the diagnostics preview to confirm the exact fields shown.
+- tapOn:
+    id: "feedback-diagnostics-toggle"
+- assertVisible:
+    id: "feedback-diagnostics-rows"
+
+- takeScreenshot: e2e/_artifacts/screenshots/feedback-form-filled
+
+# Intentionally stop here — we do NOT tap Send, so no report leaves the device.

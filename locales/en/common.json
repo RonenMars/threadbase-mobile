@@ -42,5 +42,10 @@
   "biometricLock": {
     "title": "Threadbase is locked",
     "unlock": "Unlock"
+  },
+  "errorBoundary": {
+    "title": "Something crashed",
+    "message": "The app hit an unexpected error. Reloading usually fixes it.",
+    "reload": "Reload Threadbase"
   }
 }
