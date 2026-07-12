@@ -93,13 +93,7 @@
         }
       ],
       "./plugins/withAndroidReleaseSigning",
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "threadbase",
-          "project": "threadbase-mobile"
-        }
-      ]
+      "@sentry/react-native/expo"
     ],
     "experiments": {
       "typedRoutes": true,
