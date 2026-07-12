@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { QUERY_GC_TIME } from '@/services/query-client'
+import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
@@ -504,6 +505,9 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
       // block healthy servers from returning data. Progress counters are shared
       // across concurrent callbacks via a plain object updated in-place.
       const progressByServer = new Map<string, { loaded: number; total: number }>()
+      for (const serverId of displayedServerIds) {
+        progressByServer.set(serverId, { loaded: 0, total: 0 })
+      }
       const emitProgress = () => {
         let loaded = 0
         let total = 0
@@ -514,10 +518,23 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
         setProgress({ loaded, total })
       }
 
+      // The /count call can take a while on a cold server cache (background
+      // warm-up scan still populating). While it's pending, surface the
+      // server's scan_progress broadcasts as a live "scanned so far" number
+      // instead of leaving the row at a bare spinner. Once /count resolves,
+      // fetchAllConversationPagesForServer's own onProgress takes over and
+      // this stops mattering (progressByServer already has a real total).
+      const unsubScanProgress = wsManager.onAll('scan_progress', (msg) => {
+        if (msg.type !== 'scan_progress') return
+        const current = progressByServer.get(msg.serverId)
+        if (!current || current.total > 0) return
+        progressByServer.set(msg.serverId, { loaded: msg.scanned, total: msg.total })
+        emitProgress()
+      })
+
       const settled = await Promise.allSettled(
         displayedServerIds.map(async (serverId) => {
           const label = serversRef.current[serverId]?.label
-          progressByServer.set(serverId, { loaded: 0, total: 0 })
           const items = await fetchAllConversationPagesForServer(
             serverId,
             label,
@@ -532,6 +549,8 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
           return { serverId, items }
         })
       )
+
+      unsubScanProgress()
 
       const merged: MultiConversation[] = []
       let fulfilledCount = 0
