@@ -153,12 +153,12 @@ Expected: no errors.
 
 ```bash
 # Check a disc_ id from the running server
-curl -s -H "Authorization: Bearer tb_123" https://tb-briya.rbv1000.win/api/sessions \
+curl -s -H "Authorization: Bearer tb_123" https://tb-example.rbv1000.win/api/sessions \
   | python3 -c "import json,sys; [print(s['id']) for s in json.load(sys.stdin) if s['id'].startswith('disc_')]"
 
 # Then adopt one (replace disc_12345 with a real id)
 curl -s -X POST -H "Authorization: Bearer tb_123" \
-  https://tb-briya.rbv1000.win/api/sessions/disc_12345/adopt
+  https://tb-example.rbv1000.win/api/sessions/disc_12345/adopt
 ```
 
 Expected: `{"sessionId":"ses_..."}`.

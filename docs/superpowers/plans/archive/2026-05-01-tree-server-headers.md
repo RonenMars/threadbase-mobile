@@ -229,7 +229,7 @@ cd /Users/ronenmars/Desktop/dev/ai-tools/tb-mobile && npx expo start
 
 - [ ] **Step 2: Verify multi-server layout**
 
-With 3 servers active (Briya, Pc, Ak), the tree view should show:
+With 3 servers active (Alpha, Pc, Ak), the tree view should show:
 - A section header for each server (uppercase label + total count) above its rows
 - Each server's path nodes indented beneath their header
 - Single-root servers still show the `ServerRootRow` directly below their header

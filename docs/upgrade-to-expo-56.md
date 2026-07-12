@@ -42,9 +42,9 @@ You are upgrading a working React Native + Expo project from **Expo SDK 55 → S
 - Polyfills already in place: `intl-pluralrules`, `react-native-get-random-values`
 - Crypto: `tweetnacl`, `tweetnacl-util`
 
-### Briya commit rules (NOT applicable here)
+### Commit rules
 
-This is **not** a Briya repo — no `ENG-<n>` ticket scope required. Use plain conventional commits: `chore(expo): …` etc. **No `Co-Authored-By` trailer** — global hook blocks it.
+This repo uses plain conventional commits — no external ticket-scope prefix required. Use `chore(expo): …` etc. **No `Co-Authored-By` trailer** — global hook blocks it.
 
 ### Existing memory worth respecting
 
