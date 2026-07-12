@@ -18,9 +18,9 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
    xcrun simctl list | grep Booted
    ```
 
-3. **Release Build:** Tests run against a release build for better performance and production-like behavior
+3. **Build the app:** `npm run ios` skips the Expo Dev Launcher screen (via `launchMode: "most-recent"` in `app.json`) and boots straight into the app
    ```bash
-   npx expo run:ios --configuration Release
+   npm run ios
    ```
 
 ## Test Files
@@ -261,7 +261,7 @@ Then pass the prop from the parent:
 
 2. **Rebuild after adding testIDs:**
    ```bash
-   npx expo run:ios --configuration Release
+   npm run ios
    ```
 
 3. **Check element is actually visible** (not covered by keyboard/modal)
