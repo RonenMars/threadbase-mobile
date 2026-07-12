@@ -2,8 +2,9 @@ import React, { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { NestableScrollContainer } from 'react-native-draggable-flatlist'
-import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen } from 'phosphor-react-native'
+import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen, Gear } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'expo-router'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
@@ -99,8 +100,14 @@ export function FilterSortSheet({
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
   const theme = useTheme()
+  const router = useRouter()
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
+
+  const openSettings = () => {
+    onClose()
+    router.push('/settings')
+  }
 
   const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
     { value: 'running', label: 'Running', color: theme.status.running },
@@ -108,7 +115,7 @@ export function FilterSortSheet({
     { value: 'idle', label: 'Idle', color: theme.status.idle },
   ]
 
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'settings'])
   const showServerFilter = activeServerIds.length > 1
 
   const atDefault = isDefault(sortBy, sortOrder, selectedStatuses, displayedServerIds, activeServerIds, sessionsLayout, providerFilter)
@@ -135,9 +142,21 @@ export function FilterSortSheet({
     <>
       <View style={styles.titleRow}>
         <Text style={styles.title}>{t('filter.filterSort')}</Text>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-          <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
-        </TouchableOpacity>
+        <View style={styles.titleActions}>
+          <TouchableOpacity
+            onPress={openSettings}
+            style={styles.settingsButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings:header.title')}
+            testID="filter-sort-settings-btn"
+          >
+            <Gear size={20} color={theme.text.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
+            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* View */}
@@ -356,6 +375,8 @@ function makeStyles(theme: Theme) {
     content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xl },
     titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    titleActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    settingsButton: { padding: spacing.xs },
     closeButton: { padding: spacing.xs },
     closeButtonText: { color: theme.text.secondary, fontSize: font.lg, lineHeight: font.lg },
     section: { gap: spacing.sm },
