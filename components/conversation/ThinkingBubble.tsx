@@ -105,9 +105,21 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   // Which card (if any) will render — structured WS question / permission gate
   // takes precedence over the PTY-scraped block.
   const card = activeQuestion
-    ? <QuestionCard block={activeQuestion} onSelect={handleStructuredSelect} />
+    ? (
+      <QuestionCard
+        block={activeQuestion}
+        onSelect={handleStructuredSelect}
+        onCancel={onSendKeys ? () => onSendKeys('\x1b') : undefined}
+      />
+    )
     : questionBlock
-      ? <QuestionCard block={questionBlock} onSelect={handleOptionSelect} />
+      ? (
+        <QuestionCard
+          block={questionBlock}
+          onSelect={handleOptionSelect}
+          onCancel={onSendKeys ? () => onSendKeys('\x1b') : undefined}
+        />
+      )
       : null
 
   // Once a card is showing, hide the live-terminal text + dots entirely and

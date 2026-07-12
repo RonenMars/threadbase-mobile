@@ -26,6 +26,7 @@ import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
@@ -457,6 +458,14 @@ export default function SessionDetailScreen() {
   const sessionName = getName(serverId, id) ?? session?.projectName
 
   const { sendKeys } = useSessionActions(serverId, id ?? '')
+
+  // Mirrors the `isLive` check computed later (post early-returns) — needed
+  // here too since useTerminalStream must be called unconditionally, before
+  // this component's early returns.
+  const isLiveForStream =
+    session?.ptyAttached === true &&
+    (session?.status === 'waiting_input' || session?.status === 'running')
+  const { isStreaming } = useTerminalStream(serverId, id ?? '', !isLiveForStream)
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
     sendKeys.mutate('\x1b', {
@@ -575,7 +584,7 @@ export default function SessionDetailScreen() {
     )
   }
 
-  const canStopResponse = session.status === 'running'
+  const canStopResponse = session.status === 'running' || isStreaming
 
   const sessionHeaderActions = (
     <View style={styles.headerActions}>

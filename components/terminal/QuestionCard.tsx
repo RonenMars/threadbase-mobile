@@ -1,15 +1,19 @@
 import React, { memo, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
+import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 interface Props {
   block: QuestionBlock
   onSelect: (questionIndex: number, optionIndex: number) => void
+  /** Dismiss this prompt without answering (sends Esc, same as the stop-response action). */
+  onCancel?: () => void
 }
 
-export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Props) {
+export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel }: Props) {
+  const { t } = useTranslation('common')
   const q = block.questions[0]
   // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
   const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
@@ -53,6 +57,16 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect }: Prop
           </View>
         </TouchableOpacity>
       ))}
+      {onCancel ? (
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel={t('button.cancel')}
+        >
+          <Text style={styles.cancelText}>{t('button.cancel')}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   )
 })
@@ -146,5 +160,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8b949e',
     marginTop: 4,
+  },
+  cancelButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  cancelText: {
+    color: '#8b949e',
+    fontSize: 13,
   },
 })
