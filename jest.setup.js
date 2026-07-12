@@ -301,6 +301,7 @@ jest.mock('@sentry/react-native', () => {
     captureException: jest.fn(() => 'evt_exception'),
     captureMessage: jest.fn(() => 'evt_message'),
     captureFeedback: jest.fn(() => 'evt_feedback'),
+    lastEventId: jest.fn(() => undefined),
     addBreadcrumb: jest.fn(),
     getGlobalScope: jest.fn(() => scope),
     getCurrentScope: jest.fn(() => scope),

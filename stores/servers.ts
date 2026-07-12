@@ -3,6 +3,7 @@ import * as SecureStore from '@/services/secure-store'
 import type { ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
+import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
 
@@ -173,11 +174,13 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       return { servers, activeServerIds, displayedServerIds, hasEverHadServer: true }
     })
 
+    recordDiagnosticEvent('server_added')
     return id
   },
 
   removeServer: async (serverId: string) => {
     await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
+    recordDiagnosticEvent('server_removed')
 
     set((state) => {
       const { [serverId]: _removed, ...servers } = state.servers

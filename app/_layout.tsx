@@ -44,9 +44,11 @@ import { useTranslation } from 'react-i18next'
 import { RootErrorBoundary } from '@/components/RootErrorBoundary'
 import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
 import { wrap as sentryWrap } from '@/services/sentry'
+import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
+recordDiagnosticEvent('app_started')
 
 SplashScreen.preventAutoHideAsync()
 
@@ -276,6 +278,10 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       <Stack.Screen
         name="help-feedback"
         options={{ title: i18n.t('feedback:screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
+        name="diagnostics"
+        options={{ title: i18n.t('feedback:diagnostics.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="project/[id]"

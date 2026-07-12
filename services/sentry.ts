@@ -355,6 +355,20 @@ export function submitFeedbackViaSentry(params: {
   }
 }
 
+/**
+ * The id of the last event Sentry sent, if any. Opaque, non-identifying — safe
+ * to surface in diagnostics so a user can reference a specific crash. Returns
+ * undefined when reporting is inactive or nothing has been sent.
+ */
+export function getLastEventId(): string | undefined {
+  if (!initialized) return undefined
+  try {
+    return Sentry.lastEventId() ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** The Sentry wrap HOC for the root component (re-exported for a single import site). */
 export const wrap = Sentry.wrap
 

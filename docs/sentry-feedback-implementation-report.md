@@ -2,11 +2,10 @@
 
 **Branch:** `feat/sentry-crash-reporting`
 **Spec:** `prompt-sentry-mobile.md` (repo root)
-**Status:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 ⏳ pending
+**Status:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅
 
-This document tracks the phased implementation. Phases 1 and 2 are complete and
-verified; Phase 3 (diagnostics generator + privacy-policy updates + store
-checklist) is not started. Nothing has been committed yet.
+This document tracks the phased implementation. All three phases are complete and
+verified.
 
 ---
 
@@ -165,6 +164,66 @@ FeedbackTransport
 
 ---
 
+## Phase 3 — Diagnostics & Privacy-Policy Updates
+
+### What was built
+
+**Diagnostics generator (max-effort privacy surface):**
+
+- `services/diagnostics.ts` — centralized generator with a typed `DiagnosticsReport`
+  schema, allowlist assembly, aggregate connection-state derivation, streamer-version
+  collection (deduped, generic strings only), active-session sum (count only), a
+  coarse (minute-precision) last-connection time, notification-permission enum, and
+  the opaque Sentry event id. The whole report is passed through the central
+  `sanitize()` as a final guard. Produces both human-readable text and structured
+  JSON output, each size-capped.
+- `services/diagnostic-events.ts` — a bounded in-memory ring buffer of lifecycle
+  events. Events are a **strict enum only** (`app_started`, `connection_*`,
+  `server_added/removed`, `feedback_*`, …) with coarse timestamps; anything not in
+  the enum is rejected by construction, so free-form text cannot enter.
+- `app/diagnostics.tsx` — a screen with a live preview, the plain-language
+  included / excluded / control disclosures, and Copy + Share actions.
+  Reached from the "Copy diagnostics" row on the Help & Feedback landing.
+- `services/sentry.ts` gained `getLastEventId()` (keeps the Sentry import
+  centralized).
+- Lifecycle events wired at their natural call sites: `app_started` at boot,
+  `server_added`/`server_removed` in the servers store, and `feedback_opened`/
+  `feedback_submitted` in the feedback screen.
+
+### Privacy behavior
+
+The diagnostics report contains only build constants, generic enums, bounded
+counts, a coarse timestamp, streamer version strings, an opaque Sentry event id,
+and the strict lifecycle-event enum. It never reads server URLs, ids (which are
+URL-derived fingerprints), machine names, credentials, session ids/titles, paths,
+or any user content. Tests seed the stores with sensitive server data (URL,
+apiKey, machineName, label, id) and assert none of it appears in the text or JSON
+output.
+
+### Privacy-policy & disclosure updates
+
+- `docs/proposed-privacy-policy.md` — the complete proposed replacement for
+  <https://threadbase.sh/privacy> (the website source is not in this workspace).
+  It distinguishes the five traffic categories, states that crash reporting is
+  opt-in and off by default, names Sentry, lists the categories sent and excluded,
+  covers retention/deletion/processing-region placeholders, and uses plain,
+  pun-free language.
+- `README.md` — the Privacy section and the local-first feature bullet updated so
+  the now-inaccurate "no crash reporting / no telemetry" claims are corrected
+  conservatively.
+- `docs/store-privacy-checklist.md` — a manual-review checklist of the App Store
+  Connect and Google Play Console privacy declarations Ronen must review before
+  releasing. It does not claim any console setting was changed.
+
+### Known limitations
+
+- The proposed privacy policy must be published to the live URL, and its effective
+  date + Sentry processing region filled in, before these features ship.
+- `docs/store-privacy-checklist.md` is a checklist only — the actual store-console
+  declarations must be set by hand.
+
+---
+
 ## Exact information that may leave the device
 
 Only when the user opts in / explicitly submits:
@@ -208,13 +267,12 @@ device names.
 
 ---
 
-## Phase 3 — remaining (not started)
+## Manual follow-ups before release
 
-Centralized diagnostics generator (typed schema, allowlist redaction, size caps,
-text + JSON output) at max effort; `app/diagnostics.tsx` + Copy/Export with
-privacy confirmation; prove-sensitive-values-cannot-appear tests;
-`docs/proposed-privacy-policy.md` (no sibling website repo in this workspace);
-README privacy-section update (the `no analytics / no crash reporting` claims at
-`README.md:38` and `README.md:140` become inaccurate once Sentry ships); and an
-App Store Connect / Google Play Console privacy-declaration checklist for manual
-review.
+- Publish `docs/proposed-privacy-policy.md` to <https://threadbase.sh/privacy>,
+  and set its effective date + Sentry processing region.
+- Create the Sentry project and set the real org/project slugs; configure
+  `EXPO_PUBLIC_SENTRY_DSN` (runtime) and `SENTRY_AUTH_TOKEN` (EAS, sensitive).
+- Review the App Store Connect and Google Play Console privacy declarations per
+  `docs/store-privacy-checklist.md`.
+- Create the `www.threadbase.sh/feedback` page referenced by the copy-fallback.

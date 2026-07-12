@@ -41,7 +41,19 @@
   "diagnostics": {
     "heading": "Debugging sidekick",
     "subtitle": "Review the sanitized technical details that can help us investigate.",
-    "previewIntro": "This report may include the app version, build number, platform, OS version, update channel, connection status category, and configured-server count. It will not include prompts, terminal output, source code, credentials, server addresses, or session content."
+    "previewIntro": "This report may include the app version, build number, platform, OS version, update channel, connection status category, and configured-server count. It will not include prompts, terminal output, source code, credentials, server addresses, or session content.",
+    "screenTitle": "Diagnostics",
+    "loading": "Gathering diagnostics…",
+    "includedTitle": "What's included",
+    "included": "App version and build, platform and OS version, update channel, generic connection status, configured-server count, streamer version, notification permission, and a short list of recent app events.",
+    "excludedTitle": "What's not included",
+    "excluded": "Prompts, terminal output, source code, credentials, server addresses, hostnames, session names, and your device name are never included.",
+    "controlNote": "You choose whether to copy or share this. Screenshots and feedback you type may contain content you include yourself.",
+    "copy": "Copy diagnostics",
+    "share": "Share diagnostics",
+    "copied": "Diagnostics copied. Paste responsibly.",
+    "copyFailed": "Couldn't copy the diagnostics. Please try again.",
+    "shareFailed": "Couldn't open the share sheet. Try copying instead."
   },
   "validation": {
     "descriptionRequired": "Give us a few details so we have something to debug.",

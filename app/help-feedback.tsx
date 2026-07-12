@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useTranslation } from 'react-i18next'
 import {
@@ -39,6 +40,7 @@ import {
 } from '@/services/feedback-transport'
 import { pickAndPrepareScreenshot } from '@/services/feedback-screenshot'
 import { addSafeBreadcrumb } from '@/services/sentry'
+import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import type { FeedbackCategory, FeedbackReport, FeedbackAttachment } from '@/types/feedback'
 
 const PRIVACY_URL = 'https://threadbase.sh/privacy'
@@ -60,6 +62,7 @@ export default function HelpFeedbackScreen() {
   const { t } = useTranslation('feedback')
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const router = useRouter()
   const s = useMemo(() => styles(theme), [theme])
 
   const [view, setView] = useState<View3>('landing')
@@ -81,6 +84,7 @@ export default function HelpFeedbackScreen() {
     setCategory(cat)
     setView('form')
     addSafeBreadcrumb('feedback_opened')
+    recordDiagnosticEvent('feedback_opened')
   }, [])
 
   const buildReport = useCallback((): FeedbackReport => ({
@@ -131,6 +135,7 @@ export default function HelpFeedbackScreen() {
       const result = await submitFeedback(buildReport())
       if (result.ok) {
         addSafeBreadcrumb('feedback_submitted')
+        recordDiagnosticEvent('feedback_submitted')
         setView('success')
       } else {
         // No automatic transport succeeded — offer the copy + guide fallback.
@@ -270,6 +275,13 @@ export default function HelpFeedbackScreen() {
 
           <View style={[s.card, isGlass && s.cardGlass]}>
             <GlassFill />
+            <LandingRow
+              icon={<ClipboardText size={22} color={theme.text.secondary} />}
+              label={t('landing.copyDiagnostics')}
+              onPress={() => router.push('/diagnostics')}
+              testID="feedback-landing-diagnostics"
+              theme={theme}
+            />
             <LandingRow
               icon={<ShieldCheck size={22} color={theme.text.secondary} />}
               label={t('landing.privacyPolicy')}
