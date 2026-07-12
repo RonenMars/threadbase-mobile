@@ -90,6 +90,7 @@ class WSClient {
     if (this.socket) {
       this.socket.onclose = null
       this.socket.onerror = null
+      this.socket.onmessage = null
       this.socket.close()
       this.socket = null
     }
@@ -98,12 +99,22 @@ class WSClient {
     this._setStatus('connecting')
     logConnection(this.serverId, 'connect', this.reconnectAttempt)
 
+    let socket: WebSocket
     try {
-      this.socket = new WebSocket(this.url)
+      socket = new WebSocket(this.url)
+      this.socket = socket
     } catch {
       this._scheduleReconnect()
       return
     }
+    // Guard every callback below against firing after this socket has been
+    // superseded (e.g. by forceReconnect()). The platform WebSocket may hold
+    // its own reference to a callback and can still invoke it even after
+    // `.onX = null` is set — closing a socket doesn't synchronously cancel
+    // events already queued for dispatch. Comparing against `this.socket`
+    // (updated synchronously whenever a new connect attempt starts) closes
+    // that gap regardless of platform close() timing.
+    const isCurrent = () => this.socket === socket
 
     // Abandon the attempt if the handshake neither opens nor errors in time.
     this.connectTimer = setTimeout(() => {
@@ -111,13 +122,15 @@ class WSClient {
       if (this.socket) {
         this.socket.onclose = null
         this.socket.onerror = null
+        this.socket.onmessage = null
         this.socket.close()
         this.socket = null
       }
       this._scheduleReconnect()
     }, CONNECT_TIMEOUT_MS)
 
-    this.socket.onopen = () => {
+    socket.onopen = () => {
+      if (!isCurrent()) return
       this._clearConnectTimer()
       logConnection(this.serverId, 'open')
       this.reconnectAttempt = 0
@@ -126,11 +139,12 @@ class WSClient {
       // can unicast session_list back only to the initiating client.
       this.send({ type: 'auth', token: this.apiKey })
       getDeviceClientId().then((clientId) => {
-        this.send({ type: 'register', clientId })
+        if (isCurrent()) this.send({ type: 'register', clientId })
       })
     }
 
-    this.socket.onmessage = (event) => {
+    socket.onmessage = (event) => {
+      if (!isCurrent()) return
       let msg: WSMessage
       try {
         msg = JSON.parse(event.data as string) as WSMessage
@@ -148,13 +162,15 @@ class WSClient {
       }
     }
 
-    this.socket.onerror = () => {
+    socket.onerror = () => {
+      if (!isCurrent()) return
       this._clearConnectTimer()
       logConnection(this.serverId, 'error', this.reconnectAttempt)
       this._scheduleReconnect()
     }
 
-    this.socket.onclose = () => {
+    socket.onclose = () => {
+      if (!isCurrent()) return
       this._clearConnectTimer()
       logConnection(this.serverId, 'close')
       this._setStatus('disconnected')
