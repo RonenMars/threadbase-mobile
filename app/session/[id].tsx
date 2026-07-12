@@ -35,7 +35,6 @@ import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
-import { useStreamStalled } from '@/hooks/useStreamStalled'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -71,6 +70,8 @@ const PENDING_PHRASES = [
   "Teaching bytes to dream in code…",
   "Convincing the electrons to cooperate…",
 ]
+
+const RECONNECTING_BANNER_DELAY_MS = 5_000
 
 function WakingUpOverlay({ phrase }: { phrase: string }) {
   const theme = useTheme()
@@ -429,15 +430,18 @@ export default function SessionDetailScreen() {
   }, [serverId, id, isPending, qc])
 
   // Connection staleness: a dead WS must not masquerade as a live session.
-  // wsStatus drives the "Reconnecting…" banner + dimmed content; the stalled
-  // flag catches the half-dead socket (connected but no frames) sooner than
-  // the 45s silence watchdog.
+  // Delay the visible stale state so brief WS reconnects don't interrupt the UI.
   const wsStatus = useWsStatus(serverId)
-  const streamStalled = useStreamStalled(
-    serverId,
-    id ?? '',
-    wsStatus === 'connected' && session?.status === 'running' && session?.ptyAttached === true,
-  )
+  const wsDisconnected = wsStatus !== 'connected'
+  const [showReconnectBanner, setShowReconnectBanner] = useState(false)
+  useEffect(() => {
+    if (!wsDisconnected) {
+      queueMicrotask(() => setShowReconnectBanner(false))
+      return
+    }
+    const timer = setTimeout(() => setShowReconnectBanner(true), RECONNECTING_BANNER_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [wsDisconnected])
 
   const [infoVisible, setInfoVisible] = useState(false)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
@@ -669,12 +673,10 @@ export default function SessionDetailScreen() {
       <View style={styles.body}>
         {isLive ? (
           <View style={styles.flex}>
-            {wsStatus !== 'connected' ? (
+            {showReconnectBanner ? (
               <ConnectionBanner variant="reconnecting" />
-            ) : streamStalled ? (
-              <ConnectionBanner variant="stalled" />
             ) : null}
-            <View style={wsStatus !== 'connected' ? [styles.flex, styles.staleContent] : styles.flex}>
+            <View style={showReconnectBanner ? [styles.flex, styles.staleContent] : styles.flex}>
             {sessionView === 'terminal' || !hasConversationId ? (
               <TerminalView
                 serverId={serverId}
