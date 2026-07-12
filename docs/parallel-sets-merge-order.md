@@ -80,7 +80,7 @@ For each set:
 - One worktree under `.claude/worktrees/<set-id>-<slug>/` (e.g. `c-quick-access-ux-trio`). Keeps every set's `node_modules`, Pods, and DerivedData isolated from the others.
 - Branch name `fix/set-<letter>-<slug>` (e.g. `fix/set-c-quick-access-ux`).
 - One PR per set unless explicitly noted (Set F may split into F.perf + F.maestro).
-- Conventional-commit titles per the repo CLAUDE.md rule (`fix(<scope>): …`). No `ENG-<n>` ticket scope required — this repo is non-Briya.
+- Conventional-commit titles per the repo CLAUDE.md rule (`fix(<scope>): …`). No external ticket-scope prefix required — this repo uses plain conventional commits.
 - Always commit `app.json` build-number bumps separately, before shipping (per project CLAUDE.md).
 
 ---

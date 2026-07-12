@@ -429,7 +429,7 @@ cd /Users/ronenmars/Desktop/dev/ai-tools/tb-mobile && npx expo start
 
 - [ ] **Step 2: Verify Hub layout with 3 servers**
 
-Switch to Hub view in Filter & Sort. With 3 servers active (Briya, Pc, Ak):
+Switch to Hub view in Filter & Sort. With 3 servers active (Alpha, Pc, Ak):
 - Each server should have an uppercase section header with its label and total item count
 - Project cards appear beneath their server's header
 - Cards still expand/collapse normally
