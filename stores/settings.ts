@@ -122,7 +122,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   biometricLock: false,
   autoNameFromMessage: true,
   aiGeneratedNames: false,
-  sessionView: 'chat',
+  sessionView: 'terminal',
 
   // Conversation row defaults (locked in plan §13).
   rowTitleSource: 'title',
@@ -178,7 +178,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         biometricLock: parsed.biometricLock ?? state.biometricLock,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
-        sessionView: parsed.sessionView === 'terminal' ? 'terminal' : state.sessionView,
+        sessionView: parsed.sessionView === 'chat' ? 'chat' : state.sessionView,
         rowTitleSource: parsed.rowTitleSource ?? state.rowTitleSource,
         rowPreviewMode: parsed.rowPreviewMode ?? state.rowPreviewMode,
         rowDensity: parsed.rowDensity ?? state.rowDensity,

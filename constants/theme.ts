@@ -13,6 +13,7 @@ export type Theme = {
     readonly danger: string
     readonly warning: string
     readonly success: string
+    readonly beta: string
   }
   readonly border: string
   readonly status: {
@@ -47,6 +48,7 @@ export const dark = {
     danger: '#f85149',
     warning: '#d29922',
     success: '#3fb950',
+    beta: '#d29922',
   },
   border: '#30363d',
   status: {
@@ -73,6 +75,7 @@ export const light = {
     danger: '#cf222e',
     warning: '#9a6700',
     success: '#1a7f37',
+    beta: '#9a6700',
   },
   border: '#d0d7de',
   status: {
@@ -99,6 +102,7 @@ export const dracula = {
     danger: '#ff5555',
     warning: '#ffb86c',
     success: '#50fa7b',
+    beta: '#ffb86c',
   },
   border: '#6272a4',
   status: {
@@ -125,6 +129,7 @@ export const catppuccin = {
     danger: '#f38ba8',
     warning: '#fab387',
     success: '#a6e3a1',
+    beta: '#fab387',
   },
   border: '#45475a',
   status: {
@@ -151,6 +156,7 @@ export const nord = {
     danger: '#bf616a',
     warning: '#ebcb8b',
     success: '#a3be8c',
+    beta: '#ebcb8b',
   },
   border: '#4c566a',
   status: {
@@ -178,6 +184,7 @@ export const catppuccinLatte = {
     danger: '#d20f39',
     warning: '#df8e1d',
     success: '#40a02b',
+    beta: '#df8e1d',
   },
   border: '#bcc0cc',
   status: {
@@ -205,6 +212,7 @@ export const oneDark = {
     danger: '#e06c75',
     warning: '#e5c07b',
     success: '#98c379',
+    beta: '#e5c07b',
   },
   border: '#3e4451',
   status: {
@@ -232,6 +240,7 @@ export const oneLight = {
     danger: '#e45649',
     warning: '#986801',
     success: '#50a14f',
+    beta: '#986801',
   },
   border: '#d3d3d3',
   status: {
@@ -259,6 +268,7 @@ export const solarizedDark = {
     danger: '#dc322f',
     warning: '#b58900',
     success: '#859900',
+    beta: '#b58900',
   },
   border: '#073642',
   status: {
@@ -286,6 +296,7 @@ export const solarizedLight = {
     danger: '#dc322f',
     warning: '#b58900',
     success: '#859900',
+    beta: '#b58900',
   },
   border: '#eee8d5',
   status: {
@@ -313,6 +324,7 @@ export const rosePine = {
     danger: '#eb6f92',
     warning: '#f6c177',
     success: '#31748f',
+    beta: '#f6c177',
   },
   border: '#403d52',
   status: {
@@ -340,6 +352,7 @@ export const rosePineDawn = {
     danger: '#b4637a',
     warning: '#ea9d34',
     success: '#286983',
+    beta: '#ea9d34',
   },
   border: '#dfdad9',
   status: {
@@ -367,6 +380,7 @@ export const tokyoNight = {
     danger: '#f7768e',
     warning: '#e0af68',
     success: '#9ece6a',
+    beta: '#e0af68',
   },
   border: '#292e42',
   status: {
@@ -394,6 +408,7 @@ export const tokyoNightLight = {
     danger: '#8c4351',
     warning: '#8f5e15',
     success: '#485e30',
+    beta: '#8f5e15',
   },
   border: '#b9b9c3',
   status: {
@@ -423,6 +438,7 @@ export const appleGlassThemes: Record<GlassThemeVariant, Theme> = {
       danger: '#ff5d5d',
       warning: '#ffb84d',
       success: '#34d399',
+      beta: '#ffb84d',
     },
     border: 'rgba(255, 255, 255, 0.16)',
     status: {
@@ -454,6 +470,7 @@ export const appleGlassThemes: Record<GlassThemeVariant, Theme> = {
       danger: '#ff6b6b',
       warning: '#ffcc66',
       success: '#5eead4',
+      beta: '#ffcc66',
     },
     border: 'rgba(255, 255, 255, 0.16)',
     status: {
@@ -485,6 +502,7 @@ export const appleGlassThemes: Record<GlassThemeVariant, Theme> = {
       danger: '#ff7b7b',
       warning: '#f8d66d',
       success: '#7dd3fc',
+      beta: '#f8d66d',
     },
     border: 'rgba(255, 255, 255, 0.14)',
     status: {

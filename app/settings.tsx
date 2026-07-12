@@ -22,7 +22,6 @@ import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction } from '@/stores/settings'
-import { useQuickAccessStore } from '@/stores/quickAccess'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
@@ -35,6 +34,7 @@ import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/the
 import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
 function addServerActionLabel(action: AddServerAction): string {
@@ -46,10 +46,15 @@ function addServerActionLabel(action: AddServerAction): string {
   }
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, badge }: { title: string; badge?: string }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
-  return <Text style={s.sectionHeader}>{title}</Text>
+  return (
+    <View style={s.sectionHeaderRow}>
+      <Text style={s.sectionHeader}>{title}</Text>
+      {badge ? <Badge label={badge} /> : null}
+    </View>
+  )
 }
 
 function SettingsRow({
@@ -57,17 +62,26 @@ function SettingsRow({
   value,
   onValueChange,
   testID,
+  badge,
 }: {
   label: string
   value: boolean
   onValueChange: (v: boolean) => void
   testID?: string
+  badge?: string
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
   return (
     <View style={s.row} testID={testID}>
-      <Text style={s.rowLabel}>{label}</Text>
+      <View style={s.rowLabelGroup}>
+        <Text style={s.rowLabel}>{label}</Text>
+        {badge ? (
+          <View style={{ marginTop: -10 }}>
+            <Badge label={badge} bg={theme.text.beta} color="#1a1a1a" />
+          </View>
+        ) : null}
+      </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
@@ -84,12 +98,14 @@ function PermissionRow({
   status,
   onPress,
   isLast,
+  badge,
 }: {
   label: string
   description: string
   status: PermissionStatus
   onPress: () => void
   isLast?: boolean
+  badge?: string
 }) {
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
@@ -120,7 +136,10 @@ function PermissionRow({
       onPress={onPress}
     >
       <View style={s.permissionRowLeft}>
-        <Text style={s.rowLabel}>{label}</Text>
+        <View style={s.rowLabelGroup}>
+          <Text style={s.rowLabel}>{label}</Text>
+          {badge ? <Badge label={badge} /> : null}
+        </View>
         <Text style={s.permissionRowDesc}>{description}</Text>
       </View>
       <View style={s.permissionRowRight}>
@@ -254,11 +273,6 @@ export default function SettingsScreen() {
     glassThemeVariant,
     setGlassThemeVariant,
   } = useSettingsStore()
-  const {
-    favoritesEnabled, setFavoritesEnabled,
-    recentsEnabled, setRecentsEnabled,
-    popularEnabled, setPopularEnabled,
-  } = useQuickAccessStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
@@ -558,7 +572,7 @@ await refreshServerInfo(serverId)
           ) : null}
         </View>
 
-        <SectionHeader title={t('section.notifications')} />
+        <SectionHeader title={t('section.notifications')} badge={t('comingSoonBadge')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill />
           <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
@@ -570,24 +584,8 @@ await refreshServerInfo(serverId)
           <TouchableOpacity style={s.testBtn} onPress={handleTestNotification}>
             <Text style={s.testBtnText}>{t('notifications.sendTest')}</Text>
           </TouchableOpacity>
+          <View style={s.comingSoonOverlay} pointerEvents="auto" />
         </View>
-
-        <SectionHeader title={t('quickAccess.title')} />
-        <SettingsRow
-          label={t('quickAccess.favorites')}
-          value={favoritesEnabled}
-          onValueChange={setFavoritesEnabled}
-        />
-        <SettingsRow
-          label={t('quickAccess.recentSessions')}
-          value={recentsEnabled}
-          onValueChange={setRecentsEnabled}
-        />
-        <SettingsRow
-          label={t('quickAccess.popularProjects')}
-          value={popularEnabled}
-          onValueChange={setPopularEnabled}
-        />
 
         <SectionHeader title={t('sessionNaming.title')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
@@ -600,11 +598,12 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.session')} />
         <SettingsRow
-          label={t('session.terminalView')}
-          value={sessionView === 'terminal'}
-          onValueChange={(v) => setSessionView(v ? 'terminal' : 'chat')}
+          label={t('session.chatView')}
+          value={sessionView === 'chat'}
+          onValueChange={(v) => setSessionView(v ? 'chat' : 'terminal')}
+          badge={t('session.betaBadge')}
         />
-        <Text style={s.rowNote}>{t('session.terminalViewNote')}</Text>
+        <Text style={s.rowNote}>{t('session.chatViewNote')}</Text>
 
         <SectionHeader title={t('section.history')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
@@ -784,6 +783,7 @@ await refreshServerInfo(serverId)
             description={t('permissions.notificationsDesc')}
             status={permStatuses.notifications}
             onPress={permStatuses.notifications === 'undetermined' ? () => requestPermission('notifications') : openPermissionSettings}
+            badge={t('comingSoonBadge')}
             isLast
           />
         </View>
@@ -874,14 +874,19 @@ function styles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     content: { padding: spacing.md, gap: spacing.sm },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+    },
     sectionHeader: {
       color: theme.text.secondary,
       fontSize: font.xs,
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.8,
-      marginTop: spacing.md,
-      marginBottom: spacing.xs,
       marginLeft: spacing.xs,
     },
     card: {
@@ -893,6 +898,14 @@ function styles(theme: ReturnType<typeof useTheme>) {
     },
     cardGlass: {
       backgroundColor: 'transparent',
+    },
+    comingSoonOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colorMode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.65)',
     },
     segmentedControlGlass: {
       backgroundColor: 'transparent',
@@ -943,6 +956,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
       borderBottomColor: theme.border,
     },
     rowLabel: { color: theme.text.primary, fontSize: font.base },
+    rowLabelGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     rowValue: { color: theme.text.secondary, fontSize: font.sm },
     rowNote: { color: theme.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
     accordionBody: {
