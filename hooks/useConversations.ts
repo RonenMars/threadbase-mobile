@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
+import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
 import { QUERY_GC_TIME } from '@/services/query-client'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
@@ -325,14 +326,6 @@ const CONVERSATION_ANCHORED_LIMIT = 120
  */
 type ConversationPageParam = number | { after: number }
 
-// First-page ETags, keyed by `${serverId}::${id}`. The server sets an ETag on
-// the first-page (newest) response of /api/conversations/{id}; echoing it back
-// via If-None-Match lets the server answer 304 when the conversation is
-// unchanged, so we skip re-downloading the page. Module-level so it survives
-// re-renders and the queryFn closure; only the first page participates (older
-// pages are immutable history and never revalidate).
-const firstPageEtags = new Map<string, string>()
-
 export function useConversation(
   serverId: string,
   id: string,
@@ -391,7 +384,7 @@ export function useConversation(
       // First page: send If-None-Match with the last known ETag (if any) and
       // use the conditional path so a 304 keeps the cached copy.
       const etagKey = `${serverId}::${id}`
-      const knownEtag = firstPageEtags.get(etagKey)
+      const knownEtag = getEtag(etagKey)
       const res = await api.getWithMeta<RawConversationDetail>(
         path,
         knownEtag ? { headers: { 'If-None-Match': knownEtag } } : undefined,
@@ -409,8 +402,8 @@ export function useConversation(
 
       // 200: remember the validator (null against a non-ETag server clears it,
       // so we simply stop sending If-None-Match — graceful degradation).
-      if (res.etag) firstPageEtags.set(etagKey, res.etag)
-      else firstPageEtags.delete(etagKey)
+      if (res.etag) setEtag(etagKey, res.etag)
+      else deleteEtag(etagKey)
       // body is non-null on a 200 from requestWithMeta.
       return res.body as RawConversationDetail
     },
