@@ -429,8 +429,8 @@ export function useConversation(
       return p.next_before_index
     },
     // Newer direction ("previous" in react-query terms — pages are ordered
-    // newest-chunk first). Only anchored/after pages carry has_more_newer, so
-    // this is inert for the tail view.
+    // newest-chunk first). Anchored/after pages resume via has_more_newer; the
+    // tail view resumes via a derived { resume } cursor (see body below).
     getPreviousPageParam: (first, allPages): ConversationPageParam | undefined => {
       const p = first.message_pagination
       // Anchored/after pages carry has_more_newer — the server already told us

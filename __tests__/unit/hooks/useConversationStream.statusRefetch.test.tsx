@@ -3,8 +3,9 @@ import { renderHook, act } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import type { Session } from '@/types/api'
+import type { WSMessage } from '@/services/ws-client'
 
-type Handler = (msg: any) => void
+type Handler = (msg: WSMessage) => void
 
 jest.mock('@/services/ws-client', () => {
   const listeners = new Map<string, Set<Handler>>()
@@ -20,16 +21,16 @@ jest.mock('@/services/ws-client', () => {
       onAnyStatusChange: () => () => {},
     },
     __wsTest: {
-      emit: (type: string, msg: any) => listeners.get(type)?.forEach((l) => l(msg)),
+      emit: (type: string, msg: WSMessage) => listeners.get(type)?.forEach((l) => l(msg)),
     },
   }
 })
 
 const { __wsTest } = jest.requireMock('@/services/ws-client') as {
-  __wsTest: { emit: (type: string, msg: any) => void }
+  __wsTest: { emit: (type: string, msg: WSMessage) => void }
 }
 
-function sessionUpdate(id: string, status: Session['status']) {
+function sessionUpdate(id: string, status: Session['status']): Extract<WSMessage, { type: 'session_update' }> {
   return { type: 'session_update', session: { id, status } as Session }
 }
 
