@@ -16,9 +16,7 @@ jest.mock('@/services/ws-client', () => {
       },
     },
     __wsTest: {
-      emitStatus: (sid: string, s: string) => {
-        statusListeners.forEach((l) => l(sid, s))
-      },
+      emitStatus: (sid: string, s: string) => statusListeners.forEach((l) => l(sid, s)),
     },
   }
 })
@@ -27,41 +25,15 @@ const { __wsTest } = jest.requireMock('@/services/ws-client') as {
   __wsTest: { emitStatus: (sid: string, s: string) => void }
 }
 
-async function setup() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-  )
-  const rendered = await renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
-  return { invalidateSpy, ...rendered }
-}
-
-describe('useConversationStream – reconnect recovery', () => {
-  it('refetches the conversation when the WS comes back to connected', async () => {
-    const { invalidateSpy } = await setup()
-    // Mount performs the initial invalidation.
-    expect(invalidateSpy).toHaveBeenCalledTimes(1)
-
-    await act(() => __wsTest.emitStatus('srv-1', 'connected'))
-    expect(invalidateSpy).toHaveBeenCalledTimes(2)
-    expect(invalidateSpy).toHaveBeenLastCalledWith({ queryKey: ['conversation', 'srv-1', 'conv-1'] })
-  })
-
-  it('ignores other servers and non-connected statuses', async () => {
-    const { invalidateSpy } = await setup()
-    invalidateSpy.mockClear()
-
-    await act(() => __wsTest.emitStatus('srv-2', 'connected'))
-    await act(() => __wsTest.emitStatus('srv-1', 'connecting'))
-    await act(() => __wsTest.emitStatus('srv-1', 'disconnected'))
+describe('useConversationStream — no longer touches the conversation query cache', () => {
+  it('never calls invalidateQueries on mount or on WS reconnect', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    await renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
     expect(invalidateSpy).not.toHaveBeenCalled()
-  })
-
-  it('stops listening after unmount', async () => {
-    const { invalidateSpy, unmount } = await setup()
-    invalidateSpy.mockClear()
-    await unmount()
 
     await act(() => __wsTest.emitStatus('srv-1', 'connected'))
     expect(invalidateSpy).not.toHaveBeenCalled()
