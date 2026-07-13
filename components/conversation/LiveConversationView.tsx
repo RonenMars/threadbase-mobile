@@ -84,13 +84,25 @@ export function LiveConversationView({
   // Live appended messages (WS)
   const { liveMessages } = useConversationStream(serverId, sessionId, conversationId)
 
-  // Deduplicate live messages against historical by uuid (not id — REST uses index-based ids
-  // while WS uses uuid or timestamp fallback, so id never matches across sources).
-  const seenUuids = new Set(historicalMessages.map((m) => m.uuid).filter(Boolean))
+  // Historical carries a server message_index; live WS messages do not (yet —
+  // real indexes arrive with the WS-resume follow-up). Order historical by
+  // index; live messages keep arrival order after history. Never assign a
+  // synthetic index to a live message and never write one back to the query
+  // cache — the derived cursor must stay "max index over server-indexed
+  // messages" so it can't be advanced by a client-guessed value.
+  const orderedHistorical = [...historicalMessages].sort((a, b) => {
+    const ai = a.messageIndex ?? Number.MAX_SAFE_INTEGER
+    const bi = b.messageIndex ?? Number.MAX_SAFE_INTEGER
+    return ai - bi
+  })
+
+  // Deduplicate live messages against historical by uuid (id never matches
+  // across REST/WS: REST uses index-based ids, WS uses uuid/timestamp).
+  const seenUuids = new Set(orderedHistorical.map((m) => m.uuid).filter(Boolean))
   const newLive = liveMessages.filter((m) => !m.uuid || !seenUuids.has(m.uuid))
 
   // Drop optimistic turns whose echo has landed — matched one-for-one by text.
-  const allStreamed = [...historicalMessages, ...newLive]
+  const allStreamed = [...orderedHistorical, ...newLive]
   const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
   const stillPending = (() => {
     const remaining = [...pendingSends]
@@ -100,15 +112,13 @@ export function LiveConversationView({
     }
     return remaining
   })()
-  // Order: historical → optimistic user bubble → live WS messages.
-  // This ensures the user's send always sits before any live assistant reply,
-  // even when the WS assistant message arrives before the REST echo clears stillPending.
-  // Dedup by id last: uuid-less messages fall back to `timestamp-type-role` ids
-  // which can collide across REST/WS, and duplicate FlashList keys trigger a
-  // "Maximum update depth exceeded" render loop.
+
+  // Order: historical → optimistic user bubble → live WS messages. Dedup by id
+  // last (uuid-less messages fall back to timestamp-type-role ids that can
+  // collide across REST/WS; duplicate FlashList keys trigger a render loop).
   const allMessages = (() => {
     const seen = new Set<string>()
-    return [...historicalMessages, ...stillPending, ...newLive].filter((m) => {
+    return [...orderedHistorical, ...stillPending, ...newLive].filter((m) => {
       if (seen.has(m.id)) return false
       seen.add(m.id)
       return true
