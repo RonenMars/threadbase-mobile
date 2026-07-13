@@ -631,3 +631,47 @@ describe('useConversation — retention gcTime', () => {
     expect(q?.gcTime).toBe(1000 * 60 * 5)
   })
 })
+
+describe('useConversation — retry hygiene', () => {
+  it('does not refetch the page chain on remount within staleTime', async () => {
+    setActiveServers(['srv_stale'])
+    let getWithMetaCalls = 0
+    metaHandlers.srv_stale = () => {
+      getWithMetaCalls += 1
+      return Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_s', ['a']) })
+    }
+    const { wrapper } = wrapperWithClient()
+
+    const first = await renderHook(() => useConversation('srv_stale', 'c_s'), { wrapper })
+    await waitFor(() => expect(first.result.current.data).toBeDefined())
+    expect(getWithMetaCalls).toBe(1)
+
+    // Remount against the same client + warm cache: refetchOnMount:false + fresh
+    // (staleTime 15s) means no second tail fetch.
+    const second = await renderHook(() => useConversation('srv_stale', 'c_s'), { wrapper })
+    await waitFor(() => expect(second.result.current.data).toBeDefined())
+    expect(getWithMetaCalls).toBe(1)
+  })
+
+  it('sets a 15s staleTime and disables the three auto-refetch triggers on the query', async () => {
+    setActiveServers(['srv_opts'])
+    metaHandlers.srv_opts = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_o', ['a']) })
+    const { qc, wrapper } = wrapperWithClient()
+
+    const { result } = await renderHook(() => useConversation('srv_opts', 'c_o'), { wrapper })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    const q = qc.getQueryCache().find({ queryKey: ['conversation', 'srv_opts', 'c_o'] })
+    const opts = q?.options as {
+      staleTime?: number
+      refetchOnMount?: boolean
+      refetchOnWindowFocus?: boolean
+      refetchOnReconnect?: boolean
+    }
+    expect(opts.staleTime).toBe(15_000)
+    expect(opts.refetchOnMount).toBe(false)
+    expect(opts.refetchOnWindowFocus).toBe(false)
+    expect(opts.refetchOnReconnect).toBe(false)
+  })
+})

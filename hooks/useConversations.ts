@@ -343,6 +343,10 @@ export function useConversation(
     queryKey,
     initialPageParam: -1 as ConversationPageParam,
     gcTime: conversationGcTime,
+    staleTime: 15_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
 
