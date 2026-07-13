@@ -74,8 +74,7 @@
     "bodyUnpaired": "Skip it for now — you can connect a runtime from Settings whenever you're ready.",
     "pillUnpaired": "no runtime paired · pair from Settings",
     "ctaPaired": "Enter Threadbase",
-    "ctaUnpaired": "Continue — I'll pair later",
-    "analyticsConsent": "Help improve Threadbase by anonymously sharing crash reports and diagnostics. No personal data is ever sent. You can change this anytime in Settings."
+    "ctaUnpaired": "Continue — I'll pair later"
   },
   "notifications": {
     "allowTitle": "Push notifications",

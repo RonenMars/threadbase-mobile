@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import Animated, {
   Easing,
@@ -16,7 +16,6 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg'
-import { useSettingsStore } from '@/stores/settings'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
 
@@ -28,8 +27,6 @@ interface Props {
 
 export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
   const { t } = useTranslation('onboarding')
-  const crashReportingEnabled = useSettingsStore((s) => s.crashReportingEnabled)
-  const setCrashReportingEnabled = useSettingsStore((s) => s.setCrashReportingEnabled)
   const paired = serverHost != null && serverPort != null
   const popScale = useSharedValue(0.8)
   const popOpacity = useSharedValue(0)
@@ -120,30 +117,6 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
           </Text>
         </View>
       </View>
-
-      <Pressable
-        testID="onboarding-analytics-consent"
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: crashReportingEnabled }}
-        onPress={() => setCrashReportingEnabled(!crashReportingEnabled)}
-        style={styles.consent}
-      >
-        <View style={[styles.checkbox, crashReportingEnabled && styles.checkboxChecked]}>
-          {crashReportingEnabled && (
-            <Svg width={14} height={14} viewBox="0 0 24 24">
-              <Polyline
-                points="20 6 9 17 4 12"
-                fill="none"
-                stroke="#0a1424"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          )}
-        </View>
-        <Text style={styles.consentText}>{t('done.analyticsConsent')}</Text>
-      </Pressable>
 
       <PrimaryButton testID="onboarding-done-cta" onPress={onEnter} showIcon={false}>
         {paired ? t('done.ctaPaired') : t('done.ctaUnpaired')}
@@ -244,33 +217,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 15,
-  },
-  consent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingHorizontal: 4,
-    paddingVertical: 12,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: colors.ink6,
-    backgroundColor: colors.ink2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: colors.green400,
-    borderColor: colors.green400,
-  },
-  consentText: {
-    flex: 1,
-    color: colors.fg2,
-    fontFamily: fonts.sans,
-    fontSize: 13,
-    lineHeight: 18,
   },
 })
