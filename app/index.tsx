@@ -37,7 +37,7 @@ import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple, Bug } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
@@ -46,7 +46,6 @@ import { conversationHref } from '@/lib/conversationHref'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
-import { RootErrorBoundaryFallback } from '@/components/RootErrorBoundary'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -84,9 +83,6 @@ export default function ProjectsHub() {
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const hasEverHadServer = useServersStore((s) => s.hasEverHadServer)
-  // Dev-only: preview RootErrorBoundary's fallback UI without throwing (avoids
-  // Metro's LogBox overlay). Never rendered in production.
-  const [showErrorFallbackDemo, setShowErrorFallbackDemo] = useState(false)
 
   useEffect(() => {
     clientLog.info('hub.mount', 'ProjectsHub mounted', {
@@ -352,17 +348,6 @@ export default function ProjectsHub() {
             <SlidersHorizontal size={20} color={isSheetActive ? theme.text.accent : theme.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
           </Pressable>
-          {__DEV__ ? (
-            <Pressable
-              onPress={() => setShowErrorFallbackDemo(true)}
-              hitSlop={8}
-              style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
-              accessibilityLabel="Preview error screen (dev only)"
-              testID="header-error-fallback-demo-btn"
-            >
-              <Bug size={20} color={theme.text.secondary} />
-            </Pressable>
-          ) : null}
         </View>
       </View>
 
@@ -520,15 +505,6 @@ export default function ProjectsHub() {
         convDone={convDone}
         convCounting={convCounting}
       />
-
-      {__DEV__ && showErrorFallbackDemo ? (
-        <View style={StyleSheet.absoluteFill}>
-          <RootErrorBoundaryFallback
-            onReload={() => setShowErrorFallbackDemo(false)}
-            error={new Error('Preview error (Report button demo, no real crash)')}
-          />
-        </View>
-      ) : null}
 
     </SafeAreaView>
   )
