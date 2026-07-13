@@ -48,13 +48,15 @@ through Expo's notification relay. Removing a server in Settings revokes its
 push token. The token is an opaque delivery address; it does not contain your
 session content.
 
+To deliver notifications, your streamer also sends a notification payload through Expo's push service. Threadbase is designed so these payloads do not include prompts, terminal output, credentials, or conversation content.
+
 ## 3. Optional crash reporting (Sentry)
 
 Threadbase includes optional crash reporting to help diagnose defects, sent
 through two paths:
 
 - **Automatic reporting.** **Disabled by default and opt-in.** Nothing is sent
-  automatically unless you turn on "Share anonymous crash reports" in
+  automatically unless you turn on "Automatically send sanitized crash reports" in
   **Settings → Crash Reporting**. Once enabled, future crashes are sent
   automatically until you turn it off again.
 - **Manual, one-time report.** If the app crashes, the recovery screen offers a
@@ -92,14 +94,14 @@ service.
   impossibility, which is why crash reporting is opt-in and off by default.
 - **Your control.** You can enable or disable crash reporting at any time in
   Settings. Disabling it stops future reporting immediately and deletes the
-  anonymous installation identifier from your device.
+  pseudonymous app-specific installation identifier from your device.
 - **Previously submitted reports.** Reports already sent before you disable
   crash reporting remain in Sentry subject to the retention below; disabling
   does not retroactively delete them.
 - **Retention.** Crash reports are retained according to the configured Sentry
   project retention (by default, 90 days) and then deleted.
 - **Deletion requests.** To request deletion of reports associated with your
-  anonymous installation identifier where feasible, contact
+  pseudonymous app-specific installation identifier where feasible, contact
   ronenmars@gmail.com.
 - **Processing location.** Crash reports are processed in the region configured
   for the Sentry project. _(Set this to the actual Sentry data region — for
@@ -111,16 +113,13 @@ The Help & Feedback screen lets you send a bug report, feature request, or
 general feedback. This is always a deliberate action you initiate; Threadbase
 never sends feedback on its own.
 
+Submitting feedback is always a deliberate action you take. Tapping the **Send** button authorizes Threadbase to transmit only the information shown on the submission screen. No additional permission dialog is required because the submission itself is initiated by you.
+
 - **What is sent.** The description you type, an optional reply email address if
   you provide one, and — only if you leave the "Include technical diagnostics"
-  option enabled — the same category of sanitized technical metadata described
-  for diagnostics below. Before you submit, the screen shows you exactly what
-  will be included.
-- **How it is sent.** Feedback is delivered through the first available of: a
-  configured feedback endpoint, the Sentry User Feedback channel (only when
-  crash reporting is enabled), your device's email app, or a copy-to-clipboard
-  option you can paste into the Threadbase feedback page. Feedback works whether
-  or not crash reporting is enabled.
+  option enabled — the same sanitized technical diagnostics described for diagnostics below. Before you submit, the screen shows you exactly what
+  will be included. Technical diagnostics are optional and can be disabled before sending.
+- **How it is sent.** Depending on the feature you choose, feedback may be delivered through a configured feedback endpoint, the Sentry User Feedback channel, your device's email application, or a copy-to-clipboard option. Before anything is transmitted, Threadbase clearly indicates which delivery method will be used. Feedback submissions are always initiated by you and do not require automatic crash reporting to be enabled.
 - **Optional email.** If you provide a reply email, it is stored with your
   feedback so we can respond. Leaving it blank keeps your submission anonymous.
 - **What is excluded.** As with crash reports, feedback does not intentionally
@@ -137,7 +136,7 @@ never sends feedback on its own.
   the feedback you submit and are not retained beyond what is necessary for that
   submission and its handling.
 - **Diagnostics.** You can copy or export a diagnostics report from the app. It
-  contains only the sanitized technical metadata categories described above —
+  contains only the sanitized technical diagnostics described above —
   never prompts, terminal output, credentials, server addresses, session
   content, or your device name. You control whether it is copied or submitted.
 
@@ -164,9 +163,7 @@ are governed by the retention terms above.
 Threadbase does not use advertising, tracking, fingerprinting, or behavioral
 telemetry. It does not include a product-analytics SDK. It does not
 automatically capture your screen, console output, or network requests. The only
-data that leaves your device is the core streamer traffic you direct, the
-optional push-notification token, and — only with your action or opt-in consent
-— the crash reports, feedback, screenshots, and diagnostics described above.
+data that leaves your device is the core streamer traffic you direct, the optional push-notification token and notification payload, manual feedback submissions that you choose to send, and—only with your explicit action or opt-in consent—the crash reports, screenshots, and diagnostics described above.
 
 ## Permissions the app uses
 
@@ -184,7 +181,7 @@ optional push-notification token, and — only with your action or opt-in consen
 - Crash reporting is off by default; enable or disable it any time in Settings.
 - Feedback and diagnostics are only ever sent when you initiate them.
 - Removing a server revokes its push token.
-- Uninstalling the app deletes everything stored locally.
+- Uninstalling the app removes Threadbase data stored in the app's local container. Some credentials stored by the operating system's secure credential storage (such as the iOS Keychain) may remain after uninstalling.
 - Contact ronenmars@gmail.com with any privacy question or deletion request.
 
 ---

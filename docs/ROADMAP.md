@@ -45,6 +45,7 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 32 — Handle batched `conversation_events` WS event | Planned (perf, low-priority) |
 | Feature 34 — Structured prompt cards for Codex sessions | Planned (cross-repo, streamer-side) |
 | Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | Planned (privacy/product decision) |
+| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-follow-up-checklist.md) | Planned (privacy/product decision) |
 
 **Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
