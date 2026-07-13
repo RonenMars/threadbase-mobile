@@ -8,6 +8,7 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
+import { deriveCursor } from '@/hooks/conversationCursor'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -345,11 +346,15 @@ export function useConversation(
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
 
-      // Newer-direction page (only reachable from an anchored first page).
-      // Plain fetch: anchored/after windows never answer 304.
-      if (typeof pageParam === 'object' && 'after' in pageParam) {
-        params.set('msg_limit', String(CONVERSATION_ANCHORED_LIMIT))
-        params.set('after_index', String(pageParam.after))
+      // Newer-direction page. { after } = anchored backfill (msg_limit 120);
+      // { resume } = tail delta-on-open (msg_limit 80). Both are plain fetches —
+      // after_index/anchored windows always answer 200, never 304, so
+      // If-None-Match would be misleading dead code.
+      if (typeof pageParam === 'object') {
+        const isResume = 'resume' in pageParam
+        const cursor = isResume ? pageParam.resume : pageParam.after
+        params.set('msg_limit', String(isResume ? CONVERSATION_MESSAGE_LIMIT : CONVERSATION_ANCHORED_LIMIT))
+        params.set('after_index', String(cursor))
         return api.get<RawConversationDetail>(
           `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
         )
@@ -413,10 +418,21 @@ export function useConversation(
     // Newer direction ("previous" in react-query terms — pages are ordered
     // newest-chunk first). Only anchored/after pages carry has_more_newer, so
     // this is inert for the tail view.
-    getPreviousPageParam: (first): ConversationPageParam | undefined => {
+    getPreviousPageParam: (first, allPages): ConversationPageParam | undefined => {
       const p = first.message_pagination
-      if (!p?.has_more_newer || p.next_after_index == null) return undefined
-      return { after: p.next_after_index }
+      // Anchored/after pages carry has_more_newer — the server already told us
+      // exactly where to continue, so this branch always wins when present.
+      if (p?.has_more_newer && p.next_after_index != null) {
+        return { after: p.next_after_index }
+      }
+      // Tail-view fallback: the newest cached page is plain REST/tail data with
+      // no has_more_newer field. If a cursor exists, offer a { resume } param —
+      // recomputed every call (never latched), so each mount/foreground/WS
+      // trigger resumes from the current cursor. Anchored windows never reach
+      // here. Same deriveCursor the Task 6 effect uses — one source of truth.
+      if (anchorIndex != null) return undefined
+      const cursor = deriveCursor(allPages)
+      return cursor != null ? { resume: cursor } : undefined
     },
     enabled: Boolean(serverId && id) && (opts?.enabled ?? true),
   })

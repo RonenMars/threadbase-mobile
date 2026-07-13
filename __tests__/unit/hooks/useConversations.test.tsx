@@ -382,6 +382,52 @@ describe('useConversation — anchored window (bidirectional pagination)', () =>
     await waitFor(() => expect(result.current.data).toBeDefined())
 
     expect(getWithMetaCalled).toBe(true)
+    // Delta-on-open: a tail view with a cached indexed message now exposes a
+    // { resume } cursor, so hasNewerPage is true (was falsy before the resume lane).
+    expect(result.current.hasNewerPage).toBe(true)
+  })
+})
+
+describe('useConversation — { resume } delta on the tail view', () => {
+  it('resumes from the derived cursor: after_index GET, plain get (no If-None-Match), merges newer messages', async () => {
+    setActiveServers(['srv_resume'])
+    const paths: string[] = []
+    // Tail first page: messages 0..2, total 3. No has_more_newer field (plain tail).
+    metaHandlers.srv_resume = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_r', ['a', 'b', 'c']) })
+    // after_index=2 delta: two new messages 3,4 out of total 5, no more newer.
+    handlers.srv_resume = (path) => {
+      paths.push(path)
+      return Promise.resolve(
+        rawAnchoredPage('c_r', 3, 2, 5, { has_more_newer: false, next_after_index: null }),
+      )
+    }
+
+    const { result } = await renderHook(() => useConversation('srv_resume', 'c_r'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(3))
+
+    // Cursor = max index = 2 → hasNewerPage true on the tail view now.
+    expect(result.current.hasNewerPage).toBe(true)
+
+    await result.current.fetchNewerPage()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(5))
+
+    expect(paths.some((p) => p.includes('after_index=2'))).toBe(true)
+    expect(paths.some((p) => p.includes('msg_limit=80'))).toBe(true)
+    // Delta path must NOT send If-None-Match (it's a plain get, not getWithMeta).
+    const indexes = result.current.data!.messages.map((m) => m.messageIndex)
+    expect(indexes).toEqual([0, 1, 2, 3, 4])
+  })
+
+  it('does not expose a resume cursor when no messages are cached (fresh install)', async () => {
+    setActiveServers(['srv_fresh'])
+    metaHandlers.srv_fresh = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_f', []) })
+
+    const { result } = await renderHook(() => useConversation('srv_fresh', 'c_f'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    // No indexed messages → no cursor → hasNewerPage stays falsy.
     expect(result.current.hasNewerPage).toBeFalsy()
   })
 })
