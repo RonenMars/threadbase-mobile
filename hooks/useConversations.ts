@@ -17,6 +17,7 @@ import {
   isCursorValid,
   canTrigger,
   stampTrigger,
+  etagOf,
 } from '@/hooks/conversationCursor'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
@@ -494,6 +495,7 @@ export function useConversation(
       // and correct: larger continuation pages mean fewer round-trips; do not
       // "fix" it to 80.
       let cursor = cursorAtStart
+      let drainEtag: string | undefined // captured from the first hop of THIS drain
       // eslint-disable-next-line no-constant-condition
       while (true) {
         if (cancelled) return
@@ -504,25 +506,37 @@ export function useConversation(
         if (!data) return
         const firstPage = data.pages[0]
 
-        // Empty-200: RQ prepended an empty husk — strip it, stop draining.
+        // (1) etag gate — FIRST. The after_index delta's etag changes on every
+        // append, so it can only mean "the file changed between this hop and the
+        // drain's first hop." If it differs, this hop was read across the change:
+        // strip it (do NOT merge a cross-read page) and stop. NEVER resetQueries —
+        // a whole-conversation etag can't tell append from rewrite, so discarding
+        // would wipe the 7-day cache on the normal live-streaming path. Shrink
+        // detection is the next drain's total<=cursor gate below. Skip inspecting
+        // this page's total/emptiness — a cross-read page's fields are meaningless.
+        const hopEtag = etagOf(firstPage)
+        if (drainEtag === undefined) {
+          drainEtag = hopEtag // first hop: record, don't compare
+        } else if (hopEtag !== undefined && hopEtag !== drainEtag) {
+          queryClient.setQueryData(tailKey, stripFirstPage(data))
+          return
+        }
+
+        // (2) Empty-200 husk → strip, stop draining.
         if (isEmptyFirstPage(data)) {
           queryClient.setQueryData(tailKey, stripFirstPage(data))
           return
         }
 
-        // Cursor validity: a truncation/rewrite means our cursor no longer
-        // points onto this history. resetQueries discards the cached data AND
-        // refetches the active query from initialPageParam (-1) in one call —
-        // the purpose-built primitive for discard-and-refetch. (removeQueries
-        // alone would leave the refetch to the mounted observer; resetQueries
-        // is explicit and self-contained.)
+        // (3) Cursor validity: total <= cursor → truncation/rewrite. Discard +
+        // refetch tail from -1.
         if (!isCursorValid(firstPage, cursor)) {
           void queryClient.resetQueries({ queryKey: tailKey })
           return
         }
 
+        // (4) Continue?
         if (!shouldContinueDrain(firstPage)) return
-        // Advance our local cursor to the new max for the next validity check.
         cursor = deriveCursor(data.pages) ?? cursor
       }
     }

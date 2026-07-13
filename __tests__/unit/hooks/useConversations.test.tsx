@@ -919,3 +919,78 @@ describe('useConversation — consolidated delta trigger', () => {
     await waitFor(() => expect(deltaCalls).toBe(1))
   })
 })
+
+describe('useConversation — drain etag (item 3)', () => {
+  beforeEach(() => __resetTriggerGuardForTests())
+
+  it('(e) strips the mismatched hop and stops — no resetQueries, hop-1 kept, resumable', async () => {
+    setActiveServers(['srv_etag'])
+    const paths: string[] = []
+    // Warm cache ends at index 2 (cursor 2). Two-hop backlog, but hop 2's etag differs.
+    handlers.srv_etag = (path) => {
+      paths.push(path)
+      if (path.includes('after_index=2')) {
+        // hop 1: 80 new (3..82), more newer, etag "A".
+        return Promise.resolve(rawAnchoredPage('c_et', 3, 80, 243, { has_more_newer: true, next_after_index: 83, etag: '"A"' }))
+      }
+      // hop 2 (after_index=83): file changed → etag "B".
+      return Promise.resolve(rawAnchoredPage('c_et', 83, 80, 243, { has_more_newer: true, next_after_index: 163, etag: '"B"' }))
+    }
+    metaHandlers.srv_etag = () => Promise.reject(new Error('no tail fetch expected'))
+    const { qc, wrapper } = wrapperWithClient()
+    const resetSpy = jest.spyOn(qc, 'resetQueries')
+    qc.setQueryData(['conversation', 'srv_etag', 'c_et'], warmTailCache('c_et'))
+
+    const { result } = await renderHook(() => useConversation('srv_etag', 'c_et'), { wrapper })
+
+    // Two hops fire, then the drain stops (no 3rd hop for after_index=163).
+    await waitFor(() => expect(paths.filter((p) => p.includes('after_index'))).toHaveLength(2))
+    // hop-1 (indexes 3..82) stays merged: 3 (warm) + 80 = 83 messages.
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(83))
+    // The mismatched hop-2 page was STRIPPED — the cache is back to hop-1's page count.
+    // warm cache = 1 page; after hop-1 merge = 2 pages; hop-2 prepended then stripped = 2 pages.
+    const cached = qc.getQueryData(['conversation', 'srv_etag', 'c_et']) as { pages: unknown[] }
+    expect(cached.pages).toHaveLength(2)
+    // NEVER discarded.
+    expect(resetSpy).not.toHaveBeenCalled()
+    // Still resumable: cursor exists (max index 82), so a future trigger can continue.
+    expect(result.current.hasNewerPage).toBe(true)
+  })
+
+  it('(f) two drains with different etags because messages were appended between them → merge proceeds, NO discard', async () => {
+    jest.useFakeTimers()
+    setActiveServers(['srv_grow'])
+    let hop = 0
+    // Each single-hop drain returns a consistent etag within itself, but the two
+    // drains differ (append between them). Neither should discard.
+    handlers.srv_grow = () => {
+      hop += 1
+      if (hop === 1) return Promise.resolve(rawAnchoredPage('c_gr', 3, 1, 4, { has_more_newer: false, next_after_index: null, etag: '"A"' }))
+      return Promise.resolve(rawAnchoredPage('c_gr', 4, 1, 5, { has_more_newer: false, next_after_index: null, etag: '"B"' }))
+    }
+    metaHandlers.srv_grow = () => Promise.reject(new Error('no tail fetch'))
+    const { qc, wrapper } = wrapperWithClient()
+    const resetSpy = jest.spyOn(qc, 'resetQueries')
+    qc.setQueryData(['conversation', 'srv_grow', 'c_gr'], warmTailCache('c_gr'))
+
+    // Same AppState capture pattern as the "fires a fresh delta" foreground test.
+    const appStateHandlers: ((s: string) => void)[] = []
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((event, handler) => {
+      if (event === 'change') appStateHandlers.push(handler as (s: string) => void)
+      return { remove: jest.fn() } as never
+    })
+    const fireForeground = () => appStateHandlers.forEach((h) => h('active'))
+
+    const { result } = await renderHook(() => useConversation('srv_grow', 'c_gr'), { wrapper })
+    // Drain 1 merges index 3.
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(4))
+
+    // Advance past the 5s guard, trigger a second drain via AppState foreground.
+    await act(() => jest.advanceTimersByTime(6000))
+    fireForeground()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(5))
+    // Different etag across drains must NOT discard.
+    expect(resetSpy).not.toHaveBeenCalled()
+    jest.useRealTimers()
+  })
+})
