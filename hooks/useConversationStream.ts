@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
 
-function parseLineToMessage(line: string): Message | null {
+function parseLineToMessage(line: string, seq?: number | null): Message | null {
   try {
     const entry = JSON.parse(line) as {
       type: string
@@ -46,6 +46,7 @@ function parseLineToMessage(line: string): Message | null {
       timestamp: entry.timestamp ?? new Date().toISOString(),
       is_sidechain: entry.isSidechain ?? false,
       parent_uuid: entry.parentUuid ?? null,
+      messageIndex: typeof seq === 'number' ? seq : undefined,
     }
   } catch {
     return null
@@ -65,6 +66,12 @@ export function useConversationStream(
 
     seenIds.current.clear()
 
+    // Singular per-line frame. Old/codex servers send only this. Double-parse
+    // with the plural frame below is accepted: on modern servers the plural
+    // (seq-carrying) copy arrives first and wins the seenIds race, so the
+    // singular dedupes away after parsing. Do NOT drop this subscription to
+    // avoid the double-parse — it is the old-server/codex fallback; without it
+    // a pre-#202 server leaves the overlay completely empty.
     const unsub = wsManager.getClient(serverId)?.on('conversation_event', (msg) => {
       // wsManager.on uses a union type; cast is safe once Task 1 adds the type
       const evt = msg as { type: 'conversation_event'; sessionId: string; line: string }
@@ -76,9 +83,26 @@ export function useConversationStream(
       setLiveMessages((prev) => [...prev, message])
     })
 
+    // Additive batched frame (streamer #202): carries seqs so live messages get
+    // a real message_index. Same sessionId filter as the singular handler.
+    const unsubBatch = wsManager.getClient(serverId)?.on('conversation_events', (msg) => {
+      const evt = msg as { type: 'conversation_events'; sessionId: string; lines: string[]; seqs?: (number | null)[] }
+      if (evt.sessionId !== sessionId) return
+      const next: Message[] = []
+      for (let i = 0; i < evt.lines.length; i++) {
+        const message = parseLineToMessage(evt.lines[i], evt.seqs?.[i] ?? null)
+        if (!message) continue
+        if (seenIds.current.has(message.id)) continue
+        seenIds.current.add(message.id)
+        next.push(message)
+      }
+      if (next.length > 0) setLiveMessages((prev) => [...prev, ...next])
+    })
+
     const seenIdsRef = seenIds.current
     return () => {
       unsub?.()
+      unsubBatch?.()
       setLiveMessages([])
       seenIdsRef.clear()
     }
