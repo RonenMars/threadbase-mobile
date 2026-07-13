@@ -7,6 +7,7 @@ import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
+import type { ConversationPageParam } from '@/hooks/conversationCursor'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -208,7 +209,7 @@ export interface ConversationMessagePagination {
   next_after_index?: number | null
 }
 
-interface RawConversationDetail {
+export interface RawConversationDetail {
   meta: RawSessionMeta & {
     last_prompt?: string
     resumable?: boolean
@@ -319,13 +320,6 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
 const CONVERSATION_MESSAGE_LIMIT = 80
 const CONVERSATION_ANCHORED_LIMIT = 120
 
-/**
- * -1 = first page (tail, or anchored window when an anchor is set); a plain
- * number = before_index cursor for older pages; { after } = after_index cursor
- * for newer pages (only reachable from an anchored first page).
- */
-type ConversationPageParam = number | { after: number }
-
 export function useConversation(
   serverId: string,
   id: string,
@@ -349,7 +343,7 @@ export function useConversation(
 
       // Newer-direction page (only reachable from an anchored first page).
       // Plain fetch: anchored/after windows never answer 304.
-      if (typeof pageParam === 'object') {
+      if (typeof pageParam === 'object' && 'after' in pageParam) {
         params.set('msg_limit', String(CONVERSATION_ANCHORED_LIMIT))
         params.set('after_index', String(pageParam.after))
         return api.get<RawConversationDetail>(
