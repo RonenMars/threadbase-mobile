@@ -9,7 +9,7 @@ appId: com.ronenmars.threadbase
 - launchApp:
     clearState: true
 
-# If the welcome step is visible, walk the entire onboarding carousel.
+# If the welcome step is visible, walk the onboarding carousel.
 # Otherwise the app already has credentials cached and is on the hub.
 - runFlow:
     when:
@@ -20,19 +20,7 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-welcome-cta"
 
-      # Step 2 / THEME — pick default theme, continue
-      - tapOn:
-          id: "onboarding-theme-cta"
-
-      # Step 3 / VALUE PROP — explanatory diagram
-      - tapOn:
-          id: "onboarding-valueprop-cta"
-
-      # Step 4 / SERVER NAME (Feature 23) — optional, skip for the smoke flow
-      - tapOn:
-          id: "onboarding-server-name-skip"
-
-      # Step 5 / CONNECT — paste credentials, fill URL + token, handshake
+      # Step 2 / CONNECT — paste credentials, fill URL + token, handshake
       - tapOn:
           id: "onboarding-connect-paste-card"
 
@@ -41,10 +29,14 @@ appId: com.ronenmars.threadbase
 
       - inputText: "http://localhost:7071"
 
+      - hideKeyboard
+
       - tapOn:
           id: "onboarding-connect-token-input"
 
       - inputText: "mock-key-123"
+
+      - hideKeyboard
 
       - tapOn:
           id: "onboarding-connect-handshake-cta"
@@ -56,32 +48,12 @@ appId: com.ronenmars.threadbase
           commands:
             - tapOn: "Not Now"
 
-      # Step 5 / NOTIFICATIONS — wait for handshake to advance, then skip
+      # Step 3 / DONE — handshake auto-advances here; enter the app
       - extendedWaitUntil:
           visible:
-            id: "onboarding-notifications-cta"
+            id: "onboarding-done-cta"
           timeout: 8000
 
-      - tapOn:
-          id: "onboarding-notifications-cta"
-
-      - runFlow:
-          when:
-            visible: "Not Now"
-          commands:
-            - tapOn: "Not Now"
-
-      # Step 6 / TOUR — 3 concepts, tap CTA each time
-      - tapOn:
-          id: "onboarding-tour-cta"
-
-      - tapOn:
-          id: "onboarding-tour-cta"
-
-      - tapOn:
-          id: "onboarding-tour-cta"
-
-      # Step 7 / DONE — enter the app
       - tapOn:
           id: "onboarding-done-cta"
 

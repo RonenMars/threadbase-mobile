@@ -35,23 +35,23 @@ appId: com.ronenmars.threadbase
 
 # Compose input + mic are present
 - assertVisible:
-    id: "message-input"
+    id: "chat-message-input"
 - assertVisible:
-    id: "message-input-mic"
+    id: "chat-mic-button"
 
 # Tap mic to start dictation
 - tapOn:
-    id: "message-input-mic"
+    id: "chat-mic-button"
 
 # Compose input is still visible; mic button remains tappable
 - assertVisible:
-    id: "message-input"
+    id: "chat-message-input"
 - assertVisible:
-    id: "message-input-mic"
+    id: "chat-mic-button"
 
 # Tap mic again to toggle off
 - tapOn:
-    id: "message-input-mic"
+    id: "chat-mic-button"
 
 - assertVisible:
-    id: "message-input-mic"
+    id: "chat-mic-button"
