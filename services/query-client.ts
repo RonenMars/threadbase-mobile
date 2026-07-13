@@ -7,6 +7,7 @@ import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state
 
 const ONE_MINUTE = 1000 * 60
 export const QUERY_GC_TIME = ONE_MINUTE * 5
+export const SEVEN_DAYS = 1000 * 60 * 60 * 24 * 7
 
 // ponytail: 60 s matches the per-page fetch timeout; 20 s fired too eagerly on cold multi-server loads
 const SLOW_QUERY_THRESHOLD_MS = 60000

@@ -3,96 +3,69 @@ import { renderHook, act } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import type { Session } from '@/types/api'
+import type { WSMessage } from '@/services/ws-client'
 
-type ClientHandler = (msg: { type: string; session: Session }) => void
+type Handler = (msg: WSMessage) => void
 
 jest.mock('@/services/ws-client', () => {
-  const clientListeners = new Map<string, Set<ClientHandler>>()
+  const listeners = new Map<string, Set<Handler>>()
   return {
     wsManager: {
       getClient: () => ({
-        on: (type: string, handler: ClientHandler) => {
-          if (!clientListeners.has(type)) clientListeners.set(type, new Set())
-          clientListeners.get(type)!.add(handler)
-          return () => clientListeners.get(type)!.delete(handler)
+        on: (type: string, handler: Handler) => {
+          if (!listeners.has(type)) listeners.set(type, new Set())
+          listeners.get(type)!.add(handler)
+          return () => listeners.get(type)!.delete(handler)
         },
       }),
       onAnyStatusChange: () => () => {},
     },
     __wsTest: {
-      emit: (type: string, msg: { type: string; session: Session }) => {
-        clientListeners.get(type)?.forEach((l) => l(msg))
-      },
+      emit: (type: string, msg: WSMessage) => listeners.get(type)?.forEach((l) => l(msg)),
     },
   }
 })
 
 const { __wsTest } = jest.requireMock('@/services/ws-client') as {
-  __wsTest: { emit: (type: string, msg: { type: string; session: Partial<Session> }) => void }
+  __wsTest: { emit: (type: string, msg: WSMessage) => void }
 }
 
-function sessionUpdate(id: string, status: Session['status']) {
+function sessionUpdate(id: string, status: Session['status']): Extract<WSMessage, { type: 'session_update' }> {
   return { type: 'session_update', session: { id, status } as Session }
 }
 
-async function setup() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-  )
-  const rendered = await renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
-  return { invalidateSpy, ...rendered }
-}
-
-describe('useConversationStream – refetch on session status transition', () => {
-  it('refetches the conversation when the session leaves running', async () => {
-    const { invalidateSpy } = await setup()
-    invalidateSpy.mockClear()
+describe('useConversationStream — session transitions do not touch the cache', () => {
+  it('never invalidates on running → waiting_input', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    await renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
 
     await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
-    expect(invalidateSpy).not.toHaveBeenCalled()
-
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
-    expect(invalidateSpy).toHaveBeenCalledTimes(1)
-    expect(invalidateSpy).toHaveBeenLastCalledWith({ queryKey: ['conversation', 'srv-1', 'conv-1'] })
-  })
-
-  it('refetches on running → idle too', async () => {
-    const { invalidateSpy } = await setup()
-    invalidateSpy.mockClear()
-
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
-    expect(invalidateSpy).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not refetch without a prior running status (e.g. first update is waiting_input)', async () => {
-    const { invalidateSpy } = await setup()
-    invalidateSpy.mockClear()
-
     await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
     expect(invalidateSpy).not.toHaveBeenCalled()
   })
 
-  it('ignores other sessions and repeated non-running statuses', async () => {
-    const { invalidateSpy } = await setup()
-    invalidateSpy.mockClear()
+  it('still appends live conversation_event messages', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = await renderHook(
+      () => useConversationStream('srv-1', 'sess-1', 'conv-1'),
+      { wrapper },
+    )
 
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'running')))
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-2', 'idle')))
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'waiting_input')))
-    expect(invalidateSpy).not.toHaveBeenCalled()
-  })
-
-  it('stops listening after unmount', async () => {
-    const { invalidateSpy, unmount } = await setup()
-    invalidateSpy.mockClear()
-
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'running')))
-    await unmount()
-    await act(() => __wsTest.emit('session_update', sessionUpdate('sess-1', 'idle')))
-    expect(invalidateSpy).not.toHaveBeenCalled()
+    await act(() =>
+      __wsTest.emit('conversation_event', {
+        type: 'conversation_event',
+        sessionId: 'sess-1',
+        line: JSON.stringify({ type: 'assistant', uuid: 'u1', message: { role: 'assistant', content: [{ type: 'text', text: 'hi' }] } }),
+      }),
+    )
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].uuid).toBe('u1')
   })
 })

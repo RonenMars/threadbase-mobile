@@ -14,6 +14,20 @@ import type { Message } from '@/types/api'
 
 const mockMutate = jest.fn()
 
+// MessageItem has no stable per-message testID exposing its text (only row-level
+// testIDs for the last/search-anchor rows), so render order can't be asserted
+// against the real component. Mock it to surface the first text block directly.
+jest.mock('@/components/conversation/MessageItem', () => ({
+  MessageItem: ({ message }: { message: Message }) => {
+    const { Text: RNText } = jest.requireActual('react-native')
+    const textBlock = message.content.find((b: { type: string }) => b.type === 'text') as
+      | { type: 'text'; text: string }
+      | undefined
+    if (!textBlock) return null
+    return <RNText testID="message-text">{textBlock.text}</RNText>
+  },
+}))
+
 let mockHistorical: Message[] = []
 let mockLive: Message[] = []
 let mockPtyLines: string[] = []
@@ -161,5 +175,20 @@ describe('LiveConversationView — optimistic sent message', () => {
     rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
 
     expect(screen.getAllByText('ping')).toHaveLength(1)
+  })
+
+  it('renders historical messages in message_index order, then live messages by arrival', async () => {
+    // historical out of natural order to prove index sorting (not array order).
+    mockHistorical = [
+      { id: 'c1-1', uuid: 'h1', messageIndex: 1, role: 'assistant', content: [{ type: 'text', text: 'second' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+      { id: 'c1-0', uuid: 'h0', messageIndex: 0, role: 'user', content: [{ type: 'text', text: 'first' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    mockLive = [
+      { id: 'L1', uuid: 'L1', role: 'assistant', content: [{ type: 'text', text: 'live-third' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await renderView()
+
+    const texts = screen.getAllByTestId('message-text').map((n) => n.props.children)
+    expect(texts).toEqual(['first', 'second', 'live-third'])
   })
 })

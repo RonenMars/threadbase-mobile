@@ -1,6 +1,5 @@
 // hooks/useConversationStream.ts
 import { useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
 
@@ -58,18 +57,13 @@ export function useConversationStream(
   sessionId: string | null,
   conversationId: string,
 ) {
-  const qc = useQueryClient()
   const [liveMessages, setLiveMessages] = useState<Message[]>([])
   const seenIds = useRef(new Set<string>())
-  const prevSessionStatus = useRef<string | null>(null)
 
   useEffect(() => {
     if (!serverId || !sessionId) return
 
     seenIds.current.clear()
-    prevSessionStatus.current = null
-    // On (re)subscribe, force REST refresh to recover messages missed while WS was down.
-    qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
 
     const unsub = wsManager.getClient(serverId)?.on('conversation_event', (msg) => {
       // wsManager.on uses a union type; cast is safe once Task 1 adds the type
@@ -82,36 +76,13 @@ export function useConversationStream(
       setLiveMessages((prev) => [...prev, message])
     })
 
-    // conversation_events emitted while the WS was dead are never replayed —
-    // refetch the REST history whenever the connection comes back so bubbles
-    // missed during the outage land (mirrors useTerminalStream's re-subscribe).
-    const unsubStatus = wsManager.onAnyStatusChange((sid, status) => {
-      if (sid !== serverId || status !== 'connected') return
-      qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
-    })
-
-    // Safety net for a dead server-side tail pipeline: if conversation_event
-    // frames stop arriving, nothing above refetches while the screen stays
-    // open. session_update still flips when a turn ends (PTY prompt marker),
-    // so a running → not-running transition pulls whatever REST has.
-    const unsubSession = wsManager.getClient(serverId)?.on('session_update', (msg) => {
-      if (msg.type !== 'session_update' || msg.session.id !== sessionId) return
-      const prev = prevSessionStatus.current
-      prevSessionStatus.current = msg.session.status
-      if (prev === 'running' && msg.session.status !== 'running') {
-        qc.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
-      }
-    })
-
     const seenIdsRef = seenIds.current
     return () => {
       unsub?.()
-      unsubStatus()
-      unsubSession?.()
       setLiveMessages([])
       seenIdsRef.clear()
     }
-  }, [serverId, sessionId, conversationId, qc])
+  }, [serverId, sessionId, conversationId])
 
   return { liveMessages }
 }
