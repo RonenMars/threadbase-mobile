@@ -423,9 +423,20 @@ export default function SessionDetailScreen() {
   useEffect(() => {
     if (!serverId || !id || isPending) return
     const sub = AppState.addEventListener('change', (nextState) => {
-      if (nextState !== 'active') return
-      wsManager.forceReconnect(serverId)
-      qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+      if (nextState === 'active') {
+        wsManager.forceReconnect(serverId)
+        qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+        return
+      }
+      // Backgrounding/inactive: proactively ask the server to hold this session
+      // now instead of waiting out its ~4.5-min grace timer. The PTY is put on
+      // hold (SIGINT + screen disposal, history intact) and resumes on the next
+      // subscribe (the 'active' branch above force-reconnects). Harmless no-op
+      // server-side if the session isn't live. iOS suspends JS right after this,
+      // so it's best-effort — the grace timer remains the backstop.
+      if (nextState === 'background') {
+        wsManager.send(serverId, { type: 'hold_session', sessionId: id })
+      }
     })
     return () => sub.remove()
   }, [serverId, id, isPending, qc])
