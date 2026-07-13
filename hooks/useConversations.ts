@@ -456,10 +456,15 @@ export function useConversation(
     queryRef.current = query
   })
 
+  const triggerEnabled = opts?.enabled !== false
   useEffect(() => {
     // Delta-on-open lives only on the tail view; anchored windows are
-    // navigation artifacts with their own bidirectional pagination.
-    if (anchorIndex != null || !serverId || !id) return
+    // navigation artifacts with their own bidirectional pagination. A consumer
+    // that mounts with enabled: false must not trigger either — imperative
+    // fetches (fetchPreviousPage) bypass react-query's `enabled` gate, so
+    // without this check a disabled consumer with a warm cache would still
+    // fire mount/foreground/WS deltas.
+    if (!triggerEnabled || anchorIndex != null || !serverId || !id) return
 
     // Rebuild the tail key locally so queryKey (a fresh array each render) never
     // enters the deps array. Only the tail view reaches here, so this is always
@@ -550,7 +555,7 @@ export function useConversation(
       unsubStatus()
       unsubSession?.()
     }
-  }, [serverId, id, anchorIndex, queryKeyHash, queryClient])
+  }, [serverId, id, anchorIndex, queryKeyHash, queryClient, triggerEnabled])
 
   const data = useMemo(() => {
     if (!query.data?.pages.length) return undefined

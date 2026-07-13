@@ -697,6 +697,25 @@ function warmTailCache(id: string) {
 describe('useConversation — consolidated delta trigger', () => {
   beforeEach(() => __resetTriggerGuardForTests())
 
+  it('enabled: false suppresses the trigger — warm cache, zero network', async () => {
+    setActiveServers(['srv_dis'])
+    const paths: string[] = []
+    handlers.srv_dis = (path) => {
+      paths.push(path)
+      return Promise.resolve(rawAnchoredPage('c_dis', 3, 1, 4, { has_more_newer: false, next_after_index: null }))
+    }
+    metaHandlers.srv_dis = () => Promise.reject(new Error('no tail fetch expected'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_dis', 'c_dis'], warmTailCache('c_dis'))
+
+    await renderHook(() => useConversation('srv_dis', 'c_dis', { enabled: false }), { wrapper })
+
+    // Imperative fetches bypass react-query's `enabled`, so without the effect
+    // gate this would fire a delta. Give any stray trigger time to surface.
+    await new Promise((r) => setTimeout(r, 50))
+    expect(paths).toHaveLength(0)
+  })
+
   it('fires one after_index delta on mount when a cursor exists in the warm cache', async () => {
     setActiveServers(['srv_mt'])
     const paths: string[] = []

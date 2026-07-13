@@ -16,15 +16,24 @@ type ConvData = InfiniteData<RawConversationDetail, ConversationPageParam>
 // source of cursor derivation for BOTH callers: getPreviousPageParam passes its
 // `allPages` argument, and the trigger effect passes `query.data.pages`. One
 // function, no drift.
+// Memoized by pages-array identity: react-query evaluates getPreviousPageParam
+// (and therefore this walk over every cached message) on each render via
+// hasPreviousPage, and cache writes always replace the pages array, so the
+// reference is a correct cache key. WeakMap keeps evicted arrays collectable.
+const cursorByPages = new WeakMap<RawConversationDetail[], number | undefined>()
+
 export function deriveCursor(pages: RawConversationDetail[] | undefined): number | undefined {
   if (!pages?.length) return undefined
+  if (cursorByPages.has(pages)) return cursorByPages.get(pages)
   let max = -1
   for (const p of pages) {
     for (const m of p.messages ?? []) {
       if (typeof m.message_index === 'number' && m.message_index > max) max = m.message_index
     }
   }
-  return max >= 0 ? max : undefined
+  const cursor = max >= 0 ? max : undefined
+  cursorByPages.set(pages, cursor)
+  return cursor
 }
 
 export function isEmptyFirstPage(data: ConvData | undefined): boolean {

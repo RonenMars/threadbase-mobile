@@ -36,6 +36,16 @@ describe('deriveCursor', () => {
     expect(deriveCursor(undefined)).toBeUndefined()
     expect(deriveCursor([])).toBeUndefined()
   })
+  it('is stable for the same pages reference and recomputes for a new array (memo)', () => {
+    const pages = [page([80, 81, 82]), page([0, 1, 2])]
+    expect(deriveCursor(pages)).toBe(82)
+    expect(deriveCursor(pages)).toBe(82) // memoized by reference — same result
+    // Cache writes always produce a NEW pages array (react-query never mutates
+    // in place), so a merge-shaped new array must recompute, not reuse.
+    const merged = [page([83, 84]), ...pages]
+    expect(deriveCursor(merged)).toBe(84)
+  })
+
   it('returns max message_index across all pages', () => {
     // Pages are newest-chunk-first; page 0 has the highest indexes.
     expect(deriveCursor([page([80, 81, 82]), page([0, 1, 2])])).toBe(82)
