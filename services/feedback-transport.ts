@@ -74,11 +74,14 @@ function emailSubject(report: FeedbackReport): string {
 }
 
 /** Attempt Sentry User Feedback. Returns an event id on success. */
-function trySentry(report: FeedbackReport): string | undefined {
+async function trySentry(report: FeedbackReport): Promise<string | undefined> {
   return submitFeedbackViaSentry({
     message: report.description,
     email: report.email,
     category: report.category,
+    attachment: report.attachment
+      ? { uri: report.attachment.uri, mimeType: report.attachment.mimeType }
+      : undefined,
   })
 }
 
@@ -165,7 +168,7 @@ export async function submitFeedback(
   }
 
   // 2. Sentry User Feedback (only when crash reporting is active).
-  const sentryId = trySentry(report)
+  const sentryId = await trySentry(report)
   if (sentryId) {
     return { ok: true, via: 'sentry', reportId: report.reportId, sentryEventId: sentryId }
   }

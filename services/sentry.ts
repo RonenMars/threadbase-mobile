@@ -17,6 +17,7 @@
  */
 
 import Constants from 'expo-constants'
+import * as FileSystem from 'expo-file-system/legacy'
 import * as Sentry from '@sentry/react-native'
 import {
   sanitizeEvent,
@@ -407,34 +408,77 @@ export function addSafeBreadcrumb(event: string, data?: Record<string, unknown>)
   }
 }
 
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+/** Decode a base64 string to raw bytes. Hermes has no built-in atob. */
+function base64ToBytes(base64: string): Uint8Array {
+  const clean = base64.replace(/=+$/, '')
+  const bytes: number[] = []
+  let buffer = 0
+  let bits = 0
+  for (const char of clean) {
+    const value = BASE64_CHARS.indexOf(char)
+    if (value === -1) continue
+    buffer = (buffer << 6) | value
+    bits += 6
+    if (bits >= 8) {
+      bits -= 8
+      bytes.push((buffer >> bits) & 0xff)
+    }
+  }
+  return new Uint8Array(bytes)
+}
+
+/** Read a feedback screenshot off disk into a Sentry attachment. */
+async function loadAttachment(attachment: {
+  uri: string
+  mimeType: string
+  filename?: string
+}): Promise<{ data: Uint8Array; filename: string; contentType: string }> {
+  const base64 = await FileSystem.readAsStringAsync(attachment.uri, { encoding: FileSystem.EncodingType.Base64 })
+  return {
+    data: base64ToBytes(base64),
+    filename: attachment.filename || 'screenshot.jpg',
+    contentType: attachment.mimeType,
+  }
+}
+
 /**
  * Submit user feedback via Sentry's User Feedback API. Only works when Sentry
  * is active (consent on + DSN). The resulting feedback event passes through
  * `beforeSend` → `sanitizeFeedbackEvent`, which lets the user-authored message
  * and reply email through (they explicitly chose to submit them) while still
- * stripping everything else.
+ * stripping everything else. The screenshot, if provided, is uploaded as a raw
+ * attachment alongside the feedback event — it bypasses `beforeSend` (which
+ * only sees the event body) since attachments never touch that hook, but the
+ * screenshot is already user-picked and stripped of EXIF before it reaches here.
  *
  * @returns the feedback event id when submitted, or undefined if Sentry is not
  *          active (caller should fall back to email/copy).
  */
-export function submitFeedbackViaSentry(params: {
+export async function submitFeedbackViaSentry(params: {
   message: string
   email?: string
   category?: string
-}): string | undefined {
+  attachment?: { uri: string; mimeType: string; filename?: string }
+}): Promise<string | undefined> {
   if (!initialized) return undefined
   const message = params.message?.trim()
   if (!message) return undefined
   try {
-    const id = Sentry.captureFeedback({
-      message,
-      email: params.email?.trim() || undefined,
-      source: 'app.feedback_form',
-      tags:
-        params.category && isSafeEnumToken(params.category)
-          ? { 'feedback.category': params.category }
-          : undefined,
-    })
+    const attachments = params.attachment ? [await loadAttachment(params.attachment)] : undefined
+    const id = Sentry.captureFeedback(
+      {
+        message,
+        email: params.email?.trim() || undefined,
+        source: 'app.feedback_form',
+        tags:
+          params.category && isSafeEnumToken(params.category)
+            ? { 'feedback.category': params.category }
+            : undefined,
+      },
+      attachments ? { attachments } : undefined,
+    )
     return typeof id === 'string' ? id : undefined
   } catch {
     return undefined
