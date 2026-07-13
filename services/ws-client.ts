@@ -19,6 +19,12 @@ export type WSMessage =
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }
   | { type: 'conversation_event'; sessionId: string; line: string }
+  // Additive batched variant (streamer #202): one frame carries all lines from
+  // a single watcher read. `seqs`, when present, is parallel to `lines` —
+  // seqs[i] is the message_index of lines[i], or null for a non-message line.
+  // Absent for non-claude providers. Old clients ignore this and rely on the
+  // singular conversation_event.
+  | { type: 'conversation_events'; sessionId: string; lines: string[]; seqs?: (number | null)[] }
   | QuestionWsMessage
   | QuestionCancelledWsMessage
   | PermissionWsMessage
