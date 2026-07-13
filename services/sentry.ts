@@ -113,7 +113,8 @@ function filterIntegrations(defaults: { name: string }[]): { name: string }[] {
     'ReactNativeErrorHandlers.console',
     'Console',
     'CaptureConsole',
-    'ExpoContext', // may include device/session identifiers
+    'ExpoConstants', // injects expo_constants context (session id, execution env)
+    'ReactNativeInfo', // injects react_native_context (hermes/engine build details)
   ]
   return defaults.filter((i) => !BLOCKED.some((b) => i.name.toLowerCase().includes(b.toLowerCase())))
 }

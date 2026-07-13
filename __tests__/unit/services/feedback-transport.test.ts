@@ -72,6 +72,22 @@ describe('submitFeedback — fallback chain', () => {
     expect(MailComposer.composeAsync).not.toHaveBeenCalled()
   })
 
+  it('includes diagnostics in the Sentry message when the user opted in', async () => {
+    ;(submitFeedbackViaSentry as jest.Mock).mockReturnValue('evt_fb')
+    await submitFeedback(baseReport())
+    const opts = (submitFeedbackViaSentry as jest.Mock).mock.calls[0][0]
+    expect(opts.message).toContain('Technical diagnostics')
+    expect(opts.message).toContain('appVersion: 1.0.0')
+  })
+
+  it('omits diagnostics from the Sentry message when not opted in', async () => {
+    ;(submitFeedbackViaSentry as jest.Mock).mockReturnValue('evt_fb')
+    await submitFeedback({ ...baseReport(), diagnostics: undefined })
+    const opts = (submitFeedbackViaSentry as jest.Mock).mock.calls[0][0]
+    expect(opts.message).not.toContain('Technical diagnostics')
+    expect(opts.message).not.toContain('appVersion')
+  })
+
   it('falls back to email when Sentry is unavailable', async () => {
     ;(submitFeedbackViaSentry as jest.Mock).mockReturnValue(undefined)
     const result = await submitFeedback(baseReport())

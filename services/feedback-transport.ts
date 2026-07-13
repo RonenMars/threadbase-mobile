@@ -75,8 +75,15 @@ function emailSubject(report: FeedbackReport): string {
 
 /** Attempt Sentry User Feedback. Returns an event id on success. */
 async function trySentry(report: FeedbackReport): Promise<string | undefined> {
+  const lines = [report.description.trim().slice(0, 4000)]
+  if (report.diagnostics) {
+    lines.push('', 'Technical diagnostics (sanitized):')
+    for (const row of diagnosticsToRows(report.diagnostics)) {
+      lines.push(`  ${row.key}: ${row.value}`)
+    }
+  }
   return submitFeedbackViaSentry({
-    message: report.description,
+    message: lines.join('\n'),
     email: report.email,
     category: report.category,
     attachment: report.attachment
