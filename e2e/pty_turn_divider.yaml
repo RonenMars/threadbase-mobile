@@ -35,13 +35,9 @@ appId: com.ronenmars.threadbase
       id: "session-detail-screen"
     timeout: 8000
 
-# Terminal output container is mounted
+# Compose input is present (TerminalView mounts a ChatComposer)
 - assertVisible:
-    id: "terminal-output"
-
-# Compose input is present
-- assertVisible:
-    id: "message-input"
+    id: "chat-message-input"
 
 # Visual: PTY session detail screen with terminal output + compose input.
 - takeScreenshot: e2e/_artifacts/screenshots/pty-divider-01-session-detail

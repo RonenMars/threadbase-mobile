@@ -24,8 +24,7 @@ appId: com.ronenmars.threadbase
 # Open the conversation detail via deep link. expo-router maps the path
 # segment to app/conversation/[id].tsx; with no server query param the
 # screen falls back to the first active server (set by setup.yaml).
-- launchApp:
-    url: "threadbase://conversation/conv-111"
+- openLink: "threadbase://conversation/conv-111"
 
 # iOS shows an "Open in 'Threadbase'?" disambiguation dialog whenever a
 # custom URL scheme is launched and no per-app association has been
@@ -39,10 +38,13 @@ appId: com.ronenmars.threadbase
     commands:
       - tapOn: "Open"
 
-# Conversation screen renders the in-list scroll button OR the footer's
-# Resume Session button — assert the latter to confirm we are on the
-# conversation route.
-- assertVisible: "Resume Session"
+# Confirm we are on the conversation route: the footer action bar mounts
+# with a stable testID (the Resume button text carries a ▶ prefix and lives
+# in an Animated.Text, so match the container testID instead).
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 8000
 
 # Export must NOT be a bottom-bar sibling of Resume Session anymore.
 - assertNotVisible:
