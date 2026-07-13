@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react-native'
+import React from 'react'
 import {
   useConversation,
   useConversations,
@@ -8,6 +10,16 @@ import {
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { createWrapper } from '@/test-utils'
+
+// createWrapper hides its QueryClient; retention tests need to read gcTime
+// back off the cache, so this variant exposes the client alongside the wrapper.
+function wrapperWithClient() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  return { qc, wrapper }
+}
 
 // Captures the scan_progress handler registered by useEagerConversations so
 // tests can simulate a broadcast arriving mid-count.
@@ -540,5 +552,36 @@ describe('useEagerConversations — warm-up scan_progress surfaces a live count'
 
     resolveCount?.({ total: 5 })
     await waitFor(() => expect(result.current.isDone).toBe(true))
+  })
+})
+
+describe('useConversation — retention gcTime', () => {
+  it('gives the plain tail query a 7-day gcTime', async () => {
+    setActiveServers(['srv_gc_tail'])
+    metaHandlers.srv_gc_tail = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_gc', ['x']) })
+    const { qc, wrapper } = wrapperWithClient()
+
+    const { result } = await renderHook(() => useConversation('srv_gc_tail', 'c_gc'), { wrapper })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    const q = qc.getQueryCache().find({ queryKey: ['conversation', 'srv_gc_tail', 'c_gc'] })
+    expect(q?.gcTime).toBe(1000 * 60 * 60 * 24 * 7)
+  })
+
+  it('keeps anchored windows at the 5-minute default gcTime', async () => {
+    setActiveServers(['srv_gc_anchor'])
+    handlers.srv_gc_anchor = () =>
+      Promise.resolve(rawAnchoredPage('c_gca', 90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 }))
+    const { qc, wrapper } = wrapperWithClient()
+
+    const { result } = await renderHook(
+      () => useConversation('srv_gc_anchor', 'c_gca', { anchorIndex: 150 }),
+      { wrapper },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    const q = qc.getQueryCache().find({ queryKey: ['conversation', 'srv_gc_anchor', 'c_gca', 'anchor-150'] })
+    expect(q?.gcTime).toBe(1000 * 60 * 5)
   })
 })

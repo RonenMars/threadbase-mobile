@@ -344,7 +344,7 @@ export default function RootLayout() {
             persistOptions={{
               persister: queryPersister,
               buster: persistBuster,
-              maxAge: 1000 * 60 * 60 * 24,
+              maxAge: 1000 * 60 * 60 * 24 * 7,
               dehydrateOptions: {
                 shouldDehydrateMutation: () => false,
                 shouldDehydrateQuery: (query) =>

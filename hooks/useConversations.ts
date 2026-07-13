@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
-import { QUERY_GC_TIME } from '@/services/query-client'
+import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -335,9 +335,13 @@ export function useConversation(
     anchorIndex != null
       ? (['conversation', serverId, id, `anchor-${anchorIndex}`] as const)
       : (['conversation', serverId, id] as const)
+  // Anchored windows are throwaway scroll targets; the tail view is what users
+  // return to, so it earns the long-lived persisted retention window.
+  const conversationGcTime = anchorIndex != null ? QUERY_GC_TIME : SEVEN_DAYS
   const query = useInfiniteQuery({
     queryKey,
     initialPageParam: -1 as ConversationPageParam,
+    gcTime: conversationGcTime,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
 
