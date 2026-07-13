@@ -12,7 +12,7 @@ import type { ConversationPageParam } from '@/hooks/conversationCursor'
 import {
   deriveCursor,
   isEmptyFirstPage,
-  stripEmptyFirstPage,
+  stripFirstPage,
   shouldContinueDrain,
   isCursorValid,
   canTrigger,
@@ -217,6 +217,10 @@ export interface ConversationMessagePagination {
   anchor_index?: number
   has_more_newer?: boolean
   next_after_index?: number | null
+  // After_index delta-validity token (streamer #202). Whole-conversation etag —
+  // changes on every append, so it detects a file changing between reads, not
+  // cursor continuity. Read only on after_index responses.
+  etag?: string
 }
 
 export interface RawConversationDetail {
@@ -502,7 +506,7 @@ export function useConversation(
 
         // Empty-200: RQ prepended an empty husk — strip it, stop draining.
         if (isEmptyFirstPage(data)) {
-          queryClient.setQueryData(tailKey, stripEmptyFirstPage(data))
+          queryClient.setQueryData(tailKey, stripFirstPage(data))
           return
         }
 
