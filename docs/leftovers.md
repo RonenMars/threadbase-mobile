@@ -31,7 +31,7 @@ committed, staged, verified with a fresh typecheck/lint/test run, or pushed.
 - `components/sessions/hub/ProjectHubCard.tsx` — modified; unrelated to this
   session's Sentry work as far as tracked — needs its own diff review before
   assuming intent.
-- `docs/proposed-privacy-policy.md` — restructured crash-reporting section to
+- `docs/privacy-policy/proposed-privacy-policy.md` — restructured crash-reporting section to
   describe both the automatic (opt-in) and manual one-shot report paths.
 - `docs/sentry-setup.md` — documents `EXPO_PUBLIC_SENTRY_DEBUG` and the
   fork-friendly `SENTRY_ORG`/`SENTRY_PROJECT` env-var config.

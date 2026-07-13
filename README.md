@@ -141,7 +141,7 @@ Threadbase is a thin client for self-hosted streamers, with no product analytics
 
 Optional, opt-in crash reporting (Sentry) is **off by default**. When you enable it in Settings, only sanitized technical metadata and scrubbed error traces are sent — never prompts, terminal output, source code, credentials, server addresses, or session content. User-initiated feedback (with an optional screenshot and diagnostics you choose to include) is sent only when you submit it. See the full policy for details.
 
-Full policy: <https://threadbase.sh/privacy> · Proposed update: [`docs/proposed-privacy-policy.md`](docs/proposed-privacy-policy.md)
+Full policy: <https://threadbase.sh/privacy> · Proposed update: [`docs/privacy-policy/proposed-privacy-policy.md`](docs/privacy-policy/proposed-privacy-policy.md)
 
 ## 📄 License
 

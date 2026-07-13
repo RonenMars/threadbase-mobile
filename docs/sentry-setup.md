@@ -13,7 +13,7 @@ steps. **Never commit a real DSN or auth token.**
 
 Everything that leaves the device passes through the centralized sanitizer
 (`services/sanitize.ts`) via `beforeSend` / `beforeBreadcrumb`. See
-`docs/proposed-privacy-policy.md` for the authoritative list. In short:
+`docs/privacy-policy/proposed-privacy-policy.md` for the authoritative list. In short:
 
 - **Sent (when opted in):** app version, build number, platform, OS
   major/minor, JS engine, environment/channel, Expo runtime version, EAS update
