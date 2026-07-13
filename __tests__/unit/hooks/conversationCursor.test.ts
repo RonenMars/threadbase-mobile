@@ -2,7 +2,8 @@ import type { InfiniteData } from '@tanstack/react-query'
 import {
   deriveCursor,
   isEmptyFirstPage,
-  stripEmptyFirstPage,
+  stripFirstPage,
+  etagOf,
   shouldContinueDrain,
   isCursorValid,
   canTrigger,
@@ -52,17 +53,26 @@ describe('deriveCursor', () => {
   })
 })
 
-describe('isEmptyFirstPage / stripEmptyFirstPage', () => {
+describe('isEmptyFirstPage / stripFirstPage', () => {
   it('detects an empty first page', () => {
     expect(isEmptyFirstPage(infinite([page([])], [{ resume: 82 }]))).toBe(true)
     expect(isEmptyFirstPage(infinite([page([83])], [{ resume: 82 }]))).toBe(false)
   })
   it('strips pages[0] and pageParams[0]', () => {
     const data = infinite([page([]), page([80])], [{ resume: 82 }, -1])
-    const out = stripEmptyFirstPage(data)
+    const out = stripFirstPage(data)
     expect(out.pages).toHaveLength(1)
     expect(out.pageParams).toEqual([-1])
     expect(data.pages).toHaveLength(2) // original untouched (pure)
+  })
+})
+
+describe('etagOf', () => {
+  it('returns the page etag when present', () => {
+    expect(etagOf(page([83], { etag: '"v9"' }))).toBe('"v9"')
+  })
+  it('returns undefined when absent', () => {
+    expect(etagOf(page([83]))).toBeUndefined()
   })
 })
 

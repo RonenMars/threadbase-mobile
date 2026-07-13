@@ -40,11 +40,18 @@ export function isEmptyFirstPage(data: ConvData | undefined): boolean {
   return (data?.pages?.[0]?.messages?.length ?? -1) === 0
 }
 
-export function stripEmptyFirstPage(data: ConvData): ConvData {
+export function stripFirstPage(data: ConvData): ConvData {
   return {
     pages: data.pages.slice(1),
     pageParams: data.pageParams.slice(1),
   }
+}
+
+// The after_index delta's whole-conversation etag (present only on after_index
+// responses). Changes on every append, so it can only detect a file changing
+// between two reads — never validate cursor continuity.
+export function etagOf(page: RawConversationDetail): string | undefined {
+  return page.message_pagination?.etag
 }
 
 export function shouldContinueDrain(page: RawConversationDetail): boolean {

@@ -69,3 +69,71 @@ describe('useConversationStream — session transitions do not touch the cache',
     expect(result.current.liveMessages[0].uuid).toBe('u1')
   })
 })
+
+// A plural conversation_events frame with two message lines, seqs [10, 11].
+function pluralFrame(sessionId: string, texts: string[], seqs: (number | null)[]): Extract<WSMessage, { type: 'conversation_events' }> {
+  return {
+    type: 'conversation_events',
+    sessionId,
+    lines: texts.map((t, i) => JSON.stringify({ type: 'assistant', uuid: `u${i}`, message: { role: 'assistant', content: [{ type: 'text', text: t }] } })),
+    seqs,
+  }
+}
+function singularFrame(sessionId: string, uuid: string, text: string): Extract<WSMessage, { type: 'conversation_event' }> {
+  return {
+    type: 'conversation_event',
+    sessionId,
+    line: JSON.stringify({ type: 'assistant', uuid, message: { role: 'assistant', content: [{ type: 'text', text }] } }),
+  }
+}
+
+describe('useConversationStream — seq indexing (item 3)', () => {
+  function setup() {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>
+    )
+    return renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
+  }
+
+  it('sets messageIndex from seqs on plural-frame messages; null seq → no index', async () => {
+    const { result } = await setup()
+    await act(() => __wsTest.emit('conversation_events', pluralFrame('sess-1', ['a', 'b'], [10, null])))
+    expect(result.current.liveMessages).toHaveLength(2)
+    expect(result.current.liveMessages[0].messageIndex).toBe(10)
+    expect(result.current.liveMessages[1].messageIndex).toBeUndefined()
+  })
+
+  it('plural wins the race: the seq-carrying copy is kept, the trailing singular (same uuid) dedupes away', async () => {
+    const { result } = await setup()
+    // Plural first (as the server broadcasts), then the singular for the same uuid.
+    await act(() => __wsTest.emit('conversation_events', pluralFrame('sess-1', ['hello'], [7])))
+    await act(() => __wsTest.emit('conversation_event', singularFrame('sess-1', 'u0', 'hello')))
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].messageIndex).toBe(7)
+  })
+
+  it('old server (singular only) → message has no index, overlay is non-empty', async () => {
+    const { result } = await setup()
+    await act(() => __wsTest.emit('conversation_event', singularFrame('sess-1', 'u9', 'hi')))
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].messageIndex).toBeUndefined()
+  })
+
+  it('codex (plural frame without seqs field) → messages have no index, no error', async () => {
+    const { result } = await setup()
+    const frame: Extract<WSMessage, { type: 'conversation_events' }> = {
+      type: 'conversation_events',
+      sessionId: 'sess-1',
+      lines: [JSON.stringify({ type: 'assistant', uuid: 'c0', message: { role: 'assistant', content: [{ type: 'text', text: 'x' }] } })],
+    }
+    await act(() => __wsTest.emit('conversation_events', frame))
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].messageIndex).toBeUndefined()
+  })
+
+  it('ignores plural frames for other sessions', async () => {
+    const { result } = await setup()
+    await act(() => __wsTest.emit('conversation_events', pluralFrame('other-sess', ['a'], [1])))
+    expect(result.current.liveMessages).toHaveLength(0)
+  })
+})
