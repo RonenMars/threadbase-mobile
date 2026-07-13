@@ -77,7 +77,7 @@ Move `firstPageEtags` out of `useConversations.ts` into a dedicated module backe
   - `__resetEtagStoreForTests(): void` (clears the in-memory map + pending write; test-only)
   - Keys are the existing `${serverId}::${id}` strings. Storage key constant: `ETAG_STORAGE_KEY = 'threadbase-etag-cache-v1'`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `__tests__/unit/services/etag-store.test.ts`:
 
@@ -144,12 +144,12 @@ describe('etag-store', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx jest __tests__/unit/services/etag-store.test.ts`
 Expected: FAIL — `Cannot find module '@/services/etag-store'`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `services/etag-store.ts`:
 
@@ -216,12 +216,12 @@ export function __resetEtagStoreForTests(): void {
 void hydrateEtags()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx jest __tests__/unit/services/etag-store.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Rewire `useConversations.ts` to use the store**
+- [x] **Step 5: Rewire `useConversations.ts` to use the store**
 
 In `hooks/useConversations.ts`:
 - Delete the inline `firstPageEtags` map and its comment block (`:328-334`).
@@ -231,12 +231,12 @@ In `hooks/useConversations.ts`:
   - `if (res.etag) firstPageEtags.set(etagKey, res.etag)` → `if (res.etag) setEtag(etagKey, res.etag)`
   - `else firstPageEtags.delete(etagKey)` → `else deleteEtag(etagKey)`
 
-- [ ] **Step 6: Run the ETag conditional-fetch suite to confirm no regression**
+- [x] **Step 6: Run the ETag conditional-fetch suite to confirm no regression**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "ETag conditional fetch"`
 Expected: PASS (4 tests) — behavior is unchanged; the map just moved.
 
-- [ ] **Step 7: Lint + commit**
+- [x] **Step 7: Lint + commit**
 
 ```bash
 npx eslint services/etag-store.ts hooks/useConversations.ts __tests__/unit/services/etag-store.test.ts
@@ -265,7 +265,7 @@ Extract the non-React logic — deriving the cursor, detecting/stripping the emp
   - Guard: `canTrigger(queryKeyHash: string, now: number, windowMs?: number): boolean` and `stampTrigger(queryKeyHash: string, now: number): void`, backed by a module-level `Map<string, number>`. Default `windowMs = 5000`. Plus `__resetTriggerGuardForTests(): void`.
   - Re-export the page-param type: `export type ConversationPageParam = number | { after: number } | { resume: number }` — **moved here** so both files share one definition. `useConversations.ts` imports it from this module.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `__tests__/unit/hooks/conversationCursor.test.ts`:
 
@@ -367,12 +367,12 @@ describe('trigger guard', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/conversationCursor.test.ts`
 Expected: FAIL — `Cannot find module '@/hooks/conversationCursor'`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 First, in `hooks/useConversations.ts`, add `export` to the `RawConversationDetail` interface (`:210`):
 ```typescript
@@ -451,12 +451,12 @@ export function __resetTriggerGuardForTests(): void {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/conversationCursor.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Point `useConversations.ts` at the shared page-param type**
+- [x] **Step 5: Point `useConversations.ts` at the shared page-param type**
 
 In `hooks/useConversations.ts`:
 - Delete the local `type ConversationPageParam = number | { after: number }` (`:326`) and its doc comment (`:321-325`).
@@ -466,12 +466,12 @@ In `hooks/useConversations.ts`:
   ```
 - The existing `initialPageParam: -1 as ConversationPageParam` and `getPreviousPageParam` return type still compile — the union just gained a `{ resume }` arm that no branch produces *yet* (added in Task 4).
 
-- [ ] **Step 6: Run the full conversations suite to confirm the type move is clean**
+- [x] **Step 6: Run the full conversations suite to confirm the type move is clean**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx`
 Expected: PASS (all existing tests unchanged).
 
-- [ ] **Step 7: Lint + commit**
+- [x] **Step 7: Lint + commit**
 
 ```bash
 npx eslint hooks/conversationCursor.ts hooks/useConversations.ts __tests__/unit/hooks/conversationCursor.test.ts
@@ -495,7 +495,7 @@ Persist the plain tail query 7 days; keep anchored windows at 5 min; widen the p
 - Consumes: `QUERY_GC_TIME` (existing), new `SEVEN_DAYS` from `services/query-client.ts`.
 - Produces: no new exported functions; the tail query now carries `gcTime: SEVEN_DAYS`, anchored queries `gcTime: QUERY_GC_TIME`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `__tests__/unit/hooks/useConversations.test.tsx` a new describe block. Use RQ's cache to read the resolved `gcTime` off the query — `renderHook` with `createWrapper` gives a fresh `QueryClient`; read via `queryClient.getQueryCache().find(...)`. Because `createWrapper` hides the client, add a variant wrapper that exposes it:
 
@@ -543,12 +543,12 @@ describe('useConversation — retention gcTime', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "retention gcTime"`
 Expected: FAIL — the tail query's `gcTime` is `QUERY_GC_TIME` (5 min), not 7 days.
 
-- [ ] **Step 3: Add the `SEVEN_DAYS` constant**
+- [x] **Step 3: Add the `SEVEN_DAYS` constant**
 
 In `services/query-client.ts`, after `QUERY_GC_TIME` (`:9`):
 ```typescript
@@ -556,7 +556,7 @@ export const QUERY_GC_TIME = ONE_MINUTE * 5
 export const SEVEN_DAYS = 1000 * 60 * 60 * 24 * 7
 ```
 
-- [ ] **Step 4: Branch `gcTime` in `useConversation`**
+- [x] **Step 4: Branch `gcTime` in `useConversation`**
 
 In `hooks/useConversations.ts`:
 - Add to the query-client import: `import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'`.
@@ -566,19 +566,19 @@ const conversationGcTime = anchorIndex != null ? QUERY_GC_TIME : SEVEN_DAYS
 ```
 - Add `gcTime: conversationGcTime,` to the `useInfiniteQuery` options object (next to `initialPageParam`).
 
-- [ ] **Step 5: Widen the persist ceiling**
+- [x] **Step 5: Widen the persist ceiling**
 
 In `app/_layout.tsx`, change `:347`:
 ```typescript
 maxAge: 1000 * 60 * 60 * 24 * 7,
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "retention gcTime"`
 Expected: PASS (2 tests).
 
-- [ ] **Step 7: Lint + commit**
+- [x] **Step 7: Lint + commit**
 
 ```bash
 npx eslint services/query-client.ts hooks/useConversations.ts app/_layout.tsx __tests__/unit/hooks/useConversations.test.tsx
@@ -600,7 +600,7 @@ Teach the query to *produce* a `{ resume }` param on the tail view and to *fetch
 - Consumes: `deriveCursor`, `isCursorValid` from `hooks/conversationCursor.ts`; `CONVERSATION_MESSAGE_LIMIT` (existing `= 80`).
 - Produces: `getPreviousPageParam` now returns `{ resume: cursor }` for the tail view when a cursor exists and the existing anchored branch returned `undefined`; `queryFn` handles `typeof pageParam === 'object' && 'resume' in pageParam` by fetching `?after_index=<resume>&msg_limit=80` (plain `get`, no `If-None-Match`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `__tests__/unit/hooks/useConversations.test.tsx`. First a fixture helper for a delta (`after_index`) tail page. Note the existing `rawAnchoredPage` already emits `has_more_newer`/`next_after_index` — reuse it, but assert the resume path.
 
@@ -650,12 +650,12 @@ describe('useConversation — { resume } delta on the tail view', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "{ resume } delta"`
 Expected: FAIL — `hasNewerPage` is falsy on the tail view (no `{ resume }` branch yet).
 
-- [ ] **Step 3: Add the `queryFn` `{ resume }` branch**
+- [x] **Step 3: Add the `queryFn` `{ resume }` branch**
 
 In `hooks/useConversations.ts` `queryFn`, extend the object-param branch. The current code (`:359-364`) handles `typeof pageParam === 'object'` as the `{ after }` case. Replace it so it distinguishes `resume` from `after`:
 
@@ -675,7 +675,7 @@ In `hooks/useConversations.ts` `queryFn`, extend the object-param branch. The cu
       }
 ```
 
-- [ ] **Step 4: Add the `getPreviousPageParam` fallback branch**
+- [x] **Step 4: Add the `getPreviousPageParam` fallback branch**
 
 In `hooks/useConversations.ts`, replace `getPreviousPageParam` (`:425-429`). The existing anchored branch wins when present; the `{ resume }` fallback fires only for the plain tail view.
 
@@ -706,17 +706,17 @@ import { deriveCursor } from '@/hooks/conversationCursor'
 ```
 (Task 6 extends this same value import with the trigger/drain/guard helpers. `isCursorValid` is not needed until Task 6 — do not import it here or ESLint's no-unused-vars will fail the commit.)
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "{ resume } delta"`
 Expected: PASS (2 tests).
 
-- [ ] **Step 6: Run the anchored-window suite to confirm no regression**
+- [x] **Step 6: Run the anchored-window suite to confirm no regression**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "anchored window"`
 Expected: PASS — the anchored `{ after }` branch is unchanged; `has_more_newer` still wins.
 
-- [ ] **Step 7: Lint + commit**
+- [x] **Step 7: Lint + commit**
 
 ```bash
 npx eslint hooks/useConversations.ts __tests__/unit/hooks/useConversations.test.tsx
@@ -738,7 +738,7 @@ Stop the durable page chain from replaying on mount/focus/reconnect, and move of
 - Consumes: nothing new.
 - Produces: the tail/anchored `useInfiniteQuery` now sets `staleTime: 15_000`, `refetchOnMount: false`, `refetchOnWindowFocus: false`, `refetchOnReconnect: false`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `__tests__/unit/hooks/useConversations.test.tsx`:
 
@@ -788,12 +788,12 @@ describe('useConversation — retry hygiene', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "retry hygiene"`
 Expected: FAIL — `staleTime` is 0 (global default) and `refetchOnMount` etc. are undefined/true; the remount test sees `getWithMetaCalls === 2`.
 
-- [ ] **Step 3: Add the options**
+- [x] **Step 3: Add the options**
 
 In `hooks/useConversations.ts` `useInfiniteQuery`, add alongside `gcTime`:
 ```typescript
@@ -803,12 +803,12 @@ In `hooks/useConversations.ts` `useInfiniteQuery`, add alongside `gcTime`:
     refetchOnReconnect: false,
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "retry hygiene"`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 ```bash
 npx eslint hooks/useConversations.ts __tests__/unit/hooks/useConversations.test.tsx
@@ -838,7 +838,7 @@ The load-bearing task. One effect inside `useConversation` fires the delta from 
 5. Each fetch is `fetchPreviousPage({ cancelRefetch: false })`.
 6. After each hop resolves: read the fresh cached data via `queryClient.getQueryData(tailKey)`; if the just-prepended page is empty, strip it (`setQueryData`); if the delta is non-empty, run `isCursorValid` — invalid → `resetQueries` (discard + refetch from `-1` in one call) and abort the drain; valid + `shouldContinueDrain` → loop again.
 
-- [ ] **Step 1: Write the failing test — mount trigger fires one delta**
+- [x] **Step 1: Write the failing test — mount trigger fires one delta**
 
 Add to `__tests__/unit/hooks/useConversations.test.tsx`. Seed a warm cache by pre-populating the query client, then mount and assert exactly one `after_index` GET. Use `wrapperWithClient` + `qc.setQueryData` to plant a cached tail page (simulating rehydrate-from-disk):
 
@@ -878,12 +878,12 @@ describe('useConversation — consolidated delta trigger', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "consolidated delta trigger"`
 Expected: FAIL — no trigger effect exists; no `after_index` GET fires on mount.
 
-- [ ] **Step 3: Add the trigger effect**
+- [x] **Step 3: Add the trigger effect**
 
 In `hooks/useConversations.ts`, add the `AppState` import and **extend the existing** value import from `@/hooks/conversationCursor` (Task 4 already added `import { deriveCursor } from '@/hooks/conversationCursor'` — grow that same statement, do NOT add a second import of `deriveCursor`; a duplicate binding fails the build). The type-only `import type { ConversationPageParam } from '@/hooks/conversationCursor'` from Task 2 stays a separate statement.
 
@@ -1012,12 +1012,12 @@ Inside `useConversation`, after the `useInfiniteQuery` call and before `const da
 
 Note: `useRef` and `useEffect` are already imported at `useConversations.ts:1`. `InfiniteData` is imported at `:2`. `wsManager` at `:5`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "consolidated delta trigger"`
 Expected: PASS. If the mount fetch races the warm-cache read, ensure `qc.setQueryData` runs before `renderHook` (it does in the test).
 
-- [ ] **Step 5: Write the drain test**
+- [x] **Step 5: Write the drain test**
 
 Add to the same describe block:
 
@@ -1057,12 +1057,12 @@ Add to the same describe block:
   })
 ```
 
-- [ ] **Step 6: Run the drain test**
+- [x] **Step 6: Run the drain test**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "drains a >80-message backlog"`
 Expected: PASS. The guard stamp-once-at-start lets the 2nd and 3rd hops through (they don't re-check `canTrigger`; they're inside the same `runDelta` loop).
 
-- [ ] **Step 7: Write the empty-200 strip test**
+- [x] **Step 7: Write the empty-200 strip test**
 
 ```typescript
   it('strips the empty husk on an empty-200 delta and stays resumable', async () => {
@@ -1090,12 +1090,12 @@ Expected: PASS. The guard stamp-once-at-start lets the 2nd and 3rd hops through 
   })
 ```
 
-- [ ] **Step 8: Run the empty-200 test**
+- [x] **Step 8: Run the empty-200 test**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "strips the empty husk"`
 Expected: PASS.
 
-- [ ] **Step 9: Write the cursor-invalidation test**
+- [x] **Step 9: Write the cursor-invalidation test**
 
 ```typescript
   it('discards + refetches tail when total <= cursor (truncation), no merge', async () => {
@@ -1119,12 +1119,12 @@ Expected: PASS.
   })
 ```
 
-- [ ] **Step 10: Run the invalidation test**
+- [x] **Step 10: Run the invalidation test**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "discards \\+ refetches tail"`
 Expected: PASS.
 
-- [ ] **Step 11: Write the WS-flap guard test**
+- [x] **Step 11: Write the WS-flap guard test**
 
 Drive 5 `connected` transitions inside the 5s window (fake timers) and assert one delta fetch. Uses the existing `wsManager` mock — but the current test file's `wsManager` mock only stubs `onAll`. Extend the mock at the top of the file to also expose `onAnyStatusChange` and `getClient`:
 
@@ -1179,12 +1179,12 @@ Then the test:
 
 Note: with fake timers, `Date.now()` advances via `jest.advanceTimersByTime`, so the guard's `now - last` stays under 5000ms across the loop.
 
-- [ ] **Step 12: Run the WS-flap test**
+- [x] **Step 12: Run the WS-flap test**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "WS flap"`
 Expected: PASS.
 
-- [ ] **Step 12b: Write the AppState foreground + repeat-resume test (spec acceptance criterion 2)**
+- [x] **Step 12b: Write the AppState foreground + repeat-resume test (spec acceptance criterion 2)**
 
 This is the latch-free proof: background→foreground fires one delta; after an empty-200 clears it, a *second* foreground later must fire a *fresh* delta (proving `getPreviousPageParam` isn't latched shut and the guard is time-based, not one-shot). Capture the `AppState` `change` listener via `jest.spyOn` — RN's `AppState.addEventListener` exists but emits nothing in tests, so we invoke the captured handler directly. Add the import at the top of the test file: `import { AppState } from 'react-native'`.
 
@@ -1240,12 +1240,12 @@ This is the latch-free proof: background→foreground fires one delta; after an 
 
 Note: `jest.advanceTimersByTime(6000)` moves `Date.now()` past the guard's 5s window so `canTrigger` returns true for the second foreground — proving the guard is time-based (re-armable), not a one-shot latch.
 
-- [ ] **Step 12c: Run the foreground repeat-resume test**
+- [x] **Step 12c: Run the foreground repeat-resume test**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "fires a fresh delta"`
 Expected: PASS.
 
-- [ ] **Step 13: Write the same-key dedup test**
+- [x] **Step 13: Write the same-key dedup test**
 
 ```typescript
   it('two concurrent consumers of the same key share one in-flight delta', async () => {
@@ -1272,17 +1272,17 @@ Expected: PASS.
   })
 ```
 
-- [ ] **Step 14: Run the dedup test**
+- [x] **Step 14: Run the dedup test**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx -t "share one in-flight delta"`
 Expected: PASS — the module-level guard blocks the second instance's mount trigger; even if it didn't, RQ shares one in-flight `fetchPreviousPage` for the same key.
 
-- [ ] **Step 15: Run the whole conversations suite**
+- [x] **Step 15: Run the whole conversations suite**
 
 Run: `npx jest __tests__/unit/hooks/useConversations.test.tsx`
 Expected: PASS (all old + new tests).
 
-- [ ] **Step 16: Lint + commit**
+- [x] **Step 16: Lint + commit**
 
 ```bash
 npx eslint hooks/useConversations.ts __tests__/unit/hooks/useConversations.test.tsx
@@ -1304,7 +1304,7 @@ Remove all three `invalidateQueries` sites; the hook becomes pure live-overlay. 
 - Consumes: `wsManager` (unchanged usage for `conversation_event`).
 - Produces: `useConversationStream(serverId, sessionId, conversationId)` still returns `{ liveMessages }`. It no longer imports `useQueryClient` and no longer calls `invalidateQueries` or subscribes to status/session for cache purposes.
 
-- [ ] **Step 1: Rewrite the shrunk reconnect test first (asserts the NEW behavior)**
+- [x] **Step 1: Rewrite the shrunk reconnect test first (asserts the NEW behavior)**
 
 Replace `__tests__/unit/hooks/useConversationStream.reconnect.test.tsx` body's assertions: the hook must make **zero** query-cache calls. Since it no longer takes `useQueryClient`, spy on the wrapper client's `invalidateQueries` and assert never-called across mount + status change:
 
@@ -1352,12 +1352,12 @@ describe('useConversationStream — no longer touches the conversation query cac
 })
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `npx jest __tests__/unit/hooks/useConversationStream.reconnect.test.tsx`
 Expected: FAIL — the current hook calls `invalidateQueries` on mount.
 
-- [ ] **Step 3: Rewrite `useConversationStream.ts`**
+- [x] **Step 3: Rewrite `useConversationStream.ts`**
 
 Remove the query-client dependency and all three invalidation sites. Keep the `conversation_event` subscription and `liveMessages` state:
 
@@ -1408,12 +1408,12 @@ export function useConversationStream(
 
 Notes: `conversationId` stays in the dependency array (a conversation switch resets the overlay). `prevSessionStatus` ref and the `useQueryClient`/`qc` imports are removed — they were only for the deleted invalidation sites. Keep the full `parseLineToMessage` body exactly as it was (lines 7-54 of the original).
 
-- [ ] **Step 4: Run the rewritten reconnect test**
+- [x] **Step 4: Run the rewritten reconnect test**
 
 Run: `npx jest __tests__/unit/hooks/useConversationStream.reconnect.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Rewrite the statusRefetch test to assert no-cache-touch**
+- [x] **Step 5: Rewrite the statusRefetch test to assert no-cache-touch**
 
 Replace `__tests__/unit/hooks/useConversationStream.statusRefetch.test.tsx` — the `session_update` running→not-running path no longer invalidates. Assert `invalidateSpy` is never called even across a running→waiting_input transition, and that live messages still flow:
 
@@ -1490,12 +1490,12 @@ describe('useConversationStream — session transitions do not touch the cache',
 })
 ```
 
-- [ ] **Step 6: Run the rewritten statusRefetch test**
+- [x] **Step 6: Run the rewritten statusRefetch test**
 
 Run: `npx jest __tests__/unit/hooks/useConversationStream.statusRefetch.test.tsx`
 Expected: PASS (2 tests).
 
-- [ ] **Step 7: Lint + commit**
+- [x] **Step 7: Lint + commit**
 
 ```bash
 npx eslint hooks/useConversationStream.ts __tests__/unit/hooks/useConversationStream.reconnect.test.tsx __tests__/unit/hooks/useConversationStream.statusRefetch.test.tsx
@@ -1516,7 +1516,7 @@ git commit -m "refactor(conversations): make useConversationStream a pure live o
 - Consumes: `anchorIndex` (already in scope at `[id].tsx:118`).
 - Produces: no interface change; behavioral guard only.
 
-- [ ] **Step 1: Add the `anchorIndex != null` condition**
+- [x] **Step 1: Add the `anchorIndex != null` condition**
 
 In `app/conversation/[id].tsx`, the newer-direction backfill branch (`:512-519`). Add `anchorIndex != null &&` to the condition, and add `anchorIndex` to the `useCallback` dependency array (`:521`):
 
@@ -1537,12 +1537,12 @@ In `app/conversation/[id].tsx`, the newer-direction backfill branch (`:512-519`)
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, hasNewerPage, isFetchingNewerPage, fetchNewerPage, anchorIndex])
 ```
 
-- [ ] **Step 2: Typecheck the touched file**
+- [x] **Step 2: Typecheck the touched file**
 
 Run: `npx tsc --noEmit -p tsconfig.json 2>&1 | grep "conversation/\[id\]" || echo "no [id].tsx type errors"`
 Expected: `no [id].tsx type errors` (the scroll callback's deps now include `anchorIndex`, which is a stable `number | undefined`).
 
-- [ ] **Step 3: Lint + commit**
+- [x] **Step 3: Lint + commit**
 
 ```bash
 npx eslint "app/conversation/[id].tsx"
@@ -1564,7 +1564,7 @@ Move the overlay merge from uuid-only to a `(message_index, uuid)`-aware merge. 
 - Consumes: `historicalMessages` (from `useConversation`, each carries `messageIndex`), `liveMessages` (from `useConversationStream`, no `messageIndex`).
 - Produces: `allMessages` ordering — historical (index-ordered) → optimistic → live (arrival order after history). No message with a client-guessed index is ever written back to the query cache (this component never writes to the cache, so the invariant holds by construction; the change documents and guards it).
 
-- [ ] **Step 1: Write the failing test — index-ordered history, uuid dedup preserved**
+- [x] **Step 1: Write the failing test — index-ordered history, uuid dedup preserved**
 
 Add to `__tests__/integration/components/LiveConversationView.test.tsx` a case proving the merge orders historical by `messageIndex` and still dedups live-by-uuid. The existing test at `:141-164` already covers uuid dedup; add an ordering assertion. Because the existing suite mocks `useConversation`/`useConversationStream`, check how they're mocked first and extend those mocks with `messageIndex` values.
 
@@ -1587,12 +1587,12 @@ Add to `__tests__/integration/components/LiveConversationView.test.tsx` a case p
 
 Adjust `getAllByTestId('message-text')` to whatever stable testID `MessageItem` renders (inspect `MessageItem`; if none exists, assert via `screen.getByText` order using `within`/document order, or read the FlashList `data` prop through a test hook). If `MessageItem` has no per-text testID, assert ordering by mocking `MessageItem` in this test to render `<Text testID="message-text">{first text block}</Text>`.
 
-- [ ] **Step 2: Run it to verify it fails (or reveals the ordering gap)**
+- [x] **Step 2: Run it to verify it fails (or reveals the ordering gap)**
 
 Run: `npx jest __tests__/integration/components/LiveConversationView.test.tsx -t "message_index order"`
 Expected: FAIL — today's merge preserves `historicalMessages` array order, not `messageIndex` order (the two happen to coincide from REST, but the test forces them apart).
 
-- [ ] **Step 3: Implement the tiered merge**
+- [x] **Step 3: Implement the tiered merge**
 
 In `components/conversation/LiveConversationView.tsx`, replace the merge block (`:87-116`). Keep uuid-primary dedup; add index-tiered ordering for historical, arrival order for live:
 
@@ -1639,17 +1639,17 @@ In `components/conversation/LiveConversationView.tsx`, replace the merge block (
   })()
 ```
 
-- [ ] **Step 4: Run the ordering test**
+- [x] **Step 4: Run the ordering test**
 
 Run: `npx jest __tests__/integration/components/LiveConversationView.test.tsx -t "message_index order"`
 Expected: PASS.
 
-- [ ] **Step 5: Run the full LiveConversationView suite (regression)**
+- [x] **Step 5: Run the full LiveConversationView suite (regression)**
 
 Run: `npx jest __tests__/integration/components/LiveConversationView.test.tsx`
 Expected: PASS — the uuid-dedup and optimistic-echo tests (`:128-164`) still pass; sort is stable for already-ordered REST data.
 
-- [ ] **Step 6: Lint + commit**
+- [x] **Step 6: Lint + commit**
 
 ```bash
 npx eslint components/conversation/LiveConversationView.tsx __tests__/integration/components/LiveConversationView.test.tsx
@@ -1665,17 +1665,17 @@ Final verification gate. Everything above ran per-file; now run the whole thing 
 
 **Files:** none (verification + PR only).
 
-- [ ] **Step 1: Typecheck the whole project**
+- [x] **Step 1: Typecheck the whole project**
 
 Run: `npx tsc --noEmit`
 Expected: no errors. If the `ConversationPageParam` union move or the `RawConversationDetail` export surfaced a type error anywhere else, fix it now (grep for other importers of these symbols first: `grep -rn "ConversationPageParam\|firstPageEtags" hooks/ components/ app/`).
 
-- [ ] **Step 2: Run the full unit + integration suite in-band**
+- [x] **Step 2: Run the full unit + integration suite in-band**
 
 Run: `npm test -- --runInBand`
 Expected: all suites PASS. Pay special attention to any pre-existing test that mounted `useConversation` on the tail view and did NOT seed a warm cache — the new trigger effect is inert without a cursor (no cached history → `deriveCursor` returns `undefined` → early return), so those should be unaffected. If any tail-view test now sees an unexpected `after_index` GET, it had a warm cache; adjust the test's expectation or confirm the delta is correct.
 
-- [ ] **Step 3: Lint the full changed set**
+- [x] **Step 3: Lint the full changed set**
 
 Run:
 ```bash
@@ -1683,7 +1683,7 @@ git diff main --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' | xargs npx
 ```
 Expected: no errors (warnings OK).
 
-- [ ] **Step 4: Push branch + open PR**
+- [x] **Step 4: Push branch + open PR**
 
 ```bash
 git push -u origin feat/persistent-cache-delta-sync
@@ -1716,7 +1716,7 @@ EOF
 
 If `gh pr create` fails with a PAT scope error, invoke the `gh-pr-create` skill.
 
-- [ ] **Step 5: Report the PR URL** back to the user and stop. Do not merge.
+- [x] **Step 5: Report the PR URL** back to the user and stop. Do not merge.
 
 ---
 
