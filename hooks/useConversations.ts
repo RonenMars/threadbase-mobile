@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
 import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
 import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
@@ -8,7 +9,15 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
-import { deriveCursor } from '@/hooks/conversationCursor'
+import {
+  deriveCursor,
+  isEmptyFirstPage,
+  stripEmptyFirstPage,
+  shouldContinueDrain,
+  isCursorValid,
+  canTrigger,
+  stampTrigger,
+} from '@/hooks/conversationCursor'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -440,6 +449,108 @@ export function useConversation(
     },
     enabled: Boolean(serverId && id) && (opts?.enabled ?? true),
   })
+
+  const queryKeyHash = JSON.stringify(queryKey)
+  const queryRef = useRef(query)
+  useEffect(() => {
+    queryRef.current = query
+  })
+
+  useEffect(() => {
+    // Delta-on-open lives only on the tail view; anchored windows are
+    // navigation artifacts with their own bidirectional pagination.
+    if (anchorIndex != null || !serverId || !id) return
+
+    // Rebuild the tail key locally so queryKey (a fresh array each render) never
+    // enters the deps array. Only the tail view reaches here, so this is always
+    // the plain key.
+    const tailKey = ['conversation', serverId, id] as const
+
+    let cancelled = false
+
+    const runDelta = async () => {
+      // Re-read the ref (not a captured const) so every call — and every drain
+      // iteration below — uses the latest query handle.
+      const cursorAtStart = deriveCursor(queryRef.current.data?.pages)
+      if (cursorAtStart == null) return // no cached history → nothing to resume from
+      const now = Date.now()
+      if (!canTrigger(queryKeyHash, now)) return
+      stampTrigger(queryKeyHash, now) // stamp once per drain, at the start
+
+      // Drain: sequential after_index hops until has_more_newer is false or an
+      // empty page returns. First hop uses the { resume } param from
+      // getPreviousPageParam (msg_limit 80); every subsequent hop hits the
+      // { after } branch via the page's own has_more_newer/next_after_index and
+      // therefore uses msg_limit 120 (CONVERSATION_ANCHORED_LIMIT) — intentional
+      // and correct: larger continuation pages mean fewer round-trips; do not
+      // "fix" it to 80.
+      let cursor = cursorAtStart
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (cancelled) return
+        await queryRef.current.fetchPreviousPage({ cancelRefetch: false })
+        if (cancelled) return
+
+        const data = queryClient.getQueryData<InfiniteData<RawConversationDetail, ConversationPageParam>>(tailKey)
+        if (!data) return
+        const firstPage = data.pages[0]
+
+        // Empty-200: RQ prepended an empty husk — strip it, stop draining.
+        if (isEmptyFirstPage(data)) {
+          queryClient.setQueryData(tailKey, stripEmptyFirstPage(data))
+          return
+        }
+
+        // Cursor validity: a truncation/rewrite means our cursor no longer
+        // points onto this history. resetQueries discards the cached data AND
+        // refetches the active query from initialPageParam (-1) in one call —
+        // the purpose-built primitive for discard-and-refetch. (removeQueries
+        // alone would leave the refetch to the mounted observer; resetQueries
+        // is explicit and self-contained.)
+        if (!isCursorValid(firstPage, cursor)) {
+          void queryClient.resetQueries({ queryKey: tailKey })
+          return
+        }
+
+        if (!shouldContinueDrain(firstPage)) return
+        // Advance our local cursor to the new max for the next validity check.
+        cursor = deriveCursor(data.pages) ?? cursor
+      }
+    }
+
+    // Mount.
+    void runDelta()
+
+    // AppState foreground.
+    const appStateSub = AppState.addEventListener('change', (status) => {
+      if (status === 'active') void runDelta()
+    })
+
+    // WS connected transition (observer, never owner). onAnyStatusChange also
+    // covers clients created after mount; filter to this server + connected.
+    const unsubStatus = wsManager.onAnyStatusChange((sid, status) => {
+      if (sid === serverId && status === 'connected') void runDelta()
+    })
+
+    // WS running → not-running transition, per this conversation's session.
+    // prevStatus is effect-local and survives because the effect runs once per
+    // mount (stable deps) — if queryKey were in the deps this would reset every
+    // render and never see a running→not-running edge.
+    let prevStatus: string | null = null
+    const unsubSession = wsManager.getClient(serverId)?.on('session_update', (msg) => {
+      if (msg.type !== 'session_update' || msg.session.id !== id) return
+      const prev = prevStatus
+      prevStatus = msg.session.status
+      if (prev === 'running' && msg.session.status !== 'running') void runDelta()
+    })
+
+    return () => {
+      cancelled = true
+      appStateSub.remove()
+      unsubStatus()
+      unsubSession?.()
+    }
+  }, [serverId, id, anchorIndex, queryKeyHash, queryClient])
 
   const data = useMemo(() => {
     if (!query.data?.pages.length) return undefined

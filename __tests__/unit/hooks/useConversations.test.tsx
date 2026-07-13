@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react-native'
+import { act, renderHook, waitFor } from '@testing-library/react-native'
 import React from 'react'
+import { AppState } from 'react-native'
 import {
   useConversation,
   useConversations,
   useConversationSearch,
   useEagerConversations,
 } from '@/hooks/useConversations'
+import { __resetTriggerGuardForTests } from '@/hooks/conversationCursor'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { createWrapper } from '@/test-utils'
@@ -24,6 +26,9 @@ function wrapperWithClient() {
 // Captures the scan_progress handler registered by useEagerConversations so
 // tests can simulate a broadcast arriving mid-count.
 let scanProgressHandler: ((msg: { type: string; serverId: string; scanned: number; total: number }) => void) | null = null
+// Captures the trigger effect's onAnyStatusChange listener so tests can drive
+// WS connected transitions directly.
+let statusListener: ((sid: string, s: string) => void) | null = null
 
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
@@ -33,6 +38,11 @@ jest.mock('@/services/ws-client', () => ({
         if (type === 'scan_progress') scanProgressHandler = null
       }
     },
+    onAnyStatusChange: (l: (sid: string, s: string) => void) => {
+      statusListener = l
+      return () => { statusListener = null }
+    },
+    getClient: () => ({ on: () => () => {} }),
   },
 }))
 
@@ -673,5 +683,220 @@ describe('useConversation — retry hygiene', () => {
     expect(opts.refetchOnMount).toBe(false)
     expect(opts.refetchOnWindowFocus).toBe(false)
     expect(opts.refetchOnReconnect).toBe(false)
+  })
+})
+
+// A cached tail InfiniteData with messages 0..2 and pageParam -1.
+function warmTailCache(id: string) {
+  return {
+    pages: [rawConversationPage(id, ['a', 'b', 'c'])],
+    pageParams: [-1],
+  }
+}
+
+describe('useConversation — consolidated delta trigger', () => {
+  beforeEach(() => __resetTriggerGuardForTests())
+
+  it('fires one after_index delta on mount when a cursor exists in the warm cache', async () => {
+    setActiveServers(['srv_mt'])
+    const paths: string[] = []
+    handlers.srv_mt = (path) => {
+      paths.push(path)
+      return Promise.resolve(rawAnchoredPage('c_mt', 3, 1, 4, { has_more_newer: false, next_after_index: null }))
+    }
+    metaHandlers.srv_mt = () => Promise.reject(new Error('tail fetch must not fire — cache is warm'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_mt', 'c_mt'], warmTailCache('c_mt'))
+
+    const { result } = await renderHook(() => useConversation('srv_mt', 'c_mt'), { wrapper })
+
+    await waitFor(() => expect(paths.filter((p) => p.includes('after_index=2'))).toHaveLength(1))
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(4))
+    // Only the delta fired, never a tail (-1) fetch.
+    expect(paths.every((p) => p.includes('after_index'))).toBe(true)
+  })
+
+  it('drains a >80-message backlog across sequential after_index pages, guard stamped once', async () => {
+    setActiveServers(['srv_drain'])
+    const paths: string[] = []
+    // Warm cache ends at index 2 (cursor 2). Backlog: 3 pages.
+    handlers.srv_drain = (path) => {
+      paths.push(path)
+      if (path.includes('after_index=2')) {
+        // 80 new (3..82), more newer.
+        return Promise.resolve(rawAnchoredPage('c_dr', 3, 80, 243, { has_more_newer: true, next_after_index: 83 }))
+      }
+      if (path.includes('after_index=83')) {
+        return Promise.resolve(rawAnchoredPage('c_dr', 83, 80, 243, { has_more_newer: true, next_after_index: 163 }))
+      }
+      // after_index=163 → last 80 (163..242), no more.
+      return Promise.resolve(rawAnchoredPage('c_dr', 163, 80, 243, { has_more_newer: false, next_after_index: null }))
+    }
+    metaHandlers.srv_drain = () => Promise.reject(new Error('no tail fetch expected'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_drain', 'c_dr'], warmTailCache('c_dr'))
+
+    const { result } = await renderHook(() => useConversation('srv_drain', 'c_dr'), { wrapper })
+
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(243))
+    // Exactly three sequential after_index GETs.
+    const afterPaths = paths.filter((p) => p.includes('after_index'))
+    expect(afterPaths).toHaveLength(3)
+    expect(afterPaths[0]).toContain('after_index=2')
+    expect(afterPaths[1]).toContain('after_index=83')
+    expect(afterPaths[2]).toContain('after_index=163')
+    // Full range 0..242, no gap.
+    const indexes = result.current.data!.messages.map((m) => m.messageIndex)
+    expect(indexes).toEqual(Array.from({ length: 243 }, (_, i) => i))
+  })
+
+  it('strips the empty husk on an empty-200 delta and stays resumable', async () => {
+    setActiveServers(['srv_empty'])
+    let deltaCalls = 0
+    handlers.srv_empty = () => {
+      deltaCalls += 1
+      return Promise.resolve(rawAnchoredPage('c_e', 3, 0, 3, { has_more_newer: false, next_after_index: null }))
+    }
+    metaHandlers.srv_empty = () => Promise.reject(new Error('no tail fetch'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_empty', 'c_e'], warmTailCache('c_e'))
+
+    const { result } = await renderHook(() => useConversation('srv_empty', 'c_e'), { wrapper })
+
+    await waitFor(() => expect(deltaCalls).toBe(1))
+    // Empty page stripped → back to the original single cached page.
+    await waitFor(() => {
+      const data = qc.getQueryData(['conversation', 'srv_empty', 'c_e']) as { pages: unknown[] }
+      expect(data.pages).toHaveLength(1)
+    })
+    expect(result.current.data!.messages.length).toBe(3)
+    // Still resumable afterward: hasNewerPage stays true (cursor still exists).
+    expect(result.current.hasNewerPage).toBe(true)
+  })
+
+  it('discards + refetches tail when total <= cursor (truncation), no merge', async () => {
+    setActiveServers(['srv_trunc'])
+    let tailRefetches = 0
+    // Delta reports total=2 while our cursor is 2 → total === cursor → invalid.
+    handlers.srv_trunc = () =>
+      Promise.resolve(rawAnchoredPage('c_t', 3, 1, 2, { has_more_newer: false, next_after_index: null }))
+    metaHandlers.srv_trunc = () => {
+      tailRefetches += 1
+      return Promise.resolve({ status: 200, etag: '"v2"', body: rawConversationPage('c_t', ['x', 'y']) })
+    }
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_trunc', 'c_t'], warmTailCache('c_t'))
+
+    const { result } = await renderHook(() => useConversation('srv_trunc', 'c_t'), { wrapper })
+
+    // The invalid delta triggers resetQueries → discard + refetch from -1 (getWithMeta).
+    await waitFor(() => expect(tailRefetches).toBeGreaterThanOrEqual(1))
+    await waitFor(() => expect(result.current.data!.messages.map((m) => m.messageIndex)).toEqual([0, 1]))
+  })
+
+  it('WS flap ×5 within 5s fires at most one delta, zero tail refetches', async () => {
+    jest.useFakeTimers()
+    setActiveServers(['srv_flap'])
+    let deltaCalls = 0
+    handlers.srv_flap = () => {
+      deltaCalls += 1
+      return Promise.resolve(rawAnchoredPage('c_fl', 3, 1, 4, { has_more_newer: false, next_after_index: null }))
+    }
+    let tailCalls = 0
+    metaHandlers.srv_flap = () => { tailCalls += 1; return Promise.reject(new Error('no tail')) }
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_flap', 'c_fl'], warmTailCache('c_fl'))
+
+    const { unmount } = await renderHook(() => useConversation('srv_flap', 'c_fl'), { wrapper })
+    // Mount already fired one. Clear it so we measure the flaps in isolation.
+    await waitFor(() => expect(deltaCalls).toBe(1))
+
+    for (let i = 0; i < 5; i++) {
+      statusListener?.('srv_flap', 'connected')
+      await act(() => jest.advanceTimersByTime(500)) // 5 × 500ms = 2.5s, inside the 5s guard
+    }
+    await waitFor(() => expect(deltaCalls).toBe(1)) // guard held — still just the mount delta
+    expect(tailCalls).toBe(0)
+    unmount()
+    jest.useRealTimers()
+  })
+
+  it('foreground fires one delta; a later foreground after an empty-200 fires a fresh delta (not latched)', async () => {
+    jest.useFakeTimers()
+    setActiveServers(['srv_fg'])
+    // Both foreground deltas return empty-200 (nothing new) — the point is that
+    // the SECOND foreground still issues a request, proving no latch.
+    let deltaCalls = 0
+    handlers.srv_fg = () => {
+      deltaCalls += 1
+      return Promise.resolve(rawAnchoredPage('c_fg', 3, 0, 3, { has_more_newer: false, next_after_index: null }))
+    }
+    metaHandlers.srv_fg = () => Promise.reject(new Error('no tail fetch expected'))
+
+    // Capture every AppState 'change' listener the render tree registers —
+    // react-query's own focusManager also subscribes to 'change' (via
+    // services/query-client.ts), so a single-slot capture can be clobbered by
+    // that unrelated listener. Fire the whole list, matching real AppState fan-out.
+    // Deliberately never mockRestore(): the real AppState.addEventListener
+    // throws in this test environment (no native module), so restoring it
+    // would break every AppState subscription — including this effect's —
+    // in tests that run after this one in the same file.
+    const appStateHandlers: ((s: string) => void)[] = []
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((event, handler) => {
+      if (event === 'change') appStateHandlers.push(handler as (s: string) => void)
+      return { remove: jest.fn() } as never
+    })
+    const fireForeground = () => appStateHandlers.forEach((h) => h('active'))
+
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_fg', 'c_fg'], warmTailCache('c_fg'))
+
+    const { unmount } = await renderHook(() => useConversation('srv_fg', 'c_fg'), { wrapper })
+    // Mount already fired one delta; strip pass leaves the single cached page.
+    await waitFor(() => expect(deltaCalls).toBe(1))
+    await waitFor(() => {
+      const d = qc.getQueryData(['conversation', 'srv_fg', 'c_fg']) as { pages: unknown[] }
+      expect(d.pages).toHaveLength(1)
+    })
+
+    // First foreground within the 5s guard → blocked (still 1).
+    fireForeground()
+    await waitFor(() => expect(deltaCalls).toBe(1))
+
+    // Advance past the 5s guard, then foreground again → a FRESH delta fires.
+    await act(() => jest.advanceTimersByTime(6000))
+    fireForeground()
+    await waitFor(() => expect(deltaCalls).toBe(2))
+    // Still empty-200 → still one cached page, no churn.
+    await waitFor(() => {
+      const d = qc.getQueryData(['conversation', 'srv_fg', 'c_fg']) as { pages: unknown[] }
+      expect(d.pages).toHaveLength(1)
+    })
+
+    unmount()
+    jest.useRealTimers()
+  })
+
+  it('two concurrent consumers of the same key share one in-flight delta', async () => {
+    setActiveServers(['srv_dup'])
+    let deltaCalls = 0
+    handlers.srv_dup = () => {
+      deltaCalls += 1
+      return Promise.resolve(rawAnchoredPage('c_du', 3, 1, 4, { has_more_newer: false, next_after_index: null }))
+    }
+    metaHandlers.srv_dup = () => Promise.reject(new Error('no tail'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_dup', 'c_du'], warmTailCache('c_du'))
+
+    // Two hook instances, same key, same client.
+    await renderHook(
+      () => {
+        useConversation('srv_dup', 'c_du')
+        useConversation('srv_dup', 'c_du')
+      },
+      { wrapper },
+    )
+
+    await waitFor(() => expect(deltaCalls).toBe(1))
   })
 })
