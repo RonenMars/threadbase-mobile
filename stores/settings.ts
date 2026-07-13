@@ -44,6 +44,9 @@ interface SettingsStore {
   crashReportingEnabled: boolean
   /** Whether the post-upgrade crash-reporting notice has been dismissed. */
   crashReportingNoticeDismissed: boolean
+  /** Whether the user declined the "turn on crash reporting?" upsell shown
+   * after a one-shot crash report, so it is never shown again. */
+  crashReportingUpsellDismissed: boolean
   // Conversation row settings (Conversation list redesign §13).
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
@@ -65,6 +68,7 @@ interface SettingsStore {
   setBiometricLock: (v: boolean) => void
   setCrashReportingEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
+  setCrashReportingUpsellDismissed: (v: boolean) => void
   setRowTitleSource: (v: RowTitleSource) => void
   setRowPreviewMode: (v: RowPreviewMode) => void
   setRowDensity: (v: RowDensity) => void
@@ -104,6 +108,7 @@ interface PersistedSettings {
   biometricLock: boolean
   crashReportingEnabled: boolean
   crashReportingNoticeDismissed: boolean
+  crashReportingUpsellDismissed: boolean
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
   rowDensity: RowDensity
@@ -130,6 +135,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   biometricLock: false,
   crashReportingEnabled: false,
   crashReportingNoticeDismissed: false,
+  crashReportingUpsellDismissed: false,
   autoNameFromMessage: true,
   aiGeneratedNames: false,
   sessionView: 'terminal',
@@ -160,6 +166,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setCrashReportingEnabled: (crashReportingEnabled) => set({ crashReportingEnabled }),
   setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
     set({ crashReportingNoticeDismissed }),
+  setCrashReportingUpsellDismissed: (crashReportingUpsellDismissed) =>
+    set({ crashReportingUpsellDismissed }),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   setSessionView: (sessionView) => set({ sessionView }),
@@ -192,6 +200,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         crashReportingEnabled: parsed.crashReportingEnabled ?? state.crashReportingEnabled,
         crashReportingNoticeDismissed:
           parsed.crashReportingNoticeDismissed ?? state.crashReportingNoticeDismissed,
+        crashReportingUpsellDismissed:
+          parsed.crashReportingUpsellDismissed ?? state.crashReportingUpsellDismissed,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
         sessionView: parsed.sessionView === 'chat' ? 'chat' : state.sessionView,
@@ -222,6 +232,7 @@ useSettingsStore.subscribe((state) => {
     biometricLock: state.biometricLock,
     crashReportingEnabled: state.crashReportingEnabled,
     crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,
+    crashReportingUpsellDismissed: state.crashReportingUpsellDismissed,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
     sessionView: state.sessionView,

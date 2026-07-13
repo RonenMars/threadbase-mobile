@@ -15,10 +15,17 @@ includes these features.
 Review **App Store Connect → your app → App Privacy** and update the "Data
 Collection" answers. The features add these data types (all optional / opt-in):
 
-- [ ] **Diagnostics → Crash Data** — collected when the user opts into crash
-      reporting. Linked to the user? **No** (anonymous install id only). Used for
-      tracking? **No**. Purpose: **App Functionality / Analytics? → App
-      Functionality** (crash diagnosis), not advertising.
+- [ ] **Diagnostics → Crash Data** — collected in two situations: (1)
+      automatically, whenever the user has turned on the standing "Share
+      anonymous crash reports" setting; (2) as a one-time explicit action even
+      when that setting is OFF, if the user taps "Report this crash" on the
+      crash-recovery screen. Both paths send the same sanitized data through the
+      same code path — declare Crash Data as collected, **optional** (the
+      automatic path can be disabled; the manual path only fires on an explicit
+      tap). Linked to the user? **No** (anonymous install id only, and the
+      one-tap path does not persist any additional identifier). Used for
+      tracking? **No**. Purpose: **App Functionality** (crash diagnosis), not
+      advertising.
 - [ ] **Diagnostics → Performance Data** — **Not collected** (performance tracing
       is disabled; `tracesSampleRate: 0`). Confirm you do **not** declare this.
 - [ ] **Contact Info → Email Address** — collected **only if** the user
@@ -48,8 +55,12 @@ Collection" answers. The features add these data types (all optional / opt-in):
 Review **Play Console → your app → Policy → App content → Data safety** and
 update the form:
 
-- [ ] **App activity / Crash logs** — **Data collected** (not shared), when the
-      user opts into crash reporting. Optional? **Yes** (users can opt out).
+- [ ] **App activity / Crash logs** — **Data collected** (not shared). Two
+      collection paths: automatic when the standing "Share anonymous crash
+      reports" setting is on, and a one-time explicit "Report this crash" tap on
+      the crash-recovery screen that works even when that setting is off.
+      Optional? **Yes** for both — automatic reporting can be turned off, and the
+      manual path only ever fires on an explicit tap, never in the background.
       Processed ephemerally? **No** (retained by Sentry). Purpose: **App
       functionality / Analytics? → App functionality (crash diagnosis)**.
 - [ ] **App info and performance → Diagnostics** — the sanitized technical
@@ -70,13 +81,26 @@ update the form:
 
 ## Cross-cutting reminders
 
-- [ ] Both stores: crash reporting must be described as **optional / off by
-      default**, matching the in-app consent behavior.
+- [ ] Both stores: **automatic** crash reporting must be described as optional /
+      off by default, matching the in-app toggle. Additionally disclose that a
+      **single crash report can still be sent manually** via an explicit
+      "Report this crash" tap on the crash screen, independent of that toggle —
+      this is a distinct, user-initiated action, not automatic collection, but
+      it means "crash data is never sent while the setting is off" would be an
+      inaccurate description and must not be used.
 - [ ] Both stores: do **not** declare advertising, tracking, or fingerprinting —
       the app does none.
-- [ ] Publish `docs/proposed-privacy-policy.md` to
-      <https://threadbase.sh/privacy> **before** submitting a build with these
-      features, and set the effective date + Sentry processing region in that
-      document first.
-- [ ] Beta / TestFlight release notes: mention that this build adds optional,
-      off-by-default crash reporting and an in-app feedback screen.
+- [ ] After a manual report is sent, the app may show a one-time prompt asking
+      whether to turn on automatic crash reporting going forward; declining sets
+      a local "don't ask again" flag and the prompt never reappears. This prompt
+      does not itself send any data — only the user's Yes/No answer changes the
+      standing setting.
+- [ ] Publish `docs/proposed-privacy-policy.md` (updated to also describe the
+      manual "Report this crash" path) to <https://threadbase.sh/privacy>
+      **before** submitting a build with these features, and set the effective
+      date + Sentry processing region in that document first. The current live
+      policy states the app runs no crash-reporting service of any kind — that
+      statement must be corrected before this build can ship.
+- [ ] Beta / TestFlight release notes: mention that this build adds crash
+      reporting (automatic, opt-in and off by default, plus a manual "Report this
+      crash" option on the error screen) and an in-app feedback screen.

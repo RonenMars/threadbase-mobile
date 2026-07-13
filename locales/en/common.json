@@ -46,6 +46,16 @@
   "errorBoundary": {
     "title": "Something crashed",
     "message": "The app hit an unexpected error. Reloading usually fixes it.",
-    "reload": "Reload Threadbase"
+    "reload": "Reload Threadbase",
+    "report": "Report this crash",
+    "reportSending": "Sending report…",
+    "reportSent": "Report sent. Thank you.",
+    "reportFailed": "Couldn't send the report. Please try again.",
+    "upsell": {
+      "title": "Turn on crash reporting?",
+      "message": "Enable crash reporting so future crashes are sent automatically. You can turn it off anytime in Settings.",
+      "enable": "Turn on",
+      "notNow": "Not now"
+    }
   }
 }

@@ -22,7 +22,8 @@ described in its own section below.
 
 1. **Core traffic to your streamers** — the app's normal function.
 2. **Expo push-notification delivery** — optional notifications.
-3. **Optional crash reporting (Sentry)** — off by default, opt-in.
+3. **Crash reporting (Sentry)** — automatic reporting is off by default and
+   opt-in; a single crash can also be reported manually at any time.
 4. **User-initiated feedback submissions** — only when you send feedback.
 5. **Optional screenshots or diagnostics you explicitly select** — only when you
    choose to include them.
@@ -49,12 +50,26 @@ session content.
 
 ## 3. Optional crash reporting (Sentry)
 
-Threadbase includes optional crash reporting to help diagnose defects. **It is
-disabled by default and is opt-in.** Nothing is sent to the crash-reporting
-service unless you turn on "Share anonymous crash reports" in
-**Settings → Crash Reporting**.
+Threadbase includes optional crash reporting to help diagnose defects, sent
+through two paths:
 
-- **Service provider.** When enabled, crash reports are processed by
+- **Automatic reporting.** **Disabled by default and opt-in.** Nothing is sent
+  automatically unless you turn on "Share anonymous crash reports" in
+  **Settings → Crash Reporting**. Once enabled, future crashes are sent
+  automatically until you turn it off again.
+- **Manual, one-time report.** If the app crashes, the recovery screen offers a
+  "Report this crash" button. Tapping it sends that single crash report even if
+  automatic reporting is off. This is a deliberate action you take, not
+  something the app does on its own — no report is ever sent without you
+  tapping that button or having automatic reporting turned on. It does not turn
+  on automatic reporting; after sending, the app may ask once whether you'd
+  like to turn automatic reporting on going forward, and remembers your answer
+  so it does not ask again.
+
+Both paths send the same sanitized data described below, through the same
+service.
+
+- **Service provider.** Crash reports are processed by
   [Sentry](https://sentry.io/), a third-party error-monitoring service, under
   Sentry's own terms and data-processing agreements.
 - **What is sent.** Only sanitized technical information: the app version and

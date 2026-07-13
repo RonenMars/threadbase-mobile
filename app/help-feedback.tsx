@@ -177,7 +177,7 @@ export default function HelpFeedbackScreen() {
           <Text style={s.successTitle}>{t('success.title')}</Text>
           <Text style={s.successMessage}>{t('success.message')}</Text>
           <TouchableOpacity
-            style={s.primaryBtn}
+            style={[s.primaryBtn, s.primaryBtnWide]}
             onPress={() => setView('landing')}
             accessibilityRole="button"
             accessibilityLabel={t('success.done')}
@@ -582,6 +582,11 @@ function styles(theme: Theme) {
       marginTop: spacing.md,
     },
     primaryBtnDisabled: { opacity: 0.6 },
+    // primaryBtn has no explicit width so it stretches inside the form/
+    // copy-fallback screens' padded ScrollView. The success screen centers its
+    // content instead, which shrink-wraps children — without this the button
+    // collapses to just the label's width. Used only there.
+    primaryBtnWide: { minWidth: 200, paddingHorizontal: spacing.xl },
     primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '600' },
     submittingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     successIcon: {

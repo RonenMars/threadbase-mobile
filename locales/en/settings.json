@@ -83,6 +83,7 @@
     "description": "Send sanitized technical crash information to help improve Threadbase. Prompts, terminal output, source code, credentials, server addresses, and session content are never included.",
     "privacyPolicy": "Privacy policy",
     "testCrash": "Test crash reporting",
+    "testThrow": "Throw uncaught exception",
     "testCrashConfirmTitle": "Send a test crash?",
     "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
     "testCrashSend": "Send test crash",

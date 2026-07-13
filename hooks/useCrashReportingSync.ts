@@ -16,6 +16,7 @@ export function useCrashReportingSync(): void {
   const enabled = useSettingsStore((s) => s.crashReportingEnabled)
 
   useEffect(() => {
+    if (__DEV__) console.log('[sentry] consent sync fired, crashReportingEnabled =', enabled)
     void setCrashReportingEnabled(enabled)
   }, [enabled])
 }

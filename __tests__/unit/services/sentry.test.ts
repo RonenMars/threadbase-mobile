@@ -110,6 +110,28 @@ describe('sentry service — defensive init config', () => {
     expect(kept).toContain('ReactNativeErrorHandlers')
   })
 
+  it('keeps SDK debug logging off during local QA unless explicitly enabled', async () => {
+    const { mod, sdk } = loadService({
+      EXPO_PUBLIC_SENTRY_DSN: DSN,
+      EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1',
+      EXPO_PUBLIC_SENTRY_DEBUG: undefined,
+    })
+    await mod.initCrashReporting(true)
+    const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts.debug).toBe(false)
+  })
+
+  it('enables SDK debug logging only with the explicit debug override', async () => {
+    const { mod, sdk } = loadService({
+      EXPO_PUBLIC_SENTRY_DSN: DSN,
+      EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1',
+      EXPO_PUBLIC_SENTRY_DEBUG: '1',
+    })
+    await mod.initCrashReporting(true)
+    const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts.debug).toBe(true)
+  })
+
   it('sets an anonymous install id and safe tags, never PII', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     await mod.initCrashReporting(true)
@@ -217,5 +239,77 @@ describe('sentry service — capture helpers', () => {
     expect(scope.setTag).toHaveBeenCalledWith('connection.mode', 'local')
     mod.setConnectionModeTag('https://prod.tunnel.example.com')
     expect(scope.setTag).toHaveBeenCalledWith('connection.mode', 'remote')
+  })
+})
+
+describe('sentry service — reportOneShot (works independent of standing consent)', () => {
+  it('sends a report and closes the client again when reporting was OFF', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    expect(mod.isCrashReportingActive()).toBe(false)
+
+    const eventId = await mod.reportOneShot(new Error('one-shot test'), { tag: 'test' })
+
+    expect(eventId).toBe('evt_exception')
+    expect(sdk.init).toHaveBeenCalledTimes(1) // initialized just for this report
+    expect(sdk.close).toHaveBeenCalledTimes(1) // and torn down again afterward
+    // Standing state is genuinely unaffected — still inactive afterward.
+    expect(mod.isCrashReportingActive()).toBe(false)
+  })
+
+  it('does NOT flip the persisted crashReportingEnabled setting', async () => {
+    // reportOneShot only touches the in-memory Sentry client; the settings
+    // store is a separate module it never imports or writes to.
+    const { mod } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.reportOneShot(new Error('one-shot test'))
+    expect(mod.isCrashReportingActive()).toBe(false)
+  })
+
+  it('reuses the existing client without closing it when reporting was already ON', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.initCrashReporting(true)
+    expect(mod.isCrashReportingActive()).toBe(true)
+    ;(sdk.init as jest.Mock).mockClear()
+    ;(sdk.close as jest.Mock).mockClear()
+
+    const eventId = await mod.reportOneShot(new Error('one-shot test'))
+
+    expect(eventId).toBe('evt_exception')
+    expect(sdk.init).not.toHaveBeenCalled() // already initialized — no re-init
+    expect(sdk.close).not.toHaveBeenCalled() // standing reporting stays open
+    expect(mod.isCrashReportingActive()).toBe(true)
+  })
+
+  it('returns undefined and sends nothing when no DSN is configured', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: undefined, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    const eventId = await mod.reportOneShot(new Error('one-shot test'))
+    expect(eventId).toBeUndefined()
+    expect(sdk.init).not.toHaveBeenCalled()
+    expect(sdk.captureException).not.toHaveBeenCalled()
+  })
+
+  it('returns undefined when the dev environment does not permit reporting', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: undefined })
+    const eventId = await mod.reportOneShot(new Error('one-shot test'))
+    expect(eventId).toBeUndefined()
+    expect(sdk.init).not.toHaveBeenCalled()
+  })
+
+  it('scrubs the error before sending, same as captureHandledError', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.reportOneShot(new Error('failed to reach https://secret.tunnel.io/ws?key=tb_live_abc'))
+    const capturedError = (sdk.captureException as jest.Mock).mock.calls[0][0]
+    expect(capturedError.message.includes('tb_live')).toBe(false)
+    expect(capturedError.message.includes('secret.tunnel.io')).toBe(false)
+  })
+
+  it('closes the one-shot client even if the capture itself throws', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    ;(sdk.captureException as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+    const eventId = await mod.reportOneShot(new Error('one-shot test'))
+    expect(eventId).toBeUndefined()
+    expect(sdk.close).toHaveBeenCalledTimes(1) // cleanup still ran
+    expect(mod.isCrashReportingActive()).toBe(false)
   })
 })

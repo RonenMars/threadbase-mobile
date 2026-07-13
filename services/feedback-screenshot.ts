@@ -44,17 +44,29 @@ export async function pickAndPrepareScreenshot(): Promise<FeedbackAttachment | n
   })
   if (result.canceled || result.assets.length === 0) return null
 
-  const asset = result.assets[0]
-
   // Re-encode to JPEG + downscale. This drops any residual metadata the OS
-  // attached and bounds the dimensions/size.
-  const manipulated = await ImageManipulator.manipulateAsync(
-    asset.uri,
-    asset.width && asset.width > MAX_WIDTH ? [{ resize: { width: MAX_WIDTH } }] : [],
+  // attached and bounds the dimensions/size. Always resize to MAX_WIDTH — the
+  // picker's reported asset.width can be missing (e.g. with exif:false on some
+  // OS/library combos), so gating the resize on it left full-resolution modern
+  // phone screenshots (3000px+) uncompressed enough to blow past the cap.
+  let manipulated = await ImageManipulator.manipulateAsync(
+    result.assets[0].uri,
+    [{ resize: { width: MAX_WIDTH } }],
     { compress: COMPRESS_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
   )
 
-  const sizeBytes = await fileSize(manipulated.uri)
+  let sizeBytes = await fileSize(manipulated.uri)
+  // Still too large (a very tall/dense screenshot) — retry once smaller before
+  // giving up, so users with huge screens don't hit a dead end.
+  if (sizeBytes > MAX_ATTACHMENT_BYTES) {
+    manipulated = await ImageManipulator.manipulateAsync(
+      result.assets[0].uri,
+      [{ resize: { width: MAX_WIDTH / 2 } }],
+      { compress: COMPRESS_QUALITY / 2, format: ImageManipulator.SaveFormat.JPEG },
+    )
+    sizeBytes = await fileSize(manipulated.uri)
+  }
+
   if (sizeBytes > MAX_ATTACHMENT_BYTES) {
     throw new Error('screenshot_too_large')
   }

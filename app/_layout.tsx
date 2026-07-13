@@ -71,9 +71,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
 
-  // Initialize/tear down crash reporting in lockstep with the consent setting.
-  useCrashReportingSync()
-
   useEffect(() => {
     hydrateSettings().then(() => {
       const locale = useSettingsStore.getState().locale;
@@ -338,6 +335,16 @@ function ThemedStatusBar() {
 function RootLayout() {
   const router = useRouter()
   const [splashDone, setSplashDone] = useState(!!g.__splashShown)
+
+  // Initialize/tear down crash reporting in lockstep with the consent setting.
+  // Runs here (rather than in AuthGate, several layers deeper) so Sentry.init()
+  // fires as early as React effects allow — the SDK's App Start tracing span
+  // still can't observe a client on the very first frame (Sentry.wrap() runs at
+  // module-eval time, before any effect can run, and consent is only known
+  // after an async AsyncStorage read), so a one-time "wrap called before init"
+  // warning is expected in dev and harmless: it only skips a performance span,
+  // and performance tracing is disabled anyway (tracesSampleRate: 0).
+  useCrashReportingSync()
 
   useEffect(() => {
     SplashScreen.hideAsync()

@@ -231,6 +231,13 @@ function ThemePicker({
   )
 }
 
+/** Dev-only: throws unconditionally on render, to exercise RootErrorBoundary
+ * end-to-end. Never rendered unless the user explicitly triggers the
+ * throw-uncaught test action below. */
+function ThrowOnRender(): never {
+  throw new Error('Test uncaught render exception from Settings')
+}
+
 export default function SettingsScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -277,6 +284,7 @@ export default function SettingsScreen() {
     setGlassThemeVariant,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
+  const [throwOnRender, setThrowOnRender] = useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
@@ -310,6 +318,24 @@ export default function SettingsScreen() {
               tag: 'test_crash',
             })
           },
+        },
+      ],
+    )
+  }
+
+  const handleThrowUncaught = () => {
+    Alert.alert(
+      t('crashReporting.testCrashConfirmTitle'),
+      t('crashReporting.testCrashConfirmMessage'),
+      [
+        { text: t('common:button.cancel', 'Cancel'), style: 'cancel' },
+        {
+          // Renders a component that throws for real, exercising
+          // RootErrorBoundary -> componentDidCatch -> captureHandledError, the
+          // same path a genuine unhandled render crash would take — distinct
+          // from the already-caught captureHandledError call above.
+          text: t('crashReporting.testCrashSend'),
+          onPress: () => setThrowOnRender(true),
         },
       ],
     )
@@ -801,7 +827,7 @@ await refreshServerInfo(serverId)
           </TouchableOpacity>
           {__DEV__ ? (
             <TouchableOpacity
-              style={[s.row, { borderBottomWidth: 0 }]}
+              style={s.row}
               onPress={handleTestCrash}
               accessibilityRole="button"
               accessibilityLabel={t('crashReporting.testCrash')}
@@ -811,7 +837,20 @@ await refreshServerInfo(serverId)
               <Text style={s.rowValue}>›</Text>
             </TouchableOpacity>
           ) : null}
+          {__DEV__ ? (
+            <TouchableOpacity
+              style={[s.row, { borderBottomWidth: 0 }]}
+              onPress={handleThrowUncaught}
+              accessibilityRole="button"
+              accessibilityLabel={t('crashReporting.testThrow')}
+              testID="settings-throw-uncaught-btn"
+            >
+              <Text style={s.rowLabel}>{t('crashReporting.testThrow')}</Text>
+              <Text style={s.rowValue}>›</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
+        {throwOnRender ? <ThrowOnRender /> : null}
 
         <SectionHeader title={t('section.permissions')} />
         <View style={[s.card, isGlass && s.cardGlass]}>

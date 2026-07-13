@@ -38,6 +38,7 @@ import { getSentryInstallId, clearSentryInstallId } from './sentry-install-id'
  * to embed in a client bundle by design. Auth tokens (source-map upload) live
  * only in the EAS build environment, never here. */
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN
+const SENTRY_DEBUG = process.env.EXPO_PUBLIC_SENTRY_DEBUG === '1'
 
 /** Conservative error sampling. We are not doing performance tracing at all. */
 const ERROR_SAMPLE_RATE = 1.0
@@ -142,70 +143,97 @@ function applySafeTags(): void {
 }
 
 /**
- * Initialize Sentry — ONLY when consent is granted, a DSN is configured, and
- * the environment permits reporting. Idempotent. Never throws; a failure here
- * must never crash or block app startup.
+ * The single, privacy-hardened Sentry.init() call. Shared by both the
+ * standing-consent path (initCrashReporting) and the one-shot report path
+ * (reportOneShot) so there is exactly one place that defines what the SDK is
+ * allowed to capture — no risk of the two paths drifting apart.
+ *
+ * Callers are responsible for their own consent-gating logic before calling
+ * this; it only checks DSN + environment, which apply unconditionally.
+ */
+async function performInit(): Promise<boolean> {
+  if (initialized) return true
+  if (!isDsnConfigured()) {
+    if (__DEV__) console.log('[sentry] init skipped: no DSN configured')
+    return false
+  }
+  if (!environmentPermitsReporting()) {
+    if (__DEV__) console.log('[sentry] init skipped: environment does not permit reporting')
+    return false
+  }
+
+  Sentry.init({
+    dsn: DSN,
+    environment: resolveEnvironment(),
+    release: getReleaseString(),
+    dist: getSafeBuildMetadata().buildNumber,
+    enabled: true,
+    debug: SENTRY_DEBUG, // opt-in only: the SDK's native debug logger is very noisy
+
+    // ---- Privacy hardening: disable everything that could capture content ----
+    sendDefaultPii: false,
+    attachScreenshot: false,
+    attachViewHierarchy: false,
+    attachStacktrace: true, // stack traces are scrubbed by our sanitizer
+    enableCaptureFailedRequests: false,
+    enableUserInteractionTracing: false,
+    enableAutoPerformanceTracing: false,
+    enableAutoSessionTracking: false,
+    enableAutoConsoleLogs: false,
+    enableWatchdogTerminationTracking: false,
+    enableNativeNagger: false,
+
+    // No Session Replay — sample rates pinned to zero as belt-and-suspenders.
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0,
+
+    // No performance tracing at all.
+    tracesSampleRate: 0,
+    sampleRate: ERROR_SAMPLE_RATE,
+    maxBreadcrumbs: 20,
+
+    // Strip risky default integrations; our hooks are the final guard.
+    integrations: (defaults) => filterIntegrations(defaults),
+
+    beforeSend: (event) => beforeSend(event as unknown as SentryLikeEvent) as never,
+    beforeBreadcrumb: (breadcrumb) =>
+      beforeBreadcrumb(breadcrumb as unknown as SentryLikeBreadcrumb) as never,
+  })
+
+  // Anonymous, non-network install id for issue grouping. No other user data.
+  try {
+    const id = await getSentryInstallId()
+    Sentry.getGlobalScope().setUser({ id })
+  } catch {
+    // No id is fine — grouping still works via stack + release.
+  }
+
+  applySafeTags()
+  initialized = true
+  if (__DEV__) console.log('[sentry] initialized — client ready')
+  return true
+}
+
+/**
+ * Initialize Sentry for STANDING crash reporting — ONLY when consent is
+ * granted, a DSN is configured, and the environment permits reporting.
+ * Idempotent. Never throws; a failure here must never crash or block app
+ * startup. The client stays open until disableCrashReporting() is called.
  *
  * @param consentGranted current value of the crash-reporting consent setting.
  */
 export async function initCrashReporting(consentGranted: boolean): Promise<boolean> {
   try {
     if (initialized) return true
-    if (!consentGranted) return false
-    if (!isDsnConfigured()) return false
-    if (!environmentPermitsReporting()) return false
-
-    Sentry.init({
-      dsn: DSN,
-      environment: resolveEnvironment(),
-      release: getReleaseString(),
-      dist: getSafeBuildMetadata().buildNumber,
-      enabled: true,
-
-      // ---- Privacy hardening: disable everything that could capture content ----
-      sendDefaultPii: false,
-      attachScreenshot: false,
-      attachViewHierarchy: false,
-      attachStacktrace: true, // stack traces are scrubbed by our sanitizer
-      enableCaptureFailedRequests: false,
-      enableUserInteractionTracing: false,
-      enableAutoPerformanceTracing: false,
-      enableAutoSessionTracking: false,
-      enableAutoConsoleLogs: false,
-      enableWatchdogTerminationTracking: false,
-      enableNativeNagger: false,
-
-      // No Session Replay — sample rates pinned to zero as belt-and-suspenders.
-      replaysSessionSampleRate: 0,
-      replaysOnErrorSampleRate: 0,
-
-      // No performance tracing at all.
-      tracesSampleRate: 0,
-      sampleRate: ERROR_SAMPLE_RATE,
-      maxBreadcrumbs: 20,
-
-      // Strip risky default integrations; our hooks are the final guard.
-      integrations: (defaults) => filterIntegrations(defaults),
-
-      beforeSend: (event) => beforeSend(event as unknown as SentryLikeEvent) as never,
-      beforeBreadcrumb: (breadcrumb) =>
-        beforeBreadcrumb(breadcrumb as unknown as SentryLikeBreadcrumb) as never,
-    })
-
-    // Anonymous, non-network install id for issue grouping. No other user data.
-    try {
-      const id = await getSentryInstallId()
-      Sentry.getGlobalScope().setUser({ id })
-    } catch {
-      // No id is fine — grouping still works via stack + release.
+    if (!consentGranted) {
+      if (__DEV__) console.log('[sentry] init skipped: consent not granted')
+      return false
     }
-
-    applySafeTags()
-    initialized = true
-    return true
-  } catch {
+    return await performInit()
+  } catch (err) {
     // Never let crash-reporting setup crash the app.
     initialized = false
+    if (__DEV__) console.log('[sentry] init failed:', err instanceof Error ? err.message : String(err))
     return false
   }
 }
@@ -216,6 +244,7 @@ export async function initCrashReporting(consentGranted: boolean): Promise<boole
  * initialized.
  */
 export async function disableCrashReporting(): Promise<void> {
+  if (__DEV__) console.log('[sentry] disableCrashReporting called, was initialized =', initialized)
   try {
     if (initialized) {
       Sentry.getGlobalScope().setUser(null)
@@ -270,21 +299,78 @@ export function captureHandledError(
   error: unknown,
   context?: { tag?: string },
 ): string | undefined {
-  if (!initialized) return undefined
+  if (!initialized) {
+    if (__DEV__) console.log('[sentry] captureHandledError skipped: not initialized')
+    return undefined
+  }
+  return doCaptureException(error, context)
+}
+
+/** The actual capture call, shared by captureHandledError and reportOneShot.
+ * Callers are responsible for ensuring a client is initialized first. */
+function doCaptureException(error: unknown, context?: { tag?: string }): string | undefined {
   try {
     const normalized = normalizeError(error)
     const safeError = new Error(normalized.message)
     safeError.name = normalized.name
     if (normalized.stack) safeError.stack = normalized.stack
 
-    return Sentry.captureException(safeError, (scope) => {
+    const eventId = Sentry.captureException(safeError, (scope) => {
       if (context?.tag && isSafeEnumToken(context.tag)) {
         scope.setTag('context', context.tag)
       }
       return scope
     })
-  } catch {
+    if (__DEV__) console.log('[sentry] captureException queued, eventId:', eventId)
+    return eventId
+  } catch (err) {
+    if (__DEV__) console.log('[sentry] captureException failed:', err instanceof Error ? err.message : String(err))
     return undefined
+  }
+}
+
+/**
+ * Send exactly ONE sanitized crash report, regardless of the standing
+ * crash-reporting consent setting. This is a single, explicit, user-initiated
+ * action (e.g. tapping "Report" on the crash screen) — the same category as
+ * the Help & Feedback flow, which also works independent of the consent
+ * toggle. It never reads or writes the persisted crashReportingEnabled
+ * setting.
+ *
+ * - If standing reporting is already ON, this simply reuses the existing
+ *   client (no extra init/close — nothing changes).
+ * - If standing reporting is OFF, this initializes a client just for this one
+ *   send, then immediately closes it again afterward, so no client is left
+ *   running and the "reporting is off" state is genuinely unaffected.
+ * - Still requires a DSN and an environment that permits reporting — those
+ *   gates are unconditional and are not something a UI action can bypass.
+ *
+ * @returns the Sentry event id, or undefined if the report could not be sent
+ *          (no DSN, environment doesn't permit it, or the capture failed).
+ */
+export async function reportOneShot(
+  error: unknown,
+  context?: { tag?: string },
+): Promise<string | undefined> {
+  const wasAlreadyInitialized = initialized
+  try {
+    const ready = wasAlreadyInitialized || (await performInit())
+    if (!ready) {
+      if (__DEV__) console.log('[sentry] reportOneShot skipped: could not initialize (no DSN or environment does not permit reporting)')
+      return undefined
+    }
+    const eventId = doCaptureException(error, context)
+    // Give the SDK a moment to hand the envelope to its transport queue before
+    // we potentially close the client below.
+    await Sentry.flush()
+    return eventId
+  } finally {
+    if (!wasAlreadyInitialized) {
+      // We initialized just for this one report — tear it down again so
+      // standing reporting remains genuinely OFF, matching the user's setting.
+      await disableCrashReporting()
+      if (__DEV__) console.log('[sentry] reportOneShot: one-shot client closed')
+    }
   }
 }
 

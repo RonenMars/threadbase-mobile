@@ -62,6 +62,9 @@ Gemfile.lock
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+
+# Local Serena MCP memory files — generated agent state, not app code
+.serena/memories/
 .worktrees/
 
 # Local Serena MCP config — drifts per Serena version, not part of the codebase
