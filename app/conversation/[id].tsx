@@ -506,11 +506,12 @@ export default function ConversationDetailScreen() {
       void fetchNextPage()
     }
 
-    // Newer-direction backfill: only reachable from an anchored window
-    // (hasNewerPage is unset on the tail view). Appends at the bottom, no
-    // scroll-position shift.
+    // Newer-direction backfill: only for anchored windows. On the tail view
+    // hasNewerPage is now always true (delta-on-open), so gate on the anchor to
+    // avoid firing redundant/racing after_index fetches outside the trigger.
     if (
       userHasScrolled.current &&
+      anchorIndex != null &&
       nearBottom &&
       !nearTop &&
       hasNewerPage &&
@@ -518,7 +519,7 @@ export default function ConversationDetailScreen() {
     ) {
       void fetchNewerPage()
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, hasNewerPage, isFetchingNewerPage, fetchNewerPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, hasNewerPage, isFetchingNewerPage, fetchNewerPage, anchorIndex])
 
   const queryClient = useQueryClient()
 
