@@ -7,7 +7,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
   try {
     const entry = JSON.parse(line) as {
       type: string
-      message?: { role: 'user' | 'assistant'; content?: unknown[] }
+      message?: { role: 'user' | 'assistant'; content?: unknown[] | string }
       uuid?: string
       timestamp?: string
       isMeta?: boolean
@@ -19,7 +19,23 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
     if (entry.type !== 'user' && entry.type !== 'assistant') return null
     if (!entry.message?.role) return null
 
-    const rawContent: unknown[] = entry.message.content ?? []
+    // Claude Code writes a typed user prompt with `content` as a bare string,
+    // not an array of blocks. Normalize it to a single text block (mirrors the
+    // streamer's normalizeContent + scanner's extractTextContent) so the user's
+    // own message renders instead of throwing on `.flatMap` and being dropped.
+    const rawContentValue = entry.message.content ?? []
+    if (typeof rawContentValue === 'string') {
+      return {
+        id: entry.uuid ?? `${entry.timestamp ?? ''}-${entry.type ?? ''}-${entry.message.role}`,
+        uuid: entry.uuid ?? null,
+        role: entry.message.role,
+        content: [{ type: 'text', text: rawContentValue }],
+        timestamp: entry.timestamp ?? new Date().toISOString(),
+        is_sidechain: entry.isSidechain ?? false,
+        parent_uuid: entry.parentUuid ?? null,
+      }
+    }
+    const rawContent: unknown[] = rawContentValue
     const content: MessageContent[] = rawContent.flatMap((block): MessageContent[] => {
       const b = block as Record<string, unknown>
       if (b.type === 'text' && typeof b.text === 'string') {
