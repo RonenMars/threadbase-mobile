@@ -26,10 +26,27 @@ export function useCreateDirectory(serverId: string) {
   })
 }
 
-/** `/api/sessions/start` result: a ready session, or the old async
- * fire-and-forget shape when the server times out waiting for readiness
- * (the WS session_ready listener in app/_layout.tsx handles navigation then). */
+/** `/api/sessions/start` result: a ready session, or the async
+ * fire-and-forget shape when the server times out waiting for readiness. */
 export type StartSessionResult = { kind: 'ready'; session: Session } | { kind: 'pending'; id: string }
+
+type StartSessionResponse =
+  | { session: Session }
+  | { id: string; status: 'pending' }
+  | Session
+
+function classifyStartSessionResponse(res: StartSessionResponse): StartSessionResult {
+  if ('session' in res && res.session && typeof res.session === 'object' && 'id' in res.session) {
+    return { kind: 'ready', session: res.session }
+  }
+  if ('status' in res && res.status === 'pending' && typeof res.id === 'string') {
+    return { kind: 'pending', id: res.id }
+  }
+  if ('id' in res && typeof res.id === 'string') {
+    return { kind: 'ready', session: res as Session }
+  }
+  throw new Error('Unexpected /api/sessions/start response shape')
+}
 
 export function useStartSession(serverId: string) {
   const qc = useQueryClient()
@@ -41,11 +58,8 @@ export function useStartSession(serverId: string) {
     { path: string; projectName?: string; provider?: ProviderName }
   >({
     mutationFn: async (vars) => {
-      const res = await api.post<{ session: Session } | { id: string; status: 'pending' }>(
-        '/api/sessions/start',
-        vars,
-      )
-      return 'session' in res ? { kind: 'ready', session: res.session } : { kind: 'pending', id: res.id }
+      const res = await api.post<StartSessionResponse>('/api/sessions/start', vars)
+      return classifyStartSessionResponse(res)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sessions'] })

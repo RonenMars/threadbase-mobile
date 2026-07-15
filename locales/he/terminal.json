@@ -41,7 +41,10 @@
     "reconnecting": "מתחבר מחדש…",
     "disconnected": "מנותק",
     "waking": "מתעורר…",
-    "starting": "מתחיל סשן…"
+    "starting": "מתחיל סשן…",
+    "startTimeout": "הסשן לוקח יותר מדי זמן",
+    "startTimeoutBody": "הסשן עדיין לא מוכן. אפשר להמשיך לחכות או לחזור.",
+    "keepWaiting": "המשך להמתין"
   },
   "input": {
     "placeholder": "שלח הודעה…",
