@@ -561,6 +561,26 @@ export default function SessionDetailScreen() {
     }
   }, [session?.ptyAttached, session?.status, session?.promptCount, id, serverId, router])
 
+  // Codex bind race: before boundConversationId arrives, history may 404 on the
+  // placeholder id. When the streamer first publishes the rollout UUID, switch
+  // (via historyConversationId) and drop any failed placeholder conversation
+  // cache so LiveConversationView hydrates against the bound id.
+  // Must run before early returns (rules-of-hooks).
+  const prevBoundRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const bound = session?.boundConversationId ?? null
+    const prev = prevBoundRef.current
+    prevBoundRef.current = bound
+    // Skip first paint (prev undefined) and no-op when unbound / unchanged.
+    if (prev === undefined || !bound || prev === bound) return
+    if (prev != null) return // only act on null/absent → first bind
+    const placeholderId = session?.conversationId ?? id
+    if (placeholderId) {
+      void qc.removeQueries({ queryKey: ['conversation', serverId, placeholderId] })
+    }
+    void qc.invalidateQueries({ queryKey: ['conversation', serverId, bound] })
+  }, [session?.boundConversationId, session?.conversationId, serverId, id, qc])
+
   // Track whether Claude has reached its first interactive prompt for THIS
   // session id. The streamer reports `waiting_input` once the prompt marker
   // fires; until then we treat the session as "waking up" so the composer
@@ -749,25 +769,6 @@ export default function SessionDetailScreen() {
   // for REST so history resolves; fall back to conversationId for Claude / pre-bind.
   const historyConversationId = session.boundConversationId ?? session.conversationId
   const hasConversationId = !!historyConversationId
-
-  // Codex bind race: before boundConversationId arrives, history may 404 on the
-  // placeholder id. When the streamer first publishes the rollout UUID, switch
-  // (via historyConversationId) and drop any failed placeholder conversation
-  // cache so LiveConversationView hydrates against the bound id.
-  const prevBoundRef = useRef<string | null | undefined>(undefined)
-  useEffect(() => {
-    const bound = session.boundConversationId ?? null
-    const prev = prevBoundRef.current
-    prevBoundRef.current = bound
-    // Skip first paint (prev undefined) and no-op when unbound / unchanged.
-    if (prev === undefined || !bound || prev === bound) return
-    if (prev != null) return // only act on null/absent → first bind
-    const placeholderId = session.conversationId ?? id
-    if (placeholderId) {
-      void qc.removeQueries({ queryKey: ['conversation', serverId, placeholderId] })
-    }
-    void qc.invalidateQueries({ queryKey: ['conversation', serverId, bound] })
-  }, [session.boundConversationId, session.conversationId, serverId, id, qc])
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
