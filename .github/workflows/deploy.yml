@@ -169,32 +169,48 @@ jobs:
 
       - name: Open version + build number bump PR to main (after successful upload)
         # Only runs if Ship iOS succeeded — so main advances only when a build
-        # actually uploaded to TestFlight. Re-derives just the version/buildNumber
-        # onto main's own app.json in a throwaway worktree, so a branch validation
-        # build does NOT leak the branch's code to main — only the bump lands.
+        # actually uploaded to TestFlight. Re-derives version/buildNumber (and
+        # any Podfile.lock drift from pod install) onto main's own tree in a
+        # throwaway worktree, so a branch validation build does NOT leak the
+        # branch's code to main — only the bump (+ lockfile) lands.
         # Direct pushes to main are blocked by the ruleset (required status
         # checks), so the bump lands via an admin squash-merge with the PAT
-        # (admin repo role bypasses the ruleset). No CI run on the bump branch is
-        # needed — a bot/PAT push does not reliably trigger push-triggered
-        # workflows, so --auto would wait forever on Lint/Type check contexts that
-        # never get created.
+        # (admin repo role bypasses the ruleset). --auto is unreliable because
+        # bot/PAT pushes do not always create the required Lint/Type check
+        # contexts, so we merge with --admin immediately and fail the job if
+        # the merge is refused (empty/mis-scoped GH_PAT, etc.).
         if: success()
         env:
           BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
           BUMPED_VERSION: ${{ env.BUMPED_VERSION }}
-          # Push with the PAT so the branch push triggers the Lint/Type check
-          # workflows auto-merge waits on (GITHUB_TOKEN pushes don't trigger
-          # workflows). gh uses GITHUB_TOKEN — the PAT can't create PRs.
+          # Push + admin-merge with the PAT (repo owner / admin). gh pr create
+          # stays on GITHUB_TOKEN.
           GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          if [[ -z "${GH_PUSH_TOKEN:-}" ]]; then
+            echo "::error::secrets.GH_PAT is empty — cannot admin-merge the version bump onto main"
+            exit 1
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${{ github.repository }}.git"
           git fetch origin main
           MAIN_BN=$(git show origin/main:app.json | jq -r '.expo.ios.buildNumber')
           MAIN_VER=$(git show origin/main:app.json | jq -r '.expo.version')
-          if [[ "$BUMPED_BUILD_NUMBER" == "$MAIN_BN" && "$BUMPED_VERSION" == "$MAIN_VER" ]]; then
+          NEED_VERSION=0
+          NEED_LOCK=0
+          if [[ "$BUMPED_BUILD_NUMBER" != "$MAIN_BN" || "$BUMPED_VERSION" != "$MAIN_VER" ]]; then
+            NEED_VERSION=1
+          fi
+          # Preserve lockfile drift from this job's pod install (post-deploy-commit
+          # is a no-op in CI, so the working tree still holds it).
+          if [[ -n "$(git status --short ios/Podfile.lock)" ]]; then
+            NEED_LOCK=1
+            cp ios/Podfile.lock /tmp/podfile.lock.shipped
+          fi
+          if (( NEED_VERSION == 0 && NEED_LOCK == 0 )); then
             echo "main already at version $MAIN_VER, buildNumber $MAIN_BN — nothing to do"
             exit 0
           fi
@@ -202,9 +218,15 @@ jobs:
           TITLE="chore(ios): bump build number to ${BUMPED_BUILD_NUMBER} [skip-ci]"
           git worktree add /tmp/bump-main-ios origin/main
           ( cd /tmp/bump-main-ios
-            jq ".expo.version = \"${BUMPED_VERSION}\" | .expo.ios.buildNumber = \"${BUMPED_BUILD_NUMBER}\"" \
-              app.json > app.json.tmp && mv app.json.tmp app.json
-            git add app.json
+            if (( NEED_VERSION )); then
+              jq ".expo.version = \"${BUMPED_VERSION}\" | .expo.ios.buildNumber = \"${BUMPED_BUILD_NUMBER}\"" \
+                app.json > app.json.tmp && mv app.json.tmp app.json
+              git add app.json
+            fi
+            if (( NEED_LOCK )); then
+              cp /tmp/podfile.lock.shipped ios/Podfile.lock
+              git add ios/Podfile.lock
+            fi
             git commit -m "$TITLE"
             git push --force origin "HEAD:refs/heads/${BRANCH}"
           )
@@ -213,10 +235,9 @@ jobs:
             --body "Automated version bump after successful TestFlight upload (build ${BUMPED_BUILD_NUMBER})." \
             || echo "PR already exists for $BRANCH"
           # Admin squash-merge with the PAT: its admin repo role bypasses the
-          # required-check ruleset. GITHUB_TOKEN (github-actions[bot]) is not
-          # admin and cannot bypass, and --auto never fires because the PAT push
-          # to chore/bump-** does not trigger CI, so Lint/Type check never report.
+          # required-check ruleset. Fail the job if merge is refused.
           GH_TOKEN="$GH_PUSH_TOKEN" gh pr merge "$BRANCH" --squash --delete-branch --admin
+          echo "✓ version bump merged to main (build ${BUMPED_BUILD_NUMBER})"
 
       - name: Ensure tag-release action present (from main)
         # The composite action is resolved from the checked-out tree. A deploy_ref
@@ -339,20 +360,24 @@ jobs:
         # validation build does NOT leak the branch's code to main.
         # Direct pushes to main are blocked by the ruleset (required status
         # checks), so the bump lands via an admin squash-merge with the PAT
-        # (admin repo role bypasses the ruleset). No CI run on the bump branch is
-        # needed — a bot/PAT push does not reliably trigger push-triggered
-        # workflows, so --auto would wait forever on Lint/Type check contexts that
-        # never get created.
+        # (admin repo role bypasses the ruleset). --auto is unreliable because
+        # bot/PAT pushes do not always create the required Lint/Type check
+        # contexts, so we merge with --admin immediately and fail the job if
+        # the merge is refused (empty/mis-scoped GH_PAT, etc.).
         if: success()
         env:
           BUMPED_VERSION_CODE: ${{ env.BUMPED_VERSION_CODE }}
           BUMPED_VERSION_NAME: ${{ env.BUMPED_VERSION_NAME }}
-          # Push with the PAT so the branch push triggers the Lint/Type check
-          # workflows auto-merge waits on (GITHUB_TOKEN pushes don't trigger
-          # workflows). gh uses GITHUB_TOKEN — the PAT can't create PRs.
+          # Push + admin-merge with the PAT (repo owner / admin). gh pr create
+          # stays on GITHUB_TOKEN.
           GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          if [[ -z "${GH_PUSH_TOKEN:-}" ]]; then
+            echo "::error::secrets.GH_PAT is empty — cannot admin-merge the version bump onto main"
+            exit 1
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${{ github.repository }}.git"
@@ -386,10 +411,9 @@ jobs:
             --body "Automated version bump after successful Play upload (versionCode ${BUMPED_VERSION_CODE})." \
             || echo "PR already exists for $BRANCH"
           # Admin squash-merge with the PAT: its admin repo role bypasses the
-          # required-check ruleset. GITHUB_TOKEN (github-actions[bot]) is not
-          # admin and cannot bypass, and --auto never fires because the PAT push
-          # to chore/bump-** does not trigger CI, so Lint/Type check never report.
+          # required-check ruleset. Fail the job if merge is refused.
           GH_TOKEN="$GH_PUSH_TOKEN" gh pr merge "$BRANCH" --squash --delete-branch --admin
+          echo "✓ version bump merged to main (versionCode ${BUMPED_VERSION_CODE})"
 
       - name: Ensure tag-release action present (from main)
         # The composite action is resolved from the checked-out tree. A deploy_ref

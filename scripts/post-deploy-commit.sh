@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # post-deploy-commit.sh — run after a successful ship to:
-#   1. Commit the version bump (app.json / build.gradle) on a new branch and push.
-#   2. Check for other files modified during the pipeline (npm install, pod install, etc.)
-#      and interactively offer to commit them too.
+#   1. Commit the version bump (app.json / build.gradle) on a new branch, open a
+#      PR, and admin-squash-merge it into main (no manual step).
+#   2. If other pipeline files are still dirty, do the same for a cleanup PR.
+#
+# In GitHub Actions, this script is a no-op: deploy.yml owns the bump PR +
+# admin-merge after upload. Running both produced orphan chore/post-ship-*
+# branches that never got a PR.
 #
 # Called by ship-ios.sh and ship-android.sh after upload succeeds.
 #
@@ -29,12 +33,34 @@ done
 
 [[ -n "$PLATFORM" ]] || { echo "ERROR: --platform required" >&2; exit 1; }
 
+# CI deploy workflow commits the bump via an admin-merged PR; skip here so we
+# do not leave orphan chore/post-ship-* branches with no PR.
+if [[ "${GITHUB_ACTIONS:-}" == "true" || "${CI:-}" == "true" ]]; then
+  echo
+  echo "▸ post-deploy: skipping (CI) — deploy.yml owns the version bump PR + merge"
+  exit 0
+fi
+
 # Derive the version number used in both branch and commit message names.
 if [[ "$PLATFORM" == "ios" ]]; then
   BUMP_NUMBER="$BUILD_NUMBER"
 else
   BUMP_NUMBER="$VERSION_CODE"
 fi
+
+# Open a PR for $1 and squash-merge it to main with --admin (owner can bypass
+# required checks). Fails loudly if gh is missing or merge is refused.
+open_and_merge_pr() {
+  local branch="$1" title="$2" body="$3"
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "ERROR: gh CLI required to land '$branch' on main automatically" >&2
+    exit 1
+  fi
+  gh pr create --base main --head "$branch" --title "$title" --body "$body" \
+    || echo "  PR already exists for $branch"
+  gh pr merge "$branch" --squash --delete-branch --admin
+  echo "  ✓ merged '$branch' into main"
+}
 
 # ── Step 1: commit the version bump ───────────────────────────────────────────
 
@@ -70,12 +96,16 @@ else
 
   echo "  ✓ bumped and pushed on branch '$BRANCH'"
 
-  # Return to original branch
+  open_and_merge_pr "$BRANCH" "$BUMP_MSG" \
+    "Automated version bump after successful ${PLATFORM} upload."
+
+  # Return to original branch (bump branch may already be deleted by merge)
   git checkout "$ORIGINAL_BRANCH"
+  git pull --ff-only origin main || true
   echo "  ✓ returned to '$ORIGINAL_BRANCH'"
 fi
 
-# ── Step 2: check for other dirty files ───────────────────────────────────────
+# ── Step 2: land any other dirty pipeline files on main ───────────────────────
 
 # Collect modified tracked files, excluding build artifacts and the version
 # files we already handled above.
@@ -117,5 +147,9 @@ git push -u origin "$EXTRA_BRANCH" --force-with-lease
 
 echo "  ✓ committed and pushed on branch '$EXTRA_BRANCH'"
 
+open_and_merge_pr "$EXTRA_BRANCH" "$EXTRA_MSG" \
+  "Automated post-ship cleanup after successful ${PLATFORM} upload."
+
 git checkout "$ORIGINAL_BRANCH"
+git pull --ff-only origin main || true
 echo "  ✓ returned to '$ORIGINAL_BRANCH'"
