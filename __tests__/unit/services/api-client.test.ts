@@ -144,6 +144,88 @@ describe('api.get', () => {
   })
 })
 
+describe('api.post – retry: false (non-idempotent endpoints)', () => {
+  it('does not retry on network failure and throws immediately', async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(
+      api.post('/api/sessions/start', { path: '/tmp' }, { retry: false }),
+    ).rejects.toThrow(NetworkError)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry after the first-attempt timeout aborts', async () => {
+    jest.useFakeTimers()
+    try {
+      mockFetch.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+        return new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      })
+
+      // Attach the assertion before advancing timers — advancing past the
+      // abort inline (without a pending .rejects listener) surfaces the
+      // rejection as an unhandled promise error instead of a test failure.
+      const assertion = expect(
+        api.post('/api/sessions/start', { path: '/tmp' }, { timeoutMs: 10_000, retry: false }),
+      ).rejects.toThrow(NetworkError)
+      await jest.advanceTimersByTimeAsync(10_001)
+      await assertion
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('tags a timeout-abort NetworkError with code TIMEOUT', async () => {
+    jest.useFakeTimers()
+    try {
+      mockFetch.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+        return new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      })
+
+      const assertion = expect(
+        api.post('/api/sessions/start', {}, { timeoutMs: 5_000, retry: false }),
+      ).rejects.toMatchObject({ code: 'TIMEOUT' })
+      await jest.advanceTimersByTimeAsync(5_001)
+      await assertion
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('a caller-initiated abort is NOT tagged TIMEOUT', async () => {
+    const controller = new AbortController()
+    mockFetch.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+      return new Promise((_resolve, reject) => {
+        // The signal may already be aborted by the time fetch() is called —
+        // request() awaits getDeviceClientId() first, and an abort event does
+        // not replay to a listener registered after it already fired.
+        if (init.signal.aborted) {
+          reject(new DOMException('Aborted', 'AbortError'))
+          return
+        }
+        init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+      })
+    })
+    const assertion = expect(
+      api.post('/api/sessions/start', {}, { signal: controller.signal, retry: false }),
+    ).rejects.toThrow('Request cancelled')
+    controller.abort()
+    await assertion
+  })
+
+  it('still retries other endpoints by default', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new TypeError('transient'))
+      .mockResolvedValueOnce(mockOkResponse({ ok: true }))
+    const result = await api.post<{ ok: boolean }>('/api/sessions/1/input', { input: 'hi' })
+    expect(result.ok).toBe(true)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('api.post', () => {
   it('sends JSON body', async () => {
     mockFetch.mockResolvedValueOnce(mockOkResponse({}))

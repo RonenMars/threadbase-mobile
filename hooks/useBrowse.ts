@@ -48,6 +48,12 @@ function classifyStartSessionResponse(res: StartSessionResponse): StartSessionRe
   throw new Error('Unexpected /api/sessions/start response shape')
 }
 
+// The server's own ready-wait is 10s (START_READY_TIMEOUT_MS) before it falls
+// back to the 202-pending shape — this must exceed that with margin so the
+// client never aborts first. Retry is disabled: start is non-idempotent, and
+// retrying a timed-out request spawns a second PTY server-side.
+const START_SESSION_TIMEOUT_MS = 15_000
+
 export function useStartSession(serverId: string) {
   const qc = useQueryClient()
   const api = createApiForServer(serverId)
@@ -58,7 +64,10 @@ export function useStartSession(serverId: string) {
     { path: string; projectName?: string; provider?: ProviderName }
   >({
     mutationFn: async (vars) => {
-      const res = await api.post<StartSessionResponse>('/api/sessions/start', vars)
+      const res = await api.post<StartSessionResponse>('/api/sessions/start', vars, {
+        timeoutMs: START_SESSION_TIMEOUT_MS,
+        retry: false,
+      })
       return classifyStartSessionResponse(res)
     },
     onSuccess: () => {

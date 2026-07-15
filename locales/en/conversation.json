@@ -12,7 +12,8 @@
   },
   "error": {
     "loadFailed": "Couldn't load conversation",
-    "notFound": "This conversation is no longer available on the server."
+    "notFound": "This conversation is no longer available on the server.",
+    "resumeTimeout": "The server didn't respond in time. The session may still be starting — check your sessions list before trying again."
   },
   "unavailable": {
     "pathMissing": "The project folder for this conversation was moved or deleted. You can read the history, but it can't be resumed.",
