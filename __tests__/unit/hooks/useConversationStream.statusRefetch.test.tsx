@@ -137,3 +137,82 @@ describe('useConversationStream — seq indexing (item 3)', () => {
     expect(result.current.liveMessages).toHaveLength(0)
   })
 })
+
+
+describe('useConversationStream — raw Codex rollout lines', () => {
+  async function setup() {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return renderHook(() => useConversationStream('srv-1', 'sess-1', 'conv-1'), { wrapper })
+  }
+
+  it('parses Codex response_item user/assistant into live messages', async () => {
+    const { result } = await setup()
+    const userLine = JSON.stringify({
+      timestamp: '2026-07-15T11:01:16.649Z',
+      type: 'response_item',
+      payload: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: 'Hello from mobile' }],
+      },
+    })
+    const assistantLine = JSON.stringify({
+      timestamp: '2026-07-15T11:01:20.000Z',
+      type: 'response_item',
+      payload: {
+        type: 'message',
+        role: 'assistant',
+        content: [{ type: 'output_text', text: 'Hi there' }],
+      },
+    })
+    await act(() =>
+      __wsTest.emit('conversation_events', {
+        type: 'conversation_events',
+        sessionId: 'sess-1',
+        lines: [userLine, assistantLine],
+      }),
+    )
+    expect(result.current.liveMessages).toHaveLength(2)
+    expect(result.current.liveMessages[0].role).toBe('user')
+    expect(result.current.liveMessages[0].content).toEqual([{ type: 'text', text: 'Hello from mobile' }])
+    expect(result.current.liveMessages[1].role).toBe('assistant')
+  })
+
+  it('drops session_meta, event_msg duplicates, and AGENTS.md injected user turns', async () => {
+    const { result } = await setup()
+    await act(() =>
+      __wsTest.emit('conversation_events', {
+        type: 'conversation_events',
+        sessionId: 'sess-1',
+        lines: [
+          JSON.stringify({ type: 'session_meta', payload: { id: 'c1' } }),
+          JSON.stringify({
+            type: 'response_item',
+            payload: {
+              type: 'message',
+              role: 'user',
+              content: [{ type: 'input_text', text: '# AGENTS.md instructions\n\n<INSTRUCTIONS>\nx' }],
+            },
+          }),
+          JSON.stringify({
+            type: 'event_msg',
+            payload: { type: 'user_message', message: 'real' },
+          }),
+          JSON.stringify({
+            type: 'response_item',
+            payload: {
+              type: 'message',
+              role: 'user',
+              content: [{ type: 'input_text', text: 'real question' }],
+            },
+          }),
+        ],
+      }),
+    )
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].content).toEqual([{ type: 'text', text: 'real question' }])
+  })
+})

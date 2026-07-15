@@ -561,10 +561,19 @@ export function useConversation(
     // render and never see a running→not-running edge.
     let prevStatus: string | null = null
     const unsubSession = wsManager.getClient(serverId)?.on('session_update', (msg) => {
-      if (msg.type !== 'session_update' || msg.session.id !== id) return
+      // Match live session id, Claude conversationId alias, OR Codex bound
+      // rollout UUID. For Codex, `id` is boundConversationId while
+      // msg.session.id stays the placeholder PTY key.
+      if (msg.type !== 'session_update') return
+      const s = msg.session
+      const matches =
+        s.id === id ||
+        s.conversationId === id ||
+        s.boundConversationId === id
+      if (!matches) return
       const prev = prevStatus
-      prevStatus = msg.session.status
-      if (prev === 'running' && msg.session.status !== 'running') void runDelta()
+      prevStatus = s.status
+      if (prev === 'running' && s.status !== 'running') void runDelta()
     })
 
     return () => {

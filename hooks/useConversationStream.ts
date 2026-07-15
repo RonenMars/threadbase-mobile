@@ -3,6 +3,63 @@ import { useEffect, useRef, useState } from 'react'
 import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
 
+function extractCodexText(content: unknown): string {
+  if (typeof content === 'string') return content.trim()
+  if (!Array.isArray(content)) return ''
+  return content
+    .map((item) => {
+      if (typeof item === 'string') return item
+      const block = item as { type?: string; text?: string }
+      const t = block?.type
+      if ((t === 'input_text' || t === 'output_text' || t === 'text') && typeof block.text === 'string') {
+        return block.text
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join('')
+    .trim()
+}
+
+function isCodexInjectedContext(text: string): boolean {
+  if (text.startsWith('# AGENTS.md') || text.includes('<INSTRUCTIONS>')) return true
+  if (text.startsWith('<permissions instructions>') || text.includes('Filesystem sandboxing defines')) {
+    return true
+  }
+  return false
+}
+
+/** Defense-in-depth: older streamers still emit raw Codex JSONL over WS. */
+function parseCodexLineToMessage(entry: Record<string, unknown>, seq?: number | null): Message | null {
+  if (entry.type !== 'response_item') return null
+  const payload = entry.payload as
+    | { type?: string; role?: string; content?: unknown; id?: string }
+    | undefined
+  if (!payload || payload.type !== 'message') return null
+  const role = payload.role
+  if (role !== 'user' && role !== 'assistant') return null
+  const text = extractCodexText(payload.content)
+  if (!text) return null
+  if (role === 'user' && isCodexInjectedContext(text)) return null
+
+  const timestamp = typeof entry.timestamp === 'string' ? entry.timestamp : new Date().toISOString()
+  const uuid =
+    typeof payload.id === 'string' && payload.id.length > 0
+      ? payload.id
+      : `codex-${role}-${timestamp}-${text.slice(0, 24)}`
+
+  return {
+    id: uuid,
+    uuid,
+    role,
+    content: [{ type: 'text', text }],
+    timestamp,
+    is_sidechain: false,
+    parent_uuid: null,
+    messageIndex: typeof seq === 'number' ? seq : undefined,
+  }
+}
+
 function parseLineToMessage(line: string, seq?: number | null): Message | null {
   try {
     const entry = JSON.parse(line) as {
@@ -13,6 +70,12 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
       isMeta?: boolean
       isSidechain?: boolean
       parentUuid?: string | null
+      payload?: unknown
+    }
+
+    // Codex rollout shape (raw) — normalize before the Claude path rejects it.
+    if (entry.type === 'response_item' || entry.type === 'event_msg' || entry.type === 'session_meta') {
+      return parseCodexLineToMessage(entry as Record<string, unknown>, seq)
     }
 
     if (entry.isMeta) return null

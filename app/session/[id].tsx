@@ -744,7 +744,11 @@ export default function SessionDetailScreen() {
   // conversationId for REST history; without it we fall back to TerminalView,
   // which only needs the live PTY stream and carries the same question + raw-key
   // affordances — so a prompt is never stranded behind a placeholder.
-  const hasConversationId = !!session.conversationId
+  // Codex: conversationId stays as the live-session placeholder (=== session.id);
+  // boundConversationId is the rollout UUID the scanner indexes. Prefer bound
+  // for REST so history resolves; fall back to conversationId for Claude / pre-bind.
+  const historyConversationId = session.boundConversationId ?? session.conversationId
+  const hasConversationId = !!historyConversationId
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -782,7 +786,7 @@ export default function SessionDetailScreen() {
               <LiveConversationView
                 serverId={serverId}
                 sessionId={id}
-                conversationId={session.conversationId!}
+                conversationId={historyConversationId!}
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
