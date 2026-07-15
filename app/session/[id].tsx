@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -750,6 +750,25 @@ export default function SessionDetailScreen() {
   const historyConversationId = session.boundConversationId ?? session.conversationId
   const hasConversationId = !!historyConversationId
 
+  // Codex bind race: before boundConversationId arrives, history may 404 on the
+  // placeholder id. When the streamer first publishes the rollout UUID, switch
+  // (via historyConversationId) and drop any failed placeholder conversation
+  // cache so LiveConversationView hydrates against the bound id.
+  const prevBoundRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const bound = session.boundConversationId ?? null
+    const prev = prevBoundRef.current
+    prevBoundRef.current = bound
+    // Skip first paint (prev undefined) and no-op when unbound / unchanged.
+    if (prev === undefined || !bound || prev === bound) return
+    if (prev != null) return // only act on null/absent → first bind
+    const placeholderId = session.conversationId ?? id
+    if (placeholderId) {
+      void qc.removeQueries({ queryKey: ['conversation', serverId, placeholderId] })
+    }
+    void qc.invalidateQueries({ queryKey: ['conversation', serverId, bound] })
+  }, [session.boundConversationId, session.conversationId, serverId, id, qc])
+
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
     !isLive
@@ -784,6 +803,7 @@ export default function SessionDetailScreen() {
               />
             ) : (
               <LiveConversationView
+                key={historyConversationId!}
                 serverId={serverId}
                 sessionId={id}
                 conversationId={historyConversationId!}

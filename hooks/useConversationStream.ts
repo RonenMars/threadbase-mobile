@@ -26,6 +26,16 @@ function isCodexInjectedContext(text: string): boolean {
   if (text.startsWith('<permissions instructions>') || text.includes('Filesystem sandboxing defines')) {
     return true
   }
+  // Streamer argv prompts Codex records as role:user (DEFAULT + BROWSE system prompts).
+  if (text.includes('limit the options to at most 3')) return true
+  if (text.includes('You are working within the project boundary:')) return true
+  if (
+    text.includes(
+      'Do not read, write, or execute commands that access files or directories outside this boundary',
+    )
+  ) {
+    return true
+  }
   return false
 }
 

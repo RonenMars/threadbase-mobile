@@ -215,4 +215,37 @@ describe('useConversationStream — raw Codex rollout lines', () => {
     expect(result.current.liveMessages).toHaveLength(1)
     expect(result.current.liveMessages[0].content).toEqual([{ type: 'text', text: 'real question' }])
   })
+
+  it('drops streamer DEFAULT system prompt injected as a user turn', async () => {
+    const { result } = await setup()
+    await act(() =>
+      __wsTest.emit('conversation_events', {
+        type: 'conversation_events',
+        sessionId: 'sess-1',
+        lines: [
+          JSON.stringify({
+            type: 'response_item',
+            payload: {
+              type: 'message',
+              role: 'user',
+              content: [{
+                type: 'input_text',
+                text: 'When presenting options or choices to the user, limit the options to at most 3.',
+              }],
+            },
+          }),
+          JSON.stringify({
+            type: 'response_item',
+            payload: {
+              type: 'message',
+              role: 'user',
+              content: [{ type: 'input_text', text: 'real question' }],
+            },
+          }),
+        ],
+      }),
+    )
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].content).toEqual([{ type: 'text', text: 'real question' }])
+  })
 })
