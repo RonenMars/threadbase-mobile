@@ -64,6 +64,9 @@ Gemfile.lock
 .claude/worktrees/
 .worktrees/
 
+# Local Serena MCP config — drifts per Serena version, not part of the codebase
+.serena/project.yml
+
 # Local planning notes and brainstorm working state — not part of the public surface
 .claude/plans/
 .superpowers/
