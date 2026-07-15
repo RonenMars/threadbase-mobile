@@ -19,6 +19,7 @@ import {
   stampTrigger,
   etagOf,
 } from '@/hooks/conversationCursor'
+import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -275,6 +276,16 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
       if (firstNonThinking === -1) content.push(textBlock)
       else content.splice(firstNonThinking, 0, textBlock)
     }
+    // Codex REST often sends content:[] with prose only in `text`. If content
+    // has blocks but no text (or is empty-after-filter), still surface user text.
+    if (
+      m.role === 'user' &&
+      m.text &&
+      !m.is_tool_result &&
+      !content.some((b) => b.type === 'text')
+    ) {
+      content.unshift({ type: 'text', text: m.text })
+    }
   } else {
     if (m.text) content.push({ type: 'text', text: m.text })
     if (m.tool_calls) {
@@ -311,9 +322,11 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
   const messages: Message[] = [...pages]
     .reverse()
     .flatMap((page) =>
-      (page.messages ?? []).map((m, i) =>
-        adaptRawMessage(m, convId, m.message_index ?? (page.message_pagination?.from_index ?? 0) + i),
-      ),
+      (page.messages ?? [])
+        .filter((m) => !(m.role === 'user' && typeof m.text === 'string' && isCodexInjectedContext(m.text)))
+        .map((m, i) =>
+          adaptRawMessage(m, convId, m.message_index ?? (page.message_pagination?.from_index ?? 0) + i),
+        ),
     )
 
   return {
