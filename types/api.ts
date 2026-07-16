@@ -23,6 +23,12 @@ export interface Session {
   resumedFromConversationId?: string | null
   /** Conversation ID for the live JSONL log backing this session. */
   conversationId?: string | null
+  /**
+   * Codex only: the rollout UUID discovered after the CLI creates its JSONL.
+   * Distinct from `conversationId` (stable live-session / deep-link alias ===
+   * session.id). Prefer this for REST conversation history when present.
+   */
+  boundConversationId?: string | null
 }
 
 export interface MessageSnapshot {
