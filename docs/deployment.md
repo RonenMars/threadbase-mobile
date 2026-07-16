@@ -50,6 +50,9 @@ the default maintainer path.
    until the build hits processing state `VALID`. 30-minute timeout.
 9. *(optional, `--target production` only)* **Submit for App Store review** —
    `scripts/submit-for-review.sh` with release notes and release type.
+10. **Land version bump** — `scripts/land-version-bump.sh` commits the bump from
+    the dirty tree, then admin-merges it onto `main` via `admin-merge-pr.sh`
+    (no-op when `CI`/`GITHUB_ACTIONS` is set).
 
 ### Usage
 
@@ -246,6 +249,7 @@ to Google Play via the Play Developer API.
 6. **Git sync check** — same as iOS: refuses to ship if `main` is behind `origin/main` or `app.json` has uncommitted changes.
 7. **Check/bump versionCode** — `scripts/check-version-code.sh` queries all Play tracks for the highest live versionCode, auto-bumps `app.json` if local ≤ remote, and commits the bump.
 8. **Bundle + upload** — `scripts/bundle-and-upload-android.sh` runs `./gradlew :app:bundleRelease` then uploads the `.aab` to the chosen track via the Play Developer API (resumable upload + edits.commit).
+9. **Land version bump** — `scripts/land-version-bump.sh` commits the bump from the dirty tree, then admin-merges it onto `main` via `admin-merge-pr.sh` (no-op when `CI`/`GITHUB_ACTIONS` is set).
 
 ### Usage
 
@@ -384,7 +388,7 @@ Upload is via `xcrun altool --upload-app`.
 | `IOS_DIST_CERT_PASSWORD` | Password protecting the `.p12` |
 | `IOS_PROVISION_PROFILE_B64` | Base64 of the App Store provisioning profile |
 | `IOS_PROVISION_PROFILE_UUID` | UUID of the provisioning profile |
-| `GH_PAT` | GitHub PAT with `contents: write` for pushing version bumps to main |
+| `GH_PAT` | GitHub PAT used to push bump branches and admin squash-merge them onto `main` (repo admin role bypasses required-check rulesets) |
 
 ### Rotating the Distribution cert or provisioning profile
 
@@ -415,15 +419,18 @@ ship iOS and/or Android from the GitHub Actions UI without a local machine.
 
 | Input | Options | Default |
 |---|---|---|
-| `platform` | `ios`, `android`, `all` | `ios` |
+| `platform` | `ios`, `android`, `all` | `all` |
 | `target` (iOS) | `testflight`, `production` | `testflight` |
-| `android_track` | `internal`, `alpha`, `beta`, `production` | `internal` |
+| `android_track` | `internal`, `alpha`, `beta`, `production` | `alpha` |
 | `release_notes` | free text (iOS production only) | — |
+| `deploy_ref` | any branch/ref to build | `main` |
 
 **Requirements:** signing secrets must be configured in the repo (Settings →
 Secrets → Actions): `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_TEAM_ID`,
 `ASC_AUTH_KEY_B64`, `ANDROID_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`,
-`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and `PLAY_SA_JSON_B64`.
+`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `PLAY_SA_JSON_B64`, and `GH_PAT`.
+
+**Version bump after upload:** On success, Deploy re-derives the version bump onto a fresh `origin/main` worktree (so a non-`main` `deploy_ref` does not leak branch code), then lands it via `scripts/admin-merge-pr.sh` (open PR + admin squash-merge with `GH_PAT`). Local `scripts/land-version-bump.sh` is a no-op under `GITHUB_ACTIONS`/`CI` so CI does not also commit the dirty deploy tree.
 
 ## npm ship scripts
 
@@ -440,32 +447,57 @@ normal when you call the scripts directly.
 
 ---
 
-## Branch & commit naming after a ship
+## Version bumps after a ship (local + CI)
 
-After a successful upload, the `ship-*` scripts commit the version bump on a
-fresh branch (never on `main`) and push it for a PR. This is handled by
-`scripts/land-version-bump.sh`, which both `ship-ios.sh` and `ship-android.sh`
-call. The naming follows a fixed convention — match it for any manual bump too:
+After a successful upload, version bumps land on `main` automatically via an
+admin squash-merge. Local ships and GitHub Actions Deploy share one merge
+primitive but build the bump commit differently.
+
+### Shared merge primitive
+
+`scripts/admin-merge-pr.sh <branch> <title> <body>` opens a PR (or reuses an
+existing one) and runs `gh pr merge --squash --delete-branch --admin`.
+
+- **Local:** uses your logged-in `gh` auth.
+- **CI:** `gh pr create` uses `GITHUB_TOKEN`; merge uses `GH_PAT` (`GH_PUSH_TOKEN`) so the admin role can bypass required-check rulesets. An empty or mis-scoped `GH_PAT` fails the Deploy job loudly.
+
+### Local ships — `scripts/land-version-bump.sh`
+
+Called by `ship-ios.sh` / `ship-android.sh` after upload. Commits from the
+**dirty working tree** (version files + optional `ios/Podfile.lock` or
+`android/app/build.gradle`), pushes a bump branch, then calls
+`admin-merge-pr.sh`. If other tracked pipeline files are still dirty, it lands a
+second cleanup branch the same way.
+
+Under `GITHUB_ACTIONS=true` or `CI=true` this script is a **no-op** — Deploy owns
+the bump so CI does not leave orphan `chore/post-ship-*` branches.
+
+### CI Deploy — main worktree bump
+
+After a successful upload, `deploy.yml` re-derives version fields onto a
+throwaway `origin/main` worktree (iOS also copies a dirty `Podfile.lock` when
+present), pushes `chore/bump-<platform>-version-<N>`, then calls
+`admin-merge-pr.sh`. That keeps `deploy_ref != main` from leaking feature-branch
+code onto `main`.
+
+### Branch & commit naming
+
+Match these patterns for any manual bump too:
 
 | Artifact | Pattern | Example |
 |---|---|---|
-| **Branch** | `chore/bump-<platform>-version-<N>` | `chore/bump-ios-version-140` |
-| **Commit (iOS)** | `chore(ios): bump build number to <N> [skip-ci]` | `chore(ios): bump build number to 140 [skip-ci]` |
-| **Commit (Android)** | `chore(android): bump version code to <N> [skip-ci]` | `chore(android): bump version code to 20 [skip-ci]` |
+| **Bump branch** | `chore/bump-<platform>-version-<N>` | `chore/bump-ios-version-140` |
+| **Bump commit (iOS)** | `chore(ios): bump build number to <N> [skip-ci]` | `chore(ios): bump build number to 140 [skip-ci]` |
+| **Bump commit (Android)** | `chore(android): bump version code to <N> [skip-ci]` | `chore(android): bump version code to 20 [skip-ci]` |
+| **Cleanup branch (local only)** | `chore/post-ship-<platform>-<N>` | `chore/post-ship-ios-140` |
+| **Cleanup commit (local only)** | `chore(<platform>): post-ship cleanup [skip-ci]` | `chore(ios): post-ship cleanup [skip-ci]` |
 
 Notes:
 
-- `<platform>` is `ios` or `android`; `<N>` is the new build/version number — the
-  iOS build number or the Android version code being shipped. Both the branch
-  and the commit carry it.
-- The branch name is offered as an editable default at ship time — keep the
-  convention unless you have a reason to deviate.
-- `[skip-ci]` stops CI from re-running on a bump-only commit.
-- iOS bumps touch `app.json`; Android bumps touch `app.json` **and**
-  `android/app/build.gradle` (kept in sync).
-- A second, interactive commit may follow for files modified during the
-  pipeline (e.g. lockfile or Pods changes); its branch and message are entered
-  by hand and have no fixed convention.
+- `<platform>` is `ios` or `android`; `<N>` is the new iOS build number or Android version code.
+- `[skip-ci]` stops CI from re-running on a bump-only (or cleanup-only) commit.
+- iOS bumps touch `app.json` (and `ios/Podfile.lock` when pod install drifted); Android bumps touch `app.json` **and** `android/app/build.gradle`.
+- Never push the bump straight to `main` — always land via the bump branch + `admin-merge-pr.sh`.
 
 ---
 
@@ -477,5 +509,7 @@ Notes:
 - `fastlane/.env.example` — env var template for Path B.
 - `scripts/ship-ios.sh` — iOS Path A entry point.
 - `scripts/ship-android.sh` — Android Path E entry point.
+- `scripts/land-version-bump.sh` — local post-ship version land (no-op in CI).
+- `scripts/admin-merge-pr.sh` — shared open-PR + admin squash-merge helper.
 - `scripts/promote-android.js` — promote an existing build between Play tracks.
 - `docs/google-play-mcp-setup.md` — Play service-account credential setup.
