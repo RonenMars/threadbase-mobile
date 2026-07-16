@@ -101,8 +101,14 @@ export class VirtualTerminal {
         if (/^\w+ing…\s*$/.test(trimmed)) return false
 
         // --- Status line / prompt chrome ---
-        // Prompt indicator bare (❯ 0q) AND prompt echo/suggestions ("> Hi", "> Try ...")
-        if (/^[❯›>]\s/.test(trimmed) || /^[❯›>]$/.test(trimmed)) return false
+        // Bare prompt indicator (❯) — chrome
+        if (/^[❯›>]$/.test(trimmed)) return false
+        // Prompt + hint chrome: "❯ 0q", "> 2q"
+        if (/^[❯›>]\s+\d+q$/.test(trimmed)) return false
+        // Ghost placeholder suggestions: '> Try "how do I …"'
+        if (/^[❯›>]\s+Try "/.test(trimmed)) return false
+        // NOTE: '❯ <text>' / '> <text>' lines are kept — that's how Claude Code
+        // renders the user's submitted message in the transcript.
         // Capybara mascot (Bramble)
         if (/\(●oo●\)/.test(trimmed) || /\(◐oo◐\)/.test(trimmed)) return false
         // Model info line: "Opus 4.6 (1M context) | ~/path..." or compact "Sonnet 4.6 | ~/path time | ⚓N"

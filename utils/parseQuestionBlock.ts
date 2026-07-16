@@ -31,6 +31,10 @@ export interface QuestionBlock {
 
 const QUESTION_RE = /^\?\s+(.+)$/
 const SELECTED_OPTION_RE = /^❯\s+(.+)$/
+// Format 2 entry: the ❯ cursor line must be numbered ("❯ 1. …"). A bare
+// "❯ <text>" line is the user's submitted message in the transcript (the VT
+// chrome filter deliberately lets those through) — never a menu cursor.
+const NUMBERED_SELECTED_OPTION_RE = /^❯\s+\d+\.\s+/
 // Accept 2–3 leading spaces (aligned numbered lists indent to 3). 4+ = tool output.
 const UNSELECTED_OPTION_RE = /^ {2,3}(\S.*)$/
 // Strip leading "1. " / "2. " numbering from option text
@@ -170,7 +174,7 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   // e.g. Claude Code skill picker: line before ❯ is the question text
   let selectedLineIndex = -1
   for (let i = stripped.length - 1; i >= 0; i--) {
-    if (SELECTED_OPTION_RE.test(stripped[i])) {
+    if (NUMBERED_SELECTED_OPTION_RE.test(stripped[i])) {
       selectedLineIndex = i
       break
     }

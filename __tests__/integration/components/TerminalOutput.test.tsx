@@ -1,4 +1,5 @@
 import React from 'react'
+import { StyleSheet } from 'react-native'
 import { render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 
@@ -22,6 +23,18 @@ describe('TerminalOutput – rendering', () => {
 
   it('renders empty state without crash', async () => {
     await render(<TerminalOutput lines={[]} isStreaming={false} />)
+  })
+
+  it('styles user transcript lines (❯-prefixed) with the accent colour', async () => {
+    const { getByText } = await render(
+      <TerminalOutput lines={['❯ Howdy', 'plain output']} isStreaming={false} />
+    )
+    const userLine = getByText('❯ Howdy')
+    const flat = StyleSheet.flatten(userLine.props.style)
+    expect(flat.color).toBe('#58a6ff')
+    expect(flat.fontWeight).toBe('600')
+    const plainLine = getByText('plain output')
+    expect(StyleSheet.flatten(plainLine.props.style).color).toBe('#e6edf3')
   })
 })
 

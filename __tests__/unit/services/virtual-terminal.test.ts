@@ -287,10 +287,24 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
     expect(feedAndGet('Sonnet 4.6 | ~/Desktop/dev/ai-tools/tb-mobile  main |...')).toEqual([])
   })
 
-  it('filters prompt echo and suggestion lines', () => {
-    expect(feedAndGet('> Hi')).toEqual([])
+  it('filters ghost placeholder suggestions but keeps user transcript lines', () => {
     expect(feedAndGet('> Try "how do I log an error?"')).toEqual([])
     expect(feedAndGet('❯ 0q')).toEqual([])
+    // '❯/> <text>' is how Claude Code renders the submitted user message in
+    // the transcript — it must survive the chrome filter.
+    expect(feedAndGet('> Hi')).toEqual(['> Hi'])
+    expect(feedAndGet('❯ Explain the content of this project')).toEqual([
+      '❯ Explain the content of this project',
+    ])
+  })
+
+  it('keeps the user transcript line while dropping surrounding prompt chrome', () => {
+    const vt = new VirtualTerminal()
+    vt.feed('❯ Explain the content of this project\n')
+    vt.feed('❯\n')
+    vt.feed('  Fable 5 [Explain project content] │ │ ~/dev/cv  main ✎ │  24.15.0 05:27 | ⚓4\n')
+    expect(vt.getLines()).toContain('❯ Explain the content of this project')
+    expect(vt.getLines()).not.toContain('❯')
   })
 
   it('filters bare pipe fragment lines', () => {

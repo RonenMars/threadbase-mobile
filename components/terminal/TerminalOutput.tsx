@@ -39,7 +39,14 @@ const LineGutter = memo(function LineGutter({ index }: { index: number }) {
 
 const LineText = memo(function LineText({ line }: { line: string }) {
   const clean = stripAnsi(line)
-  return <Text style={styles.lineText} selectable>{clean}</Text>
+  // '❯ <text>' transcript lines are the user's submitted messages — style
+  // them so they stand out from agent output.
+  const isUserLine = /^[❯›>]\s/.test(clean.trim())
+  return (
+    <Text style={isUserLine ? [styles.lineText, styles.lineTextUser] : styles.lineText} selectable>
+      {clean}
+    </Text>
+  )
 })
 
 // Outer wrapper stays cheap (only `index` changes); LineText memoises on `line`.
@@ -242,6 +249,10 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     flex: 1,
     lineHeight: 18,
+  },
+  lineTextUser: {
+    color: '#58a6ff',
+    fontWeight: '600',
   },
   jumpBtn: {
     position: 'absolute',
