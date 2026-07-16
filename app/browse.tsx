@@ -204,6 +204,13 @@ export default function BrowseScreen() {
       opts?: { starting?: boolean },
     ) => {
       const target = buildSessionRoute(session, serverId ?? '', opts)
+      // Guard the global session_ready listener BEFORE dismissing. session_ready
+      // can arrive mid-dismiss (the PTY is already active — see "Active 1s" in
+      // the new session header), and the global listener in app/_layout.tsx
+      // would push /session/<id> underneath the still-open modal, stranding the
+      // user on browse until they manually pull it down. Marking now suppresses
+      // that early push; our own transitionEnd push below is the only navigation.
+      markNavigatedToSession(session.id)
       // `transitionEnd` is a native-stack event; expo-router's useNavigation()
       // returns a base navigation type that doesn't include it in its event
       // map, hence the casts.
@@ -211,7 +218,6 @@ export default function BrowseScreen() {
       const unsubscribe = (navigation as any).addListener('transitionEnd', (e: { data: { closing: boolean } }) => {
         if (!e.data.closing) return
         unsubscribe()
-        markNavigatedToSession(session.id)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.push(target as any)
       })
