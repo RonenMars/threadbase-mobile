@@ -186,10 +186,6 @@ export default function ProjectsHub() {
   // Conversations data
   const [refreshEpoch, setRefreshEpoch] = useState(0)
   const [convLoaderMode, setConvLoaderMode] = useState<'full' | 'minimal'>('full')
-  // Cold-start gate: flips true once the first full load completes, and
-  // never resets for the lifetime of this JS instance. Background refetches
-  // (focusManager on app resume) then show a small spinner, not the modal.
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
   // Unified refresh — always reloads both sessions and conversations.
   const handleRefresh = useCallback(async () => {
@@ -208,13 +204,15 @@ export default function ProjectsHub() {
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
 
-  if (sessionsDone && convDone && !hasLoadedOnce) {
-    setHasLoadedOnce(true)
-  }
-
-  const isColdStart = !hasLoadedOnce
-  const showLoadingModal = isColdStart && (!sessionsDone || showConvProgress)
-  const isBackgroundRefreshing = hasLoadedOnce && (!sessionsDone || !convDone)
+  // The persisted React Query cache rehydrates sessions/conversations
+  // synchronously on cold start, so a warm cache already has rows here before
+  // the refetch resolves. Show the blocking modal ONLY when there is nothing
+  // cached to show (fresh install / cache cleared); any warm state gets the
+  // unobtrusive "Showing cached data" spinner instead.
+  const hasCachedData = sessions.length > 0 || conversations.length > 0
+  const isStillFetching = !sessionsDone || showConvProgress
+  const showLoadingModal = !hasCachedData && isStillFetching
+  const isBackgroundRefreshing = hasCachedData && (!sessionsDone || !convDone)
   // Single-server has no server-name rows to host the cached-data chip, so the
   // notice overlays the list: centered banner in Hub/Tree, caption under the
   // header fallback spinner in Classic. Multi-server is covered by the chips.
