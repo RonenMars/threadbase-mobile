@@ -90,7 +90,8 @@ describe('TerminalOutput – controls', () => {
 describe('TerminalOutput – ground-truth user ownership', () => {
   const USER = '#58a6ff'
   const PLAIN = '#e6edf3'
-  const colorOf = (node: { props: { style: unknown } }) => StyleSheet.flatten(node.props.style).color
+  type TextNode = ReturnType<Awaited<ReturnType<typeof render>>['getByText']>
+  const colorOf = (node: TextNode) => StyleSheet.flatten(node.props.style).color
 
   it('styles only ❯ lines confirmed by userMessageTexts', async () => {
     const { getByText } = await render(
