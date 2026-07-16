@@ -182,6 +182,25 @@ describe('parseQuestionBlock', () => {
     expect(parseQuestionBlock(lines)).toBeNull()
   })
 
+  it('does not treat a user transcript line (❯ <text>) as a menu cursor', () => {
+    // The VT chrome filter lets '❯ <message>' transcript lines through; an
+    // un-numbered ❯ line must never open a phantom question card.
+    const lines = [
+      '⚠ 3 MCP servers need authentication · run /mcp',
+      '❯ Analyze this folder content and write a report about it content',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('does not build a card from transcript + status bar lines', () => {
+    const lines = [
+      '✳ Cogitated for 9s',
+      '❯ B',
+      '  Fable 5 [Analyze folder content and write report] ││ ~/dev/dev-tools 06:18 │ ⚓4',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
   it('returns null when question text is a prompt echo line', () => {
     const lines = ['> Hi', '❯ Option A', '  Option B']
     expect(parseQuestionBlock(lines)).toBeNull()
