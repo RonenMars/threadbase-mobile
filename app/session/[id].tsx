@@ -444,14 +444,20 @@ export default function SessionDetailScreen() {
   }
 
   useEffect(() => {
+    // Redirect an ended session to its conversation history. Gate on "has a
+    // conversation" (boundConversationId ?? conversationId), NOT promptCount:
+    // promptCount counts only prompts sent through the app, so an adopted /
+    // externally-started session that has real history reads promptCount 0 and
+    // would otherwise strand on the read-only placeholder.
+    const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
     if (session?.ptyAttached === false &&
       session?.status === 'idle' &&
-      (session?.promptCount ?? 0) > 0 &&
+      hasConversation &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
     ) {
       router.replace(`/conversation/${id}?server=${serverId}`)
     }
-  }, [session?.ptyAttached, session?.status, session?.promptCount, id, serverId, router])
+  }, [session?.ptyAttached, session?.status, session?.boundConversationId, session?.conversationId, id, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
@@ -727,7 +733,7 @@ export default function SessionDetailScreen() {
             {session.projectPath ? (
               <Text style={styles.placeholderPath}>{session.projectPath}</Text>
             ) : null}
-            {(session.promptCount ?? 0) > 0 ? (
+            {hasConversationId ? (
               <TouchableOpacity
                 style={styles.viewConversationBtn}
                 onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
@@ -743,7 +749,7 @@ export default function SessionDetailScreen() {
             {session.projectPath ? (
               <Text style={styles.placeholderPath}>{session.projectPath}</Text>
             ) : null}
-            {(session.promptCount ?? 0) > 0 ? (
+            {hasConversationId ? (
               <TouchableOpacity
                 style={styles.viewConversationBtn}
                 onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
