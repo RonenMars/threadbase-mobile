@@ -214,7 +214,7 @@ echo "✅  Build is live on Play ($TRACK track)."
 echo "    Open Play Console to promote to a wider track when ready."
 
 # ── Post-deploy: commit version bump + prompt for other dirty files ───────────
-"$SCRIPT_DIR/post-deploy-commit.sh" \
+"$SCRIPT_DIR/land-version-bump.sh" \
   --platform android \
   --version-code "$VERSION_CODE" \
   --version-bumped "$VERSION_BUMPED"

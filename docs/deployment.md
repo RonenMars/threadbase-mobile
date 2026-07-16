@@ -444,7 +444,7 @@ normal when you call the scripts directly.
 
 After a successful upload, the `ship-*` scripts commit the version bump on a
 fresh branch (never on `main`) and push it for a PR. This is handled by
-`scripts/post-deploy-commit.sh`, which both `ship-ios.sh` and `ship-android.sh`
+`scripts/land-version-bump.sh`, which both `ship-ios.sh` and `ship-android.sh`
 call. The naming follows a fixed convention — match it for any manual bump too:
 
 | Artifact | Pattern | Example |

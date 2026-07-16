@@ -45,7 +45,7 @@ Always use `/expo-local-ship` when the user says "ship", "TestFlight", "build th
 
 **Always commit `app.json` before shipping:** After bumping the build number (and version if changed), stage and commit `app.json` *before* running the archive/upload step. Never ship with an uncommitted `app.json`.
 
-**Branch & commit naming after a ship:** The version-bump commit produced by a `ship-*` script (`scripts/ship-ios.sh` / `scripts/ship-android.sh`, via `scripts/post-deploy-commit.sh`) follows a fixed convention. Use these patterns for any manual bump too:
+**Branch & commit naming after a ship:** The version-bump commit produced by a `ship-*` script (`scripts/ship-ios.sh` / `scripts/ship-android.sh`, via `scripts/land-version-bump.sh`) follows a fixed convention. Use these patterns for any manual bump too:
 
 - **Branch:** `chore/bump-<platform>-version-<N>` — where `<N>` is the new iOS build number or Android version code. E.g. `chore/bump-ios-version-140`, `chore/bump-android-version-20`.
 - **Commit (iOS):** `chore(ios): bump build number to <N> [skip-ci]`

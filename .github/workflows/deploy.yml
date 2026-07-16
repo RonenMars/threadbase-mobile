@@ -183,8 +183,8 @@ jobs:
         env:
           BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
           BUMPED_VERSION: ${{ env.BUMPED_VERSION }}
-          # Push + admin-merge with the PAT (repo owner / admin). gh pr create
-          # stays on GITHUB_TOKEN.
+          # Push with the PAT; admin-merge-pr.sh creates the PR with GITHUB_TOKEN
+          # and merges with GH_PUSH_TOKEN (admin bypass).
           GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -204,7 +204,7 @@ jobs:
           if [[ "$BUMPED_BUILD_NUMBER" != "$MAIN_BN" || "$BUMPED_VERSION" != "$MAIN_VER" ]]; then
             NEED_VERSION=1
           fi
-          # Preserve lockfile drift from this job's pod install (post-deploy-commit
+          # Preserve lockfile drift from this job's pod install (land-version-bump
           # is a no-op in CI, so the working tree still holds it).
           if [[ -n "$(git status --short ios/Podfile.lock)" ]]; then
             NEED_LOCK=1
@@ -231,12 +231,14 @@ jobs:
             git push --force origin "HEAD:refs/heads/${BRANCH}"
           )
           git worktree remove /tmp/bump-main-ios --force
-          gh pr create --base main --head "$BRANCH" --title "$TITLE" \
-            --body "Automated version bump after successful TestFlight upload (build ${BUMPED_BUILD_NUMBER})." \
-            || echo "PR already exists for $BRANCH"
-          # Admin squash-merge with the PAT: its admin repo role bypasses the
-          # required-check ruleset. Fail the job if merge is refused.
-          GH_TOKEN="$GH_PUSH_TOKEN" gh pr merge "$BRANCH" --squash --delete-branch --admin
+          # Shared admin-merge: create PR (GITHUB_TOKEN) then squash-merge with
+          # GH_PUSH_TOKEN / GH_PAT so the admin role bypasses required checks.
+          # Older deploy_ref trees may lack the helper; take it from main then.
+          if [[ ! -f scripts/admin-merge-pr.sh ]]; then
+            git checkout origin/main -- scripts/admin-merge-pr.sh
+          fi
+          ./scripts/admin-merge-pr.sh "$BRANCH" "$TITLE" \
+            "Automated version bump after successful TestFlight upload (build ${BUMPED_BUILD_NUMBER})."
           echo "✓ version bump merged to main (build ${BUMPED_BUILD_NUMBER})"
 
       - name: Ensure tag-release action present (from main)
@@ -368,8 +370,8 @@ jobs:
         env:
           BUMPED_VERSION_CODE: ${{ env.BUMPED_VERSION_CODE }}
           BUMPED_VERSION_NAME: ${{ env.BUMPED_VERSION_NAME }}
-          # Push + admin-merge with the PAT (repo owner / admin). gh pr create
-          # stays on GITHUB_TOKEN.
+          # Push with the PAT; admin-merge-pr.sh creates the PR with GITHUB_TOKEN
+          # and merges with GH_PUSH_TOKEN (admin bypass).
           GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -407,12 +409,14 @@ jobs:
             git push --force origin "HEAD:refs/heads/${BRANCH}"
           )
           git worktree remove /tmp/bump-main --force
-          gh pr create --base main --head "$BRANCH" --title "$TITLE" \
-            --body "Automated version bump after successful Play upload (versionCode ${BUMPED_VERSION_CODE})." \
-            || echo "PR already exists for $BRANCH"
-          # Admin squash-merge with the PAT: its admin repo role bypasses the
-          # required-check ruleset. Fail the job if merge is refused.
-          GH_TOKEN="$GH_PUSH_TOKEN" gh pr merge "$BRANCH" --squash --delete-branch --admin
+          # Shared admin-merge: create PR (GITHUB_TOKEN) then squash-merge with
+          # GH_PUSH_TOKEN / GH_PAT so the admin role bypasses required checks.
+          # Older deploy_ref trees may lack the helper; take it from main then.
+          if [[ ! -f scripts/admin-merge-pr.sh ]]; then
+            git checkout origin/main -- scripts/admin-merge-pr.sh
+          fi
+          ./scripts/admin-merge-pr.sh "$BRANCH" "$TITLE" \
+            "Automated version bump after successful Play upload (versionCode ${BUMPED_VERSION_CODE})."
           echo "✓ version bump merged to main (versionCode ${BUMPED_VERSION_CODE})"
 
       - name: Ensure tag-release action present (from main)

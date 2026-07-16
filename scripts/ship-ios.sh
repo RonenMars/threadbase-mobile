@@ -192,7 +192,7 @@ else
 fi
 
 # ── Post-deploy: commit version bump + prompt for other dirty files ───────────
-"$SCRIPT_DIR/post-deploy-commit.sh" \
+"$SCRIPT_DIR/land-version-bump.sh" \
   --platform ios \
   --build-number "$BUILD_NUMBER" \
   --version-bumped "$VERSION_BUMPED"
