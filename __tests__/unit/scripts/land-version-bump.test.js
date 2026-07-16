@@ -40,6 +40,14 @@ function run(script, args, env = {}, opts = {}) {
   }
 }
 
+function expectOk(result) {
+  if (result.code !== 0) {
+    throw new Error(
+      `expected exit 0, got ${result.code}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    );
+  }
+}
+
 function git(cwd, args, env = {}) {
   return execFileSync(GIT, args, {
     cwd,
@@ -61,6 +69,11 @@ function localEnv(binDir, extra = {}) {
     PATH: `${binDir}${path.delimiter}${process.env.PATH || '/usr/bin:/bin'}`,
     GITHUB_ACTIONS: '',
     CI: '',
+    // GHA runners have no user.email; land-version-bump runs bare `git commit`.
+    GIT_AUTHOR_NAME: 'Test',
+    GIT_AUTHOR_EMAIL: 'test@example.com',
+    GIT_COMMITTER_NAME: 'Test',
+    GIT_COMMITTER_EMAIL: 'test@example.com',
     ...extra,
   };
 }
@@ -113,14 +126,17 @@ function makeShipRepo({ withAndroid = false, withIosLock = false } = {}) {
   const binDir = path.join(root, 'bin');
   fs.mkdirSync(binDir);
   fs.mkdirSync(remote);
-  git(root, ['init', '--bare', remote]);
+  // -c init.defaultBranch=main: GHA git still defaults bare repos to master.
+  git(root, ['-c', 'init.defaultBranch=main', 'init', '--bare', remote]);
   git(root, ['clone', '-q', remote, work]);
-  // Ensure branch is main (older git may use master).
+  // Ensure branch is main (older git / empty clone may still be master).
   try {
     git(work, ['checkout', '-q', '-b', 'main']);
   } catch {
     /* already on main */
   }
+  git(work, ['config', 'user.name', 'Test']);
+  git(work, ['config', 'user.email', 'test@example.com']);
   fs.writeFileSync(
     path.join(work, 'app.json'),
     JSON.stringify(
@@ -338,13 +354,14 @@ describe('land-version-bump.sh — local land (stubbed gh)', () => {
     fs.writeFileSync(appPath, JSON.stringify(app, null, 2) + '\n');
     fs.appendFileSync(path.join(repo.work, 'ios', 'Podfile.lock'), '  - Extra (1.0.0)\n');
 
-    const { code, stdout } = run(
+    const iosResult = run(
       LAND,
       ['--platform', 'ios', '--build-number', '140', '--version-bumped', '1'],
       localEnv(repo.binDir),
       { cwd: repo.work },
     );
-    expect(code).toBe(0);
+    expectOk(iosResult);
+    const { stdout } = iosResult;
     expect(stdout).toContain("bumped and pushed on branch 'chore/bump-ios-version-140'");
     expect(stdout).toContain("merged 'chore/bump-ios-version-140'");
 
@@ -389,13 +406,14 @@ describe('land-version-bump.sh — local land (stubbed gh)', () => {
       'android {\n    defaultConfig {\n        versionCode 20\n        versionName "1.0.0"\n    }\n}\n',
     );
 
-    const { code, stdout } = run(
+    const androidResult = run(
       LAND,
       ['--platform', 'android', '--version-code', '20', '--version-bumped', '1'],
       localEnv(repo.binDir),
       { cwd: repo.work },
     );
-    expect(code).toBe(0);
+    expectOk(androidResult);
+    const { stdout } = androidResult;
     expect(stdout).toContain("bumped and pushed on branch 'chore/bump-android-version-20'");
 
     const subject = git(repo.work, [
@@ -435,13 +453,14 @@ describe('land-version-bump.sh — local land (stubbed gh)', () => {
     git(repo.work, ['push']);
     fs.writeFileSync(path.join(repo.work, 'pipeline.txt'), 'after ship\n');
 
-    const { code, stdout } = run(
+    const cleanupResult = run(
       LAND,
       ['--platform', 'ios', '--build-number', '10', '--version-bumped', '0'],
       localEnv(repo.binDir),
       { cwd: repo.work },
     );
-    expect(code).toBe(0);
+    expectOk(cleanupResult);
+    const { stdout } = cleanupResult;
     expect(stdout).toContain('post-ship');
     expect(stdout).toContain("merged 'chore/post-ship-ios-10'");
 
