@@ -756,17 +756,19 @@ export default function ConversationDetailScreen() {
   // `resumable` is absent on older servers — treat undefined as resumable.
   // When false, the project the session ran in is gone: show the history
   // read-only with a banner explaining why, and disable Resume.
-  // codex-cli conversations are never resumable (Phase 2).
+  // The server's flag is authoritative for BOTH providers: the streamer resumes
+  // codex via `codex resume <id> --cd <dir>` and reports real availability, and
+  // older codex-aware streamers forced resumable:false for codex — so trusting
+  // the flag is correct against every server version (the old hardcoded
+  // "codex is never resumable" gate predated server-side codex resume).
   const isCodex = conversation.provider === 'codex-cli'
   const providerColor = isCodex ? brand.codex : brand.claude
   const providerDot = <View style={[styles.providerDot, { backgroundColor: providerColor }]} />
-  const notResumable = isCodex || conversation.resumable === false
+  const notResumable = conversation.resumable === false
   const unavailableMessage = notResumable
-    ? isCodex
-      ? t('unavailable.cannotResume')
-      : conversation.unavailableReason === 'worktree_removed'
-        ? t('unavailable.worktreeRemoved')
-        : t('unavailable.pathMissing')
+    ? conversation.unavailableReason === 'worktree_removed'
+      ? t('unavailable.worktreeRemoved')
+      : t('unavailable.pathMissing')
     : null
 
   const showMatchNav = matchIndexes != null && matchIndexes.length > 0 && activeMatchPos != null

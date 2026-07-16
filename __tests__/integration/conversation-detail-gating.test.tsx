@@ -250,6 +250,40 @@ describe('conversation detail — resumability gating', () => {
     expect(text).toContain("Can't resume")
   })
 
+  it('trusts the server for codex: resumable codex conversation gets a live Resume button', async () => {
+    // The old hardcoded "codex-cli conversations are never resumable" gate
+    // predated server-side codex resume; the server's flag is now authoritative.
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, provider: 'codex-cli', resumable: true },
+    }
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    const text = allText(root)
+    expect(text).toContain('Resume Session')
+    expect(text).not.toContain("Can't resume")
+  })
+
+  it('non-resumable codex conversation shows the path-based reason, not a blanket codex message', async () => {
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: {
+        ...makeDetail(4).meta,
+        provider: 'codex-cli',
+        resumable: false,
+        unavailable_reason: 'path_missing',
+      },
+    }
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    const text = allText(root)
+    expect(text).toContain('project folder for this conversation was moved or deleted')
+    expect(text).toContain("Can't resume")
+    expect(text).not.toContain('Resume Session')
+  })
+
   it('keeps Resume enabled and shows no banner when resumable', async () => {
     mockDetailRef.current = {
       ...makeDetail(4),
