@@ -193,12 +193,25 @@ function makeWakingStyles(theme: Theme) {
   })
 }
 
-function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendingId: string }) {
+const START_TIMEOUT_MS = 20_000
+
+function PendingSessionScreen({
+  serverId,
+  pendingId,
+  expectExactId = false,
+}: {
+  serverId: string
+  pendingId: string
+  /** When true (browse `starting=1`), only accept ready/update for this id. */
+  expectExactId?: boolean
+}) {
   const router = useRouter()
   const { t } = useTranslation(['terminal', 'common'])
   const theme = useTheme()
   const pendingStyles = makePendingStyles(theme)
   const [phraseIdx, setPhraseIdx] = useState(0)
+  const [timedOut, setTimedOut] = useState(false)
+  const [waitGeneration, setWaitGeneration] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -208,29 +221,71 @@ function PendingSessionScreen({ serverId, pendingId }: { serverId: string; pendi
   }, [])
 
   useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), START_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [waitGeneration])
+
+  useEffect(() => {
     const client = wsManager.getClient(serverId)
     if (!client) return
+
+    const goReady = (sessionId: string) => {
+      router.replace(`/session/${sessionId}?server=${serverId}`)
+    }
 
     // Primary: session_ready is an explicit signal from new streamers
     const unsubReady = client.on('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
-      router.replace(`/session/${msg.session.id}?server=${serverId}`)
+      if (expectExactId && msg.session.id !== pendingId) return
+      goReady(msg.session.id)
     })
 
     // Fallback: older streamers emit session_update with ptyAttached: true instead
     const unsubUpdate = client.on('session_update', (msg) => {
       if (msg.type !== 'session_update') return
       const s = msg.session
-      if (!s.id.startsWith('pending_') && s.ptyAttached) {
-        router.replace(`/session/${s.id}?server=${serverId}`)
+      if (!s.ptyAttached) return
+      if (expectExactId) {
+        if (s.id !== pendingId) return
+      } else if (s.id.startsWith('pending_')) {
+        return
       }
+      goReady(s.id)
     })
 
     return () => {
       unsubReady()
       unsubUpdate()
     }
-  }, [serverId, router])
+  }, [serverId, router, pendingId, expectExactId])
+
+  if (timedOut) {
+    return (
+      <SafeAreaView style={pendingStyles.container} edges={['bottom']}>
+        <View style={pendingStyles.content}>
+          <Text style={pendingStyles.title}>{t('terminal:status.startTimeout')}</Text>
+          <Text style={pendingStyles.phrase}>{t('terminal:status.startTimeoutBody')}</Text>
+        </View>
+        <View style={pendingStyles.footer}>
+          <TouchableOpacity
+            style={pendingStyles.primaryButton}
+            onPress={() => {
+              setTimedOut(false)
+              setWaitGeneration((g) => g + 1)
+            }}
+          >
+            <Text style={pendingStyles.primaryButtonText}>{t('terminal:status.keepWaiting')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={pendingStyles.cancelButton}
+            onPress={() => router.replace('/')}
+          >
+            <Text style={pendingStyles.cancelText}>{t('common:button.back')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={pendingStyles.container} edges={['bottom']}>
@@ -253,9 +308,16 @@ function makePendingStyles(theme: Theme) {
     container: { flex: 1, backgroundColor: theme.bg.primary },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md },
     spinner: { marginBottom: spacing.md },
-    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600', textAlign: 'center' },
     phrase: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
-    footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+    footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
+    primaryButton: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    primaryButtonText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '600' },
     cancelButton: {
       borderWidth: 1,
       borderColor: theme.text.danger,
@@ -402,7 +464,11 @@ export default function SessionDetailScreen() {
   const { t } = useTranslation(['terminal', 'common'])
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const { id, server } = useLocalSearchParams<{ id: string; server?: string }>()
+  const { id, server, starting } = useLocalSearchParams<{
+    id: string
+    server?: string
+    starting?: string
+  }>()
   const router = useRouter()
 
   // Fall back to first server if no server param provided (backwards compat)
@@ -410,7 +476,8 @@ export default function SessionDetailScreen() {
   const serverId = server || fallbackServerId
   const { sessionView } = useSettingsStore()
 
-  const isPending = id?.startsWith('pending_') ?? false
+  const isStarting = starting === '1'
+  const isPending = (id?.startsWith('pending_') ?? false) || isStarting
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
 
@@ -526,7 +593,13 @@ export default function SessionDetailScreen() {
   }, [serverId, id])
 
   if (isPending) {
-    return <PendingSessionScreen serverId={serverId} pendingId={id!} />
+    return (
+      <PendingSessionScreen
+        serverId={serverId}
+        pendingId={id!}
+        expectExactId={isStarting}
+      />
+    )
   }
 
   if (

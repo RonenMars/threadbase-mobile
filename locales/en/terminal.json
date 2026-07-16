@@ -41,7 +41,10 @@
     "reconnecting": "Reconnecting…",
     "disconnected": "Disconnected",
     "waking": "Waking up…",
-    "starting": "Starting session…"
+    "starting": "Starting session…",
+    "startTimeout": "Session is taking too long",
+    "startTimeoutBody": "The session has not become ready yet. You can keep waiting or go back.",
+    "keepWaiting": "Keep waiting"
   },
   "input": {
     "placeholder": "Send a message…",

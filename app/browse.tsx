@@ -26,6 +26,7 @@ import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
+import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 
 const MAX_RECENT_DIRS = 8
 
@@ -43,10 +44,12 @@ interface RecentDir {
 function buildSessionRoute(
   session: { id: string; projectId?: string; projectPath?: string | null },
   serverId: string,
+  opts?: { starting?: boolean },
 ): string {
   const params = new URLSearchParams({ server: serverId })
   if (session.projectId) params.set('projectId', session.projectId)
   if (session.projectPath) params.set('projectPath', session.projectPath)
+  if (opts?.starting) params.set('starting', '1')
   return `/session/${session.id}?${params.toString()}`
 }
 
@@ -196,8 +199,11 @@ export default function BrowseScreen() {
   // `transitionEnd` with `data.closing === true` exactly when the modal
   // teardown finishes — we listen for that one event and push then.
   const navigateToNewSession = useCallback(
-    (session: { id: string; projectId?: string; projectPath?: string | null }) => {
-      const target = buildSessionRoute(session, serverId ?? '')
+    (
+      session: { id: string; projectId?: string; projectPath?: string | null },
+      opts?: { starting?: boolean },
+    ) => {
+      const target = buildSessionRoute(session, serverId ?? '', opts)
       // `transitionEnd` is a native-stack event; expo-router's useNavigation()
       // returns a base navigation type that doesn't include it in its event
       // map, hence the casts.
@@ -205,6 +211,7 @@ export default function BrowseScreen() {
       const unsubscribe = (navigation as any).addListener('transitionEnd', (e: { data: { closing: boolean } }) => {
         if (!e.data.closing) return
         unsubscribe()
+        markNavigatedToSession(session.id)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.push(target as any)
       })
@@ -223,10 +230,13 @@ export default function BrowseScreen() {
       },
       {
         onSuccess: (result) => {
-          // 'pending' means the server timed out waiting for the PTY to become
-          // ready; the WS session_ready listener in app/_layout.tsx navigates
-          // once it actually is.
-          if (result.kind === 'ready') navigateToNewSession(result.session)
+          if (result.kind === 'ready') {
+            navigateToNewSession(result.session)
+            return
+          }
+          // Server timed out waiting for PTY readiness — dismiss browse and
+          // open the session route in a loading state until session_ready.
+          navigateToNewSession({ id: result.id }, { starting: true })
         },
         onError: (err) => {
           Alert.alert('Failed to start session', err.message)
@@ -245,7 +255,11 @@ export default function BrowseScreen() {
         },
         {
           onSuccess: (result) => {
-            if (result.kind === 'ready') navigateToNewSession(result.session)
+            if (result.kind === 'ready') {
+              navigateToNewSession(result.session)
+              return
+            }
+            navigateToNewSession({ id: result.id }, { starting: true })
           },
           onError: (err) => {
             Alert.alert('Failed to start session', err.message)
