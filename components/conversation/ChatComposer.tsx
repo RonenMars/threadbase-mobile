@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  Keyboard,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'
@@ -78,6 +79,7 @@ export function ChatComposer({
 
   const handleSend = () => {
     if (disabled || !hasContent) return
+    Keyboard.dismiss()
     onSend()
   }
 
