@@ -118,6 +118,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     const unsubUpdate = wsManager.onAll('session_update', (msg) => {
       if (msg.type !== 'session_update') return
+      if (__DEV__) {
+        console.log(`[session_update] id=${msg.session.id} status=${msg.session.status} pty=${msg.session.ptyAttached} prompts=${msg.session.promptCount}`)
+      }
       const key = ['session', msg.serverId, msg.session.id]
       // Cancel any in-flight HTTP fetch for this session so it can't overwrite
       // the authoritative status that just arrived over the WS.

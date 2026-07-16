@@ -55,6 +55,12 @@ const RECONNECTING_BANNER_DELAY_MS = 5_000
 // Max time the waking-up overlay waits on a first terminal_output before it
 // gives up and renders the terminal underneath (see wakeTimedOut).
 const WAKING_UP_WS_TIMEOUT_MS = 8_000
+// The waking-up overlay clears only when a WS session_update pushes
+// status → waiting_input (or terminal_output starts). There is no polling
+// backstop on the session query, so a dropped/stranded session_update leaves
+// the overlay stuck indefinitely. After this long still waking, re-pull the
+// authoritative session status over HTTP so the overlay always resolves.
+const WAKING_UP_BACKSTOP_MS = 15_000
 
 // The server's own ready-wait window (see tb-streamer START_READY_TIMEOUT_MS)
 // — the progress bar animates toward this. After STUCK_AFTER_MS with neither
@@ -514,6 +520,41 @@ export default function SessionDetailScreen() {
     return () => clearTimeout(timer)
   }, [id])
 
+  // Mirrors the post-early-return `isWakingUp` (see below) — computed here so
+  // the backstop effect can run unconditionally before the early returns.
+  const isWakingUpEarly =
+    session?.status === 'running' &&
+    !hasReachedPrompt &&
+    !isStreaming &&
+    (session?.promptCount ?? 0) === 0
+
+  // Backstop for the push-only overlay exit: if we're still waking up after
+  // WAKING_UP_BACKSTOP_MS, the session_update that flips status → waiting_input
+  // may have been dropped or landed on an unbound handler. Re-pull the session
+  // over HTTP (and force a WS reconnect so re-subscribe re-primes the stream)
+  // so the overlay never sits unbounded. Re-arms while still waking.
+  useEffect(() => {
+    if (!isWakingUpEarly || !serverId || !id) return
+    const timer = setTimeout(() => {
+      if (__DEV__) {
+        console.log(`[waking-backstop] still waking after ${WAKING_UP_BACKSTOP_MS}ms — invalidating session ${id} + WS reconnect`)
+      }
+      wsManager.forceReconnect(serverId)
+      void qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+    }, WAKING_UP_BACKSTOP_MS)
+    return () => clearTimeout(timer)
+  }, [isWakingUpEarly, serverId, id, qc])
+
+  // Instrumentation (dev-only): trace the waking-up exit path so a future hang
+  // can be attributed to (a) status never flipping, (b) isStreaming, or (c) the
+  // backstop. Remove once the delivery-side root cause is confirmed.
+  useEffect(() => {
+    if (!__DEV__ || isPending) return
+    console.log(
+      `[waking-trace] id=${id} status=${session?.status} pty=${session?.ptyAttached} prompts=${session?.promptCount} isStreaming=${isStreaming} hasReachedPrompt=${hasReachedPrompt} isWakingUp=${isWakingUpEarly}`,
+    )
+  }, [id, session?.status, session?.ptyAttached, session?.promptCount, isStreaming, hasReachedPrompt, isWakingUpEarly, isPending])
+
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
     const client = wsManager.getClient(serverId)
@@ -548,12 +589,10 @@ export default function SessionDetailScreen() {
   // session can be genuinely blocked on a startup dialog (e.g. Codex's
   // hooks/trust gates) that never flips promptCount/hasReachedPrompt, and the
   // user needs to see that dialog rather than a spinner covering it.
-  const isWakingUp =
-    session?.status === 'running' &&
-    !hasReachedPrompt &&
-    !isStreaming &&
-    !wakeTimedOut &&
-    (session?.promptCount ?? 0) === 0
+  // isWakingUpEarly stays exactly as #328 wrote it (no !wakeTimedOut) — it gates
+  // the 15 s re-pull effect. Folding !wakeTimedOut into it would flip it false at
+  // 8 s and clear the backstop timer before it ever fires, making #328 dead code.
+  const isWakingUp = isWakingUpEarly && !wakeTimedOut
 
   const infoModal = (
     <InfoModal
