@@ -46,6 +46,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { clientLog } from '@/lib/clientLog'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -212,6 +213,11 @@ function PendingSessionScreen({
   /** When true (browse `starting=1`), only accept ready/update for this id. */
   expectExactId?: boolean
 }) {
+  clientLog.info('session.pending', 'PendingSessionScreen render', {
+    serverId,
+    pendingId,
+    expectExactId,
+  })
   const router = useRouter()
   const { t } = useTranslation(['terminal', 'common'])
   const theme = useTheme()
@@ -222,6 +228,7 @@ function PendingSessionScreen({
   // pendingId is `pending_<realSessionId>` (see navigateToNewSession) — strip
   // the prefix to get the id the server/stop-session API actually knows.
   const realSessionId = pendingId.replace(/^pending_/, '')
+  clientLog.info('session.pending', 'resolved realSessionId', { pendingId, realSessionId })
   const { stopSession } = useSessionActions(serverId, realSessionId)
 
   useEffect(() => {
@@ -243,17 +250,46 @@ function PendingSessionScreen({
 
   useEffect(() => {
     const client = wsManager.getClient(serverId)
-    if (!client) return
+    clientLog.info('session.pending', 'WS ready-listen effect', {
+      serverId,
+      pendingId,
+      expectExactId,
+      hasClient: !!client,
+    })
+    if (!client) {
+      clientLog.info('session.pending', 'no WS client — skip ready listeners', { serverId })
+      return
+    }
 
-    const goReady = (sessionId: string) => {
-      router.replace(`/session/${sessionId}?server=${serverId}`)
+    const goReady = (sessionId: string, via: string) => {
+      const target = `/session/${sessionId}?server=${serverId}`
+      clientLog.info('session.pending', 'goReady router.replace', {
+        sessionId,
+        serverId,
+        via,
+        target,
+        pendingId,
+        expectExactId,
+      })
+      router.replace(target)
     }
 
     // Primary: session_ready is an explicit signal from new streamers
     const unsubReady = client.on('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
-      if (expectExactId && msg.session.id !== pendingId) return
-      goReady(msg.session.id)
+      clientLog.info('session.pending', 'session_ready received', {
+        msgSessionId: msg.session.id,
+        pendingId,
+        expectExactId,
+      })
+      if (expectExactId && msg.session.id !== pendingId) {
+        clientLog.info('session.pending', 'session_ready ignored (exact-id mismatch)', {
+          msgSessionId: msg.session.id,
+          pendingId,
+        })
+        return
+      }
+      goReady(msg.session.id, 'session_ready')
     })
 
     // Fallback: older streamers emit session_update with ptyAttached: true instead
@@ -261,15 +297,28 @@ function PendingSessionScreen({
       if (msg.type !== 'session_update') return
       const s = msg.session
       if (!s.ptyAttached) return
+      clientLog.info('session.pending', 'ptyAttached session_update', {
+        sessionId: s.id,
+        pendingId,
+        expectExactId,
+      })
       if (expectExactId) {
-        if (s.id !== pendingId) return
+        if (s.id !== pendingId) {
+          clientLog.info('session.pending', 'session_update ignored (exact-id mismatch)', {
+            sessionId: s.id,
+            pendingId,
+          })
+          return
+        }
       } else if (s.id.startsWith('pending_')) {
+        clientLog.info('session.pending', 'session_update ignored (pending_ id)', { sessionId: s.id })
         return
       }
-      goReady(s.id)
+      goReady(s.id, 'session_update:ptyAttached')
     })
 
     return () => {
+      clientLog.info('session.pending', 'cleanup ready listeners', { serverId, pendingId })
       unsubReady()
       unsubUpdate()
     }
@@ -490,6 +539,11 @@ export default function SessionDetailScreen() {
     server?: string
     starting?: string
   }>()
+  clientLog.info('session.screen', 'SessionDetailScreen render', {
+    id,
+    server,
+    starting,
+  })
   const router = useRouter()
 
   // Fall back to first server if no server param provided (backwards compat)
@@ -499,6 +553,13 @@ export default function SessionDetailScreen() {
 
   const isStarting = starting === '1'
   const isPending = (id?.startsWith('pending_') ?? false) || isStarting
+  clientLog.info('session.screen', 'resolved route state', {
+    id,
+    serverId,
+    isStarting,
+    isPending,
+    fallbackServerId,
+  })
   const { data: session, isLoading } = useSessionDetail(serverId, id)
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
 
@@ -634,6 +695,12 @@ export default function SessionDetailScreen() {
   }, [serverId, id])
 
   if (isPending) {
+    clientLog.info('session.screen', 'branch → PendingSessionScreen', {
+      id,
+      serverId,
+      isStarting,
+      expectExactId: isStarting,
+    })
     return (
       <PendingSessionScreen
         serverId={serverId}

@@ -27,6 +27,7 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import { clientLog } from '@/lib/clientLog'
 
 const MAX_RECENT_DIRS = 8
 
@@ -50,63 +51,117 @@ function buildSessionRoute(
   if (session.projectId) params.set('projectId', session.projectId)
   if (session.projectPath) params.set('projectPath', session.projectPath)
   if (opts?.starting) params.set('starting', '1')
-  return `/session/${session.id}?${params.toString()}`
+  const route = `/session/${session.id}?${params.toString()}`
+  clientLog.info('browse', 'buildSessionRoute', {
+    sessionId: session.id,
+    projectId: session.projectId,
+    projectPath: session.projectPath,
+    serverId,
+    starting: opts?.starting,
+    route,
+  })
+  return route
 }
 
 export default function BrowseScreen() {
+  clientLog.info('browse', 'BrowseScreen render start')
   const theme = useTheme()
+  clientLog.info('browse', 'resolved theme', { hasTheme: !!theme })
   const isGlass = useIsGlass()
-  const styles = useMemo(() => makeStyles(theme), [theme])
+  clientLog.info('browse', 'resolved isGlass', { isGlass })
+  const styles = useMemo(() => {
+    clientLog.info('browse', 'makeStyles useMemo compute', { themeKeys: Object.keys(theme ?? {}) })
+    return makeStyles(theme)
+  }, [theme])
+  clientLog.info('browse', 'styles ready')
   const { t } = useTranslation(['browse', 'common'])
+  clientLog.info('browse', 'i18n t ready')
   const router = useRouter()
+  clientLog.info('browse', 'router ready', { hasRouter: !!router })
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
+  clientLog.info('browse', 'local search params', { serverId, initialPath })
   // Pre-fill cwd when the caller passes ?path=... (TreeView drill → FAB).
   // `useLocalSearchParams` always returns a string for declared keys, so an
   // omitted `path` arrives as undefined; we coalesce to '' (server default).
   const [currentPath, setCurrentPath] = useState(initialPath ?? '')
+  clientLog.info('browse', 'currentPath state', { currentPath, initialFallback: initialPath ?? '' })
   const [newFolderName, setNewFolderName] = useState('')
+  clientLog.info('browse', 'newFolderName state', { newFolderName })
   const [showNewFolder, setShowNewFolder] = useState(false)
+  clientLog.info('browse', 'showNewFolder state', { showNewFolder })
   const [keyboardHeight, setKeyboardHeight] = useState(0)
+  clientLog.info('browse', 'keyboardHeight state', { keyboardHeight })
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
+  clientLog.info('browse', 'isRecentsOpen state', { isRecentsOpen })
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
+  clientLog.info('browse', 'selectedProvider state', { selectedProvider })
 
   const { data: allSessions = [] } = useSessions()
+  clientLog.info('browse', 'useSessions result', { allSessionsCount: allSessions.length })
   const recentDirs = useMemo<RecentDir[]>(() => {
-    if (!serverId) return []
+    clientLog.info('browse', 'recentDirs useMemo start', { serverId, allSessionsCount: allSessions.length })
+    if (!serverId) {
+      clientLog.info('browse', 'recentDirs empty: no serverId')
+      return []
+    }
     const seen = new Set<string>()
     const dirs: RecentDir[] = []
     const sorted = [...allSessions]
       .filter((s) => s.serverId === serverId && s.projectPath)
       .sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
+    clientLog.info('browse', 'recentDirs filtered+sorted', { sortedCount: sorted.length })
     for (const session of sorted) {
       const path = session.projectPath
-      if (seen.has(path)) continue
+      if (seen.has(path)) {
+        clientLog.info('browse', 'recentDirs skip duplicate path', { path })
+        continue
+      }
       seen.add(path)
+      const name = path.split('/').filter(Boolean).pop() ?? path
       dirs.push({
         path,
-        name: path.split('/').filter(Boolean).pop() ?? path,
+        name,
         lastUsedAt: session.startedAt,
       })
-      if (dirs.length >= MAX_RECENT_DIRS) break
+      clientLog.info('browse', 'recentDirs push', { path, name, lastUsedAt: session.startedAt, dirsLen: dirs.length })
+      if (dirs.length >= MAX_RECENT_DIRS) {
+        clientLog.info('browse', 'recentDirs hit MAX_RECENT_DIRS', { max: MAX_RECENT_DIRS })
+        break
+      }
     }
+    clientLog.info('browse', 'recentDirs useMemo done', { dirsCount: dirs.length })
     return dirs
   }, [allSessions, serverId])
+  clientLog.info('browse', 'recentDirs value', { recentDirsCount: recentDirs.length })
 
   useEffect(() => {
+    clientLog.info('browse', 'keyboard effect mount: add listeners')
     const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
+      clientLog.info('browse', 'keyboardWillShow', { height: e.endCoordinates.height })
       setKeyboardHeight(e.endCoordinates.height)
     })
     const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+      clientLog.info('browse', 'keyboardWillHide: reset height to 0')
       setKeyboardHeight(0)
     })
     return () => {
+      clientLog.info('browse', 'keyboard effect cleanup: remove listeners')
       showSub.remove()
       hideSub.remove()
     }
   }, [])
 
   const { data, isLoading, isError, error } = useBrowse(serverId ?? '', currentPath)
+  clientLog.info('browse', 'useBrowse result', {
+    serverId: serverId ?? '',
+    currentPath,
+    isLoading,
+    isError,
+    errorMessage: error?.message,
+    dataDirsCount: data?.directories?.length,
+  })
   const isBrowseSlow = useLoadingStateStore((s) => s.slowCounts.browse > 0)
+  clientLog.info('browse', 'isBrowseSlow', { isBrowseSlow })
 
   // The TreeView drill prefill passes the session's absolute cwd, which may
   // live outside the server's configured browse root (adopted sessions, demo
@@ -116,25 +171,48 @@ export default function BrowseScreen() {
   // `react-hooks/set-state-in-effect` rule is satisfied (same pattern as
   // app/session/[id].tsx).
   useEffect(() => {
+    clientLog.info('browse', 'outside-root effect check', {
+      isError,
+      currentPath,
+      errorMessage: error?.message,
+    })
     if (isError && currentPath && error?.message?.includes('outside browse root')) {
-      queueMicrotask(() => setCurrentPath(''))
+      clientLog.info('browse', 'outside browse root: queueMicrotask setCurrentPath("")')
+      queueMicrotask(() => {
+        clientLog.info('browse', 'outside browse root: applying setCurrentPath("")')
+        setCurrentPath('')
+      })
+    } else {
+      clientLog.info('browse', 'outside-root effect: no fallback')
     }
   }, [isError, error, currentPath])
   const createDir = useCreateDirectory(serverId ?? '')
+  clientLog.info('browse', 'useCreateDirectory ready', { serverId: serverId ?? '' })
   const startSession = useStartSession(serverId ?? '')
+  clientLog.info('browse', 'useStartSession ready', { serverId: serverId ?? '' })
 
   const breadcrumbs = currentPath ? currentPath.split('/') : []
+  clientLog.info('browse', 'breadcrumbs derived', { currentPath, breadcrumbs })
   const navigation = useNavigation()
+  clientLog.info('browse', 'navigation ready', { hasNavigation: !!navigation })
 
   const goBack = useCallback(() => {
-    if (!currentPath) return
+    clientLog.info('browse', 'goBack invoked', { currentPath })
+    if (!currentPath) {
+      clientLog.info('browse', 'goBack noop: already at root')
+      return
+    }
     const segments = currentPath.split('/')
-    setCurrentPath(segments.slice(0, -1).join('/'))
+    const nextPath = segments.slice(0, -1).join('/')
+    clientLog.info('browse', 'goBack setCurrentPath', { segments, nextPath })
+    setCurrentPath(nextPath)
+    clientLog.info('browse', 'goBack setShowNewFolder(false)')
     setShowNewFolder(false)
   }, [currentPath])
 
   // Set header back button when inside a subdirectory
   useEffect(() => {
+    clientLog.info('browse', 'headerLeft effect', { currentPath, hasPath: !!currentPath })
     navigation.setOptions({
       headerLeft: currentPath
         ? () => (
@@ -144,6 +222,7 @@ export default function BrowseScreen() {
           )
         : undefined,
     })
+    clientLog.info('browse', 'headerLeft options set', { mode: currentPath ? 'back-button' : 'undefined' })
   }, [currentPath, navigation, goBack, t, theme.text.accent])
 
   // Swipe from left edge to go back
@@ -156,33 +235,48 @@ export default function BrowseScreen() {
         runOnJS(goBack)()
       }
     })
+  clientLog.info('browse', 'swipeBack gesture configured', { currentPath })
 
   const navigateTo = useCallback((path: string) => {
+    clientLog.info('browse', 'navigateTo', { path })
     setCurrentPath(path)
+    clientLog.info('browse', 'navigateTo setShowNewFolder(false)')
     setShowNewFolder(false)
   }, [])
 
   const navigateToBreadcrumb = useCallback((index: number) => {
+    clientLog.info('browse', 'navigateToBreadcrumb', { index, currentPath })
     if (index < 0) {
+      clientLog.info('browse', 'navigateToBreadcrumb root: setCurrentPath("")')
       setCurrentPath('')
     } else {
       const segments = currentPath.split('/')
-      setCurrentPath(segments.slice(0, index + 1).join('/'))
+      const nextPath = segments.slice(0, index + 1).join('/')
+      clientLog.info('browse', 'navigateToBreadcrumb setCurrentPath', { segments, nextPath })
+      setCurrentPath(nextPath)
     }
+    clientLog.info('browse', 'navigateToBreadcrumb setShowNewFolder(false)')
     setShowNewFolder(false)
   }, [currentPath])
 
   const handleCreateFolder = useCallback(() => {
     const name = newFolderName.trim()
-    if (!name) return
+    clientLog.info('browse', 'handleCreateFolder', { raw: newFolderName, name, currentPath })
+    if (!name) {
+      clientLog.info('browse', 'handleCreateFolder noop: empty name')
+      return
+    }
+    clientLog.info('browse', 'createDir.mutate start', { parentPath: currentPath, name })
     createDir.mutate(
       { parentPath: currentPath, name },
       {
         onSuccess: () => {
+          clientLog.info('browse', 'createDir onSuccess: clear name + hide form')
           setNewFolderName('')
           setShowNewFolder(false)
         },
         onError: (err) => {
+          clientLog.info('browse', 'createDir onError', { message: err.message })
           Alert.alert('Error', err.message)
         },
       },
@@ -203,24 +297,39 @@ export default function BrowseScreen() {
       session: { id: string; projectId?: string; projectPath?: string | null },
       opts?: { starting?: boolean },
     ) => {
+      clientLog.info('browse', 'navigateToNewSession start', {
+        sessionId: session.id,
+        projectId: session.projectId,
+        projectPath: session.projectPath,
+        starting: opts?.starting,
+        serverId: serverId ?? '',
+      })
       const target = buildSessionRoute(session, serverId ?? '', opts)
+      clientLog.info('browse', 'navigateToNewSession built target', { target })
       // Guard the global session_ready listener BEFORE dismissing. session_ready
       // can arrive mid-dismiss (the PTY is already active — see "Active 1s" in
       // the new session header), and the global listener in app/_layout.tsx
       // would push /session/<id> underneath the still-open modal, stranding the
       // user on browse until they manually pull it down. Marking now suppresses
       // that early push; our own transitionEnd push below is the only navigation.
+      clientLog.info('browse', 'markNavigatedToSession before dismiss', { sessionId: session.id })
       markNavigatedToSession(session.id)
       // `transitionEnd` is a native-stack event; expo-router's useNavigation()
       // returns a base navigation type that doesn't include it in its event
       // map, hence the casts.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const unsubscribe = (navigation as any).addListener('transitionEnd', (e: { data: { closing: boolean } }) => {
-        if (!e.data.closing) return
+        clientLog.info('browse', 'transitionEnd fired', { closing: e.data.closing, target })
+        if (!e.data.closing) {
+          clientLog.info('browse', 'transitionEnd ignored: not closing')
+          return
+        }
+        clientLog.info('browse', 'transitionEnd closing: unsubscribe + router.push', { target })
         unsubscribe()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.push(target as any)
       })
+      clientLog.info('browse', 'router.back() dismiss modal')
       router.back()
     },
     [router, navigation, serverId],
@@ -235,9 +344,12 @@ export default function BrowseScreen() {
   // session_ready can't latch onto this pending screen.
   const handleStartResult = useCallback(
     (result: { kind: 'ready'; session: { id: string; projectId?: string; projectPath?: string | null } } | { kind: 'pending'; id: string }) => {
+      clientLog.info('browse', 'handleStartResult', { kind: result.kind, result })
       if (result.kind === 'ready') {
+        clientLog.info('browse', 'handleStartResult ready → navigateToNewSession', { sessionId: result.session.id })
         navigateToNewSession(result.session)
       } else {
+        clientLog.info('browse', 'handleStartResult pending → navigateToNewSession starting', { id: result.id })
         navigateToNewSession({ id: result.id }, { starting: true })
       }
     },
@@ -246,7 +358,14 @@ export default function BrowseScreen() {
 
   const handleStartError = useCallback(
     (err: Error) => {
-      const message = err instanceof NetworkError && err.code === 'TIMEOUT' ? t('error.startTimeout') : err.message
+      const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
+      const message = isTimeout ? t('error.startTimeout') : err.message
+      clientLog.info('browse', 'handleStartError', {
+        isTimeout,
+        code: err instanceof NetworkError ? err.code : undefined,
+        message,
+        rawMessage: err.message,
+      })
       Alert.alert(t('error.startFailed'), message)
     },
     [t],
@@ -254,24 +373,39 @@ export default function BrowseScreen() {
 
   const handleStartSession = useCallback(() => {
     const displayName = currentPath ? currentPath.split('/').pop() : '~'
+    const payload = {
+      path: currentPath,
+      projectName: displayName,
+      ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
+    }
+    clientLog.info('browse', 'handleStartSession mutate', {
+      currentPath,
+      displayName,
+      selectedProvider,
+      includeProvider: selectedProvider === CODEX_CLI_PROVIDER,
+      payload,
+    })
     startSession.mutate(
-      {
-        path: currentPath,
-        projectName: displayName,
-        ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
-      },
+      payload,
       { onSuccess: handleStartResult, onError: handleStartError },
     )
   }, [currentPath, selectedProvider, startSession, handleStartResult, handleStartError])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
+      const payload = {
+        path: dir.path,
+        projectName: dir.name,
+        ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
+      }
+      clientLog.info('browse', 'handleStartFromRecent mutate', {
+        dir,
+        selectedProvider,
+        includeProvider: selectedProvider === CODEX_CLI_PROVIDER,
+        payload,
+      })
       startSession.mutate(
-        {
-          path: dir.path,
-          projectName: dir.name,
-          ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
-        },
+        payload,
         { onSuccess: handleStartResult, onError: handleStartError },
       )
     },
@@ -281,10 +415,14 @@ export default function BrowseScreen() {
   const renderItem = useCallback(
     ({ item, index }: { item: { name: string }; index: number }) => {
       const childPath = currentPath ? `${currentPath}/${item.name}` : item.name
+      clientLog.info('browse', 'renderItem', { index, name: item.name, childPath, currentPath })
       return (
         <TouchableOpacity
           style={styles.row}
-          onPress={() => navigateTo(childPath)}
+          onPress={() => {
+            clientLog.info('browse', 'directory row press', { childPath, index })
+            navigateTo(childPath)
+          }}
           testID={index === 0 ? "browse-first-directory" : undefined}
         >
           <Text style={styles.folderIcon}>📁</Text>
@@ -302,6 +440,13 @@ export default function BrowseScreen() {
     (error instanceof NetworkError && error.code === 'BROWSE_ROOT_NOT_SET') ||
     error?.message?.includes('not configured')
   )
+  clientLog.info('browse', 'isBrowseNotConfigured derived', {
+    isBrowseNotConfigured,
+    isError,
+    errorCode: error instanceof NetworkError ? error.code : undefined,
+    errorMessage: error?.message,
+  })
+  clientLog.info('browse', 'BrowseScreen render end → return JSX')
 
   return (
     <GestureDetector gesture={swipeBack}>
@@ -471,7 +616,14 @@ export default function BrowseScreen() {
 
           <TouchableOpacity
             style={[styles.startBtn, startSession.isPending && styles.startBtnDisabled]}
-            onPress={handleStartSession}
+            onPress={() => {
+              clientLog.info('browse', 'Start Session Here pressed', {
+                currentPath,
+                selectedProvider,
+                isPending: startSession.isPending,
+              })
+              handleStartSession()
+            }}
             disabled={startSession.isPending}
           >
             {startSession.isPending ? (

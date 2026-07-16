@@ -11,20 +11,43 @@
 //   - Entries auto-expire after TTL_MS so a later, legitimate session_ready
 //     for the same id (e.g. after a streamer reconnect) is not suppressed.
 
+import { clientLog } from '@/lib/clientLog'
+
 const TTL_MS = 10_000
 
 const recent = new Map<string, number>()
 
 export function markNavigatedToSession(sessionId: string): void {
-  recent.set(sessionId, Date.now())
+  const now = Date.now()
+  recent.set(sessionId, now)
+  clientLog.info('sessionNavGuard', 'markNavigatedToSession', {
+    sessionId,
+    now,
+    ttlMs: TTL_MS,
+    mapSize: recent.size,
+  })
 }
 
 export function shouldSkipAutoNav(sessionId: string): boolean {
   const t = recent.get(sessionId)
-  if (t === undefined) return false
-  if (Date.now() - t > TTL_MS) {
-    recent.delete(sessionId)
+  if (t === undefined) {
+    clientLog.info('sessionNavGuard', 'shouldSkipAutoNav → false (not marked)', { sessionId })
     return false
   }
+  const ageMs = Date.now() - t
+  if (ageMs > TTL_MS) {
+    recent.delete(sessionId)
+    clientLog.info('sessionNavGuard', 'shouldSkipAutoNav → false (TTL expired)', {
+      sessionId,
+      ageMs,
+      ttlMs: TTL_MS,
+    })
+    return false
+  }
+  clientLog.info('sessionNavGuard', 'shouldSkipAutoNav → true (within TTL)', {
+    sessionId,
+    ageMs,
+    ttlMs: TTL_MS,
+  })
   return true
 }

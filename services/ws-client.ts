@@ -7,6 +7,7 @@ import type {
   PermissionCancelledWsMessage,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
+import { clientLog } from '@/lib/clientLog'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
@@ -156,6 +157,15 @@ class WSClient {
         msg = JSON.parse(event.data as string) as WSMessage
       } catch {
         return
+      }
+      if (msg.type === 'session_ready') {
+        clientLog.info('ws', 'session_ready received', {
+          serverId: this.serverId,
+          sessionId: msg.session.id,
+          projectId: msg.session.projectId,
+          projectPath: msg.session.projectPath,
+          handlerCount: this.handlers.get(msg.type)?.size ?? 0,
+        })
       }
       const handlers = this.handlers.get(msg.type)
       if (handlers) {

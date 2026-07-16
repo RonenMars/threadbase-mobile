@@ -141,9 +141,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
-      if (shouldSkipAutoNav(msg.session.id)) return
-      const serverParam = `?server=${msg.serverId}`
-      router.push(`/session/${msg.session.id}${serverParam}`)
+      clientLog.info('layout.session_ready', 'global listener received', {
+        sessionId: msg.session.id,
+        serverId: msg.serverId,
+        projectId: msg.session.projectId,
+        projectPath: msg.session.projectPath,
+      })
+      const skip = shouldSkipAutoNav(msg.session.id)
+      if (skip) {
+        clientLog.info('layout.session_ready', 'skip auto-nav (guard marked)', {
+          sessionId: msg.session.id,
+          serverId: msg.serverId,
+        })
+        return
+      }
+      const target = `/session/${msg.session.id}?server=${msg.serverId}`
+      clientLog.info('layout.session_ready', 'auto-nav router.push', {
+        sessionId: msg.session.id,
+        serverId: msg.serverId,
+        target,
+      })
+      router.push(target)
     })
     const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
       setConnected(serverId, status === 'connected')
