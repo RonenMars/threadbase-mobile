@@ -164,4 +164,25 @@ describe('SessionScreen — pending session', () => {
     expect(screen.getByText('Starting session…')).toBeTruthy()
     expect(screen.queryByText('View console')).toBeNull()
   })
+
+  it('"Wait more" dismisses the stuck state and returns to the spinner', async () => {
+    jest.useFakeTimers()
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(20_000)
+    })
+    expect(screen.getByText('Wait more')).toBeTruthy()
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Wait more'))
+      // Re-arming the timer resets stuck/elapsed on the effect re-run; let it flush.
+      await jest.advanceTimersByTimeAsync(250)
+    })
+
+    // Back to the spinner; stuck actions gone.
+    expect(screen.getByText('Starting session…')).toBeTruthy()
+    expect(screen.queryByText('Wait more')).toBeNull()
+    expect(screen.queryByText('View console')).toBeNull()
+  })
 })

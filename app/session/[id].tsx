@@ -87,6 +87,7 @@ function PendingSessionScreen({
   const [phraseIdx, setPhraseIdx] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [stuck, setStuck] = useState(false)
+  const [waitNonce, setWaitNonce] = useState(0)
   // pendingId is `pending_<realSessionId>` (see navigateToNewSession) — strip
   // the prefix to get the id the server/stop-session API actually knows.
   const realSessionId = pendingId.replace(/^pending_/, '')
@@ -99,6 +100,10 @@ function PendingSessionScreen({
     return () => clearInterval(timer)
   }, [])
 
+  // Bumping waitNonce (via "Wait more") re-arms this timer from a fresh
+  // baseline. The press handler resets elapsed/stuck (not this effect) so the
+  // reset stays out of the effect body — react-hooks/set-state-in-effect — and
+  // the new baseline lands before the next 250ms tick can re-flip `stuck`.
   useEffect(() => {
     const startedAt = Date.now()
     const timer = setInterval(() => {
@@ -107,7 +112,13 @@ function PendingSessionScreen({
       if (elapsed >= STUCK_AFTER_MS) setStuck(true)
     }, 250)
     return () => clearInterval(timer)
-  }, [])
+  }, [waitNonce])
+
+  const handleWaitMore = () => {
+    setElapsedMs(0)
+    setStuck(false)
+    setWaitNonce((n) => n + 1)
+  }
 
   useEffect(() => {
     const client = wsManager.getClient(serverId)
@@ -165,6 +176,12 @@ function PendingSessionScreen({
         </View>
         <View style={[pendingStyles.footer, pendingStyles.stuckActions]}>
           <TouchableOpacity
+            style={pendingStyles.waitButton}
+            onPress={handleWaitMore}
+          >
+            <Text style={pendingStyles.waitText}>{t('terminal:status.waitMore')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={pendingStyles.viewConsoleButton}
             onPress={() => router.replace(`/session/${realSessionId}?server=${serverId}`)}
           >
@@ -221,6 +238,14 @@ function makePendingStyles(theme: Theme) {
       alignItems: 'center',
     },
     cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '500' },
+    waitButton: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    waitText: { color: theme.text.primary, fontSize: font.base, fontWeight: '500' },
     viewConsoleButton: {
       backgroundColor: theme.text.accent,
       borderRadius: radius.md,
