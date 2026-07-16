@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 'use strict'
 // Pre-flight for the Maestro E2E scripts: confirm a booted iOS simulator and
-// that its runtime is one Maestro 2.0.10 can actually drive.
+// that its runtime is one the pinned Maestro can actually drive.
 //
-// Maestro 2.0.10's bundled XCUITest driver races/dies during the
+// Maestro 2.0.10's bundled XCUITest driver raced/died during the
 // `simctl uninstall/install` that `launchApp: clearState: true` performs on
 // iOS 26.x simulators (Xcode 26), failing flows with
-// `Unable to clear state … Failed to connect to /127.0.0.1:7001`. iOS ≤ 18
-// runtimes are unaffected. So we gate on the booted runtime's major version
-// and steer users onto a supported sim. Set E2E_ALLOW_UNSUPPORTED_IOS=1 to
-// bypass (e.g. to reproduce the bug, or once a newer Maestro fixes it).
+// `Unable to clear state … Failed to connect to /127.0.0.1:7001`. Maestro 2.6.1
+// fixes this — `launchApp: clearState: true` verified COMPLETED on an iPhone 17
+// / iOS 26.4 sim — so the gate now allows iOS 26. Set E2E_ALLOW_UNSUPPORTED_IOS=1
+// to bypass for any runtime above the ceiling below.
 const { execFileSync } = require('child_process')
 
-// Highest iOS major Maestro 2.0.10 drives reliably here. Bump when the pinned
-// Maestro version gains iOS 26 support.
-const MAX_SUPPORTED_IOS_MAJOR = 18
+// Highest iOS major the pinned Maestro (2.6.1) drives reliably here. Bump when
+// the pinned Maestro version gains support for a newer iOS.
+const MAX_SUPPORTED_IOS_MAJOR = 26
 
 function runtimeMajor(runtimeId) {
   // e.g. "com.apple.CoreSimulator.SimRuntime.iOS-26-5" -> 26
@@ -54,16 +54,16 @@ if (supported.length === 0 && !allowUnsupported) {
   console.error(
     [
       '',
-      `Error: the booted simulator runs iOS ${major}, which Maestro 2.0.10 cannot drive`,
-      'reliably — clearState kills the XCUITest driver (see E2E-TESTS-FAILURE-REPORT.md).',
+      `Error: the booted simulator runs iOS ${major}, which the pinned Maestro (2.6.1)`,
+      'has not been verified to drive here.',
       `Booted: ${offending}`,
       '',
       `Fix: boot a simulator on iOS ${MAX_SUPPORTED_IOS_MAJOR} or older, e.g.`,
-      '  xcrun simctl list devices | grep -i "iOS 17"   # find one',
+      '  xcrun simctl list devices | grep -i "iOS 26"   # find one',
       '  xcrun simctl boot "<device UDID>"',
       'Then install the app on it and re-run.',
       '',
-      'Override (will likely fail): E2E_ALLOW_UNSUPPORTED_IOS=1 npm run test:e2e:mock',
+      'Override: E2E_ALLOW_UNSUPPORTED_IOS=1 npm run test:e2e:mock',
     ].join('\n'),
   )
   process.exit(1)
@@ -72,7 +72,7 @@ if (supported.length === 0 && !allowUnsupported) {
 if (unsupported.length > 0 && allowUnsupported) {
   console.warn(
     `Warning: running on iOS ${unsupported[0].major ?? '?'} with E2E_ALLOW_UNSUPPORTED_IOS=1 — ` +
-      'clearState flows may fail (Maestro 2.0.10 + iOS 26 driver bug).',
+      'above the verified ceiling; flows may fail if the pinned Maestro cannot drive this runtime.',
   )
 }
 

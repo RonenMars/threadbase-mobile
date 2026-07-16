@@ -38,16 +38,17 @@ Maestro drives the actual iOS binary, so it must be installed on a booted simula
 
 The default Debug build boots into the Expo Dev Launcher (a SwiftUI screen that asks which JS bundle to load) and there's no clean way for Maestro to get past it — see [`docs/expo-dev-launcher.md`](../docs/expo-dev-launcher.md) for the full explanation. `npm run ios` skips it: `app.json` sets `"launchMode": "most-recent"` on the `expo-dev-client` plugin, so the app loads the last-opened bundle directly instead of showing the launcher.
 
-> **Use an iOS ≤ 18 simulator.** Maestro 2.0.10's XCUITest driver races/dies during
+> **Use an iOS ≤ 26 simulator.** Maestro 2.0.10's XCUITest driver raced/died during
 > the `simctl uninstall/install` that `clearState: true` performs on **iOS 26.x**
 > (Xcode 26), failing every flow with `Unable to clear state … Failed to connect to
-> /127.0.0.1:7001`. `e2e/check-sim.js` enforces this and will refuse to run on iOS 26
-> (override with `E2E_ALLOW_UNSUPPORTED_IOS=1`). See `E2E-TESTS-FAILURE-REPORT.md`.
-> When a newer Maestro gains iOS 26 support, bump `MAX_SUPPORTED_IOS_MAJOR` in `check-sim.js`.
+> /127.0.0.1:7001`. Maestro 2.6.1 fixes this — `launchApp: clearState: true` was
+> verified COMPLETED on an iPhone 17 / iOS 26.4 sim — so `e2e/check-sim.js` now allows
+> iOS 26 and refuses only runtimes above it (override with `E2E_ALLOW_UNSUPPORTED_IOS=1`).
+> When a newer Maestro gains support for a newer iOS, bump `MAX_SUPPORTED_IOS_MAJOR` in `check-sim.js`.
 
 ```bash
-# Boot a simulator on iOS 18 or older (iOS 17.x works; iOS 26.x does NOT — see above).
-xcrun simctl list devices available | grep -iE "iOS 1[78]"
+# Boot a simulator on iOS 26 or older (iOS 17.x and iOS 26.x both work — see above).
+xcrun simctl list devices available | grep -iE "iOS (1[78]|26)"
 xcrun simctl boot <UDID>
 
 # Build + install the app onto the booted sim, skipping the dev launcher
