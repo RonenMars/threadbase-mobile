@@ -14,6 +14,15 @@ import { createWrapper } from '@/test-utils'
 
 const mockInvalidate = jest.fn()
 const mockForceReconnect = jest.fn()
+// Stable identity — the real useQueryClient returns the same client object
+// across renders. A fresh object per call re-runs every qc-dep'd effect on
+// each re-render, restarting the 15s backstop timer when the 8s wakeTimedOut
+// flip re-renders the screen.
+const mockQc = {
+  invalidateQueries: mockInvalidate,
+  cancelQueries: jest.fn(),
+  removeQueries: jest.fn(),
+}
 
 // Live, still-waking session: running + ptyAttached, no prompt reached yet.
 const mockWakingSession = {
@@ -90,11 +99,7 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
-  useQueryClient: () => ({
-    invalidateQueries: mockInvalidate,
-    cancelQueries: jest.fn(),
-    removeQueries: jest.fn(),
-  }),
+  useQueryClient: () => mockQc,
 }))
 
 // eslint-disable-next-line import/first
