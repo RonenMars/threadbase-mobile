@@ -126,6 +126,23 @@ jest.mock('expo-notifications', () => ({
 jest.mock('expo-image-picker', () => ({
   getMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
   requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+  launchCameraAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+}))
+
+// ─── expo-image-manipulator ──────────────────────────────────────────────────
+jest.mock('expo-image-manipulator', () => ({
+  __esModule: true,
+  manipulateAsync: jest.fn().mockResolvedValue({ uri: 'file:///tmp/shot.jpg', width: 1400, height: 900 }),
+  SaveFormat: { JPEG: 'jpeg', PNG: 'png', WEBP: 'webp' },
+}))
+
+// ─── expo-file-system/legacy ─────────────────────────────────────────────────
+jest.mock('expo-file-system/legacy', () => ({
+  getInfoAsync: jest.fn().mockResolvedValue({ exists: true, size: 120000 }),
+  readAsStringAsync: jest.fn().mockResolvedValue(''),
+  EncodingType: { Base64: 'base64' },
 }))
 
 // ─── @shopify/flash-list ──────────────────────────────────────────────────────
@@ -240,6 +257,63 @@ jest.mock('expo-constants', () => ({
     },
   },
 }))
+
+// ─── expo-mail-composer ──────────────────────────────────────────────────────
+jest.mock('expo-mail-composer', () => ({
+  __esModule: true,
+  isAvailableAsync: jest.fn().mockResolvedValue(true),
+  composeAsync: jest.fn().mockResolvedValue({ status: 'sent' }),
+  MailComposerStatus: {
+    UNDETERMINED: 'undetermined',
+    SENT: 'sent',
+    SAVED: 'saved',
+    CANCELLED: 'cancelled',
+  },
+}))
+
+// ─── expo-updates ────────────────────────────────────────────────────────────
+jest.mock('expo-updates', () => ({
+  __esModule: true,
+  reloadAsync: jest.fn().mockResolvedValue(undefined),
+  updateId: null,
+  channel: null,
+  runtimeVersion: '1.0.0',
+  isEmbeddedLaunch: true,
+}))
+
+// ─── @sentry/react-native ────────────────────────────────────────────────────
+// A lightweight mock that records init/close/setUser/setTag and lets tests
+// drive the beforeSend/beforeBreadcrumb hooks the service passes in. No native
+// module is loaded.
+jest.mock('@sentry/react-native', () => {
+  const scope = {
+    setUser: jest.fn(),
+    setTag: jest.fn(),
+    setTags: jest.fn(),
+    setContext: jest.fn(),
+    setExtra: jest.fn(),
+  }
+  return {
+    __esModule: true,
+    init: jest.fn(),
+    close: jest.fn().mockResolvedValue(true),
+    flush: jest.fn().mockResolvedValue(true),
+    captureException: jest.fn(() => 'evt_exception'),
+    captureMessage: jest.fn(() => 'evt_message'),
+    captureFeedback: jest.fn(() => 'evt_feedback'),
+    lastEventId: jest.fn(() => undefined),
+    addBreadcrumb: jest.fn(),
+    getGlobalScope: jest.fn(() => scope),
+    getCurrentScope: jest.fn(() => scope),
+    setUser: jest.fn(),
+    setTag: jest.fn(),
+    setTags: jest.fn(),
+    withScope: jest.fn((cb) => cb(scope)),
+    wrap: jest.fn((c) => c),
+    ErrorBoundary: ({ children }) => children,
+    __scope: scope,
+  }
+})
 
 // ─── expo-router/react-navigation (useHeaderHeight escape hatch) ─────────────
 // SDK 56: useHeaderHeight moved here from @react-navigation/elements (which is

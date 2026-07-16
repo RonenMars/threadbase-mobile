@@ -35,7 +35,7 @@ tb-streamer pair
 - 🗂️ **Multi-server support** — manage multiple Threadbase streamer instances from one mobile app
 - 🔔 **Push notifications** — alerts for input-needed / completed / failed sessions, with quiet hours
 - 📷 **QR-code pairing** — add a server by scanning a QR code, or enter URL + API key manually
-- 🔒 **Local-first privacy** — no analytics, no telemetry, and credentials stored locally in SecureStore
+- 🔒 **Local-first privacy** — no product analytics or behavioral telemetry, opt-in crash reporting that's off by default, and credentials stored locally in SecureStore
 
 ## 🛠️ Tech Stack
 
@@ -137,9 +137,11 @@ npm run typecheck
 
 ## 🔐 Privacy
 
-Threadbase is a thin client for self-hosted streamers — no analytics, crash reporting, or telemetry of its own. Session content, prompts, provider metadata, and status events go only to the streamer URL you configure. Expo push tokens go to Expo's relay and to each paired streamer (for notification delivery). Removing a server in Settings revokes its push token; uninstalling the app deletes everything stored locally.
+Threadbase is a thin client for self-hosted streamers, with no product analytics, tracking, or behavioral telemetry. Session content, prompts, provider metadata, and status events go only to the streamer URL you configure. Expo push tokens go to Expo's relay and to each paired streamer (for notification delivery). Removing a server in Settings revokes its push token; uninstalling the app deletes everything stored locally.
 
-Full policy: <https://threadbase.sh/privacy>
+Optional, opt-in crash reporting (Sentry) is **off by default**. When you enable it in Settings, only sanitized technical metadata and scrubbed error traces are sent — never prompts, terminal output, source code, credentials, server addresses, or session content. User-initiated feedback (with an optional screenshot and diagnostics you choose to include) is sent only when you submit it. See the full policy for details.
+
+Full policy: <https://threadbase.sh/privacy> · Proposed update: [`docs/privacy-policy/proposed-privacy-policy.md`](docs/privacy-policy/proposed-privacy-policy.md)
 
 ## 📄 License
 

@@ -28,7 +28,7 @@
     },
     "android": {
       "package": "com.ronenmars.threadbase",
-      "versionCode": 27,
+      "versionCode": 28,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"
@@ -92,7 +92,8 @@
           }
         }
       ],
-      "./plugins/withAndroidReleaseSigning"
+      "./plugins/withAndroidReleaseSigning",
+      "@sentry/react-native/expo"
     ],
     "experiments": {
       "typedRoutes": true,

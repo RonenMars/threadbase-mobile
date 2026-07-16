@@ -1,0 +1,90 @@
+{
+  "screenTitle": "Help & Feedback",
+  "landing": {
+    "heading": "Spotted a bug in the wild?",
+    "subtitle": "Send a report, suggest a feature, or share an idea. No stack trace required.",
+    "reportBug": "Report a bug",
+    "suggestFeature": "Suggest a feature",
+    "generalFeedback": "General feedback",
+    "copyDiagnostics": "Copy diagnostics",
+    "privacyPolicy": "Privacy policy",
+    "supportEmail": "Email support"
+  },
+  "category": {
+    "bug": "Bug",
+    "feature": "Feature request",
+    "general": "General feedback",
+    "label": "What kind of feedback is this?"
+  },
+  "form": {
+    "bugHeading": "Help us squash a bug",
+    "bugSubtitle": "Tell us what happened and what you expected instead.",
+    "featureHeading": "Got a feature brewing?",
+    "featureSubtitle": "Add it to the backlog before it escapes your brain.",
+    "generalHeading": "Send us a signal",
+    "generalSubtitle": "Good, bad, or somewhere in the call stack — we're listening.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What happened? What did you expect?",
+    "emailLabel": "Reply email (optional)",
+    "emailPlaceholder": "you@example.com",
+    "screenshotLabel": "Screenshot (optional)",
+    "addScreenshot": "Add a screenshot",
+    "screenshotHelper": "Screenshots can be worth a thousand log lines. Check that yours contains nothing sensitive — it's sent exactly as you selected it.",
+    "removeScreenshot": "Remove screenshot",
+    "includeDiagnostics": "Include technical diagnostics",
+    "diagnosticsHelper": "Adds sanitized technical metadata only — no prompts, terminal output, or session content.",
+    "viewDiagnostics": "See what's included",
+    "hideDiagnostics": "Hide details",
+    "submit": "Send feedback",
+    "sending": "Compiling your feedback…"
+  },
+  "diagnostics": {
+    "heading": "Debugging sidekick",
+    "subtitle": "Review the sanitized technical details that can help us investigate.",
+    "previewIntro": "This report may include the app version, build number, platform, OS version, update channel, connection status category, and configured-server count. It will not include prompts, terminal output, source code, credentials, server addresses, or session content.",
+    "screenTitle": "Diagnostics",
+    "loading": "Gathering diagnostics…",
+    "includedTitle": "What's included",
+    "included": "App version and build, platform and OS version, update channel, generic connection status, configured-server count, streamer version, notification permission, and a short list of recent app events.",
+    "excludedTitle": "What's not included",
+    "excluded": "Prompts, terminal output, source code, credentials, server addresses, hostnames, session names, and your device name are never included.",
+    "controlNote": "You choose whether to copy or share this. Screenshots and feedback you type may contain content you include yourself.",
+    "copy": "Copy diagnostics",
+    "share": "Share diagnostics",
+    "copied": "Diagnostics copied. Paste responsibly.",
+    "copyFailed": "Couldn't copy the diagnostics. Please try again.",
+    "shareFailed": "Couldn't open the share sheet. Try copying instead."
+  },
+  "validation": {
+    "descriptionRequired": "Give us a few details so we have something to debug.",
+    "descriptionTooShort": "A few more characters will help us debug the plot.",
+    "emailInvalid": "That email doesn't look quite right. Leave it blank if you'd rather stay anonymous."
+  },
+  "success": {
+    "title": "Feedback committed",
+    "message": "Thanks — your report made it into the queue with no merge conflicts.",
+    "done": "Done"
+  },
+  "error": {
+    "title": "Push failed",
+    "message": "We couldn't send your report. Your feedback is still here, so you can try again.",
+    "tryAgain": "Try again"
+  },
+  "offline": {
+    "title": "Looks like the network branch is offline",
+    "message": "Reconnect and try again, or copy the report for later."
+  },
+  "screenshotError": {
+    "title": "That screenshot won't fit",
+    "message": "Please pick a smaller image and try again."
+  },
+  "copyFallback": {
+    "title": "Let's finish this by hand",
+    "step1": "Tap the copy icon to copy your report.",
+    "step2": "Open the Threadbase feedback page.",
+    "step3": "Paste it there and hit send.",
+    "copyButton": "Copy report",
+    "copied": "Diagnostics copied. Paste responsibly.",
+    "openPage": "Open feedback page"
+  }
+}

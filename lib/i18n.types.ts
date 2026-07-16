@@ -9,6 +9,7 @@ import type browse from '../locales/en/browse.json';
 import type queue from '../locales/en/queue.json';
 import type pair from '../locales/en/pair.json';
 import type shared from '../locales/en/shared.json';
+import type feedback from '../locales/en/feedback.json';
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -25,6 +26,7 @@ declare module 'i18next' {
       queue: typeof queue;
       pair: typeof pair;
       shared: typeof shared;
+      feedback: typeof feedback;
     };
   }
 }

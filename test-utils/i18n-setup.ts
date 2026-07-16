@@ -13,13 +13,14 @@ import browse from '../locales/en/browse.json';
 import queue from '../locales/en/queue.json';
 import pair from '../locales/en/pair.json';
 import shared from '../locales/en/shared.json';
+import feedback from '../locales/en/feedback.json';
 
 i18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
   defaultNS: 'common',
   resources: {
-    en: { common, sessions, terminal, settings, servers, onboarding, conversation, browse, queue, pair, shared },
+    en: { common, sessions, terminal, settings, servers, onboarding, conversation, browse, queue, pair, shared, feedback },
   },
   interpolation: { escapeValue: false },
 });

@@ -15,6 +15,7 @@ import browse_en from '../locales/en/browse.json';
 import queue_en from '../locales/en/queue.json';
 import pair_en from '../locales/en/pair.json';
 import shared_en from '../locales/en/shared.json';
+import feedback_en from '../locales/en/feedback.json';
 
 import common_he from '../locales/he/common.json';
 import sessions_he from '../locales/he/sessions.json';
@@ -27,6 +28,7 @@ import browse_he from '../locales/he/browse.json';
 import queue_he from '../locales/he/queue.json';
 import pair_he from '../locales/he/pair.json';
 import shared_he from '../locales/he/shared.json';
+import feedback_he from '../locales/he/feedback.json';
 
 import common_ar from '../locales/ar/common.json';
 import sessions_ar from '../locales/ar/sessions.json';
@@ -39,6 +41,7 @@ import browse_ar from '../locales/ar/browse.json';
 import queue_ar from '../locales/ar/queue.json';
 import pair_ar from '../locales/ar/pair.json';
 import shared_ar from '../locales/ar/shared.json';
+import feedback_ar from '../locales/ar/feedback.json';
 
 import common_ru from '../locales/ru/common.json';
 import sessions_ru from '../locales/ru/sessions.json';
@@ -51,6 +54,7 @@ import browse_ru from '../locales/ru/browse.json';
 import queue_ru from '../locales/ru/queue.json';
 import pair_ru from '../locales/ru/pair.json';
 import shared_ru from '../locales/ru/shared.json';
+import feedback_ru from '../locales/ru/feedback.json';
 
 import './i18n.types';
 
@@ -62,10 +66,10 @@ i18n.use(initReactI18next).init({
   fallbackLng: 'en',
   defaultNS: 'common',
   resources: {
-    en: { common: common_en, sessions: sessions_en, terminal: terminal_en, settings: settings_en, servers: servers_en, onboarding: onboarding_en, conversation: conversation_en, browse: browse_en, queue: queue_en, pair: pair_en, shared: shared_en },
-    he: { common: common_he, sessions: sessions_he, terminal: terminal_he, settings: settings_he, servers: servers_he, onboarding: onboarding_he, conversation: conversation_he, browse: browse_he, queue: queue_he, pair: pair_he, shared: shared_he },
-    ar: { common: common_ar, sessions: sessions_ar, terminal: terminal_ar, settings: settings_ar, servers: servers_ar, onboarding: onboarding_ar, conversation: conversation_ar, browse: browse_ar, queue: queue_ar, pair: pair_ar, shared: shared_ar },
-    ru: { common: common_ru, sessions: sessions_ru, terminal: terminal_ru, settings: settings_ru, servers: servers_ru, onboarding: onboarding_ru, conversation: conversation_ru, browse: browse_ru, queue: queue_ru, pair: pair_ru, shared: shared_ru },
+    en: { common: common_en, sessions: sessions_en, terminal: terminal_en, settings: settings_en, servers: servers_en, onboarding: onboarding_en, conversation: conversation_en, browse: browse_en, queue: queue_en, pair: pair_en, shared: shared_en, feedback: feedback_en },
+    he: { common: common_he, sessions: sessions_he, terminal: terminal_he, settings: settings_he, servers: servers_he, onboarding: onboarding_he, conversation: conversation_he, browse: browse_he, queue: queue_he, pair: pair_he, shared: shared_he, feedback: feedback_he },
+    ar: { common: common_ar, sessions: sessions_ar, terminal: terminal_ar, settings: settings_ar, servers: servers_ar, onboarding: onboarding_ar, conversation: conversation_ar, browse: browse_ar, queue: queue_ar, pair: pair_ar, shared: shared_ar, feedback: feedback_ar },
+    ru: { common: common_ru, sessions: sessions_ru, terminal: terminal_ru, settings: settings_ru, servers: servers_ru, onboarding: onboarding_ru, conversation: conversation_ru, browse: browse_ru, queue: queue_ru, pair: pair_ru, shared: shared_ru, feedback: feedback_ru },
   },
   interpolation: {
     escapeValue: false,

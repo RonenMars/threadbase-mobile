@@ -30,6 +30,7 @@ import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode } from 'phosphor-react-native'
+import { captureHandledError } from '@/services/sentry'
 import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/theme'
 import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -230,6 +231,13 @@ function ThemePicker({
   )
 }
 
+/** Dev-only: throws unconditionally on render, to exercise RootErrorBoundary
+ * end-to-end. Never rendered unless the user explicitly triggers the
+ * throw-uncaught test action below. */
+function ThrowOnRender(): never {
+  throw new Error('Test uncaught render exception from Settings')
+}
+
 export default function SettingsScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -270,10 +278,13 @@ export default function SettingsScreen() {
     setSessionView,
     biometricLock,
     setBiometricLock,
+    crashReportingEnabled,
+    setCrashReportingEnabled,
     glassThemeVariant,
     setGlassThemeVariant,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
+  const [throwOnRender, setThrowOnRender] = useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
@@ -290,6 +301,44 @@ export default function SettingsScreen() {
       },
       trigger: null,
     })
+  }
+
+  const handleTestCrash = () => {
+    Alert.alert(
+      t('crashReporting.testCrashConfirmTitle'),
+      t('crashReporting.testCrashConfirmMessage'),
+      [
+        { text: t('common:button.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('crashReporting.testCrashSend'),
+          onPress: () => {
+            // Route through the explicit capture helper so it is sanitized and
+            // gated on consent; never a raw crash of the app.
+            captureHandledError(new Error('Test crash reporting from Settings'), {
+              tag: 'test_crash',
+            })
+          },
+        },
+      ],
+    )
+  }
+
+  const handleThrowUncaught = () => {
+    Alert.alert(
+      t('crashReporting.testCrashConfirmTitle'),
+      t('crashReporting.testCrashConfirmMessage'),
+      [
+        { text: t('common:button.cancel', 'Cancel'), style: 'cancel' },
+        {
+          // Renders a component that throws for real, exercising
+          // RootErrorBoundary -> componentDidCatch -> captureHandledError, the
+          // same path a genuine unhandled render crash would take — distinct
+          // from the already-caught captureHandledError call above.
+          text: t('crashReporting.testCrashSend'),
+          onPress: () => setThrowOnRender(true),
+        },
+      ],
+    )
   }
 
   const handleRemoveServer = async (serverId: string) => {
@@ -747,7 +796,7 @@ await refreshServerInfo(serverId)
           </View>
         </View>
 
-        <SectionHeader title="Privacy" />
+        <SectionHeader title={t('section.privacy')} />
         <View style={s.card}>
           <SettingsRow
             label="Require Face ID / Fingerprint"
@@ -756,6 +805,52 @@ await refreshServerInfo(serverId)
             testID="settings-biometric-lock-toggle"
           />
         </View>
+
+        <SectionHeader title={t('section.crashReporting')} />
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
+          <SettingsRow
+            label={t('crashReporting.title')}
+            value={crashReportingEnabled}
+            onValueChange={setCrashReportingEnabled}
+            testID="settings-crash-reporting-toggle"
+          />
+          <Text style={s.rowNote}>{t('crashReporting.description')}</Text>
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => Linking.openURL('https://threadbase.sh/privacy')}
+            accessibilityRole="button"
+            accessibilityLabel={t('crashReporting.privacyPolicy')}
+          >
+            <Text style={s.rowLabel}>{t('crashReporting.privacyPolicy')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          {__DEV__ ? (
+            <TouchableOpacity
+              style={s.row}
+              onPress={handleTestCrash}
+              accessibilityRole="button"
+              accessibilityLabel={t('crashReporting.testCrash')}
+              testID="settings-test-crash-btn"
+            >
+              <Text style={s.rowLabel}>{t('crashReporting.testCrash')}</Text>
+              <Text style={s.rowValue}>›</Text>
+            </TouchableOpacity>
+          ) : null}
+          {__DEV__ ? (
+            <TouchableOpacity
+              style={[s.row, { borderBottomWidth: 0 }]}
+              onPress={handleThrowUncaught}
+              accessibilityRole="button"
+              accessibilityLabel={t('crashReporting.testThrow')}
+              testID="settings-throw-uncaught-btn"
+            >
+              <Text style={s.rowLabel}>{t('crashReporting.testThrow')}</Text>
+              <Text style={s.rowValue}>›</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        {throwOnRender ? <ThrowOnRender /> : null}
 
         <SectionHeader title={t('section.permissions')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
@@ -804,6 +899,14 @@ await refreshServerInfo(serverId)
         <SectionHeader title={t('section.help')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill />
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/help-feedback')}
+            testID="settings-help-feedback-row"
+          >
+            <Text style={s.rowLabel}>{i18n.t('feedback:screenTitle')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
             <Text style={s.rowValue}>›</Text>

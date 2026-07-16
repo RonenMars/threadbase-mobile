@@ -141,12 +141,12 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                 ...group.sessions.map((s) => ({
                   key: `s-${s.serverId}::${s.id}`,
                   ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
-                  node: <SessionRow key={`${s.serverId}::${s.id}`} session={s} />,
+                  node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} />,
                 })),
                 ...group.conversations.map((c) => ({
                   key: `c-${c.serverId}::${c.id}`,
                   ms: Date.parse(c.lastActivity) || 0,
-                  node: <ConvRow key={`${c.serverId}::${c.id}`} conv={c} />,
+                  node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} />,
                 })),
               ]
                 .sort((a, b) => b.ms - a.ms)
