@@ -52,6 +52,8 @@
   },
   "session": {
     "notFound": "Session not found",
+    "ended": "Session ended",
+    "endedBody": "This session ended without producing any output.",
     "failedToStart": "Session failed to start",
     "noTerminal": "No terminal output",
     "noTerminalBody": "This session has no active terminal.\nResume the session to start a new terminal.",

@@ -20,6 +20,7 @@ import { useSessionActions } from '@/hooks/useSessionActions'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
+import { isTerminalSession } from '@/utils/terminalSession'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
@@ -51,6 +52,9 @@ const PENDING_PHRASES = [
 ]
 
 const RECONNECTING_BANNER_DELAY_MS = 5_000
+// Max time the waking-up overlay waits on a first terminal_output before it
+// gives up and renders the terminal underneath (see wakeTimedOut).
+const WAKING_UP_WS_TIMEOUT_MS = 8_000
 
 // The server's own ready-wait window (see tb-streamer START_READY_TIMEOUT_MS)
 // — the progress bar animates toward this. After STUCK_AFTER_MS with neither
@@ -434,7 +438,8 @@ export default function SessionDetailScreen() {
   // this component's early returns.
   const isLiveForStream =
     session?.ptyAttached === true &&
-    (session?.status === 'waiting_input' || session?.status === 'running')
+    (session?.status === 'waiting_input' || session?.status === 'running') &&
+    !(session != null && isTerminalSession(session))
   const { isStreaming } = useTerminalStream(serverId, id ?? '', !isLiveForStream)
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
@@ -498,6 +503,17 @@ export default function SessionDetailScreen() {
     }
   }, [session?.status])
 
+  // Backstop: a session can be `running` yet never emit a terminal_output (dead
+  // PTY, streamer restart mid-wake) — the waking-up overlay would then spin
+  // forever. Fall through to the rendered terminal after a bounded wait so the
+  // user sees the (empty) session instead of an infinite spinner.
+  const [wakeTimedOut, setWakeTimedOut] = useState(false)
+  useEffect(() => {
+    queueMicrotask(() => setWakeTimedOut(false))
+    const timer = setTimeout(() => setWakeTimedOut(true), WAKING_UP_WS_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [id])
+
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
     const client = wsManager.getClient(serverId)
@@ -536,6 +552,7 @@ export default function SessionDetailScreen() {
     session?.status === 'running' &&
     !hasReachedPrompt &&
     !isStreaming &&
+    !wakeTimedOut &&
     (session?.promptCount ?? 0) === 0
 
   const infoModal = (
@@ -724,6 +741,14 @@ export default function SessionDetailScreen() {
               {t('session.failedToStart')}
             </Text>
             <Text style={styles.placeholderText}>{session.failureReason}</Text>
+          </View>
+        ) : isTerminalSession(session) ? (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderTitle}>{t('session.ended')}</Text>
+            <Text style={styles.placeholderText}>{t('session.endedBody')}</Text>
+            {session.projectPath ? (
+              <Text style={styles.placeholderPath}>{session.projectPath}</Text>
+            ) : null}
           </View>
         ) : noAttachEmptyPlaceholder && session.status === 'idle' ? (
           <View style={styles.placeholder}>

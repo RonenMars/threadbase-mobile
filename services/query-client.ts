@@ -85,13 +85,25 @@ queryClient.getQueryCache().subscribe((event) => {
         slowTimers.delete(hash)
         store.incrementSlow(category)
 
+        // Dismiss the moment this query stops fetching OR is removed/GC'd. The
+        // removal case matters: if the query is dropped mid-fetch (unmount, key
+        // change) the settle event never fires for this hash, and without this
+        // the slow-count would dangle > 0 forever and freeze the overlay.
+        let settled = false
+        const done = () => {
+          if (settled) return
+          settled = true
+          clearTimeout(hardTimeout)
+          store.decrementSlow(category)
+          unsub()
+        }
         const unsub = queryClient.getQueryCache().subscribe((e) => {
           if (!e || e.query.queryHash !== hash) return
-          if (e.query.state.fetchStatus !== 'fetching') {
-            store.decrementSlow(category)
-            unsub()
-          }
+          if (e.type === 'removed' || e.query.state.fetchStatus !== 'fetching') done()
         })
+        // Absolute backstop: never let a slow-count outlive the fetch by more
+        // than the threshold again, regardless of what events do/don't arrive.
+        const hardTimeout = setTimeout(done, SLOW_QUERY_THRESHOLD_MS)
       }, SLOW_QUERY_THRESHOLD_MS)
       slowTimers.set(hash, slowTimer)
     }
