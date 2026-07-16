@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
-# post-deploy-commit.sh — run after a successful ship to:
-#   1. Commit the version bump (app.json / build.gradle) on a new branch, open a
-#      PR, and admin-squash-merge it into main (no manual step).
-#   2. If other pipeline files are still dirty, do the same for a cleanup PR.
+# land-version-bump.sh — local-only: after a successful ship, commit the version
+# bump (and optional leftover pipeline files) from the dirty working tree, push
+# a branch, and admin-squash-merge it onto main via scripts/admin-merge-pr.sh.
 #
-# In GitHub Actions, this script is a no-op: deploy.yml owns the bump PR +
-# admin-merge after upload. Running both produced orphan chore/post-ship-*
-# branches that never got a PR.
+# In GitHub Actions this script is a no-op: deploy.yml owns the bump (re-derived
+# onto a fresh origin/main worktree so deploy_ref != main does not leak branch
+# code) and calls admin-merge-pr.sh itself. Running both produced orphan
+# chore/post-ship-* branches that never got a PR.
 #
 # Called by ship-ios.sh and ship-android.sh after upload succeeds.
 #
 # Usage:
-#   ./scripts/post-deploy-commit.sh --platform ios --build-number 140 --version-bumped 1
-#   ./scripts/post-deploy-commit.sh --platform android --version-code 20 --version-bumped 1
+#   ./scripts/land-version-bump.sh --platform ios --build-number 140 --version-bumped 1
+#   ./scripts/land-version-bump.sh --platform android --version-code 20 --version-bumped 1
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PLATFORM=""
 BUILD_NUMBER=""
@@ -37,7 +39,7 @@ done
 # do not leave orphan chore/post-ship-* branches with no PR.
 if [[ "${GITHUB_ACTIONS:-}" == "true" || "${CI:-}" == "true" ]]; then
   echo
-  echo "▸ post-deploy: skipping (CI) — deploy.yml owns the version bump PR + merge"
+  echo "▸ land-version-bump: skipping (CI) — deploy.yml owns the version bump PR + merge"
   exit 0
 fi
 
@@ -48,28 +50,14 @@ else
   BUMP_NUMBER="$VERSION_CODE"
 fi
 
-# Open a PR for $1 and squash-merge it to main with --admin (owner can bypass
-# required checks). Fails loudly if gh is missing or merge is refused.
-open_and_merge_pr() {
-  local branch="$1" title="$2" body="$3"
-  if ! command -v gh >/dev/null 2>&1; then
-    echo "ERROR: gh CLI required to land '$branch' on main automatically" >&2
-    exit 1
-  fi
-  gh pr create --base main --head "$branch" --title "$title" --body "$body" \
-    || echo "  PR already exists for $branch"
-  gh pr merge "$branch" --squash --delete-branch --admin
-  echo "  ✓ merged '$branch' into main"
-}
-
 # ── Step 1: commit the version bump ───────────────────────────────────────────
 
 if (( VERSION_BUMPED == 0 )); then
   echo
-  echo "▸ post-deploy: version was already at the correct value — no bump commit needed"
+  echo "▸ land-version-bump: version was already at the correct value — no bump commit needed"
 else
   echo
-  echo "▸ post-deploy: committing version bump..."
+  echo "▸ land-version-bump: committing version bump..."
 
   # Determine which files were bumped, the bump description, and the number
   # that goes into both the commit message and the branch name.
@@ -96,7 +84,7 @@ else
 
   echo "  ✓ bumped and pushed on branch '$BRANCH'"
 
-  open_and_merge_pr "$BRANCH" "$BUMP_MSG" \
+  "$SCRIPT_DIR/admin-merge-pr.sh" "$BRANCH" "$BUMP_MSG" \
     "Automated version bump after successful ${PLATFORM} upload."
 
   # Return to original branch (bump branch may already be deleted by merge)
@@ -124,12 +112,12 @@ done < <(git status --short)
 
 if [[ ${#DIRTY_FILES[@]} -eq 0 ]]; then
   echo
-  echo "▸ post-deploy: no other modified files — all done."
+  echo "▸ land-version-bump: no other modified files — all done."
   exit 0
 fi
 
 echo
-echo "▸ post-deploy: the following files were modified during the pipeline:"
+echo "▸ land-version-bump: the following files were modified during the pipeline:"
 for f in "${DIRTY_FILES[@]}"; do
   echo "    $f"
 done
@@ -147,7 +135,7 @@ git push -u origin "$EXTRA_BRANCH" --force-with-lease
 
 echo "  ✓ committed and pushed on branch '$EXTRA_BRANCH'"
 
-open_and_merge_pr "$EXTRA_BRANCH" "$EXTRA_MSG" \
+"$SCRIPT_DIR/admin-merge-pr.sh" "$EXTRA_BRANCH" "$EXTRA_MSG" \
   "Automated post-ship cleanup after successful ${PLATFORM} upload."
 
 git checkout "$ORIGINAL_BRANCH"
