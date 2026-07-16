@@ -81,10 +81,16 @@ async function request<T>(
     if (options.signal?.aborted) {
       throw new NetworkError('Request cancelled')
     }
-    if (!retried) {
+    // Session start/resume are non-idempotent — retrying a timed-out request
+    // spawns a second PTY. Callers of those endpoints pass retry: false.
+    if (!retried && options.retry !== false) {
       return request(method, path, body, serverId, options, true)
     }
-    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+    // timeoutController (not a caller abort) fired — this was OUR timeout, not
+    // a generic fetch failure. Tag it so callers can show a specific message
+    // instead of a raw "fetch failed" string.
+    const code = timeoutController.signal.aborted ? 'TIMEOUT' : undefined
+    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`, code)
   } finally {
     clearTimeout(timeoutId)
     options.signal?.removeEventListener('abort', onCallerAbort)
@@ -234,6 +240,12 @@ export interface RequestOptions {
    * FIRST_ATTEMPT_TIMEOUT_MS / REQUEST_TIMEOUT_MS otherwise.
    */
   timeoutMs?: number
+  /**
+   * Set false to disable the automatic retry-once-on-network-failure behavior.
+   * Required for non-idempotent requests (session start/resume) — a retry
+   * after a timeout would spawn a second PTY server-side.
+   */
+  retry?: boolean
 }
 
 export interface ResponseWithMeta<T> {

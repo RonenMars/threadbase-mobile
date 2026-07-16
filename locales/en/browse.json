@@ -8,6 +8,8 @@
   },
   "error": {
     "loadFailed": "Failed to load conversations",
-    "retryHint": "Pull down to retry"
+    "retryHint": "Pull down to retry",
+    "startFailed": "Failed to start session",
+    "startTimeout": "The server didn't respond in time. The session may still be starting — check your sessions list before trying again."
   }
 }

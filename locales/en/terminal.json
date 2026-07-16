@@ -42,9 +42,9 @@
     "disconnected": "Disconnected",
     "waking": "Waking up…",
     "starting": "Starting session…",
-    "startTimeout": "Session is taking too long",
-    "startTimeoutBody": "The session has not become ready yet. You can keep waiting or go back.",
-    "keepWaiting": "Keep waiting"
+    "stuckTitle": "Still starting…",
+    "stuckBody": "The session hasn't reached its prompt yet. You can watch its console output live instead of waiting.",
+    "viewConsole": "View console"
   },
   "input": {
     "placeholder": "Send a message…",

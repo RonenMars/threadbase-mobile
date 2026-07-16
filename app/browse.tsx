@@ -220,6 +220,32 @@ export default function BrowseScreen() {
     [router, navigation, serverId],
   )
 
+  // 'pending' means the server's ready-wait timed out (PTY spawned but not yet
+  // at its prompt — e.g. blocked on a Codex startup gate). Navigate to the
+  // pending screen so the user sees progress/console access instead of
+  // silently waiting on the still-open browse modal; app/_layout.tsx's global
+  // session_ready listener would otherwise be the only way out. `starting: true`
+  // carries the real id with the exact-id gate on, so a different session's
+  // session_ready can't latch onto this pending screen.
+  const handleStartResult = useCallback(
+    (result: { kind: 'ready'; session: { id: string; projectId?: string; projectPath?: string | null } } | { kind: 'pending'; id: string }) => {
+      if (result.kind === 'ready') {
+        navigateToNewSession(result.session)
+      } else {
+        navigateToNewSession({ id: result.id }, { starting: true })
+      }
+    },
+    [navigateToNewSession],
+  )
+
+  const handleStartError = useCallback(
+    (err: Error) => {
+      const message = err instanceof NetworkError && err.code === 'TIMEOUT' ? t('error.startTimeout') : err.message
+      Alert.alert(t('error.startFailed'), message)
+    },
+    [t],
+  )
+
   const handleStartSession = useCallback(() => {
     const displayName = currentPath ? currentPath.split('/').pop() : '~'
     startSession.mutate(
@@ -228,22 +254,9 @@ export default function BrowseScreen() {
         projectName: displayName,
         ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
       },
-      {
-        onSuccess: (result) => {
-          if (result.kind === 'ready') {
-            navigateToNewSession(result.session)
-            return
-          }
-          // Server timed out waiting for PTY readiness — dismiss browse and
-          // open the session route in a loading state until session_ready.
-          navigateToNewSession({ id: result.id }, { starting: true })
-        },
-        onError: (err) => {
-          Alert.alert('Failed to start session', err.message)
-        },
-      },
+      { onSuccess: handleStartResult, onError: handleStartError },
     )
-  }, [currentPath, selectedProvider, startSession, navigateToNewSession])
+  }, [currentPath, selectedProvider, startSession, handleStartResult, handleStartError])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
@@ -253,21 +266,10 @@ export default function BrowseScreen() {
           projectName: dir.name,
           ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
         },
-        {
-          onSuccess: (result) => {
-            if (result.kind === 'ready') {
-              navigateToNewSession(result.session)
-              return
-            }
-            navigateToNewSession({ id: result.id }, { starting: true })
-          },
-          onError: (err) => {
-            Alert.alert('Failed to start session', err.message)
-          },
-        },
+        { onSuccess: handleStartResult, onError: handleStartError },
       )
     },
-    [selectedProvider, startSession, navigateToNewSession],
+    [selectedProvider, startSession, handleStartResult, handleStartError],
   )
 
   const renderItem = useCallback(

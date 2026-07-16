@@ -29,7 +29,7 @@ import { useLoadingStateStore } from '@/stores/loading-state'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { useConversation } from '@/hooks/useConversations'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
-import { createApiForServer, NotFoundError } from '@/services/api-client'
+import { createApiForServer, NetworkError, NotFoundError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResumeConversationResponse } from '@/types/projectChat'
@@ -44,6 +44,9 @@ import { flexRow } from '@/lib/rtl'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
+// Exceeds the server's own ready-wait window (10s) with margin, same as
+// useStartSession's START_SESSION_TIMEOUT_MS.
+const RESUME_TIMEOUT_MS = 15_000
 
 
 
@@ -528,9 +531,12 @@ export default function ConversationDetailScreen() {
       const api = createApiForServer(serverId)
       // Backend may return either the modern ResumeConversationResponse or the
       // legacy `{ id }` shape during migration — normalise here.
+      // Resume is non-idempotent (spawns a PTY) — retry: false so a client
+      // timeout never double-spawns; timeoutMs matches useStartSession's.
       const resp = await api.post<ResumeConversationResponse | { id: string }>(
         '/api/sessions/resume',
         { sessionId: id },
+        { timeoutMs: RESUME_TIMEOUT_MS, retry: false },
       )
       if ('sessionId' in resp) {
         return {
@@ -907,9 +913,11 @@ export default function ConversationDetailScreen() {
         <View style={styles.resumeWrapper}>
           {resumeSession.isError ? (
             <Text style={styles.resumeError} numberOfLines={2}>
-              {resumeSession.error instanceof Error
-                ? resumeSession.error.message
-                : 'Failed to resume'}
+              {resumeSession.error instanceof NetworkError && resumeSession.error.code === 'TIMEOUT'
+                ? t('error.resumeTimeout')
+                : resumeSession.error instanceof Error
+                  ? resumeSession.error.message
+                  : 'Failed to resume'}
             </Text>
           ) : null}
           <TouchableOpacity

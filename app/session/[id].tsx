@@ -45,6 +45,7 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useSettingsStore } from '@/stores/settings'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { TerminalView } from '@/components/terminal/TerminalView'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 
 const WAKING_UP_PHRASES = [
   "I'm waking up, I'll be ready in a moment…",
@@ -193,7 +194,13 @@ function makeWakingStyles(theme: Theme) {
   })
 }
 
-const START_TIMEOUT_MS = 20_000
+// The server's own ready-wait window (see tb-streamer START_READY_TIMEOUT_MS)
+// — the progress bar animates toward this. After STUCK_AFTER_MS with neither
+// session_ready nor a ptyAttached session_update, the process is confirmed
+// running but never reached its interactive prompt: offer to watch it live
+// instead of leaving the user on an indefinite spinner.
+const PENDING_PROGRESS_WINDOW_MS = 10_000
+const STUCK_AFTER_MS = 20_000
 
 function PendingSessionScreen({
   serverId,
@@ -210,8 +217,12 @@ function PendingSessionScreen({
   const theme = useTheme()
   const pendingStyles = makePendingStyles(theme)
   const [phraseIdx, setPhraseIdx] = useState(0)
-  const [timedOut, setTimedOut] = useState(false)
-  const [waitGeneration, setWaitGeneration] = useState(0)
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const [stuck, setStuck] = useState(false)
+  // pendingId is `pending_<realSessionId>` (see navigateToNewSession) — strip
+  // the prefix to get the id the server/stop-session API actually knows.
+  const realSessionId = pendingId.replace(/^pending_/, '')
+  const { stopSession } = useSessionActions(serverId, realSessionId)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -221,9 +232,14 @@ function PendingSessionScreen({
   }, [])
 
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), START_TIMEOUT_MS)
-    return () => clearTimeout(timer)
-  }, [waitGeneration])
+    const startedAt = Date.now()
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startedAt
+      setElapsedMs(elapsed)
+      if (elapsed >= STUCK_AFTER_MS) setStuck(true)
+    }, 250)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const client = wsManager.getClient(serverId)
@@ -259,28 +275,28 @@ function PendingSessionScreen({
     }
   }, [serverId, router, pendingId, expectExactId])
 
-  if (timedOut) {
+  if (stuck) {
     return (
       <SafeAreaView style={pendingStyles.container} edges={['bottom']}>
         <View style={pendingStyles.content}>
-          <Text style={pendingStyles.title}>{t('terminal:status.startTimeout')}</Text>
-          <Text style={pendingStyles.phrase}>{t('terminal:status.startTimeoutBody')}</Text>
+          <Text style={pendingStyles.title}>{t('terminal:status.stuckTitle')}</Text>
+          <Text style={pendingStyles.phrase}>{t('terminal:status.stuckBody')}</Text>
         </View>
-        <View style={pendingStyles.footer}>
+        <View style={[pendingStyles.footer, pendingStyles.stuckActions]}>
           <TouchableOpacity
-            style={pendingStyles.primaryButton}
-            onPress={() => {
-              setTimedOut(false)
-              setWaitGeneration((g) => g + 1)
-            }}
+            style={pendingStyles.viewConsoleButton}
+            onPress={() => router.replace(`/session/${realSessionId}?server=${serverId}`)}
           >
-            <Text style={pendingStyles.primaryButtonText}>{t('terminal:status.keepWaiting')}</Text>
+            <Text style={pendingStyles.viewConsoleText}>{t('terminal:status.viewConsole')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={pendingStyles.cancelButton}
-            onPress={() => router.replace('/')}
+            disabled={stopSession.isPending}
+            onPress={() => {
+              stopSession.mutate(undefined, { onSuccess: () => router.back() })
+            }}
           >
-            <Text style={pendingStyles.cancelText}>{t('common:button.back')}</Text>
+            <Text style={pendingStyles.cancelText}>{t('terminal:action.stop')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -292,6 +308,9 @@ function PendingSessionScreen({
       <View style={pendingStyles.content}>
         <ActivityIndicator size="large" color={theme.text.accent} style={pendingStyles.spinner} />
         <Text style={pendingStyles.title}>{t('terminal:status.starting')}</Text>
+        <View style={pendingStyles.progressTrack}>
+          <ProgressBar loaded={elapsedMs} total={PENDING_PROGRESS_WINDOW_MS} />
+        </View>
         <Text style={pendingStyles.phrase}>{PENDING_PHRASES[phraseIdx]}</Text>
       </View>
       <View style={pendingStyles.footer}>
@@ -310,14 +329,9 @@ function makePendingStyles(theme: Theme) {
     spinner: { marginBottom: spacing.md },
     title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600', textAlign: 'center' },
     phrase: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
-    footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
-    primaryButton: {
-      backgroundColor: theme.text.accent,
-      borderRadius: radius.md,
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-    },
-    primaryButtonText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '600' },
+    progressTrack: { width: '100%', maxWidth: 240 },
+    footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+    stuckActions: { gap: spacing.sm },
     cancelButton: {
       borderWidth: 1,
       borderColor: theme.text.danger,
@@ -326,6 +340,13 @@ function makePendingStyles(theme: Theme) {
       alignItems: 'center',
     },
     cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '500' },
+    viewConsoleButton: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    viewConsoleText: { color: theme.bg.primary, fontSize: font.base, fontWeight: '600' },
   })
 }
 
@@ -630,9 +651,14 @@ export default function SessionDetailScreen() {
     return <DiscoveredSessionScreen serverId={serverId} sessionId={id!} />
   }
 
+  // isStreaming (live terminal_output arriving) also clears the overlay — a
+  // session can be genuinely blocked on a startup dialog (e.g. Codex's
+  // hooks/trust gates) that never flips promptCount/hasReachedPrompt, and the
+  // user needs to see that dialog rather than a spinner covering it.
   const isWakingUp =
     session?.status === 'running' &&
     !hasReachedPrompt &&
+    !isStreaming &&
     (session?.promptCount ?? 0) === 0
 
   const infoModal = (
