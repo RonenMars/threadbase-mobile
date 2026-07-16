@@ -8,14 +8,19 @@
 'use strict';
 
 const { execFileSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const LAND = path.resolve(__dirname, '../../../scripts/land-version-bump.sh');
 const MERGE = path.resolve(__dirname, '../../../scripts/admin-merge-pr.sh');
 
+// Absolute path: tests may set PATH without /bin (e.g. missing-gh case).
+const BASH = '/bin/bash';
+
 function run(script, args, env = {}) {
   try {
-    const stdout = execFileSync('bash', [script, ...args], {
+    const stdout = execFileSync(BASH, [script, ...args], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 10000,
@@ -75,10 +80,12 @@ describe('admin-merge-pr.sh — args', () => {
   });
 
   it('fails when gh is missing from PATH', () => {
+    // GHA runners ship gh at /usr/bin/gh — use an empty PATH so command -v fails.
+    const emptyBin = fs.mkdtempSync(path.join(os.tmpdir(), 'no-gh-'));
     const { code, stderr } = run(
       MERGE,
       ['chore/bump-ios-version-1', 'chore(ios): bump', 'body'],
-      { PATH: '/usr/bin:/bin' },
+      { PATH: emptyBin },
     );
     expect(code).not.toBe(0);
     expect(stderr).toContain('gh CLI required');
