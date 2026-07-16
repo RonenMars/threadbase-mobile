@@ -15,7 +15,11 @@ export type WSMessage =
   | { type: 'session_list'; sessions: Session[] }
   | { type: 'notification'; event: NotificationEvent }
   | { type: 'plan_ready'; sessionId: string; plan: string }
-  | { type: 'terminal_replay'; sessionId: string; lines: string[] }
+  // Ground-truth user message: the streamer wrote this text to the PTY, so the
+  // client can positively identify user-owned output instead of parsing the
+  // `❯ <text>` transcript line heuristically. Additive; old streamers omit it.
+  | { type: 'user_message'; sessionId: string; text: string; ts: number }
+  | { type: 'terminal_replay'; sessionId: string; lines: string[]; userMessages?: { text: string; ts: number }[] }
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }
