@@ -158,11 +158,19 @@ jest.mock('@shopify/flash-list', () => {
     FlashList: React.forwardRef((props, ref) => {
       const innerRef = React.useRef(null)
       React.useImperativeHandle(ref, () => ({
-        scrollToIndex: () => {},
+        scrollToIndex: () => Promise.resolve(),
         scrollToEnd: () => {},
         scrollToOffset: () => {},
       }))
-      return React.createElement(FlatList, { ...props, ref: innerRef })
+      // Real FlashList fires onLoad once it has drawn items; the skeleton gate
+      // depends on it. FlatList has no such callback, so emit it once on mount
+      // (skipped when a ListEmptyComponent would render, matching real behavior).
+      const { onLoad, onStartReached, onStartReachedThreshold, maintainVisibleContentPosition, ...flatProps } = props
+      React.useEffect(() => {
+        if (onLoad && (props.data?.length ?? 0) > 0) onLoad({ elapsedTimeInMs: 0 })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [])
+      return React.createElement(FlatList, { ...flatProps, ref: innerRef })
     }),
     // Stubs for FlashList v2 hooks consumers (ToolCard, ThinkingCard, DiffViewer).
     // Both reduce to plain React.useState under test: dep-based reset and
