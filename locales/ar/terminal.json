@@ -12,6 +12,7 @@
     "copyId": "نسخ معرّف السيشن",
     "sendInput": "إرسال إدخال",
     "cancel": "إلغاء السيشن",
+    "stop": "إيقاف السيشن",
     "more": "المزيد"
   },
   "voice": {
@@ -28,7 +29,12 @@
     "removeTitle": "إزالة السيشن",
     "removeMessage": "هل أنت متأكد أنك تريد إزالة هذا السيشن؟",
     "removeConfirm": "إزالة",
-    "removeDismiss": "إبقاء"
+    "removeDismiss": "إبقاء",
+    "stopTitle": "إيقاف السيشن",
+    "stopMessage": "هل تريد إيقاف هذا السيشن؟ سيتم مقاطعة Claude.",
+    "stopConfirm": "إيقاف",
+    "stopDismiss": "إبقاؤه يعمل",
+    "stopFailed": "تعذّر إيقاف السيشن. تحقق من الاتصال وحاول مرة أخرى."
   },
   "status": {
     "connecting": "جارٍ الاتصال…",
