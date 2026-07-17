@@ -25,9 +25,22 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1b(\[[0-9;?]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[A-Z\\])/g, '')
 }
 
+const USER_PREFIX_RE = /^[❯›>]\s(.*)$/
+
+// A line is user-owned when it's a `❯|›|> <text>` transcript row AND either the
+// streamer confirmed `<text>` as ground truth (userMessageTexts) or the set is
+// empty — old streamers send no user_message, so fall back to the heuristic.
+function isUserLine(clean: string, userMessageTexts?: Set<string>): boolean {
+  const m = clean.trim().match(USER_PREFIX_RE)
+  if (!m) return false
+  if (!userMessageTexts || userMessageTexts.size === 0) return true
+  return userMessageTexts.has(m[1].trim())
+}
+
 interface LineRowProps {
   line: string
   index: number
+  userMessageTexts?: Set<string>
 }
 
 // Gutter renders the line number. Split out + memoised on `index` only so
@@ -37,27 +50,27 @@ const LineGutter = memo(function LineGutter({ index }: { index: number }) {
   return <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
 })
 
-const LineText = memo(function LineText({ line }: { line: string }) {
+const LineText = memo(function LineText({ line, userMessageTexts }: { line: string; userMessageTexts?: Set<string> }) {
   const clean = stripAnsi(line)
   // '❯ <text>' transcript lines are the user's submitted messages — style
   // them so they stand out from agent output.
-  const isUserLine = /^[❯›>]\s/.test(clean.trim())
+  const userOwned = isUserLine(clean, userMessageTexts)
   return (
-    <Text style={isUserLine ? [styles.lineText, styles.lineTextUser] : styles.lineText} selectable>
+    <Text style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText} selectable>
       {clean}
     </Text>
   )
 })
 
 // Outer wrapper stays cheap (only `index` changes); LineText memoises on `line`.
-const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
+const LineRow = memo(function LineRow({ line, index, userMessageTexts }: LineRowProps) {
   return (
     <View
       style={styles.lineRow}
       testID="terminal-line-row"
     >
       <LineGutter index={index} />
-      <LineText line={line} />
+      <LineText line={line} userMessageTexts={userMessageTexts} />
     </View>
   )
 })
@@ -65,6 +78,8 @@ const LineRow = memo(function LineRow({ line, index }: LineRowProps) {
 interface Props {
   lines: TerminalLine[]
   isStreaming: boolean
+  /** Ground-truth user-message texts from the stream; empty → heuristic fallback. */
+  userMessageTexts?: Set<string>
   onSendInput?: (text: string) => void
   onSendKeys?: (keys: string) => void
   /** Structured question / permission gate from the WS stream (takes precedence over PTY scrape). */
@@ -73,7 +88,7 @@ interface Props {
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
 }
 
-export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, onSendKeys, activeQuestion, onAnswer }: Props) {
+export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTexts, onSendInput, onSendKeys, activeQuestion, onAnswer }: Props) {
   const { t } = useTranslation('common')
   const listRef = useRef<FlashListRef<TerminalLine>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
@@ -119,8 +134,8 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
   }, [scrollToBottom])
 
   const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
-    return <LineRow line={item} index={index} />
-  }, [])
+    return <LineRow line={item} index={index} userMessageTexts={userMessageTexts} />
+  }, [userMessageTexts])
 
   // Stable keys by content + per-content occurrence. Positional keys broke
   // memoisation: every WS frame's `.slice(-maxLines)` shifted indices, so
@@ -136,10 +151,14 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, onSendInput, 
   }, [lines])
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
-  const questionBlock = useMemo(
-    () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
-    [lines, onSendKeys]
-  )
+  const questionBlock = useMemo(() => {
+    if (!onSendKeys) return null
+    // Defense in depth on top of parseQuestionBlock's numbered-cursor rule:
+    // drop lines the streamer confirmed as user messages so a `❯ <text>`
+    // prompt echo can never be scraped as a menu cursor.
+    const window = lines.slice(-30).filter((l) => !isUserLine(stripAnsi(l), userMessageTexts))
+    return parseQuestionBlock(window)
+  }, [lines, onSendKeys, userMessageTexts])
 
   const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
