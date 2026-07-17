@@ -44,7 +44,8 @@
     "starting": "Starting session…",
     "stuckTitle": "Still starting…",
     "stuckBody": "The session hasn't reached its prompt yet. You can watch its console output live instead of waiting.",
-    "viewConsole": "View console"
+    "viewConsole": "View console",
+    "waitMore": "Wait more"
   },
   "input": {
     "placeholder": "Send a message…",
