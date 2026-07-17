@@ -1,25 +1,28 @@
 import React from 'react'
-import { fireEvent, render } from '@testing-library/react-native'
+import { fireEvent, render, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import BrowseScreen from '@/app/browse'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import { markNavigatedToSession, suppressAutoNavForBrowseStart } from '@/lib/sessionNavGuard'
 
 // Regression for the browse→session nav race: session_ready can arrive while
 // the browse modal is still dismissing. The global session_ready listener in
-// app/_layout.tsx pushes /session/<id> unless the id is guarded via
-// markNavigatedToSession. That guard must be set BEFORE router.back() so the
-// early push is suppressed; setting it late (in the transitionEnd callback)
-// leaves a window where the session opens underneath the still-open modal.
+// app/_layout.tsx pushes /session/<id> unless suppressed — a blanket suppress
+// on Start press (id unknown yet), then markNavigatedToSession once the id is
+// known, BEFORE router.back(). The session push must NOT wait for a
+// `transitionEnd` event: native-stack never emits it for a programmatic pop
+// (the route leaves state synchronously and the listener dies with the
+// screen), so the push fires on the frame after back().
 
 const mockBack = jest.fn()
 const mockPush = jest.fn()
 const mockStartMutate = jest.fn()
-let transitionEndCb: ((e: { data: { closing: boolean } }) => void) | null = null
 
 jest.mock('@/lib/sessionNavGuard', () => ({
   markNavigatedToSession: jest.fn(),
   shouldSkipAutoNav: jest.fn(() => false),
+  suppressAutoNavForBrowseStart: jest.fn(),
+  clearBrowseStartAutoNavSuppress: jest.fn(),
 }))
 
 jest.mock('expo-router', () => ({
@@ -28,10 +31,7 @@ jest.mock('expo-router', () => ({
   useGlobalSearchParams: () => ({}),
   useNavigation: () => ({
     setOptions: jest.fn(),
-    addListener: (name: string, cb: (e: { data: { closing: boolean } }) => void) => {
-      if (name === 'transitionEnd') transitionEndCb = cb
-      return jest.fn()
-    },
+    addListener: () => jest.fn(),
   }),
   useSegments: () => [],
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
@@ -74,7 +74,7 @@ beforeEach(() => {
   mockPush.mockClear()
   mockStartMutate.mockClear()
   ;(markNavigatedToSession as jest.Mock).mockClear()
-  transitionEndCb = null
+  ;(suppressAutoNavForBrowseStart as jest.Mock).mockClear()
 })
 
 async function renderScreen() {
@@ -89,7 +89,18 @@ async function renderScreen() {
 }
 
 describe('browse → session navigation race', () => {
-  it('guards auto-nav before dismissing the modal, then pushes on transitionEnd', async () => {
+  it('suppresses auto-nav on start press, before the mutation fires', async () => {
+    const { getByText } = await renderScreen()
+
+    await fireEvent.press(getByText('Start Session Here'))
+
+    expect(suppressAutoNavForBrowseStart).toHaveBeenCalledTimes(1)
+    const suppressOrder = (suppressAutoNavForBrowseStart as jest.Mock).mock.invocationCallOrder[0]
+    const mutateOrder = mockStartMutate.mock.invocationCallOrder[0]
+    expect(suppressOrder).toBeLessThan(mutateOrder)
+  })
+
+  it('guards auto-nav before dismissing the modal, then pushes without waiting for transitionEnd', async () => {
     const { getByText } = await renderScreen()
 
     await fireEvent.press(getByText('Start Session Here'))
@@ -103,11 +114,10 @@ describe('browse → session navigation race', () => {
     const markOrder = (markNavigatedToSession as jest.Mock).mock.invocationCallOrder[0]
     const backOrder = mockBack.mock.invocationCallOrder[0]
     expect(markOrder).toBeLessThan(backOrder)
-    expect(mockPush).not.toHaveBeenCalled()
 
-    // Push happens only once the modal-dismiss transition completes.
-    transitionEndCb?.({ data: { closing: true } })
-    expect(mockPush).toHaveBeenCalledTimes(1)
+    // Push is deferred by one frame (rAF), not gated on any navigation event.
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/session/sess_1'))
+    expect(backOrder).toBeLessThan(mockPush.mock.invocationCallOrder[0])
   })
 })
