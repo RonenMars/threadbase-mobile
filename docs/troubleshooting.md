@@ -70,6 +70,16 @@ fi
 
 ---
 
+### `Cannot find native module 'ExpoDevice'` + `RNGestureHandlerModule.installUIRuntimeBindings is not a function` on iOS
+
+**When:** On a dev build (Metro), opening the session screen logs `Cannot find native module 'ExpoDevice'` and repeated `RNGestureHandlerModule.installUIRuntimeBindings` / `setGestureHandlerConfig` → `undefined is not a function` (from `react-native-gesture-handler/src/v3/…`). Gestures and animations behave oddly and the screen may load slowly.
+
+**Cause:** The same native/JS skew as the Android case above — the iOS dev-client binary running on the simulator/device predates native modules the fresh JS bundle expects (`expo-device`, and the gesture-handler v3 / Reanimated-4 worklets UI-runtime bindings). `package.json`, `node_modules`, and `ios/Podfile.lock` are all internally consistent; only the *installed binary* is stale. The `installUIRuntimeBindings`/`setGestureHandlerConfig` errors are caught by React Native's microtask shim (logged, not fatal) — they do **not** block the JS thread.
+
+**Fix:** Rebuild and reinstall the iOS dev client (`npx expo run:ios`) — a JS reload is not enough, and this is not a Metro/Watchman cache issue. See **[dev-on-physical-device-ios.md](dev-on-physical-device-ios.md)**.
+
+---
+
 ## Native builds / prebuild
 
 ### `expo prebuild` wiped the committed native config (SwiftUICore hook, gradle tuning) — SDK 57+

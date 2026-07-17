@@ -172,6 +172,9 @@ class WSClient {
         })
       }
       const handlers = this.handlers.get(msg.type)
+      if (__DEV__ && msg.type === 'session_update') {
+        console.log(`[ws:${this.serverId}] frame session_update boundHandlers=${handlers?.size ?? 0}`)
+      }
       if (handlers) {
         handlers.forEach((h) => h(msg))
       }
