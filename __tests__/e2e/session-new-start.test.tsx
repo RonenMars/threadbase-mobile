@@ -1,6 +1,7 @@
 import React from 'react'
 import { Alert, type AlertButton } from 'react-native'
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import NewSessionScreen from '@/app/session/new'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import {
@@ -10,18 +11,23 @@ import {
 } from '@/lib/sessionNavGuard'
 import { NetworkError } from '@/services/api-client'
 
-// /session/new owns the start lifecycle: suppress global auto-nav BEFORE the
-// POST (session_ready can beat the HTTP response and we don't know the id
-// yet), show a countdown against the request budget, replace to the session
-// on success, and offer Retry/Cancel on failure.
+// /session/new owns the spawn lifecycle for both fresh starts and resumes:
+// suppress global auto-nav BEFORE the POST (session_ready can beat the HTTP
+// response and we don't know the id yet), show a countdown against the
+// request budget, replace to the session on success, and offer Retry/Cancel
+// on failure.
 
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
 const mockStartMutate = jest.fn()
+const mockResumePost = jest.fn()
+const mockParams: { current: Record<string, string> } = {
+  current: { server: 'srv_alpha', path: 'work', projectName: 'work' },
+}
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: mockReplace, back: mockBack, navigate: jest.fn() }),
-  useLocalSearchParams: () => ({ server: 'srv_alpha', path: 'work', projectName: 'work' }),
+  useLocalSearchParams: () => mockParams.current,
   useGlobalSearchParams: () => ({}),
   useSegments: () => [],
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
@@ -39,19 +45,29 @@ jest.mock('@/hooks/useBrowse', () => ({
   useStartSession: () => ({ mutate: mockStartMutate, isPending: false }),
 }))
 
+jest.mock('@/services/api-client', () => ({
+  ...jest.requireActual('@/services/api-client'),
+  createApiForServer: () => ({ post: mockResumePost }),
+}))
+
 beforeEach(() => {
   mockBack.mockClear()
   mockReplace.mockClear()
   mockStartMutate.mockClear()
+  mockResumePost.mockReset()
+  mockParams.current = { server: 'srv_alpha', path: 'work', projectName: 'work' }
   ;(markNavigatedToSession as jest.Mock).mockClear()
   ;(suppressAutoNavForBrowseStart as jest.Mock).mockClear()
   ;(clearBrowseStartAutoNavSuppress as jest.Mock).mockClear()
 })
 
 async function renderScreen() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return await render(
     <ThemeProvider>
-      <NewSessionScreen />
+      <QueryClientProvider client={qc}>
+        <NewSessionScreen />
+      </QueryClientProvider>
     </ThemeProvider>,
   )
 }
@@ -132,5 +148,29 @@ describe('/session/new start lifecycle', () => {
     await fireEvent.press(getByTestId('start-cancel'))
 
     expect(mockBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('resume mode posts /api/sessions/resume and replaces to the session', async () => {
+    mockParams.current = { server: 'srv_alpha', resume: 'conv_7', projectName: 'work' }
+    mockResumePost.mockResolvedValue({ id: 'sess_42' })
+
+    await renderScreen()
+
+    await waitFor(() => expect(mockResumePost).toHaveBeenCalledTimes(1))
+    expect(mockResumePost).toHaveBeenCalledWith(
+      '/api/sessions/resume',
+      { sessionId: 'conv_7' },
+      expect.objectContaining({ retry: false }),
+    )
+    expect(mockStartMutate).not.toHaveBeenCalled()
+    expect(
+      (suppressAutoNavForBrowseStart as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeLessThan(mockResumePost.mock.invocationCallOrder[0])
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+    const target = mockReplace.mock.calls[0][0] as string
+    expect(target).toContain('/session/sess_42')
+    expect(target).toContain('resumedFromConversationId=conv_7')
+    expect(markNavigatedToSession).toHaveBeenCalledWith('sess_42')
   })
 })

@@ -12,9 +12,13 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useStartSession, START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
-import { NetworkError } from '@/services/api-client'
+import { createApiForServer, NetworkError } from '@/services/api-client'
 import { CODEX_CLI_PROVIDER } from '@/constants/providers'
+import type { ResumeConversationResponse } from '@/types/projectChat'
+import type { Session } from '@/types/api'
+import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import {
@@ -146,28 +150,72 @@ function buildSessionRoute(
 }
 
 // Browse dismisses itself and lands here immediately on "Start Session Here" —
-// before any session exists. This screen owns the whole start lifecycle
-// (browse unmounts right away, and React Query drops mutate() callbacks when
-// their component unmounts, so the orchestration can't stay in browse):
-// POST /api/sessions/start, a countdown that visualizes the request budget,
-// replace to the real session on 200, and a Retry/Cancel dialog on failure.
+// before any session exists — and the conversation screen's Resume button
+// lands here with `?resume=<id>`. This screen owns the whole spawn lifecycle
+// (the launching screens unmount right away, and React Query drops mutate()
+// callbacks when their component unmounts, so the orchestration can't stay
+// there): POST /api/sessions/start or /api/sessions/resume, a countdown that
+// visualizes the request budget, replace to the real session on 200, and a
+// Retry/Cancel dialog on failure.
 export default function NewSessionScreen() {
   const router = useRouter()
-  const { t } = useTranslation(['browse', 'common'])
+  const { t } = useTranslation(['browse', 'common', 'conversation'])
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const qc = useQueryClient()
   const params = useLocalSearchParams<{
     server: string
     path?: string
     projectName?: string
     provider?: string
+    projectPath?: string
+    resume?: string
   }>()
   const serverId = params.server ?? ''
   const path = params.path ?? ''
   const projectName = params.projectName ?? '~'
   const provider = params.provider
+  const resumeId = params.resume
+  const isResume = !!resumeId
   const startSession = useStartSession(serverId)
   const { mutate } = startSession
+
+  const resumeSession = useMutation({
+    mutationFn: async (): Promise<{
+      sessionId: string
+      projectId?: string
+      projectPath?: string | null
+      conversationId: string
+      sessionSnapshot: Session | null
+    }> => {
+      const api = createApiForServer(serverId)
+      // Backend may return either the modern ResumeConversationResponse or the
+      // legacy `{ id }` shape during migration — normalise here. Resume is
+      // non-idempotent (spawns a PTY) — retry: false so a client timeout never
+      // double-spawns; same budget as start.
+      const resp = await api.post<ResumeConversationResponse | { id: string }>(
+        '/api/sessions/resume',
+        { sessionId: resumeId },
+        { timeoutMs: START_SESSION_TIMEOUT_MS, retry: false },
+      )
+      if ('sessionId' in resp) {
+        return {
+          sessionId: resp.sessionId,
+          projectId: resp.projectId,
+          projectPath: resp.projectPath,
+          conversationId: resp.conversationId,
+          sessionSnapshot: normalizeResumeResponse(resp),
+        }
+      }
+      return {
+        sessionId: resp.id,
+        projectPath: params.projectPath,
+        conversationId: resumeId ?? '',
+        sessionSnapshot: null,
+      }
+    },
+  })
+  const { mutate: resumeMutate } = resumeSession
 
   // Bumping `attempt` re-runs the start effect (Retry button).
   const [attempt, setAttempt] = useState(0)
@@ -205,16 +253,48 @@ export default function NewSessionScreen() {
     [router, serverId],
   )
 
+  // Resume success: seed the session detail cache so the session screen
+  // renders without a GET /api/sessions/:id round-trip, then replace with the
+  // conversation the session was resumed from carried along.
+  const handleResumeResult = useCallback(
+    (result: {
+      sessionId: string
+      projectId?: string
+      projectPath?: string | null
+      conversationId: string
+      sessionSnapshot: Session | null
+    }) => {
+      if (result.sessionSnapshot) {
+        qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
+      }
+      const targetParams = new URLSearchParams({ server: serverId })
+      if (result.projectId) targetParams.set('projectId', result.projectId)
+      if (result.projectPath) targetParams.set('projectPath', result.projectPath)
+      targetParams.set('resumedFromConversationId', result.conversationId)
+      const target = `/session/${result.sessionId}?${targetParams.toString()}`
+      clientLog.info('startSession', 'resume ready — mark + replace', {
+        sessionId: result.sessionId,
+        target,
+      })
+      markNavigatedToSession(result.sessionId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace(target as any)
+    },
+    [router, serverId, qc],
+  )
+
   const handleError = useCallback(
     (err: Error) => {
       clientLog.info('startSession', 'start failed', {
+        isResume,
         message: err.message,
         code: err instanceof NetworkError ? err.code : undefined,
       })
       clearBrowseStartAutoNavSuppress()
       haltedRef.current = true
       const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
-      const message = isTimeout ? t('error.startTimeout') : err.message
+      const timeoutMessage = isResume ? t('conversation:error.resumeTimeout') : t('error.startTimeout')
+      const message = isTimeout ? timeoutMessage : err.message
       Alert.alert(
         t('error.startFailed'),
         message,
@@ -239,20 +319,30 @@ export default function NewSessionScreen() {
         { cancelable: false },
       )
     },
-    [router, t],
+    [router, t, isResume],
   )
 
   useEffect(() => {
     if (lastAttemptRef.current === attempt) return
     lastAttemptRef.current = attempt
     haltedRef.current = false
+    // session_ready can beat the spawn HTTP response — suppress global
+    // auto-nav until the id is known and the result handler owns navigation.
+    if (isResume) {
+      clientLog.info('startSession', 'resume attempt — suppress + POST', {
+        attempt,
+        serverId,
+        sessionId: resumeId,
+      })
+      suppressAutoNavForBrowseStart()
+      resumeMutate(undefined, { onSuccess: handleResumeResult, onError: handleError })
+      return
+    }
     const payload = {
       path,
       projectName,
       ...(provider === CODEX_CLI_PROVIDER ? { provider: CODEX_CLI_PROVIDER } : {}),
     }
-    // session_ready can beat the start HTTP response — suppress global
-    // auto-nav until the id is known and handleResult owns navigation.
     clientLog.info('startSession', 'start attempt — suppress + POST', {
       attempt,
       serverId,
@@ -260,7 +350,7 @@ export default function NewSessionScreen() {
     })
     suppressAutoNavForBrowseStart()
     mutate(payload, { onSuccess: handleResult, onError: handleError })
-  }, [attempt, mutate, handleResult, handleError, path, projectName, provider, serverId])
+  }, [attempt, mutate, resumeMutate, handleResult, handleResumeResult, handleError, path, projectName, provider, serverId, isResume, resumeId])
 
   // The reset to the full budget happens in the Retry handler (state can't be
   // set synchronously inside the effect body); this effect only ticks.

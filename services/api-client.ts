@@ -49,7 +49,10 @@ async function request<T>(
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
   const url = `${server.url.replace(/\/$/, '')}${path}`
-  const isStartSession = path === '/api/sessions/start' || path.startsWith('/api/sessions/start?')
+  const isStartSession =
+    path === '/api/sessions/start' ||
+    path.startsWith('/api/sessions/start?') ||
+    path === '/api/sessions/resume'
 
   // Combine the caller's signal (from React Query) with a per-request timeout
   // so a single hung page can't strand the eager-pagination loop. A caller can

@@ -21,7 +21,7 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown, CaretUp, ExportIcon, InfoIcon, Star, X } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
@@ -29,24 +29,17 @@ import { useLoadingStateStore } from '@/stores/loading-state'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { useConversation } from '@/hooks/useConversations'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
-import { createApiForServer, NetworkError, NotFoundError } from '@/services/api-client'
+import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
-import { useQueryClient } from '@tanstack/react-query'
-import type { ResumeConversationResponse } from '@/types/projectChat'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, Session } from '@/types/api'
-import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
-import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 import { flexRow } from '@/lib/rtl'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
-// Exceeds the server's own ready-wait window (10s) with margin, same as
-// useStartSession's START_SESSION_TIMEOUT_MS.
-const RESUME_TIMEOUT_MS = 15_000
 
 
 
@@ -216,7 +209,6 @@ export default function ConversationDetailScreen() {
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   // useState's lazy initializer creates the Animated.Value once at mount
   // without touching ref.current during render (which React 19 flags).
-  const [pulseAnim] = useState(() => new Animated.Value(1))
   const [glowOpacity] = useState(() => new Animated.Value(0))
   const [glowScale] = useState(() => new Animated.Value(0.85))
   const animateStar = useCallback(() => {
@@ -524,60 +516,16 @@ export default function ConversationDetailScreen() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, hasNewerPage, isFetchingNewerPage, fetchNewerPage, anchorIndex])
 
-  const queryClient = useQueryClient()
-
-  const resumeSession = useMutation({
-    mutationFn: async (): Promise<{ sessionId: string; projectId?: string; projectPath?: string | null; conversationId: string; sessionSnapshot: Session | null }> => {
-      const api = createApiForServer(serverId)
-      // Backend may return either the modern ResumeConversationResponse or the
-      // legacy `{ id }` shape during migration — normalise here.
-      // Resume is non-idempotent (spawns a PTY) — retry: false so a client
-      // timeout never double-spawns; timeoutMs matches useStartSession's.
-      const resp = await api.post<ResumeConversationResponse | { id: string }>(
-        '/api/sessions/resume',
-        { sessionId: id },
-        { timeoutMs: RESUME_TIMEOUT_MS, retry: false },
-      )
-      if ('sessionId' in resp) {
-        return {
-          sessionId: resp.sessionId,
-          projectId: resp.projectId,
-          projectPath: resp.projectPath,
-          conversationId: resp.conversationId,
-          sessionSnapshot: normalizeResumeResponse(resp),
-        }
-      }
-      return { sessionId: resp.id, projectPath: conversation?.projectPath, conversationId: id, sessionSnapshot: null }
-    },
-    onSuccess: async (result) => {
-      // Seed the session detail cache so the session screen renders immediately
-      // without a GET /api/sessions/:id round-trip.
-      if (result.sessionSnapshot) {
-        queryClient.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
-      }
-      const params = new URLSearchParams({ server: serverId })
-      if (result.projectId) params.set('projectId', result.projectId)
-      if (result.projectPath) params.set('projectPath', result.projectPath)
-      params.set('resumedFromConversationId', result.conversationId)
-      markNavigatedToSession(result.sessionId)
-      router.push(`/session/${result.sessionId}?${params.toString()}`)
-    },
-  })
-
-  useEffect(() => {
-    if (!resumeSession.isPending) {
-      pulseAnim.setValue(1)
-      return
-    }
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 0.45, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    )
-    anim.start()
-    return () => anim.stop()
-  }, [resumeSession.isPending, pulseAnim])
+  // Resume is owned by /session/new (the countdown start screen): it POSTs
+  // /api/sessions/resume, shows progress, and replaces itself with the session.
+  // This screen only navigates there.
+  const handleResume = useCallback(() => {
+    const startParams = new URLSearchParams({ server: serverId, resume: id })
+    if (conversation?.title) startParams.set('projectName', conversation.title)
+    if (conversation?.projectPath) startParams.set('projectPath', conversation.projectPath)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.push(`/session/new?${startParams.toString()}` as any)
+  }, [router, serverId, id, conversation])
 
   const handleShare = useCallback(async () => {
     if (!conversation) return
@@ -911,29 +859,14 @@ export default function ConversationDetailScreen() {
 
       <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
         <View style={styles.resumeWrapper}>
-          {resumeSession.isError ? (
-            <Text style={styles.resumeError} numberOfLines={2}>
-              {resumeSession.error instanceof NetworkError && resumeSession.error.code === 'TIMEOUT'
-                ? t('error.resumeTimeout')
-                : resumeSession.error instanceof Error
-                  ? resumeSession.error.message
-                  : 'Failed to resume'}
-            </Text>
-          ) : null}
           <TouchableOpacity
             style={[styles.resumeBtn, notResumable && styles.resumeBtnDisabled]}
-            onPress={() => resumeSession.mutate()}
-            disabled={resumeSession.isPending || notResumable}
+            onPress={handleResume}
+            disabled={notResumable}
           >
-            <Animated.Text
-              style={[styles.resumeBtnText, { opacity: notResumable ? 1 : pulseAnim }]}
-            >
-              {notResumable
-                ? t('unavailable.cannotResume')
-                : resumeSession.isPending
-                  ? 'Starting...'
-                  : '▶ Resume Session'}
-            </Animated.Text>
+            <Text style={styles.resumeBtnText}>
+              {notResumable ? t('unavailable.cannotResume') : '▶ Resume Session'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
