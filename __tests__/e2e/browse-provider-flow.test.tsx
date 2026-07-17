@@ -1,20 +1,19 @@
 import React from 'react'
-import { fireEvent, render } from '@testing-library/react-native'
+import { fireEvent, render, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import BrowseScreen from '@/app/browse'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
-const mockStartMutate = jest.fn()
+// Browse no longer fires the start POST itself — it hands the parameters to
+// /session/new via the route, and that screen owns the mutation. The provider
+// travels as a query param (only when Codex is selected, matching the old
+// payload shape).
+
+const mockBack = jest.fn()
+const mockPush = jest.fn()
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    navigate: jest.fn(),
-    dismiss: jest.fn(),
-    dismissAll: jest.fn(),
-  }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack, navigate: jest.fn() }),
   useLocalSearchParams: () => ({ server: 'srv_alpha' }),
   useGlobalSearchParams: () => ({}),
   useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
@@ -54,7 +53,6 @@ jest.mock('@/hooks/useBrowse', () => ({
     error: null,
   }),
   useCreateDirectory: () => ({ mutate: jest.fn(), isPending: false }),
-  useStartSession: () => ({ mutate: mockStartMutate, isPending: false }),
 }))
 
 jest.mock('@/hooks/useSession', () => ({
@@ -62,7 +60,8 @@ jest.mock('@/hooks/useSession', () => ({
 }))
 
 beforeEach(() => {
-  mockStartMutate.mockClear()
+  mockBack.mockClear()
+  mockPush.mockClear()
 })
 
 async function renderScreen() {
@@ -84,10 +83,10 @@ describe('BrowseScreen e2e provider flow', () => {
 
     await fireEvent.press(getByText('Start Session Here'))
 
-    expect(mockStartMutate).toHaveBeenCalledWith(
-      { path: '', projectName: '~' },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    )
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    const target = mockPush.mock.calls[0][0] as string
+    expect(target).toContain('/session/new?')
+    expect(target).not.toContain('provider=')
   })
 
   it('sends codex-cli when Codex is selected', async () => {
@@ -96,9 +95,9 @@ describe('BrowseScreen e2e provider flow', () => {
     await fireEvent.press(getByTestId('start-provider-codex-cli'))
     await fireEvent.press(getByText('Start Session Here'))
 
-    expect(mockStartMutate).toHaveBeenCalledWith(
-      { path: '', projectName: '~', provider: 'codex-cli' },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    )
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    const target = mockPush.mock.calls[0][0] as string
+    expect(target).toContain('/session/new?')
+    expect(target).toContain('provider=codex-cli')
   })
 })

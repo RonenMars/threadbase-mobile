@@ -288,6 +288,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="session/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="session/new" options={{ headerShown: false }} />
       <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="browse"

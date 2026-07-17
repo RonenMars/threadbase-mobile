@@ -6,6 +6,10 @@
     "create": "إنشاء",
     "startSession": "ابدأ سيشن هنا"
   },
+  "starting": {
+    "title": "جارٍ بدء السيشن…",
+    "secondsLeft": "{{seconds}} ث"
+  },
   "error": {
     "loadFailed": "فشل تحميل المحادثات",
     "retryHint": "اسحب للأسفل لإعادة المحاولة",

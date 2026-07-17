@@ -6,6 +6,10 @@
     "create": "צור",
     "startSession": "התחל סשן כאן"
   },
+  "starting": {
+    "title": "מפעיל סשן…",
+    "secondsLeft": "{{seconds}} שנ׳"
+  },
   "error": {
     "loadFailed": "נכשל לטעון שיחות",
     "retryHint": "משוך למטה כדי לנסות שוב",

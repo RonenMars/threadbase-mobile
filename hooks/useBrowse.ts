@@ -125,7 +125,8 @@ function classifyStartSessionResponse(res: StartSessionResponse): StartSessionRe
 // back to the 202-pending shape — this must exceed that with margin so the
 // client never aborts first. Retry is disabled: start is non-idempotent, and
 // retrying a timed-out request spawns a second PTY server-side.
-const START_SESSION_TIMEOUT_MS = 15_000
+// Exported so /session/new can render the countdown against the same budget.
+export const START_SESSION_TIMEOUT_MS = 15_000
 
 export function useStartSession(serverId: string) {
   clientLog.info('useBrowse', 'useStartSession called', { serverId, timeoutMs: START_SESSION_TIMEOUT_MS })

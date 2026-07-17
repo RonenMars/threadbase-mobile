@@ -15,7 +15,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useBrowse, useCreateDirectory, useStartSession } from '@/hooks/useBrowse'
+import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -26,11 +26,6 @@ import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
-import {
-  markNavigatedToSession,
-  suppressAutoNavForBrowseStart,
-  clearBrowseStartAutoNavSuppress,
-} from '@/lib/sessionNavGuard'
 import { clientLog } from '@/lib/clientLog'
 
 const MAX_RECENT_DIRS = 8
@@ -39,32 +34,6 @@ interface RecentDir {
   path: string
   name: string
   lastUsedAt: string
-}
-
-/**
- * Build the chat-screen URL for a freshly-created session, including the
- * `projectId` (when known) and `projectPath` (display/debug only) so the
- * downstream screen can render before the next ProjectChat refetch lands.
- */
-function buildSessionRoute(
-  session: { id: string; projectId?: string; projectPath?: string | null },
-  serverId: string,
-  opts?: { starting?: boolean },
-): string {
-  const params = new URLSearchParams({ server: serverId })
-  if (session.projectId) params.set('projectId', session.projectId)
-  if (session.projectPath) params.set('projectPath', session.projectPath)
-  if (opts?.starting) params.set('starting', '1')
-  const route = `/session/${session.id}?${params.toString()}`
-  clientLog.info('browse', 'buildSessionRoute', {
-    sessionId: session.id,
-    projectId: session.projectId,
-    projectPath: session.projectPath,
-    serverId,
-    starting: opts?.starting,
-    route,
-  })
-  return route
 }
 
 export default function BrowseScreen() {
@@ -192,8 +161,9 @@ export default function BrowseScreen() {
   }, [isError, error, currentPath])
   const createDir = useCreateDirectory(serverId ?? '')
   clientLog.info('browse', 'useCreateDirectory ready', { serverId: serverId ?? '' })
-  const startSession = useStartSession(serverId ?? '')
-  clientLog.info('browse', 'useStartSession ready', { serverId: serverId ?? '' })
+  // True once a start navigation kicked off; guards double-taps in the one
+  // frame before this screen dismisses.
+  const [isStarting, setIsStarting] = useState(false)
 
   const breadcrumbs = currentPath ? currentPath.split('/') : []
   clientLog.info('browse', 'breadcrumbs derived', { currentPath, breadcrumbs })
@@ -287,171 +257,68 @@ export default function BrowseScreen() {
     )
   }, [currentPath, newFolderName, createDir])
 
-  // Bug 14 fix, take 2: browse is presented as a modal (Stack.Screen
-  // presentation: 'modal'). Pushing the session route while the modal is
-  // still in navigation state parks it UNDER the modal envelope (Bug 14),
-  // but the original fix — dismiss, then push from a `transitionEnd`
-  // listener — never fired for a programmatic router.back(): the pop
-  // removes the route from navigation state synchronously, the screen
-  // unmounts with it, and the listener dies before native-stack emits the
-  // event (it only fires for gesture dismissals, where the route stays in
-  // state until the gesture completes). So: pop the modal, then push one
-  // frame later — the modal is already out of state, so the session lands
-  // on the base stack and is revealed as the sheet animates away.
-  const navigateToNewSession = useCallback(
-    (
-      session: { id: string; projectId?: string; projectPath?: string | null },
-      opts?: { starting?: boolean },
-    ) => {
-      clientLog.info('browse', 'navigateToNewSession start', {
-        sessionId: session.id,
-        projectId: session.projectId,
-        projectPath: session.projectPath,
-        starting: opts?.starting,
-        serverId: serverId ?? '',
-      })
-      const target = buildSessionRoute(session, serverId ?? '', opts)
-      clientLog.info('startSession', 'C. navigateToNewSession — mark + back + rAF push', {
-        sessionId: session.id,
-        projectId: session.projectId,
-        projectPath: session.projectPath,
-        starting: opts?.starting,
-        serverId: serverId ?? '',
-        target,
-      })
-      clientLog.info('browse', 'navigateToNewSession built target', { target })
-      // Guard the global session_ready listener BEFORE dismissing. session_ready
-      // can arrive mid-dismiss (the PTY is already active — see "Active 1s" in
-      // the new session header), and the global listener in app/_layout.tsx
-      // would push /session/<id> underneath the still-open modal, stranding the
-      // user on browse until they manually pull it down. Marking now (and the
-      // earlier suppressAutoNavForBrowseStart on Start press) suppresses that
-      // early push; our own next-frame push below is the only navigation.
-      clientLog.info('browse', 'markNavigatedToSession before dismiss', { sessionId: session.id })
-      markNavigatedToSession(session.id)
-      clientLog.info('startSession', 'D. router.back() dismiss browse modal')
+  // Bug 14 fix, take 3: browse is presented as a modal (Stack.Screen
+  // presentation: 'modal'). Pushing a route while the modal is still in
+  // navigation state parks it UNDER the modal envelope (Bug 14), and a
+  // `transitionEnd` listener never fires for a programmatic router.back()
+  // (the pop removes the route from state synchronously and the listener
+  // dies with the unmounting screen — it only fires for gesture
+  // dismissals). So: pop the modal, then push one frame later — the modal
+  // is already out of state, so the route lands on the base stack and is
+  // revealed as the sheet animates away. The start POST itself lives in
+  // /session/new: browse unmounts immediately, and React Query drops
+  // mutate() callbacks when their component unmounts.
+  const navigateToStartScreen = useCallback(
+    (path: string, projectName: string) => {
+      const params = new URLSearchParams({ server: serverId ?? '', path, projectName })
+      if (selectedProvider === CODEX_CLI_PROVIDER) params.set('provider', selectedProvider)
+      const target = `/session/new?${params.toString()}`
+      clientLog.info('startSession', 'C. dismiss browse + push /session/new', { target })
       clientLog.info('browse', 'router.back() dismiss modal')
       router.back()
       // One frame is enough: back() has already committed the pop, and the
       // rAF outlives this screen's unmount (router is the global ref, not
       // tied to the browse route).
       requestAnimationFrame(() => {
-        clientLog.info('startSession', 'E. router.push session (frame after dismiss)', { target })
-        clientLog.info('browse', 'push session after back()', { target })
+        clientLog.info('startSession', 'D. router.push /session/new (frame after dismiss)', { target })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.push(target as any)
       })
     },
-    [router, serverId],
-  )
-
-  // 'pending' means the server's ready-wait timed out (PTY spawned but not yet
-  // at its prompt — e.g. blocked on a Codex startup gate). Navigate to the
-  // pending screen so the user sees progress/console access instead of
-  // silently waiting on the still-open browse modal; app/_layout.tsx's global
-  // session_ready listener would otherwise be the only way out. `starting: true`
-  // carries the real id with the exact-id gate on, so a different session's
-  // session_ready can't latch onto this pending screen.
-  const handleStartResult = useCallback(
-    (result: { kind: 'ready'; session: { id: string; projectId?: string; projectPath?: string | null } } | { kind: 'pending'; id: string }) => {
-      clientLog.info('startSession', 'B. handleStartResult (HTTP success path)', {
-        kind: result.kind,
-        result,
-      })
-      clientLog.info('browse', 'handleStartResult', { kind: result.kind, result })
-      if (result.kind === 'ready') {
-        clientLog.info('browse', 'handleStartResult ready → navigateToNewSession', { sessionId: result.session.id })
-        navigateToNewSession(result.session)
-      } else {
-        clientLog.info('browse', 'handleStartResult pending → navigateToNewSession starting', { id: result.id })
-        navigateToNewSession({ id: result.id }, { starting: true })
-      }
-    },
-    [navigateToNewSession],
-  )
-
-  const handleStartError = useCallback(
-    (err: Error) => {
-      clientLog.info('startSession', 'Berr. handleStartError', {
-        message: err.message,
-        code: err instanceof NetworkError ? err.code : undefined,
-      })
-      clearBrowseStartAutoNavSuppress()
-      const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
-      const message = isTimeout ? t('error.startTimeout') : err.message
-      clientLog.info('browse', 'handleStartError', {
-        isTimeout,
-        code: err instanceof NetworkError ? err.code : undefined,
-        message,
-        rawMessage: err.message,
-      })
-      Alert.alert(t('error.startFailed'), message)
-    },
-    [t],
+    [router, serverId, selectedProvider],
   )
 
   const handleStartSession = useCallback(() => {
-    const displayName = currentPath ? currentPath.split('/').pop() : '~'
-    const payload = {
-      path: currentPath,
-      projectName: displayName,
-      ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
+    if (isStarting) {
+      clientLog.info('startSession', 'start ignored — navigation already kicked off', { currentPath })
+      return
     }
-    // session_ready can beat the start HTTP response — suppress global auto-nav
-    // until we know the id and own dismiss→push navigation.
-    clientLog.info('startSession', 'A. suppressAutoNavForBrowseStart + mutate', {
+    setIsStarting(true)
+    const displayName = (currentPath ? currentPath.split('/').pop() : '~') ?? '~'
+    clientLog.info('startSession', 'A. Start Session Here → /session/new', {
       currentPath,
       displayName,
       selectedProvider,
-      payload,
       serverId,
-      isPending: startSession.isPending,
     })
-    suppressAutoNavForBrowseStart()
-    clientLog.info('browse', 'handleStartSession mutate', {
-      currentPath,
-      displayName,
-      selectedProvider,
-      includeProvider: selectedProvider === CODEX_CLI_PROVIDER,
-      payload,
-    })
-    startSession.mutate(
-      payload,
-      { onSuccess: handleStartResult, onError: handleStartError },
-    )
-  }, [currentPath, selectedProvider, startSession, handleStartResult, handleStartError, serverId])
+    navigateToStartScreen(currentPath, displayName)
+  }, [currentPath, selectedProvider, serverId, isStarting, navigateToStartScreen])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
-      const payload = {
-        path: dir.path,
-        projectName: dir.name,
-        ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
-      }
-      clientLog.info('startSession', 'A. Start from recent — suppress + mutate', {
-        dir,
-        selectedProvider,
-        payload,
-        serverId,
-        isPending: startSession.isPending,
-      })
-      if (startSession.isPending) {
-        clientLog.info('startSession', 'Start from recent ignored — already pending', { dir })
+      if (isStarting) {
+        clientLog.info('startSession', 'start from recent ignored — navigation already kicked off', { dir })
         return
       }
-      suppressAutoNavForBrowseStart()
-      clientLog.info('browse', 'handleStartFromRecent mutate', {
+      setIsStarting(true)
+      clientLog.info('startSession', 'A. Start from recent → /session/new', {
         dir,
         selectedProvider,
-        includeProvider: selectedProvider === CODEX_CLI_PROVIDER,
-        payload,
+        serverId,
       })
-      startSession.mutate(
-        payload,
-        { onSuccess: handleStartResult, onError: handleStartError },
-      )
+      navigateToStartScreen(dir.path, dir.name)
     },
-    [selectedProvider, startSession, handleStartResult, handleStartError, serverId],
+    [selectedProvider, serverId, isStarting, navigateToStartScreen],
   )
 
   const renderItem = useCallback(
@@ -534,7 +401,7 @@ export default function BrowseScreen() {
                   key={dir.path}
                   style={styles.recentRow}
                   onPress={() => handleStartFromRecent(dir)}
-                  disabled={startSession.isPending}
+                  disabled={isStarting}
                 >
                   <Text style={styles.recentIcon}>🕘</Text>
                   <View style={styles.recentTextWrap}>
@@ -657,31 +524,24 @@ export default function BrowseScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.startBtn, startSession.isPending && styles.startBtnDisabled]}
+            style={[styles.startBtn, isStarting && styles.startBtnDisabled]}
             onPress={() => {
               clientLog.info('startSession', 'CLICK Start Session Here', {
                 currentPath,
                 selectedProvider,
-                isPending: startSession.isPending,
+                isStarting,
                 serverId,
               })
               clientLog.info('browse', 'Start Session Here pressed', {
                 currentPath,
                 selectedProvider,
-                isPending: startSession.isPending,
+                isStarting,
               })
-              if (startSession.isPending) {
-                clientLog.info('startSession', 'CLICK ignored — start already pending', {
-                  currentPath,
-                  serverId,
-                })
-                return
-              }
               handleStartSession()
             }}
-            disabled={startSession.isPending}
+            disabled={isStarting}
           >
-            {startSession.isPending ? (
+            {isStarting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={styles.startBtnText}>{t('nav.startSession')}</Text>

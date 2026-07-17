@@ -6,6 +6,10 @@
     "create": "Создать",
     "startSession": "Начать сессию здесь"
   },
+  "starting": {
+    "title": "Запуск сессии…",
+    "secondsLeft": "{{seconds}} с"
+  },
   "error": {
     "loadFailed": "Не удалось загрузить беседы",
     "retryHint": "Потяните вниз для повтора",

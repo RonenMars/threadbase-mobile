@@ -6,6 +6,10 @@
     "create": "Create",
     "startSession": "Start Session Here"
   },
+  "starting": {
+    "title": "Starting session…",
+    "secondsLeft": "{{seconds}}s"
+  },
   "error": {
     "loadFailed": "Failed to load conversations",
     "retryHint": "Pull down to retry",
