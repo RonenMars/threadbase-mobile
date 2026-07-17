@@ -65,7 +65,7 @@ async function request<T>(
 
   const clientId = await getDeviceClientId()
   if (isStartSession) {
-    clientLog.info('startSession', '1. HTTP request → server', {
+    clientLog.info('startSession', 'start request → server', {
       method,
       path,
       serverId,
@@ -94,7 +94,7 @@ async function request<T>(
     })
   } catch (err) {
     if (isStartSession) {
-      clientLog.info('startSession', '1b. HTTP request FAILED (network)', {
+      clientLog.info('startSession', 'start request failed (network)', {
         method,
         path,
         serverId,
@@ -126,7 +126,7 @@ async function request<T>(
   }
 
   if (isStartSession) {
-    clientLog.info('startSession', '2. HTTP response ← server (headers)', {
+    clientLog.info('startSession', 'start response ← server', {
       method,
       path,
       serverId,
@@ -146,7 +146,7 @@ async function request<T>(
       if (errBody?.error) detail = errBody.error
       if (errBody?.code) code = errBody.code
       if (isStartSession) {
-        clientLog.info('startSession', '2b. HTTP response ERROR body', {
+        clientLog.info('startSession', 'start response error body', {
           status: response.status,
           detail,
           code,
@@ -160,7 +160,7 @@ async function request<T>(
   const json = (await response.json()) as T
   if (isStartSession) {
     const keys = json && typeof json === 'object' ? Object.keys(json as object) : []
-    clientLog.info('startSession', '2c. HTTP response OK body', {
+    clientLog.info('startSession', 'start response body', {
       method,
       path,
       serverId,

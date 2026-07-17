@@ -67,13 +67,9 @@ export default function NewSessionScreen() {
 
   const handleResult = useCallback(
     (result: { kind: 'ready'; session: { id: string; projectId?: string; projectPath?: string | null } } | { kind: 'pending'; id: string }) => {
-      clientLog.info('startSession', 'B. handleStartResult (HTTP success path)', {
-        kind: result.kind,
-        result,
-      })
       if (result.kind === 'ready') {
         const target = buildSessionRoute(result.session, serverId)
-        clientLog.info('startSession', 'C. mark + replace to real session', {
+        clientLog.info('startSession', 'session ready — mark + replace', {
           sessionId: result.session.id,
           target,
         })
@@ -84,7 +80,7 @@ export default function NewSessionScreen() {
         // Server ready-wait timed out (202): hand over to the existing
         // exact-id pending screen, which replaces itself on session_ready.
         const target = buildSessionRoute({ id: result.id }, serverId, { starting: true })
-        clientLog.info('startSession', 'C2. mark + replace to pending screen', {
+        clientLog.info('startSession', 'start pending — mark + replace to pending screen', {
           sessionId: result.id,
           target,
         })
@@ -98,7 +94,7 @@ export default function NewSessionScreen() {
 
   const handleError = useCallback(
     (err: Error) => {
-      clientLog.info('startSession', 'Berr. handleStartError', {
+      clientLog.info('startSession', 'start failed', {
         message: err.message,
         code: err instanceof NetworkError ? err.code : undefined,
       })
@@ -144,7 +140,7 @@ export default function NewSessionScreen() {
     }
     // session_ready can beat the start HTTP response — suppress global
     // auto-nav until the id is known and handleResult owns navigation.
-    clientLog.info('startSession', 'A. /session/new attempt — suppress + mutate', {
+    clientLog.info('startSession', 'start attempt — suppress + POST', {
       attempt,
       serverId,
       payload,

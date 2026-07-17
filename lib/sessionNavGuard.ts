@@ -27,10 +27,6 @@ let browseStartSuppressUntil = 0
 
 export function suppressAutoNavForBrowseStart(ttlMs = BROWSE_START_SUPPRESS_MS): void {
   browseStartSuppressUntil = Date.now() + ttlMs
-  clientLog.info('startSession', 'suppressAutoNavForBrowseStart', {
-    until: browseStartSuppressUntil,
-    ttlMs,
-  })
   clientLog.info('sessionNavGuard', 'suppressAutoNavForBrowseStart', {
     until: browseStartSuppressUntil,
     ttlMs,
@@ -59,10 +55,6 @@ export function markNavigatedToSession(sessionId: string): void {
 export function shouldSkipAutoNav(sessionId: string): boolean {
   const now = Date.now()
   if (now < browseStartSuppressUntil) {
-    clientLog.info('startSession', 'shouldSkipAutoNav → true (browse start pending)', {
-      sessionId,
-      remainingMs: browseStartSuppressUntil - now,
-    })
     clientLog.info('sessionNavGuard', 'shouldSkipAutoNav → true (browse start pending)', {
       sessionId,
       remainingMs: browseStartSuppressUntil - now,

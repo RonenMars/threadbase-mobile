@@ -141,12 +141,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
-      clientLog.info('startSession', '4. global layout session_ready listener', {
-        sessionId: msg.session.id,
-        serverId: msg.serverId,
-        projectId: msg.session.projectId,
-        projectPath: msg.session.projectPath,
-      })
       clientLog.info('layout.session_ready', 'global listener received', {
         sessionId: msg.session.id,
         serverId: msg.serverId,
@@ -155,10 +149,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       })
       const skip = shouldSkipAutoNav(msg.session.id)
       if (skip) {
-        clientLog.info('startSession', '4a. SKIP auto-nav (guard)', {
-          sessionId: msg.session.id,
-          serverId: msg.serverId,
-        })
         clientLog.info('layout.session_ready', 'skip auto-nav (guard marked)', {
           sessionId: msg.session.id,
           serverId: msg.serverId,
@@ -166,11 +156,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         return
       }
       const target = `/session/${msg.session.id}?server=${msg.serverId}`
-      clientLog.info('startSession', '4b. AUTO-NAV router.push', {
-        sessionId: msg.session.id,
-        serverId: msg.serverId,
-        target,
-      })
       clientLog.info('layout.session_ready', 'auto-nav router.push', {
         sessionId: msg.session.id,
         serverId: msg.serverId,
