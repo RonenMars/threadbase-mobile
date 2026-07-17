@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import BrowseScreen from '@/app/browse'
@@ -8,13 +8,15 @@ import type { MultiSession } from '@/types/api'
 // ─── Module mocks (localized to this test file) ─────────────────────────────
 
 const mockServerParam = { current: 'srv_alpha' as string | undefined }
+const mockPush = jest.fn()
+const mockBack = jest.fn()
 
 // expo-router — return the per-test serverId via mockServerParam
 jest.mock('expo-router', () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: mockPush,
     replace: jest.fn(),
-    back: jest.fn(),
+    back: mockBack,
     navigate: jest.fn(),
     dismiss: jest.fn(),
     dismissAll: jest.fn(),
@@ -52,8 +54,8 @@ jest.mock('react-native-reanimated', () => ({
   runOnJS: (fn: unknown) => fn,
 }))
 
-// useBrowse / useCreateDirectory / useStartSession — controllable mocks
-const mockStartMutate = jest.fn()
+// useBrowse / useCreateDirectory — controllable mocks (the start POST moved
+// to /session/new; browse only navigates there)
 const mockCreateDirMutate = jest.fn()
 jest.mock('@/hooks/useBrowse', () => ({
   useBrowse: () => ({
@@ -63,7 +65,6 @@ jest.mock('@/hooks/useBrowse', () => ({
     error: null,
   }),
   useCreateDirectory: () => ({ mutate: mockCreateDirMutate, isPending: false }),
-  useStartSession: () => ({ mutate: mockStartMutate, isPending: false }),
 }))
 
 // useSessions — controllable per-test data via mockSessions
@@ -105,7 +106,8 @@ async function renderScreen() {
 }
 
 beforeEach(() => {
-  mockStartMutate.mockClear()
+  mockPush.mockClear()
+  mockBack.mockClear()
   mockCreateDirMutate.mockClear()
   mockServerParam.current = SERVER_ID
   mockSessions.current = []
@@ -184,7 +186,7 @@ describe('BrowseScreen — recent directories accordion', () => {
     expect(getByText('Recent directories (8)')).toBeTruthy()
   })
 
-  it('starts a session at the absolute path when a recent row is tapped', async () => {
+  it('navigates to /session/new with the absolute path when a recent row is tapped', async () => {
     mockSessions.current = [
       makeSession({
         id: 'a',
@@ -196,36 +198,35 @@ describe('BrowseScreen — recent directories accordion', () => {
     const { getByText } = await renderScreen()
     await fireEvent.press(getByText('/home/user/projects/alpha'))
 
-    expect(mockStartMutate).toHaveBeenCalledTimes(1)
-    expect(mockStartMutate).toHaveBeenCalledWith(
-      { path: '/home/user/projects/alpha', projectName: 'alpha' },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    )
+    expect(mockBack).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    const target = decodeURIComponent(mockPush.mock.calls[0][0] as string)
+    expect(target).toContain('/session/new?')
+    expect(target).toContain('path=/home/user/projects/alpha')
+    expect(target).toContain('projectName=alpha')
   })
 
-  it('starts a Claude session by default without sending a provider', async () => {
+  it('navigates without a provider param for the default Claude start', async () => {
     const { getByText } = await renderScreen()
 
     await fireEvent.press(getByText('Start Session Here'))
 
-    expect(mockStartMutate).toHaveBeenCalledTimes(1)
-    expect(mockStartMutate).toHaveBeenCalledWith(
-      { path: '', projectName: '~' },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    )
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    const target = mockPush.mock.calls[0][0] as string
+    expect(target).toContain('/session/new?')
+    expect(target).not.toContain('provider=')
   })
 
-  it('sends codex-cli when Codex is selected for a new session', async () => {
+  it('carries provider=codex-cli when Codex is selected for a new session', async () => {
     const { getByTestId, getByText } = await renderScreen()
 
     await fireEvent.press(getByTestId('start-provider-codex-cli'))
     await fireEvent.press(getByText('Start Session Here'))
 
-    expect(mockStartMutate).toHaveBeenCalledTimes(1)
-    expect(mockStartMutate).toHaveBeenCalledWith(
-      { path: '', projectName: '~', provider: 'codex-cli' },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    )
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    const target = mockPush.mock.calls[0][0] as string
+    expect(target).toContain('/session/new?')
+    expect(target).toContain('provider=codex-cli')
   })
 
   it('collapses the recent list when the header is tapped', async () => {

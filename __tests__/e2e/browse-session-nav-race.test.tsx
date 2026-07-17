@@ -4,10 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import BrowseScreen from '@/app/browse'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
-// Browse no longer fires the start POST itself — it hands the parameters to
-// /session/new via the route, and that screen owns the mutation. The provider
-// travels as a query param (only when Codex is selected, matching the old
-// payload shape).
+// Regression for the browse→session nav race (Bug 14). Browse is a modal;
+// pushing a route while it is still in navigation state parks the route under
+// the modal envelope, and native-stack never emits transitionEnd for a
+// programmatic router.back() (the route leaves state synchronously and the
+// listener dies with the screen). The working sequence: back() first, then
+// push /session/new one frame later — that screen owns the start POST,
+// because React Query drops mutate() callbacks when browse unmounts.
 
 const mockBack = jest.fn()
 const mockPush = jest.fn()
@@ -16,7 +19,10 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: mockBack, navigate: jest.fn() }),
   useLocalSearchParams: () => ({ server: 'srv_alpha' }),
   useGlobalSearchParams: () => ({}),
-  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
+  useNavigation: () => ({
+    setOptions: jest.fn(),
+    addListener: () => jest.fn(),
+  }),
   useSegments: () => [],
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
   Redirect: () => null,
@@ -41,17 +47,10 @@ jest.mock('react-native-gesture-handler', () => {
   }
 })
 
-jest.mock('react-native-reanimated', () => ({
-  runOnJS: (fn: unknown) => fn,
-}))
+jest.mock('react-native-reanimated', () => ({ runOnJS: (fn: unknown) => fn }))
 
 jest.mock('@/hooks/useBrowse', () => ({
-  useBrowse: () => ({
-    data: { directories: [] },
-    isLoading: false,
-    isError: false,
-    error: null,
-  }),
+  useBrowse: () => ({ data: { directories: [] }, isLoading: false, isError: false, error: null }),
   useCreateDirectory: () => ({ mutate: jest.fn(), isPending: false }),
 }))
 
@@ -65,9 +64,7 @@ beforeEach(() => {
 })
 
 async function renderScreen() {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return await render(
     <ThemeProvider>
       <QueryClientProvider client={qc}>
@@ -77,27 +74,28 @@ async function renderScreen() {
   )
 }
 
-describe('BrowseScreen e2e provider flow', () => {
-  it('starts Claude by default without an explicit provider', async () => {
+describe('browse → session navigation race', () => {
+  it('dismisses the modal first, then pushes /session/new one frame later', async () => {
     const { getByText } = await renderScreen()
 
     await fireEvent.press(getByText('Start Session Here'))
 
+    expect(mockBack).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    expect(mockBack.mock.invocationCallOrder[0]).toBeLessThan(mockPush.mock.invocationCallOrder[0])
     const target = mockPush.mock.calls[0][0] as string
     expect(target).toContain('/session/new?')
-    expect(target).not.toContain('provider=')
+    expect(target).toContain('server=srv_alpha')
   })
 
-  it('sends codex-cli when Codex is selected', async () => {
-    const { getByTestId, getByText } = await renderScreen()
+  it('disables the start button once navigation kicked off', async () => {
+    const { getByText, queryByText } = await renderScreen()
 
-    await fireEvent.press(getByTestId('start-provider-codex-cli'))
     await fireEvent.press(getByText('Start Session Here'))
 
+    // The button swaps to a disabled spinner, so a second tap has no target.
+    expect(queryByText('Start Session Here')).toBeNull()
     await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
-    const target = mockPush.mock.calls[0][0] as string
-    expect(target).toContain('/session/new?')
-    expect(target).toContain('provider=codex-cli')
+    expect(mockBack).toHaveBeenCalledTimes(1)
   })
 })
