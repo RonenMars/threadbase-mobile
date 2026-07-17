@@ -1,5 +1,6 @@
 import { useServersStore } from '@/stores/servers'
 import { getDeviceClientId } from './device-id'
+import { clientLog } from '@/lib/clientLog'
 
 export class NetworkError extends Error {
   code?: string
@@ -48,6 +49,7 @@ async function request<T>(
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
   const url = `${server.url.replace(/\/$/, '')}${path}`
+  const isStartSession = path === '/api/sessions/start' || path.startsWith('/api/sessions/start?')
 
   // Combine the caller's signal (from React Query) with a per-request timeout
   // so a single hung page can't strand the eager-pagination loop. A caller can
@@ -62,7 +64,21 @@ async function request<T>(
   }
 
   const clientId = await getDeviceClientId()
+  if (isStartSession) {
+    clientLog.info('startSession', '1. HTTP request → server', {
+      method,
+      path,
+      serverId,
+      url,
+      body,
+      timeoutMs,
+      retry: options.retry,
+      retried,
+      clientId,
+    })
+  }
   let response: Response
+  const t0 = Date.now()
   try {
     response = await fetch(url, {
       method,
@@ -77,6 +93,19 @@ async function request<T>(
       signal: timeoutController.signal,
     })
   } catch (err) {
+    if (isStartSession) {
+      clientLog.info('startSession', '1b. HTTP request FAILED (network)', {
+        method,
+        path,
+        serverId,
+        url,
+        elapsedMs: Date.now() - t0,
+        message: err instanceof Error ? err.message : String(err),
+        aborted: timeoutController.signal.aborted,
+        callerAborted: !!options.signal?.aborted,
+        retried,
+      })
+    }
     // Don't retry if the caller aborted — that's an intentional cancellation.
     if (options.signal?.aborted) {
       throw new NetworkError('Request cancelled')
@@ -96,20 +125,52 @@ async function request<T>(
     options.signal?.removeEventListener('abort', onCallerAbort)
   }
 
+  if (isStartSession) {
+    clientLog.info('startSession', '2. HTTP response ← server (headers)', {
+      method,
+      path,
+      serverId,
+      status: response.status,
+      ok: response.ok,
+      elapsedMs: Date.now() - t0,
+    })
+  }
+
   if (response.status === 401) throw new AuthError()
   if (response.status === 404) throw new NotFoundError(path)
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
     try {
-      const body = await response.json()
-      if (body?.error) detail = body.error
-      if (body?.code) code = body.code
+      const errBody = await response.json()
+      if (errBody?.error) detail = errBody.error
+      if (errBody?.code) code = errBody.code
+      if (isStartSession) {
+        clientLog.info('startSession', '2b. HTTP response ERROR body', {
+          status: response.status,
+          detail,
+          code,
+          errBody,
+        })
+      }
     } catch {}
     throw new NetworkError(detail || `Server returned ${response.status}`, code)
   }
 
-  return response.json() as Promise<T>
+  const json = (await response.json()) as T
+  if (isStartSession) {
+    const keys = json && typeof json === 'object' ? Object.keys(json as object) : []
+    clientLog.info('startSession', '2c. HTTP response OK body', {
+      method,
+      path,
+      serverId,
+      status: response.status,
+      elapsedMs: Date.now() - t0,
+      keys,
+      body: json,
+    })
+  }
+  return json
 }
 
 // Hard-stops a running PTY session via POST /api/sessions/:id/stop. The server

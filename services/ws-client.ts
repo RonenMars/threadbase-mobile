@@ -159,10 +159,28 @@ class WSClient {
         return
       }
       if (msg.type === 'session_ready') {
+        clientLog.info('startSession', '3. WS session_ready ← server', {
+          serverId: this.serverId,
+          sessionId: msg.session.id,
+          status: msg.session.status,
+          ptyAttached: msg.session.ptyAttached,
+          projectId: msg.session.projectId,
+          projectPath: msg.session.projectPath,
+          handlerCount: this.handlers.get(msg.type)?.size ?? 0,
+        })
         clientLog.info('ws', 'session_ready received', {
           serverId: this.serverId,
           sessionId: msg.session.id,
           projectId: msg.session.projectId,
+          projectPath: msg.session.projectPath,
+          handlerCount: this.handlers.get(msg.type)?.size ?? 0,
+        })
+      } else if (msg.type === 'session_update') {
+        clientLog.info('startSession', '3b. WS session_update ← server', {
+          serverId: this.serverId,
+          sessionId: msg.session.id,
+          status: msg.session.status,
+          ptyAttached: msg.session.ptyAttached,
           projectPath: msg.session.projectPath,
           handlerCount: this.handlers.get(msg.type)?.size ?? 0,
         })

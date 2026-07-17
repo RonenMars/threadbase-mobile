@@ -140,6 +140,12 @@ export function useStartSession(serverId: string) {
     { path: string; projectName?: string; provider?: ProviderName }
   >({
     mutationFn: async (vars) => {
+      clientLog.info('startSession', '0. mutationFn entered (about to POST)', {
+        serverId,
+        vars,
+        timeoutMs: START_SESSION_TIMEOUT_MS,
+        retry: false,
+      })
       clientLog.info('useBrowse', 'startSession mutationFn start', {
         serverId,
         vars,
@@ -151,12 +157,24 @@ export function useStartSession(serverId: string) {
           timeoutMs: START_SESSION_TIMEOUT_MS,
           retry: false,
         })
+        clientLog.info('startSession', '0b. mutationFn got POST result (pre-classify)', {
+          serverId,
+          vars,
+          resKeys: res && typeof res === 'object' ? Object.keys(res) : [],
+          res,
+        })
         clientLog.info('useBrowse', 'startSession POST success, classifying', {
           serverId,
           vars,
           resKeys: res && typeof res === 'object' ? Object.keys(res) : [],
         })
         const classified = classifyStartSessionResponse(res)
+        clientLog.info('startSession', '0c. mutationFn classified', {
+          serverId,
+          kind: classified.kind,
+          id: classified.kind === 'ready' ? classified.session.id : classified.id,
+          classified,
+        })
         clientLog.info('useBrowse', 'startSession mutationFn classified', {
           serverId,
           kind: classified.kind,
@@ -164,6 +182,12 @@ export function useStartSession(serverId: string) {
         })
         return classified
       } catch (err) {
+        clientLog.info('startSession', '0d. mutationFn ERROR', {
+          serverId,
+          vars,
+          message: err instanceof Error ? err.message : String(err),
+          code: err && typeof err === 'object' && 'code' in err ? (err as { code?: string }).code : undefined,
+        })
         clientLog.info('useBrowse', 'startSession mutationFn error', {
           serverId,
           vars,
@@ -174,6 +198,11 @@ export function useStartSession(serverId: string) {
       }
     },
     onSuccess: (result) => {
+      clientLog.info('startSession', '0e. mutation onSuccess (invalidate caches)', {
+        serverId,
+        kind: result.kind,
+        id: result.kind === 'ready' ? result.session.id : result.id,
+      })
       clientLog.info('useBrowse', 'startSession onSuccess invalidate sessions queries', {
         serverId,
         kind: result.kind,
