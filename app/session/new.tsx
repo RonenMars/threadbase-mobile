@@ -27,15 +27,6 @@ import { clientLog } from '@/lib/clientLog'
 const TICK_MS = 100
 const PHRASE_ROTATE_MS = 2_500
 
-const WAKING_UP_PHRASES = [
-  "I'm waking up, I'll be ready in a moment…",
-  "Loading my entire knowledge of humanity, one sec…",
-  "Stretching my context window, almost there…",
-  "Brewing a fresh pot of tokens, hold tight…",
-  "Reminding myself what code looks like…",
-  "Counting to a trillion really fast, nearly done…",
-]
-
 // The bouncing-robot loader, moved here from the session screen's
 // WakingUpOverlay — the start wait lives on this screen now.
 function WakingUpAnimation({ theme }: { theme: Theme }) {
@@ -284,18 +275,20 @@ export default function NewSessionScreen() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setPhraseIdx((i) => (i + 1) % WAKING_UP_PHRASES.length)
+      setPhraseIdx((i) => i + 1)
     }, PHRASE_ROTATE_MS)
     return () => clearInterval(timer)
   }, [])
 
   const secondsLeft = Math.ceil(remainingMs / 1000)
+  const wakingPhrases = t('starting.phrases', { returnObjects: true }) as string[]
+  const wakingPhrase = wakingPhrases[phraseIdx % wakingPhrases.length]
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <WakingUpAnimation theme={theme} />
-        <Text style={styles.phrase}>{WAKING_UP_PHRASES[phraseIdx]}</Text>
+        <Text style={styles.phrase}>{wakingPhrase}</Text>
         <Text style={styles.project} numberOfLines={1}>
           {projectName}
         </Text>
