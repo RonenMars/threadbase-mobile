@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View, Text, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useStartSession, START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { NetworkError } from '@/services/api-client'
@@ -16,6 +25,118 @@ import {
 import { clientLog } from '@/lib/clientLog'
 
 const TICK_MS = 100
+const PHRASE_ROTATE_MS = 2_500
+
+const WAKING_UP_PHRASES = [
+  "I'm waking up, I'll be ready in a moment…",
+  "Loading my entire knowledge of humanity, one sec…",
+  "Stretching my context window, almost there…",
+  "Brewing a fresh pot of tokens, hold tight…",
+  "Reminding myself what code looks like…",
+  "Counting to a trillion really fast, nearly done…",
+]
+
+// The bouncing-robot loader, moved here from the session screen's
+// WakingUpOverlay — the start wait lives on this screen now.
+function WakingUpAnimation({ theme }: { theme: Theme }) {
+  const wakingStyles = makeWakingStyles(theme)
+  const bounce = useSharedValue(0)
+  const rotate = useSharedValue(0)
+  const pulse = useSharedValue(1)
+  const dot1 = useSharedValue(0)
+  const dot2 = useSharedValue(0)
+  const dot3 = useSharedValue(0)
+
+  useEffect(() => {
+    bounce.value = withRepeat(
+      withSequence(
+        withTiming(-18, { duration: 500, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 500, easing: Easing.in(Easing.quad) }),
+      ),
+      -1,
+      false,
+    )
+    rotate.value = withRepeat(
+      withSequence(
+        withTiming(-12, { duration: 400 }),
+        withTiming(12, { duration: 400 }),
+        withTiming(0, { duration: 200 }),
+      ),
+      -1,
+      false,
+    )
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.12, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    )
+    dot1.value = withRepeat(
+      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+      -1,
+      false,
+    )
+    dot2.value = withDelay(160, withRepeat(
+      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+      -1,
+      false,
+    ))
+    dot3.value = withDelay(320, withRepeat(
+      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
+      -1,
+      false,
+    ))
+    // Reanimated SharedValues are stable refs — including them here would cause
+    // the animation to restart on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const emojiStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: bounce.value },
+      { rotate: `${rotate.value}deg` },
+      { scale: pulse.value },
+    ],
+  }))
+  const dot1Style = useAnimatedStyle(() => ({ opacity: dot1.value }))
+  const dot2Style = useAnimatedStyle(() => ({ opacity: dot2.value }))
+  const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value }))
+
+  return (
+    <View style={wakingStyles.card} testID="waking-up-animation">
+      <Animated.Text style={[wakingStyles.emoji, emojiStyle]}>🤖</Animated.Text>
+      <View style={wakingStyles.dots}>
+        <Animated.View style={[wakingStyles.dot, dot1Style]} />
+        <Animated.View style={[wakingStyles.dot, dot2Style]} />
+        <Animated.View style={[wakingStyles.dot, dot3Style]} />
+      </View>
+    </View>
+  )
+}
+
+function makeWakingStyles(theme: Theme) {
+  return StyleSheet.create({
+    card: {
+      alignItems: 'center',
+      gap: 16,
+    },
+    emoji: {
+      fontSize: 72,
+    },
+    dots: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.text.accent,
+    },
+  })
+}
 
 /**
  * Chat-screen URL for a started session, carrying projectId/projectPath so
@@ -60,6 +181,7 @@ export default function NewSessionScreen() {
   // Bumping `attempt` re-runs the start effect (Retry button).
   const [attempt, setAttempt] = useState(0)
   const [remainingMs, setRemainingMs] = useState(START_SESSION_TIMEOUT_MS)
+  const [phraseIdx, setPhraseIdx] = useState(0)
   // Freezes the countdown while the error dialog is up.
   const haltedRef = useRef(false)
   // Dev double-effect guard: one POST per attempt.
@@ -160,13 +282,20 @@ export default function NewSessionScreen() {
     return () => clearInterval(timer)
   }, [attempt])
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhraseIdx((i) => (i + 1) % WAKING_UP_PHRASES.length)
+    }, PHRASE_ROTATE_MS)
+    return () => clearInterval(timer)
+  }, [])
+
   const secondsLeft = Math.ceil(remainingMs / 1000)
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
-        <ActivityIndicator size="large" color={theme.text.accent} style={styles.spinner} />
-        <Text style={styles.title}>{t('starting.title')}</Text>
+        <WakingUpAnimation theme={theme} />
+        <Text style={styles.phrase}>{WAKING_UP_PHRASES[phraseIdx]}</Text>
         <Text style={styles.project} numberOfLines={1}>
           {projectName}
         </Text>
@@ -197,9 +326,14 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md },
-    spinner: { marginBottom: spacing.md },
-    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600', textAlign: 'center' },
-    project: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center' },
+    phrase: {
+      color: theme.text.secondary,
+      fontSize: font.base,
+      textAlign: 'center',
+      lineHeight: 24,
+      maxWidth: 280,
+    },
+    project: { color: theme.text.primary, fontSize: font.base, fontWeight: '600', textAlign: 'center' },
     track: {
       width: '100%',
       maxWidth: 240,

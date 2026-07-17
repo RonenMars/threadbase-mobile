@@ -11,15 +11,6 @@ import {
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
@@ -48,21 +39,6 @@ import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
 
-const WAKING_UP_PHRASES = [
-  "I'm waking up, I'll be ready in a moment…",
-  "Loading my entire knowledge of humanity, one sec…",
-  "Stretching my context window, almost there…",
-  "Brewing a fresh pot of tokens, hold tight…",
-  "Reminding myself what code looks like…",
-  "Counting to a trillion really fast, nearly done…",
-]
-
-function wakingUpPhrase(sessionId: string): string {
-  let hash = 0
-  for (let i = 0; i < sessionId.length; i++) hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0
-  return WAKING_UP_PHRASES[hash % WAKING_UP_PHRASES.length]
-}
-
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
   "Warming up the neurons…",
@@ -75,125 +51,6 @@ const PENDING_PHRASES = [
 ]
 
 const RECONNECTING_BANNER_DELAY_MS = 5_000
-
-function WakingUpOverlay({ phrase }: { phrase: string }) {
-  const theme = useTheme()
-  const wakingStyles = makeWakingStyles(theme)
-  const bounce = useSharedValue(0)
-  const rotate = useSharedValue(0)
-  const pulse = useSharedValue(1)
-  const dot1 = useSharedValue(0)
-  const dot2 = useSharedValue(0)
-  const dot3 = useSharedValue(0)
-
-  useEffect(() => {
-    bounce.value = withRepeat(
-      withSequence(
-        withTiming(-18, { duration: 500, easing: Easing.out(Easing.quad) }),
-        withTiming(0, { duration: 500, easing: Easing.in(Easing.quad) }),
-      ),
-      -1,
-      false,
-    )
-    rotate.value = withRepeat(
-      withSequence(
-        withTiming(-12, { duration: 400 }),
-        withTiming(12, { duration: 400 }),
-        withTiming(0, { duration: 200 }),
-      ),
-      -1,
-      false,
-    )
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.12, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    )
-    dot1.value = withRepeat(
-      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-      -1,
-      false,
-    )
-    dot2.value = withDelay(160, withRepeat(
-      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-      -1,
-      false,
-    ))
-    dot3.value = withDelay(320, withRepeat(
-      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-      -1,
-      false,
-    ))
-    // Reanimated SharedValues are stable refs — including them here would cause
-    // the animation to restart on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const emojiStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: bounce.value },
-      { rotate: `${rotate.value}deg` },
-      { scale: pulse.value },
-    ],
-  }))
-  const dot1Style = useAnimatedStyle(() => ({ opacity: dot1.value }))
-  const dot2Style = useAnimatedStyle(() => ({ opacity: dot2.value }))
-  const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value }))
-
-  return (
-    <View style={wakingStyles.overlay} testID="waking-up-overlay">
-      <View style={wakingStyles.card}>
-        <Animated.Text style={[wakingStyles.emoji, emojiStyle]}>🤖</Animated.Text>
-        <View style={wakingStyles.dots}>
-          <Animated.View style={[wakingStyles.dot, dot1Style]} />
-          <Animated.View style={[wakingStyles.dot, dot2Style]} />
-          <Animated.View style={[wakingStyles.dot, dot3Style]} />
-        </View>
-        <Text style={wakingStyles.phrase}>{phrase}</Text>
-      </View>
-    </View>
-  )
-}
-
-function makeWakingStyles(theme: Theme) {
-  return StyleSheet.create({
-    overlay: {
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(10, 10, 14, 0.85)',
-      zIndex: 10,
-    },
-    card: {
-      alignItems: 'center',
-      gap: 16,
-      paddingHorizontal: 32,
-    },
-    emoji: {
-      fontSize: 72,
-    },
-    dots: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.text.accent,
-    },
-    phrase: {
-      color: theme.text.secondary,
-      fontSize: font.base,
-      textAlign: 'center',
-      lineHeight: 24,
-      maxWidth: 280,
-    },
-  })
-}
 
 // The server's own ready-wait window (see tb-streamer START_READY_TIMEOUT_MS)
 // — the progress bar animates toward this. After STUCK_AFTER_MS with neither
@@ -854,9 +711,6 @@ export default function SessionDetailScreen() {
               />
             )}
             </View>
-            {isWakingUp ? (
-              <WakingUpOverlay phrase={wakingUpPhrase(id)} />
-            ) : null}
           </View>
         ) : session.failureReason ? (
           <View style={styles.placeholder}>

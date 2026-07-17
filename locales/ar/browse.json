@@ -7,7 +7,6 @@
     "startSession": "ابدأ سيشن هنا"
   },
   "starting": {
-    "title": "جارٍ بدء السيشن…",
     "secondsLeft": "{{seconds}} ث"
   },
   "error": {

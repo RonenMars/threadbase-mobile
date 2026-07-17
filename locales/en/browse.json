@@ -7,7 +7,6 @@
     "startSession": "Start Session Here"
   },
   "starting": {
-    "title": "Starting session…",
     "secondsLeft": "{{seconds}}s"
   },
   "error": {

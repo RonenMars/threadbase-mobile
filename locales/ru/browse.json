@@ -7,7 +7,6 @@
     "startSession": "Начать сессию здесь"
   },
   "starting": {
-    "title": "Запуск сессии…",
     "secondsLeft": "{{seconds}} с"
   },
   "error": {

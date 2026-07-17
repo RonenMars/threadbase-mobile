@@ -58,7 +58,7 @@ async function renderScreen() {
 
 describe('/session/new start lifecycle', () => {
   it('suppresses auto-nav before firing the start request', async () => {
-    const { getByText } = await renderScreen()
+    const { getByText, getByTestId } = await renderScreen()
 
     expect(suppressAutoNavForBrowseStart).toHaveBeenCalledTimes(1)
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
@@ -66,8 +66,11 @@ describe('/session/new start lifecycle', () => {
       (suppressAutoNavForBrowseStart as jest.Mock).mock.invocationCallOrder[0],
     ).toBeLessThan(mockStartMutate.mock.invocationCallOrder[0])
     expect(mockStartMutate.mock.calls[0][0]).toEqual({ path: 'work', projectName: 'work' })
-    // Countdown starts at the full request budget.
+    // Countdown starts at the full request budget, with the waking-up robot
+    // (moved here from the session screen) and its rotating phrase.
     expect(getByText('15s')).toBeTruthy()
+    expect(getByTestId('waking-up-animation')).toBeTruthy()
+    expect(getByText("I'm waking up, I'll be ready in a moment…")).toBeTruthy()
   })
 
   it('marks the guard then replaces to the session on a ready result', async () => {
