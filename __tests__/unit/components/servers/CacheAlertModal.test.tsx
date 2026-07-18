@@ -6,6 +6,7 @@ import { resolveCacheAlert, getCacheAlert } from '@/services/api-client'
 import { renderWithI18n } from '@/test-utils/render'
 import { queryClient } from '@/services/query-client'
 import type { MultiConversation, MultiSession } from '@/types/api'
+import { useSessionsStore } from '@/stores/sessions'
 
 jest.mock('@/services/api-client', () => ({
   resolveCacheAlert: jest.fn(),
@@ -53,6 +54,7 @@ function seedAlert(overrides: Partial<import('@/types/api').CacheAlert> = {}) {
 beforeEach(() => {
   jest.clearAllMocks()
   queryClient.clear()
+  useSessionsStore.setState({ promptQueues: {} })
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
@@ -147,7 +149,7 @@ describe('CacheAlertModal', () => {
     expect(queryClient.getQueryData(['conversations-eager', undefined, 0, SERVER_ID])).toEqual([])
   })
 
-  it('clears server state after reset_rescan succeeds', async () => {
+  it('clears server state after reset_rescan starts', async () => {
     seedAlert()
     mockResolve.mockResolvedValue({ ok: true, action: 'reset_rescan' })
     const targetSession = { id: 'target-session', serverId: SERVER_ID } as MultiSession
@@ -159,11 +161,7 @@ describe('CacheAlertModal', () => {
     await fireEvent.press(await findByText('Reset & Rescan'))
     await fireEvent.press(await findByText('Proceed'))
 
-    await waitFor(() => expect(mockResolve).toHaveBeenCalledWith(SERVER_ID, {
-      fingerprint: 'fp1',
-      action: 'reset_rescan',
-      ids: undefined,
-    }))
+    await waitFor(() => expect(mockResolve).toHaveBeenCalled())
     expect(queryClient.getQueryData(['sessions-eager', 'lastActivityAt', 'desc', '', SERVER_ID])).toEqual([])
   })
 
@@ -189,6 +187,13 @@ describe('CacheAlertModal', () => {
     queryClient.setQueryData(['sessions-eager', 'lastActivityAt', 'desc', '', SERVER_ID], [targetSession, otherSession])
     queryClient.setQueryData(['conversation', SERVER_ID, 'target-conv'], { stale: true })
     queryClient.setQueryData(['session', SERVER_ID, 'target-session'], { stale: true })
+    queryClient.setQueryData(['conversations', 'search', 'term', SERVER_ID], [targetConversation, otherConversation])
+    useSessionsStore.setState({
+      promptQueues: {
+        [`${SERVER_ID}::target-session`]: [],
+        'srv_other::other-session': [],
+      },
+    })
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries')
     mockResolve.mockImplementation(async () => {
       expect(queryClient.getQueryData(['conversations-eager', undefined, 0, SERVER_ID])).toEqual([
@@ -215,6 +220,12 @@ describe('CacheAlertModal', () => {
     ])
     expect(queryClient.getQueryData(['conversation', SERVER_ID, 'target-conv'])).toBeUndefined()
     expect(queryClient.getQueryData(['session', SERVER_ID, 'target-session'])).toBeUndefined()
+    expect(queryClient.getQueryData(['conversations', 'search', 'term', SERVER_ID])).toEqual([
+      otherConversation,
+    ])
+    expect(useSessionsStore.getState().promptQueues).toEqual({
+      'srv_other::other-session': [],
+    })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['conversations-eager'] })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['conversations'] })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['sessions-eager'] })

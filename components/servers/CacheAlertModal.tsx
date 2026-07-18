@@ -79,7 +79,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
         setPendingAction(null)
         return
       }
-      if (DESTRUCTIVE_ACTIONS.includes(action)) {
+      if (DESTRUCTIVE_ACTIONS.includes(action) && !('alreadyResolved' in result)) {
         clearServerConversationAndSessionState(serverId)
         void queryClient.invalidateQueries({ queryKey: ['conversations-eager'] })
         void queryClient.invalidateQueries({ queryKey: ['conversations'] })
