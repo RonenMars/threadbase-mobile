@@ -140,7 +140,7 @@
     "react-test-renderer": "19.2.7",
     "tailwindcss": "^3.4.10",
     "test-renderer": "^1.2.0",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "ws": "^8.21.1"
   },
   "expo": {
