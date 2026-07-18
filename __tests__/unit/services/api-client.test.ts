@@ -1,4 +1,5 @@
 import { createApiForServer, NetworkError, AuthError, NotFoundError } from '@/services/api-client'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 jest.mock('@/stores/servers', () => ({
   useServersStore: {
@@ -39,6 +40,7 @@ function mockErrorResponse(status: number) {
 
 beforeEach(() => {
   mockFetch.mockReset()
+  useServerFetchStatusStore.getState().reset()
 })
 
 describe('Error classes', () => {
@@ -94,6 +96,51 @@ describe('api.get', () => {
   it('throws NetworkError on non-ok response', async () => {
     mockFetch.mockResolvedValue(mockErrorResponse(500))
     await expect(api.get('/api/broken')).rejects.toThrow(NetworkError)
+  })
+
+  it('records the explicit server warm-up response for fetch endpoints', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: jest.fn().mockResolvedValue({
+        error: 'Server is warming up',
+        code: 'SERVER_WARMING_UP',
+        warmupState: 'cache_reset',
+      }),
+    })
+
+    await expect(api.get('/api/conversations/count')).rejects.toMatchObject({
+      code: 'SERVER_WARMING_UP',
+      warmupState: 'cache_reset',
+    })
+    expect(useServerFetchStatusStore.getState().statuses.srv_test).toMatchObject({
+      status: 'warming_up',
+      warmupState: 'cache_reset',
+    })
+  })
+
+  it('does not classify a generic 503 as warm-up', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: jest.fn().mockResolvedValue({ error: 'Temporarily unavailable' }),
+    })
+
+    await expect(api.get('/api/conversations/count')).rejects.toMatchObject({
+      code: undefined,
+    })
+    expect(useServerFetchStatusStore.getState().statuses.srv_test).toBeUndefined()
+  })
+
+  it('clears warm-up only after a successful fetch endpoint response', async () => {
+    useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+    useServerFetchStatusStore.getState().recordSuccess('srv_test')
+    expect(useServerFetchStatusStore.getState().statuses.srv_test.status).toBe('warming_up')
+
+    mockFetch.mockResolvedValueOnce(mockOkResponse({ total: 0 }))
+    await api.get('/api/conversations/count')
+
+    expect(useServerFetchStatusStore.getState().statuses.srv_test.status).toBe('ok')
   })
 
   it('retries once on network failure then throws NetworkError', async () => {
