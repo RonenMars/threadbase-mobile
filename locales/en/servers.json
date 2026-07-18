@@ -85,5 +85,25 @@
     "label": "Scanning and indexing conversations…",
     "subtitle": "Your server is warming up and building its conversation index for the first time. This only happens once — history will appear as soon as it's ready.",
     "progress": "{{scanned}} / {{total}} files"
+  },
+  "cacheAlert": {
+    "bannerTitle": "{{count}} conversation histories are missing on {{server}}",
+    "title": "{{missing}} of {{total}} conversation histories are missing on {{server}}",
+    "backupHint": "Consider checking a Time Machine (or equivalent) backup before doing anything destructive.",
+    "actionPruneAll": "Prune All",
+    "actionPruneSelected": "Prune Selected",
+    "actionIgnore": "Ignore",
+    "actionResetRescan": "Reset & Rescan",
+    "confirmTitle": "Are you sure?",
+    "confirmPruneAll": "This permanently removes all {{count}} missing conversations from the cache. This cannot be undone.",
+    "confirmPruneSelected": "This permanently removes {{count}} selected conversations from the cache. This cannot be undone.",
+    "confirmResetRescan": "This resets the cache and rescans from disk. This cannot be undone.",
+    "confirmCancel": "Cancel",
+    "confirmProceed": "Proceed",
+    "selectAll": "Select All",
+    "selectNone": "Select None",
+    "successToast": "Resolved. Backup saved at {{backupPath}}",
+    "successToastNoBackup": "Resolved.",
+    "selectAtLeastOne": "Select at least one conversation to prune."
   }
 }

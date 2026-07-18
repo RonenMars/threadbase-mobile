@@ -42,6 +42,7 @@ import { installClientLogCapture, clientLog } from '@/lib/clientLog'
 import { shouldSkipAutoNav } from '@/lib/sessionNavGuard'
 import { useTranslation } from 'react-i18next'
 import { RootErrorBoundary } from '@/components/RootErrorBoundary'
+import { CacheAlertSync } from '@/components/servers/CacheAlertSync'
 import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
 import { wrap as sentryWrap } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
@@ -70,6 +71,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const setCacheReady = useServersStore((s) => s.setCacheReady)
   const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
+  const setCacheAlert = useServersStore((s) => s.setCacheAlert)
+  const clearCacheAlert = useServersStore((s) => s.clearCacheAlert)
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -178,6 +181,20 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       if (msg.type !== 'scan_progress') return
       setScanProgress(msg.serverId, msg.scanned, msg.total)
     })
+    const unsubCacheAlert = wsManager.onAll('cache_alert', (msg) => {
+      if (msg.type !== 'cache_alert') return
+      setCacheAlert(msg.serverId, {
+        fingerprint: msg.fingerprint,
+        severity: msg.severity,
+        detectedAt: msg.detectedAt,
+        missingCount: msg.missingCount,
+        totalRows: msg.totalRows,
+      })
+    })
+    const unsubCacheAlertResolved = wsManager.onAll('cache_alert_resolved', (msg) => {
+      if (msg.type !== 'cache_alert_resolved') return
+      clearCacheAlert(msg.serverId, msg.fingerprint)
+    })
 
     // Register push tokens for all servers
     registerPushTokenForAll(activeServerIds).catch(() => {})
@@ -188,6 +205,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubStatus()
       unsubCacheReady()
       unsubScanProgress()
+      unsubCacheAlert()
+      unsubCacheAlertResolved()
       wsManager.disconnectAll()
     }
     // router from expo-router is a stable singleton; setConnected/setCacheReady
@@ -210,7 +229,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return () => sub.remove()
   }, [router])
 
-  return <>{children}</>
+  return (
+    <>
+      <CacheAlertSync />
+      {children}
+    </>
+  )
 }
 
 function BiometricLockGate({ children }: { children: React.ReactNode }) {

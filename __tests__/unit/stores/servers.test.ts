@@ -36,6 +36,7 @@ beforeEach(() => {
     activeServerIds: [],
     displayedServerIds: [],
     isLoading: false,
+    cacheAlert: {},
   })
   jest.clearAllMocks()
 })
@@ -221,5 +222,66 @@ describe('reorderServers', () => {
       'threadbase_servers',
       expect.stringContaining('"srv_b"'),
     )
+  })
+})
+
+// ── cacheAlert ──────────────────────────────────────────────────────────────
+
+describe('setCacheAlert / clearCacheAlert', () => {
+  const alert = {
+    fingerprint: 'fp1',
+    severity: 'high' as const,
+    detectedAt: '2026-07-18T00:00:00.000Z',
+    missingCount: 3,
+    totalRows: 10,
+  }
+
+  it('setCacheAlert stores the alert wholesale', () => {
+    const server = seedServer()
+    useServersStore.getState().setCacheAlert(server.id, alert)
+    expect(useServersStore.getState().cacheAlert[server.id]).toEqual(alert)
+  })
+
+  it('setCacheAlert replaces a previous alert for the same server', () => {
+    const server = seedServer()
+    useServersStore.getState().setCacheAlert(server.id, alert)
+    const updated = { ...alert, fingerprint: 'fp2', missingCount: 5 }
+    useServersStore.getState().setCacheAlert(server.id, updated)
+    expect(useServersStore.getState().cacheAlert[server.id]).toEqual(updated)
+  })
+
+  it('clearCacheAlert clears when the fingerprint matches', () => {
+    const server = seedServer()
+    useServersStore.getState().setCacheAlert(server.id, alert)
+    useServersStore.getState().clearCacheAlert(server.id, 'fp1')
+    expect(useServersStore.getState().cacheAlert[server.id]).toBeNull()
+  })
+
+  it('clearCacheAlert is a no-op when the fingerprint does not match (stale resolve racing a newer alert)', () => {
+    const server = seedServer()
+    const newerAlert = { ...alert, fingerprint: 'fp2' }
+    useServersStore.getState().setCacheAlert(server.id, newerAlert)
+    useServersStore.getState().clearCacheAlert(server.id, 'fp1')
+    expect(useServersStore.getState().cacheAlert[server.id]).toEqual(newerAlert)
+  })
+
+  it('clearCacheAlert is a no-op when there is no pending alert', () => {
+    const server = seedServer()
+    expect(() => useServersStore.getState().clearCacheAlert(server.id, 'fp1')).not.toThrow()
+    expect(useServersStore.getState().cacheAlert[server.id]).toBeUndefined()
+  })
+
+  it('setConnected(false) clears the alert for a disconnected server', () => {
+    const server = seedServer({ isConnected: true })
+    useServersStore.getState().setCacheAlert(server.id, alert)
+    useServersStore.getState().setConnected(server.id, false)
+    expect(useServersStore.getState().cacheAlert[server.id]).toBeNull()
+  })
+
+  it('setConnected(true) does not touch an existing alert', () => {
+    const server = seedServer({ isConnected: false })
+    useServersStore.getState().setCacheAlert(server.id, alert)
+    useServersStore.getState().setConnected(server.id, true)
+    expect(useServersStore.getState().cacheAlert[server.id]).toEqual(alert)
   })
 })
