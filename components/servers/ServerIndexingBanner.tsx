@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { type Theme, font, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 const BEAM_WIDTH = 72
 const TRACK_HEIGHT = 3
@@ -104,22 +105,20 @@ export function ServerIndexingBanner() {
   const styles = makeStyles(theme)
   const { t } = useTranslation('servers')
   const { width: screenWidth } = useWindowDimensions()
-  const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
-  const cacheReady = useServersStore((s) => s.cacheReady)
   const scanProgress = useServersStore((s) => s.scanProgress)
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
 
-  const isIndexing = displayedServerIds.some(
-    (id) => servers[id]?.isConnected && !cacheReady[id],
+  const warmingServerIds = displayedServerIds.filter(
+    (id) => fetchStatuses[id]?.status === 'warming_up',
   )
 
-  if (!isIndexing) return null
+  if (warmingServerIds.length === 0) return null
 
   // Track fills the banner minus horizontal padding.
   const trackWidth = screenWidth - spacing.lg * 2
 
-  const progress = displayedServerIds
-    .filter((id) => servers[id]?.isConnected && !cacheReady[id])
+  const progress = warmingServerIds
     .map((id) => scanProgress[id])
     .find((p) => p && p.total > 0)
 

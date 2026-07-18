@@ -475,6 +475,22 @@ describe('useConversations — partial failure (Bug 32)', () => {
     expect(statuses['srv-B']?.error).toContain('host unreachable')
   })
 
+  it('preserves an explicit warm-up response instead of recording a fetch error', async () => {
+    setActiveServers(['srv-A'])
+    handlers['srv-A'] = () => Promise.reject({
+      code: 'SERVER_WARMING_UP',
+      warmupState: 'startup',
+    })
+
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']).toMatchObject({
+      status: 'warming_up',
+      warmupState: 'startup',
+    })
+  })
+
   it('single failing server still surfaces as a query error', async () => {
     setActiveServers(['srv-A'])
     handlers['srv-A'] = () => Promise.reject(new Error('down'))
@@ -558,7 +574,7 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
     }
   })
 
-  it('records indexing (not error) when the count request times out', async () => {
+  it('records an error when the count request times out', async () => {
     setActiveServers(['srv-slow'])
 
     handlers['srv-slow'] = (path: string) => {
@@ -575,7 +591,31 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
     await waitFor(() => expect(result.current.isDone).toBe(true))
 
     const statuses = useServerFetchStatusStore.getState().statuses
-    expect(statuses['srv-slow']?.status).toBe('indexing')
+    expect(statuses['srv-slow']?.status).toBe('error')
+  })
+
+  it('records warming_up only for the explicit server status', async () => {
+    setActiveServers(['srv-warm'])
+
+    handlers['srv-warm'] = (path: string) => {
+      if (path.includes('/api/conversations/count')) {
+        return Promise.reject({
+          code: 'SERVER_WARMING_UP',
+          warmupState: 'conversation_refresh',
+        })
+      }
+      return Promise.resolve([]) as Promise<unknown>
+    }
+
+    const { result } = await renderHook(() => useEagerConversations(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(useServerFetchStatusStore.getState().statuses['srv-warm']).toMatchObject({
+      status: 'warming_up',
+      warmupState: 'conversation_refresh',
+    })
   })
 })
 
