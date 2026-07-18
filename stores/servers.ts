@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import * as SecureStore from '@/services/secure-store'
-import type { ServerConfig, ServerInfo } from '@/types/api'
+import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
@@ -38,6 +38,8 @@ interface ServersStore {
   scanProgress: Record<string, { scanned: number; total: number }>
   /** True once the user has added at least one server (ever). Used to distinguish first launch from "removed all servers". */
   hasEverHadServer: boolean
+  /** Per-server pending cache-integrity alert, or null if none. */
+  cacheAlert: Record<string, CacheAlert | null>
 
   addServer: (url: string, apiKey: string, label?: string) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
@@ -46,6 +48,8 @@ interface ServersStore {
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
   setCacheReady: (serverId: string) => void
   setScanProgress: (serverId: string, scanned: number, total: number) => void
+  setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
+  clearCacheAlert: (serverId: string, fingerprint: string) => void
   refreshServerInfo: (serverId: string) => Promise<void>
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
@@ -118,6 +122,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   cacheReady: {},
   scanProgress: {},
   hasEverHadServer: false,
+  cacheAlert: {},
 
   get serverUrl() {
     const { servers, activeServerIds } = get()
@@ -230,6 +235,10 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const scanProgress = connected
         ? state.scanProgress
         : { ...state.scanProgress, [serverId]: { scanned: 0, total: 0 } }
+      // Stale alert state from a disconnected server shouldn't linger in the UI.
+      const cacheAlert = connected
+        ? state.cacheAlert
+        : { ...state.cacheAlert, [serverId]: null }
 
       if (connected) {
         // Start a fallback timer: if `cache_ready` never arrives, dismiss the
@@ -252,6 +261,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         },
         cacheReady,
         scanProgress,
+        cacheAlert,
       }
     })
   },
@@ -266,6 +276,16 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => ({
       scanProgress: { ...state.scanProgress, [serverId]: { scanned, total } },
     })),
+
+  setCacheAlert: (serverId: string, alert: CacheAlert | null) =>
+    set((state) => ({ cacheAlert: { ...state.cacheAlert, [serverId]: alert } })),
+
+  clearCacheAlert: (serverId: string, fingerprint: string) =>
+    set((state) => {
+      const current = state.cacheAlert[serverId]
+      if (!current || current.fingerprint !== fingerprint) return state
+      return { cacheAlert: { ...state.cacheAlert, [serverId]: null } }
+    }),
 
   refreshServerInfo: async (serverId: string): Promise<void> => {
     const server = get().servers[serverId]

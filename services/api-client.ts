@@ -1,6 +1,7 @@
 import { useServersStore } from '@/stores/servers'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
+import type { CacheAlert, CacheAlertResolveAction } from '@/types/api'
 
 export class NetworkError extends Error {
   code?: string
@@ -316,6 +317,59 @@ export interface ResponseWithMeta<T> {
   status: number
   etag: string | null
   body: T | null
+}
+
+export type ResolveCacheAlertResult =
+  | { ok: true; action: CacheAlertResolveAction; pruned?: number; backupPath?: string }
+  | { ok: true; alreadyResolved: true }
+  | { ok: false; conflict: true; currentFingerprint: string }
+
+// GET /api/cache/alert. A 404 means the server predates this feature — treat
+// as "no alert" rather than an error (see cache-integrity-alert contract).
+export async function getCacheAlert(serverId: string): Promise<CacheAlert | null> {
+  try {
+    const api = createApiForServer(serverId)
+    const { pending } = await api.get<{ pending: CacheAlert | null }>('/api/cache/alert')
+    return pending
+  } catch (e) {
+    if (e instanceof NotFoundError) return null
+    throw e
+  }
+}
+
+// POST /api/cache/alert/resolve. Uses a direct fetch rather than request<T>()
+// because a 409 fingerprint_mismatch is an expected outcome (not an error) and
+// request<T>() only surfaces non-ok responses by throwing NetworkError.
+export async function resolveCacheAlert(
+  serverId: string,
+  body: { fingerprint: string; action: CacheAlertResolveAction; ids?: string[] },
+): Promise<ResolveCacheAlertResult> {
+  const server = useServersStore.getState().getServer(serverId)
+  if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
+
+  const url = `${server.url.replace(/\/$/, '')}/api/cache/alert/resolve`
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${server.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+  }
+
+  if (response.status === 401) throw new AuthError()
+  if (response.status === 409) {
+    const { currentFingerprint } = await response.json() as { currentFingerprint: string }
+    return { ok: false, conflict: true, currentFingerprint }
+  }
+  if (!response.ok) throw new NetworkError(`resolve failed: ${response.status}`)
+
+  return await response.json() as ResolveCacheAlertResult
 }
 
 export interface ServerApi {
