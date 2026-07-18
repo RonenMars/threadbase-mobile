@@ -130,3 +130,36 @@ describe('useComposerState', () => {
     expect(result.current.pendingArgCommand).toBeNull()
   })
 })
+
+describe('path escaping for @references', () => {
+  it('escapes spaces in paths', () => {
+    const escapePath = (p: string) => p.replace(/ /g, '\\ ')
+    expect(escapePath('/tmp/My Photo.jpg')).toBe('/tmp/My\\ Photo.jpg')
+    expect(escapePath('/path/with multiple spaces/file.jpg')).toBe('/path/with\\ multiple\\ spaces/file.jpg')
+    expect(escapePath('/no-spaces.jpg')).toBe('/no-spaces.jpg')
+  })
+
+  it('builds correct payload with multiple attachments', () => {
+    const escapePath = (p: string) => p.replace(/ /g, '\\ ')
+    const attachments = [
+      { path: '/tmp/My Photo.jpg' },
+      { path: '/tmp/Another Image.png' },
+    ]
+    const refs = attachments.map((a) => `@${escapePath(a.path)}`).join(' ')
+    expect(refs).toBe('@/tmp/My\\ Photo.jpg @/tmp/Another\\ Image.png')
+
+    const text = 'what are these?'
+    const payload = `${refs} ${text}`
+    expect(payload).toBe('@/tmp/My\\ Photo.jpg @/tmp/Another\\ Image.png what are these?')
+  })
+
+  it('builds attachments-only payload when no text', () => {
+    const escapePath = (p: string) => p.replace(/ /g, '\\ ')
+    const attachments = [
+      { path: '/tmp/file1.jpg' },
+      { path: '/tmp/file2.png' },
+    ]
+    const refs = attachments.map((a) => `@${escapePath(a.path)}`).join(' ')
+    expect(refs).toBe('@/tmp/file1.jpg @/tmp/file2.png')
+  })
+})

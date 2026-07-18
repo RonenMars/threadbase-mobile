@@ -16,7 +16,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 2 | Hub tree node open: loader + long-list render stall | Open (split — see Issue 1 + Issue 2) |
 | Bug 3 | Quick Access strip never loads items | ✅ DONE 2026-05-16 (eea502d) |
 | Bug 4 | Long conversation: scroll-to-end flickery / jumpy | ✅ DONE 2026-05-22 (78218fb) |
-| Bug 5 | Multi-attachment send produces no output | Open — not diagnosed |
+| Bug 5 | Multi-attachment send produces no output | ✅ DONE 2026-07-19 (fix/multi-attachment-send) |
 | Bug 6 | Conversation list content hidden under bottom action bar | ✅ DONE 2026-05-24 (PR #11, commit 9835ecf) |
 | Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | Open |
 | Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | Open |
@@ -81,25 +81,43 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 
 ---
 
-## Bug 5 — Multi-attachment send produces no output
+## Bug 5 — Multi-attachment send produces no output ✅ DONE 2026-07-19
 
-**Filed:** 2026-05-18 — not diagnosed.
+**Filed:** 2026-05-18. **Fixed:** 2026-07-19 (branch `fix/multi-attachment-send`, not yet merged).
 
 **Symptom:** Start a new session, send a message with 2 attachments — the UI never shows a response.
 
-**Suspected cause:** Today's send-message path is built for a single attachment; the 2-attachment case either fails the send silently, succeeds server-side but doesn't deliver, or arrives but is rejected by a renderer assumption. Adjacent to the planned multi-file attachments feature (see [ROADMAP.md](./ROADMAP.md) Feature 3) — likely the same code paths.
+**Root cause:** Filenames with spaces broke Claude Code's `@path` reference parsing. When uploading a file named "My Photo.jpg", the server saved it to a path like:
+```
+/project/.threadbase-uploads/sessionId/1234-up_abc-My Photo.jpg
+```
 
-**Diagnosis order when picked up:**
-1. Inspect the network payload — does send-message ship 2 attachments at all?
-2. Check streamer logs — did the turn get stored / did the assistant respond?
-3. Check session WS stream — did the assistant turn arrive client-side?
-4. Trace message-content reducer / renderer for any single-attachment assumption.
+The mobile then sent:
+```
+@/project/.threadbase-uploads/sessionId/1234-up_abc-My Photo.jpg what is this?
+```
 
-**Files to start with (to verify):**
-- Message composer / attachment picker
-- Send-message handler in `hooks/` or `services/`
-- streamer send-message endpoint
-- Session WS stream subscriber
+Claude Code's parser splits on whitespace, so it parsed this as:
+- `@/project/.threadbase-uploads/sessionId/1234-up_abc-My` (truncated reference — file not found)
+- `Photo.jpg what is this?` (plain text)
+
+The truncated reference pointed to a non-existent file, causing Claude to fail silently.
+
+**Fix (two-part):**
+
+1. **Streamer (`tb-streamer/src/uploads.ts`):** `sanitizeFilename()` now replaces spaces and other shell-problematic characters (`@ " ' \` $ \`) with underscores. New uploads will have safe filenames.
+
+2. **Mobile (`tb-mobile/hooks/useComposerState.ts`):** `buildPayload()` now escapes spaces in paths with backslashes (`\ `). This handles legacy files uploaded before the streamer fix.
+
+**Verification:**
+1. Upload 2 images with spaces in their names (e.g., from Photos app)
+2. Send a message asking about them
+3. Confirm Claude responds about both images
+
+**Files changed:**
+- `tb-streamer/src/uploads.ts` — sanitize spaces in filenames
+- `tb-mobile/hooks/useComposerState.ts` — escape spaces in @path references
+- `tb-mobile/__tests__/unit/hooks/useComposerState.test.ts` — tests for path escaping
 
 ---
 
