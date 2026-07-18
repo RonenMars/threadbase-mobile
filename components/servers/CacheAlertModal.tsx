@@ -8,6 +8,7 @@ import type { CacheAlertResolveAction } from '@/types/api'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { clearServerConversationAndSessionState, queryClient } from '@/services/query-client'
 
 interface Props {
   visible: boolean
@@ -77,6 +78,13 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
         await refetchAlert()
         setPendingAction(null)
         return
+      }
+      if (DESTRUCTIVE_ACTIONS.includes(action)) {
+        clearServerConversationAndSessionState(serverId)
+        void queryClient.invalidateQueries({ queryKey: ['conversations-eager'] })
+        void queryClient.invalidateQueries({ queryKey: ['conversations'] })
+        void queryClient.invalidateQueries({ queryKey: ['sessions-eager'] })
+        void queryClient.invalidateQueries({ queryKey: ['sessions'] })
       }
       if ('alreadyResolved' in result) {
         onResolved()
