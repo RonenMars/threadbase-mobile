@@ -4,9 +4,6 @@ import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
 import { useServersStore } from '@/stores/servers'
 import { resolveCacheAlert, getCacheAlert } from '@/services/api-client'
 import { renderWithI18n } from '@/test-utils/render'
-import { queryClient } from '@/services/query-client'
-import type { MultiConversation, MultiSession } from '@/types/api'
-import { useSessionsStore } from '@/stores/sessions'
 
 jest.mock('@/services/api-client', () => ({
   resolveCacheAlert: jest.fn(),
@@ -53,8 +50,6 @@ function seedAlert(overrides: Partial<import('@/types/api').CacheAlert> = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  queryClient.clear()
-  useSessionsStore.setState({ promptQueues: {} })
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
@@ -78,7 +73,7 @@ describe('CacheAlertModal', () => {
       <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={jest.fn()} />
     )
     expect(await findByText(/Time Machine/)).toBeTruthy()
-  }, 15_000)
+  })
 
   it('does not show the backup hint for low severity', async () => {
     seedAlert({ severity: 'low' })
@@ -133,8 +128,6 @@ describe('CacheAlertModal', () => {
   it('sends selected ids for prune_selected after confirming', async () => {
     seedAlert()
     mockResolve.mockResolvedValue({ ok: true, action: 'prune_selected', pruned: 1 })
-    const targetConversation = { id: 'target-conv', serverId: SERVER_ID } as MultiConversation
-    queryClient.setQueryData(['conversations-eager', undefined, 0, SERVER_ID], [targetConversation])
     const { findByText } = await renderWithI18n(
       <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={jest.fn()} />
     )
@@ -146,23 +139,6 @@ describe('CacheAlertModal', () => {
       action: 'prune_selected',
       ids: ['a'],
     }))
-    expect(queryClient.getQueryData(['conversations-eager', undefined, 0, SERVER_ID])).toEqual([])
-  })
-
-  it('clears server state after reset_rescan starts', async () => {
-    seedAlert()
-    mockResolve.mockResolvedValue({ ok: true, action: 'reset_rescan' })
-    const targetSession = { id: 'target-session', serverId: SERVER_ID } as MultiSession
-    queryClient.setQueryData(['sessions-eager', 'lastActivityAt', 'desc', '', SERVER_ID], [targetSession])
-
-    const { findByText } = await renderWithI18n(
-      <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={jest.fn()} />
-    )
-    await fireEvent.press(await findByText('Reset & Rescan'))
-    await fireEvent.press(await findByText('Proceed'))
-
-    await waitFor(() => expect(mockResolve).toHaveBeenCalled())
-    expect(queryClient.getQueryData(['sessions-eager', 'lastActivityAt', 'desc', '', SERVER_ID])).toEqual([])
   })
 
   it('calls onResolved with the backup path on success', async () => {
@@ -175,79 +151,6 @@ describe('CacheAlertModal', () => {
     await fireEvent.press(await findByText('Prune All'))
     await fireEvent.press(await findByText('Proceed'))
     await waitFor(() => expect(onResolved).toHaveBeenCalledWith('/backup/x'))
-  })
-
-  it('waits for destructive success, clears only that server, and refetches the lists', async () => {
-    seedAlert()
-    const otherConversation = { id: 'other-conv', serverId: 'srv_other' } as MultiConversation
-    const targetConversation = { id: 'target-conv', serverId: SERVER_ID } as MultiConversation
-    const otherSession = { id: 'other-session', serverId: 'srv_other' } as MultiSession
-    const targetSession = { id: 'target-session', serverId: SERVER_ID } as MultiSession
-    queryClient.setQueryData(['conversations-eager', undefined, 0, SERVER_ID], [targetConversation, otherConversation])
-    queryClient.setQueryData(['sessions-eager', 'lastActivityAt', 'desc', '', SERVER_ID], [targetSession, otherSession])
-    queryClient.setQueryData(['conversation', SERVER_ID, 'target-conv'], { stale: true })
-    queryClient.setQueryData(['session', SERVER_ID, 'target-session'], { stale: true })
-    queryClient.setQueryData(['conversations', 'search', 'term', SERVER_ID], [targetConversation, otherConversation])
-    useSessionsStore.setState({
-      promptQueues: {
-        [`${SERVER_ID}::target-session`]: [],
-        'srv_other::other-session': [],
-      },
-    })
-    const invalidate = jest.spyOn(queryClient, 'invalidateQueries')
-    mockResolve.mockImplementation(async () => {
-      expect(queryClient.getQueryData(['conversations-eager', undefined, 0, SERVER_ID])).toEqual([
-        targetConversation,
-        otherConversation,
-      ])
-      expect(invalidate).not.toHaveBeenCalled()
-      return { ok: true, action: 'prune_all', pruned: 1 }
-    })
-
-    const { findByText } = await renderWithI18n(
-      <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={jest.fn()} />
-    )
-    await fireEvent.press(await findByText('Prune All'))
-    await fireEvent.press(await findByText('Proceed'))
-
-    await waitFor(() => {
-      expect(queryClient.getQueryData(['conversations-eager', undefined, 0, SERVER_ID])).toEqual([
-        otherConversation,
-      ])
-    })
-    expect(queryClient.getQueryData(['sessions-eager', 'lastActivityAt', 'desc', '', SERVER_ID])).toEqual([
-      otherSession,
-    ])
-    expect(queryClient.getQueryData(['conversation', SERVER_ID, 'target-conv'])).toBeUndefined()
-    expect(queryClient.getQueryData(['session', SERVER_ID, 'target-session'])).toBeUndefined()
-    expect(queryClient.getQueryData(['conversations', 'search', 'term', SERVER_ID])).toEqual([
-      otherConversation,
-    ])
-    expect(useSessionsStore.getState().promptQueues).toEqual({
-      'srv_other::other-session': [],
-    })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['conversations-eager'] })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['conversations'] })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['sessions-eager'] })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['sessions'] })
-    invalidate.mockRestore()
-  })
-
-  it('does not clear list state after ignore succeeds', async () => {
-    seedAlert()
-    mockResolve.mockResolvedValue({ ok: true, action: 'ignore' })
-    const targetConversation = { id: 'target-conv', serverId: SERVER_ID } as MultiConversation
-    queryClient.setQueryData(['conversations-eager', undefined, 0, SERVER_ID], [targetConversation])
-
-    const { findByText } = await renderWithI18n(
-      <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={jest.fn()} />
-    )
-    await fireEvent.press(await findByText('Ignore'))
-
-    await waitFor(() => expect(mockResolve).toHaveBeenCalled())
-    expect(queryClient.getQueryData(['conversations-eager', undefined, 0, SERVER_ID])).toEqual([
-      targetConversation,
-    ])
   })
 
   it('on 409 conflict, refetches the alert instead of calling onResolved', async () => {

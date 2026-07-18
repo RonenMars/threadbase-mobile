@@ -2,8 +2,7 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
-import { getServerWarmupState } from './server-warmup'
-import type { CacheAlert, CacheAlertResolveAction, ServerWarmupState } from '@/types/api'
+import type { CacheAlert, CacheAlertResolveAction } from '@/types/api'
 
 export class NetworkError extends Error {
   code?: string
