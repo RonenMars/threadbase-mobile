@@ -32,8 +32,6 @@ interface ServersStore {
   /** Ordered subset of servers visible in sessions/history. */
   displayedServerIds: string[]
   isLoading: boolean
-  /** Per-server flag: true once the server emits `cache_ready` (scan+index done). */
-  cacheReady: Record<string, boolean>
   /** Per-server scan progress received from `scan_progress` WS events. */
   scanProgress: Record<string, { scanned: number; total: number }>
   /** True once the user has added at least one server (ever). Used to distinguish first launch from "removed all servers". */
@@ -46,7 +44,6 @@ interface ServersStore {
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
-  setCacheReady: (serverId: string) => void
   setScanProgress: (serverId: string, scanned: number, total: number) => void
   setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
   clearCacheAlert: (serverId: string, fingerprint: string) => void
@@ -101,25 +98,11 @@ function toValidUniqueIds(ids: string[], activeServerIds: string[]): string[] {
   return Array.from(new Set(ids)).filter((id) => activeServerIds.includes(id))
 }
 
-// If the server never emits `cache_ready` (timeout, crash, slow scan), dismiss
-// the banner after this many milliseconds so it doesn't hang indefinitely.
-const CACHE_READY_TIMEOUT_MS = 30_000
-const cacheReadyTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
-
-function clearCacheReadyTimer(serverId: string) {
-  const t = cacheReadyTimers.get(serverId)
-  if (t !== undefined) {
-    clearTimeout(t)
-    cacheReadyTimers.delete(serverId)
-  }
-}
-
 export const useServersStore = create<ServersStore>((set, get) => ({
   servers: {},
   activeServerIds: [],
   displayedServerIds: [],
   isLoading: true,
-  cacheReady: {},
   scanProgress: {},
   hasEverHadServer: false,
   cacheAlert: {},
@@ -228,10 +211,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => {
       const server = state.servers[serverId]
       if (!server) return state
-      // Reset cacheReady and scanProgress when disconnected so the banner reappears on reconnect.
-      const cacheReady = connected
-        ? state.cacheReady
-        : { ...state.cacheReady, [serverId]: false }
+      // Reset scan progress when disconnected so stale progress is not reused.
       const scanProgress = connected
         ? state.scanProgress
         : { ...state.scanProgress, [serverId]: { scanned: 0, total: 0 } }
@@ -240,36 +220,15 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         ? state.cacheAlert
         : { ...state.cacheAlert, [serverId]: null }
 
-      if (connected) {
-        // Start a fallback timer: if `cache_ready` never arrives, dismiss the
-        // banner after the timeout rather than leaving it stuck indefinitely.
-        clearCacheReadyTimer(serverId)
-        const timer = setTimeout(() => {
-          cacheReadyTimers.delete(serverId)
-          useServersStore.getState().setCacheReady(serverId)
-        }, CACHE_READY_TIMEOUT_MS)
-        cacheReadyTimers.set(serverId, timer)
-      } else {
-        // Disconnected — cancel any pending timeout; banner resets above.
-        clearCacheReadyTimer(serverId)
-      }
-
       return {
         servers: {
           ...state.servers,
           [serverId]: { ...server, isConnected: connected, serverInfo: info ?? server.serverInfo },
         },
-        cacheReady,
         scanProgress,
         cacheAlert,
       }
     })
-  },
-
-  setCacheReady: (serverId: string) => {
-    // Cancel the fallback timeout — the real event arrived first.
-    clearCacheReadyTimer(serverId)
-    set((state) => ({ cacheReady: { ...state.cacheReady, [serverId]: true } }))
   },
 
   setScanProgress: (serverId: string, scanned: number, total: number) =>
