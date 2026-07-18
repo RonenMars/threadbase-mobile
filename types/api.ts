@@ -274,6 +274,25 @@ export interface ServerConfig {
   symbol?: string
 }
 
+export type CacheAlertSeverity = 'high' | 'low'
+export type CacheAlertResolveAction = 'prune_all' | 'prune_selected' | 'ignore' | 'reset_rescan'
+
+/**
+ * Pending cache-integrity alert. Same shape as the server's `GET /api/cache/alert`
+ * response; the WS `cache_alert` broadcast carries a `sample` (first 20) instead
+ * of the full `missing` list, so store the WS variant with `missing` unset until
+ * `GET /api/cache/alert` fills it in.
+ */
+export interface CacheAlert {
+  fingerprint: string
+  severity: CacheAlertSeverity
+  detectedAt: string
+  missingCount: number
+  totalRows: number
+  backupPath?: string
+  missing?: { id: string; filePath: string; title?: string; tailed: boolean }[]
+}
+
 export interface MultiSession extends Session {
   serverId: string
   serverLabel?: string
