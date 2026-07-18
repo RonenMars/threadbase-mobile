@@ -2,13 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import type { BrowseResponse, MkdirResponse, Session } from '@/types/api'
 import type { ProviderName } from '@/constants/providers'
+import { clientLog } from '@/lib/clientLog'
 
 export function useBrowse(serverId: string, path: string) {
   const api = createApiForServer(serverId)
 
+  const queryKey = ['browse', serverId, path] as const
+
   return useQuery<BrowseResponse>({
-    queryKey: ['browse', serverId, path],
-    queryFn: () => api.get<BrowseResponse>(`/api/browse?path=${encodeURIComponent(path)}`),
+    queryKey,
+    queryFn: async () => {
+      const url = `/api/browse?path=${encodeURIComponent(path)}`
+      return api.get<BrowseResponse>(url)
+    },
     enabled: !!serverId,
   })
 }
@@ -18,10 +24,12 @@ export function useCreateDirectory(serverId: string) {
   const api = createApiForServer(serverId)
 
   return useMutation<MkdirResponse, Error, { parentPath: string; name: string }>({
-    mutationFn: ({ parentPath, name }) =>
-      api.post<MkdirResponse>('/api/browse/mkdir', { path: parentPath, name }),
+    mutationFn: async ({ parentPath, name }) => {
+      return api.post<MkdirResponse>('/api/browse/mkdir', { path: parentPath, name })
+    },
     onSuccess: (_data, { parentPath }) => {
-      qc.invalidateQueries({ queryKey: ['browse', serverId, parentPath] })
+      const invalidateKey = ['browse', serverId, parentPath]
+      qc.invalidateQueries({ queryKey: invalidateKey })
     },
   })
 }
@@ -45,6 +53,7 @@ function classifyStartSessionResponse(res: StartSessionResponse): StartSessionRe
   if ('id' in res && typeof res.id === 'string') {
     return { kind: 'ready', session: res as Session }
   }
+  clientLog.info('startSession', 'unexpected /api/sessions/start response shape', { res })
   throw new Error('Unexpected /api/sessions/start response shape')
 }
 
@@ -52,7 +61,8 @@ function classifyStartSessionResponse(res: StartSessionResponse): StartSessionRe
 // back to the 202-pending shape — this must exceed that with margin so the
 // client never aborts first. Retry is disabled: start is non-idempotent, and
 // retrying a timed-out request spawns a second PTY server-side.
-const START_SESSION_TIMEOUT_MS = 15_000
+// Exported so /session/new can render the countdown against the same budget.
+export const START_SESSION_TIMEOUT_MS = 15_000
 
 export function useStartSession(serverId: string) {
   const qc = useQueryClient()
@@ -68,7 +78,13 @@ export function useStartSession(serverId: string) {
         timeoutMs: START_SESSION_TIMEOUT_MS,
         retry: false,
       })
-      return classifyStartSessionResponse(res)
+      const classified = classifyStartSessionResponse(res)
+      clientLog.info('startSession', 'start response classified', {
+        serverId,
+        kind: classified.kind,
+        id: classified.kind === 'ready' ? classified.session.id : classified.id,
+      })
+      return classified
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sessions'] })

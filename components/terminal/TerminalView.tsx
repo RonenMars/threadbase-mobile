@@ -21,7 +21,7 @@ interface Props {
 }
 
 export function TerminalView({ serverId, sessionId, disabled = false, pendingPlan = null, onClosePlan }: Props) {
-  const { lines, isStreaming } = useTerminalStream(serverId, sessionId)
+  const { lines, isStreaming, userMessageTexts } = useTerminalStream(serverId, sessionId)
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
@@ -57,6 +57,7 @@ export function TerminalView({ serverId, sessionId, disabled = false, pendingPla
       <TerminalOutput
         lines={lines}
         isStreaming={isStreaming}
+        userMessageTexts={userMessageTexts}
         onSendInput={(text) => sendInput.mutate(text)}
         onSendKeys={(keys) => sendKeys.mutate(keys)}
         activeQuestion={activeQuestion}

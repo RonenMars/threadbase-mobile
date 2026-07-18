@@ -25,6 +25,21 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<TerminalLine[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  // Ground-truth set of texts the streamer wrote to the PTY, normalized (trim).
+  // Lets the renderer positively identify user-owned lines instead of guessing.
+  // Empty when the streamer is old (no user_message / replay.userMessages) →
+  // the caller falls back to the `❯ <text>` heuristic.
+  const [userMessageTexts, setUserMessageTexts] = useState<Set<string>>(() => new Set())
+
+  const addUserMessages = useCallback((texts: string[]) => {
+    const next = texts.map((t) => t.trim()).filter(Boolean)
+    if (next.length === 0) return
+    setUserMessageTexts((prev) => {
+      const merged = new Set(prev)
+      for (const t of next) merged.add(t)
+      return merged.size === prev.size ? prev : merged
+    })
+  }, [])
   const vtRef = useRef<VirtualTerminal | null>(null)
   if (vtRef.current === null) {
     vtRef.current = new VirtualTerminal()
@@ -94,6 +109,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     queueMicrotask(() => {
       setLines([])
       setHttpFallbackEnabled(false)
+      setUserMessageTexts(new Set())
     })
   }, [serverId, sessionId])
 
@@ -105,6 +121,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     let silenceTimer: ReturnType<typeof setTimeout> | null = null
     let unsubOutput: (() => void) | null = null
     let unsubReplay: (() => void) | null = null
+    let unsubUserMessage: (() => void) | null = null
     let unsubWildcard: (() => void) | null = null
 
     function resetSilenceTimer() {
@@ -136,6 +153,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
           clearTimeout(fallbackTimer)
           fallbackTimer = null
         }
+        if (msg.userMessages) addUserMessages(msg.userMessages.map((m) => m.text))
         feedHistory(msg.lines.join('\n'))
       })
 
@@ -164,6 +182,16 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       })
     }
 
+    function subscribeUserMessage() {
+      unsubUserMessage?.()
+      const client = wsManager.getClient(serverId)
+      if (!client) return
+      unsubUserMessage = client.on('user_message', (msg) => {
+        if (msg.type !== 'user_message' || msg.sessionId !== sessionId) return
+        addUserMessages([msg.text])
+      })
+    }
+
     function subscribeWildcard() {
       unsubWildcard?.()
       const client = wsManager.getClient(serverId)
@@ -174,6 +202,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
     sendSubscribeAndWaitForReplay()
     subscribeOutput()
+    subscribeUserMessage()
     subscribeWildcard()
     resetSilenceTimer()
 
@@ -190,6 +219,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       historyFedRef.current = false
       sendSubscribeAndWaitForReplay()
       subscribeOutput()
+      subscribeUserMessage()
       subscribeWildcard()
       resetSilenceTimer()
     })
@@ -197,6 +227,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     return () => {
       unsubOutput?.()
       unsubReplay?.()
+      unsubUserMessage?.()
       unsubWildcard?.()
       unsubStatus()
       clearTimeout(idleTimer)
@@ -213,5 +244,5 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     setLines([])
   }, [])
 
-  return { lines, isStreaming, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear }
+  return { lines, isStreaming, userMessageTexts, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear }
 }

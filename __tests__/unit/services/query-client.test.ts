@@ -26,6 +26,7 @@ function emit(partial: Partial<NetInfoState>) {
 
 import { onlineManager } from '@tanstack/react-query'
 import { shouldPersistQuery, queryClient } from '@/services/query-client'
+import { useLoadingStateStore } from '@/stores/loading-state'
 
 function q(queryKey: readonly unknown[], meta?: unknown) {
   return { queryKey, meta }
@@ -99,5 +100,39 @@ describe('onlineManager <- NetInfo wiring', () => {
     emit({ isConnected: true, isInternetReachable: true })
     expect(resume).not.toHaveBeenCalled()
     resume.mockRestore()
+  })
+})
+
+describe('slow-query overlay (dangling slow-count)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    useLoadingStateStore.setState({
+      slowCounts: { sessions: 0, conversations: 0, messages: 0, 'session-detail': 0, browse: 0, other: 0 },
+    })
+  })
+  afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
+    queryClient.clear()
+  })
+
+  it('decrements the slow-count even when the query is removed mid-fetch', async () => {
+    // A never-resolving fetch keeps the query in fetchStatus 'fetching'.
+    let cancelled = false
+    const p = queryClient.fetchQuery({
+      queryKey: ['sessions', 'srv1'],
+      queryFn: () => new Promise(() => { /* never resolves */ }),
+    })
+    p.catch(() => { cancelled = true })
+
+    // Cross the 60s slow threshold → incrementSlow('sessions').
+    jest.advanceTimersByTime(60000)
+    expect(useLoadingStateStore.getState().slowCounts.sessions).toBe(1)
+
+    // Remove the query while it is still fetching — previously the settle event
+    // never fired for this hash, leaving the count dangling at 1 forever.
+    queryClient.removeQueries({ queryKey: ['sessions', 'srv1'] })
+    expect(useLoadingStateStore.getState().slowCounts.sessions).toBe(0)
+    void cancelled
   })
 })

@@ -14,7 +14,12 @@ const BUFFER: Entry[] = []
 const FLUSH_INTERVAL_MS = 1500
 const MAX_BATCH = 50
 
-const _origWarn = console.warn
+// Capture originals at module load so mirroring still works after
+// installClientLogCapture() wraps console.* (avoids recursion).
+const _origLog = console.log.bind(console)
+const _origInfo = console.info.bind(console)
+const _origWarn = console.warn.bind(console)
+const _origError = console.error.bind(console)
 
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 let installed = false
@@ -63,6 +68,51 @@ async function flush() {
   if (BUFFER.length > 0) scheduleFlush()
 }
 
+function safeStringify(v: unknown): string {
+  if (typeof v === 'string') return v
+  try {
+    return JSON.stringify(v)
+  } catch {
+    return String(v)
+  }
+}
+
+function mirrorToConsole(
+  level: LogLevel,
+  tag: string,
+  msg: string,
+  fields?: Record<string, unknown>,
+) {
+  // installClientLogCapture already prints the original console.* args to Metro;
+  // skip mirroring those to avoid duplicate lines.
+  if (
+    tag === 'console.log' ||
+    tag === 'console.info' ||
+    tag === 'console.warn' ||
+    tag === 'console.error'
+  ) {
+    return
+  }
+  const line =
+    fields && Object.keys(fields).length > 0
+      ? `[${tag}] ${msg} ${safeStringify(fields)}`
+      : `[${tag}] ${msg}`
+  switch (level) {
+    case 'debug':
+      _origLog(line)
+      break
+    case 'info':
+      _origInfo(line)
+      break
+    case 'warn':
+      _origWarn(line)
+      break
+    case 'error':
+      _origError(line)
+      break
+  }
+}
+
 export function clog(
   level: LogLevel,
   tag: string,
@@ -71,6 +121,7 @@ export function clog(
 ) {
   if (!__DEV__) return
   if (process.env.JEST_WORKER_ID !== undefined) return
+  mirrorToConsole(level, tag, msg, fields)
   BUFFER.push({
     level,
     msg,
@@ -89,40 +140,26 @@ export const clientLog = {
   error: (tag: string, msg: string, fields?: Record<string, unknown>) => clog('error', tag, msg, fields),
 }
 
-function safeStringify(v: unknown): string {
-  if (typeof v === 'string') return v
-  try {
-    return JSON.stringify(v)
-  } catch {
-    return String(v)
-  }
-}
-
 export function installClientLogCapture() {
   if (installed) return
   if (!__DEV__) return
   installed = true
 
-  const origLog = console.log
-  const origInfo = console.info
-  const origWarn = console.warn
-  const origError = console.error
-
   console.log = (...args: unknown[]) => {
     clog('info', 'console.log', args.map(safeStringify).join(' '))
-    origLog.apply(console, args as never[])
+    _origLog(...(args as never[]))
   }
   console.info = (...args: unknown[]) => {
     clog('info', 'console.info', args.map(safeStringify).join(' '))
-    origInfo.apply(console, args as never[])
+    _origInfo(...(args as never[]))
   }
   console.warn = (...args: unknown[]) => {
     clog('warn', 'console.warn', args.map(safeStringify).join(' '))
-    origWarn.apply(console, args as never[])
+    _origWarn(...(args as never[]))
   }
   console.error = (...args: unknown[]) => {
     clog('error', 'console.error', args.map(safeStringify).join(' '))
-    origError.apply(console, args as never[])
+    _origError(...(args as never[]))
   }
 
   const errorUtils = (globalThis as unknown as { ErrorUtils?: {
