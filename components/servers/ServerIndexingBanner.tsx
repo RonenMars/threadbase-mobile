@@ -105,7 +105,6 @@ export function ServerIndexingBanner() {
   const styles = makeStyles(theme)
   const { t } = useTranslation('servers')
   const { width: screenWidth } = useWindowDimensions()
-  const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const scanProgress = useServersStore((s) => s.scanProgress)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
@@ -118,10 +117,12 @@ export function ServerIndexingBanner() {
 
   // Track fills the banner minus horizontal padding.
   const trackWidth = screenWidth - spacing.lg * 2
-  const hasProgress = warmingServerIds.some((id) => {
-    const progress = scanProgress[id]
-    return progress && progress.total > 0
-  })
+
+  const progress = warmingServerIds
+    .map((id) => scanProgress[id])
+    .find((p) => p && p.total > 0)
+
+  const fillWidth = progress ? trackWidth * (progress.scanned / progress.total) : 0
 
   return (
     <View
@@ -132,7 +133,16 @@ export function ServerIndexingBanner() {
       {/* Text */}
       <View style={styles.textBlock}>
         <Text style={styles.title}>{t('indexing.label')}</Text>
-        {!hasProgress && <Text style={styles.subtitle}>{t('indexing.subtitle')}</Text>}
+        {progress ? (
+          <Text style={styles.subtitle}>
+            {t('indexing.progress', {
+              scanned: progress.scanned.toLocaleString(),
+              total: progress.total.toLocaleString(),
+            })}
+          </Text>
+        ) : (
+          <Text style={styles.subtitle}>{t('indexing.subtitle')}</Text>
+        )}
       </View>
 
       {/* Pulse dots */}
@@ -142,42 +152,13 @@ export function ServerIndexingBanner() {
         ))}
       </View>
 
-      <View style={styles.serverList}>
-        {warmingServerIds.map((serverId) => {
-          const progress = scanProgress[serverId]
-          const validProgress = progress && progress.total > 0 ? progress : null
-          const fillWidth = validProgress
-            ? trackWidth * (validProgress.scanned / validProgress.total)
-            : 0
-          const serverLabel = servers[serverId]?.label || servers[serverId]?.url || serverId
-
-          return (
-            <View key={serverId} style={styles.serverProgress}>
-              <View style={styles.serverHeader}>
-                <Text style={styles.serverLabel} numberOfLines={1}>
-                  {serverLabel}
-                </Text>
-                {validProgress && (
-                  <Text style={styles.subtitle}>
-                    {t('indexing.progress', {
-                      scanned: validProgress.scanned.toLocaleString(),
-                      total: validProgress.total.toLocaleString(),
-                    })}
-                  </Text>
-                )}
-              </View>
-
-              {/* Determinate fill when progress is known, indeterminate beam otherwise. */}
-              <View style={[styles.track, { width: trackWidth }]}>
-                {validProgress ? (
-                  <View style={[styles.fill, { width: fillWidth }]} />
-                ) : (
-                  <ScanBeam trackWidth={trackWidth} />
-                )}
-              </View>
-            </View>
-          )
-        })}
+      {/* Scan-beam track: determinate fill when progress known, indeterminate otherwise */}
+      <View style={[styles.track, { width: trackWidth }]}>
+        {progress ? (
+          <View style={[styles.fill, { width: fillWidth }]} />
+        ) : (
+          <ScanBeam trackWidth={trackWidth} />
+        )}
       </View>
     </View>
   )
@@ -206,24 +187,6 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.xs,
       lineHeight: 16,
-    },
-    serverList: {
-      gap: spacing.sm,
-    },
-    serverProgress: {
-      gap: 2,
-    },
-    serverHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.sm,
-    },
-    serverLabel: {
-      flex: 1,
-      color: theme.text.primary,
-      fontSize: font.sm,
-      fontWeight: '600',
     },
     dotsRow: {
       flexDirection: 'row',
