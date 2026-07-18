@@ -27,7 +27,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 13 | New session: name modal flashes open then auto-closes before user can type | Open — not diagnosed |
 | Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | Open — not diagnosed |
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
-| Bug 16 | Back from never-typed-in new session leaves an empty session alive | Open — not diagnosed |
+| Bug 16 | Back from never-typed-in new session leaves an empty session alive | ✅ Fixed — discard unused fresh PTY on back |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
 | Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), `.skip` deleted; still needs CI re-wiring |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
@@ -527,7 +527,9 @@ router.push(`/session/${id}?...`)
 
 ## Bug 16 — Back from never-typed-in new session leaves an empty session alive
 
-**Filed:** 2026-05-24 — not diagnosed.
+**Status:** Fixed on `fix/abandoned-empty-sessions` — session screen stops unused fresh PTYs on back (`promptCount === 0`, not a resume, no local send).
+
+**Filed:** 2026-05-24.
 
 **Symptom:** From `/browse`, pick a path and tap **Start session**. The PTY opens at `/session/[id]`. **Without typing anything**, tap **back**. The session is left running on the streamer — it now shows up in the Hub / Recents as a brand-new but empty session. The user clearly abandoned it (no prompt sent, no PTY input), so keeping it around is just noise.
 

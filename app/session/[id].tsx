@@ -12,7 +12,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -39,6 +39,7 @@ import { LiveConversationView } from '@/components/conversation/LiveConversation
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
+import { clearSessionUsed, wasSessionUsed } from '@/lib/sessionUsage'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -397,6 +398,7 @@ export default function SessionDetailScreen() {
     starting?: string
   }>()
   const router = useRouter()
+  const navigation = useNavigation()
 
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
@@ -462,7 +464,42 @@ export default function SessionDetailScreen() {
   const renameSession = useRenameSession(serverId)
   const sessionName = getName(serverId, id) ?? session?.projectName
 
-  const { sendKeys } = useSessionActions(serverId, id ?? '')
+  const { sendKeys, stopSession } = useSessionActions(serverId, id ?? '')
+
+  // Bug 16: leaving a never-used fresh session should hard-stop the PTY so it
+  // doesn't linger in the hub as an empty idle entry. Fire-and-forget — don't
+  // block the back gesture. Skips resumes and sessions the user already typed in.
+  useEffect(() => {
+    if (isPending || !id) return
+    const unsub = navigation.addListener('beforeRemove', () => {
+      const unusedFresh =
+        session != null &&
+        session.ptyAttached === true &&
+        (session.status === 'running' || session.status === 'waiting_input') &&
+        session.promptCount === 0 &&
+        !session.resumedFromConversationId &&
+        !wasSessionUsed(id)
+      if (!unusedFresh) return
+      clientLog.info('session', 'discard unused empty session on back', { sessionId: id, serverId })
+      clearSessionUsed(id)
+      stopSession.mutate(undefined, {
+        onError: (err) => {
+          clientLog.info('session', 'discard stop failed', {
+            sessionId: id,
+            err: err instanceof Error ? err.message : String(err),
+          })
+        },
+      })
+    })
+    return unsub
+  }, [
+    navigation,
+    isPending,
+    id,
+    serverId,
+    session,
+    stopSession.mutate,
+  ])
 
   // Mirrors the `isLive` check computed later (post early-returns) — needed
   // here too since useTerminalStream must be called unconditionally, before
