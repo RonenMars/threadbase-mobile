@@ -4,26 +4,39 @@
   },
   "status": {
     "connected": "מחובר",
-    "disconnected": "מנותק"
+    "disconnected": "מנותק",
+    "connecting": "מתחבר…",
+    "error": "שגיאת חיבור"
   },
   "action": {
     "add": "הוסף שרת",
+    "edit": "ערוך",
+    "remove": "הסר שרת",
+    "viewError": "הצג שגיאת חיבור",
     "connect": "התחבר",
     "details": "פרטים"
   },
   "dialog": {
     "removeTitle": "הסר שרת",
-    "removeMessage": "להתנתק מ-{{server}}?",
-    "removeConfirm": "הסר"
+    "removeMessage": "האם אתה בטוח שברצונך להסיר את השרת הזה?",
+    "removeConfirm": "הסר",
+    "removeDismiss": "ביטול"
   },
   "form": {
+    "name": "שם",
+    "url": "URL",
+    "namePlaceholder": "השרת שלי",
+    "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "תווית (אופציונלי)",
     "serverUrl": "כתובת שרת",
     "apiKey": "מפתח API",
     "hint": "הרץ cch serve --tunnel --qr על ה-Mac שלך כדי לקבל URL הניתן לסריקת QR."
   },
   "manage": {
-    "addServer": "הוסף שרת"
+    "title": "שרתים",
+    "addServer": "הוסף שרת",
+    "addServerHint": "התחבר למופע tb-streamer",
+    "empty": "עדיין לא נוספו שרתים."
   },
   "filter": {
     "title": "מסננים",
@@ -56,6 +69,7 @@
     "rememberChoice": "זכור את הבחירה הזו"
   },
   "statusModal": {
+    "title": "סטטוס שרת",
     "close": "✕",
     "menuEdit": "ערוך",
     "menuRefresh": "רענן",
@@ -91,114 +105,5 @@
     "successToast": "טופל. הגיבוי נשמר ב-{{backupPath}}",
     "successToastNoBackup": "טופל.",
     "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה."
-  },
-  "claudeFlags": {
-    "title": "דגלי Claude CLI",
-    "description": "חלים על כל סשן שהשרת הזה מפעיל. ייכנסו לתוקף בסשן הבא.",
-    "notPersisted": "השרת הופעל עם דגלי שורת פקודה, ולכן שינויים חלים עכשיו אך יתאפסו באתחול.",
-    "extraArgsLabel": "ארגומנטים נוספים",
-    "extraArgsUnsupported": "מועברים כמו שהם וללא אימות. השימוש באחריותך.",
-    "listHint": "מופרד בפסיקים",
-    "save": "שמירת דגלים",
-    "confirmTitle": "לבטל את בקשות ההרשאה?",
-    "confirmApprove": "אישור",
-    "confirmContinue": "המשך",
-    "dangerousExplanation": "קלוד יריץ פקודות במחשב הזה בלי לשאול אותך, בכל סשן עתידי. לכל מי שיש את מפתח ה-API של השרת תהיה אותה יכולת.",
-    "flags": {
-      "permissionMode": {
-        "label": "מצב הרשאות",
-        "description": "כמה קלוד שואל לפני ביצוע פעולה. מצבי עקיפה מבטלים כל אישור."
-      },
-      "addDir": {
-        "label": "תיקיות נוספות",
-        "description": "תיקיות נוספות שקלוד רשאי לקרוא ולערוך, מעבר לפרויקט."
-      },
-      "allowedTools": {
-        "label": "כלים מורשים",
-        "description": "רק כלים אלה ירוצו ללא שאלה. חלופה בטוחה יותר למצב עקיפה."
-      },
-      "disallowedTools": {
-        "label": "כלים חסומים",
-        "description": "כלים שקלוד לעולם לא יריץ בשרת הזה."
-      },
-      "maxBudgetUsd": {
-        "label": "מגבלת תקציב (USD)",
-        "description": "מגבילה את ההוצאה של סשן יחיד. שימושי כשהאישורים מבוטלים."
-      },
-      "fallbackModel": {
-        "label": "מודל גיבוי",
-        "description": "המודל שאליו לעבור אם המודל הראשי אינו זמין."
-      }
-    }
-  },
-  "health": {
-    "heading": "בריאות שרת",
-    "subtitle": "בדיקות עצמאיות מכל סטרימר מחובר. כשלים כוללים קוד ופעולה מומלצת. סודות אינם נכללים.",
-    "screenTitle": "בריאות שרת",
-    "emptyTitle": "אין שרתים עדיין",
-    "emptyBody": "צמד שרת תחילה, ואז חזור לכאן לבדיקת הבריאות.",
-    "loading": "בודק שרת…",
-    "loadFailed": "לא ניתן לטעון את בריאות השרת.",
-    "retry": "נסה שוב",
-    "overall": "סה״כ",
-    "generatedAt": "נוצר ב־{{at}}",
-    "copy": "העתק דוח",
-    "copied": "הועתק",
-    "copyFailed": "לא ניתן להעתיק את הדוח.",
-    "share": "שתף דוח",
-    "shareFailed": "לא ניתן לשתף את הדוח.",
-    "unsupportedContract": "הסטרימר מדווח על חוזה אבחון v{{version}}. האפליקציה מצפה ל־v1 — ייתכן שחלק מהשדות חסרים.",
-    "status": {
-      "ok": "תקין",
-      "degraded": "מוחלש",
-      "failed": "נכשל",
-      "unknown": "לא ידוע"
-    },
-    "checks": {
-      "streamer": "סטרימר",
-      "providerClaude": "Claude Code CLI",
-      "providerCodex": "Codex CLI",
-      "cache": "מטמון שיחות",
-      "pty": "מערכת PTY",
-      "filesystem": "תיקיית היסטוריית ספק"
-    },
-    "remediation": {
-      "PROVIDER_NOT_INSTALLED": {
-        "title": "חסר CLI של הספק",
-        "action": "במק שמריץ את הסטרימר, התקן את ה־CLI של הספק וודא שהוא ב־PATH, ואז נסה שוב."
-      },
-      "PROVIDER_VERSION_UNVERIFIED": {
-        "title": "גרסת ספק לא מאומתת",
-        "action": "עדכן את ה־CLI לגרסה שהסטרימר אימת, ואז נסה שוב."
-      },
-      "DB_UNAVAILABLE": {
-        "title": "מסד הנתונים אינו זמין",
-        "action": "הפעל מחדש את הסטרימר. אם זה נמשך, בדוק מקום בדיסק ויומנים במארח."
-      },
-      "DB_MIGRATION_PENDING": {
-        "title": "מיגרציית מסד ממתינה",
-        "action": "שדרג והפעל מחדש את הסטרימר כדי להחיל מיגרציות."
-      },
-      "PTY_UNAVAILABLE": {
-        "title": "PTY אינו זמין",
-        "action": "התקן/בנה מחדש את הסטרימר כדי שמודול ה־PTY ייטען, ואז הפעל מחדש."
-      },
-      "CACHE_DEGRADED": {
-        "title": "מטמון השיחות מוחלש",
-        "action": "פתח שרתים ← טפל בהתראת שלמות המטמון במארח זה, ואז נסה שוב."
-      },
-      "CLOCK_SKEWED": {
-        "title": "סטיית שעון",
-        "action": "כוון את שעון המארח (שעה אוטומטית). אסימוני צימוד פגים תוך דקות."
-      },
-      "FS_SCOPE_MISSING": {
-        "title": "תיקיית היסטוריה חסרה",
-        "action": "וודא שהספק יצר את תיקיית ההיסטוריה במארח, ואז נסה שוב."
-      },
-      "NONE": {
-        "title": "אין צורך בפעולה",
-        "action": ""
-      }
-    }
   }
 }
