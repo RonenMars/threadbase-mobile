@@ -4,6 +4,7 @@ import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { AppState, type AppStateStatus } from 'react-native'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
+import type { MultiConversation, MultiSession } from '@/types/api'
 
 const ONE_MINUTE = 1000 * 60
 export const QUERY_GC_TIME = ONE_MINUTE * 5
@@ -45,6 +46,65 @@ export const queryClient = new QueryClient({
     },
   },
 })
+
+interface ConversationCollection {
+  conversations: MultiConversation[]
+  total?: number
+}
+
+interface ConversationInfiniteData {
+  pages: ConversationCollection[]
+  pageParams: unknown[]
+}
+
+function withoutServer<T extends { serverId: string }>(items: T[], serverId: string): T[] {
+  return items.filter((item) => item.serverId !== serverId)
+}
+
+function filterConversationCollection(
+  collection: ConversationCollection,
+  serverId: string,
+): ConversationCollection {
+  const conversations = withoutServer(collection.conversations, serverId)
+  const removed = collection.conversations.length - conversations.length
+  return {
+    ...collection,
+    conversations,
+    ...(collection.total === undefined
+      ? {}
+      : { total: Math.max(0, collection.total - removed) }),
+  }
+}
+
+/** Drop cached list/detail state belonging to one server while preserving all others. */
+export function clearServerConversationAndSessionState(serverId: string) {
+  queryClient.setQueriesData<MultiConversation[]>(
+    { queryKey: ['conversations-eager'] },
+    (data) => data ? withoutServer(data, serverId) : data,
+  )
+  queryClient.setQueriesData<ConversationCollection | ConversationInfiniteData>(
+    { queryKey: ['conversations'] },
+    (data) => {
+      if (!data) return data
+      if ('pages' in data) {
+        return { ...data, pages: data.pages.map((page) => filterConversationCollection(page, serverId)) }
+      }
+      return filterConversationCollection(data, serverId)
+    },
+  )
+  queryClient.setQueriesData<MultiSession[]>(
+    { queryKey: ['sessions-eager'] },
+    (data) => data ? withoutServer(data, serverId) : data,
+  )
+  queryClient.setQueriesData<MultiSession[]>(
+    { queryKey: ['sessions'] },
+    (data) => data ? withoutServer(data, serverId) : data,
+  )
+
+  queryClient.removeQueries({ queryKey: ['conversation', serverId] })
+  queryClient.removeQueries({ queryKey: ['project-conversations', serverId] })
+  queryClient.removeQueries({ queryKey: ['session', serverId] })
+}
 
 // React Native has no browser online/offline events, so onlineManager never
 // learns about radio state on its own — refetchOnReconnect would never fire and
