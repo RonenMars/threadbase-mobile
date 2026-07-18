@@ -15,7 +15,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useBrowse, useCreateDirectory, useStartSession } from '@/hooks/useBrowse'
+import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -26,7 +26,7 @@ import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
-import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import { clientLog } from '@/lib/clientLog'
 
 const MAX_RECENT_DIRS = 8
 
@@ -36,27 +36,12 @@ interface RecentDir {
   lastUsedAt: string
 }
 
-/**
- * Build the chat-screen URL for a freshly-created session, including the
- * `projectId` (when known) and `projectPath` (display/debug only) so the
- * downstream screen can render before the next ProjectChat refetch lands.
- */
-function buildSessionRoute(
-  session: { id: string; projectId?: string; projectPath?: string | null },
-  serverId: string,
-  opts?: { starting?: boolean },
-): string {
-  const params = new URLSearchParams({ server: serverId })
-  if (session.projectId) params.set('projectId', session.projectId)
-  if (session.projectPath) params.set('projectPath', session.projectPath)
-  if (opts?.starting) params.set('starting', '1')
-  return `/session/${session.id}?${params.toString()}`
-}
-
 export default function BrowseScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
-  const styles = useMemo(() => makeStyles(theme), [theme])
+  const styles = useMemo(() => {
+    return makeStyles(theme)
+  }, [theme])
   const { t } = useTranslation(['browse', 'common'])
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
@@ -72,7 +57,9 @@ export default function BrowseScreen() {
 
   const { data: allSessions = [] } = useSessions()
   const recentDirs = useMemo<RecentDir[]>(() => {
-    if (!serverId) return []
+    if (!serverId) {
+      return []
+    }
     const seen = new Set<string>()
     const dirs: RecentDir[] = []
     const sorted = [...allSessions]
@@ -80,14 +67,19 @@ export default function BrowseScreen() {
       .sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
     for (const session of sorted) {
       const path = session.projectPath
-      if (seen.has(path)) continue
+      if (seen.has(path)) {
+        continue
+      }
       seen.add(path)
+      const name = path.split('/').filter(Boolean).pop() ?? path
       dirs.push({
         path,
-        name: path.split('/').filter(Boolean).pop() ?? path,
+        name,
         lastUsedAt: session.startedAt,
       })
-      if (dirs.length >= MAX_RECENT_DIRS) break
+      if (dirs.length >= MAX_RECENT_DIRS) {
+        break
+      }
     }
     return dirs
   }, [allSessions, serverId])
@@ -117,19 +109,26 @@ export default function BrowseScreen() {
   // app/session/[id].tsx).
   useEffect(() => {
     if (isError && currentPath && error?.message?.includes('outside browse root')) {
-      queueMicrotask(() => setCurrentPath(''))
+      queueMicrotask(() => {
+        setCurrentPath('')
+      })
     }
   }, [isError, error, currentPath])
   const createDir = useCreateDirectory(serverId ?? '')
-  const startSession = useStartSession(serverId ?? '')
+  // True once a start navigation kicked off; guards double-taps in the one
+  // frame before this screen dismisses.
+  const [isStarting, setIsStarting] = useState(false)
 
   const breadcrumbs = currentPath ? currentPath.split('/') : []
   const navigation = useNavigation()
 
   const goBack = useCallback(() => {
-    if (!currentPath) return
+    if (!currentPath) {
+      return
+    }
     const segments = currentPath.split('/')
-    setCurrentPath(segments.slice(0, -1).join('/'))
+    const nextPath = segments.slice(0, -1).join('/')
+    setCurrentPath(nextPath)
     setShowNewFolder(false)
   }, [currentPath])
 
@@ -167,14 +166,17 @@ export default function BrowseScreen() {
       setCurrentPath('')
     } else {
       const segments = currentPath.split('/')
-      setCurrentPath(segments.slice(0, index + 1).join('/'))
+      const nextPath = segments.slice(0, index + 1).join('/')
+      setCurrentPath(nextPath)
     }
     setShowNewFolder(false)
   }, [currentPath])
 
   const handleCreateFolder = useCallback(() => {
     const name = newFolderName.trim()
-    if (!name) return
+    if (!name) {
+      return
+    }
     createDir.mutate(
       { parentPath: currentPath, name },
       {
@@ -189,87 +191,52 @@ export default function BrowseScreen() {
     )
   }, [currentPath, newFolderName, createDir])
 
-  // Bug 14 fix: browse is presented as a modal (Stack.Screen
-  // presentation: 'modal'). Navigating from inside the still-presented
-  // modal — whether via push, replace, or dismissTo — leaves the modal
-  // envelope mounted underneath, so pulling down the new session screen
-  // reveals browse behind it. The framework-correct sequence is: dismiss
-  // the modal, wait for the dismiss animation to fully complete, then push
-  // the session route on the parent stack. native-stack emits
-  // `transitionEnd` with `data.closing === true` exactly when the modal
-  // teardown finishes — we listen for that one event and push then.
-  const navigateToNewSession = useCallback(
-    (
-      session: { id: string; projectId?: string; projectPath?: string | null },
-      opts?: { starting?: boolean },
-    ) => {
-      const target = buildSessionRoute(session, serverId ?? '', opts)
-      // `transitionEnd` is a native-stack event; expo-router's useNavigation()
-      // returns a base navigation type that doesn't include it in its event
-      // map, hence the casts.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const unsubscribe = (navigation as any).addListener('transitionEnd', (e: { data: { closing: boolean } }) => {
-        if (!e.data.closing) return
-        unsubscribe()
-        markNavigatedToSession(session.id)
+  // Bug 14 fix, take 3: browse is presented as a modal (Stack.Screen
+  // presentation: 'modal'). Pushing a route while the modal is still in
+  // navigation state parks it UNDER the modal envelope (Bug 14), and a
+  // `transitionEnd` listener never fires for a programmatic router.back()
+  // (the pop removes the route from state synchronously and the listener
+  // dies with the unmounting screen — it only fires for gesture
+  // dismissals). So: pop the modal, then push one frame later — the modal
+  // is already out of state, so the route lands on the base stack and is
+  // revealed as the sheet animates away. The start POST itself lives in
+  // /session/new: browse unmounts immediately, and React Query drops
+  // mutate() callbacks when their component unmounts.
+  const navigateToStartScreen = useCallback(
+    (path: string, projectName: string) => {
+      const params = new URLSearchParams({ server: serverId ?? '', path, projectName })
+      if (selectedProvider === CODEX_CLI_PROVIDER) params.set('provider', selectedProvider)
+      const target = `/session/new?${params.toString()}`
+      clientLog.info('browse', 'dismiss modal + push /session/new', { target })
+      router.back()
+      // One frame is enough: back() has already committed the pop, and the
+      // rAF outlives this screen's unmount (router is the global ref, not
+      // tied to the browse route).
+      requestAnimationFrame(() => {
+        clientLog.info('browse', 'push /session/new after dismiss', { target })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.push(target as any)
       })
-      router.back()
     },
-    [router, navigation, serverId],
-  )
-
-  // 'pending' means the server's ready-wait timed out (PTY spawned but not yet
-  // at its prompt — e.g. blocked on a Codex startup gate). Navigate to the
-  // pending screen so the user sees progress/console access instead of
-  // silently waiting on the still-open browse modal; app/_layout.tsx's global
-  // session_ready listener would otherwise be the only way out. `starting: true`
-  // carries the real id with the exact-id gate on, so a different session's
-  // session_ready can't latch onto this pending screen.
-  const handleStartResult = useCallback(
-    (result: { kind: 'ready'; session: { id: string; projectId?: string; projectPath?: string | null } } | { kind: 'pending'; id: string }) => {
-      if (result.kind === 'ready') {
-        navigateToNewSession(result.session)
-      } else {
-        navigateToNewSession({ id: result.id }, { starting: true })
-      }
-    },
-    [navigateToNewSession],
-  )
-
-  const handleStartError = useCallback(
-    (err: Error) => {
-      const message = err instanceof NetworkError && err.code === 'TIMEOUT' ? t('error.startTimeout') : err.message
-      Alert.alert(t('error.startFailed'), message)
-    },
-    [t],
+    [router, serverId, selectedProvider],
   )
 
   const handleStartSession = useCallback(() => {
-    const displayName = currentPath ? currentPath.split('/').pop() : '~'
-    startSession.mutate(
-      {
-        path: currentPath,
-        projectName: displayName,
-        ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
-      },
-      { onSuccess: handleStartResult, onError: handleStartError },
-    )
-  }, [currentPath, selectedProvider, startSession, handleStartResult, handleStartError])
+    if (isStarting) return
+    setIsStarting(true)
+    const displayName = (currentPath ? currentPath.split('/').pop() : '~') ?? '~'
+    clientLog.info('browse', 'start session pressed', { currentPath, selectedProvider, serverId })
+    navigateToStartScreen(currentPath, displayName)
+  }, [currentPath, selectedProvider, serverId, isStarting, navigateToStartScreen])
 
   const handleStartFromRecent = useCallback(
     (dir: RecentDir) => {
-      startSession.mutate(
-        {
-          path: dir.path,
-          projectName: dir.name,
-          ...(selectedProvider === CODEX_CLI_PROVIDER ? { provider: selectedProvider } : {}),
-        },
-        { onSuccess: handleStartResult, onError: handleStartError },
-      )
+      if (isStarting) return
+      setIsStarting(true)
+      clientLog.info('browse', 'start from recent pressed', { path: dir.path, serverId })
+      navigateToStartScreen(dir.path, dir.name)
     },
-    [selectedProvider, startSession, handleStartResult, handleStartError],
+    [serverId, isStarting, navigateToStartScreen],
   )
 
   const renderItem = useCallback(
@@ -278,7 +245,9 @@ export default function BrowseScreen() {
       return (
         <TouchableOpacity
           style={styles.row}
-          onPress={() => navigateTo(childPath)}
+          onPress={() => {
+            navigateTo(childPath)
+          }}
           testID={index === 0 ? "browse-first-directory" : undefined}
         >
           <Text style={styles.folderIcon}>📁</Text>
@@ -341,7 +310,7 @@ export default function BrowseScreen() {
                   key={dir.path}
                   style={styles.recentRow}
                   onPress={() => handleStartFromRecent(dir)}
-                  disabled={startSession.isPending}
+                  disabled={isStarting}
                 >
                   <Text style={styles.recentIcon}>🕘</Text>
                   <View style={styles.recentTextWrap}>
@@ -464,11 +433,11 @@ export default function BrowseScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.startBtn, startSession.isPending && styles.startBtnDisabled]}
+            style={[styles.startBtn, isStarting && styles.startBtnDisabled]}
             onPress={handleStartSession}
-            disabled={startSession.isPending}
+            disabled={isStarting}
           >
-            {startSession.isPending ? (
+            {isStarting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={styles.startBtnText}>{t('nav.startSession')}</Text>

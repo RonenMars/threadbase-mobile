@@ -5,6 +5,9 @@ import { useLoadingStateStore } from '@/stores/loading-state'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
+// ponytail: standard iOS/Android nav-bar row height; keeps the banner below the topbar back button
+const NAV_BAR_HEIGHT = 44
+
 export function SlowQueryBanner() {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -14,7 +17,7 @@ export function SlowQueryBanner() {
   if (!isSlow) return null
 
   return (
-    <View style={[styles.strip, { top: insets.top }]}>
+    <View style={[styles.strip, { top: insets.top + NAV_BAR_HEIGHT }]}>
       <ActivityIndicator size="small" color={theme.text.warning} />
       <Text style={styles.text}>
         {'Fetching sessions is taking longer than expected.\nHold still…'}

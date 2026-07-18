@@ -31,6 +31,15 @@ Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR 
 
 ---
 
+## Native Dependencies After Package Changes
+
+Whenever `package.json` or `package-lock.json` changes:
+
+1. Run `pod install` from the `ios/` directory.
+2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
+
+---
+
 ## Icons
 
 **Never use emojis in the app UI.** All icons must come from the [Phosphor Icons](https://phosphoricons.com/) library (`phosphor-react-native`). Use the appropriate Phosphor component (e.g. `<Star />`, `<Clock />`, `<Fire />`, `<GearSix />`, `<PencilSimple />`). This applies to all new code and any code you touch.

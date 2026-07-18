@@ -11,7 +11,6 @@
  *    the list is still resizing.
  */
 import React from 'react'
-import { FlatList } from 'react-native'
 import { render, act, type RenderResult } from '@testing-library/react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
@@ -102,32 +101,12 @@ function seedServer() {
 }
 
 function skeletonOverlayVisible(root: RenderResult) {
-  // The gated overlay renders a non-scrollable skeleton FlatList above the
-  // message list; once the gate lifts only the message list remains.
-  const lists = root.UNSAFE_getAllByType(FlatList)
-  return lists.some((l) => l.props.scrollEnabled === false)
+  // The gated overlay carries testID="skeleton-overlay"; once the gate lifts it
+  // unmounts and only the message list remains.
+  return root.queryByTestId('skeleton-overlay') != null
 }
 
-async function renderScreenAndFindList(root: RenderResult) {
-  // Flush queryFn resolution under fake timers — react-query may defer a tick.
-  let list
-  for (let i = 0; i < 20 && !list; i++) {
-    await act(async () => {
-      jest.advanceTimersByTime(5)
-    })
-    list = root
-      .UNSAFE_getAllByType(FlatList)
-      .find(
-        (l) =>
-          typeof l.props.onContentSizeChange === 'function' &&
-          l.props.scrollEnabled !== false,
-      )
-  }
-  expect(list).toBeDefined()
-  return list!.props.onContentSizeChange as (w: number, h: number) => void
-}
-
-describe.skip('conversation detail — skeleton gating', () => {
+describe('conversation detail — skeleton gating', () => {
   beforeEach(() => {
     jest.useFakeTimers()
     seedServer()
@@ -139,54 +118,37 @@ describe.skip('conversation detail — skeleton gating', () => {
     jest.useRealTimers()
   })
 
-  it('lifts the skeleton at the 400 ms floor when data and layout are fast', async () => {
-    const t0 = Date.now()
+  // The skeleton lifts once the fetch lands AND FlashList reports it drew its
+  // items (onLoad → listDrawn), held by the 400 ms useMinDisplayTime floor.
+  // The mocked FlashList fires onLoad on mount, so the gate is bounded by the
+  // floor — no content-size settle/cap machinery anymore.
+  it('holds the skeleton under the 400 ms anti-flicker floor, then lifts', async () => {
     const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
-    const fireContentSizeChange = await renderScreenAndFindList(root)
 
-    // One size change, then layout goes quiet — settle fires 150 ms later.
+    // Let the query resolve and the list mount (onLoad fires), but stay under
+    // the 400 ms floor.
     await act(async () => {
-      fireContentSizeChange(390, 5000)
-      jest.advanceTimersByTime(150)
-    })
-    expect(skeletonOverlayVisible(root)).toBe(true) // floor still holding
-
-    // Just before the 400 ms floor — still gated.
-    await act(async () => {
-      jest.advanceTimersByTime(400 - (Date.now() - t0) - 10)
+      jest.advanceTimersByTime(100)
     })
     expect(skeletonOverlayVisible(root)).toBe(true)
 
-    // Crossing the floor lifts the gate (well before the old 800 ms).
+    // Cross the floor — gate lifts.
     await act(async () => {
-      jest.advanceTimersByTime(20)
+      jest.advanceTimersByTime(400)
     })
     expect(skeletonOverlayVisible(root)).toBe(false)
   })
 
-  it('caps the settle wait: continuous content-size churn cannot hold the skeleton', async () => {
+  it('lifts immediately for an empty conversation (no onLoad)', async () => {
+    mockDetailRef.current = makeDetail(0)
     const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
-    const fireContentSizeChange = await renderScreenAndFindList(root)
 
-    // Height keeps changing every 100 ms (code/image-heavy page laying out).
-    // Each change resets the 150 ms settle debounce, so without a cap the
-    // gate would be deferred for as long as the churn lasts.
-    let lifted: number | null = null
-    const churnStart = Date.now()
-    for (let t = 0; t < 1200; t += 100) {
-      await act(async () => {
-        fireContentSizeChange(390, 5000 + t)
-        jest.advanceTimersByTime(100)
-      })
-      if (lifted === null && !skeletonOverlayVisible(root)) {
-        lifted = Date.now() - churnStart
-      }
-    }
-
-    // The gate must have lifted mid-churn: at most first-change + 500 ms cap
-    // (plus the 400 ms floor lower bound), far below the 1200 ms churn window.
-    expect(lifted).not.toBeNull()
-    expect(lifted!).toBeLessThanOrEqual(700)
+    await act(async () => {
+      jest.advanceTimersByTime(600)
+    })
+    // Empty state flips listDrawn directly (ListEmptyComponent path fires no
+    // onLoad), so the skeleton must not be stuck up.
+    expect(skeletonOverlayVisible(root)).toBe(false)
   })
 })
 

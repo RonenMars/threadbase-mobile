@@ -6,6 +6,17 @@
     "create": "Create",
     "startSession": "Start Session Here"
   },
+  "starting": {
+    "secondsLeft": "{{seconds}}s",
+    "phrases": [
+      "I'm waking up, I'll be ready in a moment…",
+      "Loading my entire knowledge of humanity, one sec…",
+      "Stretching my context window, almost there…",
+      "Brewing a fresh pot of tokens, hold tight…",
+      "Reminding myself what code looks like…",
+      "Counting to a trillion really fast, nearly done…"
+    ]
+  },
   "error": {
     "loadFailed": "Failed to load conversations",
     "retryHint": "Pull down to retry",

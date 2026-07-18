@@ -42,5 +42,11 @@
     "previousMatch": "Previous match",
     "nextMatch": "Next match",
     "clearSearch": "Clear search"
+  },
+  "slowLoading": {
+    "title1": "Untangling a long thread…",
+    "title2": "Messages are fashionably late…",
+    "title3": "Your messages hit some traffic…",
+    "message": "Wasn't expecting them to be this heavy. We're loading as fast as we can."
   }
 }

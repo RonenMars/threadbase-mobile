@@ -87,6 +87,38 @@ describe('TerminalOutput – controls', () => {
   })
 })
 
+describe('TerminalOutput – ground-truth user ownership', () => {
+  const USER = '#58a6ff'
+  const PLAIN = '#e6edf3'
+  type TextNode = ReturnType<Awaited<ReturnType<typeof render>>['getByText']>
+  const colorOf = (node: TextNode) => StyleSheet.flatten(node.props.style).color
+
+  it('styles only ❯ lines confirmed by userMessageTexts', async () => {
+    const { getByText } = await render(
+      <TerminalOutput
+        lines={['❯ real prompt', '❯ agent echo', 'plain output']}
+        isStreaming={false}
+        userMessageTexts={new Set(['real prompt'])}
+      />
+    )
+    expect(colorOf(getByText('❯ real prompt'))).toBe(USER)
+    // A ❯ line NOT in the set is agent-owned once ground truth is present.
+    expect(colorOf(getByText('❯ agent echo'))).toBe(PLAIN)
+    expect(colorOf(getByText('plain output'))).toBe(PLAIN)
+  })
+
+  it('falls back to the ❯ heuristic when the set is empty (old streamer)', async () => {
+    const { getByText } = await render(
+      <TerminalOutput
+        lines={['❯ anything']}
+        isStreaming={false}
+        userMessageTexts={new Set()}
+      />
+    )
+    expect(colorOf(getByText('❯ anything'))).toBe(USER)
+  })
+})
+
 describe('TerminalOutput – row testIDs', () => {
   it('renders LineRow with testID for each line', async () => {
     const { queryAllByTestId } = await render(

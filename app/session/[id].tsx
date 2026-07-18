@@ -11,15 +11,6 @@ import {
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
@@ -29,6 +20,7 @@ import { useSessionActions } from '@/hooks/useSessionActions'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
+import { isTerminalSession } from '@/utils/terminalSession'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
@@ -46,21 +38,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-
-const WAKING_UP_PHRASES = [
-  "I'm waking up, I'll be ready in a moment…",
-  "Loading my entire knowledge of humanity, one sec…",
-  "Stretching my context window, almost there…",
-  "Brewing a fresh pot of tokens, hold tight…",
-  "Reminding myself what code looks like…",
-  "Counting to a trillion really fast, nearly done…",
-]
-
-function wakingUpPhrase(sessionId: string): string {
-  let hash = 0
-  for (let i = 0; i < sessionId.length; i++) hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0
-  return WAKING_UP_PHRASES[hash % WAKING_UP_PHRASES.length]
-}
+import { clientLog } from '@/lib/clientLog'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -74,125 +52,15 @@ const PENDING_PHRASES = [
 ]
 
 const RECONNECTING_BANNER_DELAY_MS = 5_000
-
-function WakingUpOverlay({ phrase }: { phrase: string }) {
-  const theme = useTheme()
-  const wakingStyles = makeWakingStyles(theme)
-  const bounce = useSharedValue(0)
-  const rotate = useSharedValue(0)
-  const pulse = useSharedValue(1)
-  const dot1 = useSharedValue(0)
-  const dot2 = useSharedValue(0)
-  const dot3 = useSharedValue(0)
-
-  useEffect(() => {
-    bounce.value = withRepeat(
-      withSequence(
-        withTiming(-18, { duration: 500, easing: Easing.out(Easing.quad) }),
-        withTiming(0, { duration: 500, easing: Easing.in(Easing.quad) }),
-      ),
-      -1,
-      false,
-    )
-    rotate.value = withRepeat(
-      withSequence(
-        withTiming(-12, { duration: 400 }),
-        withTiming(12, { duration: 400 }),
-        withTiming(0, { duration: 200 }),
-      ),
-      -1,
-      false,
-    )
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.12, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    )
-    dot1.value = withRepeat(
-      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-      -1,
-      false,
-    )
-    dot2.value = withDelay(160, withRepeat(
-      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-      -1,
-      false,
-    ))
-    dot3.value = withDelay(320, withRepeat(
-      withSequence(withTiming(1, { duration: 400 }), withTiming(0.3, { duration: 400 })),
-      -1,
-      false,
-    ))
-    // Reanimated SharedValues are stable refs — including them here would cause
-    // the animation to restart on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const emojiStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: bounce.value },
-      { rotate: `${rotate.value}deg` },
-      { scale: pulse.value },
-    ],
-  }))
-  const dot1Style = useAnimatedStyle(() => ({ opacity: dot1.value }))
-  const dot2Style = useAnimatedStyle(() => ({ opacity: dot2.value }))
-  const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value }))
-
-  return (
-    <View style={wakingStyles.overlay} testID="waking-up-overlay">
-      <View style={wakingStyles.card}>
-        <Animated.Text style={[wakingStyles.emoji, emojiStyle]}>🤖</Animated.Text>
-        <View style={wakingStyles.dots}>
-          <Animated.View style={[wakingStyles.dot, dot1Style]} />
-          <Animated.View style={[wakingStyles.dot, dot2Style]} />
-          <Animated.View style={[wakingStyles.dot, dot3Style]} />
-        </View>
-        <Text style={wakingStyles.phrase}>{phrase}</Text>
-      </View>
-    </View>
-  )
-}
-
-function makeWakingStyles(theme: Theme) {
-  return StyleSheet.create({
-    overlay: {
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(10, 10, 14, 0.85)',
-      zIndex: 10,
-    },
-    card: {
-      alignItems: 'center',
-      gap: 16,
-      paddingHorizontal: 32,
-    },
-    emoji: {
-      fontSize: 72,
-    },
-    dots: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.text.accent,
-    },
-    phrase: {
-      color: theme.text.secondary,
-      fontSize: font.base,
-      textAlign: 'center',
-      lineHeight: 24,
-      maxWidth: 280,
-    },
-  })
-}
+// Max time the waking-up overlay waits on a first terminal_output before it
+// gives up and renders the terminal underneath (see wakeTimedOut).
+const WAKING_UP_WS_TIMEOUT_MS = 8_000
+// The waking-up overlay clears only when a WS session_update pushes
+// status → waiting_input (or terminal_output starts). There is no polling
+// backstop on the session query, so a dropped/stranded session_update leaves
+// the overlay stuck indefinitely. After this long still waking, re-pull the
+// authoritative session status over HTTP so the overlay always resolves.
+const WAKING_UP_BACKSTOP_MS = 15_000
 
 // The server's own ready-wait window (see tb-streamer START_READY_TIMEOUT_MS)
 // — the progress bar animates toward this. After STUCK_AFTER_MS with neither
@@ -219,6 +87,7 @@ function PendingSessionScreen({
   const [phraseIdx, setPhraseIdx] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [stuck, setStuck] = useState(false)
+  const [waitNonce, setWaitNonce] = useState(0)
   // pendingId is `pending_<realSessionId>` (see navigateToNewSession) — strip
   // the prefix to get the id the server/stop-session API actually knows.
   const realSessionId = pendingId.replace(/^pending_/, '')
@@ -231,6 +100,10 @@ function PendingSessionScreen({
     return () => clearInterval(timer)
   }, [])
 
+  // Bumping waitNonce (via "Wait more") re-arms this timer from a fresh
+  // baseline. The press handler resets elapsed/stuck (not this effect) so the
+  // reset stays out of the effect body — react-hooks/set-state-in-effect — and
+  // the new baseline lands before the next 250ms tick can re-flip `stuck`.
   useEffect(() => {
     const startedAt = Date.now()
     const timer = setInterval(() => {
@@ -239,21 +112,38 @@ function PendingSessionScreen({
       if (elapsed >= STUCK_AFTER_MS) setStuck(true)
     }, 250)
     return () => clearInterval(timer)
-  }, [])
+  }, [waitNonce])
+
+  const handleWaitMore = () => {
+    setElapsedMs(0)
+    setStuck(false)
+    setWaitNonce((n) => n + 1)
+  }
 
   useEffect(() => {
     const client = wsManager.getClient(serverId)
-    if (!client) return
+    if (!client) {
+      clientLog.info('session.pending', 'no WS client — cannot listen for ready', { serverId, pendingId })
+      return
+    }
 
-    const goReady = (sessionId: string) => {
-      router.replace(`/session/${sessionId}?server=${serverId}`)
+    const goReady = (sessionId: string, via: string) => {
+      const target = `/session/${sessionId}?server=${serverId}`
+      clientLog.info('session.pending', 'ready — replace to session', { sessionId, via, target })
+      router.replace(target)
     }
 
     // Primary: session_ready is an explicit signal from new streamers
     const unsubReady = client.on('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
-      if (expectExactId && msg.session.id !== pendingId) return
-      goReady(msg.session.id)
+      if (expectExactId && msg.session.id !== pendingId) {
+        clientLog.info('session.pending', 'session_ready ignored (exact-id mismatch)', {
+          msgSessionId: msg.session.id,
+          pendingId,
+        })
+        return
+      }
+      goReady(msg.session.id, 'session_ready')
     })
 
     // Fallback: older streamers emit session_update with ptyAttached: true instead
@@ -262,11 +152,13 @@ function PendingSessionScreen({
       const s = msg.session
       if (!s.ptyAttached) return
       if (expectExactId) {
-        if (s.id !== pendingId) return
+        if (s.id !== pendingId) {
+          return
+        }
       } else if (s.id.startsWith('pending_')) {
         return
       }
-      goReady(s.id)
+      goReady(s.id, 'session_update:ptyAttached')
     })
 
     return () => {
@@ -283,6 +175,12 @@ function PendingSessionScreen({
           <Text style={pendingStyles.phrase}>{t('terminal:status.stuckBody')}</Text>
         </View>
         <View style={[pendingStyles.footer, pendingStyles.stuckActions]}>
+          <TouchableOpacity
+            style={pendingStyles.waitButton}
+            onPress={handleWaitMore}
+          >
+            <Text style={pendingStyles.waitText}>{t('terminal:status.waitMore')}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={pendingStyles.viewConsoleButton}
             onPress={() => router.replace(`/session/${realSessionId}?server=${serverId}`)}
@@ -340,6 +238,14 @@ function makePendingStyles(theme: Theme) {
       alignItems: 'center',
     },
     cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '500' },
+    waitButton: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    waitText: { color: theme.text.primary, fontSize: font.base, fontWeight: '500' },
     viewConsoleButton: {
       backgroundColor: theme.text.accent,
       borderRadius: radius.md,
@@ -563,7 +469,8 @@ export default function SessionDetailScreen() {
   // this component's early returns.
   const isLiveForStream =
     session?.ptyAttached === true &&
-    (session?.status === 'waiting_input' || session?.status === 'running')
+    (session?.status === 'waiting_input' || session?.status === 'running') &&
+    !(session != null && isTerminalSession(session))
   const { isStreaming } = useTerminalStream(serverId, id ?? '', !isLiveForStream)
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
@@ -573,14 +480,20 @@ export default function SessionDetailScreen() {
   }
 
   useEffect(() => {
+    // Redirect an ended session to its conversation history. Gate on "has a
+    // conversation" (boundConversationId ?? conversationId), NOT promptCount:
+    // promptCount counts only prompts sent through the app, so an adopted /
+    // externally-started session that has real history reads promptCount 0 and
+    // would otherwise strand on the read-only placeholder.
+    const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
     if (session?.ptyAttached === false &&
       session?.status === 'idle' &&
-      (session?.promptCount ?? 0) > 0 &&
+      hasConversation &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
     ) {
       router.replace(`/conversation/${id}?server=${serverId}`)
     }
-  }, [session?.ptyAttached, session?.status, session?.promptCount, id, serverId, router])
+  }, [session?.ptyAttached, session?.status, session?.boundConversationId, session?.conversationId, id, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
@@ -621,6 +534,52 @@ export default function SessionDetailScreen() {
     }
   }, [session?.status])
 
+  // Backstop: a session can be `running` yet never emit a terminal_output (dead
+  // PTY, streamer restart mid-wake) — the waking-up overlay would then spin
+  // forever. Fall through to the rendered terminal after a bounded wait so the
+  // user sees the (empty) session instead of an infinite spinner.
+  const [wakeTimedOut, setWakeTimedOut] = useState(false)
+  useEffect(() => {
+    queueMicrotask(() => setWakeTimedOut(false))
+    const timer = setTimeout(() => setWakeTimedOut(true), WAKING_UP_WS_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [id])
+
+  // Mirrors the post-early-return `isWakingUp` (see below) — computed here so
+  // the backstop effect can run unconditionally before the early returns.
+  const isWakingUpEarly =
+    session?.status === 'running' &&
+    !hasReachedPrompt &&
+    !isStreaming &&
+    (session?.promptCount ?? 0) === 0
+
+  // Backstop for the push-only overlay exit: if we're still waking up after
+  // WAKING_UP_BACKSTOP_MS, the session_update that flips status → waiting_input
+  // may have been dropped or landed on an unbound handler. Re-pull the session
+  // over HTTP (and force a WS reconnect so re-subscribe re-primes the stream)
+  // so the overlay never sits unbounded. Re-arms while still waking.
+  useEffect(() => {
+    if (!isWakingUpEarly || !serverId || !id) return
+    const timer = setTimeout(() => {
+      if (__DEV__) {
+        console.log(`[waking-backstop] still waking after ${WAKING_UP_BACKSTOP_MS}ms — invalidating session ${id} + WS reconnect`)
+      }
+      wsManager.forceReconnect(serverId)
+      void qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+    }, WAKING_UP_BACKSTOP_MS)
+    return () => clearTimeout(timer)
+  }, [isWakingUpEarly, serverId, id, qc])
+
+  // Instrumentation (dev-only): trace the waking-up exit path so a future hang
+  // can be attributed to (a) status never flipping, (b) isStreaming, or (c) the
+  // backstop. Remove once the delivery-side root cause is confirmed.
+  useEffect(() => {
+    if (!__DEV__ || isPending) return
+    console.log(
+      `[waking-trace] id=${id} status=${session?.status} pty=${session?.ptyAttached} prompts=${session?.promptCount} isStreaming=${isStreaming} hasReachedPrompt=${hasReachedPrompt} isWakingUp=${isWakingUpEarly}`,
+    )
+  }, [id, session?.status, session?.ptyAttached, session?.promptCount, isStreaming, hasReachedPrompt, isWakingUpEarly, isPending])
+
   // Listen for plan_ready events for this session on the correct server
   useEffect(() => {
     const client = wsManager.getClient(serverId)
@@ -655,11 +614,10 @@ export default function SessionDetailScreen() {
   // session can be genuinely blocked on a startup dialog (e.g. Codex's
   // hooks/trust gates) that never flips promptCount/hasReachedPrompt, and the
   // user needs to see that dialog rather than a spinner covering it.
-  const isWakingUp =
-    session?.status === 'running' &&
-    !hasReachedPrompt &&
-    !isStreaming &&
-    (session?.promptCount ?? 0) === 0
+  // isWakingUpEarly stays exactly as #328 wrote it (no !wakeTimedOut) — it gates
+  // the 15 s re-pull effect. Folding !wakeTimedOut into it would flip it false at
+  // 8 s and clear the backstop timer before it ever fires, making #328 dead code.
+  const isWakingUp = isWakingUpEarly && !wakeTimedOut
 
   const infoModal = (
     <InfoModal
@@ -840,9 +798,6 @@ export default function SessionDetailScreen() {
               />
             )}
             </View>
-            {isWakingUp ? (
-              <WakingUpOverlay phrase={wakingUpPhrase(id)} />
-            ) : null}
           </View>
         ) : session.failureReason ? (
           <View style={styles.placeholder}>
@@ -850,6 +805,14 @@ export default function SessionDetailScreen() {
               {t('session.failedToStart')}
             </Text>
             <Text style={styles.placeholderText}>{session.failureReason}</Text>
+          </View>
+        ) : isTerminalSession(session) ? (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderTitle}>{t('session.ended')}</Text>
+            <Text style={styles.placeholderText}>{t('session.endedBody')}</Text>
+            {session.projectPath ? (
+              <Text style={styles.placeholderPath}>{session.projectPath}</Text>
+            ) : null}
           </View>
         ) : noAttachEmptyPlaceholder && session.status === 'idle' ? (
           <View style={styles.placeholder}>
@@ -859,7 +822,7 @@ export default function SessionDetailScreen() {
             {session.projectPath ? (
               <Text style={styles.placeholderPath}>{session.projectPath}</Text>
             ) : null}
-            {(session.promptCount ?? 0) > 0 ? (
+            {hasConversationId ? (
               <TouchableOpacity
                 style={styles.viewConversationBtn}
                 onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
@@ -875,7 +838,7 @@ export default function SessionDetailScreen() {
             {session.projectPath ? (
               <Text style={styles.placeholderPath}>{session.projectPath}</Text>
             ) : null}
-            {(session.promptCount ?? 0) > 0 ? (
+            {hasConversationId ? (
               <TouchableOpacity
                 style={styles.viewConversationBtn}
                 onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}

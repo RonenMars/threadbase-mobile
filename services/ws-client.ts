@@ -7,6 +7,7 @@ import type {
   PermissionCancelledWsMessage,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
+import { clientLog } from '@/lib/clientLog'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
@@ -14,7 +15,11 @@ export type WSMessage =
   | { type: 'session_list'; sessions: Session[] }
   | { type: 'notification'; event: NotificationEvent }
   | { type: 'plan_ready'; sessionId: string; plan: string }
-  | { type: 'terminal_replay'; sessionId: string; lines: string[] }
+  // Ground-truth user message: the streamer wrote this text to the PTY, so the
+  // client can positively identify user-owned output instead of parsing the
+  // `❯ <text>` transcript line heuristically. Additive; old streamers omit it.
+  | { type: 'user_message'; sessionId: string; text: string; ts: number }
+  | { type: 'terminal_replay'; sessionId: string; lines: string[]; userMessages?: { text: string; ts: number }[] }
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }
@@ -157,7 +162,19 @@ class WSClient {
       } catch {
         return
       }
+      if (msg.type === 'session_ready') {
+        clientLog.info('ws', 'session_ready received', {
+          serverId: this.serverId,
+          sessionId: msg.session.id,
+          projectId: msg.session.projectId,
+          projectPath: msg.session.projectPath,
+          handlerCount: this.handlers.get(msg.type)?.size ?? 0,
+        })
+      }
       const handlers = this.handlers.get(msg.type)
+      if (__DEV__ && msg.type === 'session_update') {
+        console.log(`[ws:${this.serverId}] frame session_update boundHandlers=${handlers?.size ?? 0}`)
+      }
       if (handlers) {
         handlers.forEach((h) => h(msg))
       }
