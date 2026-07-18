@@ -105,6 +105,7 @@ export function ServerIndexingBanner() {
   const styles = makeStyles(theme)
   const { t } = useTranslation('servers')
   const { width: screenWidth } = useWindowDimensions()
+  const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const scanProgress = useServersStore((s) => s.scanProgress)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
@@ -117,12 +118,10 @@ export function ServerIndexingBanner() {
 
   // Track fills the banner minus horizontal padding.
   const trackWidth = screenWidth - spacing.lg * 2
-
-  const progress = warmingServerIds
-    .map((id) => scanProgress[id])
-    .find((p) => p && p.total > 0)
-
-  const fillWidth = progress ? trackWidth * (progress.scanned / progress.total) : 0
+  const hasProgress = warmingServerIds.some((id) => {
+    const progress = scanProgress[id]
+    return progress && progress.total > 0
+  })
 
   return (
     <View
