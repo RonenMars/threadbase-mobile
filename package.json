@@ -49,6 +49,7 @@
     "dev:tunnel": "./scripts/start-cloudflared.sh",
     "dev:tunnel:clear": "./scripts/start-cloudflared.sh -c",
     "dev:tunnel:native": "./scripts/start-cloudflared.sh --native",
+    "dev:tunnel:native:reset": "./scripts/dev-tunnel-native-reset.sh",
     "dev:reset": "rm -rf node_modules && npm ci && cd ios && rm -rf Pods && pod install && cd .. && npx expo start --dev-client --tunnel --clear",
     "kill:metro": "./scripts/kill-metro.sh",
     "ship:ios": "./scripts/ship-ios.sh",
