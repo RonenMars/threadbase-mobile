@@ -293,6 +293,8 @@ export interface CacheAlert {
   missing?: { id: string; filePath: string; title?: string; tailed: boolean }[]
 }
 
+export type ServerWarmupState = 'startup' | 'cache_reset' | 'conversation_refresh'
+
 export interface MultiSession extends Session {
   serverId: string
   serverLabel?: string
