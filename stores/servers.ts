@@ -220,20 +220,6 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         ? state.cacheAlert
         : { ...state.cacheAlert, [serverId]: null }
 
-      if (connected) {
-        // Start a fallback timer: if `cache_ready` never arrives, dismiss the
-        // banner after the timeout rather than leaving it stuck indefinitely.
-        clearCacheReadyTimer(serverId)
-        const timer = setTimeout(() => {
-          cacheReadyTimers.delete(serverId)
-          useServersStore.getState().setCacheReady(serverId)
-        }, CACHE_READY_TIMEOUT_MS)
-        cacheReadyTimers.set(serverId, timer)
-      } else {
-        // Disconnected — cancel any pending timeout; banner resets above.
-        clearCacheReadyTimer(serverId)
-      }
-
       return {
         servers: {
           ...state.servers,
