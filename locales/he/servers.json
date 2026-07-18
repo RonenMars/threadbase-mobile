@@ -85,5 +85,25 @@
     "label": "סורק ומאנדקס שיחות…",
     "subtitle": "השרת מתחמם ובונה את אינדקס השיחות לראשונה. זה קורה רק פעם אחת — ההיסטוריה תופיע ברגע שתהיה מוכנה.",
     "progress": "{{scanned}} / {{total}} קבצים"
+  },
+  "cacheAlert": {
+    "bannerTitle": "{{count}} היסטוריות שיחה חסרות ב-{{server}}",
+    "title": "{{missing}} מתוך {{total}} היסטוריות שיחה חסרות ב-{{server}}",
+    "backupHint": "מומלץ לבדוק גיבוי Time Machine (או שווה ערך) לפני ביצוע פעולה הרסנית.",
+    "actionPruneAll": "מחק הכול",
+    "actionPruneSelected": "מחק נבחרים",
+    "actionIgnore": "התעלם",
+    "actionResetRescan": "אפס וסרוק מחדש",
+    "confirmTitle": "האם אתה בטוח?",
+    "confirmPruneAll": "פעולה זו מסירה לצמיתות את כל {{count}} השיחות החסרות מהמטמון. לא ניתן לבטל פעולה זו.",
+    "confirmPruneSelected": "פעולה זו מסירה לצמיתות {{count}} שיחות נבחרות מהמטמון. לא ניתן לבטל פעולה זו.",
+    "confirmResetRescan": "פעולה זו מאפסת את המטמון וסורקת מחדש מהדיסק. לא ניתן לבטל פעולה זו.",
+    "confirmCancel": "ביטול",
+    "confirmProceed": "המשך",
+    "selectAll": "בחר הכול",
+    "selectNone": "נקה בחירה",
+    "successToast": "טופל. הגיבוי נשמר ב-{{backupPath}}",
+    "successToastNoBackup": "טופל.",
+    "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה."
   }
 }
