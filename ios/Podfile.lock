@@ -234,7 +234,7 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (57.0.0):
     - ExpoModulesCore
-  - ExpoLinearGradient (57.0.0):
+  - ExpoLinearGradient (57.0.1):
     - ExpoModulesCore
   - ExpoLinking (57.0.1):
     - ExpoModulesCore
@@ -3089,13 +3089,13 @@ SPEC CHECKSUMS:
   ExpoImageManipulator: db2be3b3fe592c57d5993886f3bdf57d4a4d5041
   ExpoImagePicker: 0afefebdfe3aacd2281535eada9d59345afa3118
   ExpoKeepAwake: 8a96e2075b75641001f55393d7e6600a5b808f09
-  ExpoLinearGradient: cb6781ae9bd07bcb2ab58221ce7612aadd81e1f4
+  ExpoLinearGradient: 903b3f5fe566c666ff78b2599add51d094483613
   ExpoLinking: db6d7a9e9348cca9ada7c39127ab30963deddba3
   ExpoLocalAuthentication: 4f2c3ddae58a42e93564fcf2be4518c463fbdd71
   ExpoLocalization: 543cb852ec9d4a6c732344f94ebd96d18897eaab
   ExpoLogBox: b39a76aab749833d58111c3be1264bb90f3b92d4
   ExpoMailComposer: 93f4d65c12dd45331f69e0906773aa0e7b74344c
-  ExpoModulesCore: ad043f1c5f96533cbda39c24fafd27b9c439717f
+  ExpoModulesCore: c0b51d494d8a1b8ecd9bc1776b0047eb388c7f55
   ExpoModulesJSI: ef7f197a8e7eeb245557f560ade794bfc1abdc79
   ExpoModulesWorklets: 10c1c68a4abbae5e279f8ed5f6c6fc5078bbba1e
   ExpoModulesWorkletsAdapter: 442c516a02a58a9579d00577df0ba561e4be948a
@@ -3111,7 +3111,7 @@ SPEC CHECKSUMS:
   EXUpdates: 6bfc710fb7d7219ec3da729e72ae003e523f0c17
   EXUpdatesInterface: 492cdb30f3889cc35d9e737a4b5fc3aec39d1131
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
-  hermes-engine: 82b14fe6a4b57b835581d32346f9e8d04a067b68
+  hermes-engine: 1d671487d0aa0413017c2176a5dfe58a9434d0fc
   RCTDeprecation: 2a74a2c57675e64419bd89078efde81f7c1de90b
   RCTRequired: 30451112e6fef4e6f31b4e7eee0845156e35e4b0
   RCTSwiftUI: 5aaf0b07e747ba749dc6acc94d8bd41eea4b570f
@@ -3194,7 +3194,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: 92172e79df6e88e0e93b6341f9dcd8b5a02746ba
   RNReanimated: a9bf68fb5f19ce1c363b7d1413dcf8ee323185b8
   RNScreens: f94000b3cb1eb14cbb8d08dd6074fdd6ccf0e6b0
-  RNSentry: 1379dbcba661977664b1b9c5ae802130ef8e5e96
+  RNSentry: 7bb2dcf95d8e545ffcb96155c9e5ebfbb95c8916
   RNSVG: 6cae8d4082913be2eb43eaec2a456222c42195ed
   RNWorklets: 53439575fed8525fb8d1cabcc05a3d4d91e6ffe4
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
