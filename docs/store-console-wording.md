@@ -25,15 +25,17 @@ field in both consoles must point to the updated page before submitting.
 
 **Description field (free text, if offered):**
 > Threadbase is a thin client for self-hosted Threadbase streamers — it does
-> not run its own analytics or telemetry. Crash data is sent to Sentry, a
-> third-party crash-reporting service, only in two cases: (1) automatically, if
-> you turn on "Share anonymous crash reports" in Settings (off by default), or
-> (2) as a one-time report if you tap "Report this crash" on the error-recovery
-> screen after a crash, which works even if automatic reporting is off. Crash
-> data is limited to app version, platform, OS version, and a sanitized error
-> type/message/stack trace, plus a random installation identifier used only to
-> group reports. It never includes prompts, terminal output, source code,
-> credentials, server addresses, or session content.
+> not run its own analytics or telemetry. Technical data is sent to Sentry, a
+> third-party crash-reporting service, only in user-initiated cases:
+> (1) automatically, if you turn on "Share anonymous crash reports" in Settings
+> (off by default); (2) as a one-time report if you tap "Report this crash" on
+> the error-recovery screen after a crash; or (3) when you submit feedback via
+> the Help & Feedback screen. Cases (2) and (3) work even if automatic reporting
+> is off — tapping "Send" or "Report" is treated as explicit consent for that
+> single submission. Data is limited to app version, platform, OS version, and a
+> sanitized error type/message/stack trace, plus a random installation
+> identifier used only to group reports. It never includes prompts, terminal
+> output, source code, credentials, server addresses, or session content.
 
 ### Data type: Diagnostics → Performance Data
 **Not collected.** (Performance tracing is disabled in the app.)
@@ -104,14 +106,16 @@ cross-app or cross-site tracking, advertising, or data broker sharing.
 
 **Why this data is collected (free text):**
 > Threadbase is a thin client for self-hosted Threadbase streamers and runs no
-> analytics or telemetry of its own. Crash logs are sent to Sentry, a
-> third-party crash-reporting processor, only when you turn on "Share
-> anonymous crash reports" in Settings (off by default), or when you tap
-> "Report this crash" to manually send a single report after a crash — the
-> manual option works even with automatic reporting off. Logs contain
-> sanitized technical details only (app version, platform, OS version, error
-> type/message/stack trace) and a random installation id for grouping; they
-> never contain prompts, terminal output, source code, credentials, server
+> analytics or telemetry of its own. Technical data is sent to Sentry, a
+> third-party crash-reporting processor, only in user-initiated cases: (1) when
+> you turn on "Share anonymous crash reports" in Settings (off by default);
+> (2) when you tap "Report this crash" to manually send a single report after a
+> crash; or (3) when you submit feedback via the Help & Feedback screen. Cases
+> (2) and (3) work even with automatic reporting off — tapping "Send" or
+> "Report" is treated as explicit consent for that single submission. Logs
+> contain sanitized technical details only (app version, platform, OS version,
+> error type/message/stack trace) and a random installation id for grouping;
+> they never contain prompts, terminal output, source code, credentials, server
 > addresses, or session content.
 
 ### Data type: App info and performance → Diagnostics
