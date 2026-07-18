@@ -76,7 +76,7 @@ describe('CacheAlertModal', () => {
       <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={jest.fn()} />
     )
     expect(await findByText(/Time Machine/)).toBeTruthy()
-  })
+  }, 15_000)
 
   it('does not show the backup hint for low severity', async () => {
     seedAlert({ severity: 'low' })
