@@ -26,6 +26,7 @@ import {
   Check,
   X,
   Image as ImageIcon,
+  PaperPlaneTilt,
 } from 'phosphor-react-native'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -41,7 +42,7 @@ import {
 import { pickAndPrepareScreenshot } from '@/services/feedback-screenshot'
 import { addSafeBreadcrumb } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
-import type { FeedbackCategory, FeedbackReport, FeedbackAttachment } from '@/types/feedback'
+import type { FeedbackCategory, FeedbackReport, FeedbackAttachment, FeedbackTransportKind } from '@/types/feedback'
 
 const PRIVACY_URL = 'https://threadbase.sh/privacy'
 const MIN_DESCRIPTION = 10
@@ -77,6 +78,7 @@ export default function HelpFeedbackScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [reportId] = useState(makeReportId)
   const [copied, setCopied] = useState(false)
+  const [deliveredVia, setDeliveredVia] = useState<FeedbackTransportKind | null>(null)
 
   const diagnostics = useMemo(() => buildFeedbackDiagnostics(), [])
 
@@ -136,6 +138,7 @@ export default function HelpFeedbackScreen() {
       if (result.ok) {
         addSafeBreadcrumb('feedback_submitted')
         recordDiagnosticEvent('feedback_submitted')
+        setDeliveredVia(result.via)
         setView('success')
       } else {
         // No automatic transport succeeded — offer the copy + guide fallback.
@@ -168,6 +171,13 @@ export default function HelpFeedbackScreen() {
 
   // ---- Success state ----
   if (view === 'success') {
+    const deliveryNote =
+      deliveredVia === 'sentry'
+        ? t('success.viaSentry')
+        : deliveredVia === 'email'
+          ? t('success.viaEmail')
+          : null
+
     return (
       <SafeAreaView style={s.container} edges={['bottom']}>
         <View style={s.centered}>
@@ -176,6 +186,12 @@ export default function HelpFeedbackScreen() {
           </View>
           <Text style={s.successTitle}>{t('success.title')}</Text>
           <Text style={s.successMessage}>{t('success.message')}</Text>
+          {deliveryNote ? (
+            <View style={s.deliveryNote}>
+              <PaperPlaneTilt size={14} color={theme.text.secondary} />
+              <Text style={s.deliveryNoteText}>{deliveryNote}</Text>
+            </View>
+          ) : null}
           <TouchableOpacity
             style={[s.primaryBtn, s.primaryBtnWide]}
             onPress={() => setView('landing')}
@@ -601,6 +617,13 @@ function styles(theme: Theme) {
     },
     successTitle: { color: theme.text.primary, fontSize: font.lg, fontWeight: '700', marginTop: spacing.sm },
     successMessage: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 21 },
+    deliveryNote: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    deliveryNoteText: { color: theme.text.secondary, fontSize: font.xs },
     stepRow: {
       flexDirection: 'row',
       alignItems: 'center',
