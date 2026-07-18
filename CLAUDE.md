@@ -75,6 +75,15 @@ Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR 
 
 ---
 
+## Native Dependencies After Package Changes
+
+Whenever `package.json` or `package-lock.json` changes:
+
+1. Run `pod install` from the `ios/` directory.
+2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
+
+---
+
 ## Keep `ci-paths.txt` in Sync
 
 `scripts/git-hooks/ci-paths.txt` is the canonical list of paths that affect **app functionality, tests, or CI**. The `commit-msg` hook appends `[skip-ci]` to any commit that touches **none** of them, so CI skips the heavy jobs. If the list is stale, a real change can be silently mis-tagged `[skip-ci]` and skip CI.
