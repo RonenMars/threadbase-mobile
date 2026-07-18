@@ -89,7 +89,10 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const buildPayload = (text: string): string | null => {
     const trimmed = text.trim()
     if (!trimmed && attachments.length === 0) return null
-    const refs = attachments.map((a) => `@${a.path}`).join(' ')
+    // Escape spaces in paths so Claude Code's @path parser doesn't split them.
+    // The streamer now sanitizes filenames, but this handles legacy uploads.
+    const escapePath = (p: string) => p.replace(/ /g, '\\ ')
+    const refs = attachments.map((a) => `@${escapePath(a.path)}`).join(' ')
     return refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed
   }
 
