@@ -21,6 +21,7 @@ import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { wsManager } from '@/services/ws-client'
+import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme } from '@/constants/theme'
@@ -182,6 +183,7 @@ export function LiveConversationView({
       Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
       return
     }
+    markSessionUsed(sessionId)
     if (optimisticText) {
       setPendingSends((prev) => [...prev, makeOptimisticMessage(optimisticText)])
     }
