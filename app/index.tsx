@@ -45,6 +45,8 @@ import { clientLog } from '@/lib/clientLog'
 import { conversationHref } from '@/lib/conversationHref'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
+import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
+import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -75,7 +77,7 @@ export default function ProjectsHub() {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
-  const { t } = useTranslation(['sessions', 'shared', 'settings'])
+  const { t } = useTranslation(['sessions', 'shared', 'settings', 'servers'])
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const mergeChats = useSettingsStore((s) => (s as any).mergeChats ?? false)
@@ -127,6 +129,8 @@ export default function ProjectsHub() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, fetchStatuses, wsConnectedCount])
 
+  const cacheAlert = useServersStore((s) => s.cacheAlert)
+
   const serverCount = activeServerIds.length
   const allConnected = healthyCount === serverCount && serverCount > 0
   const someConnected = healthyCount > 0
@@ -137,6 +141,19 @@ export default function ProjectsHub() {
   const [statusModalOpen, setStatusModalOpen] = useState(false)
   const [pickerVisible, setPickerVisible] = useState(false)
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
+  const [manualCacheAlertServerId, setManualCacheAlertServerId] = useState<string | null>(null)
+  const [cacheAlertToast, setCacheAlertToast] = useState<string | null>(null)
+
+  // Auto-open for a pending high-severity alert (derived, not stateful); the
+  // low-severity banner can also open the modal manually via setCacheAlertModalServerId.
+  // Both auto-close once the store no longer has an alert for that server
+  // (e.g. resolved from another surface) since neither branch is sticky state.
+  const highSeverityCacheAlertServerId = displayedServerIds.find(
+    (id) => cacheAlert[id]?.severity === 'high',
+  ) ?? null
+  const cacheAlertModalServerId = highSeverityCacheAlertServerId
+    ?? (manualCacheAlertServerId && cacheAlert[manualCacheAlertServerId] ? manualCacheAlertServerId : null)
+  const setCacheAlertModalServerId = setManualCacheAlertServerId
 
   // Sort state (hub mode)
   const [sortBy, setSortBy] = useState<SortBy>('lastActivity')
@@ -355,6 +372,12 @@ export default function ProjectsHub() {
       {/* Shown while server is scanning/indexing conversations on first boot */}
       <ServerIndexingBanner />
 
+      <CacheAlertBanner onPress={() => {
+        const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')
+        if (lowSeverityId) setCacheAlertModalServerId(lowSeverityId)
+      }}
+      />
+
       <ServerStateMessage
         activeServerIds={activeServerIds}
         servers={servers}
@@ -462,6 +485,11 @@ export default function ProjectsHub() {
           <Text style={styles.fabToastText}>{t('sessions:fab.noServerHint')}</Text>
         </View>
       )}
+      {cacheAlertToast && (
+        <View style={styles.fabToast} pointerEvents="none">
+          <Text style={styles.fabToastText}>{cacheAlertToast}</Text>
+        </View>
+      )}
       <FAB
         ref={fabRef}
         onPress={handleFABPress}
@@ -490,6 +518,19 @@ export default function ProjectsHub() {
         servers={servers}
         onPick={startSessionOn}
         onClose={() => setPickerVisible(false)}
+      />
+      <CacheAlertModal
+        visible={cacheAlertModalServerId !== null}
+        serverId={cacheAlertModalServerId}
+        onClose={() => setCacheAlertModalServerId(null)}
+        onResolved={(backupPath) => {
+          setCacheAlertModalServerId(null)
+          const message = backupPath
+            ? t('cacheAlert.successToast', { ns: 'servers', backupPath })
+            : t('cacheAlert.successToastNoBackup', { ns: 'servers' })
+          setCacheAlertToast(message)
+          setTimeout(() => setCacheAlertToast(null), 3000)
+        }}
       />
 
       <LoadingOverlay
