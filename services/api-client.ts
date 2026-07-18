@@ -2,7 +2,8 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
-import type { CacheAlert, CacheAlertResolveAction } from '@/types/api'
+import { getServerWarmupState } from './server-warmup'
+import type { CacheAlert, CacheAlertResolveAction, ServerWarmupState } from '@/types/api'
 
 export class NetworkError extends Error {
   code?: string
@@ -199,11 +200,12 @@ async function request<T>(
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
-    let errBody: Record<string, unknown> | undefined
+    let warmupState: ServerWarmupState | undefined
     try {
-      errBody = await response.json()
-      if (errBody?.error) detail = errBody.error as string
-      if (errBody?.code) code = errBody.code as string
+      const errBody = await response.json()
+      if (errBody?.error) detail = errBody.error
+      if (errBody?.code) code = errBody.code
+      if (isWarmupFetchEndpoint(method, path)) warmupState = recordWarmupError(serverId, errBody)
       if (isStartSession) {
         clientLog.info('startSession', 'start response error body', {
           status: response.status,
@@ -213,12 +215,7 @@ async function request<T>(
         })
       }
     } catch {}
-    // Soft resume-collision: surface the structured payload as a typed error so
-    // the caller can name what was detected and offer a force-override retry.
-    if (response.status === 409 && code === 'CONVERSATION_BUSY') {
-      throw new ConversationBusyError(detail || 'Conversation is busy', errBody ?? {})
-    }
-    throw new NetworkError(detail || `Server returned ${response.status}`, code)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
   const json = (await response.json()) as T
