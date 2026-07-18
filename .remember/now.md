@@ -1,11 +1,7 @@
 
-## 20:07 | main
-Implemented cache-integrity-alert feature on worktree; then re-reviewed UNCOMMITTED_NATIVE_BUILD_CHANGES.md and found it was accidental `expo prebuild --clean` drift (11 files, majority damage: reverted Sentry/JitPack/CocoaPods/version fixes). Discarded all drift, regenerating with `--no-clean` from main to preserve incident fixes while capturing intended Sentry/biometric/Face-ID config.
-## 20:14 | main
-Regenerated native config (Sentry, biometric perms, Face ID) on isolated worktree `chore-native-regen` with pinned CocoaPods 1.16.2, verified all incident fixes (JitPack, OOM heap, SwiftUICore hook) intact, committed `277a481` (6 files, Sentry gradle+Xcode phases, Podfile.lock sync of stale ExpoLinearGradient 57.0.0→57.0.1 from #330); held for human build validation before push; user now requesting pull latest main, relocate report to docs/tb-mobile/, new worktree, real build+push, and deploy.yml audit.
-## 20:33 | main
-Designed 4 demo video scenarios (30s scripts for LinkedIn/TikTok/README with hook/hold/CTR optimization), built `demo/demo-server.js` (mock server w/ fixture data, endpoint responses, session state reset), wrote `demo/README.md` (run instructions, timing beats, platform notes), and explored Remotion for generated title cards/intros (React → MP4, theme-token matched to app).
-## 20:38 | main
-Implemented cache-integrity-alert feature on new worktree (WS msgs, store state, API calls, banner/modal UI, tests); re-verified UNCOMMITTED_NATIVE_BUILD_CHANGES report, discarded accidental `--clean` regen drift (incident-fix regressions), performed clean `--no-clean` regen to materialize Sentry native integration + biometric perms + Face ID from app.json (commit 277a481 on chore/native-config-regen); validated iOS build green, Android debug build in progress; confirmed deploy.yml does not regenerate native config on deploy (by design — only commits version bumps + Podfile.lock), so Sentry native phases (pbxproj upload/wrap, gradle apply) must be committed via PR.
-## 20:50 | feat/cache-warmup-status
-Diagnosed `cc` alias issue with `--message` flag (shell array expansion not preserving flags when mixed with `CLAUDE_DEFAULT_FLAGS`); created `cc-message` function in aliases as workaround: `command claude --dangerously-skip-permissions --message "$*"`.
+## 21:16 | main
+Updated privacy policy URLs in threadbase-landing-page (PR #61 opened: biometric auth clarification across 4 locales en/he/ru/ar) + fixed Play Console privacy URL from `https://threadbase.sh/privacy` → `https://threadbase.sh/privacy-policy` to match iOS correction.
+## 21:20 | main
+Verified Play Console privacy URL fix (`/privacy` → `/privacy-policy`) persists correctly; discovered & auditing gap: Sentry crash logs + optional feedback email should be declared in Play Data Safety form (currently under-declared), delegated code audit to confirm exact data fields + mapping to Play categories.
+## 23:53 | feat/cache-warmup-status
+Added npm script to reset cache, reinstall deps, rebuild pods, accept device UDID as positional arg, and run native tunnel mode in single command.
