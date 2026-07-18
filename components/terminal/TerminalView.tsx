@@ -1,8 +1,6 @@
 import React from 'react'
-import { Alert, View, Text, StyleSheet } from 'react-native'
+import { Alert } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
-import { useTranslation } from 'react-i18next'
-import { Warning } from 'phosphor-react-native'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -14,36 +12,17 @@ import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { markSessionUsed } from '@/lib/sessionUsage'
-import type { ProviderName } from '@/constants/providers'
-import type { ParseConfidence } from '@/lib/renderConfidence'
 
 interface Props {
   serverId: string
   sessionId: string
-  provider?: ProviderName | string | null
-  parseConfidence?: ParseConfidence
   disabled?: boolean
   pendingPlan?: string | null
   onClosePlan?: () => void
 }
 
-export function TerminalView({
-  serverId,
-  sessionId,
-  provider,
-  parseConfidence: parseConfidenceProp,
-  disabled = false,
-  pendingPlan = null,
-  onClosePlan,
-}: Props) {
-  const { t } = useTranslation('terminal')
-  const { lines, isStreaming, userMessageTexts, parseConfidence } = useTerminalStream(
-    serverId,
-    sessionId,
-    false,
-    provider,
-  )
-  const confidence = parseConfidenceProp ?? parseConfidence
+export function TerminalView({ serverId, sessionId, disabled = false, pendingPlan = null, onClosePlan }: Props) {
+  const { lines, isStreaming, userMessageTexts } = useTerminalStream(serverId, sessionId)
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
@@ -77,12 +56,6 @@ export function TerminalView({
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
-      {confidence === 'low' ? (
-        <View style={styles.rawNote} testID="terminal-raw-mode-note">
-          <Warning size={14} color="#d29922" weight="fill" />
-          <Text style={styles.rawNoteText}>{t('session.rawModeNote')}</Text>
-        </View>
-      ) : null}
       <TerminalOutput
         lines={lines}
         isStreaming={isStreaming}
@@ -140,22 +113,3 @@ export function TerminalView({
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  rawNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#21262d',
-    borderBottomWidth: 1,
-    borderBottomColor: '#30363d',
-  },
-  rawNoteText: {
-    flex: 1,
-    color: '#d29922',
-    fontSize: 11,
-    lineHeight: 15,
-  },
-})
