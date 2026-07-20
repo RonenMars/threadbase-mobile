@@ -1,14 +1,18 @@
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
-import type { CacheAlert, CacheAlertResolveAction } from '@/types/api'
+import { getServerWarmupState } from './server-warmup'
+import type { CacheAlert, CacheAlertResolveAction, ServerWarmupState } from '@/types/api'
 
 export class NetworkError extends Error {
   code?: string
-  constructor(message: string, code?: string) {
+  warmupState?: ServerWarmupState
+  constructor(message: string, code?: string, warmupState?: ServerWarmupState) {
     super(message)
     this.name = 'NetworkError'
     this.code = code
+    this.warmupState = warmupState
   }
 }
 
@@ -37,6 +41,26 @@ const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.
 const FIRST_ATTEMPT_TIMEOUT_MS = 8000
+
+function isWarmupFetchEndpoint(method: string, path: string): boolean {
+  if (method !== 'GET') return false
+  const pathname = path.split('?')[0]
+  return pathname === '/api/sessions' ||
+    pathname === '/api/sessions/count' ||
+    pathname === '/api/sessions/recents' ||
+    /^\/api\/sessions\/[^/]+$/.test(pathname) ||
+    pathname === '/api/conversations' ||
+    pathname === '/api/conversations/count' ||
+    /^\/api\/conversations\/[^/]+$/.test(pathname)
+}
+
+function recordWarmupError(serverId: string, errorBody: unknown): ServerWarmupState | undefined {
+  const warmupState = getServerWarmupState(errorBody) ?? undefined
+  if (warmupState) {
+    useServerFetchStatusStore.getState().recordWarmingUp(serverId, warmupState)
+  }
+  return warmupState
+}
 
 async function request<T>(
   method: string,
@@ -145,10 +169,12 @@ async function request<T>(
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
+    let warmupState: ServerWarmupState | undefined
     try {
       const errBody = await response.json()
       if (errBody?.error) detail = errBody.error
       if (errBody?.code) code = errBody.code
+      if (isWarmupFetchEndpoint(method, path)) warmupState = recordWarmupError(serverId, errBody)
       if (isStartSession) {
         clientLog.info('startSession', 'start response error body', {
           status: response.status,
@@ -158,10 +184,13 @@ async function request<T>(
         })
       }
     } catch {}
-    throw new NetworkError(detail || `Server returned ${response.status}`, code)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
   const json = (await response.json()) as T
+  if (isWarmupFetchEndpoint(method, path)) {
+    useServerFetchStatusStore.getState().recordReady(serverId)
+  }
   if (isStartSession) {
     const keys = json && typeof json === 'object' ? Object.keys(json as object) : []
     clientLog.info('startSession', 'start response body', {
@@ -276,6 +305,7 @@ async function requestWithMeta<T>(
   // 304: the cached copy is current. fetch() resolves (does not throw); the
   // body is empty, so don't call response.json().
   if (response.status === 304) {
+    useServerFetchStatusStore.getState().recordReady(serverId)
     return { status: 304, etag, body: null }
   }
 
@@ -284,14 +314,17 @@ async function requestWithMeta<T>(
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
+    let warmupState: ServerWarmupState | undefined
     try {
       const errBody = await response.json()
       if (errBody?.error) detail = errBody.error
       if (errBody?.code) code = errBody.code
+      warmupState = recordWarmupError(serverId, errBody)
     } catch {}
-    throw new NetworkError(detail || `Server returned ${response.status}`, code)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
+  useServerFetchStatusStore.getState().recordReady(serverId)
   return { status: response.status, etag, body: (await response.json()) as T }
 }
 
