@@ -98,6 +98,45 @@ fi
 
 ---
 
+## Windows dev machine
+
+### `spawn npx ENOENT` when running `npm run dev:metro` / `dev:android:js` on Windows
+
+**When:** Running `npm run dev:metro` (or `dev:android:js`, which wraps the same `scripts/dev-metro.js`) on Windows throws immediately:
+
+```
+Error: spawn npx ENOENT
+    at ChildProcess._handle.onexit (node:internal/child_process:287:19)
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'spawn npx',
+```
+
+**Cause:** `scripts/dev-metro.js` calls `spawn('npx', args, {...})` without `shell: true`. Node's `spawn()` talks directly to the Windows `CreateProcess` API and doesn't resolve `.cmd`/`.bat` shims — `npx` on Windows is `npx.cmd`, not a raw executable. `exec()` always goes through `cmd.exe` so it works; bare `spawn()` doesn't unless the shell is explicitly requested.
+
+**Fix (workaround, no code change needed):** Skip the wrapper script and run Expo directly, setting the tunnel URL in the same shell so the child process inherits it:
+
+```powershell
+$env:EXPO_PACKAGER_PROXY_URL = "https://<your-tunnel-hostname>"
+npx expo start --dev-client
+```
+
+### Fresh Windows checkout: `PluginError: Failed to resolve plugin for module "..."` on `expo start`
+
+**When:** On a freshly cloned/pulled Windows checkout, `npx expo start` fails immediately with something like:
+
+```
+PluginError: Failed to resolve plugin for module "expo-local-authentication" relative to "<repo>". Do you have node modules installed?
+```
+
+even though the package is listed in `package.json` and `package-lock.json`.
+
+**Cause:** The package is missing from `node_modules` despite being present in the lockfile — `npm ls <package>` shows it as absent (`node_modules` had drifted out of sync with the lockfile from an earlier partial/incomplete install).
+
+**Fix:** `npm install` to reconcile `node_modules` with the lockfile, then retry `expo start`.
+
+---
+
 ## iOS Simulator console noise
 
 ### `CHHapticPattern` / `CHHapticEngine` "hapticpatternlibrary.plist" errors flooding the log
