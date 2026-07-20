@@ -275,3 +275,4 @@ if ($pid) { taskkill /PID $pid /F }
 | `cloudflared service install` fails silently | Requires Administrator — open Terminal (Admin) and re-run |
 | Service installed but tunnel not routing | The Windows service reads the SYSTEM profile config, not your user profile. Edit `C:\Windows\system32\config\systemprofile\.cloudflared\config.yml`, then run `Restart-Service cloudflared` |
 | Edited `~\.cloudflared\config.yml` but tunnel still returns 404 | Wrong file — the service uses the SYSTEM profile path above |
+| Not sure if a named tunnel route is actually wired up (before starting Metro) | `curl -I https://<your-metro-hostname>`. `502` means the edge found the ingress route but nothing's listening on `:8081` yet (expected until Metro starts) — the route is live. `404` means the hostname isn't in the *active* ingress config (wrong file edited, or service not restarted). |
