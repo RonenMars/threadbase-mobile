@@ -11,6 +11,7 @@ import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
+import { markSessionUsed } from '@/lib/sessionUsage'
 
 interface Props {
   serverId: string
@@ -26,6 +27,7 @@ export function TerminalView({ serverId, sessionId, disabled = false, pendingPla
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
   const onSend = (payload: string) => {
+    markSessionUsed(sessionId)
     sendInput.mutate(payload, {
       onError: (err) => Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
     })
