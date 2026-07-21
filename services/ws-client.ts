@@ -30,6 +30,9 @@ export type WSMessage =
   // Absent for non-claude providers. Old clients ignore this and rely on the
   // singular conversation_event.
   | { type: 'conversation_events'; sessionId: string; lines: string[]; seqs?: (number | null)[] }
+  // External-session liveness ping: the conversation's JSONL grew (or its owner
+  // changed) without a PTY the streamer owns. Additive; no subscriber wired yet.
+  | { type: 'conversation_updated'; conversationId: string; messageCount: number; lastActivity: string; ownership: 'external' | 'managed' }
   | QuestionWsMessage
   | QuestionCancelledWsMessage
   | PermissionWsMessage

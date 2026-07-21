@@ -21,6 +21,7 @@ import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { conversationHref } from '@/lib/conversationHref'
+import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 
 export function ProjectHubList({
   sessions,
@@ -88,6 +89,13 @@ export function ProjectHubList({
 
   const handleSessionPress = useCallback(
     (item: MultiSession) => {
+      // External sessions are read-only — route to the conversation view, never
+      // the PTY screen (which exposes the destructive Overtake / input paths).
+      if (isExternalSession(item)) {
+        const convId = item.boundConversationId ?? item.conversationId ?? item.id
+        router.push(conversationHref(convId, item.serverId))
+        return
+      }
       router.push(`/session/${item.id}?server=${item.serverId}`)
     },
     [router],
@@ -134,7 +142,8 @@ export function ProjectHubList({
       const isSession = isMultiSession(item)
       const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
       if (isSession) {
-        const isLive = item.status === 'running' || item.status === 'waiting_input'
+        const externalAlive = isExternalAlive(item)
+        const isLive = externalAlive || item.status === 'running' || item.status === 'waiting_input'
         return (
           <ConversationListItem
             testID={`session-row-${item.id}`}
@@ -144,6 +153,7 @@ export function ProjectHubList({
             branch={item.branch}
             messageCount={item.promptCount}
             live={isLive}
+            external={externalAlive}
             lastOutput={item.lastOutput || null}
             serverLabel={item.serverLabel}
             serverColor={serverColor}

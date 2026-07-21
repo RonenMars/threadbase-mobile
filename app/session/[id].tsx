@@ -604,9 +604,12 @@ export default function SessionDetailScreen() {
 
   if (
     session &&
+    session.ownership !== 'external' &&
     session.ptyAttached === false &&
     (session.status === 'running' || session.status === 'waiting_input')
   ) {
+    // External sessions are read-only — never surface the Overtake path (which
+    // SIGTERMs the user's real terminal process). Gated regardless of routing.
     return <DiscoveredSessionScreen serverId={serverId} sessionId={id!} />
   }
 

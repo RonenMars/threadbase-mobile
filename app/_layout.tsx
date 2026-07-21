@@ -28,7 +28,8 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { wsManager } from '@/services/ws-client'
-import type { Session, MultiSession } from '@/types/api'
+import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
+import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
@@ -128,19 +129,17 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData<Session>(key, (prev) =>
         prev ? { ...prev, ...msg.session } : (msg.session as Session),
       )
-      // Patch the eager paginated sessions cache (home-screen list) in place
-      // so the row's status flips without an HTTP refetch.
-      queryClient.setQueriesData<MultiSession[]>(
-        { queryKey: ['sessions-eager'] },
-        (old) =>
-          Array.isArray(old)
-            ? old.map((s) =>
-                s.serverId === msg.serverId && s.id === msg.session.id
-                  ? { ...s, ...msg.session }
-                  : s,
-              )
-            : old,
-      )
+      // Patch the eager paginated sessions cache (home-screen list) in place so
+      // the row's status flips without an HTTP refetch; if the session isn't in
+      // the list yet (e.g. a newly-alive external session), invalidate so it
+      // appears without a manual pull-to-refresh.
+      applySessionUpdateToEagerCache(queryClient, msg.serverId, msg.session)
+    })
+    // External-session liveness ping: a conversation's JSONL grew without a PTY
+    // the streamer owns. Refresh the eager conversations list so its row updates.
+    const unsubConvUpdated = wsManager.onAll('conversation_updated', (msg) => {
+      if (msg.type !== 'conversation_updated') return
+      refreshEagerConversations(queryClient)
     })
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
@@ -184,6 +183,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     return () => {
       unsubUpdate()
+      unsubConvUpdated()
       unsubReady()
       unsubStatus()
       unsubCacheReady()

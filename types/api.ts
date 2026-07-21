@@ -29,6 +29,27 @@ export interface Session {
    * session.id). Prefer this for REST conversation history when present.
    */
   boundConversationId?: string | null
+  /**
+   * OS process id of the underlying CLI. The server sends this for discovered
+   * external processes; absent for managed PTY sessions and historical shapes.
+   */
+  pid?: number
+  /**
+   * Who owns this session's process. `managed` = streamer-owned PTY;
+   * `external` = a CLI the streamer discovered but does not own; `historical` =
+   * a resumable shape reconstructed from disk. Additive; older servers omit it.
+   */
+  ownership?: 'managed' | 'external' | 'historical'
+  /**
+   * Liveness of the underlying process when the streamer does not own the PTY.
+   * `unknown` when it can't be determined. Additive; older servers omit it.
+   */
+  processLiveness?: 'alive' | 'gone' | 'unknown'
+  /**
+   * Inferred activity from JSONL tailing (not authoritative process status).
+   * Additive; older servers omit it.
+   */
+  activity?: { state: 'active_writing' | 'quiet'; lastEventAt: string; source: 'jsonl' }
 }
 
 export interface MessageSnapshot {

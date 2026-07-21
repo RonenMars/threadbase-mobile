@@ -32,6 +32,37 @@ export class SessionNotFoundError extends Error {
   }
 }
 
+/** Which signals the server used to decide a conversation is busy. */
+export type ConversationBusyDetectedBy = 'jsonl_mtime' | 'process_argv' | 'process_cwd'
+
+/**
+ * Soft 409 from `POST /api/sessions/resume`: the conversation looks like it may
+ * still be open elsewhere (e.g. an external CLI writing its JSONL). Carries the
+ * structured payload so callers can name what was detected and offer a
+ * force-override retry instead of failing with a generic error.
+ */
+export class ConversationBusyError extends Error {
+  detectedBy: ConversationBusyDetectedBy[]
+  lastActivityMs: number | null
+  likelyOwner: 'external' | 'unknown'
+  constructor(
+    message: string,
+    payload: {
+      detectedBy?: unknown
+      lastActivityMs?: unknown
+      likelyOwner?: unknown
+    } = {},
+  ) {
+    super(message)
+    this.name = 'ConversationBusyError'
+    this.detectedBy = Array.isArray(payload.detectedBy)
+      ? (payload.detectedBy.filter((d) => typeof d === 'string') as ConversationBusyDetectedBy[])
+      : []
+    this.lastActivityMs = typeof payload.lastActivityMs === 'number' ? payload.lastActivityMs : null
+    this.likelyOwner = payload.likelyOwner === 'external' ? 'external' : 'unknown'
+  }
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.
@@ -144,10 +175,11 @@ async function request<T>(
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
+    let errBody: Record<string, unknown> | undefined
     try {
-      const errBody = await response.json()
-      if (errBody?.error) detail = errBody.error
-      if (errBody?.code) code = errBody.code
+      errBody = await response.json()
+      if (errBody?.error) detail = errBody.error as string
+      if (errBody?.code) code = errBody.code as string
       if (isStartSession) {
         clientLog.info('startSession', 'start response error body', {
           status: response.status,
@@ -157,6 +189,11 @@ async function request<T>(
         })
       }
     } catch {}
+    // Soft resume-collision: surface the structured payload as a typed error so
+    // the caller can name what was detected and offer a force-override retry.
+    if (response.status === 409 && code === 'CONVERSATION_BUSY') {
+      throw new ConversationBusyError(detail || 'Conversation is busy', errBody ?? {})
+    }
     throw new NetworkError(detail || `Server returned ${response.status}`, code)
   }
 
