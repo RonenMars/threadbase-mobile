@@ -29,6 +29,13 @@ export interface ConversationListItemProps {
   branch?: string | null
   /** When set, the row gains a pulsing amber live indicator + LIVE pill. */
   live?: boolean
+  /**
+   * When set (with `live`), renders the read-only "external / observed" variant
+   * instead of the interactive amber treatment: a blue dot + EXTERNAL pill.
+   * Distinguishes a discovered process the streamer only observes from a
+   * streamer-owned live session.
+   */
+  external?: boolean
 
   /** Optional message snapshots used by `MessagePreview`. */
   firstMessage?: { text: string } | null
@@ -99,6 +106,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     messageCount,
     branch,
     live = false,
+    external = false,
     firstMessage,
     lastMessage,
     preview,
@@ -126,10 +134,12 @@ export function ConversationListItem(props: ConversationListItemProps) {
     testID,
   } = props
 
+  // Blue for an observed external session, amber for an interactive live one.
+  const liveColor = external ? theme.status.completed : theme.status.waiting
   const serverVisible = shouldShowServer(showServer, activeServerCount, Boolean(serverLabel))
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
-    : (live ? theme.status.waiting : null)
+    : (live ? liveColor : null)
 
   // Path rendering — only consulted when no title.
   const pathParts = useMemo(() => {
@@ -215,7 +225,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       )}
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
-          <LiveDot live={live} color={live ? theme.status.waiting : theme.text.accent} size={6} />
+          <LiveDot live={live} color={live ? liveColor : theme.text.accent} size={6} />
         </View>
       )}
       {leading === 'depth' && !isChip && (
@@ -252,9 +262,11 @@ export function ConversationListItem(props: ConversationListItemProps) {
       {!isChip ? (
         <View style={styles.tail}>
           {live ? (
-            <View style={styles.livePill}>
-              <View style={styles.livePillDot} />
-              <Text style={styles.livePillText}>LIVE</Text>
+            <View style={[styles.livePill, external && { backgroundColor: `${liveColor}24` }]}>
+              <View style={[styles.livePillDot, external && { backgroundColor: liveColor }]} />
+              <Text style={[styles.livePillText, external && { color: liveColor }]}>
+                {external ? 'EXTERNAL' : 'LIVE'}
+              </Text>
             </View>
           ) : timeText ? (
             <Text

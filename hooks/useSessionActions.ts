@@ -1,7 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer, NetworkError, stopSession } from '@/services/api-client'
 import { useSessionsStore } from '@/stores/sessions'
-import type { MultiSession, QueuedPrompt } from '@/types/api'
+import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
+import type { ResumeConversationResponse } from '@/types/projectChat'
+import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
+
+/** Normalised result of a successful resume, ready for cache-seed + navigation. */
+export interface ResumeResult {
+  sessionId: string
+  projectId?: string
+  projectPath?: string | null
+  conversationId: string
+  sessionSnapshot: Session | null
+}
 
 // networkMode stays default 'online': a send fired while offline auto-pauses and
 // is replayed by resumePausedMutations() on reconnect. retry bridges the
@@ -88,6 +99,36 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
+  // Resumes the conversation `sessionId` into a live PTY session. Non-idempotent
+  // (spawns a PTY) — retry:false so a client timeout never double-spawns. A soft
+  // 409 (the conversation may still be open elsewhere) surfaces as a
+  // ConversationBusyError to onError, carrying the structured detection payload;
+  // callers confirm and retry with `{ force: true }`. Normalises both the modern
+  // ResumeConversationResponse and the legacy `{ id }` shape.
+  const resume = useMutation({
+    mutationFn: async ({ force }: { force?: boolean } = {}): Promise<ResumeResult> => {
+      const resp = await api.post<ResumeConversationResponse | { id: string }>(
+        '/api/sessions/resume',
+        { sessionId, ...(force ? { force: true } : {}) },
+        { retry: false },
+      )
+      if ('sessionId' in resp) {
+        return {
+          sessionId: resp.sessionId,
+          projectId: resp.projectId,
+          projectPath: resp.projectPath,
+          conversationId: resp.conversationId,
+          sessionSnapshot: normalizeResumeResponse(resp),
+        }
+      }
+      return {
+        sessionId: resp.id,
+        conversationId: sessionId,
+        sessionSnapshot: null,
+      }
+    },
+  })
+
   // Hard-kills the PTY via /stop. Status is driven idle by the WS session_update
   // the server broadcasts after the stream closes, so we only refresh the lists.
   const stopSessionMutation = useMutation({
@@ -99,5 +140,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession, resume, stopSession: stopSessionMutation }
 }

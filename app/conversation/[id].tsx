@@ -11,14 +11,15 @@ import {
   ActivityIndicator,
   FlatList,
   Animated,
+  AppState,
   type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
@@ -26,8 +27,12 @@ import { ConversationHistoryList } from '@/components/conversation/ConversationH
 import { ConversationSearchView } from '@/components/conversation/ConversationSearchView'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useConversation } from '@/hooks/useConversations'
+import { useConversationStream } from '@/hooks/useConversationStream'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
-import { createApiForServer, NotFoundError } from '@/services/api-client'
+import { createApiForServer, ConversationBusyError, NotFoundError } from '@/services/api-client'
+import { wsManager } from '@/services/ws-client'
+import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
+import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -37,6 +42,11 @@ import type { Session } from '@/types/api'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
+
+// Cadence for the focus-scoped freshness poll (P2.1). The detail endpoint is
+// stale-while-revalidate (~2s) and the drain self-throttles (5s canTrigger), so
+// a 3s tick converges without a ?refresh=1 or over-fetching.
+const LIVE_POLL_INTERVAL_MS = 3000
 
 interface SearchTargetResponse {
   query: string
@@ -133,7 +143,56 @@ export default function ConversationDetailScreen() {
     isFetchingNewerPage,
     totalMessages,
     loadedMessages,
+    triggerDelta,
   } = useConversation(serverId, id, { anchorIndex: fetchAnchorIndex, enabled: !isResolvingTarget })
+
+  // P2.2: external-session live push. Phase-1 keys external transcript frames by
+  // the conversation UUID in the sessionId field, so mounting the stream with
+  // sessionId === conversationId === id makes the hook's strict-equality filter
+  // match unchanged. Read-only: liveMessages is merged after REST history, never
+  // sent back.
+  const { liveMessages } = useConversationStream(serverId, id, id)
+
+  // P2.1: while this screen is focused AND the app is foregrounded, poll the
+  // delta drain so REST history stays fresh against an unmodified server. The
+  // drain self-throttles (5s canTrigger), so the 3s cadence is intentionally
+  // finer than the throttle rather than aligned to it. Stops on blur
+  // (useFocusEffect cleanup) or background.
+  useFocusEffect(
+    useCallback(() => {
+      let timer: ReturnType<typeof setInterval> | null = null
+      const start = () => {
+        if (timer == null) timer = setInterval(triggerDelta, LIVE_POLL_INTERVAL_MS)
+      }
+      const stop = () => {
+        if (timer != null) {
+          clearInterval(timer)
+          timer = null
+        }
+      }
+      if (AppState.currentState === 'active') start()
+      const sub = AppState.addEventListener('change', (state) => {
+        if (state === 'active') start()
+        else stop()
+      })
+      return () => {
+        stop()
+        sub.remove()
+      }
+    }, [triggerDelta]),
+  )
+
+  // P2.2: the additive conversation_updated push is an extra drain trigger — an
+  // external writer grew this conversation's JSONL, so pull the delta now
+  // instead of waiting for the next poll tick.
+  useEffect(() => {
+    const client = wsManager.getClient(serverId)
+    if (!client) return
+    return client.on('conversation_updated', (msg) => {
+      if (msg.type !== 'conversation_updated' || msg.conversationId !== id) return
+      triggerDelta()
+    })
+  }, [serverId, id, triggerDelta])
 
   const isConvNotFound = error instanceof NotFoundError
   // ponytail: only fires when conversation 404s — avoids extra request on normal loads
@@ -239,16 +298,98 @@ export default function ConversationDetailScreen() {
     }
   }, [conversation])
 
-  // Resume is owned by /session/new (the countdown start screen): it POSTs
-  // /api/sessions/resume, shows progress, and replaces itself with the session.
-  // This screen only navigates there.
+  const qc = useQueryClient()
+  const { resume, adoptSession } = useSessionActions(serverId, id)
+
+  // Seed the session cache from the resume snapshot (so /session/:id renders
+  // without a round-trip) then hand off to the live session, carrying the
+  // conversation it was resumed from.
+  const navigateToResumedSession = useCallback(
+    (result: ResumeResult) => {
+      if (result.sessionSnapshot) {
+        qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
+      }
+      const startParams = new URLSearchParams({ server: serverId })
+      if (result.projectId) startParams.set('projectId', result.projectId)
+      const projectPath = result.projectPath ?? conversation?.projectPath
+      if (projectPath) startParams.set('projectPath', projectPath)
+      startParams.set('resumedFromConversationId', result.conversationId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace(`/session/${result.sessionId}?${startParams.toString()}` as any)
+    },
+    [qc, serverId, conversation?.projectPath, router],
+  )
+
+  // Second-chance resume after the user acknowledges a possible collision.
+  // `force: true` always proceeds server-side (contract), so a repeat 409 is
+  // not expected — any error here is a genuine failure.
+  const forceResume = useCallback(() => {
+    resume.mutate(
+      { force: true },
+      {
+        onSuccess: navigateToResumedSession,
+        onError: (err) =>
+          Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err)),
+      },
+    )
+  }, [resume, navigateToResumedSession, t])
+
+  // Take over: stop the process that already owns this conversation, then adopt
+  // it as a streamer session. Destructive but SAFE — the server waits for the
+  // old process to actually exit before spawning, so it cannot leave two agents
+  // writing one transcript (which is what "open anyway" risks).
+  const takeOverSession = useCallback(() => {
+    adoptSession.mutate(undefined, {
+      onSuccess: (data) => router.replace(`/session/${data.sessionId}?server=${serverId}`),
+      onError: (err) =>
+        Alert.alert(t('resume.takeOverFailed'), err instanceof Error ? err.message : String(err)),
+    })
+  }, [adoptSession, router, serverId, t])
+
+  // Resume this conversation into a live session. The server soft-blocks with a
+  // 409 CONVERSATION_BUSY when the conversation may still be open elsewhere; on
+  // that we confirm with the user — naming what was detected, honestly (it *may*
+  // still be open, never "is open") — and only then retry with force. A clean
+  // resume proceeds straight through.
   const handleResume = useCallback(() => {
-    const startParams = new URLSearchParams({ server: serverId, resume: id })
-    if (conversation?.title) startParams.set('projectName', conversation.title)
-    if (conversation?.projectPath) startParams.set('projectPath', conversation.projectPath)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push(`/session/new?${startParams.toString()}` as any)
-  }, [router, serverId, id, conversation])
+    resume.mutate(
+      {},
+      {
+        onSuccess: navigateToResumedSession,
+        onError: (err) => {
+          if (err instanceof ConversationBusyError) {
+            const entries = err.detectedBy.length > 0 ? err.detectedBy : ['unknown']
+            const reasons = Array.from(
+              new Set(
+                entries.map((d) =>
+                  t(`resume.reason.${d}`, { defaultValue: t('resume.reason.unknown') }),
+                ),
+              ),
+            ).join('; ')
+            // Taking over needs a process we can actually signal. The server only
+            // reports likelyOwner 'external' when it matched a real PID (argv/cwd);
+            // a bare mtime hit ('unknown') has nothing to adopt, so we don't offer it.
+            const canTakeOver = err.likelyOwner === 'external'
+            Alert.alert(t('resume.collisionTitle'), t('resume.collisionMessage', { reasons }), [
+              { text: t('common:button.cancel'), style: 'cancel' },
+              ...(canTakeOver
+                ? [
+                    {
+                      text: t('resume.takeOver'),
+                      style: 'destructive' as const,
+                      onPress: takeOverSession,
+                    },
+                  ]
+                : []),
+              { text: t('resume.confirm'), onPress: forceResume },
+            ])
+          } else {
+            Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err))
+          }
+        },
+      },
+    )
+  }, [resume, navigateToResumedSession, forceResume, takeOverSession, t])
 
   const handleShare = useCallback(async () => {
     if (!conversation) return
@@ -390,7 +531,15 @@ export default function ConversationDetailScreen() {
 
   if (!conversation) return null
 
-  const hasMessages = conversation.messages.length > 0
+  // Merge WS-live messages after REST history for the tail view. When nothing is
+  // streaming this is referentially the same array as conversation.messages, so
+  // the non-live render path stays byte-identical. The search view keeps raw
+  // conversation.messages — its match indexes are keyed to REST message_index.
+  const mergedMessages =
+    liveMessages.length > 0 ? mergeLiveMessages(conversation.messages, liveMessages) : conversation.messages
+  const mergedLastMessageId = mergedMessages[mergedMessages.length - 1]?.id
+
+  const hasMessages = mergedMessages.length > 0
   const isLoadingMessages = Boolean(hasNextPage || isFetchingNextPage)
 
   // `resumable` is absent on older servers — treat undefined as resumable. The
@@ -462,8 +611,8 @@ export default function ConversationDetailScreen() {
             />
           ) : (
             <ConversationHistoryList
-              messages={conversation.messages}
-              lastMessageId={lastMessageId}
+              messages={mergedMessages}
+              lastMessageId={mergedLastMessageId}
               onReady={handleListReady}
               onStartReached={fetchNextPage}
               isFetchingOlder={isFetchingNextPage}
@@ -479,12 +628,17 @@ export default function ConversationDetailScreen() {
         <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
           <View style={styles.resumeWrapper}>
             <TouchableOpacity
-              style={[styles.resumeBtn, notResumable && styles.resumeBtnDisabled]}
+              style={[styles.resumeBtn, (notResumable || resume.isPending) && styles.resumeBtnDisabled]}
               onPress={handleResume}
-              disabled={notResumable}
+              disabled={notResumable || resume.isPending}
+              testID="resume-button"
             >
               <Text style={styles.resumeBtnText}>
-                {notResumable ? t('unavailable.cannotResume') : '▶ Resume Session'}
+                {notResumable
+                  ? t('unavailable.cannotResume')
+                  : resume.isPending
+                    ? t('resume.resuming')
+                    : '▶ Resume Session'}
               </Text>
             </TouchableOpacity>
           </View>

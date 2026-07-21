@@ -28,4 +28,23 @@ describe('SessionStatusBadge', () => {
     // Tree should be non-null
     expect(toJSON()).not.toBeNull()
   })
+
+  it('renders the distinct "External" label when externalAlive', async () => {
+    // External sessions carry status 'idle' — the externalAlive treatment must
+    // override that so it is not indistinguishable from a dead idle session.
+    const { getByText, queryByText } = await render(
+      <SessionStatusBadge status="idle" externalAlive />,
+    )
+    expect(getByText('External')).toBeTruthy()
+    expect(queryByText('Idle')).toBeNull()
+  })
+
+  it('is visually distinct from a managed running session', async () => {
+    const external = await render(<SessionStatusBadge status="idle" externalAlive />)
+    const managed = await render(<SessionStatusBadge status="running" />)
+    expect(external.getByText('External')).toBeTruthy()
+    expect(external.queryByText('Running')).toBeNull()
+    expect(managed.getByText('Running')).toBeTruthy()
+    expect(managed.queryByText('External')).toBeNull()
+  })
 })
