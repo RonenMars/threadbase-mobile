@@ -5,12 +5,14 @@
   },
   "list": {
     "loadingMore": "Loading more…",
-    "empty": "No messages in this conversation."
+    "empty": "No messages in this conversation.",
+    "msgs_one": "{{count}} msg",
+    "msgs_other": "{{count}} msgs",
+    "tokens": "{{count}}k tokens"
   },
   "error": {
     "loadFailed": "Couldn't load conversation",
     "notFound": "This conversation is no longer available on the server.",
-    "back": "Back to hub",
     "resumeTimeout": "The server didn't respond in time. The session may still be starting — check your sessions list before trying again."
   },
   "unavailable": {
@@ -33,12 +35,6 @@
     "takeOver": "Take over",
     "takeOverFailed": "Couldn't take over that session. Please try again."
   },
-  "live": {
-    "indicator": "Live",
-    "paused": "Paused",
-    "pause": "Pause live updates",
-    "resume": "Resume live updates"
-  },
   "action": {
     "export": "Export",
     "copyPatch": "Copy patch",
@@ -60,36 +56,12 @@
     "matchCount": "{{current}} of {{total}}",
     "previousMatch": "Previous match",
     "nextMatch": "Next match",
-    "clearSearch": "Clear search",
-    "placeholder": "Search in conversation…",
-    "open": "Search in conversation"
+    "clearSearch": "Clear search"
   },
   "slowLoading": {
     "title1": "Untangling a long thread…",
     "title2": "Messages are fashionably late…",
     "title3": "Your messages hit some traffic…",
     "message": "Wasn't expecting them to be this heavy. We're loading as fast as we can."
-  },
-  "review": {
-    "title": "Review changes",
-    "open": "Open review",
-    "summary": "{{files}} files · +{{added}} / −{{removed}}",
-    "incompleteWarning": "Built from conversation Edit/Write tools — may be incomplete vs real git status.",
-    "oversizedWarning": "Some diffs are truncated for performance. Copy the handoff packet for desktop review.",
-    "filterAll": "All",
-    "kindEdited": "Edited",
-    "kindWritten": "Written",
-    "kindDiff": "Diff",
-    "kindUnknown": "Other",
-    "searchPlaceholder": "Filter files…",
-    "empty": "No file changes found in this conversation yet.",
-    "selectFile": "Select a file to view its diff.",
-    "copyHandoff": "Copy for desktop",
-    "sendNote": "Send note to agent",
-    "sendNoteTitle": "Send review note?",
-    "sendNoteBody": "Posts a compact file list into the live session input.",
-    "cancel": "Cancel",
-    "send": "Send",
-    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
   }
 }

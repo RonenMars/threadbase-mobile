@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -67,11 +66,6 @@ export interface ConversationListItemProps {
   serverChipVariant?: ServerChipVariant
   /** Total active servers in the app — used to resolve `showServer === 'auto'`. */
   activeServerCount?: number
-  /**
-   * Force the server chip even when `showServer === 'auto'` would hide it —
-   * used when the same project path exists on multiple servers.
-   */
-  forceServerChip?: boolean
 
   /** Search-result inline substring highlight. */
   highlight?: string
@@ -94,21 +88,15 @@ export interface ConversationListItemProps {
 const STRIP_WIDTH = 3
 const STRIP_RADIUS = 2
 
-function shouldShowServer(
-  mode: ConversationListServerMode,
-  activeServerCount: number | undefined,
-  hasLabel: boolean,
-  forceServerChip: boolean,
-): boolean {
+function shouldShowServer(mode: ConversationListServerMode, activeServerCount: number | undefined, hasLabel: boolean): boolean {
   if (!hasLabel) return false
   if (mode === 'never') return false
-  if (mode === 'always' || forceServerChip) return true
+  if (mode === 'always') return true
   return (activeServerCount ?? 0) > 1
 }
 
 export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
-  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const {
     title,
@@ -135,7 +123,6 @@ export function ConversationListItem(props: ConversationListItemProps) {
     showServer = 'auto',
     serverChipVariant = 'label',
     activeServerCount,
-    forceServerChip = false,
     highlight,
     showCount = true,
     showBranch = true,
@@ -149,13 +136,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
 
   // Blue for an observed external session, amber for an interactive live one.
   const liveColor = external ? theme.status.completed : theme.status.waiting
-  const livePillLabel = external ? t('status.externalPill') : t('status.livePill')
-  const serverVisible = shouldShowServer(
-    showServer,
-    activeServerCount,
-    Boolean(serverLabel),
-    forceServerChip,
-  )
+  const serverVisible = shouldShowServer(showServer, activeServerCount, Boolean(serverLabel))
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
     : (live ? liveColor : null)
@@ -284,7 +265,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
             <View style={[styles.livePill, external && { backgroundColor: `${liveColor}24` }]}>
               <View style={[styles.livePillDot, external && { backgroundColor: liveColor }]} />
               <Text style={[styles.livePillText, external && { color: liveColor }]}>
-                {livePillLabel}
+                {external ? 'EXTERNAL' : 'LIVE'}
               </Text>
             </View>
           ) : timeText ? (

@@ -19,10 +19,8 @@ import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
-import { useNavLockStore } from '@/stores/navLock'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 // Track which session IDs have already played their enter animation so
 // polling-driven remounts don't re-trigger FadeInDown.
@@ -53,7 +51,6 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color) ?? SERVER_COLOR_DEFAULT
   const customName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
   const displayName = customName ?? session.projectName
-  const reduceMotion = useReducedMotion()
   const compoundId = `${session.serverId}::${session.id}`
   const isNew = !_animatedIds.has(compoundId)
   if (isNew) _animatedIds.add(compoundId)
@@ -80,7 +77,6 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
-    useNavLockStore.getState().lock()
     if (isExternal) {
       const convId = session.boundConversationId ?? session.conversationId ?? session.id
       router.push(conversationHref(convId, session.serverId))
@@ -137,7 +133,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const timeLabel = lastActivityTs ? formatListTime(lastActivityTs) : null
 
   return (
-    <Animated.View entering={isNew && !reduceMotion ? FadeInDown : undefined} style={[styles.cardWrap, isGlass && styles.cardWrapGlass]}>
+    <Animated.View entering={isNew ? FadeInDown : undefined} style={[styles.cardWrap, isGlass && styles.cardWrapGlass]}>
       <GlassFill />
       <TouchableOpacity
         testID={isFirstSession ? "first-session-card" : undefined}
