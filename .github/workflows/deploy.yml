@@ -147,6 +147,9 @@ jobs:
           IOS_TARGET: ${{ inputs.target }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         run: |
           ARGS=(
             --target "$IOS_TARGET"
