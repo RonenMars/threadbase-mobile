@@ -149,6 +149,30 @@ The same applies when adding any new `scripts` entry that involves error suppres
 
 ---
 
+## Rollup / Snapshot Tag Naming
+
+Separate from normal `<type>/<description>` work branches (`feat/…`, `fix/…`, `docs/…`, etc.), this repo also uses **test tags**: lightweight `git tag`s that mark a combination of commits purely for verification, not for their own PR. A tag (not a branch) is used because these mark a point in time rather than an active line of work — they carry no ongoing commits, don't clutter the branch list, and can't accidentally be pushed to. They're deleted once superseded or once the underlying work merges individually.
+
+**Format:**
+
+```
+test-<env>/v<version>-<sha>-<date>
+```
+
+- `<env>` — what the snapshot is being verified against:
+  - `dev` — local/dev-only verification, e.g. combining several open PR branches to integration-test them together before merging individually
+  - `pre-release` — staging/TestFlight-track candidate verification
+  - `production` — verification against what's shipping (or about to ship) to production
+- `v<version>` — the app version from `app.json` / `package.json` at the time the tag was cut
+- `<sha>` — short SHA (7 chars) of the commit the tag points to
+- `<date>` — ISO date (`YYYY-MM-DD`) the tag was created
+
+**Example:** `test-dev/v1.0.0-bfc800d-2026-07-20` — a dev-only test tag combining several open PRs at app version 1.0.0, pointing at commit `bfc800d` on 2026-07-20.
+
+To validate a build from one of these tags before merging, run the `Deploy` workflow (`.github/workflows/deploy.yml`) with `deploy_ref` set to the tag name — `deploy_ref` accepts any branch, tag, or commit SHA.
+
+---
+
 ## Merging PRs — Rebase + Squash, Linear History
 
 Keep `main` a straight line — one commit per PR, no merge commits. Every PR follows the same two operations, in this order:

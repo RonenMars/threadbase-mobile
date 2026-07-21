@@ -35,7 +35,7 @@ on:
         required: false
         type: string
       deploy_ref:
-        description: 'Branch/ref to build (default: main). Set to a feature branch to validate a fix before merging: the branch is built + uploaded to the store, and only the version bump lands on main (via an auto-merged PR, after a successful upload). The branch code lands on main via its own PR.'
+        description: 'Branch, tag, or commit SHA to build (default: main). Set to a feature branch or a snapshot tag (see CLAUDE.md → Rollup / Snapshot Tag Naming) to validate a build before merging: the ref is built + uploaded to the store, and only the version bump lands on main (via an auto-merged PR, after a successful upload). A branch''s other code lands on main via its own PR; a tag is a pinned snapshot with no separate PR.'
         required: false
         default: main
         type: string
@@ -62,9 +62,10 @@ jobs:
           DEPLOY_REF: ${{ inputs.deploy_ref }}
         run: |
           echo "::warning::Building '${DEPLOY_REF}', not main (deploy_ref override)." \
-               "The branch's code is built and uploaded to the store. Only the" \
+               "The ref's code is built and uploaded to the store. Only the" \
                "version bump lands on main via an auto-merged PR (after a successful" \
-               "upload) — the branch's other changes land on main only when you merge the PR."
+               "upload) — a branch's other changes land on main only when its own PR is" \
+               "merged; a tag is a pinned snapshot with no separate PR."
 
       - uses: actions/checkout@v5
         with:
@@ -279,9 +280,10 @@ jobs:
           DEPLOY_REF: ${{ inputs.deploy_ref }}
         run: |
           echo "::warning::Building '${DEPLOY_REF}', not main (deploy_ref override)." \
-               "The branch's code is built and uploaded to the store. Only the" \
+               "The ref's code is built and uploaded to the store. Only the" \
                "version bump lands on main via an auto-merged PR (after a successful" \
-               "upload) — the branch's other changes land on main only when you merge the PR."
+               "upload) — a branch's other changes land on main only when its own PR is" \
+               "merged; a tag is a pinned snapshot with no separate PR."
 
       - uses: actions/checkout@v5
         with:
