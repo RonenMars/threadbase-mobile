@@ -13,9 +13,16 @@ const STATUS_LABELS: Record<SessionStatus, string> = {
 interface Props {
   status: SessionStatus
   isRefetching?: boolean
+  /**
+   * When true, render the distinct "external — alive" treatment (a discovered
+   * process the streamer only observes) instead of the status label: a blue
+   * pulsing dot + "External". Visually separate from an interactive
+   * streamer-owned live session.
+   */
+  externalAlive?: boolean
 }
 
-export function SessionStatusBadge({ status, isRefetching }: Props) {
+export function SessionStatusBadge({ status, isRefetching, externalAlive }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const STATUS_COLORS: Record<SessionStatus, string> = {
@@ -23,8 +30,9 @@ export function SessionStatusBadge({ status, isRefetching }: Props) {
     waiting_input: theme.status.running,
     idle: theme.status.idle,
   }
-  const color = STATUS_COLORS[status] ?? theme.status.idle
-  const isLive = status === 'running' || status === 'waiting_input'
+  const color = externalAlive ? theme.status.completed : (STATUS_COLORS[status] ?? theme.status.idle)
+  const isLive = externalAlive || status === 'running' || status === 'waiting_input'
+  const label = externalAlive ? 'External' : STATUS_LABELS[status]
 
   return (
     <View style={styles.row}>
@@ -33,7 +41,7 @@ export function SessionStatusBadge({ status, isRefetching }: Props) {
       ) : (
         <LiveDot live={isLive} color={color} size={7} />
       )}
-      <Text style={[styles.label, { color }]}>{STATUS_LABELS[status]}</Text>
+      <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   )
 }

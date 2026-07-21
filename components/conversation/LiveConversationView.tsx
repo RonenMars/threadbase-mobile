@@ -15,6 +15,7 @@ import { MessageItem } from '@/components/conversation/MessageItem'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
+import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -114,17 +115,10 @@ export function LiveConversationView({
     return remaining
   })()
 
-  // Order: historical → optimistic user bubble → live WS messages. Dedup by id
-  // last (uuid-less messages fall back to timestamp-type-role ids that can
-  // collide across REST/WS; duplicate FlashList keys trigger a render loop).
-  const allMessages = (() => {
-    const seen = new Set<string>()
-    return [...orderedHistorical, ...stillPending, ...newLive].filter((m) => {
-      if (seen.has(m.id)) return false
-      seen.add(m.id)
-      return true
-    })
-  })()
+  // Order: historical → optimistic user bubble → live WS messages. Dedup by
+  // uuid then id (shared with the read-only conversation view). newLive above is
+  // recomputed inside the helper — kept local here only for the echo matching.
+  const allMessages = mergeLiveMessages(orderedHistorical, liveMessages, stillPending)
 
   // Session status for thinking indicator
   const { data: session } = useSessionDetail(serverId, sessionId)
