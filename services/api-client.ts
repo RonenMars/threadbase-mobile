@@ -201,10 +201,13 @@ async function request<T>(
     let detail = ''
     let code: string | undefined
     let warmupState: ServerWarmupState | undefined
+    // Hoisted out of the try so the 409 handler below can read the structured
+    // collision payload, not just the flattened detail/code strings.
+    let errBody: Record<string, unknown> | undefined
     try {
-      const errBody = await response.json()
-      if (errBody?.error) detail = errBody.error
-      if (errBody?.code) code = errBody.code
+      errBody = await response.json()
+      if (errBody?.error) detail = errBody.error as string
+      if (errBody?.code) code = errBody.code as string
       if (isWarmupFetchEndpoint(method, path)) warmupState = recordWarmupError(serverId, errBody)
       if (isStartSession) {
         clientLog.info('startSession', 'start response error body', {
@@ -215,6 +218,11 @@ async function request<T>(
         })
       }
     } catch {}
+    // Soft resume-collision: surface the structured payload as a typed error so
+    // the caller can name what was detected and offer a force-override retry.
+    if (response.status === 409 && code === 'CONVERSATION_BUSY') {
+      throw new ConversationBusyError(detail || 'Conversation is busy', errBody ?? {})
+    }
     throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
