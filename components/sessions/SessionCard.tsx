@@ -14,6 +14,8 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
+import { conversationHref } from '@/lib/conversationHref'
+import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -54,22 +56,39 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   if (isNew) _animatedIds.add(compoundId)
 
   const isLive = session.status === 'running' || session.status === 'waiting_input'
-  // Brand thread spine: amber for live (running / waiting_input), then the
-  // server's assigned identity color when multi-server (so you can see at a
-  // glance which server the card came from), then brand blue for idle.
-  // Echoes the brand mark; not a decorative side-stripe border.
+  // A discovered process the streamer only observes — read-only, not
+  // interactive. Routing keys on `ownership` (strict); the alive indicator keys
+  // on the liveness fields with a pid fallback for older servers, so it does
+  // not require `ownership` to be present.
+  const isExternal = isExternalSession(session)
+  const externalAlive = isExternalAlive(session)
+  // Brand thread spine: amber for live (running / waiting_input), blue for an
+  // alive external (observed) session, then the server's assigned identity
+  // color when multi-server (so you can see at a glance which server the card
+  // came from), then brand blue for idle. Echoes the brand mark; not a
+  // decorative side-stripe border.
   const spineColor = isLive
     ? theme.status.waiting
-    : multipleServers
-      ? serverColor
-      : theme.text.accent
+    : externalAlive
+      ? theme.status.completed
+      : multipleServers
+        ? serverColor
+        : theme.text.accent
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
+    if (isExternal) {
+      const convId = session.boundConversationId ?? session.conversationId ?? session.id
+      router.push(conversationHref(convId, session.serverId))
+      return
+    }
     router.push(`/session/${session.id}?server=${session.serverId}`)
-  }, [session.id, session.serverId, router])
+  }, [session, isExternal, router])
 
   const handleLongPress = useCallback(() => {
+    // External sessions are read-only — suppress the input-oriented actions
+    // (Send Input / Cancel) entirely so they can never be triggered.
+    if (isExternal) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     const options = [
       i18n.t('sessions:card.copyId'),
@@ -106,7 +125,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
         { text: 'Dismiss', style: 'cancel' },
       ])
     }
-  }, [session, cancelSession, router])
+  }, [session, isExternal, cancelSession, router])
 
   const elapsedLabel = formatElapsed(session.elapsedMs)
   const promptsLabel = t('card.prompts', { count: session.promptCount })
@@ -127,7 +146,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
       >
         <View style={styles.row}>
           {/* Thread spine — structural column, brand-mark echo. */}
-          <View style={[styles.spine, { backgroundColor: spineColor, opacity: isLive ? 1 : 0.55 }]} />
+          <View style={[styles.spine, { backgroundColor: spineColor, opacity: isLive || externalAlive ? 1 : 0.55 }]} />
 
           <View style={styles.body}>
             {/* Line 1: project name + trailing meta chips */}
@@ -151,7 +170,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
             {/* Line 2: status + runtime + prompts in mono. The bullets give
                 the row a terminal-log rhythm without adding chrome. */}
             <View style={styles.statusRow}>
-              <SessionStatusBadge status={session.status} />
+              <SessionStatusBadge status={session.status} externalAlive={externalAlive} />
               <Text style={styles.metaSeparator}>•</Text>
               <Text style={styles.metaMono}>{elapsedLabel}</Text>
               <Text style={styles.metaSeparator}>•</Text>

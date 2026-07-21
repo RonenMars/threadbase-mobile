@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
@@ -478,8 +478,19 @@ export function useConversation(
     queryRef.current = query
   })
 
+  // Imperative handle to the delta drain below. Consumers (the read-only
+  // conversation view's focus-poll interval + conversation_updated listener)
+  // invoke it to run one throttled drain. Points at a no-op whenever the effect
+  // is inactive (anchored window / disabled consumer), so a stale runDelta can
+  // never fire after the deps flip.
+  const triggerDeltaRef = useRef<() => void>(() => {})
+  const triggerDelta = useCallback(() => triggerDeltaRef.current(), [])
+
   const triggerEnabled = opts?.enabled !== false
   useEffect(() => {
+    // Reset the imperative handle first; only the active tail-view path below
+    // re-points it at a live runDelta.
+    triggerDeltaRef.current = () => {}
     // Delta-on-open lives only on the tail view; anchored windows are
     // navigation artifacts with their own bidirectional pagination. A consumer
     // that mounts with enabled: false must not trigger either — imperative
@@ -558,6 +569,13 @@ export function useConversation(
       }
     }
 
+    // Expose the drain to imperative callers (focus-poll interval,
+    // conversation_updated listener). Same throttle applies — runDelta gates on
+    // canTrigger internally.
+    triggerDeltaRef.current = () => {
+      void runDelta()
+    }
+
     // Mount.
     void runDelta()
 
@@ -629,6 +647,8 @@ export function useConversation(
     isFetchingNewerPage: query.isFetchingPreviousPage,
     totalMessages,
     loadedMessages,
+    // Imperative delta-drain trigger (throttled) for freshness pollers.
+    triggerDelta,
   }
 }
 
