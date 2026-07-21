@@ -3115,10 +3115,10 @@ SPEC CHECKSUMS:
   ExpoLocalization: 543cb852ec9d4a6c732344f94ebd96d18897eaab
   ExpoLogBox: 8a3cfa2897e088083cd49fc1ff7fdb2de4385547
   ExpoMailComposer: 93f4d65c12dd45331f69e0906773aa0e7b74344c
-  ExpoModulesCore: a4d8d4e58d500b54a51f9c5c47e9bb77ab205f08
-  ExpoModulesJSI: b20fefa4cdd9097e7e6b715466d1900b8c5d4711
-  ExpoModulesWorklets: b21b8f233b5fd71ca74327217601fa4ead9ddaaf
-  ExpoModulesWorkletsAdapter: 6b3dffb299973f4f2b1a96738aa2cb46987b18e1
+  ExpoModulesCore: ad043f1c5f96533cbda39c24fafd27b9c439717f
+  ExpoModulesJSI: ef7f197a8e7eeb245557f560ade794bfc1abdc79
+  ExpoModulesWorklets: 10c1c68a4abbae5e279f8ed5f6c6fc5078bbba1e
+  ExpoModulesWorkletsAdapter: 442c516a02a58a9579d00577df0ba561e4be948a
   ExpoNotifications: 9e7946eed73d94bbe0b7188906be41b0cc236c40
   ExpoRouter: 4f2ffaa0520703446edf643ee35b1ac1c11c65f9
   ExpoSecureStore: be2276d312c1f213605c0864772510239605ec37
