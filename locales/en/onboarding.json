@@ -1,39 +1,14 @@
 {
   "welcome": {
-    "title": "Welcome to Threadbase",
-    "subtitle": "Connect to your Claude Code sessions",
     "eyebrow": "// AMBIENT CODING",
     "headline": "Pull a thread.",
     "headlineAccent": "Watch it weave.",
     "body": "A remote control for Claude Code, on the device you actually carry.",
     "cta": "Get started"
   },
-  "addServer": {
-    "title": "Add a Server",
-    "subtitle": "Enter your Threadbase server URL to get started"
-  },
-  "browse": {
-    "title": "Browse",
-    "empty": "No files",
-    "emptySubtitle": "This directory is empty"
-  },
-  "conversation": {
-    "title": "Conversation",
-    "empty": "No messages",
-    "emptySubtitle": "No conversation history yet"
-  },
   "shell": {
     "back": "Back",
     "skip": "Skip"
-  },
-  "serverName": {
-    "eyebrow": "> 02 / NAME",
-    "headline": "Name your server.",
-    "body": "Optional. Pick a label you'll recognise in the Hub — like \"Work Mac\" or \"Home Server\". You can change it later in Settings.",
-    "fieldLabel": "Server name",
-    "placeholder": "e.g. Work Mac",
-    "cta": "Continue",
-    "skip": "Skip for now"
   },
   "connect": {
     "eyebrow": "> 02 / PAIR",
@@ -45,18 +20,12 @@
     "pasteCredentialsBody": "Run tb pair on your server, then paste the URL and token.",
     "qrEyebrow": "> 02 / PAIR · QR",
     "qrHeadline": "Scan to pair.",
-    "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
-    "step2": "2. Tap Open camera below. Threadbase will ask permission to use the camera — that's only used to read the QR.",
     "openCamera": "Open camera",
-    "pairMyLaptop": "Pair my laptop",
     "ready": "✓ ready",
-    "footnote": "// On your desktop, run tb pair to print a token.",
     "manualSectionLabel": "On your Mac",
     "manualSectionHint": "Open Terminal and run:",
     "manualSectionPasteHint": "It prints a URL + token — paste both below.",
-    "manualServerUrl": "Server URL",
     "manualToken": "Token",
-    "manualTokenPlaceholder": "paste token from tb pair output",
     "manualScanInstead": "Scan a QR instead →",
     "manualEnterInstead": "Use manual entry instead",
     "connectIdle": "Connect",
@@ -83,30 +52,5 @@
     "skipCta": "Skip — I'll watch the kanban",
     "enabledStatus": "ENABLED · alerts.threadbase.dev",
     "tapToAllow": "TAP TO ALLOW"
-  },
-  "tour": {
-    "eyebrow": "> 04 / TOUR",
-    "eyebrowProgress": "> 04 / TOUR · {{current}}/{{total}}",
-    "dropIn": "Drop me in",
-    "nextConcept": "Next concept"
-  },
-  "valueProp": {
-    "eyebrow": "// APPEARANCE",
-    "eyebrowWhy": "> 01 / WHY",
-    "headline": "Your laptop is the runtime. Your phone is the cockpit.",
-    "headlineMain": "Your laptop is the runtime.",
-    "headlineMuted": "Your phone is the cockpit.",
-    "headlineAccent": "vibe.",
-    "body": "Threadbase keeps your agents alive on the box that has the GPU, the keys, and the file tree — and gives you a calm surface to drive them from anywhere.",
-    "cta": "Pair my laptop",
-    "labelYou": "YOU",
-    "labelPrompts": "prompts ▸",
-    "labelStdout": "◂ stdout",
-    "labelClaudeRun": "claude run"
-  },
-  "theme": {
-    "eyebrow": "// APPEARANCE",
-    "headlineLine1": "Pick your",
-    "body": "Choose a color theme. You can always change it later in Settings."
   }
 }

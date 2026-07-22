@@ -4,39 +4,25 @@
   },
   "status": {
     "connected": "Connected",
-    "disconnected": "Disconnected",
-    "connecting": "Connecting…",
-    "error": "Connection Error"
+    "disconnected": "Disconnected"
   },
   "action": {
     "add": "Add Server",
-    "edit": "Edit",
-    "remove": "Remove Server",
-    "viewError": "View connection error",
     "connect": "Connect",
     "details": "Details"
   },
   "dialog": {
     "removeTitle": "Remove Server",
-    "removeMessage": "Are you sure you want to remove this server?",
-    "removeConfirm": "Remove",
-    "removeDismiss": "Cancel"
+    "removeConfirm": "Remove"
   },
   "form": {
-    "name": "Name",
-    "url": "URL",
-    "namePlaceholder": "My Server",
-    "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "Label (optional)",
     "serverUrl": "Server URL",
     "apiKey": "API Key",
     "hint": "Run cch serve --tunnel --qr on your Mac to get a QR-scannable URL."
   },
   "manage": {
-    "title": "Servers",
-    "addServer": "Add Server",
-    "addServerHint": "Connect to a tb-streamer instance",
-    "empty": "No servers added yet."
+    "addServer": "Add Server"
   },
   "filter": {
     "title": "Filters",
@@ -69,7 +55,6 @@
     "rememberChoice": "Remember this choice"
   },
   "statusModal": {
-    "title": "Servers Status",
     "close": "✕",
     "menuEdit": "Edit",
     "menuRefresh": "Refresh",
