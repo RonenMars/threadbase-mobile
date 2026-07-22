@@ -16,7 +16,10 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs on PR branches, but never mid-flight on main: a main
+  # run is post-merge validation, and cancelling it leaves the merged commit
+  # with no green record.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   # Decide whether to skip the heavy CI work. The PR jobs (Type check, Unit

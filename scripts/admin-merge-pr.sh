@@ -61,6 +61,21 @@ if [[ "$PR_AUTHOR" == "github-actions[bot]" ]]; then
 fi
 echo "::endgroup::"
 
+# Surface the PR + author on the run summary page so a deploy can be checked
+# without opening job logs. GITHUB_STEP_SUMMARY is unset outside Actions.
+if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+  {
+    echo ""
+    echo "| Bump PR | Author |"
+    echo "|---------|--------|"
+    echo "| $PR_URL | \`$PR_AUTHOR\` |"
+    if [[ "$PR_AUTHOR" == "github-actions[bot]" ]]; then
+      echo ""
+      echo "> ⚠️ Authored by \`github-actions[bot]\` — its workflow run will await manual approval. Check \`GH_TOKEN\` in deploy.yml."
+    fi
+  } >> "$GITHUB_STEP_SUMMARY"
+fi
+
 # Admin squash-merge: owner/admin PAT bypasses required-check rulesets.
 # Fail if merge is refused (empty/mis-scoped token, etc.).
 echo "::group::admin-merge-pr: squash-merge '$BRANCH'"
