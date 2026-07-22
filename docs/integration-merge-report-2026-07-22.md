@@ -90,8 +90,23 @@ It was dropped during conflict G to keep the snapshot's dead-key gate green, the
 #362's new head was merged back in (`ancestry-only — the tree was already identical`), so the snapshot still contains every open PR at its current head.
 Without this, `i18n-unused-keys` would have flagged the key once #356 and #362 were both on `main`.
 
-**#362 does not type-check.** `__tests__/unit/hooks/useTBPair.test.ts` uses `globalThis.__DEV__` with no declaration — 3 × `TS2339`.
-Pre-existing and already red on #362's own CI (`Type check=FAILURE`); the file is new in #362 and absent from `main`. Not merge-induced.
+**#362 did not type-check — fixed upstream.** `__tests__/unit/hooks/useTBPair.test.ts` used `global.__DEV__`, which React Native declares as a bare `const`, not a property of `globalThis` — 3 × `TS2339`.
+A `declare global { var __DEV__ }` is not an option: it collides with RN's own `const __DEV__` declaration.
+Fixed on #362 with a test-local typed alias (`ec5260f`, `fix(types): type the __DEV__ global alias in useTBPair tests`).
+
+**The `SessionScreen` failures were #346's, not #355's — fixed upstream.**
+`useNavigation` was introduced by **#346** (`app/session/[id].tsx`, the Bug-16 `beforeRemove` listener), not #355; #355 only carries it because its base includes #346.
+#346's own CI was already red on Integration tests, which confirms the attribution.
+
+Two distinct defects were stacked in those suites, the second only visible once the first was fixed:
+
+1. **`useNavigation` missing from the mocks.** The six local `jest.mock('expo-router', …)` factories replace the module wholesale, dropping the `useNavigation` that `jest.setup.js` provides — and the global stub returned only `setOptions`, with no `addListener` for the `beforeRemove` subscription.
+2. **`stopSession` missing from `useSessionActions` mocks.** #346 added `stopSession` to the screen's destructure; four suites' mocks never provided it, so `stopSession.mutate` was undefined.
+
+Fixed on #346 (`b84f18c`, `test(session): mock navigation and stopSession for the session screen`) — `addListener` added to the global stub, `useNavigation` added to six local factories, `stopSession` added to the four mocks that lacked it.
+
+**`SessionScreen.externalGate` was a genuine cross-PR interaction.** The suite is new in #354 and its local `expo-router` mock omits `useNavigation`; the screen only calls `useNavigation` once #346 is present. Neither PR is wrong alone — the failure exists only in the combination.
+Fixed on #354 (`25c83b6`, `test(session): mock useNavigation in the external-gate suite`), where the file lives; harmless there on its own.
 
 **#341's run-1 conflict disappeared.** Its branch was rebased onto #339 in the interim, so the 6-file add/add conflict recorded in run 1 no longer occurs. Recorded resolutions are perishable — re-verify preconditions rather than applying blind.
 
@@ -102,16 +117,21 @@ Measured at the tip on the same machine, against an `origin/main` baseline.
 | Check | Result |
 |---|---|
 | `npm run test:i18n` | **3/3 suites pass** (`i18n`, `i18n-completeness`, `i18n-unused-keys`) |
-| `npm run typecheck` | **3 errors, all #362's** (`useTBPair.test.ts`, `globalThis.__DEV__`) |
-| `npx jest --ci` | 9 suites / 23 tests failed, 112 suites / 1124 passed |
+| `npm run typecheck` | **clean** |
+| `npx jest --ci` | **121/121 suites pass**, 1147 tests passed, 1 skipped, **0 failed** |
 
-Failure breakdown — **no merge-induced failures remain**:
+**The snapshot is fully green.** Every failure found during this run was traced to the PR that caused it and fixed at source, then merged back in:
 
-| Failure | Count | Verdict |
+| Was failing | Root cause | Fixed on |
 |---|---|---|
-| `SessionScreen.*` — `useNavigation is not a function` | 7 suites, 21 tests | **#355's own bug.** Only #355 calls `useNavigation`; those suites mock `expo-router` locally without it. Already red on #355's CI. Passes on `main`. |
-| `e2e/feedback-flow` — 5s timeout | 1 test | **Not merge-related.** Fails on `main` on this machine (Windows perf). Outside what CI runs. |
-| `unit/components/servers/CacheAlertModal` | 1 test | **Flaky under full-suite load.** Passes in isolation (12/12). |
+| 6 × `SessionScreen.*` | #346 — `useNavigation` / `addListener` missing from mocks, then `stopSession` missing | #346 `b84f18c` |
+| `SessionScreen.externalGate` | #354 × #346 interaction — suite's mock omits `useNavigation` | #354 `25c83b6` |
+| `typecheck` (3 × TS2339) | #362 — `global.__DEV__` | #362 `ec5260f` |
+| `i18n-unused-keys` (would have) | #362 — dead `manualServerUrl` key | #362 `4c6a275` |
+
+Two earlier observations did not reproduce in the final run and needed no fix: `e2e/feedback-flow` (a 5s timeout that also fails on `main` on this machine — Windows perf) and `unit/components/servers/CacheAlertModal` (flaky under full-suite load, 12/12 in isolation). Both pass in the green run above.
+
+Note on measuring: several `SessionScreen` suites are heavy enough that parallel jest workers on this machine produce spurious failures. Use `--runInBand` when verifying them, and re-check any single-suite failure in isolation before treating it as real.
 
 ---
 
