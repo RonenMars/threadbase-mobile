@@ -42,7 +42,7 @@ function derivePort(url: string): string {
     if (parsed.port) return parsed.port
     return parsed.protocol === 'https:' ? '443' : '80'
   } catch {
-    return '7331'
+    return '8766'
   }
 }
 
@@ -62,10 +62,19 @@ export function OnboardingNavigator({ onDone }: Props) {
 
   const onNext = useCallback(() => {
     setIndex((curr) => {
+      // Connect step: swipe/forward must not jump to Done unpaired.
+      if (curr === 1 && !paired) return curr
       if (curr >= TOTAL_STEPS - 1) return curr
       setDirection(1)
       return curr + 1
     })
+  }, [paired])
+
+  // ConnectStep calls this after a successful pair — bypass the unpaired guard
+  // (paired state may not have flushed yet when onAdvance runs).
+  const advanceAfterPair = useCallback(() => {
+    setDirection(1)
+    setIndex(2)
   }, [])
 
   const onBack = useCallback(() => {
@@ -76,9 +85,11 @@ export function OnboardingNavigator({ onDone }: Props) {
     })
   }, [])
 
+  // Welcome: no Skip (avoids empty-Hub first impression). Connect: "Pair later".
   const onSkip = useCallback(() => {
+    if (index !== 1) return
     goto(TOTAL_STEPS - 1)
-  }, [goto])
+  }, [goto, index])
 
   const handlePaired = useCallback((result: PairResult) => {
     setPaired(result)
@@ -107,10 +118,12 @@ export function OnboardingNavigator({ onDone }: Props) {
       onNext={onNext}
       onBack={onBack}
       onSkip={onSkip}
+      showSkip={index === 1}
+      skipLabelKey="shell.pairLater"
     >
       {index === 0 && <WelcomeStep onNext={onNext} />}
       {index === 1 && (
-        <ConnectStep onPaired={handlePaired} onAdvance={onNext} />
+        <ConnectStep onPaired={handlePaired} onAdvance={advanceAfterPair} />
       )}
       {index === 2 && (
         <DoneStep

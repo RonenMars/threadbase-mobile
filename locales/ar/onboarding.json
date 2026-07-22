@@ -8,7 +8,8 @@
   },
   "shell": {
     "back": "رجوع",
-    "skip": "تخطي"
+    "skip": "تخطي",
+    "pairLater": "الاقتران لاحقاً"
   },
   "connect": {
     "eyebrow": "> 02 / إقران",
@@ -20,9 +21,11 @@
     "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق URL والرمز.",
     "qrEyebrow": "> 02 / إقران · QR",
     "qrHeadline": "امسح للإقران.",
+    "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
+    "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
     "openCamera": "فتح الكاميرا",
     "ready": "✓ جاهز",
-    "manualSectionLabel": "على Mac الخاص بك",
+    "manualSectionLabel": "على جهازك",
     "manualSectionHint": "افتح Terminal وشغّل:",
     "manualSectionPasteHint": "يطبع URL + رمزًا — الصق كليهما أدناه.",
     "manualToken": "الرمز",
@@ -32,7 +35,9 @@
     "connectOk": "متصل",
     "connectErr": "إعادة المحاولة",
     "connectBusy": "…جارٍ الاتصال",
-    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مرة أخرى على Mac الخاص بك."
+    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مجدداً على جهازك.",
+    "backToOptions": "← خيارات أخرى",
+    "step3": "3. وجّه هاتفك نحو رمز QR. الرمز صالح لمدة 3 دقائق؛ إن انتهت صلاحيته، شغّل tb pair مجدداً."
   },
   "done": {
     "eyebrowPaired": "اكتمل الإقران",
