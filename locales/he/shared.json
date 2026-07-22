@@ -19,25 +19,6 @@
     "pinToFavorites": "נעץ למועדפים",
     "cancel": "ביטול",
     "loadMore": "+ {{count}} נוספים",
-    "emptyFavorites": "עדיין אין מועדפים — לחץ לחיצה ארוכה על פריט כדי לנעוץ אותו.",
-    "pairServer": "זווג שרת כדי לראות {{tab}}.",
-    "loading": "טוען…",
-    "loadFailed": "לא ניתן לטעון — הקש כדי לנסות שוב.",
-    "nothing": "עדיין כלום.",
-    "favorites": "מועדפים",
-    "popular": "פופולרי",
-    "recents": "אחרונים"
-  },
-  "conversationInfo": {
-    "title": "מידע שיחה",
-    "id": "מזהה",
-    "titleLabel": "כותרת",
-    "projectPath": "נתיב פרויקט",
-    "messageCount": "ספירת הודעות",
-    "lastActivity": "פעילות אחרונה"
-  },
-  "session": {
-    "active": "פעיל",
-    "gotIt": "הבנתי"
+    "emptyFavorites": "עדיין אין מועדפים — לחץ לחיצה ארוכה על פריט כדי לנעוץ אותו."
   }
 }
