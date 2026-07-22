@@ -215,12 +215,19 @@ jobs:
             NEED_LOCK=1
             cp ios/Podfile.lock /tmp/podfile.lock.shipped
           fi
+          echo "::group::iOS bump: resolved vs main"
+          echo "  shipped version:     $BUMPED_VERSION (main: $MAIN_VER)"
+          echo "  shipped buildNumber: $BUMPED_BUILD_NUMBER (main: $MAIN_BN)"
+          echo "  NEED_VERSION=$NEED_VERSION  NEED_LOCK=$NEED_LOCK"
+          echo "::endgroup::"
           if (( NEED_VERSION == 0 && NEED_LOCK == 0 )); then
             echo "main already at version $MAIN_VER, buildNumber $MAIN_BN — nothing to do"
             exit 0
           fi
           BRANCH="chore/bump-ios-version-${BUMPED_BUILD_NUMBER}"
           TITLE="chore(ios): bump build number to ${BUMPED_BUILD_NUMBER} [skip-ci]"
+          echo "  bump branch: $BRANCH"
+          echo "  bump title:  $TITLE"
           git worktree add /tmp/bump-main-ios origin/main
           ( cd /tmp/bump-main-ios
             if (( NEED_VERSION )); then
@@ -396,12 +403,18 @@ jobs:
           git fetch origin main
           MAIN_VC=$(git show origin/main:app.json | jq -r '.expo.android.versionCode')
           MAIN_VN=$(git show origin/main:app.json | jq -r '.expo.version')
+          echo "::group::Android bump: resolved vs main"
+          echo "  shipped versionName: $BUMPED_VERSION_NAME (main: $MAIN_VN)"
+          echo "  shipped versionCode: $BUMPED_VERSION_CODE (main: $MAIN_VC)"
+          echo "::endgroup::"
           if [[ "$BUMPED_VERSION_CODE" == "$MAIN_VC" && "$BUMPED_VERSION_NAME" == "$MAIN_VN" ]]; then
             echo "main already at versionCode $MAIN_VC, versionName $MAIN_VN — nothing to do"
             exit 0
           fi
           BRANCH="chore/bump-android-version-${BUMPED_VERSION_CODE}"
           TITLE="chore(android): bump version code to ${BUMPED_VERSION_CODE} [skip-ci]"
+          echo "  bump branch: $BRANCH"
+          echo "  bump title:  $TITLE"
           git worktree add /tmp/bump-main origin/main
           ( cd /tmp/bump-main
             jq ".expo.version = \"${BUMPED_VERSION_NAME}\" | .expo.android.versionCode = ${BUMPED_VERSION_CODE}" \
