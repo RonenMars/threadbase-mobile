@@ -21,6 +21,8 @@
     "pasteCredentialsBody": "הרץ tb pair על השרת שלך, ואז הדבק את ה-URL והטוקן.",
     "qrEyebrow": "> 02 / זיווג · QR",
     "qrHeadline": "סרוק כדי לזווג.",
+    "step1": "1. על השרת שלך, הרץ tb pair. QR יודפס לטרמינל.",
+    "step2": "2. הקש על פתח מצלמה למטה. Threadbase תבקש הרשאה להשתמש במצלמה — היא משמשת רק לקריאת ה-QR.",
     "openCamera": "פתח מצלמה",
     "ready": "✓ מוכן",
     "manualSectionLabel": "במחשב שלך",

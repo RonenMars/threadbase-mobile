@@ -21,6 +21,8 @@
     "pasteCredentialsBody": "Run tb pair on your server, then paste the URL and token.",
     "qrEyebrow": "> 02 / PAIR · QR",
     "qrHeadline": "Scan to pair.",
+    "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
+    "step2": "2. Tap Open camera below. Threadbase will ask permission to use the camera — that's only used to read the QR.",
     "openCamera": "Open camera",
     "ready": "✓ ready",
     "manualSectionLabel": "On your computer",

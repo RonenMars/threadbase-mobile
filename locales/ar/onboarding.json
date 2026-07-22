@@ -21,6 +21,8 @@
     "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق URL والرمز.",
     "qrEyebrow": "> 02 / إقران · QR",
     "qrHeadline": "امسح للإقران.",
+    "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
+    "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
     "openCamera": "فتح الكاميرا",
     "ready": "✓ جاهز",
     "manualSectionLabel": "على جهازك",
