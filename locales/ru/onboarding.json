@@ -27,7 +27,6 @@
     "manualSectionLabel": "На вашем компьютере",
     "manualSectionHint": "Откройте Терминал и запустите:",
     "manualSectionPasteHint": "Он выведет URL + токен (или ссылку threadbase://) — вставьте ниже.",
-    "manualServerUrl": "URL сервера",
     "manualToken": "Токен",
     "manualScanInstead": "Сканировать QR вместо этого →",
     "manualEnterInstead": "Ввести вручную вместо этого",

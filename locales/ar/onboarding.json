@@ -27,7 +27,6 @@
     "manualSectionLabel": "على جهازك",
     "manualSectionHint": "افتح Terminal وشغّل:",
     "manualSectionPasteHint": "يطبع URL + رمزًا (أو رابط threadbase://) — الصق أدناه.",
-    "manualServerUrl": "عنوان الخادم",
     "manualToken": "الرمز",
     "manualScanInstead": "مسح QR بدلًا من ذلك →",
     "manualEnterInstead": "استخدام الإدخال اليدوي بدلًا من ذلك",
