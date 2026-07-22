@@ -13,6 +13,7 @@
   },
   "dialog": {
     "removeTitle": "Удалить сервер",
+    "removeMessage": "Отключиться от {{server}}?",
     "removeConfirm": "Удалить"
   },
   "form": {
