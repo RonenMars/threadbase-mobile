@@ -1,7 +1,4 @@
 {
-  "header": {
-    "session": "Session"
-  },
   "connection": {
     "reconnectingTitle": "Reconnecting…",
     "reconnectingMessage": "Connection lost — the content below may be stale.",
@@ -9,38 +6,24 @@
     "stalledMessage": "Connected, but no output has arrived for a while."
   },
   "action": {
-    "copyId": "Copy Session ID",
     "sendInput": "Send Input",
-    "cancel": "Cancel Session",
-    "stop": "Stop session",
-    "more": "More"
+    "stop": "Stop session"
   },
   "voice": {
     "start": "Start dictation",
-    "stop": "Stop dictation",
-    "permissionDeniedTitle": "Microphone permission denied",
-    "permissionDeniedBody": "Threadbase needs microphone access to dictate prompts. Enable it in Settings."
+    "stop": "Stop dictation"
   },
   "dialog": {
     "cancelTitle": "Cancel Session",
     "cancelMessage": "Are you sure you want to cancel this session?",
     "cancelConfirm": "Cancel Session",
-    "cancelDismiss": "Keep Running",
     "removeTitle": "Remove Session",
-    "removeMessage": "Are you sure you want to remove this session?",
     "removeConfirm": "Remove",
-    "removeDismiss": "Keep",
     "stopTitle": "Stop session",
-    "stopMessage": "Stop this session? Claude will be interrupted.",
-    "stopConfirm": "Stop",
-    "stopDismiss": "Keep Running",
     "stopFailed": "Couldn't stop the session. Check your connection and try again."
   },
   "status": {
-    "connecting": "Connecting…",
-    "reconnecting": "Reconnecting…",
     "disconnected": "Disconnected",
-    "waking": "Waking up…",
     "starting": "Starting session…",
     "stuckTitle": "Still starting…",
     "stuckBody": "The session hasn't reached its prompt yet. You can watch its console output live instead of waiting.",
@@ -48,8 +31,7 @@
     "waitMore": "Wait more"
   },
   "input": {
-    "placeholder": "Send a message…",
-    "send": "Send"
+    "placeholder": "Send a message…"
   },
   "session": {
     "notFound": "Session not found",
@@ -65,11 +47,6 @@
     "alreadyRunningBody": "This session has an active process on the server. Resuming here will stop that process and start a new terminal session in the app.",
     "overtake": "Overtake",
     "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts",
-    "tabTerminal": "Terminal",
-    "tabChat": "Chat"
-  },
-  "banner": {
-    "streamingInfo": "Tool calls and output stream here in real time. Type a follow-up below while Claude is still working."
+    "prompts_other": "{{count}} prompts"
   }
 }
