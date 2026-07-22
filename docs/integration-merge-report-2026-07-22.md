@@ -1,4 +1,4 @@
-# Integration merge report — `integration-dev/v1.0.0-df91938-2026-07-22`
+# Integration merge report — `integration-dev/v1.0.0-2026-07-22`
 
 **This document is the authoritative merge flow for the currently-open PRs.**
 When these branches are merged individually, follow the order and the per-conflict resolutions recorded here rather than re-deriving them.
@@ -116,9 +116,35 @@ This is not snapshot-only. It will recur on `main`:
 
 The same trap applies to conflict 4 (#357's `removeMessage`), though that one surfaces as a real conflict rather than silently.
 
-**CI will not catch the silent half.** CI runs only `test:unit` (`__tests__/unit`) and `test:integration` (`__tests__/integration`).
-Root-level suites — `__tests__/i18n-completeness.test.ts` and #356's new `__tests__/i18n-unused-keys.test.ts` — never run.
-Typecheck *does* catch it, because `lib/i18n.types.ts` types `t()` against the locale JSON.
+### Ordering does not solve it — verified
+
+`git merge-tree` was run on #356 and #360 in **both** directions.
+Both produce identical outcomes: `connect.step1` is absent from the merged `locales/en/onboarding.json`, and both report exactly **one** conflict marker — the `manualSectionLabel` / `footnote` hunk, *not* the step keys.
+
+So "merge #360 before #356" does **not** help.
+Worse, the merge hands you a conflict *in the very file that is silently losing keys*: you resolve the visible hunk, the file looks handled, and the deletion rides along unnoticed. That is exactly how it slipped through here.
+
+### What does solve it
+
+**Rebase, then re-verify — and merge only on post-rebase green.**
+This is already the repo's stated merge rule, and it is sufficient, because **Type check catches this class of bug**: `lib/i18n.types.ts` types `t()` against the locale JSON, so a referenced-but-missing key is a `TS2345` compile error. That is how it was found here (3 errors → 1 after the restore).
+
+The hazard only materialises if a PR is squash-merged on a **stale** green CI run from before the rebase.
+Concretely, for whichever of #356 / #360 goes second:
+
+1. `git fetch origin && git rebase origin/main`
+2. Push with `--force-with-lease` and wait for a **fresh** CI run
+3. If Type check goes red on `connect.step*`, re-add the keys to the locale files as part of the rebase — do not merge red
+
+GitHub Merge Queue automates precisely this guarantee (each PR tested on top of those ahead of it) and is the durable fix if PR volume grows; it is already flagged as the adjacent pattern in `docs/research/2026-07-21-pre-merge-integration-build-strategy.md`.
+
+### A gap Type check does not cover
+
+**CI does not run the root-level suites at all.** The jobs are `test:unit` (`__tests__/unit`) and `test:integration` (`__tests__/integration`).
+`__tests__/i18n-completeness.test.ts` and #356's new `__tests__/i18n-unused-keys.test.ts` sit at the root of `__tests__/` and therefore never run on a PR.
+
+That is why #343 and #354 are green despite adding English-only keys — the `i18n-completeness` failures listed below are invisible to CI, and Type check cannot see them either (a *missing translation* is not a type error; only a *missing key* is).
+Worth fixing independently of these PRs: widen the CI test jobs to cover root-level suites, or #356's new gate lands dead on arrival.
 
 ---
 
