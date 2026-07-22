@@ -24,7 +24,8 @@
   },
   "shell": {
     "back": "חזרה",
-    "skip": "דלג"
+    "skip": "דלג",
+    "pairLater": "אצמד אחר כך"
   },
   "serverName": {
     "eyebrow": "> 02 / שם",
@@ -51,7 +52,7 @@
     "pairMyLaptop": "זווג את המחשב הנייד שלי",
     "ready": "✓ מוכן",
     "footnote": "// על שולחן העבודה שלך, הרץ tb pair כדי להדפיס טוקן.",
-    "manualSectionLabel": "על ה-Mac שלך",
+    "manualSectionLabel": "במחשב שלך",
     "manualSectionHint": "פתח טרמינל והרץ:",
     "manualSectionPasteHint": "הוא מדפיס URL + טוקן — הדבק את שניהם למטה.",
     "manualServerUrl": "כתובת שרת",
@@ -63,7 +64,9 @@
     "connectOk": "מחובר",
     "connectErr": "נסה שוב",
     "connectBusy": "…מתחבר",
-    "connectErrHint": "הטוקן פג תוקף? הרץ tb pair שוב על ה-Mac שלך."
+    "connectErrHint": "פג תוקף הטוקן? הרץ tb pair שוב במחשב.",
+    "backToOptions": "← אפשרויות אחרות",
+    "step3": "3. כוון את הטלפון ל-QR. הטוקן תקף ל-3 דקות; אם פג, הרץ tb pair שוב."
   },
   "done": {
     "eyebrowPaired": "לחיצת היד הושלמה",

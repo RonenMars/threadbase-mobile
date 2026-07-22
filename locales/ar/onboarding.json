@@ -24,7 +24,8 @@
   },
   "shell": {
     "back": "رجوع",
-    "skip": "تخطي"
+    "skip": "تخطي",
+    "pairLater": "الاقتران لاحقاً"
   },
   "serverName": {
     "eyebrow": "> 02 / الاسم",
@@ -51,7 +52,7 @@
     "pairMyLaptop": "إقران حاسوبي المحمول",
     "ready": "✓ جاهز",
     "footnote": "// على سطح مكتبك، شغّل tb pair لطباعة توكن.",
-    "manualSectionLabel": "على Mac الخاص بك",
+    "manualSectionLabel": "على جهازك",
     "manualSectionHint": "افتح Terminal وشغّل:",
     "manualSectionPasteHint": "يطبع URL + رمزًا — الصق كليهما أدناه.",
     "manualServerUrl": "عنوان الخادم",
@@ -63,7 +64,9 @@
     "connectOk": "متصل",
     "connectErr": "إعادة المحاولة",
     "connectBusy": "…جارٍ الاتصال",
-    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مرة أخرى على Mac الخاص بك."
+    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مجدداً على جهازك.",
+    "backToOptions": "← خيارات أخرى",
+    "step3": "3. وجّه هاتفك نحو رمز QR. الرمز صالح لمدة 3 دقائق؛ إن انتهت صلاحيته، شغّل tb pair مجدداً."
   },
   "done": {
     "eyebrowPaired": "اكتمل الإقران",
