@@ -28,6 +28,7 @@ interface RawSessionMeta {
   id: string
   profile_id?: string
   project_name?: string
+  session_name?: string
   project_path?: string
   last_updated_at?: string
   message_count?: number
@@ -68,7 +69,8 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
   }
   const conversations: Conversation[] = raw.filter((s): s is RawSessionMeta => s != null).map((s) => ({
     id: s.id,
-    title: s.project_name ?? 'Conversation',
+    title: s.session_name?.trim() || s.project_name || 'Conversation',
+    sessionName: s.session_name,
     projectPath: s.project_path ?? '',
     branch: s.git_branch,
     messageCount: s.message_count ?? 0,
@@ -335,7 +337,7 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
 
   return {
     id: convId,
-    title: first.meta.project_name ?? 'Conversation',
+    title: first.meta.session_name?.trim() || first.meta.project_name || 'Conversation',
     projectPath: first.meta.project_path ?? '',
     branch: first.meta.git_branch,
     messageCount: first.meta.message_count ?? messages.length,
