@@ -132,7 +132,8 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 ### Feature 5 — Polish the onboarding flow
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Status (2026-07-22):** 🔄 In flight on `feat/onboarding-polish-top5` — audit complete; shipping top XS/S wins (Skip/swipe empty-Hub guard, QR advance without re-handshake, back-to-choose, Mac→computer copy + i18n QR steps, default port 8766). Still open: manual `tb pair` token exchange in `useTBPair`, NotificationsStep re-wire.
+
 
 **Goal:** Refine the first-launch onboarding experience. Today's flow (`app/onboarding.tsx` + `components/onboarding/{OnboardingShell,OnboardingNavigator}.tsx` + `components/onboarding/steps/*`) gets users from cold install to a paired server, but the rough edges haven't been cataloged or prioritized.
 

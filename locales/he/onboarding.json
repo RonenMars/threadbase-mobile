@@ -8,7 +8,8 @@
   },
   "shell": {
     "back": "חזרה",
-    "skip": "דלג"
+    "skip": "דלג",
+    "pairLater": "אצמד אחר כך"
   },
   "connect": {
     "eyebrow": "> 02 / זיווג",
@@ -22,7 +23,7 @@
     "qrHeadline": "סרוק כדי לזווג.",
     "openCamera": "פתח מצלמה",
     "ready": "✓ מוכן",
-    "manualSectionLabel": "על ה-Mac שלך",
+    "manualSectionLabel": "במחשב שלך",
     "manualSectionHint": "פתח טרמינל והרץ:",
     "manualSectionPasteHint": "הוא מדפיס URL + טוקן — הדבק את שניהם למטה.",
     "manualToken": "טוקן",
@@ -32,7 +33,9 @@
     "connectOk": "מחובר",
     "connectErr": "נסה שוב",
     "connectBusy": "…מתחבר",
-    "connectErrHint": "הטוקן פג תוקף? הרץ tb pair שוב על ה-Mac שלך."
+    "connectErrHint": "פג תוקף הטוקן? הרץ tb pair שוב במחשב.",
+    "backToOptions": "← אפשרויות אחרות",
+    "step3": "3. כוון את הטלפון ל-QR. הטוקן תקף ל-3 דקות; אם פג, הרץ tb pair שוב."
   },
   "done": {
     "eyebrowPaired": "לחיצת היד הושלמה",
