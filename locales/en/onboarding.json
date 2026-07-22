@@ -8,7 +8,8 @@
   },
   "shell": {
     "back": "Back",
-    "skip": "Skip"
+    "skip": "Skip",
+    "pairLater": "Pair later"
   },
   "connect": {
     "eyebrow": "> 02 / PAIR",
@@ -22,7 +23,8 @@
     "qrHeadline": "Scan to pair.",
     "openCamera": "Open camera",
     "ready": "✓ ready",
-    "manualSectionLabel": "On your Mac",
+    "footnote": "// On your desktop, run tb pair to print a token.",
+    "manualSectionLabel": "On your computer",
     "manualSectionHint": "Open Terminal and run:",
     "manualSectionPasteHint": "It prints a URL + token — paste both below.",
     "manualToken": "Token",
@@ -32,7 +34,9 @@
     "connectOk": "Connected",
     "connectErr": "Retry",
     "connectBusy": "…connecting",
-    "connectErrHint": "Token expired? Run tb pair again on your Mac."
+    "connectErrHint": "Token expired? Run tb pair again on your computer.",
+    "backToOptions": "← Other options",
+    "step3": "3. Point your phone at the QR. The pair token is valid for 3 minutes; if it expires, just run tb pair again."
   },
   "done": {
     "eyebrowPaired": "HANDSHAKE COMPLETE",

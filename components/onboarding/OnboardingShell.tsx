@@ -16,6 +16,10 @@ interface Props {
   onNext: () => void
   onBack: () => void
   onSkip: () => void
+  /** When false, the Skip chrome control is hidden (Welcome). Default: index < total - 1. */
+  showSkip?: boolean
+  /** i18n key under `onboarding` for the skip label. Default: shell.skip */
+  skipLabelKey?: string
   children: React.ReactNode
 }
 
@@ -26,6 +30,8 @@ export function OnboardingShell({
   onNext,
   onBack,
   onSkip,
+  showSkip: showSkipProp,
+  skipLabelKey = 'shell.skip',
   children,
 }: Props) {
   const insets = useSafeAreaInsets()
@@ -42,7 +48,7 @@ export function OnboardingShell({
     .runOnJS(true)
 
   const showBack = index > 0
-  const showSkip = index < total - 1
+  const showSkip = showSkipProp ?? index < total - 1
   const Entering = direction === -1 ? SlideInLeft : SlideInRight
 
   return (
@@ -67,7 +73,7 @@ export function OnboardingShell({
         )}
         {showSkip ? (
           <Pressable onPress={onSkip} style={styles.chromeBtn} hitSlop={10}>
-            <Text style={styles.chromeSkip}>{t('shell.skip')}</Text>
+            <Text style={styles.chromeSkip}>{t(skipLabelKey)}</Text>
           </Pressable>
         ) : (
           <View />
