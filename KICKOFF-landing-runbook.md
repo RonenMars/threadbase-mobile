@@ -51,3 +51,21 @@ One post-merge action that is not a merge: **after `#368` lands, add `i18n` to t
 ## Done when
 
 Someone who has not read the merge report can land the chain from the runbook alone, and every trap that produces a green signal has an explicit "after merging X, check Y" step.
+
+---
+
+## Follow-up PRs opened after this kick-off (session-name display)
+
+These are **not** part of the 20-PR chain this kick-off builds a runbook for — they are new work opened after, targeting `main` directly.
+When you write `docs/runbooks/2026-07-22-land-open-prs.md`, carry this cross-repo chain into it as a separate "Follow-up PRs" section (do not fold them into the main order — different base, different set).
+
+Fix: interactive Claude Code conversations carried no session name (the scanner only read the `slug` field, which the human REPL never writes), so mobile showed the project name in the list, the conversation view, and the live-session view instead of a real title.
+
+| Order | Repo | PR | Branch | What it does |
+|---|---|---|---|---|
+| 1 | tb-scanner | [#53](https://github.com/RonenMars/threadbase-scanner/pull/53) | `fix/session-name-from-first-message` | Derive session name from the first user message when no `slug`. The data source. |
+| 2 | tb-streamer | [#267](https://github.com/RonenMars/threadbase-streamer/pull/267) | `fix/emit-session-name` | Emit `session_name` in the conversation detail `meta` block. |
+| 3 | tb-mobile | [#376](https://github.com/RonenMars/threadbase-mobile/pull/376) | `fix/session-name-display` | Read `session_name` in the list, conversation, and live-session views (user rename → session name → project name). |
+
+**The mobile PR (#376) is safe to land alone** — it is additive and shows nothing new until the server pipeline (scanner #53 → scanner release → streamer dep bump → streamer #267) lands.
+So the *visible* result is gated on the server side, but the merge order for correctness is only: land #376 whenever; the name simply stays blank until the upstream chain completes.
