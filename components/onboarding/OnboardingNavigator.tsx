@@ -6,9 +6,11 @@ import type { PairResult } from '@/hooks/useTBPair'
 import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
 import { DoneStep } from './steps/DoneStep'
+import { NotificationsStep } from './steps/NotificationsStep'
 import { WelcomeStep } from './steps/WelcomeStep'
 
-export const TOTAL_STEPS = 3
+// Welcome → Connect → Notifications → Done (redesign: Notifications after pair)
+export const TOTAL_STEPS = 4
 export const ONBOARDED_KEY = 'threadbase_onboarded'
 const PAIRED_TOKEN_HASH_KEY = 'threadbase_paired_token_hash'
 
@@ -76,6 +78,7 @@ export function OnboardingNavigator({ onDone }: Props) {
     })
   }, [])
 
+  // Skip / pair-later: jump to Done, skipping Notifications when unpaired.
   const onSkip = useCallback(() => {
     goto(TOTAL_STEPS - 1)
   }, [goto])
@@ -112,7 +115,8 @@ export function OnboardingNavigator({ onDone }: Props) {
       {index === 1 && (
         <ConnectStep onPaired={handlePaired} onAdvance={onNext} />
       )}
-      {index === 2 && (
+      {index === 2 && <NotificationsStep onNext={onNext} />}
+      {index === 3 && (
         <DoneStep
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}
