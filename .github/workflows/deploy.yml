@@ -187,10 +187,11 @@ jobs:
         env:
           BUMPED_BUILD_NUMBER: ${{ env.BUMPED_BUILD_NUMBER }}
           BUMPED_VERSION: ${{ env.BUMPED_VERSION }}
-          # Push with the PAT; admin-merge-pr.sh creates the PR with GITHUB_TOKEN
-          # and merges with GH_PUSH_TOKEN (admin bypass).
+          # Push, create the PR, and admin-merge all with the PAT. Creating the PR
+          # with GITHUB_TOKEN makes github-actions[bot] the author, which GitHub
+          # gates behind manual workflow approval.
           GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
           if [[ -z "${GH_PUSH_TOKEN:-}" ]]; then
@@ -378,10 +379,11 @@ jobs:
         env:
           BUMPED_VERSION_CODE: ${{ env.BUMPED_VERSION_CODE }}
           BUMPED_VERSION_NAME: ${{ env.BUMPED_VERSION_NAME }}
-          # Push with the PAT; admin-merge-pr.sh creates the PR with GITHUB_TOKEN
-          # and merges with GH_PUSH_TOKEN (admin bypass).
+          # Push, create the PR, and admin-merge all with the PAT. Creating the PR
+          # with GITHUB_TOKEN makes github-actions[bot] the author, which GitHub
+          # gates behind manual workflow approval.
           GH_PUSH_TOKEN: ${{ secrets.GH_PAT }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
           if [[ -z "${GH_PUSH_TOKEN:-}" ]]; then
