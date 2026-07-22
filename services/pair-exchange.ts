@@ -16,6 +16,9 @@ export interface ExchangeResult {
 
 export type PairUriErrorCode = 'invalid' | 'expired' | 'bad-server-url'
 
+/** How a pasted manual-entry credential should be resolved. */
+export type PairCredentialKind = 'pair-uri' | 'pair-token' | 'api-key'
+
 export class PairUriError extends Error {
   readonly code: PairUriErrorCode
   constructor(code: PairUriErrorCode, message: string) {
@@ -23,6 +26,15 @@ export class PairUriError extends Error {
     this.name = 'PairUriError'
     this.code = code
   }
+}
+
+/** Classify a pasted token / URI for the manual onboarding pair path. */
+export function classifyPairCredential(raw: string): PairCredentialKind {
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('threadbase:')) return 'pair-uri'
+  // Short-lived tokens from `tb pair` / `/api/pair/start` (`pt_<hex>`).
+  if (trimmed.startsWith('pt_')) return 'pair-token'
+  return 'api-key'
 }
 
 export class PairExchangeError extends Error {
