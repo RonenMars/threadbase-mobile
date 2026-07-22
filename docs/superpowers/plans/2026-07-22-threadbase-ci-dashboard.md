@@ -6,7 +6,7 @@
 
 **Architecture:** Standalone Next.js 15 App Router site in a new public repo (`threadbase-ci-dashboard`). GitHub OAuth via Auth.js v5 provides identity; the stored OAuth access token (repo + workflow scopes) is used server-side for all GitHub API calls — no PAT needed. Neon + Drizzle stores users/roles and Auth.js sessions. Real-time run history uses GitHub webhooks → Upstash Redis list → SSE stream, with client-side polling as fallback.
 
-**Tech Stack:** Next.js 15 (App Router), Auth.js v5 beta, @auth/drizzle-adapter, Drizzle ORM 0.45+, @neondatabase/serverless, @upstash/redis, Tailwind v4, shadcn/ui, zod v4, Jest + Testing Library.
+**Tech Stack:** Next.js 15 (App Router), Auth.js v5 beta, @auth/drizzle-adapter, Drizzle ORM 0.45+, @neondatabase/serverless, @upstash/redis, Tailwind v4, shadcn/ui, zod v4, Vitest + Playwright.
 
 ## Global Constraints
 
@@ -23,6 +23,61 @@
 - SSE stream polls Redis list every 2 seconds, streams for 25 seconds then client auto-reconnects
 - Client falls back to polling `/api/runs` every 10 seconds when SSE is down
 - Conventional commits, no AI attribution
+
+---
+
+## Good Practices from `threadbase-landing-page`
+
+Mirror these conventions from `RonenMars/threadbase-landing-page` — the authoritative sibling project for Threadbase web properties.
+
+### TypeScript
+- `"strict": true` (no granular overrides — let the umbrella cover everything)
+- `"moduleResolution": "bundler"` — correct for Next.js 15, not `"node"`
+- Path alias `"@/*": ["./*"]` maps to the repo root (not `src/`)
+- `"target": "ES2017"`, `"module": "esnext"`
+- Exclude test config files from `tsconfig.json` (e.g. `vitest.config.ts`) so test globals don't pollute app types
+
+### ESLint
+- Flat config format: `eslint.config.js` using `defineConfig` from `eslint/config` — not the legacy `.eslintrc` format
+- Three plugin layers: `typescript-eslint.configs.recommended` + `reactHooks.configs.recommended` + `next.configs["core-web-vitals"]`
+- `eslint-plugin-tailwind-canonical-classes` at `"warn"` severity to enforce canonical Tailwind class ordering
+- `@typescript-eslint/no-unused-vars` and `no-unused-expressions` both set to `"warn"` (not `"error"`)
+
+### Testing
+- **Vitest** for unit tests (not Jest) — `"test": "vitest run"`, `"test:watch": "vitest"`
+- **Playwright** for E2E / visual tests — `"test:visual": "playwright test"`
+- Mock `next/navigation` and other Next.js server modules via Vitest module aliases so server components are unit-testable without a real runtime
+
+### Next.js config
+- Typed config: `next.config.ts` (not `.js`), importing `NextConfig` type
+- Enable Turbopack: `turbopack: { root: process.cwd() }`
+- `"type": "module"` in `package.json` (ESM-first)
+
+### Component conventions
+- **Named exports only** — no default exports for components
+- Explicit return type on every component: `): React.JSX.Element`
+- Props typed as a local `type XxxProps = Readonly<{ ... }>` alias, destructured in the signature
+- Feature-level subdirectories (`Hero/`, `NavMenu/`) for multi-file features; single files at the `components/` root for simple components
+- `components/ui/` holds shadcn primitives only
+
+### Icons
+- `@phosphor-icons/react` — consistent with `threadbase-mobile`; never use emojis in the UI
+
+### Forms
+- `react-hook-form` + `@hookform/resolvers/zod` + `zod` for all form state and validation (not manual `useState` per field)
+
+### Utilities
+- `clsx` + `tailwind-merge` for conditional class merging
+- `class-variance-authority` (CVA) for variant-driven component styling
+
+### Scripts (add to `package.json`)
+```json
+"lint": "eslint .",
+"type-check": "tsc --noEmit",
+"test": "vitest run",
+"test:watch": "vitest",
+"test:e2e": "playwright test"
+```
 
 ---
 
