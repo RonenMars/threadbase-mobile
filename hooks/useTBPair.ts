@@ -1,5 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { AuthError, NetworkError } from '@/services/api-client'
+import {
+  classifyPairCredential,
+  exchangeToken,
+  parsePairUri,
+  PairExchangeError,
+  PairUriError,
+} from '@/services/pair-exchange'
 
 export type PairLogKind = 'i' | 'd' | 'ok' | 'err'
 
@@ -30,7 +37,55 @@ const SCHEDULE = {
   done: 2400,
 }
 
-// Mocks the handshake in dev; calls a real /api/profiles auth check in prod.
+async function resolveCredentials(url: string, token: string): Promise<PairResult> {
+  const trimmedUrl = url.replace(/\/$/, '')
+  const trimmedToken = token.trim()
+  const kind = classifyPairCredential(trimmedToken)
+
+  if (kind === 'pair-uri') {
+    const parsed = parsePairUri(trimmedToken)
+    const exchanged = await exchangeToken({ url: parsed.url, token: parsed.token })
+    return { url: exchanged.url, apiKey: exchanged.apiKey }
+  }
+
+  if (kind === 'pair-token') {
+    const exchanged = await exchangeToken({ url: trimmedUrl, token: trimmedToken })
+    return { url: exchanged.url, apiKey: exchanged.apiKey }
+  }
+
+  // Long-lived API key (`tb_…`): Bearer-check /api/profiles.
+  const res = await fetch(`${trimmedUrl}/api/profiles`, {
+    headers: { Authorization: `Bearer ${trimmedToken}` },
+  })
+  if (res.status === 401) throw new AuthError()
+  if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
+  await res.json()
+  return { url: trimmedUrl, apiKey: trimmedToken }
+}
+
+function messageForPairFailure(err: unknown): string {
+  if (err instanceof PairUriError) {
+    if (err.code === 'expired') return 'pair link expired · run tb pair again'
+    if (err.code === 'bad-server-url') return 'invalid server URL in pair link'
+    return 'invalid pair link · paste the threadbase:// URL from tb pair'
+  }
+  if (err instanceof PairExchangeError) {
+    if (err.kind === 'token') return 'token rejected · run tb pair again'
+    if (err.kind === 'rate-limited') return 'too many attempts · try again shortly'
+    if (err.kind === 'network') return 'connection refused · is the server running?'
+    if (err.kind === 'decrypt') return 'could not unseal api key'
+    return 'exchange failed'
+  }
+  if (err instanceof AuthError) {
+    return 'token rejected · check THREADBASE_API_KEY'
+  }
+  if (err instanceof NetworkError || err instanceof TypeError) {
+    return 'connection refused · is the server running?'
+  }
+  return 'handshake failed'
+}
+
+// Mocks the handshake in dev; resolves pair tokens / URIs / API keys in prod.
 export function useTBPair() {
   const [phase, setPhase] = useState<PairPhase>('idle')
   const [log, setLog] = useState<PairLogLine[]>([])
@@ -71,7 +126,7 @@ export function useTBPair() {
       const trimmedUrl = url.replace(/\/$/, '')
       const finishMockSequence = () => {
         schedule(SCHEDULE.dial, () => {
-          append({ k: 'i', t: `dial ${trimmedUrl}` })
+          append({ k: 'i', t: `dial ${trimmedUrl || 'pair-uri'}` })
           setPhase('resolving')
         })
         schedule(SCHEDULE.resolve, () => {
@@ -95,20 +150,22 @@ export function useTBPair() {
         return
       }
 
-      // Prod: real auth check against the server before advancing.
+      const dialTarget =
+        classifyPairCredential(token) === 'pair-uri' ? 'pair-uri' : trimmedUrl
+
       schedule(SCHEDULE.dial, () => {
-        append({ k: 'i', t: `dial ${trimmedUrl}` })
+        append({ k: 'i', t: `dial ${dialTarget}` })
         setPhase('resolving')
       })
 
       ;(async () => {
         try {
-          const res = await fetch(`${trimmedUrl}/api/profiles`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          if (res.status === 401) throw new AuthError()
-          if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
-          await res.json()
+          const kind = classifyPairCredential(token)
+          if (kind === 'pair-uri' || kind === 'pair-token') {
+            append({ k: 'd', t: 'exchanging pair token…' })
+          }
+
+          const result = await resolveCredentials(url, token)
 
           schedule(SCHEDULE.resolve - SCHEDULE.dial, () => {
             append({ k: 'd', t: 'mdns → handshake' })
@@ -122,16 +179,10 @@ export function useTBPair() {
             setPhase('ok')
           })
           schedule(SCHEDULE.done - SCHEDULE.dial, () => {
-            onSuccess?.({ url: trimmedUrl, apiKey: token })
+            onSuccess?.(result)
           })
         } catch (err) {
-          if (err instanceof AuthError) {
-            fail('token rejected · check THREADBASE_API_KEY')
-          } else if (err instanceof NetworkError || err instanceof TypeError) {
-            fail('connection refused · is the server running?')
-          } else {
-            fail('handshake failed')
-          }
+          fail(messageForPairFailure(err))
         }
       })()
     },
