@@ -5,6 +5,8 @@ import type {
   QuestionCancelledWsMessage,
   PermissionWsMessage,
   PermissionCancelledWsMessage,
+  CacheAlertSeverity,
+  CacheAlertResolveAction,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
@@ -23,6 +25,16 @@ export type WSMessage =
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }
+  | {
+      type: 'cache_alert'
+      fingerprint: string
+      severity: CacheAlertSeverity
+      missingCount: number
+      totalRows: number
+      detectedAt: string
+      sample: { id: string; title?: string }[]
+    }
+  | { type: 'cache_alert_resolved'; fingerprint: string; action: CacheAlertResolveAction }
   | { type: 'conversation_event'; sessionId: string; line: string }
   // Additive batched variant (streamer #202): one frame carries all lines from
   // a single watcher read. `seqs`, when present, is parallel to `lines` —
