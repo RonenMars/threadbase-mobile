@@ -5,14 +5,7 @@
   },
   "list": {
     "loadingMore": "جارٍ تحميل المزيد…",
-    "empty": "لا توجد رسائل في هذه المحادثة.",
-    "msgs_zero": "لا رسائل",
-    "msgs_one": "رسالة واحدة",
-    "msgs_two": "رسالتان",
-    "msgs_few": "{{count}} رسائل",
-    "msgs_many": "{{count}} رسالة",
-    "msgs_other": "{{count}} رسالة",
-    "tokens": "{{count}}k توكن"
+    "empty": "لا توجد رسائل في هذه المحادثة."
   },
   "error": {
     "loadFailed": "تعذّر تحميل المحادثة",

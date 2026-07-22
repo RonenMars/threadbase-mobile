@@ -8,62 +8,26 @@
   },
   "filter": {
     "label": "Filter & Sort",
-    "all": "All",
-    "active": "Active",
-    "waiting": "Waiting",
-    "completed": "Completed",
-    "failed": "Failed"
-  },
-  "sort": {
-    "label": "Sort",
-    "newest": "Newest",
-    "oldest": "Oldest",
-    "az": "A–Z"
+    "all": "All"
   },
   "list": {
-    "sessionCount_one": "{{count}} session",
-    "sessionCount_other": "{{count}} sessions",
     "empty": "No sessions",
     "emptySubtitle": "Start a Claude Code\nsession to see it here",
     "noResults": "No results",
-    "noResultsSubtitle": "Nothing matched \"{{query}}\"",
-    "emptyProjects": "No projects yet"
+    "noResultsSubtitle": "Nothing matched \"{{query}}\""
   },
   "card": {
-    "status": {
-      "active": "Active",
-      "waiting": "Waiting for Input",
-      "completed": "Session Completed",
-      "failed": "Session Failed",
-      "starting": "Starting…",
-      "stopping": "Stopping…"
-    },
-    "connectedTo": "{{server}}",
     "copyId": "Copy Session ID",
     "sendInput": "Send Input",
     "cancel": "Cancel Session",
-    "remove": "Remove Session",
-    "viewError": "View connection error",
     "prompts_one": "{{count}} prompt",
     "prompts_other": "{{count}} prompts"
-  },
-  "takeover": {
-    "prompt": "Another client is controlling this session",
-    "takeControl": "Take Control",
-    "dismiss": "Dismiss"
-  },
-  "directory": {
-    "empty": "Empty directory",
-    "loadFailed": "Unable to load directories",
-    "browsingNotConfigured": "Browsing not configured"
   },
   "hub": {
     "seeAll_one": "See all {{count}} conversation →",
     "seeAll_other": "See all {{count}} conversations →",
     "msgs_one": "{{count}} msg",
-    "msgs_other": "{{count}} msgs",
-    "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts"
+    "msgs_other": "{{count}} msgs"
   },
   "loading": {
     "title": "Loading sessions",
@@ -79,12 +43,6 @@
     "headerLive_other": "LIVE · {{count}}",
     "headerIdle_one": "IDLE · {{count}}",
     "headerIdle_other": "IDLE · {{count}}"
-  },
-  "rename": {
-    "title": "Rename session",
-    "placeholder": "Session name",
-    "cancel": "Cancel",
-    "save": "Save"
   },
   "preview": {
     "liveUnavailable": "Live session preview not available — open the session to see the live terminal.",

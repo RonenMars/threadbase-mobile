@@ -3,41 +3,20 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
-    "done": "Done",
     "back": "Back",
     "close": "Close",
     "retry": "Retry",
-    "remove": "Remove",
-    "apply": "Apply",
-    "skip": "Skip",
-    "create": "Create",
-    "export": "Export",
-    "copy": "Copy",
-    "paste": "Paste",
-    "openSettings": "Open Settings"
+    "apply": "Apply"
   },
   "error": {
-    "generic": "Something went wrong",
-    "loadFailed": "Unable to load",
-    "connectionFailed": "Connection failed"
-  },
-  "state": {
-    "loading": "Loading…",
-    "empty": "Nothing here yet",
-    "noResults": "No results"
+    "loadFailed": "Unable to load"
   },
   "search": {
-    "placeholder": "Search…",
-    "clear": "Clear search"
+    "placeholder": "Search…"
   },
   "nav": {
     "top": "↑ Top",
-    "bottom": "↓ Bottom",
-    "backArrow": "‹ Back"
-  },
-  "time": {
-    "now": "now",
-    "yesterday": "Yesterday"
+    "bottom": "↓ Bottom"
   },
   "biometricLock": {
     "title": "Threadbase is locked",

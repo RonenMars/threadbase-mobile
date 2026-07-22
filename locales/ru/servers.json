@@ -4,39 +4,25 @@
   },
   "status": {
     "connected": "Подключено",
-    "disconnected": "Отключено",
-    "connecting": "Подключение…",
-    "error": "Ошибка подключения"
+    "disconnected": "Отключено"
   },
   "action": {
     "add": "Добавить сервер",
-    "edit": "Изменить",
-    "remove": "Удалить сервер",
-    "viewError": "Показать ошибку подключения",
     "connect": "Подключить",
     "details": "Подробнее"
   },
   "dialog": {
     "removeTitle": "Удалить сервер",
-    "removeMessage": "Вы уверены, что хотите удалить этот сервер?",
-    "removeConfirm": "Удалить",
-    "removeDismiss": "Отмена"
+    "removeConfirm": "Удалить"
   },
   "form": {
-    "name": "Имя",
-    "url": "URL",
-    "namePlaceholder": "Мой сервер",
-    "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "Метка (необязательно)",
     "serverUrl": "URL сервера",
     "apiKey": "API-ключ",
     "hint": "Запустите cch serve --tunnel --qr на вашем Mac, чтобы получить URL с QR-кодом."
   },
   "manage": {
-    "title": "Серверы",
-    "addServer": "Добавить сервер",
-    "addServerHint": "Подключитесь к экземпляру tb-streamer",
-    "empty": "Серверы ещё не добавлены."
+    "addServer": "Добавить сервер"
   },
   "filter": {
     "title": "Фильтры",
@@ -69,7 +55,6 @@
     "rememberChoice": "Запомнить этот выбор"
   },
   "statusModal": {
-    "title": "Статус сервера",
     "close": "✕",
     "menuEdit": "Изменить",
     "menuRefresh": "Обновить",
