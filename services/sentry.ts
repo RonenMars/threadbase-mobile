@@ -445,17 +445,28 @@ async function loadAttachment(attachment: {
 }
 
 /**
- * Submit user feedback via Sentry's User Feedback API. Only works when Sentry
- * is active (consent on + DSN). The resulting feedback event passes through
- * `beforeSend` → `sanitizeFeedbackEvent`, which lets the user-authored message
- * and reply email through (they explicitly chose to submit them) while still
- * stripping everything else. The screenshot, if provided, is uploaded as a raw
- * attachment alongside the feedback event — it bypasses `beforeSend` (which
- * only sees the event body) since attachments never touch that hook, but the
- * screenshot is already user-picked and stripped of EXIF before it reaches here.
+ * Submit user feedback via Sentry's User Feedback API. Like `reportOneShot`,
+ * this treats the explicit user action (tapping "Send feedback") as its own
+ * consent — it will self-init Sentry for this one submission even if standing
+ * crash reporting is off, then tear down afterward so the "reporting is off"
+ * state is genuinely unaffected. This makes "explicit user action always tries
+ * Sentry first" a consistent rule across the app (crash report button +
+ * feedback form behave the same way).
  *
- * @returns the feedback event id when submitted, or undefined if Sentry is not
- *          active (caller should fall back to email/copy).
+ * The resulting feedback event passes through `beforeSend` →
+ * `sanitizeFeedbackEvent`, which lets the user-authored message and reply email
+ * through (they explicitly chose to submit them) while still stripping
+ * everything else. The screenshot, if provided, is uploaded as a raw attachment
+ * alongside the feedback event — it bypasses `beforeSend` (which only sees the
+ * event body) since attachments never touch that hook, but the screenshot is
+ * already user-picked and stripped of EXIF before it reaches here.
+ *
+ * - Still requires a DSN and an environment that permits reporting — those
+ *   gates are unconditional and are not something a UI action can bypass.
+ *
+ * @returns the feedback event id when submitted, or undefined if the feedback
+ *          could not be sent (no DSN, environment doesn't permit it, or the
+ *          capture failed).
  */
 export async function submitFeedbackViaSentry(params: {
   message: string
@@ -463,10 +474,17 @@ export async function submitFeedbackViaSentry(params: {
   category?: string
   attachment?: { uri: string; mimeType: string; filename?: string }
 }): Promise<string | undefined> {
-  if (!initialized) return undefined
   const message = params.message?.trim()
   if (!message) return undefined
+
+  const wasAlreadyInitialized = initialized
   try {
+    const ready = wasAlreadyInitialized || (await performInit())
+    if (!ready) {
+      if (__DEV__) console.log('[sentry] submitFeedbackViaSentry skipped: could not initialize (no DSN or environment does not permit reporting)')
+      return undefined
+    }
+
     const attachments = params.attachment ? [await loadAttachment(params.attachment)] : undefined
     const id = Sentry.captureFeedback(
       {
@@ -480,9 +498,16 @@ export async function submitFeedbackViaSentry(params: {
       },
       attachments ? { attachments } : undefined,
     )
+
+    await Sentry.flush()
     return typeof id === 'string' ? id : undefined
   } catch {
     return undefined
+  } finally {
+    if (!wasAlreadyInitialized) {
+      await disableCrashReporting()
+      if (__DEV__) console.log('[sentry] submitFeedbackViaSentry: one-shot client closed')
+    }
   }
 }
 

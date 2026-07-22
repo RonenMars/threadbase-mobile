@@ -82,12 +82,14 @@ update the form:
 ## Cross-cutting reminders
 
 - [ ] Both stores: **automatic** crash reporting must be described as optional /
-      off by default, matching the in-app toggle. Additionally disclose that a
-      **single crash report can still be sent manually** via an explicit
-      "Report this crash" tap on the crash screen, independent of that toggle —
-      this is a distinct, user-initiated action, not automatic collection, but
-      it means "crash data is never sent while the setting is off" would be an
-      inaccurate description and must not be used.
+      off by default, matching the in-app toggle. Additionally disclose that
+      **user-initiated submissions can still use Sentry** independent of that
+      toggle — this includes both the "Report this crash" tap on the crash
+      screen and the Help & Feedback submission (both are explicit, deliberate
+      actions the user takes, not automatic collection). This means "crash data
+      is never sent while the setting is off" would be an inaccurate description
+      and must not be used; the accurate framing is "automatic reporting is off
+      by default; user-initiated submissions may still use Sentry".
 - [ ] Both stores: do **not** declare advertising, tracking, or fingerprinting —
       the app does none.
 - [ ] After a manual report is sent, the app may show a one-time prompt asking

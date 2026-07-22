@@ -63,6 +63,8 @@
   "success": {
     "title": "Feedback committed",
     "message": "Thanks — your report made it into the queue with no merge conflicts.",
+    "viaSentry": "Sent via Sentry crash-reporting service",
+    "viaEmail": "Sent via email",
     "done": "Done"
   },
   "error": {
