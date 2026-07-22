@@ -13,7 +13,9 @@
   },
   "dialog": {
     "removeTitle": "Remove Server",
-    "removeConfirm": "Remove"
+    "removeMessage": "Disconnect from {{server}}?",
+    "removeConfirm": "Remove",
+    "removeDismiss": "Cancel"
   },
   "form": {
     "labelOptional": "Label (optional)",
