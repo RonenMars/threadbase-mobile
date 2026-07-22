@@ -18,7 +18,7 @@
   },
   "dialog": {
     "removeTitle": "Удалить сервер",
-    "removeMessage": "Вы уверены, что хотите удалить этот сервер?",
+    "removeMessage": "Отключиться от {{server}}?",
     "removeConfirm": "Удалить",
     "removeDismiss": "Отмена"
   },

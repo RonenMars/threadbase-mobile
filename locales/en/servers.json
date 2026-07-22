@@ -18,7 +18,7 @@
   },
   "dialog": {
     "removeTitle": "Remove Server",
-    "removeMessage": "Are you sure you want to remove this server?",
+    "removeMessage": "Disconnect from {{server}}?",
     "removeConfirm": "Remove",
     "removeDismiss": "Cancel"
   },
