@@ -1,9 +1,10 @@
 # Maestro E2E — Feature 1: tree drill pre-fills new-session cwd
 # Flow:
-#   1. Land on the hub (TreeView is the default sessionsLayout).
-#   2. Drill into a project leaf row.
-#   3. Tap the FAB to start a new session.
-#   4. Assert the browse screen opened with cwd pre-filled to the drilled path.
+#   1. Land on the hub (Classic is the default sessionsLayout).
+#   2. Switch to Tree via FilterSortSheet (self-sufficient — no Settings visit).
+#   3. Drill into a project leaf row.
+#   4. Tap the FAB to start a new session.
+#   5. Assert the browse screen opened with cwd pre-filled to the drilled path.
 #
 # Without this feature the FAB pushes /browse?server=<id> with no path, and
 # the breadcrumb would render only `~`. With the feature the breadcrumb
@@ -16,15 +17,34 @@ appId: com.ronenmars.threadbase
 ---
 - runFlow: setup.yaml
 
-# Hub chrome is mounted (TreeView is the default layout).
 - assertVisible:
     id: "hub-screen"
+
+# Classic is default; switch to Tree so drill testIDs mount.
+- tapOn:
+    id: "filter-sort-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "filter-sort-sheet"
+    timeout: 5000
+
+- tapOn:
+    id: "layout-option-tree"
+
+- tapOn:
+    id: "filter-sort-close-btn"
 
 # Drill into the my-project leaf row in the tree. Fixture has three sessions
 # under /home/user/my-project so it is rendered as a leaf in the compacted
 # tree. We target by testID because the LIVE strip above the tree renders
 # additional rows whose project header also reads "my-project" — a plain
 # text match would be ambiguous.
+- extendedWaitUntil:
+    visible:
+      id: "tree-row-/home/user/my-project"
+    timeout: 8000
+
 - tapOn:
     id: "tree-row-/home/user/my-project"
 
