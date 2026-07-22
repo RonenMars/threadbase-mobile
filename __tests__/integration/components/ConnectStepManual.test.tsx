@@ -19,12 +19,12 @@ describe('ConnectStep – manual mode', () => {
     expect(getByText('Type / paste manually')).toBeTruthy()
   })
 
-  it('shows "On your Mac" section header in manual mode', async () => {
+  it('shows "On your computer" section header in manual mode', async () => {
     const { getByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
     await fireEvent.press(getByText('Type / paste manually'))
-    expect(getByText('On your Mac')).toBeTruthy()
+    expect(getByText('On your computer')).toBeTruthy()
   })
 
   it('shows copyable tb pair command in manual mode', async () => {
