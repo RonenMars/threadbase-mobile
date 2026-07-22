@@ -1,11 +1,34 @@
 import nacl from 'tweetnacl'
 import naclUtil from 'tweetnacl-util'
 import {
+  classifyPairCredential,
   exchangeToken,
   parsePairUri,
   PairExchangeError,
   PairUriError,
 } from '@/services/pair-exchange'
+
+describe('classifyPairCredential', () => {
+  it('detects threadbase:// pair URIs', () => {
+    expect(
+      classifyPairCredential(
+        'threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_abc',
+      ),
+    ).toBe('pair-uri')
+  })
+
+  it('detects short-lived pt_ pair tokens', () => {
+    expect(classifyPairCredential('pt_abcdef0123456789')).toBe('pair-token')
+    expect(classifyPairCredential('  pt_x  ')).toBe('pair-token')
+  })
+
+  it('treats long-lived API keys as api-key', () => {
+    expect(classifyPairCredential('tb_df11da2b8b037fd61d82349d182a87b6')).toBe(
+      'api-key',
+    )
+    expect(classifyPairCredential('some-other-secret')).toBe('api-key')
+  })
+})
 
 describe('parsePairUri', () => {
   it('parses a well-formed pair URI', () => {
