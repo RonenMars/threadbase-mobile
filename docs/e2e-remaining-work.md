@@ -32,6 +32,9 @@ the latest edits:
 
 ### 1. `voice_dictation` — speech-recognition permission prerequisite
 
+**Status (2026-07-22):** `e2e/ensure-release-build.js` now grants `speech-recognition` + `microphone` via `simctl privacy` before the suite runs. Re-run to confirm green.
+
+
 `chat-mic-button` only renders when `micGranted === true`
 (`components/conversation/ChatComposer.tsx:147`). `micGranted` comes from
 `ExpoSpeechRecognitionModule.getPermissionsAsync()`
