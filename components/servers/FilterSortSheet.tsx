@@ -55,6 +55,8 @@ export const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle'
 const DEFAULT_SORT_BY: SortBy = 'lastActivity'
 const DEFAULT_SORT_ORDER: SortOrder = 'desc'
 
+const DEFAULT_SESSIONS_LAYOUT: SessionsLayout = 'classic'
+
 function isDefault(
   sortBy: SortBy,
   sortOrder: SortOrder,
@@ -69,7 +71,7 @@ function isDefault(
     sortOrder === DEFAULT_SORT_ORDER &&
     selectedStatuses.length === ALL_STATUSES.length &&
     displayedServerIds.length === activeServerIds.length &&
-    sessionsLayout === 'tree' &&
+    sessionsLayout === DEFAULT_SESSIONS_LAYOUT &&
     providerFilter === undefined
   )
 }
@@ -125,7 +127,7 @@ export function FilterSortSheet({
     onChangeSortOrder(DEFAULT_SORT_ORDER)
     onChangeStatuses(ALL_STATUSES)
     onChangeProviderFilter(undefined)
-    setSessionsLayout('tree')
+    setSessionsLayout(DEFAULT_SESSIONS_LAYOUT)
     if (showServerFilter) setDisplayedServerIds(activeServerIds)
   }
 
@@ -153,7 +155,14 @@ export function FilterSortSheet({
           >
             <Gear size={20} color={theme.text.secondary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('filter.close')}
+            testID="filter-sort-close-btn"
+          >
             <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
           </TouchableOpacity>
         </View>
@@ -171,7 +180,9 @@ export function FilterSortSheet({
                 onPress={() => setSessionsLayout(value)}
                 style={[styles.chip, selected && styles.chipSelected]}
                 accessibilityRole="button"
+                accessibilityLabel={label}
                 accessibilityState={{ selected }}
+                testID={`layout-option-${value}`}
               >
                 <Icon size={14} color={selected ? theme.text.primary : theme.text.secondary} />
                 <Text style={[styles.chipText, selected && styles.chipTextSelected]}>

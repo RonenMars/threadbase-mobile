@@ -20,11 +20,19 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "hub-screen"
 
+- assertVisible:
+    id: "fab-new-session"
+
 # Filter & sort sheet opens
 - tapOn:
     id: "filter-sort-button"
 
-- assertVisible:
-    id: "filter-sort-sheet"
+# Wait for the sheet content testID (BottomSheetScrollView). Prefer
+# extendedWaitUntil over a bare assert so a slow sheet animation is not
+# misreported as an app crash by the XCUITest driver.
+- extendedWaitUntil:
+    visible:
+      id: "filter-sort-sheet"
+    timeout: 5000
 
 - takeScreenshot: e2e/_artifacts/screenshots/browse-01-filter-sort-sheet
