@@ -12,6 +12,10 @@ It is maintained as a **run log**: each snapshot cut appends a numbered run with
 Supersedes run 1. All **19** open PRs merged with `--no-ff`; **#291** (`typescript 6.0.3 → 7.0.2`) excluded by request.
 24 merge commits for 19 PRs — #355 is based on the 2026-07-20 snapshot, so merging it replays that snapshot's 5 merge commits.
 
+**`origin/main` is fully contained** up to `3219d6f`, past the `73d9ae5` this was cut from.
+`main` advanced by two CI commits (`54f6f43`, `3219d6f`) mid-run; they arrived transitively when the #372 docs branch — cut from the newer `main` — was merged in, so no separate `main` merge was needed.
+`app.json` carries iOS build `166`, matching `main`.
+
 Immutable ref: the `test-dev/v1.0.0-…-2026-07-22` tag cut at this branch's tip. Prefer it over the branch as a `deploy_ref`.
 
 ### Merge log
