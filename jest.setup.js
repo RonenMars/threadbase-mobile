@@ -36,7 +36,7 @@ jest.mock('expo-router', () => {
     })),
     useLocalSearchParams: jest.fn(() => ({})),
     useGlobalSearchParams: jest.fn(() => ({})),
-    useNavigation: jest.fn(() => ({ setOptions: jest.fn() })),
+    useNavigation: jest.fn(() => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) })),
     useSegments: jest.fn(() => []),
     // Screens are always focused under test — run the effect on mount and
     // return its cleanup so blur/unmount tears the interval down.
