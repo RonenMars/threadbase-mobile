@@ -75,7 +75,7 @@ export function useTBPair() {
           setPhase('resolving')
         })
         schedule(SCHEDULE.resolve, () => {
-          append({ k: 'd', t: 'mdns → 192.168.1.42:7331' })
+          append({ k: 'd', t: 'mdns → 192.168.1.42:8766' })
           setPhase('handshake')
         })
         schedule(SCHEDULE.handshake, () => {
