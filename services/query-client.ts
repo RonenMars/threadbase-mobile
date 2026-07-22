@@ -4,6 +4,7 @@ import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { AppState, type AppStateStatus } from 'react-native'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
+import { useSessionsStore } from '@/stores/sessions'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
 const ONE_MINUTE = 1000 * 60
@@ -82,10 +83,11 @@ export function clearServerConversationAndSessionState(serverId: string) {
     { queryKey: ['conversations-eager'] },
     (data) => data ? withoutServer(data, serverId) : data,
   )
-  queryClient.setQueriesData<ConversationCollection | ConversationInfiniteData>(
+  queryClient.setQueriesData<MultiConversation[] | ConversationCollection | ConversationInfiniteData>(
     { queryKey: ['conversations'] },
     (data) => {
       if (!data) return data
+      if (Array.isArray(data)) return withoutServer(data, serverId)
       if ('pages' in data) {
         return { ...data, pages: data.pages.map((page) => filterConversationCollection(page, serverId)) }
       }
@@ -104,6 +106,7 @@ export function clearServerConversationAndSessionState(serverId: string) {
   queryClient.removeQueries({ queryKey: ['conversation', serverId] })
   queryClient.removeQueries({ queryKey: ['project-conversations', serverId] })
   queryClient.removeQueries({ queryKey: ['session', serverId] })
+  useSessionsStore.getState().clearServer(serverId)
 }
 
 // React Native has no browser online/offline events, so onlineManager never

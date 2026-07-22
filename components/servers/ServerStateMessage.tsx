@@ -61,7 +61,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const wsStatus = wsManager.status(id)
       const fetchStatus = fetchStatuses[id]?.status ?? 'ok'
       const fetchOk = fetchStatus === 'ok'
-      if (fetchStatus === 'indexing') indexing.push(id)
+      if (fetchStatus === 'warming_up') indexing.push(id)
       else if (wsStatus === 'connected' && fetchOk) healthy.push(id)
       else if (wsStatus === 'disconnected' && !fetchOk) unreachable.push(id)
       else if (wsStatus === 'connected' && !fetchOk) fetchFailed.push(id)
