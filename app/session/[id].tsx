@@ -462,7 +462,8 @@ export default function SessionDetailScreen() {
 
   const getName = useSessionNamesStore((s) => s.getName)
   const renameSession = useRenameSession(serverId)
-  const sessionName = getName(serverId, id) ?? session?.projectName
+  // User rename wins; then the JSONL-derived conversation name; then project name.
+  const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
   const { sendKeys, stopSession } = useSessionActions(serverId, id ?? '')
 
