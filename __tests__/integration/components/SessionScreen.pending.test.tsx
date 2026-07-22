@@ -81,6 +81,7 @@ jest.mock('@/stores/settings', () => ({ useSettingsStore: () => ({ sessionView: 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'pending_sess-real-id', server: 'srv1' }),
   useRouter: () => ({ replace: mockReplace, back: mockBack, push: jest.fn() }),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),

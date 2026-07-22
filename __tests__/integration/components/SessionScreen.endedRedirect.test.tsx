@@ -42,6 +42,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendInput: { mutate: jest.fn() },
     sendKeys: { mutate: jest.fn(), isPending: false },
     adoptSession: { mutate: jest.fn() },
+    stopSession: { mutate: jest.fn(), isPending: false },
   }),
 }))
 jest.mock('@/hooks/useTerminalStream', () => ({
@@ -83,6 +84,7 @@ jest.mock('@/stores/settings', () => ({
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'b80a4f91-17f4-4375-b65f-00e46c872b01', server: 'srv1' }),
   useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
