@@ -1,7 +1,7 @@
 # E2E (Maestro) Mock Suite — Remaining Work
 
 Status of the `npm run test:e2e:mock` flow suite after the fixes in this branch.
-The suite runs 11 flows against `e2e/mock-server.js` on an **iOS 17 simulator**
+The suite runs 12 flows against `e2e/mock-server.js` on an **iOS 17 simulator**
 (Maestro 2.0.10 cannot drive iOS 26 reliably — the preflight in `e2e/check-sim.js`
 rejects it).
 
@@ -19,6 +19,7 @@ rejects it).
 These have had their root cause addressed but were not yet confirmed green after
 the latest edits:
 
+- `server_drag_reorder` — added to `test:e2e:mock`; swipe removed (Bug 18); default path asserts single-server lock-toggle gate
 - `feat2_export_in_info_shelf` — deep link switched `launchApp {url}` → `openLink`;
   route assertion switched from the brittle `"Resume Session"` text (the button is
   now `▶ Resume Session` inside an `Animated.Text`) to the `conversation-bottom-bar`
@@ -28,6 +29,13 @@ the latest edits:
   `TerminalView` mounts a `ChatComposer`).
 - `voice_dictation` — stale testIDs `message-input` / `message-input-mic` replaced
   with `chat-message-input` / `chat-mic-button`. **Still blocked**, see below.
+
+## Bug 18 / `server_drag_reorder` (done)
+
+Included in `test:e2e:mock`. Flow no longer swipes drag handles (known NestableDraggableFlatList crash).
+Mock default = one paired server → asserts `server-order-toggle` hidden. Remaining risk: multi-server
+edit-order path is smoke-only (toggle + screenshot); true reorder still lives in integration tests.
+A full green re-run of the mock suite has not been confirmed in this change.
 
 ## Still to do
 

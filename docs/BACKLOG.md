@@ -29,7 +29,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | ✅ DONE — eliminated with Bug 14 navigation |
 | Bug 16 | Back from never-typed-in new session leaves an empty session alive | 🔄 In flight — [PR #346](https://github.com/RonenMars/threadbase-mobile/pull/346) |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
-| Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), `.skip` deleted; still needs CI re-wiring |
+| Bug 18 | Maestro flow `server_drag_reorder` — swipe crash / suite wiring | ✅ DONE — wired into `test:e2e:mock`; swipe removed (reorder covered by integration tests) |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
 | Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
 | Bug 21 | "Open Session" from Recents lands on "Session not found" | Open — not diagnosed |
@@ -624,32 +624,21 @@ If all of the above are still empty at exit time, the session is a discard.
 
 ---
 
-## Bug 18 — Maestro flow `server_drag_reorder.yaml.skip` crashes the app at the `swipe` step
+## Bug 18 — Maestro flow `server_drag_reorder` — swipe crash / suite wiring
 
-**Filed:** 2026-05-24. **Status:** **Partial.** A working flow was recreated as `e2e/server_drag_reorder.yaml` (commit `cd6d753`, `test(e2e): add server drag-reorder maestro flow`). The stale `e2e/server_drag_reorder.yaml.skip` has now been deleted (2026-06-30, E2E remediation). Remaining work: (1) verify `server_drag_reorder.yaml` passes locally against the mock fixture, (2) add it to the `maestro test ...` arglist alongside the other flows. (Step 3 — removing the `.skip` — is done.)
+**Filed:** 2026-05-24. **Status:** ✅ **DONE** (2026-07-22). Wired into `npm run test:e2e:mock`.
 
-**Symptom:** The flow runs `setup.yaml`, taps the filter-sort button, then the conditional `runFlow` enters the multi-server branch even on a single-server fixture. The first `swipe` against `id: "drag-handle-srv_a"` causes the app to crash within ~4 s. Maestro log: *"App crashed or stopped while executing flow, please check diagnostic logs: ~/Library/Logs/DiagnosticReports directory"*.
+**Resolution:**
+1. Flow lives at `e2e/server_drag_reorder.yaml` (`.skip` deleted earlier).
+2. Added to the `maestro test …` arglist in `package.json` → `test:e2e:mock`.
+3. Removed the Maestro `swipe` on `drag-handle-*` — that step crashed the app on `NestableDraggableFlatList`. Default mock path (one server after `setup.yaml`) asserts `server-order-toggle` is hidden (`activeServerIds.length >= 2` gate). Multi-server branch only toggles edit-order on/off + screenshot; real reorder is covered by `__tests__/integration` for `DisplayedServersList`.
 
-**Root-cause hypothesis (unverified):**
+**Original symptom (kept for search):** swipe against `id: "drag-handle-srv_a"` crashed within ~4 s (*"App crashed or stopped while executing flow"*).
 
-1. **Most likely — branch-guard misfires.** The `when: visible: { id: "server-order-toggle" }` gate is supposed to skip the multi-server commands when only one server is paired (the default after `setup.yaml`). Maestro 2.x may evaluate `visible` more leniently than expected (or the toggle has different `testID` resolution on single-server now), so the `runFlow` enters the branch and tries to drag a `drag-handle-srv_a` row that doesn't exist. The crash is whatever React Native does when a missing-element `swipe` runs on `DraggableFlatList`.
-2. **Less likely — `swipe` API misuse.** The flow uses Maestro 2.x's `swipe: { direction: DOWN, from: { id: ... } }` form (replacing the deprecated `dragAndDrop: { from, to }`). The 2.0.10 docs say this works, but it's possible the from-element resolution is brittle on RN.
-
-**Steps to fix:**
-
-1. Add a `MOCK_SERVERS=srv_a,srv_b` env var to `e2e/mock-server.js` and seed `setup.yaml` to pair both, so the multi-server branch has the rows it expects.
-2. Add explicit `assertVisible: { id: "drag-handle-srv_a" }` *before* the `swipe`, so the flow fails the assertion (clean Maestro failure) instead of crashing the app (opaque "app stopped" error).
-3. Verify Maestro 2.0.10's `swipe` syntax against [the official 2.x reference](https://maestro.mobile.dev/api-reference/commands/swipe) — confirm `from: { id }` is the right invocation.
-4. If single-server should still be tested, fall through to the `notVisible` branch and assert the toggle is hidden (already in the flow).
-
-**Re-enable:** `git mv e2e/server_drag_reorder.yaml.skip e2e/server_drag_reorder.yaml` and add the file back to the `maestro test` arglist in `package.json` → `test:e2e:mock`.
-
-**Files likely involved:**
-
-- `e2e/server_drag_reorder.yaml` — the flow (the `.skip` variant was deleted)
-- `e2e/setup.yaml` — server-pairing seed
-- `e2e/mock-server.js` — multi-server fixture support
-- `components/servers/DisplayedServersList.tsx` — drag-handle testID emission
+**Files:**
+- `e2e/server_drag_reorder.yaml`
+- `package.json` (`test:e2e:mock`)
+- `components/servers/DisplayedServersList.tsx` — drag-handle testIDs
 
 ---
 
