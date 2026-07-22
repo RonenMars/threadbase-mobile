@@ -196,9 +196,22 @@ Translations reuse terminology already in the files rather than inventing wordin
 
 ## Running the suite in a snapshot worktree
 
-A worktree created under `.claude/` is excluded by `testPathIgnorePatterns`, so `npx jest` finds **0 tests** and `npm run test:i18n` looks broken when it is not.
-Create snapshot worktrees **outside** `.claude/` (this run used `worktrees/merge-prs-v2`), or pass `--testPathIgnorePatterns "/node_modules/"` to override.
+Both gotchas below are now documented permanently in [`docs/troubleshooting.md`](./troubleshooting.md) → "Jest test suites" and summarised in `CLAUDE.md` (PR #372), so they survive this snapshot's deletion. Repeated here because they bite on every snapshot run.
+
+**Create the worktree outside `.claude/`.** A worktree under `.claude/` is excluded by `testPathIgnorePatterns`, so `npx jest` finds **0 tests** and `npm run test:i18n` looks broken when it is not.
+This run used `worktrees/merge-prs-v2`. To run in place anyway, pass `--testPathIgnorePatterns "/node_modules/"` — but note that also re-enables `__tests__/unit/scripts/`, which the main config excludes deliberately and which fails on Windows.
+
 Each worktree needs its own `npm ci` (~3 min, 1292 packages).
+
+**Verify heavy suites serially, and confirm every failure in isolation.**
+
+```bash
+npx jest --ci --runInBand --testPathPattern "SessionScreen"
+```
+
+Several `SessionScreen.*` suites are heavy enough that parallel jest workers on this machine produce spurious failures — but a load artifact and a real defect look identical in batch output, so the isolation re-run is what distinguishes them. Passes alone → artifact. Fails alone → real.
+
+This run proved both directions: four genuinely broken suites were nearly dismissed as flakes, while `feedback-flow` and `CacheAlertModal` really were load artifacts and needed no fix.
 
 ---
 
