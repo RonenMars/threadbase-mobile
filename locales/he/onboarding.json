@@ -54,7 +54,6 @@
     "manualSectionLabel": "על ה-Mac שלך",
     "manualSectionHint": "פתח טרמינל והרץ:",
     "manualSectionPasteHint": "הוא מדפיס URL + טוקן (או קישור threadbase://) — הדבק למטה.",
-    "manualServerUrl": "כתובת שרת",
     "manualToken": "טוקן",
     "manualTokenPlaceholder": "הדבק טוקן מהפלט של tb pair",
     "manualScanInstead": "סרוק QR במקום →",

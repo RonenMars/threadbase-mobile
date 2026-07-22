@@ -54,7 +54,6 @@
     "manualSectionLabel": "On your Mac",
     "manualSectionHint": "Open Terminal and run:",
     "manualSectionPasteHint": "It prints a URL + token (or a threadbase:// link) — paste below.",
-    "manualServerUrl": "Server URL",
     "manualToken": "Token",
     "manualTokenPlaceholder": "paste token from tb pair output",
     "manualScanInstead": "Scan a QR instead →",

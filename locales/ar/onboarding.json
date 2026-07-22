@@ -54,7 +54,6 @@
     "manualSectionLabel": "على Mac الخاص بك",
     "manualSectionHint": "افتح Terminal وشغّل:",
     "manualSectionPasteHint": "يطبع URL + رمزًا (أو رابط threadbase://) — الصق أدناه.",
-    "manualServerUrl": "عنوان الخادم",
     "manualToken": "الرمز",
     "manualTokenPlaceholder": "الصق الرمز من مخرجات tb pair",
     "manualScanInstead": "مسح QR بدلًا من ذلك →",
