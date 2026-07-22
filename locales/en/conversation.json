@@ -20,6 +20,21 @@
     "worktreeRemoved": "This conversation ran in a git worktree that no longer exists. You can read the history, but it can't be resumed.",
     "cannotResume": "Can't resume"
   },
+  "resume": {
+    "resuming": "Resuming…",
+    "collisionTitle": "Resume this conversation?",
+    "collisionMessage": "This conversation may still be open in a terminal on your computer — {{reasons}}. Resuming it here could interfere with that session.",
+    "confirm": "Resume anyway",
+    "failed": "Couldn't resume this conversation. Please try again.",
+    "reason": {
+      "jsonl_mtime": "its history was updated moments ago",
+      "process_argv": "a matching terminal process may still be running",
+      "process_cwd": "a process may still be using its project folder",
+      "unknown": "another program may still be using it"
+    },
+    "takeOver": "Take over",
+    "takeOverFailed": "Couldn't take over that session. Please try again."
+  },
   "action": {
     "export": "Export",
     "copyPatch": "Copy patch",
