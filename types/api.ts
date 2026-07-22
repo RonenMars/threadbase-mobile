@@ -13,6 +13,12 @@ export interface Session {
   projectName: string
   branch?: string
   machineName?: string
+  /**
+   * JSONL-derived conversation name (the scanner's slug, or the first user
+   * message when there is no slug). Set on resumed/historical sessions; absent
+   * on a freshly-started session with no history yet. Additive; older servers omit it.
+   */
+  sessionName?: string
   lastOutput: string
   elapsedMs: number
   promptCount: number

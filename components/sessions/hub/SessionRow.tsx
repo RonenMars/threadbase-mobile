@@ -18,7 +18,9 @@ export function SessionRow({ session }: SessionRowProps) {
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
-  const sessionName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  // User rename wins; then the JSONL-derived conversation name off the session.
+  const renamedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  const sessionName = renamedName ?? session.sessionName
 
   // A discovered process the streamer only observes — read-only, not
   // interactive: route to the conversation view, never the PTY screen.
