@@ -85,9 +85,10 @@ Adjacent lines: #363 adds `e2e/server_drag_reorder.yaml` to `test:e2e:mock`, #36
 
 ### Findings raised by this run
 
-**#362 introduces a dead locale key.** `connect.manualServerUrl` is added in all 4 locales but never referenced — verified on #362's own branch, not just in the merge.
-It was dropped here to keep the snapshot's dead-key gate green.
-Once #356 and #362 are both on `main`, `i18n-unused-keys` will flag it; #362 should either use the key or drop it.
+**#362 introduced a dead locale key — fixed upstream.** `connect.manualServerUrl` was added in all 4 locales but never referenced, verified on #362's own branch and not only in the merge.
+It was dropped during conflict G to keep the snapshot's dead-key gate green, then fixed at source on #362 itself (`4c6a275`, `fix(i18n): drop unused manualServerUrl onboarding key`).
+#362's new head was merged back in (`ancestry-only — the tree was already identical`), so the snapshot still contains every open PR at its current head.
+Without this, `i18n-unused-keys` would have flagged the key once #356 and #362 were both on `main`.
 
 **#362 does not type-check.** `__tests__/unit/hooks/useTBPair.test.ts` uses `globalThis.__DEV__` with no declaration — 3 × `TS2339`.
 Pre-existing and already red on #362's own CI (`Type check=FAILURE`); the file is new in #362 and absent from `main`. Not merge-induced.
