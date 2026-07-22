@@ -16,18 +16,18 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 2 | Hub tree node open: loader + long-list render stall | Open (split — see Issue 1 + Issue 2) |
 | Bug 3 | Quick Access strip never loads items | ✅ DONE 2026-05-16 (eea502d) |
 | Bug 4 | Long conversation: scroll-to-end flickery / jumpy | ✅ DONE 2026-05-22 (78218fb) |
-| Bug 5 | Multi-attachment send produces no output | ✅ DONE 2026-07-19 (fix/multi-attachment-send) |
+| Bug 5 | Multi-attachment send produces no output | 🔄 In flight — [PR #345](https://github.com/RonenMars/threadbase-mobile/pull/345) (spaces in `@path`; pairs with streamer #241) |
 | Bug 6 | Conversation list content hidden under bottom action bar | ✅ DONE 2026-05-24 (PR #11, commit 9835ecf) |
-| Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | Open |
-| Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | Open |
-| Bug 9 | Quick Access: hide Edit pencil when strip is collapsed | Open |
+| Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | ✅ DONE — Favorites-only strip (`c43e9a1`); remaining Recents routing superseded |
+| Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | ✅ DONE — single native Stack header |
+| Bug 9 | Quick Access: hide Edit pencil when strip is collapsed | ✅ DONE — pencil/gear gated on `!stripCollapsed` |
 | Bug 10 | Conversation: show "Top" button only when scrolling up | ✅ DONE 2026-05-24 (384790c) |
 | Bug 11 | Conversation: move "Bottom" button to bottom-right; show only when not at bottom | ✅ DONE 2026-05-24 (384790c) |
 | Bug 12 | MessageBubble bleed + code-fence collapse cut | ✅ DONE 2026-05-22 (cdf0303, d3aec11, f58d74d, 1a020fb) |
-| Bug 13 | New session: name modal flashes open then auto-closes before user can type | Open — not diagnosed |
-| Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | Open — not diagnosed |
-| Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
-| Bug 16 | Back from never-typed-in new session leaves an empty session alive | ✅ Fixed — discard unused fresh PTY on back |
+| Bug 13 | New session: name modal flashes open then auto-closes before user can type | ♻️ Replaced — create/exit name modals removed (`6c138c8`); rename remains |
+| Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | ✅ DONE — dismiss-then-push `/session/new` (`0909404`) |
+| Bug 15 | After new-session back, file browser is interaction-locked (only close works) | ✅ DONE — eliminated with Bug 14 navigation |
+| Bug 16 | Back from never-typed-in new session leaves an empty session alive | 🔄 In flight — [PR #346](https://github.com/RonenMars/threadbase-mobile/pull/346) |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
 | Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), `.skip` deleted; still needs CI re-wiring |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
@@ -45,11 +45,11 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
 | Bug 32 | One unavailable server hides conversations from all servers (Hub + search) | ✅ DONE 2026-05-27 (1ec1686) |
 | Bug 33 | Browse→session navigation: simplify the transitionEnd dismiss-then-push dance | Open — investigation |
-| Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | Open |
+| Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | ✅ DONE — cached-data refresh indicator (`2a3e6d8` / #326) |
 | Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
 | E2E | Mock Maestro suite — remaining flow failures + env gotchas | Open — see [e2e-remaining-work.md](./e2e-remaining-work.md) |
 
-**Suggested next-up order:** **Bug 32** (one bad server hides everything — mechanical `Promise.allSettled` fix, ship standalone) → Bug 13 + Bug 14 + Bug 15 + Bug 16 (all on the browse → start-session → PTY → back handoff, likely shared root cause — investigate together) → Bug 7 → Bug 9 (same file, ship together) → Bug 8 → **Bug 17 → Bug 10 + Bug 11** (same conversation FlashList; smooth-scroll fix may change at-bottom detection the scroll-button bugs rely on) → Issue 1 → Issue 2 → Bug 6 → Bug 5. Rationale at the bottom of the file under [Sequencing](#sequencing).
+**Suggested next-up order (2026-07-22):** Merge in-flight pre-release PRs first (**Bug 5** #345, **Bug 16** #346, plus privacy Features 35/36 via #343). Then open new work in this order: **(1) Expo Router typed-route / `npm run typecheck` red** (required CI) → **(2) Maestro release suite green** (Feature 17 + [e2e-remaining-work.md](./e2e-remaining-work.md) + Bugs 18/19) → **(3) Feature 5 — onboarding polish** (OSS first-impression). After those: Issue 2 (hub accordion), Bug 17 (jumpy scroll). Historical sequencing notes remain under [Sequencing](#sequencing).
 
 ---
 
@@ -83,7 +83,7 @@ Two distinct problems hiding behind one symptom ("clicking a directory hangs"):
 
 ## Bug 5 — Multi-attachment send produces no output ✅ DONE 2026-07-19
 
-**Filed:** 2026-05-18. **Fixed:** 2026-07-19 (branch `fix/multi-attachment-send`, not yet merged).
+**Filed:** 2026-05-18. **Status (2026-07-22):** 🔄 In flight — [PR #345](https://github.com/RonenMars/threadbase-mobile/pull/345) escapes spaces in composer `@path` payloads; root cause was shell/`@path` tokenization (not multi vs single). Pair with streamer [PR #241](https://github.com/RonenMars/threadbase-streamer/pull/241) (`sanitizeFilename`). Multi-select/upload already shipped earlier (`c70a498`).
 
 **Symptom:** Start a new session, send a message with 2 attachments — the UI never shows a response.
 
@@ -144,7 +144,7 @@ The truncated reference pointed to a non-existent file, causing Claude to fail s
 
 ## Bug 7 — Quick Access strip: default-collapsed + tab reorder + hide when fully empty
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Status (2026-07-22):** ✅ DONE — Favorites-only Quick Access (`c43e9a1`); Recents/Popular tabs removed.
 
 Three small UX tweaks reported together. They share a file (`components/quick-access/QuickAccessStrip.tsx`) and a store (`stores/quickAccess.ts`), so handle as one ticket.
 
@@ -178,7 +178,7 @@ Three small UX tweaks reported together. They share a file (`components/quick-ac
 
 ## Bug 8 — Manage Favorites: duplicate top bar
 
-**Filed:** 2026-05-22. **Note:** 2026-05-25 — the original 8b ("Add to favorites" empty-state CTA) was reclassified as a feature and moved to ROADMAP as [Feature 24](./ROADMAP.md#feature-24--manage-favorites-add-to-favorites-empty-state-cta). What remains below is the original 8a bugfix.
+**Filed:** 2026-05-22. **Status (2026-07-22):** ✅ DONE — one native Stack header; no in-screen duplicate. **Note:** 2026-05-25 — the original 8b ("Add to favorites" empty-state CTA) was reclassified as a feature and moved to ROADMAP as [Feature 24](./ROADMAP.md#feature-24--manage-favorites-add-to-favorites-empty-state-cta). What remains below is the original 8a bugfix.
 
 **Remove the duplicate top bar.**
 - Screenshot shows two stacked top bars: the system Stack header (`< manage-favorites`) AND the screen's own custom header (`← Back  Manage Favorites`). Both are rendering.
@@ -196,7 +196,7 @@ Three small UX tweaks reported together. They share a file (`components/quick-ac
 
 ## Bug 9 — Quick Access: hide Edit pencil when strip is collapsed
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Status (2026-07-22):** ✅ DONE — pencil/gear gated on `!stripCollapsed`.
 
 **Symptom:** When the Quick Access strip is collapsed (chips hidden, only the tab bar visible), the Edit-mode pencil icon still renders on the right side of the tab bar. It does nothing useful in that state — there are no chips to enter edit mode for — and it's visually cluttering an already-dense row.
 
@@ -286,7 +286,7 @@ setShowScrollTop(scrollingUp && y > 100)
 
 ## Issue 1 — Post-intro: cached Hub list flashes, then re-paints with server data
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Status (2026-07-22):** ✅ DONE — cached-data refresh indicator (`2a3e6d8` / #326).
 
 ### Symptom
 
@@ -424,7 +424,7 @@ Quick scan of `FlatList` / `FlashList` / `SectionList` / inline `.map` over serv
 
 ## Bug 13 — New session: name modal flashes open then auto-closes before user can type
 
-**Filed:** 2026-05-23 — not diagnosed.
+**Filed:** 2026-05-23. **Status (2026-07-22):** ♻️ Replaced — create/exit name modals removed (`6c138c8`); rename remains.
 
 **Symptom:** From the browse screen, pick a path and tap **Start session**. The "Name this session?" modal (`NameSessionModal`, `mode="create"`) opens for a fraction of a second and then closes on its own. The user is navigated straight to `/session/[id]` without any chance to type a name or tap Skip / Start / Don't ask again.
 
@@ -478,7 +478,7 @@ Quick scan of `FlatList` / `FlashList` / `SectionList` / inline `.map` over serv
 
 ## Bug 14 — After starting new session, file browser stays in stack and re-shows on exit
 
-**Filed:** 2026-05-23 — not diagnosed.
+**Filed:** 2026-05-23. **Status (2026-07-22):** ✅ DONE — `/session/new` dismiss-then-push (`0909404`).
 
 **Symptom:** Start a new session from `/browse` (pick a path, tap **Start session**, get into `/session/[id]`). Later, when the user exits the session (back gesture / Resume Session back navigation / etc.), instead of landing on the Hub (`/`), they land back on the file browser modal — which by then is a stale view of a directory they've already moved past.
 
@@ -523,7 +523,7 @@ router.push(`/session/${id}?...`)
 
 ## Bug 15 — After new-session back, file browser is interaction-locked (only close works)
 
-**Filed:** 2026-05-24 — not diagnosed. **Re-repro 2026-05-25** added top-left chevron + recent-directories details.
+**Filed:** 2026-05-24. **Status (2026-07-22):** ✅ DONE — eliminated with Bug 14 navigation. **Re-repro 2026-05-25** added top-left chevron + recent-directories details.
 
 **Symptom:** Start a new session from `/browse` (pick a path, tap **Start session**). The PTY opens at `/session/[id]`. Tap **back**. The browse modal re-appears (the same surface flagged in [Bug 14](#bug-14--after-starting-new-session-file-browser-stays-in-stack-and-re-shows-on-exit)), but in this stale state **almost nothing inside the modal responds to taps** — directory rows, the recent-directories list, "Start session", and the up-directory affordance are all dead. The **top-left back chevron** is *visually* active but only walks the directory tree inside the modal; it never dismisses the modal. The only control that actually exits the modal is the **drag-down-to-close** gesture on the modal title bar.
 
@@ -545,9 +545,7 @@ router.push(`/session/${id}?...`)
 
 ## Bug 16 — Back from never-typed-in new session leaves an empty session alive
 
-**Status:** Fixed on `fix/abandoned-empty-sessions` — session screen stops unused fresh PTYs on back (`promptCount === 0`, not a resume, no local send).
-
-**Filed:** 2026-05-24.
+**Filed:** 2026-05-24. **Status (2026-07-22):** 🔄 In flight — [PR #346](https://github.com/RonenMars/threadbase-mobile/pull/346) stops unused fresh PTYs on back when `promptCount === 0`.
 
 **Symptom:** From `/browse`, pick a path and tap **Start session**. The PTY opens at `/session/[id]`. **Without typing anything**, tap **back**. The session is left running on the streamer — it now shows up in the Hub / Recents as a brand-new but empty session. The user clearly abandoned it (no prompt sent, no PTY input), so keeping it around is just noise.
 
