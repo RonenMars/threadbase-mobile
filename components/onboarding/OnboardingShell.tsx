@@ -5,7 +5,6 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { useTranslation } from 'react-i18next'
-import type { ParseKeys } from 'i18next'
 import { PagerDots } from './components/PagerDots'
 import { colors, fonts } from './theme'
 import { flexRow } from '@/lib/rtl'
@@ -20,7 +19,7 @@ interface Props {
   /** When false, the Skip chrome control is hidden (Welcome). Default: index < total - 1. */
   showSkip?: boolean
   /** i18n key under `onboarding` for the skip label. Default: shell.skip */
-  skipLabelKey?: ParseKeys<'onboarding'>
+  skipLabelKey?: string
   children: React.ReactNode
 }
 

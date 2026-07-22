@@ -6,11 +6,9 @@ import type { PairResult } from '@/hooks/useTBPair'
 import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
 import { DoneStep } from './steps/DoneStep'
-import { NotificationsStep } from './steps/NotificationsStep'
 import { WelcomeStep } from './steps/WelcomeStep'
 
-// Welcome → Connect → Notifications → Done (redesign: Notifications after pair)
-export const TOTAL_STEPS = 4
+export const TOTAL_STEPS = 3
 export const ONBOARDED_KEY = 'threadbase_onboarded'
 const PAIRED_TOKEN_HASH_KEY = 'threadbase_paired_token_hash'
 
@@ -87,7 +85,7 @@ export function OnboardingNavigator({ onDone }: Props) {
     })
   }, [])
 
-  // Skip / pair-later: jump to Done, skipping Notifications when unpaired.
+  // Welcome: no Skip (avoids empty-Hub first impression). Connect: "Pair later".
   const onSkip = useCallback(() => {
     if (index !== 1) return
     goto(TOTAL_STEPS - 1)
@@ -100,11 +98,7 @@ export function OnboardingNavigator({ onDone }: Props) {
   const handleEnter = useCallback(async () => {
     try {
       if (paired) {
-        await addServer(paired.url, paired.apiKey, paired.label, {
-          deviceId: paired.deviceId,
-          deviceToken: paired.deviceToken,
-          capabilities: paired.capabilities,
-        })
+        await addServer(paired.url, paired.apiKey)
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,
           hashToken(paired.apiKey),
@@ -131,13 +125,11 @@ export function OnboardingNavigator({ onDone }: Props) {
       {index === 1 && (
         <ConnectStep onPaired={handlePaired} onAdvance={advanceAfterPair} />
       )}
-      {index === 2 && <NotificationsStep onNext={onNext} />}
-      {index === 3 && (
+      {index === 2 && (
         <DoneStep
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}
           serverPort={paired ? derivePort(paired.url) : undefined}
-          serverLabel={paired?.label}
         />
       )}
     </OnboardingShell>

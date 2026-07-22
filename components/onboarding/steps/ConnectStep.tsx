@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import {
-  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,8 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { ServerFormFields } from '@/components/servers/ServerFormFields'
-import { classifyPairCredential, type ExchangeResult } from '@/services/pair-exchange'
-import { isValidHttpServerUrl } from '@/lib/serverUrl'
+import type { ExchangeResult } from '@/services/pair-exchange'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
 import { InfoTooltip } from '../components/InfoTooltip'
@@ -90,37 +88,20 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
   const [urlHost, setUrlHost] = useState('')
   const [token, setToken] = useState('')
-  const [label, setLabel] = useState('')
-  const [urlError, setUrlError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('choose')
   const [scannerOpen, setScannerOpen] = useState(false)
   const { phase, log, pair } = useTBPair()
 
-  // A pasted threadbase:// pair URI carries its own server URL.
-  const credentialKind = classifyPairCredential(token)
-  const valid =
-    token.trim().length >= 8 &&
-    (credentialKind === 'pair-uri' || urlHost.trim().length > 0)
+  const valid = urlHost.trim().length > 0 && token.length >= 8
   const busy = phase !== 'idle' && phase !== 'err'
 
   const handleConnect = () => {
     if (!valid || busy) return
-    if (credentialKind !== 'pair-uri') {
-      const fullUrl = `${protocol}://${urlHost.trim()}`
-      if (!isValidHttpServerUrl(fullUrl)) {
-        setUrlError(t('connect.invalidUrl'))
-        return
-      }
-    }
-    setUrlError(null)
     pair({
-      url: urlHost.trim() ? `${protocol}://${urlHost.trim()}` : '',
+      url: `${protocol}://${urlHost.trim()}`,
       token,
       onSuccess: (result) => {
-        onPaired({
-          ...result,
-          label: label.trim() || result.label,
-        })
+        onPaired(result)
         onAdvance()
       },
     })
@@ -130,14 +111,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     setScannerOpen(false)
     // QR exchange already sealed the API key — advance immediately instead of
     // flipping to manual mode and re-running the handshake theater.
-    onPaired({
-      url: result.url,
-      apiKey: result.apiKey,
-      label: result.machineName ?? undefined,
-      deviceId: result.deviceId ?? undefined,
-      deviceToken: result.deviceToken ?? undefined,
-      capabilities: result.capabilities ?? undefined,
-    })
+    onPaired({ url: result.url, apiKey: result.apiKey })
     onAdvance()
   }
 
@@ -147,20 +121,13 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
         <Text style={styles.headline}>{t('connect.headline')}</Text>
         <Text style={styles.modeBlurb}>{t('connect.modeBlurb')}</Text>
-        <Text style={styles.connectivityHint}>{t('connect.connectivityHint')}</Text>
 
         <TouchableOpacity
-          testID="onboarding-connect-qr-card"
-          style={[styles.modeCard, styles.modeCardPrimary]}
+          style={styles.modeCard}
           onPress={() => setMode('qr-explain')}
           activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t('connect.scanQr')}
         >
-          <View style={styles.modeCardHeader}>
-            <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
-            <Text style={styles.recommendedBadge}>{t('connect.recommended')}</Text>
-          </View>
+          <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
           <Text style={styles.modeCardBody}>{t('connect.scanQrBody')}</Text>
         </TouchableOpacity>
 
@@ -169,8 +136,6 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           style={styles.modeCard}
           onPress={() => setMode('manual')}
           activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t('connect.pasteCredentials')}
         >
           <Text style={styles.modeCardTitle}>{t('connect.pasteCredentials')}</Text>
           <Text style={styles.modeCardBody}>{t('connect.pasteCredentialsBody')}</Text>
@@ -245,15 +210,10 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
       <View style={styles.form}>
         <ServerFormFields
-          label={label}
-          onLabelChange={setLabel}
           protocol={protocol}
           onProtocolChange={setProtocol}
           urlHost={urlHost}
-          onUrlHostChange={(v) => {
-            setUrlError(null)
-            setUrlHost(v)
-          }}
+          onUrlHostChange={setUrlHost}
           apiKey={token}
           onApiKeyChange={setToken}
           keyFieldLabel={t('connect.manualToken')}
@@ -272,7 +232,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
               linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
             >
               {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-              <Text>A short-lived pt_ token or the full threadbase:// link from tb pair. Valid for 3 minutes — run tb pair again if it expires. Long-lived tb_ API keys also work.</Text>
+              <Text>A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.</Text>
             </InfoTooltip>
           }
           editable={!busy}
@@ -280,27 +240,6 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           keyInputTestID="onboarding-connect-token-input"
           onSubmitEditing={handleConnect}
         />
-
-        {urlError ? (
-          <Text testID="onboarding-connect-url-error" style={styles.urlError}>
-            {urlError}
-          </Text>
-        ) : null}
-
-        {phase === 'err' ? (
-          <TouchableOpacity
-            testID="onboarding-connect-support"
-            onPress={() => {
-              void Linking.openURL(
-                'mailto:ronenmars@gmail.com?subject=Threadbase%20Pairing%20Help',
-              )
-            }}
-            style={styles.supportLink}
-            accessibilityRole="link"
-          >
-            <Text style={styles.linkText}>{t('connect.contactSupport')}</Text>
-          </TouchableOpacity>
-        ) : null}
 
         {log.length > 0 && (
           <View style={styles.logWrap}>
@@ -417,13 +356,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 12.5,
     lineHeight: 19,
-    marginBottom: 10,
-  },
-  connectivityHint: {
-    color: colors.fg4,
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    lineHeight: 18,
     marginBottom: 16,
   },
   modeCard: {
@@ -433,47 +365,18 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
-  modeCardPrimary: {
-    borderColor: colors.blue400,
-    backgroundColor: 'rgba(96, 165, 250, 0.08)',
-  },
-  modeCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 4,
-  },
-  recommendedBadge: {
-    color: colors.blue400,
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
   modeCardTitle: {
     color: colors.fg0,
     fontFamily: fonts.sans,
     fontSize: 17,
     fontWeight: '600',
-    flexShrink: 1,
+    marginBottom: 4,
   },
   modeCardBody: {
     color: colors.fg3,
     fontFamily: fonts.mono,
     fontSize: 12,
     lineHeight: 18,
-  },
-  urlError: {
-    color: colors.red400,
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    marginTop: 8,
-  },
-  supportLink: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
   },
   explainStep: {
     color: colors.fg2,
