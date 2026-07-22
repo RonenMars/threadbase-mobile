@@ -69,3 +69,21 @@ if (installedBuildType !== 'Release') {
   console.log('Release build already installed. Launching...')
   execFileSync('xcrun', ['simctl', 'launch', 'booted', BUNDLE_ID], { stdio: 'inherit' })
 }
+
+// Voice dictation Maestro flow asserts `chat-mic-button`, which only mounts
+// after speech-recognition permission is granted. Fresh/erase'd sims have none.
+function grantSpeechRecognition() {
+  const services = ['speech-recognition', 'microphone']
+  for (const service of services) {
+    try {
+      execFileSync('xcrun', ['simctl', 'privacy', 'booted', 'grant', service, BUNDLE_ID], {
+        stdio: 'inherit',
+      })
+      console.log(`Granted ${service} to ${BUNDLE_ID}`)
+    } catch {
+      console.warn(`Could not grant ${service} (simctl may use a different service name)`)
+    }
+  }
+}
+
+grantSpeechRecognition()
