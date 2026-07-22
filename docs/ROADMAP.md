@@ -44,8 +44,8 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned (platform/noise, low-priority) |
 | Feature 32 — Handle batched `conversation_events` WS event | Planned (perf, low-priority) |
 | Feature 34 — Structured prompt cards for Codex sessions | Planned (cross-repo, streamer-side) |
-| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | Planned (privacy/product decision) |
-| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | Planned (privacy/product decision) |
+| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | **Implemented** (decision (a) — explicit actions self-init Sentry) |
+| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | **Partial** (code items verified; store/legal items remain human-only) |
 
 **Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
@@ -1089,7 +1089,35 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 ### Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only)
 
-**Filed:** 2026-07-13.
+**Filed:** 2026-07-13. **Implemented:** 2026-07-18 — decision **(a)**.
+
+**Decision:** Option **(a)** — explicit user-initiated actions (one-shot crash report AND Help & Feedback) both self-init Sentry for the duration of the submit, then tear down if standing consent is off. Standing/automatic reporting remains gated by the Settings toggle (off by default).
+
+**What was implemented:**
+
+1. **`services/sentry.ts`** — `submitFeedbackViaSentry` now self-inits like `reportOneShot`: when the user taps Send, it initializes Sentry for that one submission even if the standing toggle is off, then tears down afterward so the "reporting is off" state is genuinely unaffected.
+2. **`app/help-feedback.tsx`** — success view now shows a brief note indicating which delivery method was used ("Sent via Sentry crash-reporting service" or "Sent via email"), addressing the "user expectation mismatch" concern by making the delivery path visible.
+3. **`locales/en/feedback.json`** — added translation keys for the delivery-path notes.
+4. **`docs/privacy-policy/proposed-privacy-policy.md`** — updated to clearly describe that feedback submissions may use Sentry even when the standing toggle is off, matching the one-shot crash report behavior.
+5. **`docs/store-privacy-checklist.md`** — updated cross-cutting reminder to describe both crash report and feedback as user-initiated Sentry paths independent of the standing toggle.
+6. **`docs/store-console-wording.md`** — updated App Store Connect and Google Play Console draft wording to include feedback submissions alongside crash reports as cases where Sentry may be used.
+
+**Consent model summary:**
+
+| Path | Standing toggle required? | How it works |
+|------|--------------------------|--------------|
+| Automatic crash reporting | Yes | Only initializes if toggle is on |
+| Manual crash report ("Report this crash") | No | Self-inits for one send, tears down after |
+| Help & Feedback submission | No | Self-inits for one send, tears down after |
+
+All three paths still require a DSN and an environment that permits reporting — those gates are unconditional. The only thing the standing toggle controls is whether Sentry stays running in the background to catch crashes automatically.
+
+**Not implemented (follow-up):** The full first-crash recovery screen from `docs/privacy-policy/threadbase-crash-reporting-ux-recommendation.md` (showing what's included/excluded, offering "Always send" as a separate opt-in) — this can be a future enhancement but is not required for the consent-model consistency fix.
+
+---
+
+<details>
+<summary>Original problem statement (archived)</summary>
 
 **Goal:** Resolve a design gap surfaced while testing the Sentry feedback flow (`feat/sentry-crash-reporting`, PR #303): two of the app's Sentry entry points behave inconsistently with each other around the "Share anonymous reports" toggle, and the inconsistency itself raises a real product question — should *any* Sentry path work without the standing toggle being on?
 
@@ -1113,13 +1141,7 @@ Today there are three ways data can reach Sentry, and they don't agree on what "
 - **Consistency reduces support/debug burden.** Right now, "does this feature work?" has a different answer depending on which Sentry entry point is asked — as seen in this session's own back-and-forth diagnosing why feedback attachments/diagnostics weren't appearing. A single consistent rule (whichever direction) removes an entire class of "why didn't this work" investigation.
 - **Silent fallback vs. explicit failure.** Path 3's current silent fallback to email is defensible (the user still gets their feedback delivered), but it means the "Include technical diagnostics" and screenshot-attachment work only reliably reaches Sentry when the toggle happens to already be on — which may be rare for typical users who never visit Settings.
 
-**Not yet decided — do not implement without picking (a) or (b) first**, since they're mutually exclusive framings of what "the toggle" means app-wide.
-
-**Files likely involved:**
-- `services/sentry.ts` — `submitFeedbackViaSentry`, `reportOneShot`, `initCrashReporting`
-- `services/feedback-transport.ts` — `trySentry`
-- `docs/privacy-policy/proposed-privacy-policy.md`, `docs/store-privacy-checklist.md`, `docs/store-console-wording.md` — wording depends on the direction chosen
-- `app/help-feedback.tsx` — if (a) is chosen, likely needs a small UI note about the delivery path used
+</details>
 
 ---
 
