@@ -7,8 +7,6 @@ import {
   PairExchangeError,
   PairUriError,
 } from '@/services/pair-exchange'
-import { defaultPairDeviceName } from '@/services/pair-device-name'
-import type { DeviceCapability } from '@/types/devices'
 
 export type PairLogKind = 'i' | 'd' | 'ok' | 'err'
 
@@ -22,19 +20,12 @@ export type PairPhase = 'idle' | 'dialing' | 'resolving' | 'handshake' | 'ok' | 
 export interface PairResult {
   url: string
   apiKey: string
-  /** Optional display name (user-entered or machine name from pair exchange). */
-  label?: string
-  deviceId?: string
-  deviceToken?: string
-  capabilities?: DeviceCapability[]
 }
 
 interface PairOptions {
   url: string
   token: string
   onSuccess?: (result: PairResult) => void
-  /** When true, request a read-only device credential from the streamer. */
-  readOnly?: boolean
 }
 
 // Schedule per HANDOFF: 200/700/1100/1700ms; auto-advance 700ms after `paired`.
@@ -46,53 +37,20 @@ const SCHEDULE = {
   done: 2400,
 }
 
-function defaultDeviceName(): string {
-  return defaultPairDeviceName()
-}
-
-async function resolveCredentials(
-  url: string,
-  token: string,
-  readOnly = false,
-): Promise<PairResult> {
+async function resolveCredentials(url: string, token: string): Promise<PairResult> {
   const trimmedUrl = url.replace(/\/$/, '')
   const trimmedToken = token.trim()
   const kind = classifyPairCredential(trimmedToken)
-  const deviceName = defaultDeviceName()
 
   if (kind === 'pair-uri') {
     const parsed = parsePairUri(trimmedToken)
-    const exchanged = await exchangeToken({
-      url: parsed.url,
-      token: parsed.token,
-      deviceName,
-      readOnly,
-    })
-    return {
-      url: exchanged.url,
-      apiKey: exchanged.apiKey,
-      label: exchanged.machineName ?? undefined,
-      deviceId: exchanged.deviceId ?? undefined,
-      deviceToken: exchanged.deviceToken ?? undefined,
-      capabilities: exchanged.capabilities ?? undefined,
-    }
+    const exchanged = await exchangeToken({ url: parsed.url, token: parsed.token })
+    return { url: exchanged.url, apiKey: exchanged.apiKey }
   }
 
   if (kind === 'pair-token') {
-    const exchanged = await exchangeToken({
-      url: trimmedUrl,
-      token: trimmedToken,
-      deviceName,
-      readOnly,
-    })
-    return {
-      url: exchanged.url,
-      apiKey: exchanged.apiKey,
-      label: exchanged.machineName ?? undefined,
-      deviceId: exchanged.deviceId ?? undefined,
-      deviceToken: exchanged.deviceToken ?? undefined,
-      capabilities: exchanged.capabilities ?? undefined,
-    }
+    const exchanged = await exchangeToken({ url: trimmedUrl, token: trimmedToken })
+    return { url: exchanged.url, apiKey: exchanged.apiKey }
   }
 
   // Long-lived API key (`tb_…`): Bearer-check /api/profiles.
@@ -155,7 +113,7 @@ export function useTBPair() {
   }, [append])
 
   const pair = useCallback(
-    ({ url, token, onSuccess, readOnly }: PairOptions) => {
+    ({ url, token, onSuccess }: PairOptions) => {
       if (phase !== 'idle' && phase !== 'err') return
       reset()
       setPhase('dialing')
@@ -207,7 +165,7 @@ export function useTBPair() {
             append({ k: 'd', t: 'exchanging pair token…' })
           }
 
-          const result = await resolveCredentials(url, token, readOnly === true)
+          const result = await resolveCredentials(url, token)
 
           schedule(SCHEDULE.resolve - SCHEDULE.dial, () => {
             append({ k: 'd', t: 'mdns → handshake' })
