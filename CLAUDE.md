@@ -19,6 +19,20 @@ When adding new Maestro flows:
 
 ---
 
+## Jest — Confirm Suite Failures in Isolation
+
+The `SessionScreen.*` suites are heavy enough that jest's parallel workers oversubscribe some machines, so a batch run can report failures that aren't real. Verify them serially:
+
+```bash
+npx jest --ci --runInBand --testPathPattern "SessionScreen"
+```
+
+**Never classify a batch failure without re-running that suite alone** — a load artifact and a genuine defect are indistinguishable in batch output. Passes alone → artifact. Fails alone → real, fix it. Both mistakes are easy: during the 2026-07-22 integration snapshot four genuinely broken suites were nearly dismissed as flakes, while two others really were artifacts.
+
+The load-sensitive suites, the `.claude/` worktree gotcha (`npx jest` finds **0 tests** there), and their fixes are documented in [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "Jest test suites".
+
+---
+
 ## Comments — Non-Trivial Only
 
 Never add comments that restate what the code already says. Only comment when the code is complex, non-obvious, or would surprise a reader without context.
