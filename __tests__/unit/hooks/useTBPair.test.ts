@@ -16,19 +16,24 @@ const exchangeToken = pairExchange.exchangeToken as jest.MockedFunction<
   typeof pairExchange.exchangeToken
 >
 
+// React Native declares `__DEV__` as a bare `const`, not a property of
+// globalThis, so it is neither assignable nor reachable via `global.__DEV__`.
+// This alias is the narrowest way to flip it for the prod-path tests.
+const globalWithDev = global as typeof global & { __DEV__: boolean }
+
 describe('useTBPair (prod path)', () => {
-  const prevDev = global.__DEV__
+  const prevDev = globalWithDev.__DEV__
 
   beforeEach(() => {
     jest.useFakeTimers()
-    global.__DEV__ = false
+    globalWithDev.__DEV__ = false
     exchangeToken.mockReset()
     global.fetch = jest.fn()
   })
 
   afterEach(() => {
     jest.useRealTimers()
-    global.__DEV__ = prevDev
+    globalWithDev.__DEV__ = prevDev
   })
 
   it('exchanges a pt_ pair token then returns the sealed api key', async () => {
