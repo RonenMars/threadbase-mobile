@@ -11,8 +11,8 @@ import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
-import { ServerFormFields } from '@/components/servers/ServerFormFields'
-import type { ExchangeResult } from '@/services/pair-exchange'
+import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
+import { classifyPairCredential, type ExchangeResult } from '@/services/pair-exchange'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
 import { InfoTooltip } from '../components/InfoTooltip'
@@ -92,13 +92,17 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   const [scannerOpen, setScannerOpen] = useState(false)
   const { phase, log, pair } = useTBPair()
 
-  const valid = urlHost.trim().length > 0 && token.length >= 8
+  // A pasted threadbase:// pair URI carries its own server URL.
+  const credentialKind = classifyPairCredential(token)
+  const valid =
+    token.trim().length >= 8 &&
+    (credentialKind === 'pair-uri' || urlHost.trim().length > 0)
   const busy = phase !== 'idle' && phase !== 'err'
 
   const handleConnect = () => {
     if (!valid || busy) return
     pair({
-      url: `${protocol}://${urlHost.trim()}`,
+      url: urlHost.trim() ? `${protocol}://${urlHost.trim()}` : '',
       token,
       onSuccess: (result) => {
         onPaired(result)
@@ -232,7 +236,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
               linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
             >
               {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-              <Text>A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.</Text>
+              <Text>A short-lived pt_ token or the full threadbase:// link from tb pair. Valid for 3 minutes — run tb pair again if it expires. Long-lived tb_ API keys also work.</Text>
             </InfoTooltip>
           }
           editable={!busy}
