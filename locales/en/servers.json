@@ -13,6 +13,7 @@
   },
   "dialog": {
     "removeTitle": "Remove Server",
+    "removeMessage": "Disconnect from {{server}}?",
     "removeConfirm": "Remove"
   },
   "form": {
