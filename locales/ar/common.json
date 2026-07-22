@@ -16,8 +16,7 @@
   },
   "nav": {
     "top": "↑ الأعلى",
-    "bottom": "↓ الأسفل",
-    "copyAll": "نسخ الكل"
+    "bottom": "↓ الأسفل"
   },
   "biometricLock": {
     "title": "Threadbase مقفل",
@@ -37,12 +36,5 @@
       "enable": "تفعيل",
       "notNow": "ليس الآن"
     }
-  },
-  "renderError": {
-    "title": "تعذر عرض هذا العنصر",
-    "message": "يتم عرض بديل خام بدلًا من تعطّل الشاشة."
-  },
-  "navLock": {
-    "opening": "جارٍ الفتح…"
   }
 }

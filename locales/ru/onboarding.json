@@ -8,28 +8,23 @@
   },
   "shell": {
     "back": "Назад",
-    "skip": "Пропустить",
-    "pairLater": "Подключить позже"
+    "skip": "Пропустить"
   },
   "connect": {
     "eyebrow": "> 02 / СОПРЯЖЕНИЕ",
     "headline": "Подключить среду выполнения.",
     "modeBlurb": "Выберите, как передать серверу его ключи.",
-    "connectivityHint": "Телефон достучится до компьютера по той же Wi‑Fi, через VPN (например Tailscale) или публичный туннельный URL.",
-    "recommended": "Рекомендуется",
-    "invalidUrl": "Введите полный адрес сервера с http:// или https://.",
-    "contactSupport": "Нужна помощь? Свяжитесь с поддержкой",
     "scanQr": "Сканировать QR",
     "scanQrBody": "Запустите tb pair на вашем сервере, чтобы вывести QR. Самый быстрый способ, без ввода.",
     "pasteCredentials": "Ввести / вставить вручную",
-    "pasteCredentialsBody": "Запустите tb pair на вашем сервере, затем вставьте URL + токен — или полную ссылку threadbase://.",
+    "pasteCredentialsBody": "Запустите tb pair на вашем сервере, затем вставьте URL и токен.",
     "qrEyebrow": "> 02 / СОПРЯЖЕНИЕ · QR",
     "qrHeadline": "Сканируйте для сопряжения.",
     "openCamera": "Открыть камеру",
     "ready": "✓ готово",
-    "manualSectionLabel": "На вашем компьютере",
+    "manualSectionLabel": "На вашем Mac",
     "manualSectionHint": "Откройте Терминал и запустите:",
-    "manualSectionPasteHint": "Он выведет URL + токен (или ссылку threadbase://) — вставьте ниже.",
+    "manualSectionPasteHint": "Он выведет URL + токен — вставьте оба поля ниже.",
     "manualToken": "Токен",
     "manualScanInstead": "Сканировать QR вместо этого →",
     "manualEnterInstead": "Ввести вручную вместо этого",
@@ -37,11 +32,7 @@
     "connectOk": "Подключено",
     "connectErr": "Повторить",
     "connectBusy": "…подключение",
-    "connectErrHint": "Токен истёк? Снова выполните tb pair на компьютере.",
-    "backToOptions": "← Другие варианты",
-    "step1": "1. На вашем сервере запустите tb pair. QR выведется в терминал.",
-    "step2": "2. Нажмите Открыть камеру ниже. Threadbase запросит разрешение на использование камеры — она используется только для чтения QR.",
-    "step3": "3. Наведите телефон на QR. Токен действует 3 минуты; если истёк — снова выполните tb pair."
+    "connectErrHint": "Токен истёк? Запустите tb pair снова на вашем Mac."
   },
   "done": {
     "eyebrowPaired": "РУКОПОЖАТИЕ ЗАВЕРШЕНО",
@@ -50,8 +41,6 @@
     "headlineUnpaired": "Вы внутри.",
     "bodyPaired": "Ваш ноутбук слушает. Открывайте сессию, когда захотите.",
     "bodyUnpaired": "Пропустите пока — вы можете подключить среду выполнения из Настроек в любое время.",
-    "pillPaired": "подключено · {{host}} · {{port}}",
-    "pillPairedNamed": "подключено · {{name}} · {{host}} · {{port}}",
     "pillUnpaired": "среда не подключена · подключить из Настроек",
     "ctaPaired": "Войти в Threadbase",
     "ctaUnpaired": "Продолжить — подключу позже"

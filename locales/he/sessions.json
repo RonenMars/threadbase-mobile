@@ -14,13 +14,7 @@
     "empty": "אין סשנים",
     "emptySubtitle": "התחל סשן Claude Code\nכדי לראות אותו כאן",
     "noResults": "אין תוצאות",
-    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
-    "serverEmpty": "אין סשנים בשרת זה",
-    "serverEmptySubtitle": "התחל סשן כאן או החלף שרת.",
-    "serverOffline": "השרת לא זמין",
-    "serverOfflineSubtitle": "מוצגים שרתים אחרים. נסה שוב כשהמארח יחזור.",
-    "serverWarming": "השרת מתחמם",
-    "serverWarmingSubtitle": "ההיסטוריה תופיע כשהאינדוקס יסתיים."
+    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\""
   },
   "card": {
     "copyId": "העתק מזהה סשן",
@@ -76,25 +70,5 @@
   "sync": {
     "cachedData": "מציג נתונים שמורים",
     "cachedDataSyncing": "מציג נתונים שמורים — מסתנכרן…"
-  },
-  "status": {
-    "running": "רץ",
-    "waiting": "ממתין",
-    "idle": "לא פעיל",
-    "externalLive": "חיצוני",
-    "historical": "היסטוריה",
-    "resumed": "חודש",
-    "onHold": "בהמתנה",
-    "completed": "הושלם",
-    "failed": "נכשל",
-    "unavailablePath": "לא זמין",
-    "unavailableWorktree": "אין worktree",
-    "stale": "לא עדכני",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
-  },
-  "capability": {
-    "observeOnly": "צפייה בלבד",
-    "liveControl": "שליטה חיה"
   }
 }

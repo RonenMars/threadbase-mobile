@@ -8,28 +8,23 @@
   },
   "shell": {
     "back": "חזרה",
-    "skip": "דלג",
-    "pairLater": "אצמד אחר כך"
+    "skip": "דלג"
   },
   "connect": {
     "eyebrow": "> 02 / זיווג",
     "headline": "חבר סביבת ריצה.",
     "modeBlurb": "בחר איך אתה רוצה למסור לשרת את המפתחות שלו.",
-    "connectivityHint": "הטלפון מגיע למחשב דרך אותו Wi‑Fi, VPN (למשל Tailscale) או כתובת מנהרה ציבורית.",
-    "recommended": "מומלץ",
-    "invalidUrl": "הזינו כתובת שרת מלאה שמתחילה ב־http:// או https://.",
-    "contactSupport": "צריכים עזרה? פנו לתמיכה",
     "scanQr": "סרוק QR",
     "scanQrBody": "הרץ tb pair על השרת שלך כדי להדפיס QR. הכי מהיר, בלי הקלדה.",
     "pasteCredentials": "הקלד / הדבק באופן ידני",
-    "pasteCredentialsBody": "הרץ tb pair על השרת שלך, ואז הדבק את ה-URL והטוקן — או את קישור threadbase:// המלא.",
+    "pasteCredentialsBody": "הרץ tb pair על השרת שלך, ואז הדבק את ה-URL והטוקן.",
     "qrEyebrow": "> 02 / זיווג · QR",
     "qrHeadline": "סרוק כדי לזווג.",
     "openCamera": "פתח מצלמה",
     "ready": "✓ מוכן",
-    "manualSectionLabel": "במחשב שלך",
+    "manualSectionLabel": "על ה-Mac שלך",
     "manualSectionHint": "פתח טרמינל והרץ:",
-    "manualSectionPasteHint": "הוא מדפיס URL + טוקן (או קישור threadbase://) — הדבק למטה.",
+    "manualSectionPasteHint": "הוא מדפיס URL + טוקן — הדבק את שניהם למטה.",
     "manualToken": "טוקן",
     "manualScanInstead": "סרוק QR במקום →",
     "manualEnterInstead": "השתמש בהזנה ידנית במקום",
@@ -37,11 +32,7 @@
     "connectOk": "מחובר",
     "connectErr": "נסה שוב",
     "connectBusy": "…מתחבר",
-    "connectErrHint": "פג תוקף הטוקן? הרץ tb pair שוב במחשב.",
-    "backToOptions": "← אפשרויות אחרות",
-    "step1": "1. על השרת שלך, הרץ tb pair. QR יודפס לטרמינל.",
-    "step2": "2. הקש על פתח מצלמה למטה. Threadbase תבקש הרשאה להשתמש במצלמה — היא משמשת רק לקריאת ה-QR.",
-    "step3": "3. כוון את הטלפון ל-QR. הטוקן תקף ל-3 דקות; אם פג, הרץ tb pair שוב."
+    "connectErrHint": "הטוקן פג תוקף? הרץ tb pair שוב על ה-Mac שלך."
   },
   "done": {
     "eyebrowPaired": "לחיצת היד הושלמה",
@@ -50,8 +41,6 @@
     "headlineUnpaired": "אתה בפנים.",
     "bodyPaired": "המחשב הנייד שלך מאזין. פתח סשן כשתרצה.",
     "bodyUnpaired": "דלג לעת עתה — תוכל לחבר סביבת ריצה מההגדרות בכל עת.",
-    "pillPaired": "מחובר · {{host}} · {{port}}",
-    "pillPairedNamed": "מחובר · {{name}} · {{host}} · {{port}}",
     "pillUnpaired": "אין סביבת ריצה מחוברת · חבר מהגדרות",
     "ctaPaired": "כנס ל-Threadbase",
     "ctaUnpaired": "המשך — אחבר מאוחר יותר"

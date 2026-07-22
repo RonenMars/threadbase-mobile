@@ -8,28 +8,23 @@
   },
   "shell": {
     "back": "رجوع",
-    "skip": "تخطي",
-    "pairLater": "الاقتران لاحقاً"
+    "skip": "تخطي"
   },
   "connect": {
     "eyebrow": "> 02 / إقران",
     "headline": "اتصل ببيئة التشغيل.",
     "modeBlurb": "اختر كيف تريد تسليم المفاتيح للخادم.",
-    "connectivityHint": "هاتفك يصل إلى حاسوبك عبر نفس شبكة Wi‑Fi أو عبر VPN (مثل Tailscale) أو عبر عنوان نفق عام.",
-    "recommended": "موصى به",
-    "invalidUrl": "أدخل عنوان خادم كاملاً يبدأ بـ http:// أو https://.",
-    "contactSupport": "تحتاج مساعدة؟ تواصل مع الدعم",
     "scanQr": "مسح QR",
     "scanQrBody": "شغّل tb pair على خادمك لطباعة QR. أسرع طريقة، بدون كتابة.",
     "pasteCredentials": "الإدخال اليدوي",
-    "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق URL والرمز — أو رابط threadbase:// الكامل.",
+    "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق URL والرمز.",
     "qrEyebrow": "> 02 / إقران · QR",
     "qrHeadline": "امسح للإقران.",
     "openCamera": "فتح الكاميرا",
     "ready": "✓ جاهز",
-    "manualSectionLabel": "على جهازك",
+    "manualSectionLabel": "على Mac الخاص بك",
     "manualSectionHint": "افتح Terminal وشغّل:",
-    "manualSectionPasteHint": "يطبع URL + رمزًا (أو رابط threadbase://) — الصق أدناه.",
+    "manualSectionPasteHint": "يطبع URL + رمزًا — الصق كليهما أدناه.",
     "manualToken": "الرمز",
     "manualScanInstead": "مسح QR بدلًا من ذلك →",
     "manualEnterInstead": "استخدام الإدخال اليدوي بدلًا من ذلك",
@@ -37,11 +32,7 @@
     "connectOk": "متصل",
     "connectErr": "إعادة المحاولة",
     "connectBusy": "…جارٍ الاتصال",
-    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مجدداً على جهازك.",
-    "backToOptions": "← خيارات أخرى",
-    "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
-    "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
-    "step3": "3. وجّه هاتفك نحو رمز QR. الرمز صالح لمدة 3 دقائق؛ إن انتهت صلاحيته، شغّل tb pair مجدداً."
+    "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مرة أخرى على Mac الخاص بك."
   },
   "done": {
     "eyebrowPaired": "اكتمل الإقران",
@@ -50,8 +41,6 @@
     "headlineUnpaired": "أنت داخل.",
     "bodyPaired": "جهازك المحمول يستمع. افتح سيشن متى أردت.",
     "bodyUnpaired": "تخطَّ الآن — يمكنك توصيل بيئة تشغيل من الإعدادات في أي وقت.",
-    "pillPaired": "مقترن · {{host}} · {{port}}",
-    "pillPairedNamed": "مقترن · {{name}} · {{host}} · {{port}}",
     "pillUnpaired": "لا توجد بيئة تشغيل · قرن من الإعدادات",
     "ctaPaired": "ادخل Threadbase",
     "ctaUnpaired": "متابعة — سأقرن لاحقًا"

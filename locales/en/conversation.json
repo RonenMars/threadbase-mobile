@@ -5,10 +5,7 @@
   },
   "list": {
     "loadingMore": "Loading more…",
-    "empty": "No messages in this conversation.",
-    "msgs_one": "{{count}} msg",
-    "msgs_other": "{{count}} msgs",
-    "tokens": "{{count}}k tokens"
+    "empty": "No messages in this conversation."
   },
   "error": {
     "loadFailed": "Couldn't load conversation",

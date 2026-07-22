@@ -4,39 +4,25 @@
   },
   "status": {
     "connected": "متصل",
-    "disconnected": "غير متصل",
-    "connecting": "جارٍ الاتصال…",
-    "error": "خطأ في الاتصال"
+    "disconnected": "غير متصل"
   },
   "action": {
     "add": "إضافة خادم",
-    "edit": "تعديل",
-    "remove": "إزالة الخادم",
-    "viewError": "عرض خطأ الاتصال",
     "connect": "اتصال",
     "details": "التفاصيل"
   },
   "dialog": {
     "removeTitle": "إزالة الخادم",
-    "removeMessage": "هل أنت متأكد أنك تريد إزالة هذا الخادم؟",
-    "removeConfirm": "إزالة",
-    "removeDismiss": "إلغاء"
+    "removeConfirm": "إزالة"
   },
   "form": {
-    "name": "الاسم",
-    "url": "عنوان URL",
-    "namePlaceholder": "خادمي",
-    "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "التسمية (اختياري)",
     "serverUrl": "عنوان الخادم",
     "apiKey": "مفتاح API",
     "hint": "شغّل cch serve --tunnel --qr على جهاز Mac للحصول على عنوان قابل للمسح عبر QR."
   },
   "manage": {
-    "title": "الخوادم",
-    "addServer": "إضافة خادم",
-    "addServerHint": "اتصل بنسخة tb-streamer",
-    "empty": "لم تتم إضافة أي خوادم بعد."
+    "addServer": "إضافة خادم"
   },
   "filter": {
     "title": "عوامل التصفية",
@@ -69,7 +55,6 @@
     "rememberChoice": "تذكّر هذا الاختيار"
   },
   "statusModal": {
-    "title": "حالة الخوادم",
     "close": "✕",
     "menuEdit": "تعديل",
     "menuRefresh": "تحديث",

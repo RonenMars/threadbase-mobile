@@ -14,13 +14,7 @@
     "empty": "لا توجد سيشنات",
     "emptySubtitle": "ابدأ سيشن Claude Code\nلرؤيته هنا",
     "noResults": "لا توجد نتائج",
-    "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
-    "serverEmpty": "لا توجد سيشنات على هذا الخادم",
-    "serverEmptySubtitle": "ابدأ سيشن هنا أو بدّل الخادم.",
-    "serverOffline": "الخادم غير متاح",
-    "serverOfflineSubtitle": "يُعرض الخوادم الأخرى. أعد المحاولة عندما يعود المضيف.",
-    "serverWarming": "الخادم قيد التجهيز",
-    "serverWarmingSubtitle": "سيظهر السجل عند انتهاء الفهرسة."
+    "noResultsSubtitle": "لا شيء يطابق \"{{query}}\""
   },
   "card": {
     "copyId": "نسخ معرّف السيشن",
@@ -96,25 +90,5 @@
   "sync": {
     "cachedData": "عرض بيانات مخزنة مؤقتًا",
     "cachedDataSyncing": "عرض بيانات مخزنة مؤقتًا — جارٍ المزامنة…"
-  },
-  "status": {
-    "running": "قيد التشغيل",
-    "waiting": "في الانتظار",
-    "idle": "خامل",
-    "externalLive": "خارجي",
-    "historical": "سجل",
-    "resumed": "مُستأنف",
-    "onHold": "معلّق",
-    "completed": "مكتمل",
-    "failed": "فشل",
-    "unavailablePath": "غير متاح",
-    "unavailableWorktree": "لا يوجد worktree",
-    "stale": "قديم",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
-  },
-  "capability": {
-    "observeOnly": "للمشاهدة فقط",
-    "liveControl": "تحكم مباشر"
   }
 }

@@ -14,13 +14,7 @@
     "empty": "Нет сессий",
     "emptySubtitle": "Запустите сессию Claude Code,\nчтобы увидеть её здесь",
     "noResults": "Ничего не найдено",
-    "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
-    "serverEmpty": "На этом сервере нет сессий",
-    "serverEmptySubtitle": "Запустите сессию здесь или переключите сервер.",
-    "serverOffline": "Сервер недоступен",
-    "serverOfflineSubtitle": "Показаны другие серверы. Повторите попытку, когда хост вернётся.",
-    "serverWarming": "Сервер прогревается",
-    "serverWarmingSubtitle": "История появится после завершения индексации."
+    "noResultsSubtitle": "Ничего не соответствует \"{{query}}\""
   },
   "card": {
     "copyId": "Копировать ID сессии",
@@ -86,25 +80,5 @@
   "sync": {
     "cachedData": "Показаны кэшированные данные",
     "cachedDataSyncing": "Показаны кэшированные данные — синхронизация…"
-  },
-  "status": {
-    "running": "Работает",
-    "waiting": "Ожидание",
-    "idle": "Простой",
-    "externalLive": "Внешняя",
-    "historical": "История",
-    "resumed": "Возобновлена",
-    "onHold": "На паузе",
-    "completed": "Завершена",
-    "failed": "Ошибка",
-    "unavailablePath": "Недоступна",
-    "unavailableWorktree": "Нет worktree",
-    "stale": "Устарела",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
-  },
-  "capability": {
-    "observeOnly": "Только просмотр",
-    "liveControl": "Управление"
   }
 }
