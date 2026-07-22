@@ -11,7 +11,7 @@ import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
-import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
+import { ServerFormFields } from '@/components/servers/ServerFormFields'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
@@ -109,19 +109,10 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
   const handleScanSuccess = (result: ExchangeResult) => {
     setScannerOpen(false)
-    const { protocol: p, host } = splitUrl(result.url)
-    setProtocol(p)
-    setUrlHost(host)
-    setToken(result.apiKey)
-    setMode('manual')
-    pair({
-      url: result.url,
-      token: result.apiKey,
-      onSuccess: (r) => {
-        onPaired(r)
-        onAdvance()
-      },
-    })
+    // QR exchange already sealed the API key — advance immediately instead of
+    // flipping to manual mode and re-running the handshake theater.
+    onPaired({ url: result.url, apiKey: result.apiKey })
+    onAdvance()
   }
 
   if (mode === 'choose') {
@@ -156,30 +147,20 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   if (mode === 'qr-explain') {
     return (
       <View style={styles.root}>
+        <TouchableOpacity
+          testID="onboarding-connect-back-to-choose"
+          onPress={() => setMode('choose')}
+          style={styles.linkBtnTop}
+        >
+          <Text style={styles.linkText}>{t('connect.backToOptions')}</Text>
+        </TouchableOpacity>
         <Text style={styles.eyebrow}>{t('connect.qrEyebrow')}</Text>
         <Text style={styles.headline}>{t('connect.qrHeadline')}</Text>
 
         <TerminalCard>
-          <Text style={styles.explainStep}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.stepNum}>1.</Text>{' '}On your server, run{' '}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={{ color: colors.fg2 }}>tb pair</Text>. A QR will print to the terminal.
-          </Text>
-          <Text style={[styles.explainStep, { marginTop: 10 }]}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.stepNum}>2.</Text>{' '}Tap{' '}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={{ color: colors.fg2 }}>{t('connect.openCamera')}</Text> below. Threadbase will ask
-            permission to use the camera — that&apos;s only used to read the QR.
-          </Text>
-          <Text style={[styles.explainStep, { marginTop: 10 }]}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.stepNum}>3.</Text>{' '}Point your phone at the QR. The pair token is
-            valid for 3 minutes; if it expires, just run{' '}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={{ color: colors.fg2 }}>tb pair</Text> again.
-          </Text>
+          <Text style={styles.explainStep}>{t('connect.step1')}</Text>
+          <Text style={[styles.explainStep, { marginTop: 10 }]}>{t('connect.step2')}</Text>
+          <Text style={[styles.explainStep, { marginTop: 10 }]}>{t('connect.step3')}</Text>
         </TerminalCard>
 
         <View style={styles.flex} />
@@ -206,6 +187,13 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       keyboardShouldPersistTaps="handled"
       bottomOffset={16}
     >
+      <TouchableOpacity
+        testID="onboarding-connect-back-to-choose"
+        onPress={() => setMode('choose')}
+        style={styles.linkBtnTop}
+      >
+        <Text style={styles.linkText}>{t('connect.backToOptions')}</Text>
+      </TouchableOpacity>
       <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
       <Text style={styles.headline}>{t('connect.headline')}</Text>
 
