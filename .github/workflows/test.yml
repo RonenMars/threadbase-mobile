@@ -147,6 +147,26 @@ jobs:
         with:
           run: npm run lint
 
+  # ── i18n ─────────────────────────────────────────────────────────────────────
+  # The locale gates (`i18n-completeness`, `i18n-unused-keys`, `i18n`) live at the
+  # root of `__tests__/`, so neither `test:unit` (`__tests__/unit`) nor
+  # `test:integration` (`__tests__/integration`) matches them and they never ran
+  # on a PR. An English-only key therefore shipped green: Type check only catches
+  # a *missing key* (t() is typed against the locale JSON), never a *missing
+  # translation*, which reaches users as silent English fallback mid-RTL layout.
+  i18n:
+    name: i18n
+    runs-on: ubuntu-latest
+    needs: [gate, setup]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: i18n
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
+        with:
+          run: npm run test:i18n
+
   # ── Maestro E2E (iOS sim, monthly schedule only) ─────────────────────────────
   # Runs once per month (00:00 UTC on the 1st) via the schedule trigger above.
   # The macOS runner + iOS app build is ~15 minutes and ~$3/run, so this acts
