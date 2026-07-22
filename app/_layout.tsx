@@ -23,7 +23,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
@@ -68,8 +67,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrateSessionNames = useSessionNamesStore((s) => s.hydrate)
   const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
-  const setCacheReady = useServersStore((s) => s.setCacheReady)
-  const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
   const setCacheAlert = useServersStore((s) => s.setCacheAlert)
   const clearCacheAlert = useServersStore((s) => s.clearCacheAlert)
@@ -174,8 +171,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubCacheReady = wsManager.onAll('cache_ready', (msg) => {
       if (msg.type !== 'cache_ready') return
-      setCacheReady(msg.serverId)
-      recordFetchSuccess(msg.serverId)
+      void queryClient.invalidateQueries({ queryKey: ['sessions-eager'] })
+      void queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      void queryClient.invalidateQueries({ queryKey: ['conversations-eager'] })
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] })
     })
     const unsubScanProgress = wsManager.onAll('scan_progress', (msg) => {
       if (msg.type !== 'scan_progress') return
@@ -209,8 +208,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubCacheAlertResolved()
       wsManager.disconnectAll()
     }
-    // router from expo-router is a stable singleton; setConnected/setCacheReady
-    // are stable Zustand setters. Wiring is intentionally scoped to activeServerIds changes.
+    // router from expo-router is a stable singleton; setConnected is a stable
+    // Zustand setter. Wiring is intentionally scoped to activeServerIds changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds])
 

@@ -63,4 +63,14 @@ describe('SessionsStore – prompt queue', () => {
     expect(useSessionsStore.getState().promptQueues[KEY]).toHaveLength(1)
     expect(useSessionsStore.getState().promptQueues[KEY_2]).toHaveLength(1)
   })
+
+  it('clears only queues belonging to one server', () => {
+    useSessionsStore.getState().addToQueue(SERVER, SESSION, makePrompt('p1'))
+    useSessionsStore.getState().addToQueue('srv_other', SESSION, makePrompt('p2'))
+
+    useSessionsStore.getState().clearServer(SERVER)
+
+    expect(useSessionsStore.getState().promptQueues[KEY]).toBeUndefined()
+    expect(useSessionsStore.getState().promptQueues[`srv_other::${SESSION}`]).toHaveLength(1)
+  })
 })
