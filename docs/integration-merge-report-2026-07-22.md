@@ -5,8 +5,11 @@ When these branches are merged individually, follow the order and the per-confli
 
 Snapshot cut from `origin/main` @ `b7d8bda` on 2026-07-22.
 All 14 open PRs merged with `--no-ff`; #291 (`typescript 6.0.3 → 7.0.2`) excluded by request.
-Contents: 14 merge commits + 3 fix commits (`c9a78cd`, `d206e24`, `0662707`) + this report.
+Contents: 14 merge commits, plus fixes cherry-picked from the PRs they belong to (`c9a78cd`, `d206e24`, `0662707`, `32d4233`, `5acc494`, `2acfe53`), plus this report.
 Pushed to origin as a branch only — no PR, nothing merged into `main`.
+
+`origin/main` has advanced past `b7d8bda` since this snapshot was cut, so it is a point-in-time record, not a current merge preview.
+Re-cut it if you need a fresh combined build.
 The immutable snapshot ref is the `test-dev/v1.0.0-…-2026-07-22` tag cut at this commit; prefer it over the branch as a `deploy_ref`.
 
 ---
@@ -138,13 +141,36 @@ Concretely, for whichever of #356 / #360 goes second:
 
 GitHub Merge Queue automates precisely this guarantee (each PR tested on top of those ahead of it) and is the durable fix if PR volume grows; it is already flagged as the adjacent pattern in `docs/research/2026-07-21-pre-merge-integration-build-strategy.md`.
 
-### A gap Type check does not cover
+### A gap Type check does not cover — now closed by PR #368
 
-**CI does not run the root-level suites at all.** The jobs are `test:unit` (`__tests__/unit`) and `test:integration` (`__tests__/integration`).
-`__tests__/i18n-completeness.test.ts` and #356's new `__tests__/i18n-unused-keys.test.ts` sit at the root of `__tests__/` and therefore never run on a PR.
+**CI did not run the root-level suites at all.** The jobs are `test:unit` (`__tests__/unit`) and `test:integration` (`__tests__/integration`).
+`__tests__/i18n-completeness.test.ts` and #356's new `__tests__/i18n-unused-keys.test.ts` sit at the root of `__tests__/` and therefore never ran on a PR.
 
-That is why #343 and #354 are green despite adding English-only keys — the `i18n-completeness` failures listed below are invisible to CI, and Type check cannot see them either (a *missing translation* is not a type error; only a *missing key* is).
-Worth fixing independently of these PRs: widen the CI test jobs to cover root-level suites, or #356's new gate lands dead on arrival.
+That is why #343 and #354 were green despite adding English-only keys — invisible to CI, and Type check cannot see them either (a *missing translation* is not a type error; only a *missing key* is).
+It also meant #356's new dead-key gate would have landed dead on arrival.
+
+**PR #368** (`ci/i18n-parity-gate`) closes this: a `test:i18n` script plus an `i18n` CI job alongside Lint and Type check, following the same `[skip-ci]` gate pattern.
+The pattern picks up `i18n-unused-keys` automatically once #356 merges.
+Verified by deleting a key from `locales/ar/common.json` and confirming the job goes red — it catches regressions, it does not merely pass.
+Cherry-picked onto this snapshot as `32d4233`.
+
+**After #368 merges, add `i18n` to the required status checks in branch protection**, or it will run without being able to block a merge.
+
+### Missing translations — audited and fixed
+
+All 15 open PRs were audited against their own trees; `main` itself has zero gaps, so every gap was introduced by its PR.
+Two were responsible, and both are now fixed on the branch that introduced the keys:
+
+| PR | Namespace | Keys | Fix |
+|---|---|---|---|
+| #343 | `feedback.json` | `success.viaSentry`, `success.viaEmail` | `393b9ca` — ar/he/ru |
+| #354 | `conversation.json` | `resume.takeOver`, `resume.takeOverFailed` | `5b26bf7` — ar/he/ru |
+
+Both cherry-picked onto this snapshot (`5acc494`, `2acfe53`).
+Translations reuse terminology already in the files rather than inventing new wording — `الإبلاغ عن الأعطال` / `דיווח קריסות` / `отчётов о сбоях` for crash reporting, and the existing `terminal.json` `overtake` wording (`الاستحواذ` / `השתלט` / `Перехватить`) for take-over.
+
+#355 still reports the same gaps, but it is not a third offender — it is #354 rebased onto the previous snapshot, so it inherits both sets and clears once rebased.
+The other 12 PRs are clean, including #356, #357 and #360, which touch locales heavily.
 
 ---
 
@@ -154,16 +180,20 @@ Measured at the tip, against an `origin/main` baseline on the same machine.
 
 **Typecheck: clean.** The one error (`OnboardingShell.tsx:76`) was fixed by `d206e24`, cherry-picked from #360.
 
-**Jest: 9 suites / 28 tests failed**, 111 suites / 1113 tests passed.
-Only one group is caused by the merge.
+**Jest: 10 suites / 30 tests failed**, 110 suites / 1111 tests passed.
+**Exactly one stable failure group remains, and it is not merge-induced.**
 
 | Failure | Count | Verdict |
 |---|---|---|
 | `SessionScreen.*` — `useNavigation is not a function` | 7 suites, 21 tests | **#355's own bug.** Only #355 calls `useNavigation`; those suites mock `expo-router` locally without it. #355's CI is already red on Integration tests. Passes on `main`. |
-| `i18n-completeness` | 6 tests | **Merge-induced.** ar/he/ru lack `resume.takeOver` + `resume.takeOverFailed` (#354/#355) and `success.viaSentry` + `success.viaEmail` (#343) — all added English-only. Passes on `main`. Left unfixed: writing translations is authoring PR content, not resolving a merge. |
-| `conversation-live-view` — appends streamed events | 1 test | **Flaky.** Fails in a full run, passes in isolation. |
+| `conversation-live-view`, `conversation-detail-gating`, `conversation-search-anchor` | 3 suites, 9 tests | **Flaky under parallel load.** All three pass in isolation (25/25). Not a defect in the branch. |
 
-Fixed since the first measurement, so no longer failing: `ConnectStepManual` (was #360's stale "On your Mac" assertion, fixed by `0662707`).
+`npm run test:i18n` — all 3 suites pass, including #356's `i18n-unused-keys`, which confirms the new CI job picks it up.
+
+Resolved since the first measurement:
+
+- `i18n-completeness` (was 6 failures) — translations landed on the PRs that introduced the keys; see below.
+- `ConnectStepManual` — #360's stale "On your Mac" assertion, fixed by `0662707`.
 
 Excluded from the run and not a branch defect: `unit/scripts/land-version-bump` (runs under `jest.config.scripts.js`, not the main config) and `e2e/feedback-flow` (5s timeout that fails on `main` on this machine too — Windows perf, and outside what CI runs).
 
