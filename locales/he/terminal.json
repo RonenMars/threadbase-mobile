@@ -1,7 +1,4 @@
 {
-  "header": {
-    "session": "סשן"
-  },
   "connection": {
     "reconnectingTitle": "מתחבר מחדש…",
     "reconnectingMessage": "החיבור אבד — התוכן שלמטה עשוי להיות לא מעודכן.",
@@ -9,38 +6,24 @@
     "stalledMessage": "מחובר, אך לא התקבל פלט כבר זמן מה."
   },
   "action": {
-    "copyId": "העתק מזהה סשן",
     "sendInput": "שלח קלט",
-    "cancel": "בטל סשן",
-    "more": "עוד",
     "stop": "עצור סשן"
   },
   "voice": {
     "start": "התחל הכתבה",
-    "stop": "עצור הכתבה",
-    "permissionDeniedTitle": "הרשאת מיקרופון נדחתה",
-    "permissionDeniedBody": "Threadbase זקוק לגישה למיקרופון כדי להכתיב פרומפטים. אפשר זאת בהגדרות."
+    "stop": "עצור הכתבה"
   },
   "dialog": {
     "cancelTitle": "בטל סשן",
     "cancelMessage": "האם אתה בטוח שברצונך לבטל את הסשן הזה?",
     "cancelConfirm": "בטל סשן",
-    "cancelDismiss": "המשך ריצה",
     "removeTitle": "הסר סשן",
-    "removeMessage": "האם אתה בטוח שברצונך להסיר את הסשן הזה?",
     "removeConfirm": "הסר",
-    "removeDismiss": "שמור",
     "stopTitle": "עצור סשן",
-    "stopMessage": "לעצור את הסשן הזה? קלוד יופסק.",
-    "stopConfirm": "עצור",
-    "stopDismiss": "המשך ריצה",
     "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב."
   },
   "status": {
-    "connecting": "מתחבר…",
-    "reconnecting": "מתחבר מחדש…",
     "disconnected": "מנותק",
-    "waking": "מתעורר…",
     "starting": "מתחיל סשן…",
     "stuckTitle": "עדיין מתחיל…",
     "stuckBody": "הסשן עדיין לא הגיע למצב מוכן. אפשר לראות את פלט הקונסולה שלו בזמן אמת במקום להמשיך לחכות.",
@@ -48,8 +31,7 @@
     "waitMore": "המתן עוד"
   },
   "input": {
-    "placeholder": "שלח הודעה…",
-    "send": "שלח"
+    "placeholder": "שלח הודעה…"
   },
   "session": {
     "notFound": "סשן לא נמצא",
@@ -65,11 +47,6 @@
     "alreadyRunningBody": "לסשן זה יש תהליך פעיל בשרת. חידוש כאן יעצור את התהליך ויתחיל סשן טרמינל חדש באפליקציה.",
     "overtake": "השתלט",
     "prompts_one": "פרומפט אחד",
-    "prompts_other": "{{count}} פרומפטים",
-    "tabTerminal": "טרמינל",
-    "tabChat": "צ'אט"
-  },
-  "banner": {
-    "streamingInfo": "קריאות כלי ופלט זורמים כאן בזמן אמת. הקלד המשך למטה בזמן ש-Claude עדיין עובד."
+    "prompts_other": "{{count}} פרומפטים"
   }
 }

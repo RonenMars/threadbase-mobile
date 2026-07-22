@@ -41,7 +41,6 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "system": "System",
     "glassVariations": "Glass variations",
     "layout": "Layout",
     "layoutTree": "Tree",
@@ -86,10 +85,7 @@
     "testThrow": "Throw uncaught exception",
     "testCrashConfirmTitle": "Send a test crash?",
     "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
-    "testCrashSend": "Send test crash",
-    "noticeTitle": "Crash reporting is available",
-    "noticeMessage": "Threadbase can now send sanitized crash reports if you opt in. It stays off until you turn it on in Settings. No prompts, terminal output, or session content are ever included.",
-    "noticeDismiss": "Got it"
+    "testCrashSend": "Send test crash"
   },
   "servers": {
     "scanQr": "Scan QR to add server"
@@ -98,19 +94,10 @@
     "title": "Session Naming",
     "autoNameFromMessage": "Auto-name from first message",
     "aiGeneratedNames": "AI-generated session names",
-    "askOnCreateNote": "Show a prompt to name the session when you start a new one.",
-    "askOnExitNote": "Suggest naming the session when you leave it, if it hasn't been named yet. Suppressed when the creation prompt is disabled.",
     "autoNameNote": "Set the session name from the first words of your first message. No AI, no tokens.",
     "aiGeneratedNote": "Use an AI model to generate a meaningful name. Uses tokens from your configured API key."
   },
-  "quickAccess": {
-    "title": "Quick Access",
-    "favorites": "Favorites",
-    "recentSessions": "Recent Sessions",
-    "popularProjects": "Popular Projects"
-  },
   "language": {
-    "label": "Language",
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
@@ -139,6 +126,5 @@
     "previewFirst": "First",
     "previewLast": "Last",
     "previewOff": "Off"
-  },
-  "restartTour": "Restart app tour"
+  }
 }

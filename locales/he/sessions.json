@@ -8,62 +8,26 @@
   },
   "filter": {
     "label": "סנן ומיין",
-    "all": "הכל",
-    "active": "פעיל",
-    "waiting": "ממתין",
-    "completed": "הושלם",
-    "failed": "נכשל"
-  },
-  "sort": {
-    "label": "מיון",
-    "newest": "החדש ביותר",
-    "oldest": "הישן ביותר",
-    "az": "א–ת"
+    "all": "הכל"
   },
   "list": {
-    "sessionCount_one": "סשן אחד",
-    "sessionCount_other": "{{count}} סשנים",
     "empty": "אין סשנים",
     "emptySubtitle": "התחל סשן Claude Code\nכדי לראות אותו כאן",
     "noResults": "אין תוצאות",
-    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
-    "emptyProjects": "עדיין אין פרויקטים"
+    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\""
   },
   "card": {
-    "status": {
-      "active": "פעיל",
-      "waiting": "ממתין לקלט",
-      "completed": "הסשן הושלם",
-      "failed": "הסשן נכשל",
-      "starting": "מתחיל…",
-      "stopping": "עוצר…"
-    },
-    "connectedTo": "{{server}}",
     "copyId": "העתק מזהה סשן",
     "sendInput": "שלח קלט",
     "cancel": "בטל סשן",
-    "remove": "הסר סשן",
-    "viewError": "הצג שגיאת חיבור",
     "prompts_one": "פרומפט אחד",
     "prompts_other": "{{count}} פרומפטים"
-  },
-  "takeover": {
-    "prompt": "לקוח אחר שולט בסשן זה",
-    "takeControl": "קח שליטה",
-    "dismiss": "התעלם"
-  },
-  "directory": {
-    "empty": "תיקייה ריקה",
-    "loadFailed": "לא ניתן לטעון תיקיות",
-    "browsingNotConfigured": "גלישה לא מוגדרת"
   },
   "hub": {
     "seeAll_one": "ראה את כל השיחה →",
     "seeAll_other": "ראה את כל {{count}} השיחות →",
     "msgs_one": "הודעה אחת",
-    "msgs_other": "{{count}} הודעות",
-    "prompts_one": "פרומפט אחד",
-    "prompts_other": "{{count}} פרומפטים"
+    "msgs_other": "{{count}} הודעות"
   },
   "loading": {
     "title": "טוען סשנים",
@@ -79,12 +43,6 @@
     "headerLive_other": "חי · {{count}}",
     "headerIdle_one": "סרק · {{count}}",
     "headerIdle_other": "סרק · {{count}}"
-  },
-  "rename": {
-    "title": "שנה שם סשן",
-    "placeholder": "שם סשן",
-    "cancel": "ביטול",
-    "save": "שמירה"
   },
   "preview": {
     "liveUnavailable": "תצוגה מקדימה של סשן חי אינה זמינה — פתח את הסשן כדי לראות את הטרמינל החי.",
