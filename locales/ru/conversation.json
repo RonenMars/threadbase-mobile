@@ -5,12 +5,7 @@
   },
   "list": {
     "loadingMore": "Загрузка…",
-    "empty": "В этой беседе нет сообщений.",
-    "msgs_one": "{{count}} сообщение",
-    "msgs_few": "{{count}} сообщения",
-    "msgs_many": "{{count}} сообщений",
-    "msgs_other": "{{count}} сообщений",
-    "tokens": "{{count}}k токенов"
+    "empty": "В этой беседе нет сообщений."
   },
   "error": {
     "loadFailed": "Не удалось загрузить беседу",

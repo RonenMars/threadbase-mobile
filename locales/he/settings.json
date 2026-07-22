@@ -41,7 +41,6 @@
     "theme": "ערכת נושא",
     "dark": "כהה",
     "light": "בהיר",
-    "system": "מערכת",
     "glassVariations": "וריאציות זכוכית",
     "layout": "פריסה",
     "layoutTree": "עץ",
@@ -86,10 +85,7 @@
     "testThrow": "זריקת חריגה לא מטופלת",
     "testCrashConfirmTitle": "לשלוח קריסת בדיקה?",
     "testCrashConfirmMessage": "פעולה זו יוצרת שגיאת בדיקה כדי לוודא שהדיווח פועל. זמין רק בגרסאות פיתוח.",
-    "testCrashSend": "שלח קריסת בדיקה",
-    "noticeTitle": "דיווח קריסות זמין",
-    "noticeMessage": "Threadbase יכול כעת לשלוח דיווחי קריסה מנוקים אם תבחר להצטרף. הדיווח נשאר כבוי עד שתפעיל אותו בהגדרות. הנחיות, פלט טרמינל ותוכן סשנים לעולם אינם נכללים.",
-    "noticeDismiss": "הבנתי"
+    "testCrashSend": "שלח קריסת בדיקה"
   },
   "servers": {
     "scanQr": "סרוק QR להוספת שרת"
@@ -98,19 +94,10 @@
     "title": "שמות סשן",
     "autoNameFromMessage": "שם אוטומטי מההודעה הראשונה",
     "aiGeneratedNames": "שמות סשן שנוצרו ב-AI",
-    "askOnCreateNote": "הצג בקשה לתת שם לסשן כאשר אתה מתחיל חדש.",
-    "askOnExitNote": "הצע לתת שם לסשן כאשר אתה עוזב אותו, אם עדיין לא נתת לו שם. מושבת כאשר בקשת היצירה כבויה.",
     "autoNameNote": "הגדר את שם הסשן מהמילים הראשונות של ההודעה הראשונה שלך. בלי AI, בלי טוקנים.",
     "aiGeneratedNote": "השתמש במודל AI כדי ליצור שם משמעותי. משתמש בטוקנים ממפתח ה-API המוגדר שלך."
   },
-  "quickAccess": {
-    "title": "גישה מהירה",
-    "favorites": "מועדפים",
-    "recentSessions": "סשנים אחרונים",
-    "popularProjects": "פרויקטים פופולריים"
-  },
   "language": {
-    "label": "שפה",
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
@@ -139,6 +126,5 @@
     "previewFirst": "ראשונה",
     "previewLast": "אחרונה",
     "previewOff": "כבוי"
-  },
-  "restartTour": "הפעל מחדש סיור באפליקציה"
+  }
 }

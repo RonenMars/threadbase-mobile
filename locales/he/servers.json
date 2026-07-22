@@ -4,39 +4,25 @@
   },
   "status": {
     "connected": "מחובר",
-    "disconnected": "מנותק",
-    "connecting": "מתחבר…",
-    "error": "שגיאת חיבור"
+    "disconnected": "מנותק"
   },
   "action": {
     "add": "הוסף שרת",
-    "edit": "ערוך",
-    "remove": "הסר שרת",
-    "viewError": "הצג שגיאת חיבור",
     "connect": "התחבר",
     "details": "פרטים"
   },
   "dialog": {
     "removeTitle": "הסר שרת",
-    "removeMessage": "האם אתה בטוח שברצונך להסיר את השרת הזה?",
-    "removeConfirm": "הסר",
-    "removeDismiss": "ביטול"
+    "removeConfirm": "הסר"
   },
   "form": {
-    "name": "שם",
-    "url": "URL",
-    "namePlaceholder": "השרת שלי",
-    "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "תווית (אופציונלי)",
     "serverUrl": "כתובת שרת",
     "apiKey": "מפתח API",
     "hint": "הרץ cch serve --tunnel --qr על ה-Mac שלך כדי לקבל URL הניתן לסריקת QR."
   },
   "manage": {
-    "title": "שרתים",
-    "addServer": "הוסף שרת",
-    "addServerHint": "התחבר למופע tb-streamer",
-    "empty": "עדיין לא נוספו שרתים."
+    "addServer": "הוסף שרת"
   },
   "filter": {
     "title": "מסננים",
@@ -69,7 +55,6 @@
     "rememberChoice": "זכור את הבחירה הזו"
   },
   "statusModal": {
-    "title": "סטטוס שרת",
     "close": "✕",
     "menuEdit": "ערוך",
     "menuRefresh": "רענן",
