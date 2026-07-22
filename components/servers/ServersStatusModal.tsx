@@ -246,7 +246,7 @@ export function ServersStatusModal({ visible, onClose }: Props) {
     const server = servers[serverId]
     Alert.alert(
       i18n.t('servers:dialog.removeTitle'),
-      `Disconnect from ${server?.label || server?.url}?`,
+      i18n.t('servers:dialog.removeMessage', { server: server?.label || server?.url }),
       [
         { text: i18n.t('common:button.cancel'), style: 'cancel' },
         {

@@ -13,7 +13,9 @@
   },
   "dialog": {
     "removeTitle": "Удалить сервер",
-    "removeConfirm": "Удалить"
+    "removeMessage": "Отключиться от {{server}}?",
+    "removeConfirm": "Удалить",
+    "removeDismiss": "Отмена"
   },
   "form": {
     "labelOptional": "Метка (необязательно)",
