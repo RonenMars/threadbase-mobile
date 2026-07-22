@@ -13,7 +13,9 @@
   },
   "dialog": {
     "removeTitle": "إزالة الخادم",
-    "removeConfirm": "إزالة"
+    "removeMessage": "قطع الاتصال بـ {{server}}؟",
+    "removeConfirm": "إزالة",
+    "removeDismiss": "إلغاء"
   },
   "form": {
     "labelOptional": "التسمية (اختياري)",
