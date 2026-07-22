@@ -353,6 +353,9 @@ jobs:
       - name: Ship Android
         env:
           ANDROID_TRACK: ${{ inputs.android_track }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         run: |
           ./scripts/ship-android.sh \
             --track "$ANDROID_TRACK" \
