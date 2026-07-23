@@ -316,6 +316,26 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
   }
 }
 
+// Reuse the previous render's Message object for any id whose content is
+// unchanged, so a rebuilt list keeps stable references for existing rows.
+// FlashList then treats a live reload as an append, not a full data swap, and
+// never blank-remeasures. Content compared by JSON equality — Messages are
+// plain data (no functions), so this is exact and cheap at conversation sizes.
+export function reuseMessageIdentities(prev: Message[], next: Message[]): Message[] {
+  if (prev.length === 0) return next
+  const prevById = new Map(prev.map((m) => [m.id, m]))
+  let changed = false
+  const out = next.map((m) => {
+    const old = prevById.get(m.id)
+    if (old && old !== m && JSON.stringify(old) === JSON.stringify(m)) {
+      changed = true
+      return old
+    }
+    return m
+  })
+  return changed ? out : next
+}
+
 /** Pages are ordered newest-chunk first (infinite query page 0 = tail). Merge oldest → newest. */
 function mergeConversationPages(pages: RawConversationDetail[]): ConversationDetail {
   if (pages.length === 0) {
@@ -619,9 +639,27 @@ export function useConversation(
     }
   }, [serverId, id, anchorIndex, queryKeyHash, queryClient, triggerEnabled])
 
+  // Every drain rebuilds ConversationDetail from raw pages, so each Message is a
+  // fresh object even when its content is byte-identical to the one already on
+  // screen. Feeding FlashList a wholly new-identity array on a live reload makes
+  // it drop and re-measure every cell (startRenderingFromBottom), which paints a
+  // blank frame — the reload "blink". Reuse the prior object for any id whose
+  // content is unchanged so existing rows keep stable references and only genuine
+  // appends read as new. (See reuseMessageIdentities.test.ts.)
+  //
+  // The prev-messages cache is a plain render-time identity cache: it only swaps
+  // equal objects for equal objects, so it can never change WHETHER this memo
+  // recomputes (that is fully decided by the query.data dep) — the exact case
+  // the refs-in-render lint exists to catch does not apply here.
+  const prevMessagesRef = useRef<Message[]>([])
   const data = useMemo(() => {
     if (!query.data?.pages.length) return undefined
-    return mergeConversationPages(query.data.pages)
+    const merged = mergeConversationPages(query.data.pages)
+    // eslint-disable-next-line react-hooks/refs -- render-time identity cache; see note above
+    merged.messages = reuseMessageIdentities(prevMessagesRef.current, merged.messages)
+    // eslint-disable-next-line react-hooks/refs -- render-time identity cache; see note above
+    prevMessagesRef.current = merged.messages
+    return merged
   }, [query.data])
 
   const firstPage = query.data?.pages[0]
