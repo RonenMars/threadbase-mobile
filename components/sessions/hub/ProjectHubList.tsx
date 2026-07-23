@@ -22,6 +22,11 @@ import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessAct
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
+import {
+  collidingProjectPaths,
+  shouldForceServerChip,
+} from '@/lib/projectDisambiguation'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 export function ProjectHubList({
   sessions,
@@ -51,12 +56,17 @@ export function ProjectHubList({
 
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const serverLabels = useMemo(
     () => Object.fromEntries(activeServerIds.map((id) => [id, servers[id]?.label ?? id])),
     [activeServerIds, servers],
   )
   const serverGroups = useServerGroups(groups, activeServerIds, serverLabels)
   const showServerHeaders = serverGroups.length > 0
+  const collidingPaths = useMemo(
+    () => collidingProjectPaths([...sessions, ...conversations]),
+    [sessions, conversations],
+  )
   const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
   const toggleServer = useCallback((serverId: string) => {
     setCollapsedServers((prev) => {
@@ -141,6 +151,7 @@ export function ProjectHubList({
     ({ item }: { item: MultiConversation | MultiSession }) => {
       const isSession = isMultiSession(item)
       const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
+      const forceServerChip = shouldForceServerChip(item.projectPath, collidingPaths)
       if (isSession) {
         const externalAlive = isExternalAlive(item)
         const isLive = externalAlive || item.status === 'running' || item.status === 'waiting_input'
@@ -158,6 +169,7 @@ export function ProjectHubList({
             serverLabel={item.serverLabel}
             serverColor={serverColor}
             activeServerCount={activeServerCount}
+            forceServerChip={forceServerChip}
             density="comfortable"
             leading="avatar"
             highlight={debouncedQuery}
@@ -179,6 +191,7 @@ export function ProjectHubList({
           serverLabel={item.serverLabel}
           serverColor={serverColor}
           activeServerCount={activeServerCount}
+          forceServerChip={forceServerChip}
           density="comfortable"
           leading="avatar"
           highlight={debouncedQuery}
@@ -188,7 +201,14 @@ export function ProjectHubList({
         />
       )
     },
-    [handleConversationPress, handleSessionPress, servers, activeServerCount, debouncedQuery],
+    [
+      handleConversationPress,
+      handleSessionPress,
+      servers,
+      activeServerCount,
+      debouncedQuery,
+      collidingPaths,
+    ],
   )
 
   const renderSectionHeader = useCallback(
@@ -205,6 +225,7 @@ export function ProjectHubList({
   type HubFlatItem =
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
     | { kind: 'group'; group: ProjectGroup }
+    | { kind: 'serverEmpty'; serverId: string }
 
   const hubFlatData = useMemo((): HubFlatItem[] => {
     // Collapse only applies with more than one visible server; with a single
@@ -214,9 +235,13 @@ export function ProjectHubList({
     return showServerHeaders
       ? serverGroups.flatMap((sg) => {
           const expanded = !collapseApplies || !collapsedServers.has(sg.serverId)
+          const body: HubFlatItem[] =
+            sg.totalCount > 0
+              ? sg.groups.map((g) => ({ kind: 'group' as const, group: g }))
+              : [{ kind: 'serverEmpty' as const, serverId: sg.serverId }]
           return [
             { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
-            ...(expanded ? sg.groups.map((g) => ({ kind: 'group' as const, group: g })) : []),
+            ...(expanded ? body : []),
           ]
         })
       : groups.map((g) => ({ kind: 'group' as const, group: g }))
@@ -271,9 +296,11 @@ export function ProjectHubList({
       ) : (
         <FlatList
           data={hubFlatData}
-          keyExtractor={(item) =>
-            item.kind === 'header' ? `header-${item.serverId}` : `project:${item.group.projectId}`
-          }
+          keyExtractor={(item) => {
+            if (item.kind === 'header') return `header-${item.serverId}`
+            if (item.kind === 'serverEmpty') return `empty-${item.serverId}`
+            return `project:${item.group.projectId}`
+          }}
           renderItem={({ item }) => {
             if (item.kind === 'header') {
               return (
@@ -288,11 +315,32 @@ export function ProjectHubList({
                 />
               )
             }
+            if (item.kind === 'serverEmpty') {
+              const fetchStatus = fetchStatuses[item.serverId]?.status
+              const isError = fetchStatus === 'error'
+              const isWarming = fetchStatus === 'warming_up'
+              const emptyTitle = isError
+                ? t('list.serverOffline')
+                : isWarming
+                  ? t('list.serverWarming')
+                  : t('list.serverEmpty')
+              const emptySubtitle = isError
+                ? t('list.serverOfflineSubtitle')
+                : isWarming
+                  ? t('list.serverWarmingSubtitle')
+                  : t('list.serverEmptySubtitle')
+              return (
+                <View style={styles.serverEmpty} testID={`server-empty-${item.serverId}`}>
+                  <EmptyState title={emptyTitle} subtitle={emptySubtitle} />
+                </View>
+              )
+            }
             return (
               <ProjectHubCard
                 group={item.group}
                 isOpen={openIds.has(item.group.projectId)}
                 onToggle={() => toggleOpen(item.group.projectId)}
+                forceServerChip={shouldForceServerChip(item.group.projectPath, collidingPaths)}
               />
             )
           }}

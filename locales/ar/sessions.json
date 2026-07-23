@@ -14,7 +14,13 @@
     "empty": "لا توجد سيشنات",
     "emptySubtitle": "ابدأ سيشن Claude Code\nلرؤيته هنا",
     "noResults": "لا توجد نتائج",
-    "noResultsSubtitle": "لا شيء يطابق \"{{query}}\""
+    "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
+    "serverEmpty": "لا توجد سيشنات على هذا الخادم",
+    "serverEmptySubtitle": "ابدأ سيشن هنا أو بدّل الخادم.",
+    "serverOffline": "الخادم غير متاح",
+    "serverOfflineSubtitle": "يُعرض الخوادم الأخرى. أعد المحاولة عندما يعود المضيف.",
+    "serverWarming": "الخادم قيد التجهيز",
+    "serverWarmingSubtitle": "سيظهر السجل عند انتهاء الفهرسة."
   },
   "card": {
     "copyId": "نسخ معرّف السيشن",
