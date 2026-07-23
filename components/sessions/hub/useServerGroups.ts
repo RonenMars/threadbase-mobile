@@ -22,21 +22,16 @@ export function useServerGroups(
   return useMemo(() => {
     if (activeServerIds.length <= 1) return []
 
+    // Always seed every active server so offline / empty hosts still get a
+    // section header instead of vanishing from the hub.
     const map = new Map<string, ServerGroup>()
-
-    for (const group of projectGroups) {
-      const allItems = [...group.sessions, ...group.conversations]
-      for (const item of allItems) {
-        const serverId = item.serverId
-        if (!map.has(serverId)) {
-          map.set(serverId, {
-            serverId,
-            serverLabel: serverLabels[serverId] ?? serverId,
-            groups: [],
-            totalCount: 0,
-          })
-        }
-      }
+    for (const serverId of activeServerIds) {
+      map.set(serverId, {
+        serverId,
+        serverLabel: serverLabels[serverId] ?? serverId,
+        groups: [],
+        totalCount: 0,
+      })
     }
 
     for (const group of projectGroups) {
@@ -46,31 +41,30 @@ export function useServerGroups(
       ])
       for (const serverId of serverIds) {
         const serverGroup = map.get(serverId)
-        if (serverGroup) {
-          const filteredGroup: ProjectGroup = {
-            ...group,
-            sessions: group.sessions.filter((s) => s.serverId === serverId),
-            conversations: group.conversations.filter((c) => c.serverId === serverId),
-          }
-          filteredGroup.latestActivityMs = Math.max(
-            ...filteredGroup.sessions.map((s) =>
-              s.completedAt ? toMs(s.completedAt) : toMs(s.startedAt) + (s.elapsedMs ?? 0),
-            ),
-            ...filteredGroup.conversations.map((c) => toMs(c.lastActivity)),
-            0,
-          )
-          filteredGroup.earliestStartMs = filteredGroup.sessions.length > 0
-            ? Math.min(...filteredGroup.sessions.map((s) => toMs(s.startedAt)).filter((ms) => ms > 0))
-            : 0
-          serverGroup.groups.push(filteredGroup)
-          serverGroup.totalCount +=
-            filteredGroup.sessions.length + filteredGroup.conversations.length
+        if (!serverGroup) continue
+        const filteredGroup: ProjectGroup = {
+          ...group,
+          sessions: group.sessions.filter((s) => s.serverId === serverId),
+          conversations: group.conversations.filter((c) => c.serverId === serverId),
         }
+        filteredGroup.latestActivityMs = Math.max(
+          ...filteredGroup.sessions.map((s) =>
+            s.completedAt ? toMs(s.completedAt) : toMs(s.startedAt) + (s.elapsedMs ?? 0),
+          ),
+          ...filteredGroup.conversations.map((c) => toMs(c.lastActivity)),
+          0,
+        )
+        filteredGroup.earliestStartMs = filteredGroup.sessions.length > 0
+          ? Math.min(...filteredGroup.sessions.map((s) => toMs(s.startedAt)).filter((ms) => ms > 0))
+          : 0
+        serverGroup.groups.push(filteredGroup)
+        serverGroup.totalCount +=
+          filteredGroup.sessions.length + filteredGroup.conversations.length
       }
     }
 
     return activeServerIds
       .map((id) => map.get(id))
-      .filter((sg): sg is ServerGroup => sg !== undefined && sg.totalCount > 0)
+      .filter((sg): sg is ServerGroup => sg !== undefined)
   }, [projectGroups, activeServerIds, serverLabels])
 }

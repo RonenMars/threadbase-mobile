@@ -14,7 +14,13 @@
     "empty": "אין סשנים",
     "emptySubtitle": "התחל סשן Claude Code\nכדי לראות אותו כאן",
     "noResults": "אין תוצאות",
-    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\""
+    "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
+    "serverEmpty": "אין סשנים בשרת זה",
+    "serverEmptySubtitle": "התחל סשן כאן או החלף שרת.",
+    "serverOffline": "השרת לא זמין",
+    "serverOfflineSubtitle": "מוצגים שרתים אחרים. נסה שוב כשהמארח יחזור.",
+    "serverWarming": "השרת מתחמם",
+    "serverWarmingSubtitle": "ההיסטוריה תופיע כשהאינדוקס יסתיים."
   },
   "card": {
     "copyId": "העתק מזהה סשן",

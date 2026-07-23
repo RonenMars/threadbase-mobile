@@ -24,15 +24,18 @@ export interface ProjectHubCardProps {
   group: import('./useProjectGroups').ProjectGroup
   isOpen: boolean
   onToggle: () => void
+  forceServerChip?: boolean
 }
 
 export interface SessionRowProps {
   session: MultiSession
+  forceServerChip?: boolean
 }
 
 export interface ConvRowProps {
   conv: MultiConversation
   onLongPress?: (conv: MultiConversation) => void
+  forceServerChip?: boolean
 }
 
 export function isMultiSession(item: MultiConversation | MultiSession): item is MultiSession {
