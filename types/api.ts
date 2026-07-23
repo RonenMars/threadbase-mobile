@@ -257,6 +257,58 @@ export interface ServerInfo {
   machineName: string
   platform: string
   activeSessions: number
+  /** Additive: true when the server serves /api/config/claude-flags. Absent on older servers. */
+  claudeFlags?: boolean
+}
+
+// ── Per-server Claude CLI flags ──────────────────────────────────────────────
+// The registry is served BY the streamer (only it knows which claude binary is
+// installed locally), so the app renders the form generically from this metadata
+// rather than hardcoding a flag list that would drift on a CLI upgrade.
+
+export type ClaudeFlagValueType = 'boolean' | 'string' | 'enum' | 'list'
+
+/** How risky enabling a flag is. `dangerous` requires an explicit confirmation. */
+export type ClaudeFlagRisk = 'low' | 'elevated' | 'dangerous'
+
+export interface ClaudeFlagDefinition {
+  /** Stable key used in requests and for i18n lookup — not the CLI spelling. */
+  id: string
+  flag: string
+  valueType: ClaudeFlagValueType
+  enumValues?: string[]
+  risk: ClaudeFlagRisk
+}
+
+export type ClaudeFlagValue = string | string[] | boolean
+export type ClaudeFlagValues = Record<string, ClaudeFlagValue>
+
+export interface ClaudeFlagsConfig {
+  registry: ClaudeFlagDefinition[]
+  values: ClaudeFlagValues
+  extraArgs: string | null
+  /** False when the server was started with --claude-flag: changes won't survive a restart. */
+  persisted: boolean
+  warning?: string
+}
+
+/**
+ * Permission modes that disable the human-in-the-loop confirmation entirely.
+ * Mirrors DANGEROUS_PERMISSION_MODES in the streamer's src/claude-flags.ts.
+ */
+export const DANGEROUS_PERMISSION_MODES = ['bypassPermissions', 'dontAsk']
+
+/** Effective risk of a specific value — only permissionMode is value-dependent. */
+export function claudeFlagValueRisk(
+  def: ClaudeFlagDefinition,
+  value: ClaudeFlagValue,
+): ClaudeFlagRisk {
+  if (def.id === 'permissionMode') {
+    return typeof value === 'string' && DANGEROUS_PERMISSION_MODES.includes(value)
+      ? 'dangerous'
+      : 'low'
+  }
+  return def.risk
 }
 
 export interface QueuedPrompt {
