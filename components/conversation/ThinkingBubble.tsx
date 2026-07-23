@@ -6,6 +6,7 @@ import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlo
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { SkeletonBox } from '@/components/ui/Skeleton'
 
 function DotsAnimation({ style, color }: { style?: object; color: string }) {
   // useMemo so Animated.Value instances are stable across re-renders
@@ -149,7 +150,16 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
         ) : null}
         {(isStreaming || !hasLines) ? (
           <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} color={theme.text.accent} />
-        ) : null}
+        ) : (
+          // Agent is still working but the PTY has gone quiet. Claude only
+          // repaints when it has something to draw, so a silent think (30s+ is
+          // routine) leaves the lines above frozen and nothing moving — which
+          // reads as a dead session. A skeleton keeps the turn visibly alive.
+          <View style={styles.skeleton} testID="thinking-skeleton">
+            <SkeletonBox height={11} width="72%" />
+            <SkeletonBox height={11} width="54%" style={styles.skeletonLineGap} />
+          </View>
+        )}
       </View>
     </Animated.View>
   )
@@ -188,6 +198,13 @@ function makeStyles(theme: Theme) {
       lineHeight: font.xs * 1.5,
     },
     dotsWithLines: {
+      marginTop: spacing.xs,
+    },
+    skeleton: {
+      marginTop: spacing.xs,
+      minWidth: 140,
+    },
+    skeletonLineGap: {
       marginTop: spacing.xs,
     },
   })
