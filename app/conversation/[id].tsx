@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Pressable,
   StyleSheet,
@@ -16,7 +17,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { ExportIcon, InfoIcon, Star } from 'phosphor-react-native'
+import { ExportIcon, InfoIcon, MagnifyingGlass, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -38,6 +39,7 @@ import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { LivePauseControl } from '@/components/conversation/LivePauseControl'
+import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, Session } from '@/types/api'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
@@ -62,6 +64,7 @@ export default function ConversationDetailScreen() {
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
+  const searchStyles = useMemo(() => makeSearchStyles(theme), [theme])
   const { id, server, search, anchor_index } = useLocalSearchParams<{
     id: string
     server?: string
@@ -77,6 +80,34 @@ export default function ConversationDetailScreen() {
   const searchQuery = typeof search === 'string' && search.trim().length > 0 ? search : undefined
   const anchorParam = typeof anchor_index === 'string' ? Number.parseInt(anchor_index, 10) : NaN
   const hasAnchorParam = Number.isFinite(anchorParam)
+
+  // In-chat search entry: toggles a query bar that writes ?search= on submit.
+  // Prefills / auto-opens when navigation already carries a search param (Hub).
+  // Synced during render (same pattern as fetchAnchor below) so we don't need
+  // an effect that setStates on searchQuery changes.
+  const [searchBarState, setSearchBarState] = useState<{
+    open: boolean
+    draft: string
+    syncedQuery: string | undefined
+  }>({ open: false, draft: '', syncedQuery: undefined })
+  if (searchQuery !== searchBarState.syncedQuery) {
+    setSearchBarState({
+      open: searchQuery ? true : searchBarState.open,
+      draft: searchQuery ?? '',
+      syncedQuery: searchQuery,
+    })
+  }
+  const { open: searchOpen, draft: searchDraft } = searchBarState
+
+  const submitInChatSearch = useCallback(() => {
+    const trimmed = searchDraft.trim()
+    if (trimmed.length === 0) {
+      router.setParams({ search: '', anchor_index: '' })
+      return
+    }
+    // Clear any prior anchor_index so the search-target resolver runs again.
+    router.setParams({ search: trimmed, anchor_index: '' })
+  }, [router, searchDraft])
 
   // Resolves an active search query to the message to scroll to and highlight.
   // Skipped when the caller supplied anchor_index directly. A 404 leaves
@@ -491,6 +522,24 @@ export default function ConversationDetailScreen() {
     <View style={styles.headerActions}>
       {isLive ? <LivePauseControl paused={livePaused} onToggle={toggleLivePaused} /> : null}
       <Pressable
+        onPress={() =>
+          setSearchBarState((prev) => ({ ...prev, open: !prev.open }))
+        }
+        hitSlop={8}
+        accessibilityLabel={t('search.open')}
+        testID="conversation-search-btn"
+        style={({ pressed }) => [
+          styles.headerButton,
+          searchOpen && styles.headerButtonActive,
+          { opacity: pressed ? 0.5 : 1 },
+        ]}
+      >
+        <MagnifyingGlass
+          size={22}
+          color={searchOpen ? theme.text.primary : theme.text.secondary}
+        />
+      </Pressable>
+      <Pressable
         onPress={() => {
           void toggleFavorite()
         }}
@@ -530,6 +579,25 @@ export default function ConversationDetailScreen() {
     </View>
   )
 
+  const searchBar = searchOpen ? (
+    <View style={searchStyles.searchBar} testID="conversation-search-bar">
+      <TextInput
+        testID="conversation-search-input"
+        style={searchStyles.searchInput}
+        value={searchDraft}
+        onChangeText={(text) => setSearchBarState((prev) => ({ ...prev, draft: text }))}
+        onSubmitEditing={submitInChatSearch}
+        placeholder={t('search.placeholder')}
+        placeholderTextColor={theme.text.secondary}
+        autoFocus={!searchQuery}
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+    </View>
+  ) : null
+
   if (error) {
     // A 404 from /api/conversations/:id doesn't mean "gone" — it may mean the
     // session is live but hasn't written JSONL yet. Check /api/sessions/:id;
@@ -538,6 +606,7 @@ export default function ConversationDetailScreen() {
       return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           <ScreenHeader right={headerActions} />
+          {searchBar}
           <View style={styles.centered}>
             <ActivityIndicator color={theme.text.secondary} />
           </View>
@@ -547,6 +616,7 @@ export default function ConversationDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader right={headerActions} />
+        {searchBar}
         <View style={styles.centered}>
           <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
           <Text style={styles.errorMessage}>{isConvNotFound ? t('error.notFound') : error.message}</Text>
@@ -565,6 +635,7 @@ export default function ConversationDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader right={headerActions} />
+        {searchBar}
         <View style={styles.listWrapper}>
           <FlatList
             data={MESSAGE_SKELETON_KEYS}
@@ -612,6 +683,7 @@ export default function ConversationDetailScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={conversation.title} titleRight={providerDot} right={headerActions} />
+      {searchBar}
       <View style={styles.inner}>
         {isGated ? (
           <View style={styles.skeletonOverlay} pointerEvents="none" testID="skeleton-overlay">
@@ -724,6 +796,16 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    headerButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+    },
+    headerButtonActive: {
+      backgroundColor: 'rgba(88,166,255,0.12)',
+    },
     providerDot: { width: 8, height: 8, borderRadius: 4 },
     inner: { flex: 1 },
     skeletonOverlay: {
