@@ -9,7 +9,6 @@ import { DiffViewer } from '@/components/conversation/DiffViewer'
 import type { Message, MessageContent } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 export function renderContent(
   block: MessageContent,
@@ -55,7 +54,6 @@ export const MessageItem = React.memo(function MessageItem({
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const reduceMotion = useReducedMotion()
   const rowRef = useRef<View>(null)
   const messageIndex = message.messageIndex
   const matchAnchor: MatchAnchor | undefined =
@@ -76,8 +74,8 @@ export const MessageItem = React.memo(function MessageItem({
   // Fade-in-from-bottom on freshly-arrived rows only. FadeInDown keyed on the
   // message id so React runs it once per real message, never on FlashList cell
   // recycle. Plain View elsewhere — history and scrolled-back rows never animate.
-  const Row = animateIn && !reduceMotion ? Animated.View : View
-  const entering = animateIn && !reduceMotion ? FadeInDown.duration(260).springify().damping(18) : undefined
+  const Row = animateIn ? Animated.View : View
+  const entering = animateIn ? FadeInDown.duration(260).springify().damping(18) : undefined
 
   if (hasToolOrDiff) {
     return (
@@ -95,7 +93,6 @@ export const MessageItem = React.memo(function MessageItem({
                 recycleKey={message.id}
                 highlight={highlight}
                 matchAnchor={matchAnchor}
-                noOuterMargin
               />
             )
           }
