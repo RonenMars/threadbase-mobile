@@ -24,6 +24,9 @@ interface Props {
   highlight?: string
   /** Set on the anchored search row: reports where the match sits inside the row. */
   matchAnchor?: MatchAnchor
+  /** Set when nested inside MessageItem's toolContainer, which already applies its own
+   * marginVertical + gap — an outer margin here would double the spacing between rows. */
+  noOuterMargin?: boolean
 }
 
 export interface MatchAnchor {
@@ -320,7 +323,7 @@ function ContentBlock({
 // Memoized: message objects are stable by reference for already-loaded pages
 // (adaptRawMessage output is reused between renders), so screen-level state
 // changes don't re-render — and re-highlight — every visible row.
-export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor }: Props) {
+export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor, noOuterMargin }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -328,7 +331,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
   const isUser = message.role === 'user'
 
   return (
-    <View style={[styles.container, isUser ? styles.containerUser : styles.containerAssistant]}>
+    <View style={[styles.container, noOuterMargin && styles.containerNoMargin, isUser ? styles.containerUser : styles.containerAssistant]}>
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
         {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
@@ -348,6 +351,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
       marginVertical: spacing.xs,
     },
+    containerNoMargin: { marginVertical: 0 },
     containerUser: { alignItems: 'flex-end' },
     containerAssistant: { alignItems: 'flex-start' },
     bubble: {
