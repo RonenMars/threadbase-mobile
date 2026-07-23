@@ -25,6 +25,11 @@ import { useTheme } from '@/contexts/ThemeContext'
 // bugs). The two consumers differ only in whether native bottom-anchoring is
 // on (tail) or off with app-driven scrolling (anchored search).
 
+// A newly-arrived message animates in only if it lands within this many rows of
+// the tail — so a live append fades in, but a jump/backfill of older history
+// does not animate a screenful at once.
+const ANIMATE_TAIL_WINDOW = 8
+
 export interface ConversationHistoryListProps {
   messages: Message[]
   lastMessageId: string | undefined
@@ -88,6 +93,44 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     const [showScrollTop, setShowScrollTop] = useState(false)
     const [showScrollBottom, setShowScrollBottom] = useState(false)
 
+    // Ids that should play the fade-in-from-bottom entrance. A message id not yet
+    // seen is new; it animates ONLY when it lands in the tail window (a live
+    // append), never at the head (older-history page load). The whole loaded
+    // history present on first render is seeded silently so nothing animates on a
+    // cold open. Ids are only ever ADDED — FadeInDown fires once on the row's
+    // mount, so keeping the id set-membership stable can't re-trigger it, and it
+    // keeps the row's component type (Animated.View) from flipping mid-animation.
+    //
+    // Held in state so a new tail row re-renders the list; `epoch` bumps only
+    // when the set grows, so renderItem's identity (and FlashList's cells) stay
+    // stable across the far more common no-new-message reloads.
+    const animateIdsRef = useRef<Set<string>>(new Set())
+    const seededRef = useRef(false)
+    const [animateEpoch, setAnimateEpoch] = useState(0)
+    /* eslint-disable react-hooks/refs -- render-time seen/animate id cache; see note above */
+    if (!seededRef.current) {
+      seededRef.current = true
+      animateIdsRef.current = new Set() // seed nothing → history renders silently
+      messages.forEach((m) => animateIdsRef.current.add(`seen:${m.id}`))
+    } else {
+      const set = animateIdsRef.current
+      const tailStart = Math.max(0, messages.length - ANIMATE_TAIL_WINDOW)
+      let grew = false
+      messages.forEach((m, i) => {
+        const seenKey = `seen:${m.id}`
+        if (!set.has(seenKey)) {
+          set.add(seenKey)
+          if (i >= tailStart) {
+            set.add(m.id)
+            grew = true
+          }
+        }
+      })
+      if (grew) setAnimateEpoch((e) => e + 1)
+    }
+    const animateIds = animateIdsRef.current
+    /* eslint-enable react-hooks/refs */
+
     const renderItem = useCallback(
       ({ item }: { item: Message }) => (
         <MessageItem
@@ -95,9 +138,12 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
           isLast={item.id === lastMessageId}
           highlight={highlight && item.messageIndex === highlightIndex ? highlight : undefined}
           onMatchLayout={onMatchLayout}
+          animateIn={animateIds.has(item.id)}
         />
       ),
-      [lastMessageId, highlight, highlightIndex, onMatchLayout],
+      // animateIds is a stable ref; animateEpoch re-keys this only when it grew.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [lastMessageId, highlight, highlightIndex, onMatchLayout, animateEpoch],
     )
 
     // Distinguish row shapes so FlashList only recycles cells of the same kind;

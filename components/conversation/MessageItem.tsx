@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useTranslation } from 'react-i18next'
 import { MessageBubble, type MatchAnchor } from '@/components/conversation/MessageBubble'
 import { ThinkingCard } from '@/components/conversation/ThinkingCard'
@@ -39,6 +40,7 @@ export const MessageItem = React.memo(function MessageItem({
   isLast,
   highlight,
   onMatchLayout,
+  animateIn,
 }: {
   message: Message
   isLast?: boolean
@@ -46,6 +48,8 @@ export const MessageItem = React.memo(function MessageItem({
   highlight?: string
   /** Reports the highlighted match's y offset within this row, for anchored scrolling. */
   onMatchLayout?: (messageIndex: number, y: number) => void
+  /** Play the fade-in-from-bottom entrance — set only on freshly-arrived tail rows. */
+  animateIn?: boolean
 }) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
@@ -67,9 +71,15 @@ export const MessageItem = React.memo(function MessageItem({
   // search anchor in any fixture this app ships.
   const rowTestId = highlight ? 'search-anchor-message' : isLast ? 'conversation-last-message' : undefined
 
+  // Fade-in-from-bottom on freshly-arrived rows only. FadeInDown keyed on the
+  // message id so React runs it once per real message, never on FlashList cell
+  // recycle. Plain View elsewhere — history and scrolled-back rows never animate.
+  const Row = animateIn ? Animated.View : View
+  const entering = animateIn ? FadeInDown.duration(260).springify().damping(18) : undefined
+
   if (hasToolOrDiff) {
     return (
-      <View style={styles.toolContainer} testID={rowTestId} ref={rowRef}>
+      <Row style={styles.toolContainer} testID={rowTestId} ref={rowRef} entering={entering}>
         {message.has_images ? (
           <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
         ) : null}
@@ -88,18 +98,18 @@ export const MessageItem = React.memo(function MessageItem({
           }
           return renderContent(block, i, message.id, highlight, matchAnchor)
         })}
-      </View>
+      </Row>
     )
   }
 
   if (message.content.length === 0) return null
   return (
-    <View testID={rowTestId} ref={rowRef}>
+    <Row testID={rowTestId} ref={rowRef} entering={entering}>
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
       <MessageBubble message={message} recycleKey={message.id} highlight={highlight} matchAnchor={matchAnchor} />
-    </View>
+    </Row>
   )
 })
 

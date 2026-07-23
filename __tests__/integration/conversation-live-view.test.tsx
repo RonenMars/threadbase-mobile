@@ -15,7 +15,7 @@
  */
 import React from 'react'
 import { AppState } from 'react-native'
-import { render, act, type RenderResult } from '@testing-library/react-native'
+import { render, act, fireEvent, type RenderResult } from '@testing-library/react-native'
 import { useLocalSearchParams } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
@@ -301,5 +301,45 @@ describe('conversation live view — freshness triggers (P2.1)', () => {
       })
     })
     expect(mockTriggerDelta).not.toHaveBeenCalled()
+  })
+
+  it('pausing holds live updates; resuming drains once and re-enables them', async () => {
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await act(async () => {})
+
+    // A growth push marks the session live → the pause control appears.
+    await act(async () => {
+      emit('conversation_updated', {
+        type: 'conversation_updated',
+        conversationId: 'conv-1',
+        messageCount: 2,
+        lastActivity: '2026-07-19T12:01:00Z',
+        ownership: 'external',
+      })
+    })
+    // Pause.
+    await act(async () => {
+      fireEvent.press(root.getByTestId('live-pause-toggle'))
+    })
+    mockTriggerDelta.mockClear()
+
+    // Paused: neither a growth push nor the focus poll drains.
+    await act(async () => {
+      emit('conversation_updated', {
+        type: 'conversation_updated',
+        conversationId: 'conv-1',
+        messageCount: 3,
+        lastActivity: '2026-07-19T12:02:00Z',
+        ownership: 'external',
+      })
+      jest.advanceTimersByTime(9000)
+    })
+    expect(mockTriggerDelta).not.toHaveBeenCalled()
+
+    // Resume: catches up with exactly one drain.
+    await act(async () => {
+      fireEvent.press(root.getByTestId('live-pause-toggle'))
+    })
+    expect(mockTriggerDelta).toHaveBeenCalledTimes(1)
   })
 })
