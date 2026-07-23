@@ -529,3 +529,21 @@ describe('VirtualTerminal – realistic Claude Code PTY data', () => {
     expect(feedAndGet('line1\r\nline2\r\nline3')).toEqual(['line1', 'line2', 'line3'])
   })
 })
+
+// ── Scrollback cap ───────────────────────────────────────────────────────────
+describe('VirtualTerminal – scrollback cap', () => {
+  const MAX_ROWS = 10_000
+
+  it('bounds the grid for an append-only stream and keeps the newest lines', () => {
+    const vt = new VirtualTerminal()
+    const total = MAX_ROWS + 5000
+    // Append-only feed (no screen clears) — the unbounded-growth case.
+    for (let i = 0; i < total; i++) vt.feed(`line ${i}\n`)
+
+    const lines = vt.getLines()
+    expect(lines.length).toBeLessThanOrEqual(MAX_ROWS)
+    // The most recent line survives; the oldest is trimmed away.
+    expect(lines).toContain(`line ${total - 1}`)
+    expect(lines).not.toContain('line 0')
+  })
+})

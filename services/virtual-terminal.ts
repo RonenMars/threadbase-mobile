@@ -4,6 +4,14 @@
  * clearing) and maintains a 2D character grid. Produces clean text lines
  * suitable for display in a non-terminal context.
  */
+// Hard cap on retained rows. The rendered view only ever shows the last
+// `terminalMaxLines` (default 5000), so anything older is dead weight — a
+// long append-only session would otherwise grow the grid forever and make
+// getLines() an O(total-lines) scan on every frame. Kept well above any TUI
+// screen height so absolute cursor positioning (H/f) never hits the trim.
+// ponytail: fixed cap; make it configurable only if a use case needs more scrollback.
+const MAX_ROWS = 10_000
+
 export class VirtualTerminal {
   private grid: string[][] = [[]]
   private row = 0
@@ -307,6 +315,13 @@ export class VirtualTerminal {
   private ensureRow(row: number): void {
     while (this.grid.length <= row) {
       this.grid.push([])
+    }
+    // Drop oldest rows once we exceed the cap, shifting the cursor to match so
+    // absolute row math (this.row) keeps pointing at the same logical line.
+    if (this.grid.length > MAX_ROWS) {
+      const excess = this.grid.length - MAX_ROWS
+      this.grid.splice(0, excess)
+      this.row = Math.max(0, this.row - excess)
     }
   }
 }
