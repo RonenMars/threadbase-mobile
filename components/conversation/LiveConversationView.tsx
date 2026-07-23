@@ -209,25 +209,17 @@ export function LiveConversationView({
   } = useComposerState({ serverId, sessionId, onSend: send })
 
   // Auto-scroll to bottom when keyboard opens or app resumes with keyboard already up.
+  // New-message/thinking-bubble scrolling is left to FlashList's native
+  // maintainVisibleContentPosition bottom-anchoring below — a JS scrollToEnd
+  // fired from an effect races FlashList's cell measurement for the new row,
+  // landing short until a manual scroll forces a re-layout (see
+  // ConversationHistoryList's comment on this same hand-rolled machinery).
   useEffect(() => {
     const onShow = () => listRef.current?.scrollToEnd({ animated: true })
     const subShow = Keyboard.addListener('keyboardDidShow', onShow)
     const subChange = Keyboard.addListener('keyboardDidChangeFrame', onShow)
     return () => { subShow.remove(); subChange.remove() }
   }, [])
-
-  // Auto-scroll to bottom when a new message appears or the thinking bubble shows.
-  useEffect(() => {
-    if (allMessages.length > 0) {
-      listRef.current?.scrollToEnd({ animated: true })
-    }
-  }, [allMessages.length])
-
-  useEffect(() => {
-    if (thinkingState === 'thinking') {
-      listRef.current?.scrollToEnd({ animated: true })
-    }
-  }, [thinkingState])
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding" automaticOffset>
@@ -238,6 +230,7 @@ export function LiveConversationView({
         renderItem={({ item, index }) => (
           <MessageItem message={item} isLast={index === allMessages.length - 1} />
         )}
+        maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
         ListEmptyComponent={
           // A freshly-started / waiting_input session has no JSONL yet, so there
