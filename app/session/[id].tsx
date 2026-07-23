@@ -424,12 +424,13 @@ export default function SessionDetailScreen() {
         qc.invalidateQueries({ queryKey: ['session', serverId, id] })
         return
       }
-      // Backgrounding/inactive: proactively ask the server to hold this session
-      // now instead of waiting out its ~4.5-min grace timer. The PTY is put on
-      // hold (SIGINT + screen disposal, history intact) and resumes on the next
+      // Backgrounding/inactive: proactively (re)arm the server's ~4.5-min grace
+      // timer for this session, same as a WS disconnect would. The session keeps
+      // running until the timer elapses; only then is the PTY put on hold
+      // (SIGINT + screen disposal, history intact), resuming on the next
       // subscribe (the 'active' branch above force-reconnects). Harmless no-op
       // server-side if the session isn't live. iOS suspends JS right after this,
-      // so it's best-effort — the grace timer remains the backstop.
+      // so it's best-effort — the WS-disconnect grace timer remains the backstop.
       if (nextState === 'background') {
         wsManager.send(serverId, { type: 'hold_session', sessionId: id })
       }
