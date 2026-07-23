@@ -357,6 +357,38 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
     expect(feedAndGet('● high')).toEqual([])
   })
 
+  // Claude only repaints the spinner when it has other output to draw, so the
+  // elapsed number freezes at its last painted value and reads as a hung
+  // session. Elapsed time is surfaced natively from the session detail instead.
+  it('filters the spinner line carrying the live counter', () => {
+    expect(feedAndGet('✽ Swirling… (56s · ↑ 3.4k tokens)')).toEqual([])
+    expect(feedAndGet('✽ Blanching… (15s · ↓ 271 tokens)')).toEqual([])
+    expect(feedAndGet('Swirling… (5s)')).toEqual([])
+  })
+
+  it('filters completed-turn timers', () => {
+    expect(feedAndGet('✻ Crunched for 3m 17s')).toEqual([])
+    expect(feedAndGet('✽ Cogitated for 13s')).toEqual([])
+  })
+
+  it('keeps real output that merely looks like a spinner line', () => {
+    const keep = [
+      'Testing… (this is real output)',
+      'Refactoring… (see notes below)',
+      'Building the project for 10s of users',
+    ]
+    for (const line of keep) {
+      expect(feedAndGet(line)).toEqual([line])
+    }
+  })
+
+  it('filters the model status line without a minor version', () => {
+    // "Sonnet 5" has no ".x" part, and the separator is a box-drawing pipe.
+    expect(feedAndGet('Sonnet 5 │ ~/dev/ai-tools/tb-streamer')).toEqual([])
+    expect(feedAndGet('Sonnet 5 [Check local streamer session timeout limits]')).toEqual([])
+    expect(feedAndGet('Opus is a great model')).toEqual(['Opus is a great model'])
+  })
+
   it('filters hotkey hints', () => {
     expect(feedAndGet('some text (shift+tab to cycle)')).toEqual([])
     expect(feedAndGet('(ctrl+o to expand)')).toEqual([])
