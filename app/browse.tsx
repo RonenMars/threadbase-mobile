@@ -268,7 +268,7 @@ export default function BrowseScreen() {
 
   return (
     <GestureDetector gesture={swipeBack}>
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']} testID="browse-screen">
       {/* Breadcrumbs */}
       <View style={styles.breadcrumbs} testID={`browse-cwd-${currentPath || '~'}`}>
         <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)}>
@@ -436,6 +436,7 @@ export default function BrowseScreen() {
             style={[styles.startBtn, isStarting && styles.startBtnDisabled]}
             onPress={handleStartSession}
             disabled={isStarting}
+            testID="browse-start-session"
           >
             {isStarting ? (
               <ActivityIndicator size="small" color="#fff" />
