@@ -2,10 +2,11 @@
  * SessionScreen — hold-on-background.
  *
  * Guards: when the app goes to background, the screen proactively sends a
- * { type: 'hold_session', sessionId } WS message so the server holds the PTY
- * immediately instead of waiting out its ~4.5-min grace timer. Returning to
- * 'active' force-reconnects (which re-subscribes and resumes). No message is
- * sent for other transitions (e.g. 'inactive').
+ * { type: 'hold_session', sessionId } WS message so the server (re)arms its
+ * ~4.5-min grace timer for this session, same as a WS disconnect would — the
+ * session keeps running until the timer elapses. Returning to 'active'
+ * force-reconnects (which re-subscribes and resumes). No message is sent for
+ * other transitions (e.g. 'inactive').
  */
 import React from 'react'
 import { AppState } from 'react-native'
