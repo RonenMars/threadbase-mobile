@@ -22,6 +22,7 @@ const mockQc = {
   invalidateQueries: mockInvalidate,
   cancelQueries: jest.fn(),
   removeQueries: jest.fn(),
+  getQueryData: jest.fn(),
 }
 
 // Live, still-waking session: running + ptyAttached, no prompt reached yet.
