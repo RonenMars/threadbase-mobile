@@ -92,5 +92,44 @@
     "successToast": "טופל. הגיבוי נשמר ב-{{backupPath}}",
     "successToastNoBackup": "טופל.",
     "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה."
+  },
+  "claudeFlags": {
+    "title": "דגלי Claude CLI",
+    "description": "חלים על כל סשן שהשרת הזה מפעיל. ייכנסו לתוקף בסשן הבא.",
+    "notPersisted": "השרת הופעל עם דגלי שורת פקודה, ולכן שינויים חלים עכשיו אך יתאפסו באתחול.",
+    "extraArgsLabel": "ארגומנטים נוספים",
+    "extraArgsUnsupported": "מועברים כמו שהם וללא אימות. השימוש באחריותך.",
+    "listHint": "מופרד בפסיקים",
+    "save": "שמירת דגלים",
+    "confirmTitle": "לבטל את בקשות ההרשאה?",
+    "confirmApprove": "אישור",
+    "confirmContinue": "המשך",
+    "dangerousExplanation": "קלוד יריץ פקודות במחשב הזה בלי לשאול אותך, בכל סשן עתידי. לכל מי שיש את מפתח ה-API של השרת תהיה אותה יכולת.",
+    "flags": {
+      "permissionMode": {
+        "label": "מצב הרשאות",
+        "description": "כמה קלוד שואל לפני ביצוע פעולה. מצבי עקיפה מבטלים כל אישור."
+      },
+      "addDir": {
+        "label": "תיקיות נוספות",
+        "description": "תיקיות נוספות שקלוד רשאי לקרוא ולערוך, מעבר לפרויקט."
+      },
+      "allowedTools": {
+        "label": "כלים מורשים",
+        "description": "רק כלים אלה ירוצו ללא שאלה. חלופה בטוחה יותר למצב עקיפה."
+      },
+      "disallowedTools": {
+        "label": "כלים חסומים",
+        "description": "כלים שקלוד לעולם לא יריץ בשרת הזה."
+      },
+      "maxBudgetUsd": {
+        "label": "מגבלת תקציב (USD)",
+        "description": "מגבילה את ההוצאה של סשן יחיד. שימושי כשהאישורים מבוטלים."
+      },
+      "fallbackModel": {
+        "label": "מודל גיבוי",
+        "description": "המודל שאליו לעבור אם המודל הראשי אינו זמין."
+      }
+    }
   }
 }

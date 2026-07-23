@@ -12,6 +12,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, QrCode, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import { useServersStore } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
@@ -198,6 +199,10 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               >
                 <Text style={styles.saveBtnText}>{t('button.save')}</Text>
               </TouchableOpacity>
+
+              {/* Only in edit mode: the flags are fetched from the server, which
+                  must already exist (and be reachable) to have any. */}
+              {isEditMode && serverId ? <ServerClaudeFlagsSection serverId={serverId} /> : null}
             </View>
           </View>
         </KeyboardAwareScrollView>

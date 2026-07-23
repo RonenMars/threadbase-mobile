@@ -92,5 +92,44 @@
     "successToast": "Resolved. Backup saved at {{backupPath}}",
     "successToastNoBackup": "Resolved.",
     "selectAtLeastOne": "Select at least one conversation to prune."
+  },
+  "claudeFlags": {
+    "title": "Claude CLI flags",
+    "description": "Applied to every session this server starts. Takes effect on the next session.",
+    "notPersisted": "This server was started with command-line flags, so changes apply now but reset on restart.",
+    "extraArgsLabel": "Extra arguments",
+    "extraArgsUnsupported": "Passed through as-is and not validated. Use at your own risk.",
+    "listHint": "Comma-separated",
+    "save": "Save flags",
+    "confirmTitle": "Disable permission prompts?",
+    "confirmApprove": "Approve",
+    "confirmContinue": "Continue",
+    "dangerousExplanation": "Claude will run commands on this machine without asking you first, for every future session. Anyone with this server's API key gets the same power.",
+    "flags": {
+      "permissionMode": {
+        "label": "Permission mode",
+        "description": "How much Claude asks before acting. Bypass modes remove every confirmation."
+      },
+      "addDir": {
+        "label": "Additional directories",
+        "description": "Extra folders Claude may read and edit, beyond the project."
+      },
+      "allowedTools": {
+        "label": "Allowed tools",
+        "description": "Only these tools run without asking. A safer alternative to bypass mode."
+      },
+      "disallowedTools": {
+        "label": "Blocked tools",
+        "description": "Tools Claude may never run on this server."
+      },
+      "maxBudgetUsd": {
+        "label": "Budget limit (USD)",
+        "description": "Caps what one session can spend. Useful when prompts are disabled."
+      },
+      "fallbackModel": {
+        "label": "Fallback model",
+        "description": "Model to switch to if the main one is unavailable."
+      }
+    }
   }
 }
