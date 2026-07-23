@@ -39,7 +39,6 @@ import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { LivePauseControl } from '@/components/conversation/LivePauseControl'
-import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import type { Message, Session } from '@/types/api'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
@@ -521,24 +520,6 @@ export default function ConversationDetailScreen() {
   const headerActions = (
     <View style={styles.headerActions}>
       {isLive ? <LivePauseControl paused={livePaused} onToggle={toggleLivePaused} /> : null}
-      <Pressable
-        onPress={() =>
-          setSearchBarState((prev) => ({ ...prev, open: !prev.open }))
-        }
-        hitSlop={8}
-        accessibilityLabel={t('search.open')}
-        testID="conversation-search-btn"
-        style={({ pressed }) => [
-          styles.headerButton,
-          searchOpen && styles.headerButtonActive,
-          { opacity: pressed ? 0.5 : 1 },
-        ]}
-      >
-        <MagnifyingGlass
-          size={22}
-          color={searchOpen ? theme.text.primary : theme.text.secondary}
-        />
-      </Pressable>
       <Pressable
         onPress={() => {
           void toggleFavorite()
