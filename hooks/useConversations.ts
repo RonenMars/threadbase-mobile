@@ -98,7 +98,7 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
 
   return useInfiniteQuery({
     queryKey: ['conversations', filter, refreshEpoch, ...displayedServerIds],
-    queryFn: async ({ pageParam = 0 }): Promise<MultiConversationPage> => {
+    queryFn: async ({ pageParam = 0, signal }): Promise<MultiConversationPage> => {
       // Bug 32: use allSettled so one unreachable server doesn't blank the Hub.
       // Rejected results update the per-server fetch-status store, which the
       // header dot + ServerStatusModal read to surface partial failure.
@@ -118,11 +118,14 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
           }
           const raw = await api.get<RawSessionMeta[] | ConversationPage>(
             `/api/conversations?${params.toString()}`,
+            { signal },
           )
           const page = adaptPage(raw, pageParam as number, limit)
           return { serverId, page }
         })
       )
+
+      if (signal.aborted) throw new Error('aborted')
 
       const fulfilled: { serverId: string; page: ConversationPage }[] = []
       const failedServers: string[] = []

@@ -59,6 +59,11 @@ export interface ConversationListItemProps {
   serverChipVariant?: ServerChipVariant
   /** Total active servers in the app — used to resolve `showServer === 'auto'`. */
   activeServerCount?: number
+  /**
+   * Force the server chip even when `showServer === 'auto'` would hide it —
+   * used when the same project path exists on multiple servers.
+   */
+  forceServerChip?: boolean
 
   /** Search-result inline substring highlight. */
   highlight?: string
@@ -81,10 +86,15 @@ export interface ConversationListItemProps {
 const STRIP_WIDTH = 3
 const STRIP_RADIUS = 2
 
-function shouldShowServer(mode: ConversationListServerMode, activeServerCount: number | undefined, hasLabel: boolean): boolean {
+function shouldShowServer(
+  mode: ConversationListServerMode,
+  activeServerCount: number | undefined,
+  hasLabel: boolean,
+  forceServerChip: boolean,
+): boolean {
   if (!hasLabel) return false
   if (mode === 'never') return false
-  if (mode === 'always') return true
+  if (mode === 'always' || forceServerChip) return true
   return (activeServerCount ?? 0) > 1
 }
 
@@ -115,6 +125,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     showServer = 'auto',
     serverChipVariant = 'label',
     activeServerCount,
+    forceServerChip = false,
     highlight,
     showCount = true,
     showBranch = true,
@@ -126,7 +137,12 @@ export function ConversationListItem(props: ConversationListItemProps) {
     testID,
   } = props
 
-  const serverVisible = shouldShowServer(showServer, activeServerCount, Boolean(serverLabel))
+  const serverVisible = shouldShowServer(
+    showServer,
+    activeServerCount,
+    Boolean(serverLabel),
+    forceServerChip,
+  )
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
     : (live ? theme.status.waiting : null)

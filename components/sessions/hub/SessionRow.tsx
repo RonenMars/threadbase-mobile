@@ -11,7 +11,7 @@ import { formatElapsed } from './hubUtils'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { SessionRowProps } from './types'
 
-export function SessionRow({ session }: SessionRowProps) {
+export function SessionRow({ session, forceServerChip = false }: SessionRowProps) {
   const router = useRouter()
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
@@ -72,6 +72,7 @@ export function SessionRow({ session }: SessionRowProps) {
       serverLabel={session.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}
+      forceServerChip={forceServerChip}
       density="compact"
       leading="dot"
       previewMode={previewMode}

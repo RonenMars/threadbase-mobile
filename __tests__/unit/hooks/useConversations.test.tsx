@@ -69,7 +69,7 @@ const metaHandlers: Record<
 
 jest.mock('@/services/api-client', () => ({
   createApiForServer: (serverId: string) => ({
-    get: (path: string) => {
+    get: (path: string, _opts?: { signal?: AbortSignal }) => {
       const h = handlers[serverId]
       if (!h) return Promise.reject(new Error(`no handler for ${serverId}`))
       return h(path)
@@ -482,6 +482,33 @@ describe('useConversations — partial failure (Bug 32)', () => {
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.data).toBeUndefined()
+  })
+
+  it('keeps healthy results when peers are slow, offline, or malformed', async () => {
+    setActiveServers(['srv-healthy', 'srv-slow', 'srv-offline', 'srv-malformed'])
+
+    handlers['srv-healthy'] = () =>
+      Promise.resolve([rawSession('healthy-1')]) as Promise<unknown>
+    handlers['srv-slow'] = () =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve([rawSession('slow-1')]), 40)
+      })
+    handlers['srv-offline'] = () => Promise.reject(new Error('ECONNREFUSED'))
+    handlers['srv-malformed'] = () => Promise.reject(new Error('Unexpected token < in JSON'))
+
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data?.pages.length).toBe(1))
+
+    const ids = result.current.data!.pages[0].conversations.map((c) => c.id)
+    expect(ids).toEqual(expect.arrayContaining(['healthy-1', 'slow-1']))
+    expect(ids).toHaveLength(2)
+    expect(result.current.isError).toBe(false)
+
+    const statuses = useServerFetchStatusStore.getState().statuses
+    expect(statuses['srv-healthy']?.status).toBe('ok')
+    expect(statuses['srv-slow']?.status).toBe('ok')
+    expect(statuses['srv-offline']?.status).toBe('error')
+    expect(statuses['srv-malformed']?.status).toBe('error')
   })
 })
 

@@ -29,7 +29,13 @@
     "emptySubtitle": "Запустите сессию Claude Code,\nчтобы увидеть её здесь",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
-    "emptyProjects": "Проектов пока нет"
+    "emptyProjects": "Проектов пока нет",
+    "serverEmpty": "На этом сервере нет сессий",
+    "serverEmptySubtitle": "Запустите сессию здесь или переключите сервер.",
+    "serverOffline": "Сервер недоступен",
+    "serverOfflineSubtitle": "Показаны другие серверы. Повторите попытку, когда хост вернётся.",
+    "serverWarming": "Сервер прогревается",
+    "serverWarmingSubtitle": "История появится после завершения индексации."
   },
   "card": {
     "status": {
