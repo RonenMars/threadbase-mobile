@@ -6,7 +6,7 @@
  */
 import React from 'react'
 import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
@@ -119,6 +119,14 @@ beforeEach(() => {
   mockAnchoredResponder = null
   mockRequestedPaths.length = 0
   mockQueryCalls.length = 0
+  ;(useRouter as jest.Mock).mockReturnValue({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    navigate: jest.fn(),
+    setParams: jest.fn(),
+    canGoBack: jest.fn(() => true),
+  })
 })
 
 afterEach(() => {
@@ -376,5 +384,71 @@ describe('conversation detail — search-anchored navigation', () => {
       expect(mockRequestedPaths.some((p) => p.includes('anchor_index=150'))).toBe(true)
     })
     expect(mockRequestedPaths.some((p) => p.includes('/search-target'))).toBe(false)
+  })
+
+  it('submits in-chat search from the header bar and scopes to this conversation', async () => {
+    const setParams = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+      navigate: jest.fn(),
+      setParams,
+      canGoBack: jest.fn(() => true),
+    })
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'conv-anchor', server: 'srv1' })
+    mockTailResponder = () => makeDetail(0, 10, 10)
+
+    const { getByTestId, queryByTestId } = await render(<ConversationDetailScreen />, {
+      wrapper: createWrapper(),
+    })
+    await flushQueries()
+
+    await waitFor(() => {
+      expect(getByTestId('conversation-search-btn')).toBeTruthy()
+    })
+    expect(queryByTestId('conversation-search-input')).toBeNull()
+
+    await act(async () => {
+      fireEvent.press(getByTestId('conversation-search-btn'))
+    })
+    const input = getByTestId('conversation-search-input')
+    await act(async () => {
+      fireEvent.changeText(input, '  needle  ')
+    })
+    await act(async () => {
+      fireEvent(input, 'submitEditing')
+    })
+
+    expect(setParams).toHaveBeenCalledWith({ search: 'needle', anchor_index: '' })
+    // Hub-wide /api/search must not be used for in-chat search.
+    expect(mockRequestedPaths.some((p) => p.includes('/api/search'))).toBe(false)
+  })
+
+  it('auto-opens the in-chat search bar when navigation already carries ?search=', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'needle',
+    })
+    mockSearchTargetResponder = () => ({
+      query: 'needle',
+      message_index: 150,
+      uuid: 'uuid-150',
+      snippet: 'a needle appears',
+      match_indexes: [150],
+      total_matches: 1,
+    })
+    mockAnchoredResponder = () =>
+      makeDetail(90, 120, 300, { anchor_index: 150, has_more_newer: true, next_after_index: 210 })
+
+    const { getByTestId } = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+
+    await waitFor(() => {
+      expect(getByTestId('search-match-nav')).toBeTruthy()
+    })
+    expect(getByTestId('conversation-search-input')).toBeTruthy()
+    expect(getByTestId('conversation-search-input').props.value).toBe('needle')
   })
 })

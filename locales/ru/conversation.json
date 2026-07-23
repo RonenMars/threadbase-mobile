@@ -59,7 +59,9 @@
     "matchCount": "{{current}} из {{total}}",
     "previousMatch": "Предыдущий результат",
     "nextMatch": "Следующий результат",
-    "clearSearch": "Очистить поиск"
+    "clearSearch": "Очистить поиск",
+    "placeholder": "Поиск в разговоре…",
+    "open": "Поиск в разговоре"
   },
   "slowLoading": {
     "title1": "Распутываем длинную ветку…",

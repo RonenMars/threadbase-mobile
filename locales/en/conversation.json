@@ -59,7 +59,9 @@
     "matchCount": "{{current}} of {{total}}",
     "previousMatch": "Previous match",
     "nextMatch": "Next match",
-    "clearSearch": "Clear search"
+    "clearSearch": "Clear search",
+    "placeholder": "Search in conversation…",
+    "open": "Search in conversation"
   },
   "slowLoading": {
     "title1": "Untangling a long thread…",
