@@ -522,24 +522,6 @@ export default function ConversationDetailScreen() {
     <View style={styles.headerActions}>
       {isLive ? <LivePauseControl paused={livePaused} onToggle={toggleLivePaused} /> : null}
       <Pressable
-        onPress={() =>
-          setSearchBarState((prev) => ({ ...prev, open: !prev.open }))
-        }
-        hitSlop={8}
-        accessibilityLabel={t('search.open')}
-        testID="conversation-search-btn"
-        style={({ pressed }) => [
-          styles.headerButton,
-          searchOpen && styles.headerButtonActive,
-          { opacity: pressed ? 0.5 : 1 },
-        ]}
-      >
-        <MagnifyingGlass
-          size={22}
-          color={searchOpen ? theme.text.primary : theme.text.secondary}
-        />
-      </Pressable>
-      <Pressable
         onPress={() => {
           void toggleFavorite()
         }}
