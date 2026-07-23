@@ -19,6 +19,21 @@ export interface Session {
    * on a freshly-started session with no history yet. Additive; older servers omit it.
    */
   sessionName?: string
+  /**
+   * Model powering the live session, scraped from Claude's status line
+   * (e.g. 'Opus 4.8 (1M context)'). Additive; older servers omit it.
+   */
+  model?: string
+  /**
+   * Reasoning-effort tier from the status line (e.g. 'high'). Live sessions
+   * only — absent for historical shapes. Additive; older servers omit it.
+   */
+  effort?: string
+  /**
+   * Active permission mode from the status line (e.g. 'accept edits on').
+   * Live sessions only. Additive; older servers omit it.
+   */
+  permissionMode?: string
   lastOutput: string
   elapsedMs: number
   promptCount: number
