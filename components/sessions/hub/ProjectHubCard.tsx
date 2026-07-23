@@ -21,7 +21,7 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
-export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps) {
+export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -141,12 +141,12 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                 ...group.sessions.map((s) => ({
                   key: `s-${s.serverId}::${s.id}`,
                   ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
-                  node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} />,
+                  node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
                 })),
                 ...group.conversations.map((c) => ({
                   key: `c-${c.serverId}::${c.id}`,
                   ms: Date.parse(c.lastActivity) || 0,
-                  node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} />,
+                  node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
                 })),
               ]
                 .sort((a, b) => b.ms - a.ms)
@@ -161,6 +161,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                     <SessionRow
                       key={`${session.serverId}::${session.id}`}
                       session={session}
+                      forceServerChip={forceServerChip}
                     />
                   ))}
                 </View>
@@ -174,6 +175,7 @@ export function ProjectHubCard({ group, isOpen, onToggle }: ProjectHubCardProps)
                       key={`${conv.serverId}::${conv.id}`}
                       conv={conv}
                       onLongPress={setActiveConv}
+                      forceServerChip={forceServerChip}
                     />
                   ))}
                   {convCount > 5 && (

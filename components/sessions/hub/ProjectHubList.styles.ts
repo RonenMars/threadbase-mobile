@@ -38,6 +38,10 @@ export function makeStyles(theme: Theme, bottomInset: number = 0) {
   emptyListContent: {
     flexGrow: 1,
   },
+  serverEmpty: {
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.md,
+  },
   sectionHeader: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
