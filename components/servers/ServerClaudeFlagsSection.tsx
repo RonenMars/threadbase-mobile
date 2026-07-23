@@ -1,0 +1,266 @@
+import React, { useMemo, useState } from 'react'
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { useTheme } from '@/contexts/ThemeContext'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useClaudeFlags, useUpdateClaudeFlags } from '@/hooks/useClaudeFlags'
+import { claudeFlagValueRisk } from '@/types/api'
+import type { ClaudeFlagDefinition, ClaudeFlagValue, ClaudeFlagValues } from '@/types/api'
+import { confirmDangerousChange } from '@/utils/confirmDangerousChange'
+
+interface Props {
+  serverId: string
+}
+
+/** Lists render as comma-separated text; empty entries are dropped on parse. */
+function valueToText(value: ClaudeFlagValue | undefined): string {
+  if (value === undefined) return ''
+  if (Array.isArray(value)) return value.join(', ')
+  return String(value)
+}
+
+function textToValue(def: ClaudeFlagDefinition, text: string): ClaudeFlagValue | undefined {
+  const trimmed = text.trim()
+  if (!trimmed) return undefined
+  if (def.valueType === 'list') {
+    const items = trimmed.split(',').map((s) => s.trim()).filter(Boolean)
+    return items.length > 0 ? items : undefined
+  }
+  return trimmed
+}
+
+/**
+ * Per-server Claude CLI flags.
+ *
+ * Renders generically from the registry the SERVER supplies, so a streamer that
+ * knows about a newer flag needs no app update. Hidden entirely when the server
+ * predates the feature (query resolves to null).
+ */
+export function ServerClaudeFlagsSection({ serverId }: Props) {
+  const { t } = useTranslation(['servers', 'common'])
+  const theme = useTheme()
+  const styles = useMemo(() => makeStyles(theme), [theme])
+
+  const { data, isLoading } = useClaudeFlags(serverId)
+  const update = useUpdateClaudeFlags(serverId)
+
+  const [values, setValues] = useState<ClaudeFlagValues>({})
+  const [extraArgs, setExtraArgs] = useState('')
+
+  // Seed the edit state from the server's copy by ADJUSTING STATE DURING RENDER
+  // (https://react.dev/reference/react/useState#storing-information-from-previous-renders)
+  // rather than in an effect, which would cost a second render pass on every load.
+  //
+  // Keyed on the CONTENT, not the object identity: react-query hands back a
+  // fresh object on every refetch, so an identity key would re-seed mid-edit and
+  // silently discard whatever the user had just typed.
+  const serverSnapshot = data ? JSON.stringify([data.values, data.extraArgs]) : null
+  const [seededFrom, setSeededFrom] = useState<string | null>(null)
+  if (serverSnapshot !== null && serverSnapshot !== seededFrom) {
+    setSeededFrom(serverSnapshot)
+    setValues(data ? data.values : {})
+    setExtraArgs(data?.extraArgs ?? '')
+  }
+
+  if (isLoading) {
+    return (
+      <View style={styles.section}>
+        <ActivityIndicator color={theme.text.accent} />
+      </View>
+    )
+  }
+
+  // null = server predates the feature. Render nothing rather than an error.
+  if (!data) return null
+
+  const flagLabel = (def: ClaudeFlagDefinition) =>
+    t(`servers:claudeFlags.flags.${def.id}.label`, { defaultValue: def.flag })
+  const flagDescription = (def: ClaudeFlagDefinition) =>
+    t(`servers:claudeFlags.flags.${def.id}.description`, { defaultValue: '' })
+
+  const apply = (def: ClaudeFlagDefinition, next: ClaudeFlagValue | undefined) => {
+    setValues((prev) => {
+      const copy = { ...prev }
+      if (next === undefined) delete copy[def.id]
+      else copy[def.id] = next
+      return copy
+    })
+  }
+
+  const stage = (def: ClaudeFlagDefinition, next: ClaudeFlagValue | undefined) => {
+    // Gate only the transition INTO a dangerous value; clearing one is always
+    // allowed without friction. Everything else applies synchronously.
+    if (next !== undefined && claudeFlagValueRisk(def, next) === 'dangerous') {
+      void confirmDangerousChange(t('servers:claudeFlags.dangerousExplanation')).then((ok) => {
+        if (ok) apply(def, next)
+      })
+      return
+    }
+    apply(def, next)
+  }
+
+  const onSave = () => {
+    update.mutate({ values, extraArgs: extraArgs.trim() || undefined })
+  }
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{t('servers:claudeFlags.title')}</Text>
+      <Text style={styles.sectionDescription}>{t('servers:claudeFlags.description')}</Text>
+
+      {!data.persisted ? (
+        <View style={styles.warningBox}>
+          <Text style={styles.warningText}>{t('servers:claudeFlags.notPersisted')}</Text>
+        </View>
+      ) : null}
+
+      {data.registry.map((def) => {
+        const value = values[def.id]
+        const dangerous = value !== undefined && claudeFlagValueRisk(def, value) === 'dangerous'
+
+        return (
+          <View key={def.id} style={styles.row}>
+            <View style={styles.rowText}>
+              <Text style={[styles.rowLabel, dangerous && styles.rowLabelDangerous]}>
+                {flagLabel(def)}
+              </Text>
+              {flagDescription(def) ? (
+                <Text style={styles.rowDescription}>{flagDescription(def)}</Text>
+              ) : null}
+            </View>
+
+            {def.valueType === 'boolean' ? (
+              <Switch
+                value={value === true}
+                onValueChange={(on) => stage(def, on ? true : undefined)}
+                trackColor={{ false: theme.border, true: theme.text.accent }}
+                thumbColor="#fff"
+                testID={`claude-flag-${def.id}`}
+              />
+            ) : def.valueType === 'enum' ? (
+              <View style={styles.enumRow}>
+                {(def.enumValues ?? []).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.chip, value === option && styles.chipActive]}
+                    onPress={() => stage(def, value === option ? undefined : option)}
+                    testID={`claude-flag-${def.id}-${option}`}
+                  >
+                    <Text style={[styles.chipText, value === option && styles.chipTextActive]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <TextInput
+                style={styles.input}
+                value={valueToText(value)}
+                onChangeText={(text) => stage(def, textToValue(def, text))}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder={def.valueType === 'list' ? t('servers:claudeFlags.listHint') : def.flag}
+                placeholderTextColor={theme.text.secondary}
+                testID={`claude-flag-${def.id}`}
+              />
+            )}
+          </View>
+        )
+      })}
+
+      <Text style={styles.rowLabel}>{t('servers:claudeFlags.extraArgsLabel')}</Text>
+      <Text style={styles.rowDescription}>{t('servers:claudeFlags.extraArgsUnsupported')}</Text>
+      <TextInput
+        style={styles.input}
+        value={extraArgs}
+        onChangeText={setExtraArgs}
+        autoCapitalize="none"
+        autoCorrect={false}
+        placeholder="--bare --agent reviewer"
+        placeholderTextColor={theme.text.secondary}
+        testID="claude-flag-extra-args"
+      />
+
+      {update.isError ? (
+        <Text style={styles.errorText}>{update.error.message}</Text>
+      ) : null}
+
+      <TouchableOpacity
+        style={[styles.saveBtn, update.isPending && styles.saveBtnDisabled]}
+        onPress={onSave}
+        disabled={update.isPending}
+        testID="claude-flags-save"
+      >
+        {update.isPending ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.saveBtnText}>{t('servers:claudeFlags.save')}</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    section: { marginTop: spacing.lg, gap: spacing.sm },
+    sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
+    sectionDescription: { color: theme.text.secondary, fontSize: font.sm },
+    warningBox: {
+      backgroundColor: theme.bg.secondary,
+      borderRadius: radius.sm,
+      padding: spacing.sm,
+    },
+    warningText: { color: theme.text.secondary, fontSize: font.sm },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    rowText: { flex: 1, gap: 2 },
+    rowLabel: { color: theme.text.primary, fontSize: font.sm, fontWeight: '500' },
+    rowLabelDangerous: { color: theme.text.danger },
+    rowDescription: { color: theme.text.secondary, fontSize: font.xs },
+    enumRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, maxWidth: '55%' },
+    chip: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.sm,
+      backgroundColor: theme.bg.secondary,
+    },
+    chipActive: { backgroundColor: theme.text.accent },
+    chipText: { color: theme.text.secondary, fontSize: font.xs },
+    chipTextActive: { color: '#fff' },
+    input: {
+      color: theme.text.primary,
+      backgroundColor: theme.bg.secondary,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      fontSize: font.sm,
+      minWidth: 140,
+      maxWidth: '55%',
+    },
+    errorText: { color: theme.text.danger, fontSize: font.sm },
+    saveBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      paddingVertical: spacing.sm,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
+  })
