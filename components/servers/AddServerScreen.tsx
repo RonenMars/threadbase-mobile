@@ -32,7 +32,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
   const navigation = useNavigation()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
   const { addServerAction, setAddServerAction } = useSettingsStore()
-  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? 'http://localhost:8766'
+  const defaultUrl = process.env.EXPO_PUBLIC_DEFAULT_SERVER_URL ?? ''
   const [protocol, setProtocol] = useState<'https' | 'http'>(
     defaultUrl.startsWith('https://') ? 'https' : 'http'
   )
