@@ -23,14 +23,19 @@ interface Props {
   onEnter: () => void
   serverHost?: string
   serverPort?: string | number
+  serverLabel?: string
 }
 
-export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
+export function DoneStep({ onEnter, serverHost, serverPort, serverLabel }: Props) {
   const { t } = useTranslation('onboarding')
   const paired = serverHost != null && serverPort != null
   const popScale = useSharedValue(0.8)
   const popOpacity = useSharedValue(0)
   const dotOpacity = useSharedValue(0.55)
+
+  const pairedPill = serverLabel
+    ? t('done.pillPairedNamed', { name: serverLabel, host: serverHost, port: serverPort })
+    : t('done.pillPaired', { host: serverHost, port: serverPort })
 
   useEffect(() => {
     popScale.value = withSequence(
@@ -111,9 +116,7 @@ export function DoneStep({ onEnter, serverHost, serverPort }: Props) {
             <View style={[styles.pillDot, styles.pillDotIdle]} />
           )}
           <Text style={styles.pillText}>
-            {paired
-              ? `paired · ${serverHost} · ${serverPort}`
-              : t('done.pillUnpaired')}
+            {paired ? pairedPill : t('done.pillUnpaired')}
           </Text>
         </View>
       </View>
