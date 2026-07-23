@@ -20,6 +20,8 @@ export type PairPhase = 'idle' | 'dialing' | 'resolving' | 'handshake' | 'ok' | 
 export interface PairResult {
   url: string
   apiKey: string
+  /** Optional display name (user-entered or machine name from pair exchange). */
+  label?: string
 }
 
 interface PairOptions {
@@ -45,12 +47,12 @@ async function resolveCredentials(url: string, token: string): Promise<PairResul
   if (kind === 'pair-uri') {
     const parsed = parsePairUri(trimmedToken)
     const exchanged = await exchangeToken({ url: parsed.url, token: parsed.token })
-    return { url: exchanged.url, apiKey: exchanged.apiKey }
+    return { url: exchanged.url, apiKey: exchanged.apiKey, label: exchanged.machineName ?? undefined }
   }
 
   if (kind === 'pair-token') {
     const exchanged = await exchangeToken({ url: trimmedUrl, token: trimmedToken })
-    return { url: exchanged.url, apiKey: exchanged.apiKey }
+    return { url: exchanged.url, apiKey: exchanged.apiKey, label: exchanged.machineName ?? undefined }
   }
 
   // Long-lived API key (`tb_…`): Bearer-check /api/profiles.

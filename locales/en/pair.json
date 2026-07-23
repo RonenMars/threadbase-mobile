@@ -4,9 +4,12 @@
     "permissionBody": "Threadbase needs camera access to scan a pairing QR code shown by your server.",
     "allowCamera": "Continue",
     "permissionHint": "Camera access is disabled. Open Settings to enable it for Threadbase.",
+    "openSettings": "Open Settings",
+    "close": "Close",
     "exchanging": "Exchanging pair token…",
     "errorTitle": "Pairing failed",
     "tryAgain": "Try again",
+    "contactSupport": "Need help? Contact support",
     "reticleHint": "Point at the QR shown by your server",
     "errors": {
       "generic": "Pairing failed.",
