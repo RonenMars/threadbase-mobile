@@ -1,0 +1,41 @@
+# Maestro E2E — Session lifecycle hub → browse entry
+# Asserts the new-session FAB still opens browse (the handoff surface for
+# start-session). Deep session-detail / abandon-empty paths are covered by
+# Jest (sessionLifecycle + SessionScreen.holdOnBackground).
+#
+# Requires: mock server on localhost:7071
+# Usage: maestro test e2e/session_lifecycle.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- assertVisible:
+    id: "fab-new-session"
+
+- tapOn:
+    id: "fab-new-session"
+
+- extendedWaitUntil:
+    visible:
+      id: "browse-screen"
+    timeout: 8000
+
+- assertVisible:
+    id: "browse-start-session"
+
+- takeScreenshot: e2e/_artifacts/screenshots/session-lifecycle-01-browse
+
+# Leave browse without starting — modal dismiss must return a usable hub.
+- back
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+- assertVisible:
+    id: "fab-new-session"

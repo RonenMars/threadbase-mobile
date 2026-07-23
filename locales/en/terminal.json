@@ -53,6 +53,8 @@
   },
   "session": {
     "notFound": "Session not found",
+    "notFoundBody": "This session is no longer on the server. It may have ended or been cleaned up.",
+    "backToHub": "Back to hub",
     "ended": "Session ended",
     "endedBody": "This session ended without producing any output.",
     "failedToStart": "Session failed to start",

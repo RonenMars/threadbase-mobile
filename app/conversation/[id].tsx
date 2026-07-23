@@ -28,6 +28,7 @@ import { useLoadingStateStore } from '@/stores/loading-state'
 import { useConversation } from '@/hooks/useConversations'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
+import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -154,6 +155,13 @@ export default function ConversationDetailScreen() {
       router.replace(`/session/${id}?server=${serverId}`)
     }
   }, [isConvNotFound, isSessionLive, id, serverId, router])
+
+  // True 404 (no live session either): drop the favorite so Open Session
+  // cannot keep routing into a dead conversation id.
+  useEffect(() => {
+    if (!isConvNotFound || isSessionLoading || isSessionLive || !serverId || !id) return
+    evictStaleConversationFavorite(serverId, id)
+  }, [isConvNotFound, isSessionLoading, isSessionLive, serverId, id])
 
   const [infoVisible, setInfoVisible] = useState(false)
   const [footerHeight, setFooterHeight] = useState(0)
@@ -355,12 +363,22 @@ export default function ConversationDetailScreen() {
       )
     }
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']} testID="conversation-not-found">
         <ScreenHeader right={headerActions} />
         <View style={styles.centered}>
           <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
           <Text style={styles.errorMessage}>{isConvNotFound ? t('error.notFound') : error.message}</Text>
-          {isConvNotFound ? null : (
+          {isConvNotFound ? (
+            <TouchableOpacity
+              testID="conversation-not-found-back"
+              style={styles.retryBtn}
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel={t('error.back')}
+            >
+              <Text style={styles.retryBtnText}>{t('error.back')}</Text>
+            </TouchableOpacity>
+          ) : (
             <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
               <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
             </TouchableOpacity>

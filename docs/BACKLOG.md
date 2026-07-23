@@ -28,11 +28,11 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | Open — not diagnosed |
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | Open — not diagnosed |
 | Bug 16 | Back from never-typed-in new session leaves an empty session alive | Open — not diagnosed |
-| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
+| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed (U1 reconnect now also rehydrates the bound conversation) |
 | Bug 18 | Maestro flow `server_drag_reorder.yaml.skip` crashes the app at `swipe` | Partial — flow recreated as `.yaml` (cd6d753), `.skip` deleted; still needs CI re-wiring |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
 | Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
-| Bug 21 | "Open Session" from Recents lands on "Session not found" | Open — not diagnosed |
+| Bug 21 | "Open Session" from Recents lands on "Session not found" | ✅ DONE — Recents removed; U1 evicts stale session/conversation favorites on 404 + recovery CTA |
 | Bug 22 | Settings QR-scanner button is a no-op on the UI layer | Open — not diagnosed |
 | Bug 23 | Popular → "New Session here" errors "Unable to load directories" | Open — not diagnosed |
 | Bug 24 | Popular error text is black on black (almost invisible) | Open (visual — consult /impeccable) |
