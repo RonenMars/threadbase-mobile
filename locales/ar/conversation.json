@@ -59,7 +59,9 @@
     "matchCount": "{{current}} من {{total}}",
     "previousMatch": "التطابق السابق",
     "nextMatch": "التطابق التالي",
-    "clearSearch": "مسح البحث"
+    "clearSearch": "مسح البحث",
+    "placeholder": "البحث في المحادثة…",
+    "open": "البحث في المحادثة"
   },
   "slowLoading": {
     "title1": "نفكّ خيوط محادثة طويلة…",

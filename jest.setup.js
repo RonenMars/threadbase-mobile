@@ -24,24 +24,33 @@ jest.mock('@react-native-community/netinfo', () => ({
 }))
 
 // ─── expo-router ─────────────────────────────────────────────────────────────
-jest.mock('expo-router', () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    navigate: jest.fn(),
-    canGoBack: jest.fn(() => true),
-  })),
-  useLocalSearchParams: jest.fn(() => ({})),
-  useGlobalSearchParams: jest.fn(() => ({})),
-  useNavigation: jest.fn(() => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) })),
-  useSegments: jest.fn(() => []),
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
-  Redirect: () => null,
-  Link: ({ children }) => children,
-  Stack: { Screen: () => null },
-  Tabs: { Screen: () => null },
-}))
+jest.mock('expo-router', () => {
+  const React = require('react')
+  return {
+    useRouter: jest.fn(() => ({
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+      navigate: jest.fn(),
+      setParams: jest.fn(),
+      canGoBack: jest.fn(() => true),
+    })),
+    useLocalSearchParams: jest.fn(() => ({})),
+    useGlobalSearchParams: jest.fn(() => ({})),
+    useNavigation: jest.fn(() => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) })),
+    useSegments: jest.fn(() => []),
+    // Screens are always focused under test — run the effect on mount and
+    // return its cleanup so blur/unmount tears the interval down.
+    useFocusEffect: (cb) => {
+      React.useEffect(() => cb(), [cb])
+    },
+    router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
+    Redirect: () => null,
+    Link: ({ children }) => children,
+    Stack: { Screen: () => null },
+    Tabs: { Screen: () => null },
+  }
+})
 
 // ─── expo-haptics ────────────────────────────────────────────────────────────
 jest.mock('expo-haptics', () => ({
