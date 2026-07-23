@@ -308,7 +308,9 @@ export function ProjectHubList({
             if (item.kind === 'serverEmpty') {
               const fetchStatus = fetchStatuses[item.serverId]?.status
               const isError = fetchStatus === 'error'
-              const isWarming = fetchStatus === 'warming_up'
+              // Third status is the warm-up / indexing state (`indexing` on
+              // main, `warming_up` on integration) — treat anything else as empty.
+              const isWarming = fetchStatus != null && fetchStatus !== 'ok' && fetchStatus !== 'error'
               const emptyTitle = isError
                 ? t('list.serverOffline')
                 : isWarming
