@@ -59,7 +59,9 @@
     "matchCount": "{{current}} מתוך {{total}}",
     "previousMatch": "התאמה קודמת",
     "nextMatch": "התאמה הבאה",
-    "clearSearch": "נקה חיפוש"
+    "clearSearch": "נקה חיפוש",
+    "placeholder": "חיפוש בשיחה…",
+    "open": "חיפוש בשיחה"
   },
   "slowLoading": {
     "title1": "מתירים שרשור ארוך…",
