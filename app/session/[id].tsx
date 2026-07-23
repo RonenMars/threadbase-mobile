@@ -40,6 +40,12 @@ import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
 import { clearSessionUsed, wasSessionUsed } from '@/lib/sessionUsage'
+import {
+  evictStaleSessionFavorite,
+  rehydrateSessionAfterReconnect,
+  removeSessionFromEagerCache,
+} from '@/lib/sessionLifecycle'
+import { NotFoundError } from '@/services/api-client'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -407,8 +413,9 @@ export default function SessionDetailScreen() {
 
   const isStarting = starting === '1'
   const isPending = (id?.startsWith('pending_') ?? false) || isStarting
-  const { data: session, isLoading } = useSessionDetail(serverId, id)
+  const { data: session, isLoading, error: sessionError } = useSessionDetail(serverId, id)
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
+  const isSessionNotFound = sessionError instanceof NotFoundError
 
   // When the app returns from background, iOS may have torn down the WS
   // connection without firing onclose, and the streamer may have restarted
@@ -421,7 +428,16 @@ export default function SessionDetailScreen() {
     const sub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         wsManager.forceReconnect(serverId)
-        qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+        const cached = qc.getQueryData<{
+          boundConversationId?: string | null
+          conversationId?: string | null
+        }>(['session', serverId, id])
+        rehydrateSessionAfterReconnect(
+          qc,
+          serverId,
+          id,
+          cached?.boundConversationId ?? cached?.conversationId,
+        )
         return
       }
       // Backgrounding/inactive: proactively (re)arm the server's ~4.5-min grace
@@ -437,6 +453,14 @@ export default function SessionDetailScreen() {
     })
     return () => sub.remove()
   }, [serverId, id, isPending, qc])
+
+  // Stale favorite / hub row → vanished session: evict caches so back-nav
+  // cannot reopen the same dead id.
+  useEffect(() => {
+    if (!isSessionNotFound || !serverId || !id) return
+    removeSessionFromEagerCache(qc, serverId, id)
+    evictStaleSessionFavorite(serverId, id)
+  }, [isSessionNotFound, serverId, id, qc])
 
   // Connection staleness: a dead WS must not masquerade as a live session.
   // Delay the visible stale state so brief WS reconnects don't interrupt the UI.
@@ -604,7 +628,16 @@ export default function SessionDetailScreen() {
         console.log(`[waking-backstop] still waking after ${WAKING_UP_BACKSTOP_MS}ms — invalidating session ${id} + WS reconnect`)
       }
       wsManager.forceReconnect(serverId)
-      void qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+      const cached = qc.getQueryData<{
+        boundConversationId?: string | null
+        conversationId?: string | null
+      }>(['session', serverId, id])
+      rehydrateSessionAfterReconnect(
+        qc,
+        serverId,
+        id,
+        cached?.boundConversationId ?? cached?.conversationId,
+      )
     }, WAKING_UP_BACKSTOP_MS)
     return () => clearTimeout(timer)
   }, [isWakingUpEarly, serverId, id, qc])
@@ -704,13 +737,22 @@ export default function SessionDetailScreen() {
       return <DiscoveredSessionScreen serverId={serverId} sessionId={id} />
     }
     return (
-      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.flex} edges={['top', 'bottom']} testID="session-not-found">
         <ScreenHeader />
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
           <Text style={styles.discoveredTitle}>{t('session.notFound')}</Text>
           <Text style={[styles.discoveredText, { textAlign: 'center', marginTop: spacing.sm }]}>
-            {`No session found for ID:\n${id}`}
+            {t('session.notFoundBody')}
           </Text>
+          <TouchableOpacity
+            testID="session-not-found-back"
+            style={[styles.retryBtn, { marginTop: spacing.lg }]}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('session.backToHub')}
+          >
+            <Text style={styles.retryBtnText}>{t('session.backToHub')}</Text>
+          </TouchableOpacity>
         </View>
         {infoModal}
       </SafeAreaView>
@@ -978,6 +1020,19 @@ function makeStyles(theme: Theme) {
       fontSize: font.sm,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    retryBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    retryBtnText: {
+      color: theme.text.onAccent,
+      fontWeight: '700',
+      fontSize: font.base,
     },
   })
 }
