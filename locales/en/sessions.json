@@ -14,7 +14,13 @@
     "empty": "No sessions",
     "emptySubtitle": "Start a Claude Code\nsession to see it here",
     "noResults": "No results",
-    "noResultsSubtitle": "Nothing matched \"{{query}}\""
+    "noResultsSubtitle": "Nothing matched \"{{query}}\"",
+    "serverEmpty": "No sessions on this server",
+    "serverEmptySubtitle": "Start a session here or switch servers.",
+    "serverOffline": "Server unreachable",
+    "serverOfflineSubtitle": "Showing other servers. Retry when this host is back.",
+    "serverWarming": "Server is warming up",
+    "serverWarmingSubtitle": "History will appear when indexing finishes."
   },
   "card": {
     "copyId": "Copy Session ID",
