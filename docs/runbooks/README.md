@@ -10,6 +10,6 @@ Executable procedures. A runbook tells you how to carry out work that is risky, 
 |---|---|
 | [`_template.md`](_template.md) | The format. Copy it to `YYYY-MM-DD-<slug>.md` and fill it in. It opens with the seven rules its sections encode. |
 | [`_example-streamer-land-open-prs.md`](_example-streamer-land-open-prs.md) | A **reference example** — the same template filled in for the *streamer* repo's PR-landing chain. Use it to see the shape of a completed runbook; its PR numbers and paths are streamer-specific and do not apply here. |
-| `2026-07-22-land-open-prs.md` | *(to be authored)* the mobile PR-landing runbook, derived from [`../integration-merge-report-2026-07-22.md`](../integration-merge-report-2026-07-22.md). |
+| [`2026-07-22-land-open-prs.md`](2026-07-22-land-open-prs.md) | The mobile PR-landing runbook, derived from [`../integration-merge-report-2026-07-22.md`](../integration-merge-report-2026-07-22.md). |
 
 The `_`-prefix marks files that are not themselves runbooks (the template and the cross-repo example), so a directory listing separates them from real, dated runbooks.
