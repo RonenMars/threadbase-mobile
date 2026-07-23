@@ -68,7 +68,9 @@ describe('sessionLifecycle', () => {
 
     evictStaleConversationFavorite('s1', 'c-gone')
 
-    expect(useQuickAccessStore.getState().favorites.map((f) => f.conversationId)).toEqual(['c-keep'])
+    expect(useQuickAccessStore.getState().favorites.map((f) => f.id)).toEqual([
+      buildFavoriteId('s1', 'conversation', 'c-keep'),
+    ])
   })
 
   it('rehydrates session and bound conversation queries after reconnect', () => {

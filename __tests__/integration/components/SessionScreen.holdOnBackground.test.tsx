@@ -105,7 +105,10 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
-  useQueryClient: () => ({ invalidateQueries: jest.fn() }),
+  useQueryClient: () => ({
+    invalidateQueries: jest.fn(),
+    getQueryData: jest.fn(),
+  }),
 }))
 
 // eslint-disable-next-line import/first
