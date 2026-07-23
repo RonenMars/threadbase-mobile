@@ -107,6 +107,13 @@ export class VirtualTerminal {
         // Thinking verb + ellipsis: "Thinking…", "Computing…" (180+ verbs from tweakcc)
         if (/^[·✢*✳✶✻✽]\s+\w+ing…\s*$/.test(trimmed)) return false
         if (/^\w+ing…\s*$/.test(trimmed)) return false
+        // Same spinner carrying the live counter: "✽ Swirling… (56s · ↑ 3.4k tokens)".
+        // Claude only repaints this when it has other output to draw, so the
+        // number sticks at whatever it was on the last paint and reads as a
+        // hung session. The elapsed time is shown natively instead.
+        if (/^[·✢*✳✶✻✽]?\s*\w+ing…\s*\(\d+s\b[^)]*\)\s*$/.test(trimmed)) return false
+        // Completed-turn timers: "✻ Crunched for 3m 17s", "✽ Cogitated for 13s"
+        if (/^[✱✳✶✻✽*·✢]\s+\w+\s+for\s+(\d+m\s*)?\d+s\s*$/.test(trimmed)) return false
 
         // --- Status line / prompt chrome ---
         // Bare prompt indicator (❯) — chrome
@@ -119,8 +126,10 @@ export class VirtualTerminal {
         // renders the user's submitted message in the transcript.
         // Capybara mascot (Bramble)
         if (/\(●oo●\)/.test(trimmed) || /\(◐oo◐\)/.test(trimmed)) return false
-        // Model info line: "Opus 4.6 (1M context) | ~/path..." or compact "Sonnet 4.6 | ~/path time | ⚓N"
-        if (/^(Opus|Sonnet|Haiku)\s+\d+\.\d+[\s(|]/.test(trimmed)) return false
+        // Model info line: "Opus 4.6 (1M context) | ~/path..." or compact "Sonnet 4.6 | ~/path time | ⚓N".
+        // The version may have no minor part ("Sonnet 5"), and the separator may
+        // be a box-drawing pipe (│) rather than ASCII "|".
+        if (/^(Opus|Sonnet|Haiku|Fable)\s+\d+(\.\d+)?[\s(|│[]/.test(trimmed)) return false
         // "Claude" model variant: "Claude 4.6 Opus..."
         if (/^Claude\s+\d+\.\d+\s+(Opus|Sonnet|Haiku)/.test(trimmed)) return false
         // Bare pipe fragment: "| ~/Desktop/dev/apps |"
