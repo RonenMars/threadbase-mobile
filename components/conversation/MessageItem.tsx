@@ -93,6 +93,7 @@ export const MessageItem = React.memo(function MessageItem({
                 recycleKey={message.id}
                 highlight={highlight}
                 matchAnchor={matchAnchor}
+                noOuterMargin
               />
             )
           }
