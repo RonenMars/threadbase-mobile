@@ -148,6 +148,13 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       unsubReplay?.()
       unsubReplay = client.on('terminal_replay', (msg) => {
         if (msg.type !== 'terminal_replay' || msg.sessionId !== sessionId) return
+        // A card-parked session can replay only blank ring-buffer rows. Treating
+        // that as a successful load latches replayReceivedRef and disarms the
+        // HTTP fallback, stranding the terminal blank even though /output holds
+        // the full transcript. Only accept a replay that carries content; leave
+        // the fallback timer armed otherwise so /output fills the screen.
+        const hasContent = msg.lines.some((line) => line.trim().length > 0)
+        if (!hasContent) return
         replayReceivedRef.current = true
         if (fallbackTimer) {
           clearTimeout(fallbackTimer)
