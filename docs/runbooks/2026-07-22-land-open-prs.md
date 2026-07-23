@@ -194,3 +194,18 @@ These were opened **after** the kick-off and are **not** part of the 20-PR chain
 | 3 | **tb-mobile** | [#376](https://github.com/RonenMars/threadbase-mobile/pull/376) | `fix/session-name-display` | Read `session_name` in the list, conversation, and live-session views (user rename → session name → project name). **The only one that lands here.** |
 
 **`#376` is safe to land alone, whenever.** It is additive and targets `main` directly (verified 2026-07-23: `OPEN`, `MERGEABLE`/`CLEAN`). It shows nothing new until the server pipeline lands (scanner #53 → scanner release → streamer dep bump → streamer #267); until then the name simply stays blank, so there is no ordering constraint against the chain above — treat it as a Phase-A-style mechanical independent, just recorded separately because it is a different set. Include `#376` in the pre-flight sweep even though it is not in the count of 20.
+
+## Follow-up PRs — session load + cumulative slowdown (separate chain)
+
+Opened 2026-07-23, **after** the kick-off and **not** part of the 20-PR chain above — different set, all mobile-only, all cut from the integration branch. They came out of two diagnosed bugs: a live session parked on a question/permission card showed a blank terminal that "failed to load" (the WS `terminal_replay` came back blank and the client latched it as a successful load, disarming the HTTP `/output` fallback that held the full transcript), and the app slowed down progressively after opening 5-6 sessions (native-stack screens stay mounted, so each opened session kept its WS handlers firing and its `VirtualTerminal` grid growing). The three fixes are already committed on `integration-dev/v1.0.0-2026-07-22` (`83cfe3a`, `77e568b`, `4b25551`).
+
+| Order | PR | Branch → base | What it does |
+|---|---|---|---|
+| 1 | [#385](https://github.com/RonenMars/threadbase-mobile/pull/385) | `fix/terminal-empty-replay-fallback` → `main` | Ignore a blank `terminal_replay` so the 2s HTTP `/output` fallback stays armed and fills a card-parked session's terminal. Independent. |
+| 2 | [#386](https://github.com/RonenMars/threadbase-mobile/pull/386) | `perf/freeze-hidden-session-screens` → `main` | `freezeOnBlur` on the session Stack so a pushed-under screen stops running effects/handlers while hidden. |
+| 3 | [#387](https://github.com/RonenMars/threadbase-mobile/pull/387) | `perf/cap-virtualterminal-scrollback` → **`perf/freeze-hidden-session-screens`** | Cap the `VirtualTerminal` grid at 10k rows so memory and the per-frame `getLines()` scan stay bounded. **Stacked on #386.** |
+
+**Each is additive and mobile-only** — no server, API, or WS-contract change — and each carries the full integration history against `main`, as intended (verified 2026-07-23: all three `MERGEABLE`/`CLEAN`).
+**#385 and #386 target `main` and are independent** of each other and of the chain above — land either order, Phase-A-style.
+**#387 is stacked on #386** (its base is `#386`'s branch, so its diff shows only the `VirtualTerminal` change): merge #386 first, then rebase #387 `--onto main` before merging it — otherwise a squash of #387 would drag #386's commit onto `main` a second time.
+Include all three in the pre-flight sweep even though they are not in the count of 20.
