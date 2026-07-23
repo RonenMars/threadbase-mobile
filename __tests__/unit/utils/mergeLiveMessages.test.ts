@@ -70,4 +70,11 @@ describe('mergeLiveMessages', () => {
     const liveMsgs = [live('L0', 'reply')]
     expect(texts(mergeLiveMessages(hist, liveMsgs, middle))).toEqual(['first', 'typing…', 'reply'])
   })
+
+  it('keeps history → middle → live order even when timestamps are out of order', () => {
+    const hist = [{ ...historical(0, 'h0', 'first'), timestamp: '2026-07-24T00:00:02.000Z' }]
+    const middle = [{ ...live('opt', 'typing…', 'user'), id: 'optimistic-1', uuid: null, timestamp: '2026-07-24T00:00:01.000Z' }]
+    const liveMsgs = [{ ...live('L0', 'reply'), timestamp: '2026-07-24T00:00:00.000Z' }]
+    expect(texts(mergeLiveMessages(hist, liveMsgs, middle))).toEqual(['first', 'typing…', 'reply'])
+  })
 })

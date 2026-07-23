@@ -27,12 +27,12 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 13 | New session: name modal flashes open then auto-closes before user can type | ♻️ Replaced — create/exit name modals removed (`6c138c8`); rename remains |
 | Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | ✅ DONE — dismiss-then-push `/session/new` (`0909404`) |
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | ✅ DONE — eliminated with Bug 14 navigation |
-| Bug 16 | Back from never-typed-in new session leaves an empty session alive | 🔄 In flight — [PR #346](https://github.com/RonenMars/threadbase-mobile/pull/346) |
-| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | Open — not diagnosed |
+| Bug 16 | Back from never-typed-in new session leaves an empty session alive | ✅ DONE on integration — stop unused fresh PTY on `beforeRemove` (`a17a2f2`); public PR #346 |
+| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | 🟡 Partial — live list uses native MVCP (`da5638c` / #382); reconnect also rehydrates bound conversation (U1) |
 | Bug 18 | Maestro flow `server_drag_reorder` — swipe crash / suite wiring | ✅ DONE — wired into `test:e2e:mock`; swipe removed (reorder covered by integration tests) |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
 | Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
-| Bug 21 | "Open Session" from Recents lands on "Session not found" | Open — not diagnosed |
+| Bug 21 | "Open Session" from Recents lands on "Session not found" | ✅ DONE — Recents removed; U1 evicts stale session/conversation favorites on 404 + recovery CTA |
 | Bug 22 | Settings QR-scanner button is a no-op on the UI layer | Open — not diagnosed |
 | Bug 23 | Popular → "New Session here" errors "Unable to load directories" | Open — not diagnosed |
 | Bug 24 | Popular error text is black on black (almost invisible) | Open (visual — consult /impeccable) |
