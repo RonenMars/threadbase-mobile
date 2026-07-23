@@ -286,5 +286,8 @@ export function useSessionDetail(serverId: string, sessionId: string) {
     // Don't persist session detail across app restarts — each session is
     // ephemeral and stale persisted state causes false status flickers.
     meta: { persist: false },
+    // A vanished session is authoritative — retrying a 404 only delays the
+    // not-found recovery UI and keeps stale favorites pinned longer.
+    retry: false,
   })
 }
