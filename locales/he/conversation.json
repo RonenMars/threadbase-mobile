@@ -32,6 +32,12 @@
     "takeOver": "השתלט",
     "takeOverFailed": "לא ניתן היה להשתלט על הסשן הזה. נסה שוב."
   },
+  "live": {
+    "indicator": "חי",
+    "paused": "מושהה",
+    "pause": "השהה עדכונים חיים",
+    "resume": "חדש עדכונים חיים"
+  },
   "action": {
     "export": "ייצוא",
     "copyPatch": "העתק תיקון",
