@@ -32,6 +32,12 @@
     "takeOver": "Take over",
     "takeOverFailed": "Couldn't take over that session. Please try again."
   },
+  "live": {
+    "indicator": "Live",
+    "paused": "Paused",
+    "pause": "Pause live updates",
+    "resume": "Resume live updates"
+  },
   "action": {
     "export": "Export",
     "copyPatch": "Copy patch",
