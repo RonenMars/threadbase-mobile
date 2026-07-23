@@ -209,3 +209,15 @@ Opened 2026-07-23, **after** the kick-off and **not** part of the 20-PR chain ab
 **#385 and #386 target `main` and are independent** of each other and of the chain above — land either order, Phase-A-style.
 **#387 is stacked on #386** (its base is `#386`'s branch, so its diff shows only the `VirtualTerminal` change): merge #386 first, then rebase #387 `--onto main` before merging it — otherwise a squash of #387 would drag #386's commit onto `main` a second time.
 Include all three in the pre-flight sweep even though they are not in the count of 20.
+
+## Local integration merge — PRs #354, #355, and #376
+
+On 2026-07-23, the three PRs previously reported as missing were merged into the isolated worktree `/private/tmp/tb-mobile-merge-354-355-376`, based on integration tip `5502eb3`, in this order: **#354 → #355 → #376**.
+
+| PR | Local merge commit | Result |
+|---|---|---|
+| #354 | `a70110d` | Merge commit created; the substantive live-session code was already represented in the integration tree through equivalent content. |
+| #355 | `1ee5e4e` | Added the three missing `takeOver` translation blocks in `locales/{ar,he,ru}/conversation.json`; its `app/conversation/[id].tsx` conflict retained the integration branch's in-chat search UI. |
+| #376 | `6840078` | Merge commit created; the session-name display code was already represented in the integration tree through equivalent content. |
+
+These are local preparation merges only. They were not pushed or squash-merged to `main`; the worktree remains the place to run focused verification before any outward-facing merge.
