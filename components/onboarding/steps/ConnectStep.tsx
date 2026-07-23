@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import {
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,8 +12,9 @@ import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
-import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
+import { ServerFormFields } from '@/components/servers/ServerFormFields'
 import type { ExchangeResult } from '@/services/pair-exchange'
+import { isValidHttpServerUrl } from '@/lib/serverUrl'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
 import { InfoTooltip } from '../components/InfoTooltip'
@@ -88,20 +90,31 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
   const [urlHost, setUrlHost] = useState('')
   const [token, setToken] = useState('')
+  const [label, setLabel] = useState('')
+  const [urlError, setUrlError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('choose')
   const [scannerOpen, setScannerOpen] = useState(false)
   const { phase, log, pair } = useTBPair()
 
-  const valid = urlHost.trim().length > 0 && token.length >= 8
+  const valid = urlHost.trim().length > 0 && token.trim().length >= 8
   const busy = phase !== 'idle' && phase !== 'err'
 
   const handleConnect = () => {
     if (!valid || busy) return
+    const fullUrl = `${protocol}://${urlHost.trim()}`
+    if (!isValidHttpServerUrl(fullUrl)) {
+      setUrlError(t('connect.invalidUrl'))
+      return
+    }
+    setUrlError(null)
     pair({
-      url: `${protocol}://${urlHost.trim()}`,
+      url: fullUrl,
       token,
       onSuccess: (result) => {
-        onPaired(result)
+        onPaired({
+          ...result,
+          label: label.trim() || result.label,
+        })
         onAdvance()
       },
     })
@@ -109,19 +122,14 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
   const handleScanSuccess = (result: ExchangeResult) => {
     setScannerOpen(false)
-    const { protocol: p, host } = splitUrl(result.url)
-    setProtocol(p)
-    setUrlHost(host)
-    setToken(result.apiKey)
-    setMode('manual')
-    pair({
+    // QR exchange already sealed the API key — advance immediately instead of
+    // flipping to manual mode and re-running the handshake theater.
+    onPaired({
       url: result.url,
-      token: result.apiKey,
-      onSuccess: (r) => {
-        onPaired(r)
-        onAdvance()
-      },
+      apiKey: result.apiKey,
+      label: result.machineName ?? undefined,
     })
+    onAdvance()
   }
 
   if (mode === 'choose') {
@@ -130,13 +138,20 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
         <Text style={styles.headline}>{t('connect.headline')}</Text>
         <Text style={styles.modeBlurb}>{t('connect.modeBlurb')}</Text>
+        <Text style={styles.connectivityHint}>{t('connect.connectivityHint')}</Text>
 
         <TouchableOpacity
-          style={styles.modeCard}
+          testID="onboarding-connect-qr-card"
+          style={[styles.modeCard, styles.modeCardPrimary]}
           onPress={() => setMode('qr-explain')}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('connect.scanQr')}
         >
-          <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
+          <View style={styles.modeCardHeader}>
+            <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
+            <Text style={styles.recommendedBadge}>{t('connect.recommended')}</Text>
+          </View>
           <Text style={styles.modeCardBody}>{t('connect.scanQrBody')}</Text>
         </TouchableOpacity>
 
@@ -145,6 +160,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           style={styles.modeCard}
           onPress={() => setMode('manual')}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('connect.pasteCredentials')}
         >
           <Text style={styles.modeCardTitle}>{t('connect.pasteCredentials')}</Text>
           <Text style={styles.modeCardBody}>{t('connect.pasteCredentialsBody')}</Text>
@@ -156,30 +173,20 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   if (mode === 'qr-explain') {
     return (
       <View style={styles.root}>
+        <TouchableOpacity
+          testID="onboarding-connect-back-to-choose"
+          onPress={() => setMode('choose')}
+          style={styles.linkBtnTop}
+        >
+          <Text style={styles.linkText}>{t('connect.backToOptions')}</Text>
+        </TouchableOpacity>
         <Text style={styles.eyebrow}>{t('connect.qrEyebrow')}</Text>
         <Text style={styles.headline}>{t('connect.qrHeadline')}</Text>
 
         <TerminalCard>
-          <Text style={styles.explainStep}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.stepNum}>1.</Text>{' '}On your server, run{' '}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={{ color: colors.fg2 }}>tb pair</Text>. A QR will print to the terminal.
-          </Text>
-          <Text style={[styles.explainStep, { marginTop: 10 }]}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.stepNum}>2.</Text>{' '}Tap{' '}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={{ color: colors.fg2 }}>{t('connect.openCamera')}</Text> below. Threadbase will ask
-            permission to use the camera — that&apos;s only used to read the QR.
-          </Text>
-          <Text style={[styles.explainStep, { marginTop: 10 }]}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.stepNum}>3.</Text>{' '}Point your phone at the QR. The pair token is
-            valid for 3 minutes; if it expires, just run{' '}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={{ color: colors.fg2 }}>tb pair</Text> again.
-          </Text>
+          <Text style={styles.explainStep}>{t('connect.step1')}</Text>
+          <Text style={[styles.explainStep, { marginTop: 10 }]}>{t('connect.step2')}</Text>
+          <Text style={[styles.explainStep, { marginTop: 10 }]}>{t('connect.step3')}</Text>
         </TerminalCard>
 
         <View style={styles.flex} />
@@ -206,6 +213,13 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       keyboardShouldPersistTaps="handled"
       bottomOffset={16}
     >
+      <TouchableOpacity
+        testID="onboarding-connect-back-to-choose"
+        onPress={() => setMode('choose')}
+        style={styles.linkBtnTop}
+      >
+        <Text style={styles.linkText}>{t('connect.backToOptions')}</Text>
+      </TouchableOpacity>
       <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
       <Text style={styles.headline}>{t('connect.headline')}</Text>
 
@@ -222,10 +236,15 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
       <View style={styles.form}>
         <ServerFormFields
+          label={label}
+          onLabelChange={setLabel}
           protocol={protocol}
           onProtocolChange={setProtocol}
           urlHost={urlHost}
-          onUrlHostChange={setUrlHost}
+          onUrlHostChange={(v) => {
+            setUrlError(null)
+            setUrlHost(v)
+          }}
           apiKey={token}
           onApiKeyChange={setToken}
           keyFieldLabel={t('connect.manualToken')}
@@ -244,7 +263,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
               linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
             >
               {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-              <Text>A short-lived token printed by tb pair. Valid for 3 minutes — run tb pair again if it expires.</Text>
+              <Text>A short-lived pt_ token or the full threadbase:// link from tb pair. Valid for 3 minutes — run tb pair again if it expires. Long-lived tb_ API keys also work.</Text>
             </InfoTooltip>
           }
           editable={!busy}
@@ -252,6 +271,27 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           keyInputTestID="onboarding-connect-token-input"
           onSubmitEditing={handleConnect}
         />
+
+        {urlError ? (
+          <Text testID="onboarding-connect-url-error" style={styles.urlError}>
+            {urlError}
+          </Text>
+        ) : null}
+
+        {phase === 'err' ? (
+          <TouchableOpacity
+            testID="onboarding-connect-support"
+            onPress={() => {
+              void Linking.openURL(
+                'mailto:ronenmars@gmail.com?subject=Threadbase%20Pairing%20Help',
+              )
+            }}
+            style={styles.supportLink}
+            accessibilityRole="link"
+          >
+            <Text style={styles.linkText}>{t('connect.contactSupport')}</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {log.length > 0 && (
           <View style={styles.logWrap}>
@@ -368,6 +408,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 12.5,
     lineHeight: 19,
+    marginBottom: 10,
+  },
+  connectivityHint: {
+    color: colors.fg4,
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: 16,
   },
   modeCard: {
@@ -377,18 +424,47 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
+  modeCardPrimary: {
+    borderColor: colors.blue400,
+    backgroundColor: 'rgba(96, 165, 250, 0.08)',
+  },
+  modeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4,
+  },
+  recommendedBadge: {
+    color: colors.blue400,
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   modeCardTitle: {
     color: colors.fg0,
     fontFamily: fonts.sans,
     fontSize: 17,
     fontWeight: '600',
-    marginBottom: 4,
+    flexShrink: 1,
   },
   modeCardBody: {
     color: colors.fg3,
     fontFamily: fonts.mono,
     fontSize: 12,
     lineHeight: 18,
+  },
+  urlError: {
+    color: colors.red400,
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  supportLink: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
   },
   explainStep: {
     color: colors.fg2,

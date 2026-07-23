@@ -87,7 +87,7 @@ export function OnboardingNavigator({ onDone }: Props) {
   const handleEnter = useCallback(async () => {
     try {
       if (paired) {
-        await addServer(paired.url, paired.apiKey)
+        await addServer(paired.url, paired.apiKey, paired.label)
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,
           hashToken(paired.apiKey),
@@ -117,6 +117,7 @@ export function OnboardingNavigator({ onDone }: Props) {
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}
           serverPort={paired ? derivePort(paired.url) : undefined}
+          serverLabel={paired?.label}
         />
       )}
     </OnboardingShell>

@@ -13,6 +13,8 @@ export type PairPhase = 'idle' | 'dialing' | 'resolving' | 'handshake' | 'ok' | 
 export interface PairResult {
   url: string
   apiKey: string
+  /** Optional display name (user-entered or machine name from pair exchange). */
+  label?: string
 }
 
 interface PairOptions {
