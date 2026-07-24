@@ -21,7 +21,6 @@
     "chatViewNote": "أظهر السيشنات المباشرة كفقاعات دردشة بدلًا من مخرجات الطرفية الخام. بيتا — قد تحتوي على أخطاء ولا تعمل دائمًا.",
     "betaBadge": "بيتا"
   },
-  "comingSoonBadge": "قريبًا",
   "permissions": {
     "camera": "الكاميرا",
     "cameraDesc": "مسح رمز QR للاقتران بالخوادم",
@@ -127,5 +126,46 @@
     "previewFirst": "الأولى",
     "previewLast": "الأخيرة",
     "previewOff": "إيقاف"
+  },
+  "notificationHealth": {
+    "screenTitle": "صحة الإشعارات",
+    "heading": "صحة الإشعارات",
+    "subtitle": "حالة تسجيل الدفع لكل خادم من الستريمر. لا تُعرض الرموز.",
+    "emptyTitle": "لا خوادم بعد",
+    "emptyBody": "اربط خادمًا أولاً، ثم افحص صحة التسليم هنا.",
+    "loading": "جارٍ فحص صحة الدفع…",
+    "loadFailed": "تعذّر تحميل صحة الدفع.",
+    "retry": "إعادة المحاولة",
+    "reregister": "إعادة التسجيل",
+    "reregistering": "جارٍ التسجيل…",
+    "reregistered": "أُعيد تسجيل الرمز مع هذا الخادم.",
+    "reregisterFailed": "فشلت إعادة التسجيل. تحقق من إذن الإشعارات وحاول مجددًا.",
+    "quietPreview": "ساعات الهدوء (هذا الجهاز)",
+    "quietActive": "ساعات الهدوء نشطة الآن — تُكبت التنبيهات محليًا.",
+    "quietInactive": "ساعات الهدوء متوقفة أو غير نشطة الآن.",
+    "quietWindow": "{{from}} – {{to}}",
+    "storeAvailable": "مخزن الدفع متاح على هذا الخادم.",
+    "storeUnavailable": "مخزن الدفع غير متاح على هذا الخادم.",
+    "noTokens": "لا رموز دفع مسجّلة لهذا الخادم بعد.",
+    "platform": "Platform",
+    "registeredAt": "Registered",
+    "lastSuccess": "Last success",
+    "lastFailure": "Last failure",
+    "failureCode": "Failure code",
+    "failureStreak": "Failure streak",
+    "state": {
+      "never-delivered": "Never delivered",
+      "healthy": "Healthy",
+      "failing": "Failing",
+      "dead": "Dead",
+      "revoked": "Revoked"
+    },
+    "hintNeverDelivered": "Registered, but no successful delivery yet (detection vs delivery).",
+    "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
+    "hintRevoked": "This token was revoked on the server.",
+    "hintHealthy": "Recent deliveries succeeded.",
+    "openRow": "صحة التسليم",
+    "reregisterNeedsPermission": "إذن الإشعارات متوقف — فعّله في إعدادات النظام ثم أعد المحاولة.",
+    "reregisterNeedsDevice": "تعذّر الحصول على رمز دفع (المحاكيات لا تسجّل). جرّب على جهاز حقيقي."
   }
 }

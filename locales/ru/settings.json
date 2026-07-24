@@ -21,7 +21,6 @@
     "chatViewNote": "Показывать активные сессии в виде чат-пузырей вместо необработанного вывода терминала. Бета — может работать нестабильно.",
     "betaBadge": "Бета"
   },
-  "comingSoonBadge": "Скоро",
   "permissions": {
     "camera": "Камера",
     "cameraDesc": "Сканирование QR-кода для подключения к серверам",
@@ -127,5 +126,46 @@
     "previewFirst": "Первое",
     "previewLast": "Последнее",
     "previewOff": "Выкл."
+  },
+  "notificationHealth": {
+    "screenTitle": "Состояние уведомлений",
+    "heading": "Состояние уведомлений",
+    "subtitle": "Состояние push-регистрации по серверам со стримера. Токены не показываются.",
+    "emptyTitle": "Серверов пока нет",
+    "emptyBody": "Сначала привяжите сервер, затем проверьте доставку здесь.",
+    "loading": "Проверка push…",
+    "loadFailed": "Не удалось загрузить состояние push.",
+    "retry": "Повторить",
+    "reregister": "Перерегистрировать",
+    "reregistering": "Регистрация…",
+    "reregistered": "Токен снова зарегистрирован на этом сервере.",
+    "reregisterFailed": "Перерегистрация не удалась. Проверьте разрешение на уведомления.",
+    "quietPreview": "Тихие часы (это устройство)",
+    "quietActive": "Тихие часы активны — локальные оповещения подавляются.",
+    "quietInactive": "Тихие часы выключены или сейчас не активны.",
+    "quietWindow": "{{from}} – {{to}}",
+    "storeAvailable": "Хранилище push доступно на этом сервере.",
+    "storeUnavailable": "Хранилище push недоступно на этом сервере.",
+    "noTokens": "Для этого сервера ещё нет зарегистрированных push-токенов.",
+    "platform": "Platform",
+    "registeredAt": "Registered",
+    "lastSuccess": "Last success",
+    "lastFailure": "Last failure",
+    "failureCode": "Failure code",
+    "failureStreak": "Failure streak",
+    "state": {
+      "never-delivered": "Never delivered",
+      "healthy": "Healthy",
+      "failing": "Failing",
+      "dead": "Dead",
+      "revoked": "Revoked"
+    },
+    "hintNeverDelivered": "Registered, but no successful delivery yet (detection vs delivery).",
+    "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
+    "hintRevoked": "This token was revoked on the server.",
+    "hintHealthy": "Recent deliveries succeeded.",
+    "openRow": "Состояние доставки",
+    "reregisterNeedsPermission": "Разрешение на уведомления выключено — включите в настройках системы и повторите.",
+    "reregisterNeedsDevice": "Не удалось получить push-токен (симуляторы не регистрируются). Попробуйте на устройстве."
   }
 }
