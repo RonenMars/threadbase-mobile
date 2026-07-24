@@ -75,7 +75,8 @@
   },
   "help": {
     "restartOnboarding": "Restart onboarding",
-    "helpSupport": "Help & Support"
+    "helpSupport": "Help & Support",
+    "serverHealth": "Server health"
   },
   "crashReporting": {
     "title": "Share anonymous crash reports",
