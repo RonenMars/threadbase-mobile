@@ -901,6 +901,14 @@ await refreshServerInfo(serverId)
           <GlassFill />
           <TouchableOpacity
             style={s.row}
+            onPress={() => router.push('/server-health')}
+            testID="settings-server-health-row"
+          >
+            <Text style={s.rowLabel}>{t('help.serverHealth')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.row}
             onPress={() => router.push('/help-feedback')}
             testID="settings-help-feedback-row"
           >

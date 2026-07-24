@@ -75,7 +75,8 @@
   },
   "help": {
     "restartOnboarding": "Перезапустить руководство",
-    "helpSupport": "Помощь и поддержка"
+    "helpSupport": "Помощь и поддержка",
+    "serverHealth": "Состояние сервера"
   },
   "crashReporting": {
     "title": "Отправлять анонимные отчёты о сбоях",
