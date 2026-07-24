@@ -68,6 +68,7 @@ Native / deploy pipeline:
 - `fastlane/` — iOS TestFlight lanes (invoked by `ship-ios.sh`)
 - `eas.json` — EAS build config
 - `Gemfile` — Ruby deps for Fastlane + CocoaPods
+- `patches/` — patch-package fixes applied to node_modules on install (e.g. iOS build fixes for vendored native/Swift sources); a patch can go stale or start/stop applying without any package.json change
 
 ## Does NOT affect (excluded from the trigger list)
 
