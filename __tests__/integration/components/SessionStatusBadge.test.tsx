@@ -5,7 +5,7 @@ import type { SessionStatus } from '@/types/api'
 
 const STATUSES: [SessionStatus, string][] = [
   ['running', 'Running'],
-  ['waiting_input', 'Active'],
+  ['waiting_input', 'Waiting'],
   ['idle', 'Idle'],
 ]
 
@@ -22,16 +22,12 @@ describe('SessionStatusBadge', () => {
   })
 
   it('renders a dot indicator alongside the label', async () => {
-    // The component renders an Animated.View (dot) + Text (label)
     const { getByText, toJSON } = await render(<SessionStatusBadge status="running" />)
     expect(getByText('Running')).toBeTruthy()
-    // Tree should be non-null
     expect(toJSON()).not.toBeNull()
   })
 
   it('renders the distinct "External" label when externalAlive', async () => {
-    // External sessions carry status 'idle' — the externalAlive treatment must
-    // override that so it is not indistinguishable from a dead idle session.
     const { getByText, queryByText } = await render(
       <SessionStatusBadge status="idle" externalAlive />,
     )
@@ -46,5 +42,21 @@ describe('SessionStatusBadge', () => {
     expect(external.queryByText('Running')).toBeNull()
     expect(managed.getByText('Running')).toBeTruthy()
     expect(managed.queryByText('External')).toBeNull()
+  })
+
+  it('uses presentation kind from a full session payload', async () => {
+    const { getByTestId, getByText } = await render(
+      <SessionStatusBadge
+        status="running"
+        session={{
+          status: 'running',
+          ownership: 'managed',
+          ptyAttached: true,
+          resumedFromConversationId: 'c1',
+        }}
+      />,
+    )
+    expect(getByTestId('session-status-resumed')).toBeTruthy()
+    expect(getByText('Resumed')).toBeTruthy()
   })
 })

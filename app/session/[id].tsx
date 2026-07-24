@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -395,7 +396,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
-  const { t } = useTranslation(['terminal', 'common'])
+  const { t } = useTranslation(['terminal', 'common', 'sessions'])
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { id, server, starting } = useLocalSearchParams<{
@@ -829,6 +830,12 @@ export default function SessionDetailScreen() {
   const isLive =
     session.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running')
+  const presentation = deriveSessionPresentation(session)
+  const capabilityLabel = presentation.capabilities.isObserveOnly
+    ? t('sessions:capability.observeOnly')
+    : presentation.live
+      ? t('sessions:capability.liveControl')
+      : null
 
   // A live PTY may not have a conversationId yet (no JSONL written), but it can
   // already be showing an interactive prompt. LiveConversationView needs the
@@ -851,7 +858,17 @@ export default function SessionDetailScreen() {
         <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
-            <SessionStatusBadge status={session.status} isRefetching={false} />
+            <SessionStatusBadge status={session.status} session={session} isRefetching={false} />
+            {session.provider ? (
+              <Text style={styles.metaChip} testID="session-provider-chip">
+                {session.provider === 'codex-cli' ? 'Codex' : 'Claude'}
+              </Text>
+            ) : null}
+            {capabilityLabel ? (
+              <Text style={styles.metaChip} testID="session-capability-chip">
+                {capabilityLabel}
+              </Text>
+            ) : null}
             <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
             <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
           </View>
@@ -969,6 +986,7 @@ function makeStyles(theme: Theme) {
     },
     elapsed: { color: theme.text.secondary, fontSize: font.sm },
     prompts: { color: theme.text.secondary, fontSize: font.sm },
+    metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
     staleContent: { opacity: 0.45 },
