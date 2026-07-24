@@ -76,5 +76,25 @@
   "sync": {
     "cachedData": "מציג נתונים שמורים",
     "cachedDataSyncing": "מציג נתונים שמורים — מסתנכרן…"
+  },
+  "status": {
+    "running": "רץ",
+    "waiting": "ממתין",
+    "idle": "לא פעיל",
+    "externalLive": "חיצוני",
+    "historical": "היסטוריה",
+    "resumed": "חודש",
+    "onHold": "בהמתנה",
+    "completed": "הושלם",
+    "failed": "נכשל",
+    "unavailablePath": "לא זמין",
+    "unavailableWorktree": "אין worktree",
+    "stale": "לא עדכני",
+    "livePill": "LIVE",
+    "externalPill": "EXTERNAL"
+  },
+  "capability": {
+    "observeOnly": "צפייה בלבד",
+    "liveControl": "שליטה חיה"
   }
 }
