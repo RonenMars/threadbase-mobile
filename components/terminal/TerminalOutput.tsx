@@ -17,10 +17,12 @@ import { useTranslation } from 'react-i18next'
 import * as Clipboard from 'expo-clipboard'
 import { CopySimple } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
+import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
+import i18n from '@/lib/i18n'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -50,31 +52,51 @@ interface LineRowProps {
 // `LineText` (the heavier ANSI-strip + styled <Text>) doesn't re-render when
 // only the position changes — which happens on every WS frame.
 const LineGutter = memo(function LineGutter({ index }: { index: number }) {
-  return <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
+  return (
+    <Text
+      style={styles.lineNum}
+      selectable={false}
+      maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
+    >
+      {index + 1}
+    </Text>
+  )
 })
 
-const LineText = memo(function LineText({ line, userMessageTexts }: { line: string; userMessageTexts?: Set<string> }) {
+const LineText = memo(function LineText({
+  line,
+  userMessageTexts,
+  accessibilityLabel,
+}: {
+  line: string
+  userMessageTexts?: Set<string>
+  accessibilityLabel?: string
+}) {
   const clean = stripAnsi(line)
-  // '❯ <text>' transcript lines are the user's submitted messages — style
-  // them so they stand out from agent output.
   const userOwned = isUserLine(clean, userMessageTexts)
   return (
-    <Text style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText} selectable>
+    <Text
+      style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText}
+      selectable
+      maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
+      accessibilityLabel={accessibilityLabel}
+    >
       {clean}
     </Text>
   )
 })
 
-// Outer wrapper stays cheap (only `index` changes); LineText memoises on `line`.
 const LineRow = memo(function LineRow({ line, index, userMessageTexts }: LineRowProps) {
+  const clean = stripAnsi(line)
+  const a11yLabel = i18n.t('terminal:a11y.line', { n: index + 1, text: clean })
   return (
-    <RenderErrorBoundary tag="terminal_line" rawFallback={stripAnsi(line)}>
+    <RenderErrorBoundary tag="terminal_line" rawFallback={clean}>
       <View
         style={styles.lineRow}
         testID="terminal-line-row"
       >
         <LineGutter index={index} />
-        <LineText line={line} userMessageTexts={userMessageTexts} />
+        <LineText line={line} userMessageTexts={userMessageTexts} accessibilityLabel={a11yLabel} />
       </View>
     </RenderErrorBoundary>
   )
@@ -311,6 +333,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(88, 166, 255, 0.25)',
     padding: 8,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   jumpBtnInner: {
     backgroundColor: 'rgba(31, 111, 235, 0.18)',
@@ -319,6 +345,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(88, 166, 255, 0.25)',
     paddingHorizontal: 14,
     paddingVertical: 6,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   jumpBtnText: {
     color: 'rgba(255, 255, 255, 0.7)',
