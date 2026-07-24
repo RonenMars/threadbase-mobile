@@ -16,7 +16,8 @@
   },
   "nav": {
     "top": "↑ למעלה",
-    "bottom": "↓ למטה"
+    "bottom": "↓ למטה",
+    "copyAll": "העתק הכל"
   },
   "biometricLock": {
     "title": "Threadbase נעול",
@@ -36,5 +37,9 @@
       "enable": "הפעל",
       "notNow": "לא עכשיו"
     }
+  },
+  "renderError": {
+    "title": "לא ניתן להציג פריט זה",
+    "message": "מוצג גיבוי גולמי במקום קריסת המסך."
   }
 }
