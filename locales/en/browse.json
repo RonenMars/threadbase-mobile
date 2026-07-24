@@ -22,5 +22,15 @@
     "retryHint": "Pull down to retry",
     "startFailed": "Failed to start session",
     "startTimeout": "The server didn't respond in time. The session may still be starting — check your sessions list before trying again."
+  },
+  "provider": {
+    "unavailable": "This provider’s CLI is not installed on the server. Choose another provider or install it on the host.",
+    "noStructuredQuestions": "This provider has no structured question menus — you’ll answer in the raw terminal.",
+    "observeOnly": "Live control is unavailable for this provider; sessions are observe-only.",
+    "warning": {
+      "provider_not_found": "Provider CLI not found on the server PATH.",
+      "version_undetectable": "Could not read the installed provider version — compatibility is unverified.",
+      "version_unverified": "Installed provider version is outside the range this streamer has verified."
+    }
   }
 }
