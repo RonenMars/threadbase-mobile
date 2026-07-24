@@ -58,6 +58,14 @@ Feature parity with iOS/Android has **not** been verified past onboarding.
   extension convention) provides a `localStorage`-backed shim for web only. Native
   builds are unaffected.
 
+- **`expo-widgets` (Live Activities) is iOS-only** and has no web counterpart —
+  there is no browser surface equivalent to the Lock Screen or Dynamic Island.
+
+  Fix: `services/live-activity.ts` is shadowed by `services/live-activity.web.ts`,
+  which no-ops the same entry points via Metro's platform-extension resolution, so
+  the web bundle never reaches `expo-widgets` or the `widgets/` layouts. Call sites
+  need no platform check of their own.
+
 ### Known unverified blockers
 
 These libraries are native-only or partially supported on web and have not been

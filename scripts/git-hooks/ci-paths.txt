@@ -25,6 +25,7 @@ utils/
 locales/
 plugins/
 assets/
+widgets/
 
 # tests + infra
 __tests__/
