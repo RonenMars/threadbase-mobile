@@ -145,6 +145,8 @@ jest.mock('expo-notifications', () => ({
   scheduleNotificationAsync: jest.fn().mockResolvedValue('notification-id'),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  // Cold-start read-back: null means "the app was not launched by a tap".
+  getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
   setBadgeCountAsync: jest.fn().mockResolvedValue(undefined),
   AndroidImportance: { HIGH: 5, DEFAULT: 3 },
 }))
