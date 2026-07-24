@@ -27,6 +27,8 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 import { clientLog } from '@/lib/clientLog'
+import { useProviderHealth } from '@/hooks/useProviderHealth'
+import { findProviderHealth } from '@/types/provider-health'
 
 const MAX_RECENT_DIRS = 8
 
@@ -54,6 +56,15 @@ export default function BrowseScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
+  const { data: providerHealth } = useProviderHealth(serverId)
+  const selectedHealth = findProviderHealth(providerHealth?.providers, selectedProvider)
+  const selectedUnavailable = selectedHealth?.available === false
+  const selectedWarnings = selectedHealth?.warnings ?? []
+  const showProviderNotes =
+    selectedUnavailable ||
+    selectedWarnings.length > 0 ||
+    selectedHealth?.capabilities.structuredQuestions === false ||
+    selectedHealth?.capabilities.liveControl === false
 
   const { data: allSessions = [] } = useSessions()
   const recentDirs = useMemo<RecentDir[]>(() => {
@@ -397,6 +408,8 @@ export default function BrowseScreen() {
             { value: CODEX_CLI_PROVIDER, label: 'Codex', color: brand.codex },
           ]).map((option) => {
             const selected = selectedProvider === option.value
+            const health = findProviderHealth(providerHealth?.providers, option.value)
+            const unavailable = health?.available === false
             return (
               <TouchableOpacity
                 key={option.value}
@@ -404,10 +417,11 @@ export default function BrowseScreen() {
                   styles.providerOption,
                   selected && styles.providerOptionSelected,
                   selected ? { borderColor: option.color } : null,
+                  unavailable && styles.providerOptionDisabled,
                 ]}
                 onPress={() => setSelectedProvider(option.value)}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityState={{ selected, disabled: unavailable }}
                 testID={`start-provider-${option.value}`}
               >
                 <View style={[styles.providerDot, { backgroundColor: option.color }]} />
@@ -416,6 +430,7 @@ export default function BrowseScreen() {
                     styles.providerOptionText,
                     selected && styles.providerOptionTextSelected,
                     selected ? { color: option.color } : null,
+                    unavailable && styles.providerOptionTextDisabled,
                   ]}
                 >
                   {option.label}
@@ -424,6 +439,31 @@ export default function BrowseScreen() {
             )
           })}
         </View>
+        {showProviderNotes ? (
+          <View style={styles.providerWarning} testID="browse-provider-warning">
+            {selectedUnavailable ? (
+              <Text style={styles.providerWarningText}>{t('provider.unavailable')}</Text>
+            ) : null}
+            {selectedWarnings.map((w) => {
+              let warningLabel = t('provider.warning.version_unverified')
+              if (w.code === 'provider_not_found') warningLabel = t('provider.warning.provider_not_found')
+              else if (w.code === 'version_undetectable') {
+                warningLabel = t('provider.warning.version_undetectable')
+              }
+              return (
+                <Text key={w.code} style={styles.providerWarningText}>
+                  {warningLabel}
+                </Text>
+              )
+            })}
+            {selectedHealth && !selectedHealth.capabilities.structuredQuestions ? (
+              <Text style={styles.providerWarningText}>{t('provider.noStructuredQuestions')}</Text>
+            ) : null}
+            {selectedHealth && !selectedHealth.capabilities.liveControl ? (
+              <Text style={styles.providerWarningText}>{t('provider.observeOnly')}</Text>
+            ) : null}
+          </View>
+        ) : null}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.newFolderToggle}
@@ -433,9 +473,12 @@ export default function BrowseScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.startBtn, isStarting && styles.startBtnDisabled]}
+            style={[
+              styles.startBtn,
+              (isStarting || selectedUnavailable) && styles.startBtnDisabled,
+            ]}
             onPress={handleStartSession}
-            disabled={isStarting}
+            disabled={isStarting || selectedUnavailable}
             testID="browse-start-session"
           >
             {isStarting ? (
@@ -561,6 +604,27 @@ function makeStyles(theme: Theme) {
   },
   providerOptionSelected: {
     backgroundColor: theme.bg.card,
+  },
+  providerOptionDisabled: {
+    opacity: 0.55,
+  },
+  providerOptionTextDisabled: {
+    color: theme.text.secondary,
+  },
+  providerWarning: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.bg.secondary,
+    gap: 4,
+  },
+  providerWarningText: {
+    color: theme.text.warning,
+    fontSize: font.xs,
+    lineHeight: 16,
   },
   providerDot: {
     width: 8,

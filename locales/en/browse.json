@@ -2,10 +2,6 @@
   "nav": {
     "back": "‹ Back",
     "recentDirs": "Recent directories ({{count}})",
-    "displayAll": "Display all",
-    "allRecentDirs": "Recent directories",
-    "searchRecentDirs": "Search locations",
-    "noMatchingDirs": "No matching locations",
     "newFolder": "New Folder",
     "create": "Create",
     "startSession": "Start Session Here"
@@ -33,8 +29,8 @@
     "observeOnly": "Live control is unavailable for this provider; sessions are observe-only.",
     "warning": {
       "provider_not_found": "Provider CLI not found on the server PATH.",
-      "version_undetectable": "Could not read the installed provider version — compatibility is unverified, and it may behave differently.",
-      "version_unverified": "Installed provider version is unverified against this streamer — it may behave differently."
+      "version_undetectable": "Could not read the installed provider version — compatibility is unverified.",
+      "version_unverified": "Installed provider version is outside the range this streamer has verified."
     }
   }
 }
