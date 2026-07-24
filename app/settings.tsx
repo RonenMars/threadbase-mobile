@@ -927,6 +927,14 @@ await refreshServerInfo(serverId)
           </TouchableOpacity>
           <TouchableOpacity
             style={s.row}
+            onPress={() => router.push('/backup-restore')}
+            testID="settings-backup-restore-row"
+          >
+            <Text style={s.rowLabel}>{t('help.backupRestore')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.row}
             onPress={() => router.push('/help-feedback')}
             testID="settings-help-feedback-row"
           >
