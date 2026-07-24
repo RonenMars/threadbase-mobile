@@ -66,6 +66,14 @@ Feature parity with iOS/Android has **not** been verified past onboarding.
   the web bundle never reaches `expo-widgets` or the `widgets/` layouts. Call sites
   need no platform check of their own.
 
+  Android resolves to `services/live-activity.android.ts`, which posts an ongoing
+  notification instead. Note it is a *plain* ongoing notification, not the API 36
+  promoted status-bar chip: `expo-notifications` exposes `sticky` (Android's
+  `setOngoing`) but neither `setRequestPromotedOngoing` nor `setUsesChronometer`,
+  so there is no chip and no ticking elapsed time. Elapsed is omitted rather than
+  shown frozen. Reaching parity needs those two builder calls exposed upstream or
+  a small native module.
+
 ### Known unverified blockers
 
 These libraries are native-only or partially supported on web and have not been

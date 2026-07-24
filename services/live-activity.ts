@@ -1,5 +1,4 @@
 import type { LiveActivity } from 'expo-widgets'
-import { Platform } from 'react-native'
 
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
 import type { Session } from '@/types/api'
@@ -152,7 +151,6 @@ async function apply(action: LiveActivityAction): Promise<void> {
  * frame — `decideActions` collapses the no-op cases to an empty list.
  */
 export async function reconcile(serverId: string, session: Session): Promise<void> {
-  if (Platform.OS !== 'ios') return
   const key = liveActivityKey(serverId, session.id)
   for (const action of decideActions(tracked(), toLiveState(session, serverId), key)) {
     await apply(action)
@@ -164,7 +162,6 @@ export async function reconcile(serverId: string, session: Session): Promise<voi
  * Without this they would be untracked and could never be updated or ended.
  */
 export function adoptRunningActivities(): void {
-  if (Platform.OS !== 'ios') return
   for (const activity of SessionLiveActivity.getInstances()) {
     // The native instance carries no props back, so there is no key to recover
     // and no way to match it to a session. Ending is the honest option: a
