@@ -12,6 +12,10 @@ jest.mock('@/services/pair-exchange', () => {
   }
 })
 
+jest.mock('@/services/pair-device-name', () => ({
+  defaultPairDeviceName: () => 'Test Phone',
+}))
+
 const exchangeToken = pairExchange.exchangeToken as jest.MockedFunction<
   typeof pairExchange.exchangeToken
 >
@@ -42,6 +46,9 @@ describe('useTBPair (prod path)', () => {
       apiKey: 'tb_sealed_key',
       publicUrl: 'https://example.test',
       machineName: null,
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: ['history:read', 'session:control'],
     })
 
     const onSuccess = jest.fn()
@@ -62,6 +69,8 @@ describe('useTBPair (prod path)', () => {
     expect(exchangeToken).toHaveBeenCalledWith({
       url: 'https://example.test',
       token: 'pt_abcdef',
+      deviceName: 'Test Phone',
+      readOnly: false,
     })
     expect(global.fetch).not.toHaveBeenCalled()
 
@@ -72,6 +81,9 @@ describe('useTBPair (prod path)', () => {
     expect(onSuccess).toHaveBeenCalledWith({
       url: 'https://example.test',
       apiKey: 'tb_sealed_key',
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: ['history:read', 'session:control'],
     })
     expect(result.current.phase).toBe('ok')
   })
@@ -82,6 +94,9 @@ describe('useTBPair (prod path)', () => {
       apiKey: 'tb_from_uri',
       publicUrl: 'https://from-uri.test',
       machineName: null,
+      deviceId: null,
+      deviceToken: null,
+      capabilities: null,
     })
 
     const onSuccess = jest.fn()
@@ -100,6 +115,8 @@ describe('useTBPair (prod path)', () => {
     expect(exchangeToken).toHaveBeenCalledWith({
       url: 'https://from-uri.test',
       token: 'pt_uri_tok',
+      deviceName: 'Test Phone',
+      readOnly: false,
     })
 
     await act(() => {
