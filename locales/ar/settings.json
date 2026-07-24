@@ -75,7 +75,8 @@
   },
   "help": {
     "restartOnboarding": "إعادة تشغيل الإعداد التمهيدي",
-    "helpSupport": "المساعدة والدعم"
+    "helpSupport": "المساعدة والدعم",
+    "serverHealth": "صحة الخادم"
   },
   "crashReporting": {
     "title": "مشاركة تقارير الأعطال المجهولة",

@@ -130,5 +130,75 @@
         "description": "Model to switch to if the main one is unavailable."
       }
     }
+  },
+  "health": {
+    "heading": "Server health",
+    "subtitle": "Independent checks from each paired streamer. Failures include a code and what to do next. Secrets are never included.",
+    "screenTitle": "Server health",
+    "emptyTitle": "No servers yet",
+    "emptyBody": "Pair a server first, then return here to inspect its health.",
+    "loading": "Checking server…",
+    "loadFailed": "Could not load server health.",
+    "retry": "Retry",
+    "overall": "Overall",
+    "generatedAt": "Generated {{at}}",
+    "copy": "Copy report",
+    "copied": "Copied",
+    "copyFailed": "Could not copy the report.",
+    "share": "Share report",
+    "shareFailed": "Could not share the report.",
+    "unsupportedContract": "This streamer reports diagnostics contract v{{version}}. This app expects v1 — some fields may be missing.",
+    "status": {
+      "ok": "Healthy",
+      "degraded": "Degraded",
+      "failed": "Failed",
+      "unknown": "Unknown"
+    },
+    "checks": {
+      "streamer": "Streamer",
+      "providerClaude": "Claude Code CLI",
+      "providerCodex": "Codex CLI",
+      "cache": "Conversation cache",
+      "pty": "PTY subsystem",
+      "filesystem": "Provider history folder"
+    },
+    "remediation": {
+      "PROVIDER_NOT_INSTALLED": {
+        "title": "Provider CLI missing",
+        "action": "On the Mac that runs the streamer, install the provider CLI and confirm it is on PATH, then retry."
+      },
+      "PROVIDER_VERSION_UNVERIFIED": {
+        "title": "Provider version unverified",
+        "action": "Update the provider CLI to a version the streamer has verified, then retry."
+      },
+      "DB_UNAVAILABLE": {
+        "title": "Database unavailable",
+        "action": "Restart the streamer. If this persists, check disk space and streamer logs on the host."
+      },
+      "DB_MIGRATION_PENDING": {
+        "title": "Database migration pending",
+        "action": "Upgrade and restart the streamer so pending migrations can apply."
+      },
+      "PTY_UNAVAILABLE": {
+        "title": "PTY unavailable",
+        "action": "Reinstall or rebuild the streamer so the native PTY module loads, then restart it."
+      },
+      "CACHE_DEGRADED": {
+        "title": "Conversation cache degraded",
+        "action": "Open Servers → resolve the cache integrity alert on this host, then retry."
+      },
+      "CLOCK_SKEWED": {
+        "title": "Clock skew detected",
+        "action": "Set the host clock correctly (automatic time). Pairing tokens expire in minutes, so large skew breaks pairing."
+      },
+      "FS_SCOPE_MISSING": {
+        "title": "History folder missing",
+        "action": "Ensure the provider has created its projects/history directory on the host, then retry."
+      },
+      "NONE": {
+        "title": "No action needed",
+        "action": ""
+      }
+    }
   }
 }
