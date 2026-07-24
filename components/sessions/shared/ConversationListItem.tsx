@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -90,6 +91,7 @@ function shouldShowServer(mode: ConversationListServerMode, activeServerCount: n
 
 export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const {
     title,
@@ -254,7 +256,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
           {live ? (
             <View style={styles.livePill}>
               <View style={styles.livePillDot} />
-              <Text style={styles.livePillText}>LIVE</Text>
+              <Text style={styles.livePillText}>{t('status.livePill')}</Text>
             </View>
           ) : timeText ? (
             <Text

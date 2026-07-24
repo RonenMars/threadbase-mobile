@@ -140,5 +140,25 @@
   "sync": {
     "cachedData": "عرض بيانات مخزنة مؤقتًا",
     "cachedDataSyncing": "عرض بيانات مخزنة مؤقتًا — جارٍ المزامنة…"
+  },
+  "status": {
+    "running": "قيد التشغيل",
+    "waiting": "في الانتظار",
+    "idle": "خامل",
+    "externalLive": "خارجي",
+    "historical": "سجل",
+    "resumed": "مُستأنف",
+    "onHold": "معلّق",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    "unavailablePath": "غير متاح",
+    "unavailableWorktree": "لا يوجد worktree",
+    "stale": "قديم",
+    "livePill": "LIVE",
+    "externalPill": "EXTERNAL"
+  },
+  "capability": {
+    "observeOnly": "للمشاهدة فقط",
+    "liveControl": "تحكم مباشر"
   }
 }

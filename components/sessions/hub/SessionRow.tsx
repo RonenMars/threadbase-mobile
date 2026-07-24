@@ -7,6 +7,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { formatElapsed } from './hubUtils'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { SessionRowProps } from './types'
@@ -17,6 +18,7 @@ export function SessionRow({ session }: SessionRowProps) {
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
   const sessionName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  const presentation = deriveSessionPresentation(session)
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -24,6 +26,7 @@ export function SessionRow({ session }: SessionRowProps) {
   }, [session.id, session.serverId, router])
 
   const handleLongPress = useCallback(() => {
+    if (!presentation.capabilities.canCancel) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -50,28 +53,29 @@ export function SessionRow({ session }: SessionRowProps) {
         { text: 'Dismiss', style: 'cancel' },
       ])
     }
-  }, [session, cancelSession])
+  }, [session, presentation.capabilities.canCancel, cancelSession])
 
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
 
-  const isLive = session.status === 'running' || session.status === 'waiting_input'
   const branchAndElapsed = [session.branch || 'no git', formatElapsed(session.elapsedMs)].join(' · ')
   const titleSuffix = sessionName?.trim() || branchAndElapsed
   const promptCountLabel = `${session.promptCount} prompt${session.promptCount === 1 ? '' : 's'}`
+  const activityTimestamp = presentation.activityAt ?? session.completedAt ?? session.startedAt
 
   return (
     <ConversationListItem
       title={titleSuffix}
-      timestamp={session.completedAt ?? session.startedAt}
+      timestamp={activityTimestamp}
       messageCount={session.promptCount}
       branch={session.branch}
-      live={isLive}
+      live={presentation.live}
       lastOutput={session.lastOutput || null}
       preview={promptCountLabel}
       serverLabel={session.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}
+      provider={session.provider}
       density="compact"
       leading="dot"
       previewMode={previewMode}
