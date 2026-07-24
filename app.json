@@ -93,7 +93,14 @@
         }
       ],
       "./plugins/withAndroidReleaseSigning",
-      "@sentry/react-native/expo"
+      "@sentry/react-native/expo",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.ronenmars.threadbase.widgets",
+          "groupIdentifier": "group.com.ronenmars.threadbase"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
