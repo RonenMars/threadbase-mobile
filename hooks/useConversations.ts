@@ -8,7 +8,7 @@ import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, DiffHunk, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
 import {
   deriveCursor,
@@ -198,6 +198,9 @@ interface RawContentBlock {
   tool_use_id?: string
   content?: string
   is_error?: boolean
+  // structured diff (when streamer emits it)
+  filename?: string
+  hunks?: DiffHunk[]
 }
 
 interface RawMessage {
@@ -272,6 +275,8 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
           content: block.content ?? '',
           isError: block.is_error,
         })
+      } else if (block.type === 'diff' && block.filename && Array.isArray(block.hunks)) {
+        content.push({ type: 'diff', filename: block.filename, hunks: block.hunks })
       }
     }
     // The server carries assistant prose in the top-level `text` field, never
