@@ -79,7 +79,7 @@
     "expo-dev-client": "~57.0.3",
     "expo-device": "~57.0.0",
     "expo-document-picker": "~57.0.0",
-    "expo-font": "~57.0.0",
+    "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.0",
     "expo-image-manipulator": "~57.0.1",
     "expo-image-picker": "~57.0.1",
