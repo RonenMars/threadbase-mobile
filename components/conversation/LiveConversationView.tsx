@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+import { Alert, StyleSheet, Text, Keyboard } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -26,16 +26,22 @@ import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme } from '@/constants/theme'
+import type { ProviderName } from '@/constants/providers'
+import { preferRawTerminal } from '@/lib/renderConfidence'
+import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 
 interface Props {
   serverId: string
   sessionId: string
   conversationId: string
+  provider?: ProviderName | string | null
   /** Disable the composer while the session's PTY is still waking up. */
   disabled?: boolean
   /** Plan to preview, surfaced from the session screen's plan_ready listener. */
   pendingPlan?: string | null
   onClosePlan?: () => void
+  /** Prefer raw terminal when chat normalization looks unreliable. */
+  onPreferRawTerminal?: () => void
 }
 
 // Concatenate a user message's text blocks for echo matching.
@@ -65,9 +71,11 @@ export function LiveConversationView({
   serverId,
   sessionId,
   conversationId,
+  provider,
   disabled = false,
   pendingPlan = null,
   onClosePlan,
+  onPreferRawTerminal,
 }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -137,7 +145,25 @@ export function LiveConversationView({
   }, [serverId, sessionId, qc])
 
   // PTY lines shown inside the thinking bubble while agent is running
-  const { lines: ptyLines, isStreaming } = useTerminalStream(serverId, sessionId)
+  const { lines: ptyLines, isStreaming, parseConfidence } = useTerminalStream(
+    serverId,
+    sessionId,
+    false,
+    provider,
+  )
+
+  useEffect(() => {
+    const decision = preferRawTerminal({
+      sessionView: 'chat',
+      hasConversationId: true,
+      conversationMessageCount: allMessages.length,
+      ptyVisibleLineCount: ptyLines.length,
+      parseConfidence,
+    })
+    if (decision.mode === 'terminal' && !decision.chatAuthoritative) {
+      onPreferRawTerminal?.()
+    }
+  }, [allMessages.length, ptyLines.length, parseConfidence, onPreferRawTerminal])
 
   // Show thinking bubble whenever the session is running. Mid-turn assistant
   // messages (interim replies, sub-agent dispatches) land while Claude is
@@ -228,7 +254,12 @@ export function LiveConversationView({
         data={allMessages}
         keyExtractor={(m) => m.id}
         renderItem={({ item, index }) => (
-          <MessageItem message={item} isLast={index === allMessages.length - 1} />
+          <RenderErrorBoundary
+            tag="message_item"
+            rawFallback={userMessageText(item) || item.role}
+          >
+            <MessageItem message={item} isLast={index === allMessages.length - 1} />
+          </RenderErrorBoundary>
         )}
         maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
@@ -311,13 +342,17 @@ function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme })
   if (visibleLines.length === 0) return null
   const styles = makeStyles(theme)
   return (
-    <ScrollView style={styles.ptyContainer} contentContainerStyle={styles.ptyContent}>
-      {visibleLines.map((line, i) => (
-        <Text key={i} style={styles.ptyLine} numberOfLines={1}>
-          {line}
+    <FlashList
+      data={visibleLines}
+      keyExtractor={(item, index) => `${index}:${item.slice(0, 24)}`}
+      renderItem={({ item }) => (
+        <Text style={styles.ptyLine} numberOfLines={1}>
+          {item}
         </Text>
-      ))}
-    </ScrollView>
+      )}
+      style={styles.ptyContainer}
+      contentContainerStyle={styles.ptyContent}
+    />
   )
 }
 
