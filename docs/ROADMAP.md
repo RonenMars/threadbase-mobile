@@ -6,6 +6,8 @@ This doc tracks **features**: new capabilities, UX changes, or feature-flag work
 
 Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an idea is ready to commit to, promote it into this file as a numbered Feature.
 
+New discrete tasks also land under [`roadmap/`](./roadmap/index.md) (one file per task, indexed there) — preferred layout for freshly filed work going forward.
+
 ---
 
 ## Status overview
@@ -390,6 +392,8 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 - `services/ws-client.ts` — hook session_update events into the activity update path
 - `app/session/[id].tsx` — "Make live" action
 - streamer: send activity-update pushes alongside the existing session-update notifications
+
+**Related:** [Smartwatch surfaces](./roadmap/tasks/smartwatch-session-surfaces.md) — once phone Live Activities / Live Updates exist, extend glanceability to paired smartwatches (mirroring first, native watch companions later if needed). See also [`docs/roadmap/`](./roadmap/index.md).
 
 ---
 
