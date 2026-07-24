@@ -134,6 +134,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       url: result.url,
       apiKey: result.apiKey,
       label: result.machineName ?? undefined,
+      deviceId: result.deviceId ?? undefined,
+      deviceToken: result.deviceToken ?? undefined,
+      capabilities: result.capabilities ?? undefined,
     })
     onAdvance()
   }
