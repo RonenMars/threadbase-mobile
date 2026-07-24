@@ -118,6 +118,24 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   },
 }))
 
+// ─── expo-widgets / live activity ────────────────────────────────────────────
+// The widget module is mocked rather than `expo-widgets` itself: its layout
+// carries the `'widget'` directive, which only Babel's widget transform can
+// resolve — under Jest the JSX would reference undefined SwiftUI globals.
+// `start()` returns a fresh handle per call so eviction tests can assert which
+// activity was ended.
+jest.mock('@/widgets/SessionLiveActivity', () => ({
+  __esModule: true,
+  default: {
+    start: jest.fn(() => ({
+      update: jest.fn().mockResolvedValue(undefined),
+      end: jest.fn().mockResolvedValue(undefined),
+      getPushToken: jest.fn().mockResolvedValue(null),
+    })),
+    getInstances: jest.fn(() => []),
+  },
+}))
+
 // ─── expo-notifications ──────────────────────────────────────────────────────
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),

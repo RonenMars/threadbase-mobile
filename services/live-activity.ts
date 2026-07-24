@@ -1,3 +1,7 @@
+import type { LiveActivity } from 'expo-widgets'
+import { Platform } from 'react-native'
+
+import SessionLiveActivity from '@/widgets/SessionLiveActivity'
 import type { Session } from '@/types/api'
 import {
   LAST_OUTPUT_MAX_CHARS,
@@ -90,4 +94,75 @@ export function decideActions(
     { type: 'end', key: victim.key },
     { type: 'start', key, state: incoming },
   ]
+}
+
+interface LiveHandle extends TrackedActivity {
+  activity: LiveActivity<LiveSessionState>
+}
+
+const handles = new Map<string, LiveHandle>()
+
+// A monotonic counter, not a clock: several updates routinely land inside the
+// same millisecond, and `Date.now()` ties would make LRU eviction pick an
+// arbitrary victim. Only the ordering matters.
+let touchCounter = 0
+
+function tracked(): TrackedActivity[] {
+  return [...handles.values()].map(({ key, lastUpdatedAt }) => ({ key, lastUpdatedAt }))
+}
+
+function deepLink(state: LiveSessionState): string {
+  return `threadbase://session/${state.sessionId}?server=${state.serverId}`
+}
+
+async function apply(action: LiveActivityAction): Promise<void> {
+  if (action.type === 'end') {
+    const handle = handles.get(action.key)
+    if (!handle) return
+    handles.delete(action.key)
+    // 'immediate' so a finished session's surface does not linger on the Lock Screen.
+    await handle.activity.end('immediate')
+    return
+  }
+  if (action.type === 'start') {
+    const activity = SessionLiveActivity.start(action.state, deepLink(action.state))
+    handles.set(action.key, { key: action.key, lastUpdatedAt: ++touchCounter, activity })
+    return
+  }
+  const handle = handles.get(action.key)
+  if (!handle) return
+  handle.lastUpdatedAt = ++touchCounter
+  await handle.activity.update(action.state)
+}
+
+/**
+ * Drives the live surfaces from one `session_update`. Safe to call for every
+ * frame — `decideActions` collapses the no-op cases to an empty list.
+ */
+export async function reconcile(serverId: string, session: Session): Promise<void> {
+  if (Platform.OS !== 'ios') return
+  const key = liveActivityKey(serverId, session.id)
+  for (const action of decideActions(tracked(), toLiveState(session, serverId), key)) {
+    await apply(action)
+  }
+}
+
+/**
+ * Adopts activities that outlived the JS context (app restarted mid-session).
+ * Without this they would be untracked and could never be updated or ended.
+ */
+export function adoptRunningActivities(): void {
+  if (Platform.OS !== 'ios') return
+  for (const activity of SessionLiveActivity.getInstances()) {
+    // The native instance carries no props back, so there is no key to recover
+    // and no way to match it to a session. Ending is the honest option: a
+    // surface we cannot update would freeze on stale data indefinitely.
+    void activity.end('immediate')
+  }
+  handles.clear()
+}
+
+/** Test seam — the module-level map would otherwise leak between cases. */
+export function resetLiveActivities(): void {
+  handles.clear()
 }

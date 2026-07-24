@@ -30,6 +30,7 @@ import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
 import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
+import { reconcile as reconcileLiveActivity } from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
@@ -134,6 +135,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       // the list yet (e.g. a newly-alive external session), invalidate so it
       // appears without a manual pull-to-refresh.
       applySessionUpdateToEagerCache(queryClient, msg.serverId, msg.session)
+      // Live surfaces are driven from this one frame — it is the only place
+      // every status change passes through with its serverId already stamped.
+      void reconcileLiveActivity(msg.serverId, msg.session)
     })
     // External-session liveness ping: a conversation's JSONL grew without a PTY
     // the streamer owns. Refresh the eager conversations list so its row updates.
