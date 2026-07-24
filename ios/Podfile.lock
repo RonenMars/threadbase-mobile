@@ -3115,7 +3115,7 @@ SPEC CHECKSUMS:
   ExpoLocalization: 543cb852ec9d4a6c732344f94ebd96d18897eaab
   ExpoLogBox: 8a3cfa2897e088083cd49fc1ff7fdb2de4385547
   ExpoMailComposer: 93f4d65c12dd45331f69e0906773aa0e7b74344c
-  ExpoModulesCore: a4d8d4e58d500b54a51f9c5c47e9bb77ab205f08
+  ExpoModulesCore: 6abb896a08e54893c79f170b43cda72cc64f9348
   ExpoModulesJSI: b20fefa4cdd9097e7e6b715466d1900b8c5d4711
   ExpoModulesWorklets: b21b8f233b5fd71ca74327217601fa4ead9ddaaf
   ExpoModulesWorkletsAdapter: 6b3dffb299973f4f2b1a96738aa2cb46987b18e1
