@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import { FileCode } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
 import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
@@ -62,13 +63,10 @@ export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
 
   const copyPatch = () => Clipboard.setStringAsync(toPatch(filename, hunks))
 
-  const ext = filename.split('.').pop() ?? ''
-  const fileIcon = ext === 'ts' || ext === 'tsx' ? '📘' : ext === 'go' ? '🐹' : ext === 'md' ? '📝' : '📄'
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.fileIcon}>{fileIcon}</Text>
+        <FileCode size={14} color="#8b949e" />
         <Text style={styles.filename} numberOfLines={1}>{filename}</Text>
         <Text style={styles.added}>+{added}</Text>
         <Text style={styles.removed}>−{removed}</Text>
@@ -135,7 +133,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     backgroundColor: '#1c2128',
   },
-  fileIcon: { fontSize: font.sm },
   filename: {
     color: dark.text.primary,
     fontSize: font.sm,
