@@ -21,7 +21,6 @@
     "chatViewNote": "Show live sessions as chat bubbles instead of raw terminal output. Beta — may be buggy and not always work.",
     "betaBadge": "Beta"
   },
-  "comingSoonBadge": "Coming soon",
   "permissions": {
     "camera": "Camera",
     "cameraDesc": "QR code scanning to pair with servers",
@@ -127,5 +126,46 @@
     "previewFirst": "First",
     "previewLast": "Last",
     "previewOff": "Off"
+  },
+  "notificationHealth": {
+    "screenTitle": "Notification health",
+    "heading": "Notification health",
+    "subtitle": "Per-server push registration state from the streamer. Tokens are never shown.",
+    "emptyTitle": "No servers yet",
+    "emptyBody": "Pair a server first, then check notification delivery health here.",
+    "loading": "Checking push health…",
+    "loadFailed": "Could not load push health.",
+    "retry": "Retry",
+    "reregister": "Re-register",
+    "reregistering": "Registering…",
+    "reregistered": "Token re-registered with this server.",
+    "reregisterFailed": "Re-registration failed. Check notification permission and try again.",
+    "quietPreview": "Quiet hours (this device)",
+    "quietActive": "Quiet hours are active now — alerts are suppressed locally.",
+    "quietInactive": "Quiet hours are off or not active right now.",
+    "quietWindow": "{{from}} – {{to}}",
+    "storeAvailable": "Push store is available on this server.",
+    "storeUnavailable": "Push store is unavailable on this server (registration cannot persist).",
+    "noTokens": "No push tokens registered for this server yet.",
+    "platform": "Platform",
+    "registeredAt": "Registered",
+    "lastSuccess": "Last success",
+    "lastFailure": "Last failure",
+    "failureCode": "Failure code",
+    "failureStreak": "Failure streak",
+    "state": {
+      "never-delivered": "Never delivered",
+      "healthy": "Healthy",
+      "failing": "Failing",
+      "dead": "Dead",
+      "revoked": "Revoked"
+    },
+    "hintNeverDelivered": "Registered, but no successful delivery yet (detection vs delivery).",
+    "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
+    "hintRevoked": "This token was revoked on the server.",
+    "hintHealthy": "Recent deliveries succeeded.",
+    "openRow": "Delivery health",
+    "reregisterNeedsPermission": "Notifications permission is off — enable it in system settings, then retry.",
+    "reregisterNeedsDevice": "Could not get a push token (simulators cannot register). Try on a physical device."
   }
 }
