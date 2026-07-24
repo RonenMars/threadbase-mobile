@@ -1,4 +1,5 @@
 import type { ProviderName } from '@/constants/providers'
+import type { DeviceCapability } from '@/types/devices'
 
 export type SessionStatus = 'running' | 'waiting_input' | 'idle'
 
@@ -367,6 +368,10 @@ export interface ServerConfig {
   color?: string
   /** Optional Phosphor icon name used by the 'symbol' chip variant. */
   symbol?: string
+  /** Paired-device id from `/api/pair/exchange` (C5). Not a secret. */
+  deviceId?: string
+  /** Capability list from pair exchange; absent means legacy owner key (full access). */
+  deviceCapabilities?: DeviceCapability[]
 }
 
 export type CacheAlertSeverity = 'high' | 'low'

@@ -86,7 +86,21 @@ export function AddServerScreen({ isAddingServer }: Props) {
   )
 
   const connectWith = useCallback(
-    async ({ url, apiKey: keyArg, label: labelArg }: { url: string; apiKey: string; label?: string }) => {
+    async ({
+      url,
+      apiKey: keyArg,
+      label: labelArg,
+      deviceId,
+      deviceToken,
+      capabilities,
+    }: {
+      url: string
+      apiKey: string
+      label?: string
+      deviceId?: string
+      deviceToken?: string
+      capabilities?: import('@/types/devices').DeviceCapability[]
+    }) => {
       setError(null)
       setLoading(true)
 
@@ -98,7 +112,11 @@ export function AddServerScreen({ isAddingServer }: Props) {
         if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
 
         await res.json()
-        const addResult = await addServer(url, keyArg, labelArg || undefined)
+        const addResult = await addServer(url, keyArg, labelArg || undefined, {
+          deviceId,
+          deviceToken,
+          capabilities,
+        })
         if (typeof addResult !== 'string') {
           setError('This server is already in your list.')
           return
@@ -150,7 +168,14 @@ export function AddServerScreen({ isAddingServer }: Props) {
     setServerUrl(stripped)
     setApiKey(result.apiKey)
     setLabel(labelGuess)
-    await connectWith({ url: result.url, apiKey: result.apiKey, label: labelGuess })
+    await connectWith({
+      url: result.url,
+      apiKey: result.apiKey,
+      label: labelGuess,
+      deviceId: result.deviceId ?? undefined,
+      deviceToken: result.deviceToken ?? undefined,
+      capabilities: result.capabilities ?? undefined,
+    })
   }
 
   return (

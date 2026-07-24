@@ -20,6 +20,7 @@ import {
   PairUriError,
   type ExchangeResult,
 } from '@/services/pair-exchange'
+import { defaultPairDeviceName } from '@/services/pair-device-name'
 
 interface Props {
   visible: boolean
@@ -76,7 +77,11 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       setPhase('exchanging')
       try {
         const parsed = parsePairUri(data)
-        const result = await exchangeToken({ url: parsed.url, token: parsed.token })
+        const result = await exchangeToken({
+          url: parsed.url,
+          token: parsed.token,
+          deviceName: defaultPairDeviceName(),
+        })
         reset()
         onSuccess(result)
         onClose()
