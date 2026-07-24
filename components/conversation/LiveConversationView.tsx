@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, StyleSheet, Text, View, Keyboard } from 'react-native'
+import { Alert, StyleSheet, Text, Keyboard } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -25,7 +25,7 @@ import { wsManager } from '@/services/ws-client'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
-import { spacing, type Theme } from '@/constants/theme'
+import { type Theme } from '@/constants/theme'
 import type { ProviderName } from '@/constants/providers'
 import { preferRawTerminal } from '@/lib/renderConfidence'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
@@ -88,7 +88,7 @@ export function LiveConversationView({
   const [pendingSends, setPendingSends] = useState<Message[]>([])
 
   // Historical messages (REST)
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId)
+  const { data } = useConversation(serverId, conversationId)
   const historicalMessages: Message[] = data?.messages ?? []
 
   // Live appended messages (WS)
@@ -141,18 +141,6 @@ export function LiveConversationView({
     return client.on('session_update', (msg) => {
       if (msg.type !== 'session_update' || msg.session.id !== sessionId) return
       qc.setQueryData(['session', serverId, sessionId], msg.session)
-    })
-  }, [serverId, sessionId, qc])
-
-  // A session_update emitted while the app is backgrounded (socket
-  // suspended) is lost forever — reconnect re-auths but never replays it.
-  // Refetch on every reconnect so a missed status flip (e.g. running → idle
-  // while backgrounded) doesn't strand the thinking bubble indefinitely.
-  useEffect(() => {
-    return wsManager.onStatusChange(serverId, (s) => {
-      if (s === 'connected') {
-        qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
-      }
     })
   }, [serverId, sessionId, qc])
 
@@ -275,15 +263,6 @@ export function LiveConversationView({
         )}
         maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
-        onStartReached={hasNextPage ? fetchNextPage : undefined}
-        onStartReachedThreshold={0.3}
-        ListHeaderComponent={
-          isFetchingNextPage ? (
-            <View style={styles.pageLoading}>
-              <ActivityIndicator color={theme.text.secondary} />
-            </View>
-          ) : null
-        }
         ListEmptyComponent={
           // A freshly-started / waiting_input session has no JSONL yet, so there
           // are no conversation messages (REST) and no conversation_event (WS).
@@ -380,11 +359,6 @@ function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme })
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
-    pageLoading: {
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     ptyContainer: { flex: 1, paddingHorizontal: 12 },
     ptyContent: { paddingVertical: 12 },
     ptyLine: {
