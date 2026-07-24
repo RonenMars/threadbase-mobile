@@ -333,6 +333,10 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={{ title: i18n.t('settings:notificationHealth.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
+        name="paired-devices"
+        options={{ title: i18n.t('settings:pairedDevices.screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
         name="project/[id]"
         options={({ route }) => {
           const params = route.params as { id?: string; path?: string }

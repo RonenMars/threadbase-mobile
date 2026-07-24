@@ -75,7 +75,8 @@
   "help": {
     "restartOnboarding": "Restart onboarding",
     "helpSupport": "Help & Support",
-    "serverHealth": "Server health"
+    "serverHealth": "Server health",
+    "pairedDevices": "Paired devices"
   },
   "crashReporting": {
     "title": "Share anonymous crash reports",
@@ -167,5 +168,42 @@
     "openRow": "Delivery health",
     "reregisterNeedsPermission": "Notifications permission is off — enable it in system settings, then retry.",
     "reregisterNeedsDevice": "Could not get a push token (simulators cannot register). Try on a physical device."
+  },
+  "pairedDevices": {
+    "screenTitle": "Paired devices",
+    "heading": "Paired devices",
+    "subtitle": "Devices registered with this streamer. Credentials are never shown — only names, capabilities, and activity.",
+    "emptyTitle": "No servers yet",
+    "emptyBody": "Pair a server first, then manage its devices here.",
+    "loading": "Loading devices…",
+    "loadFailed": "Could not load paired devices.",
+    "retry": "Retry",
+    "storeUnavailable": "Device registry is unavailable on this server.",
+    "noDevices": "No devices registered yet. Pair from this app (or another) to mint one.",
+    "controlNote": "Devices with session control can drive the agent. Revoking removes that device’s credential only — other devices keep working.",
+    "hasControl": "This device can control sessions (start, send input, interrupt).",
+    "thisDevice": "This device",
+    "unnamed": "Device {{id}}",
+    "noCapabilities": "No capabilities listed",
+    "createdAt": "Created {{at}}",
+    "lastSeen": "Last seen {{at}}",
+    "revokedAt": "Revoked {{at}}",
+    "revokedSection": "Revoked",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke device?",
+    "revokeBody": "Revoke “{{name}}”? It will lose access on the next request.",
+    "revokeThisBody": "Revoke this phone’s device credential? The shared owner key on this app still works; only the per-device token is invalidated.",
+    "revokeConfirm": "Revoke",
+    "revoked": "Device revoked.",
+    "alreadyRevoked": "Device was already revoked.",
+    "revokeFailed": "Could not revoke device.",
+    "capability": {
+      "historyRead": "Read history",
+      "sessionControl": "Session control",
+      "fsBrowse": "Browse files",
+      "fsUpload": "Upload files",
+      "notifications": "Notifications",
+      "admin": "Admin"
+    }
   }
 }

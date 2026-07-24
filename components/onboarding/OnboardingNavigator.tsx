@@ -100,7 +100,11 @@ export function OnboardingNavigator({ onDone }: Props) {
   const handleEnter = useCallback(async () => {
     try {
       if (paired) {
-        await addServer(paired.url, paired.apiKey, paired.label)
+        await addServer(paired.url, paired.apiKey, paired.label, {
+          deviceId: paired.deviceId,
+          deviceToken: paired.deviceToken,
+          capabilities: paired.capabilities,
+        })
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,
           hashToken(paired.apiKey),
