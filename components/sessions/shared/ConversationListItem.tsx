@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -107,6 +108,7 @@ function shouldShowServer(
 
 export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const {
     title,
@@ -147,6 +149,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
 
   // Blue for an observed external session, amber for an interactive live one.
   const liveColor = external ? theme.status.completed : theme.status.waiting
+  const livePillLabel = external ? t('status.externalPill') : t('status.livePill')
   const serverVisible = shouldShowServer(
     showServer,
     activeServerCount,
@@ -281,7 +284,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
             <View style={[styles.livePill, external && { backgroundColor: `${liveColor}24` }]}>
               <View style={[styles.livePillDot, external && { backgroundColor: liveColor }]} />
               <Text style={[styles.livePillText, external && { color: liveColor }]}>
-                {external ? 'EXTERNAL' : 'LIVE'}
+                {livePillLabel}
               </Text>
             </View>
           ) : timeText ? (

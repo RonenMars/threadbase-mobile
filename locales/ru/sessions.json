@@ -86,5 +86,25 @@
   "sync": {
     "cachedData": "Показаны кэшированные данные",
     "cachedDataSyncing": "Показаны кэшированные данные — синхронизация…"
+  },
+  "status": {
+    "running": "Работает",
+    "waiting": "Ожидание",
+    "idle": "Простой",
+    "externalLive": "Внешняя",
+    "historical": "История",
+    "resumed": "Возобновлена",
+    "onHold": "На паузе",
+    "completed": "Завершена",
+    "failed": "Ошибка",
+    "unavailablePath": "Недоступна",
+    "unavailableWorktree": "Нет worktree",
+    "stale": "Устарела",
+    "livePill": "LIVE",
+    "externalPill": "EXTERNAL"
+  },
+  "capability": {
+    "observeOnly": "Только просмотр",
+    "liveControl": "Управление"
   }
 }
