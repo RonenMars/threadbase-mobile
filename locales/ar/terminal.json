@@ -53,6 +53,11 @@
     "prompts_two": "برومبتان",
     "prompts_few": "{{count}} برومبتات",
     "prompts_many": "{{count}} برومبتًا",
-    "prompts_other": "{{count}} برومبت"
+    "prompts_other": "{{count}} برومبت",
+    "viewModeTerminal": "طرفية",
+    "viewModeChat": "محادثة",
+    "rawFallbackBanner": "عرض الطرفية الخام — تطبيع المحادثة غير مؤكد لهذا البث.",
+    "ptyActiveFallbackBanner": "مخرجات الطرفية المباشرة نشطة قبل توفر رسائل المحادثة.",
+    "rawModeNote": "وضع الطرفية الخام — تم اكتشاف تسلسلات غير مدعومة؛ المخرجات غير مفلترة."
   }
 }
