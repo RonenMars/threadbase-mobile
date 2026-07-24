@@ -1,4 +1,5 @@
-import type { UnavailableReason } from '@/types/api'
+import type { Session, UnavailableReason } from '@/types/api'
+import { isExternalAlive, isExternalSession } from '@/lib/externalSession'
 
 /**
  * Canonical session/conversation presentation kinds for hub rows, badges, and
@@ -56,33 +57,19 @@ export interface SessionPresentation {
 export type SessionPresentationInput = {
   /** Runtime may still emit legacy / on_hold values not in SessionStatus. */
   status: string
-  ownership?: 'managed' | 'external' | 'historical'
-  processLiveness?: 'alive' | 'gone' | 'unknown'
-  activity?: { state: 'active_writing' | 'quiet'; lastEventAt: string; source: 'jsonl' }
-  pid?: number
+  ownership?: Session['ownership']
+  processLiveness?: Session['processLiveness']
+  activity?: Session['activity']
+  pid?: Session['pid']
   ptyAttached?: boolean
-  resumedFromConversationId?: string | null
-  completedAt?: string
-  failureReason?: string
+  resumedFromConversationId?: Session['resumedFromConversationId']
+  completedAt?: Session['completedAt']
+  failureReason?: Session['failureReason']
 }
 
 export interface ConversationPresentationInput {
   resumable?: boolean | null
   unavailableReason?: UnavailableReason | null
-}
-
-function isExternalSession(s: Pick<SessionPresentationInput, 'ownership'>): boolean {
-  return s.ownership === 'external'
-}
-
-function isExternalAlive(
-  s: Pick<SessionPresentationInput, 'processLiveness' | 'activity' | 'pid'>,
-): boolean {
-  if (s.processLiveness === 'alive') return true
-  if (s.processLiveness === 'gone') return false
-  if (s.activity?.state === 'active_writing') return true
-  if (s.processLiveness == null && s.activity == null && s.pid != null) return true
-  return false
 }
 
 const OBSERVE_ONLY: SessionCapabilities = {
