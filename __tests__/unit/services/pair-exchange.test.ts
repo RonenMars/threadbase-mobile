@@ -121,6 +121,55 @@ describe('exchangeToken', () => {
     expect(result.publicUrl).toBe('https://example.test')
     expect(result.machineName).toBe('ronen-mac.local')
     expect(result.url).toBe('https://example.test')
+    expect(result.deviceId).toBeNull()
+    expect(result.deviceToken).toBeNull()
+    expect(result.capabilities).toBeNull()
+  })
+
+  it('forwards deviceName/readOnly and returns device fields', async () => {
+    const apiKey = 'tb_device_fields'
+
+    global.fetch = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as {
+        token: string
+        clientPublicKey: string
+        deviceName?: string
+        readOnly?: boolean
+      }
+      expect(body.deviceName).toBe('Pixel 8')
+      expect(body.readOnly).toBe(true)
+      const recipientPk = naclUtil.decodeBase64(body.clientPublicKey)
+      const ephemeral = nacl.box.keyPair()
+      const nonce = nacl.randomBytes(nacl.box.nonceLength)
+      const cipher = nacl.box(
+        naclUtil.decodeUTF8(apiKey),
+        nonce,
+        recipientPk,
+        ephemeral.secretKey,
+      )
+      return new Response(
+        JSON.stringify({
+          ciphertext: naclUtil.encodeBase64(cipher),
+          nonce: naclUtil.encodeBase64(nonce),
+          ephemeralPublicKey: naclUtil.encodeBase64(ephemeral.publicKey),
+          deviceId: 'uuid-1',
+          deviceToken: 'dt_secret',
+          capabilities: ['history:read'],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      )
+    }) as typeof fetch
+
+    const result = await exchangeToken({
+      url: 'https://example.test',
+      token: 'pt_abc',
+      deviceName: 'Pixel 8',
+      readOnly: true,
+    })
+    expect(result.apiKey).toBe(apiKey)
+    expect(result.deviceId).toBe('uuid-1')
+    expect(result.deviceToken).toBe('dt_secret')
+    expect(result.capabilities).toEqual(['history:read'])
   })
 
   it('surfaces a 401 as a token error', async () => {

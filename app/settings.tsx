@@ -418,7 +418,11 @@ await refreshServerInfo(serverId)
   const handleScanQrSuccess = async (result: ExchangeResult) => {
     setQrScannerOpen(false)
     const label = result.machineName?.trim() || undefined
-    const addResult = await addServer(result.url, result.apiKey, label)
+    const addResult = await addServer(result.url, result.apiKey, label, {
+      deviceId: result.deviceId ?? undefined,
+      deviceToken: result.deviceToken ?? undefined,
+      capabilities: result.capabilities ?? undefined,
+    })
     if (typeof addResult === 'string') {
       wsManager.connect(addResult, result.url, result.apiKey)
     }
@@ -911,6 +915,14 @@ await refreshServerInfo(serverId)
             testID="settings-server-health-row"
           >
             <Text style={s.rowLabel}>{t('help.serverHealth')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/paired-devices')}
+            testID="settings-paired-devices-row"
+          >
+            <Text style={s.rowLabel}>{t('help.pairedDevices')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
           <TouchableOpacity
