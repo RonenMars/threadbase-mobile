@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import * as SecureStore from '@/services/secure-store'
 import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
+import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 
@@ -15,6 +16,16 @@ function secureKeyForServer(serverId: string): string {
   return `threadbase_api_key_${serverId}`
 }
 
+function secureKeyForDeviceToken(serverId: string): string {
+  return `threadbase_device_token_${serverId}`
+}
+
+export interface AddServerDeviceMeta {
+  deviceId?: string
+  deviceToken?: string
+  capabilities?: DeviceCapability[]
+}
+
 /** Minimal shape persisted to AsyncStorage (no secrets). */
 interface PersistedServer {
   id: string
@@ -23,6 +34,8 @@ interface PersistedServer {
   connectionError?: string
   color?: string
   symbol?: string
+  deviceId?: string
+  deviceCapabilities?: DeviceCapability[]
 }
 
 interface ServersStore {
@@ -39,7 +52,12 @@ interface ServersStore {
   /** Per-server pending cache-integrity alert, or null if none. */
   cacheAlert: Record<string, CacheAlert | null>
 
-  addServer: (url: string, apiKey: string, label?: string) => Promise<string | { error: 'duplicate' }>
+  addServer: (
+    url: string,
+    apiKey: string,
+    label?: string,
+    device?: AddServerDeviceMeta,
+  ) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
@@ -79,6 +97,8 @@ async function persistServerList(
       connectionError: servers[id].connectionError ?? undefined,
       color: servers[id].color,
       symbol: servers[id].symbol,
+      deviceId: servers[id].deviceId,
+      deviceCapabilities: servers[id].deviceCapabilities,
     }))
   const payload = {
     list,
@@ -121,7 +141,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
   getServer: (serverId: string) => get().servers[serverId],
 
-  addServer: async (url: string, apiKey: string, label?: string): Promise<string | { error: 'duplicate' }> => {
+  addServer: async (
+    url: string,
+    apiKey: string,
+    label?: string,
+    device?: AddServerDeviceMeta,
+  ): Promise<string | { error: 'duplicate' }> => {
     const normalised = url.replace(/\/+$/, '')
 
     // Duplicate check: same normalised URL AND same API key
@@ -135,6 +160,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
     const id = serverIdFromUrl(normalised)
     await SecureStore.setItemAsync(secureKeyForServer(id), apiKey)
+    if (device?.deviceToken) {
+      await SecureStore.setItemAsync(secureKeyForDeviceToken(id), device.deviceToken)
+    }
 
     const usedColors = activeServerIds.map((sid) => servers[sid]?.color)
     const color = pickNextServerColor(usedColors)
@@ -148,6 +176,8 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       serverInfo: null,
       connectionError: null,
       color,
+      deviceId: device?.deviceId,
+      deviceCapabilities: device?.capabilities,
     }
 
     set((state) => {
@@ -168,6 +198,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
   removeServer: async (serverId: string) => {
     await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
+    await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
     recordDiagnosticEvent('server_removed')
 
     set((state) => {
@@ -377,6 +408,8 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             connectionError: entry.connectionError ?? null,
             color,
             symbol: entry.symbol,
+            deviceId: entry.deviceId,
+            deviceCapabilities: entry.deviceCapabilities,
           }
           activeServerIds.push(entry.id)
         }
