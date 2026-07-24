@@ -16,7 +16,8 @@
   },
   "nav": {
     "top": "↑ Top",
-    "bottom": "↓ Bottom"
+    "bottom": "↓ Bottom",
+    "copyAll": "Copy all"
   },
   "biometricLock": {
     "title": "Threadbase is locked",
@@ -36,5 +37,9 @@
       "enable": "Turn on",
       "notNow": "Not now"
     }
+  },
+  "renderError": {
+    "title": "Couldn’t render this item",
+    "message": "Showing a raw fallback instead of crashing the screen."
   }
 }

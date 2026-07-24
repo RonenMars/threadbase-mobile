@@ -5,6 +5,8 @@ import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { QUERY_GC_TIME } from '@/services/query-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
+import type { ProviderName } from '@/constants/providers'
+import type { ParseConfidence } from '@/lib/renderConfidence'
 
 export type TerminalLine = string
 
@@ -21,9 +23,15 @@ const TERMINAL_REPLAY_TIMEOUT_MS = 2000
 // the app is in the foreground). Force a reconnect so streaming resumes.
 const WS_SILENCE_TIMEOUT_MS = 45_000
 
-export function useTerminalStream(serverId: string, sessionId: string, skipLiveStream = false) {
+export function useTerminalStream(
+  serverId: string,
+  sessionId: string,
+  skipLiveStream = false,
+  provider?: ProviderName | string | null,
+) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<TerminalLine[]>([])
+  const [parseConfidence, setParseConfidence] = useState<ParseConfidence>('high')
   const [isStreaming, setIsStreaming] = useState(false)
   // Ground-truth set of texts the streamer wrote to the PTY, normalized (trim).
   // Lets the renderer positively identify user-owned lines instead of guessing.
@@ -52,6 +60,16 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   // HTTP fallback query — disabled by default, enabled only when WS replay times out
   const [httpFallbackEnabled, setHttpFallbackEnabled] = useState(false)
 
+  function publishLines() {
+    const vt = vtRef.current!
+    const confidence = vt.getParseConfidence()
+    setParseConfidence(confidence)
+    // Low parse confidence → raw lines so we never present chrome-filtered
+    // output as if normalization were authoritative.
+    const visible = confidence === 'low' ? vt.getRawLines() : vt.getLines()
+    setLines(visible.slice(-maxLines))
+  }
+
   const historyQuery = useQuery({
     queryKey: ['terminal-output', serverId, sessionId],
     queryFn: async () => {
@@ -74,10 +92,10 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     if (historyFedRef.current) return
     historyFedRef.current = true
     vtRef.current!.reset()
+    vtRef.current!.setProvider(provider)
     setLines([])
     vtRef.current!.feed(raw)
-    const visible = vtRef.current!.getLines()
-    setLines(visible.slice(-maxLines))
+    publishLines()
   }
 
   // Feed HTTP fallback history whenever it loads (only if replay wasn't received)
@@ -108,10 +126,20 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     historyFedRef.current = false
     queueMicrotask(() => {
       setLines([])
+      setParseConfidence('high')
       setHttpFallbackEnabled(false)
       setUserMessageTexts(new Set())
     })
   }, [serverId, sessionId])
+
+  useEffect(() => {
+    vtRef.current?.setProvider(provider)
+    if (historyFedRef.current || lines.length > 0) {
+      publishLines()
+    }
+    // Re-apply chrome filter when provider identity arrives after first paint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider])
 
   useEffect(() => {
     if (skipLiveStream) return
@@ -182,7 +210,7 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
 
         setIsStreaming(true)
         vtRef.current!.feed(msg.data)
-        setLines(vtRef.current!.getLines().slice(-maxLines))
+        publishLines()
 
         clearTimeout(idleTimer)
         idleTimer = setTimeout(() => setIsStreaming(false), 1500)
@@ -249,7 +277,15 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const clear = useCallback(() => {
     vtRef.current!.reset()
     setLines([])
+    setParseConfidence('high')
   }, [])
 
-  return { lines, isStreaming, userMessageTexts, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear }
+  return {
+    lines,
+    isStreaming,
+    userMessageTexts,
+    parseConfidence,
+    isLoadingHistory: historyQuery.isPending && httpFallbackEnabled,
+    clear,
+  }
 }

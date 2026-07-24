@@ -47,6 +47,7 @@ import {
   removeSessionFromEagerCache,
 } from '@/lib/sessionLifecycle'
 import { NotFoundError } from '@/services/api-client'
+import { preferRawTerminal } from '@/lib/renderConfidence'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -410,7 +411,8 @@ export default function SessionDetailScreen() {
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
-  const { sessionView } = useSettingsStore()
+  const { sessionView, setSessionView } = useSettingsStore()
+  const [forceRawTerminal, setForceRawTerminal] = useState(false)
 
   const isStarting = starting === '1'
   const isPending = (id?.startsWith('pending_') ?? false) || isStarting
@@ -535,7 +537,12 @@ export default function SessionDetailScreen() {
     session?.ptyAttached === true &&
     (session?.status === 'waiting_input' || session?.status === 'running') &&
     !(session != null && isTerminalSession(session))
-  const { isStreaming } = useTerminalStream(serverId, id ?? '', !isLiveForStream)
+  const { isStreaming, parseConfidence, lines: streamPreviewLines } = useTerminalStream(
+    serverId,
+    id ?? '',
+    !isLiveForStream,
+    session?.provider,
+  )
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
     sendKeys.mutate('\x1b', {
@@ -847,6 +854,30 @@ export default function SessionDetailScreen() {
   // for REST so history resolves; fall back to conversationId for Claude / pre-bind.
   const historyConversationId = session.boundConversationId ?? session.conversationId
   const hasConversationId = !!historyConversationId
+  const renderMode = preferRawTerminal({
+    sessionView: forceRawTerminal ? 'terminal' : sessionView,
+    hasConversationId,
+    // Message count is owned by LiveConversationView; session-level routing
+    // only gates on preference, conversation id, and parse confidence.
+    conversationMessageCount: forceRawTerminal ? 0 : 1,
+    ptyVisibleLineCount: streamPreviewLines.length,
+    parseConfidence,
+  })
+  const showTerminalSurface =
+    sessionView === 'terminal' ||
+    !hasConversationId ||
+    forceRawTerminal ||
+    parseConfidence === 'low' ||
+    renderMode.mode === 'terminal'
+  const viewModeLabel = showTerminalSurface
+    ? t('session.viewModeTerminal')
+    : t('session.viewModeChat')
+  const rawFallbackBanner =
+    parseConfidence === 'low' || renderMode.reason === 'low_parse_confidence'
+      ? t('session.rawFallbackBanner')
+      : forceRawTerminal
+        ? t('session.ptyActiveFallbackBanner')
+        : null
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -869,6 +900,21 @@ export default function SessionDetailScreen() {
                 {capabilityLabel}
               </Text>
             ) : null}
+            {isLive ? (
+              <TouchableOpacity
+                onPress={() => {
+                  const next = showTerminalSurface ? 'chat' : 'terminal'
+                  if (!hasConversationId && next === 'chat') return
+                  setForceRawTerminal(false)
+                  setSessionView(next)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={viewModeLabel}
+                testID="session-view-mode-chip"
+              >
+                <Text style={styles.metaChip}>{viewModeLabel}</Text>
+              </TouchableOpacity>
+            ) : null}
             <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
             <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
           </View>
@@ -881,11 +927,18 @@ export default function SessionDetailScreen() {
             {showReconnectBanner ? (
               <ConnectionBanner variant="reconnecting" />
             ) : null}
+            {rawFallbackBanner ? (
+              <View style={styles.rawBanner} testID="session-raw-fallback-banner">
+                <Text style={styles.rawBannerText}>{rawFallbackBanner}</Text>
+              </View>
+            ) : null}
             <View style={showReconnectBanner ? [styles.flex, styles.staleContent] : styles.flex}>
-            {sessionView === 'terminal' || !hasConversationId ? (
+            {showTerminalSurface ? (
               <TerminalView
                 serverId={serverId}
                 sessionId={id}
+                provider={session.provider}
+                parseConfidence={parseConfidence}
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
@@ -896,9 +949,11 @@ export default function SessionDetailScreen() {
                 serverId={serverId}
                 sessionId={id}
                 conversationId={historyConversationId!}
+                provider={session.provider}
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+                onPreferRawTerminal={() => setForceRawTerminal(true)}
               />
             )}
             </View>
@@ -987,6 +1042,14 @@ function makeStyles(theme: Theme) {
     elapsed: { color: theme.text.secondary, fontSize: font.sm },
     prompts: { color: theme.text.secondary, fontSize: font.sm },
     metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    rawBanner: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    rawBannerText: { color: theme.text.warning, fontSize: font.xs, lineHeight: 16 },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
     staleContent: { opacity: 0.45 },
