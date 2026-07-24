@@ -1,45 +1,66 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from './LiveDot'
 import type { SessionStatus } from '@/types/api'
-
-const STATUS_LABELS: Record<SessionStatus, string> = {
-  running: 'Running',
-  waiting_input: 'Active',
-  idle: 'Idle',
-}
+import {
+  deriveSessionPresentation,
+  type SessionColorToken,
+  type SessionPresentationInput,
+} from '@/lib/sessionPresentation'
 
 interface Props {
   status: SessionStatus
   isRefetching?: boolean
   /**
-   * When true, render the distinct "external — alive" treatment (a discovered
-   * process the streamer only observes) instead of the status label: a blue
-   * pulsing dot + "External". Visually separate from an interactive
-   * streamer-owned live session.
+   * When true, render the distinct "external — alive" treatment. Prefer
+   * passing `session` so kind/label come from `deriveSessionPresentation`.
    */
   externalAlive?: boolean
+  /** When set, badge kind/label/color come from the shared presentation helper. */
+  session?: SessionPresentationInput
 }
 
-export function SessionStatusBadge({ status, isRefetching, externalAlive }: Props) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const STATUS_COLORS: Record<SessionStatus, string> = {
-    running: theme.status.running,
-    waiting_input: theme.status.running,
-    idle: theme.status.idle,
+function colorForToken(theme: Theme, token: SessionColorToken): string {
+  switch (token) {
+    case 'running':
+      return theme.status.running
+    case 'waiting':
+      return theme.status.waiting
+    case 'completed':
+      return theme.status.completed
+    case 'failed':
+      return theme.status.failed
+    case 'idle':
+    default:
+      return theme.status.idle
   }
-  const color = externalAlive ? theme.status.completed : (STATUS_COLORS[status] ?? theme.status.idle)
-  const isLive = externalAlive || status === 'running' || status === 'waiting_input'
-  const label = externalAlive ? 'External' : STATUS_LABELS[status]
+}
+
+export function SessionStatusBadge({ status, isRefetching, externalAlive, session }: Props) {
+  const theme = useTheme()
+  const { t } = useTranslation('sessions')
+  const styles = makeStyles(theme)
+
+  const presentation = session
+    ? deriveSessionPresentation(session)
+    : deriveSessionPresentation({
+        status: externalAlive ? 'idle' : status,
+        ownership: externalAlive ? 'external' : 'managed',
+        processLiveness: externalAlive ? 'alive' : undefined,
+        ptyAttached: !externalAlive && (status === 'running' || status === 'waiting_input'),
+      })
+
+  const color = colorForToken(theme, presentation.colorToken)
+  const label = t(presentation.labelKey)
 
   return (
-    <View style={styles.row}>
+    <View style={styles.row} testID={`session-status-${presentation.kind}`}>
       {isRefetching ? (
         <ActivityIndicator size="small" color={color} style={styles.spinner} />
       ) : (
-        <LiveDot live={isLive} color={color} size={7} />
+        <LiveDot live={presentation.live} color={color} size={7} />
       )}
       <Text style={[styles.label, { color }]}>{label}</Text>
     </View>

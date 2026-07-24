@@ -76,5 +76,25 @@
   "sync": {
     "cachedData": "Showing cached data",
     "cachedDataSyncing": "Showing cached data — syncing…"
+  },
+  "status": {
+    "running": "Running",
+    "waiting": "Waiting",
+    "idle": "Idle",
+    "externalLive": "External",
+    "historical": "History",
+    "resumed": "Resumed",
+    "onHold": "On hold",
+    "completed": "Completed",
+    "failed": "Failed",
+    "unavailablePath": "Unavailable",
+    "unavailableWorktree": "Worktree gone",
+    "stale": "Stale",
+    "livePill": "LIVE",
+    "externalPill": "EXTERNAL"
+  },
+  "capability": {
+    "observeOnly": "Observe only",
+    "liveControl": "Live control"
   }
 }

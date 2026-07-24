@@ -8,7 +8,8 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { conversationHref } from '@/lib/conversationHref'
-import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
+import { isExternalSession } from '@/lib/externalSession'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { formatElapsed } from './hubUtils'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { SessionRowProps } from './types'
@@ -22,23 +23,21 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
   const renamedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
   const sessionName = renamedName ?? session.sessionName
 
-  // A discovered process the streamer only observes — read-only, not
-  // interactive: route to the conversation view, never the PTY screen.
+  const presentation = deriveSessionPresentation(session)
   const isExternal = isExternalSession(session)
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
-    if (isExternal) {
+    if (presentation.capabilities.isObserveOnly || isExternal) {
       const convId = session.boundConversationId ?? session.conversationId ?? session.id
       router.push(conversationHref(convId, session.serverId))
       return
     }
     router.push(`/session/${session.id}?server=${session.serverId}`)
-  }, [session, isExternal, router])
+  }, [session, presentation.capabilities.isObserveOnly, isExternal, router])
 
   const handleLongPress = useCallback(() => {
-    // External sessions are read-only — suppress the Cancel action entirely.
-    if (isExternal) return
+    if (!presentation.capabilities.canCancel) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -65,35 +64,31 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
         { text: 'Dismiss', style: 'cancel' },
       ])
     }
-  }, [session, isExternal, cancelSession])
+  }, [session, presentation.capabilities.canCancel, cancelSession])
 
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
 
-  // An alive external session is status 'idle' but its process is running — mark
-  // the row live so it isn't indistinguishable from a dead one, in the distinct
-  // "external" variant (blue) rather than the interactive amber treatment. Keys
-  // on liveness fields with a pid fallback (no `ownership` required).
-  const externalAlive = isExternalAlive(session)
-  const isLive = externalAlive || session.status === 'running' || session.status === 'waiting_input'
   const branchAndElapsed = [session.branch || 'no git', formatElapsed(session.elapsedMs)].join(' · ')
   const titleSuffix = sessionName?.trim() || branchAndElapsed
   const promptCountLabel = `${session.promptCount} prompt${session.promptCount === 1 ? '' : 's'}`
+  const activityTimestamp = presentation.activityAt ?? session.completedAt ?? session.startedAt
 
   return (
     <ConversationListItem
       title={titleSuffix}
-      timestamp={session.completedAt ?? session.startedAt}
+      timestamp={activityTimestamp}
       messageCount={session.promptCount}
       branch={session.branch}
-      live={isLive}
-      external={externalAlive}
+      live={presentation.live}
+      external={presentation.externalLive}
       lastOutput={session.lastOutput || null}
       preview={promptCountLabel}
       serverLabel={session.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}
       forceServerChip={forceServerChip}
+      provider={session.provider}
       density="compact"
       leading="dot"
       previewMode={previewMode}
