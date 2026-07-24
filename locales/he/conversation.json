@@ -39,12 +39,6 @@
     "pause": "השהה עדכונים חיים",
     "resume": "חדש עדכונים חיים"
   },
-  "live": {
-    "indicator": "חי",
-    "paused": "מושהה",
-    "pause": "השהה עדכונים חיים",
-    "resume": "חדש עדכונים חיים"
-  },
   "action": {
     "export": "ייצוא",
     "copyPatch": "העתק תיקון",
@@ -75,5 +69,27 @@
     "title2": "ההודעות מאחרות באלגנטיות…",
     "title3": "ההודעות נתקעו בפקק…",
     "message": "לא ציפינו שהן יהיו כל כך כבדות. אנחנו טוענים הכי מהר שאפשר."
+  },
+  "review": {
+    "title": "סקירת שינויים",
+    "open": "פתח סקירה",
+    "summary": "{{files}} קבצים · +{{added}} / −{{removed}}",
+    "incompleteWarning": "נבנה מכלי Edit/Write בשיחה — ייתכן שאינו מלא מול git status.",
+    "oversizedWarning": "חלק מה-diff קוצצו לביצועים. העתיקו את החבילה לסקירה בשולחן העבודה.",
+    "filterAll": "הכל",
+    "kindEdited": "נערך",
+    "kindWritten": "נכתב",
+    "kindDiff": "Diff",
+    "kindUnknown": "אחר",
+    "searchPlaceholder": "סינון קבצים…",
+    "empty": "עדיין אין שינויי קבצים בשיחה זו.",
+    "selectFile": "בחרו קובץ כדי לראות את ה-diff.",
+    "copyHandoff": "העתק לשולחן העבודה",
+    "sendNote": "שלח הערה לסוכן",
+    "sendNoteTitle": "לשלוח הערת סקירה?",
+    "sendNoteBody": "שולח רשימת קבצים מקוצרת לקלט הסשן החי.",
+    "cancel": "ביטול",
+    "send": "שלח",
+    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
   }
 }
