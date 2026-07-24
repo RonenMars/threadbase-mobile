@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
-import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
+import { InfoIcon, PencilSimple, Star, StopCircle, GitDiff } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -48,6 +48,8 @@ import {
 } from '@/lib/sessionLifecycle'
 import { NotFoundError } from '@/services/api-client'
 import { preferRawTerminal } from '@/lib/renderConfidence'
+import { ReviewSheet } from '@/components/review/ReviewSheet'
+import { useConversation } from '@/hooks/useConversations'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -397,7 +399,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
-  const { t } = useTranslation(['terminal', 'common', 'sessions'])
+  const { t } = useTranslation(['terminal', 'common', 'sessions', 'conversation'])
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { id, server, starting } = useLocalSearchParams<{
@@ -481,6 +483,7 @@ export default function SessionDetailScreen() {
 
   const [infoVisible, setInfoVisible] = useState(false)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
+  const [reviewVisible, setReviewVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
   const [planVisible, setPlanVisible] = useState(false)
 
@@ -493,7 +496,12 @@ export default function SessionDetailScreen() {
   // User rename wins; then the JSONL-derived conversation name; then project name.
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
-  const { sendKeys, stopSession } = useSessionActions(serverId, id ?? '')
+  const { sendKeys, sendInput, stopSession } = useSessionActions(serverId, id ?? '')
+  const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
+  const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
+    enabled: Boolean(serverId && reviewConversationId),
+  })
+  const reviewMessages = reviewConversation?.messages ?? []
 
   // Bug 16: leaving a never-used fresh session should hard-stop the PTY so it
   // doesn't linger in the hub as an empty idle entry. Fire-and-forget — don't
@@ -808,6 +816,15 @@ export default function SessionDetailScreen() {
         <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
       </Pressable>
       <Pressable
+        testID="session-review-button"
+        onPress={() => setReviewVisible(true)}
+        hitSlop={8}
+        accessibilityLabel={t('conversation:review.open')}
+        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+      >
+        <GitDiff size={22} color={theme.text.secondary} />
+      </Pressable>
+      <Pressable
         testID="session-info-button"
         onPress={() => setInfoVisible(true)}
         hitSlop={8}
@@ -1020,6 +1037,20 @@ export default function SessionDetailScreen() {
           setRenameSheetVisible(false)
         }}
         onCancel={() => setRenameSheetVisible(false)}
+      />
+
+      <ReviewSheet
+        visible={reviewVisible}
+        messages={reviewMessages}
+        projectPath={session.projectPath}
+        machineName={session.machineName}
+        canSendNote={isLive && !isWakingUp}
+        onClose={() => setReviewVisible(false)}
+        onSendNote={(note) => {
+          sendInput.mutate(note, {
+            onSettled: () => setReviewVisible(false),
+          })
+        }}
       />
     </SafeAreaView>
   )
