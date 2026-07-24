@@ -75,7 +75,8 @@
   },
   "help": {
     "restartOnboarding": "הפעל מחדש הדרכה",
-    "helpSupport": "עזרה ותמיכה"
+    "helpSupport": "עזרה ותמיכה",
+    "serverHealth": "בריאות שרת"
   },
   "crashReporting": {
     "title": "שיתוף דיווחי קריסה אנונימיים",

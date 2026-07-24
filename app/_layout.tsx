@@ -325,6 +325,10 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={{ title: i18n.t('feedback:diagnostics.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
+        name="server-health"
+        options={{ title: i18n.t('servers:health.screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
         name="project/[id]"
         options={({ route }) => {
           const params = route.params as { id?: string; path?: string }
