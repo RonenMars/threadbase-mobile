@@ -14,10 +14,13 @@ import Animated, {
 } from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
+import * as Clipboard from 'expo-clipboard'
+import { CopySimple } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -65,13 +68,15 @@ const LineText = memo(function LineText({ line, userMessageTexts }: { line: stri
 // Outer wrapper stays cheap (only `index` changes); LineText memoises on `line`.
 const LineRow = memo(function LineRow({ line, index, userMessageTexts }: LineRowProps) {
   return (
-    <View
-      style={styles.lineRow}
-      testID="terminal-line-row"
-    >
-      <LineGutter index={index} />
-      <LineText line={line} userMessageTexts={userMessageTexts} />
-    </View>
+    <RenderErrorBoundary tag="terminal_line" rawFallback={stripAnsi(line)}>
+      <View
+        style={styles.lineRow}
+        testID="terminal-line-row"
+      >
+        <LineGutter index={index} />
+        <LineText line={line} userMessageTexts={userMessageTexts} />
+      </View>
+    </RenderErrorBoundary>
   )
 })
 
@@ -132,6 +137,12 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     scrollToBottom(true)
     setShowJumpButton(0)
   }, [scrollToBottom])
+
+  const copyAll = useCallback(async () => {
+    const text = lines.map((l) => stripAnsi(l)).join('\n')
+    if (!text.trim()) return
+    await Clipboard.setStringAsync(text)
+  }, [lines])
 
   const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
     return <LineRow line={item} index={index} userMessageTexts={userMessageTexts} />
@@ -221,6 +232,15 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
         </TouchableOpacity>
       </Animated.View>
 
+      <TouchableOpacity
+        onPress={copyAll}
+        accessibilityLabel={t('nav.copyAll')}
+        style={styles.copyBtn}
+        testID="terminal-copy-all"
+      >
+        <CopySimple size={16} color="rgba(255, 255, 255, 0.7)" />
+      </TouchableOpacity>
+
       <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
           onPress={jumpToBottom}
@@ -281,6 +301,16 @@ const styles = StyleSheet.create({
   jumpBtnTop: {
     bottom: undefined,
     top: spacing.md,
+  },
+  copyBtn: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    backgroundColor: 'rgba(31, 111, 235, 0.18)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 166, 255, 0.25)',
+    padding: 8,
   },
   jumpBtnInner: {
     backgroundColor: 'rgba(31, 111, 235, 0.18)',
