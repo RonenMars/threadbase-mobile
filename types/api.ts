@@ -339,6 +339,7 @@ export interface NotificationPreferences {
 export interface PushRegisterPayload {
   token: string
   platform: 'ios' | 'android'
+  deviceId?: string
 }
 
 // ── Browse types ────────────────────────────────────────────────────
