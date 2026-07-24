@@ -64,7 +64,15 @@ export default function NotificationHealthScreen() {
     setReregistering(true)
     setActionMsg(null)
     try {
-      await registerPushToken(selectedId)
+      const result = await registerPushToken(selectedId)
+      if (!result.ok) {
+        const skipMsg =
+          result.reason === 'permission_denied'
+            ? t('settings:notificationHealth.reregisterNeedsPermission')
+            : t('settings:notificationHealth.reregisterNeedsDevice')
+        setActionMsg(skipMsg)
+        return
+      }
       setActionMsg(t('settings:notificationHealth.reregistered'))
       await refetch()
     } catch {

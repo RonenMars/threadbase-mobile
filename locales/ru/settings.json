@@ -164,6 +164,8 @@
     "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
     "hintRevoked": "This token was revoked on the server.",
     "hintHealthy": "Recent deliveries succeeded.",
-    "openRow": "Состояние доставки"
+    "openRow": "Состояние доставки",
+    "reregisterNeedsPermission": "Разрешение на уведомления выключено — включите в настройках системы и повторите.",
+    "reregisterNeedsDevice": "Не удалось получить push-токен (симуляторы не регистрируются). Попробуйте на устройстве."
   }
 }

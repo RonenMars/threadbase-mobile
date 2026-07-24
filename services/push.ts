@@ -26,9 +26,13 @@ async function hasPermission(): Promise<boolean> {
   return granted
 }
 
-export async function registerPushToken(serverId: string): Promise<void> {
+export type RegisterPushResult =
+  | { ok: true }
+  | { ok: false; reason: 'permission_denied' | 'token_unavailable' }
+
+export async function registerPushToken(serverId: string): Promise<RegisterPushResult> {
   // Never prompt from the registration path — onboarding owns the prompt.
-  if (!(await hasPermission())) return
+  if (!(await hasPermission())) return { ok: false, reason: 'permission_denied' }
 
   // Only works on physical devices; silently skip on simulators
   let token: string
@@ -36,7 +40,7 @@ export async function registerPushToken(serverId: string): Promise<void> {
     const result = await Notifications.getExpoPushTokenAsync()
     token = result.data
   } catch {
-    return
+    return { ok: false, reason: 'token_unavailable' }
   }
 
   const payload: PushRegisterPayload = {
@@ -47,6 +51,7 @@ export async function registerPushToken(serverId: string): Promise<void> {
 
   const api = createApiForServer(serverId)
   await api.post('/api/push/register', payload)
+  return { ok: true }
 }
 
 /** Register push token with all provided servers. */

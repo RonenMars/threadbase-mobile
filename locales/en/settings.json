@@ -164,6 +164,8 @@
     "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
     "hintRevoked": "This token was revoked on the server.",
     "hintHealthy": "Recent deliveries succeeded.",
-    "openRow": "Delivery health"
+    "openRow": "Delivery health",
+    "reregisterNeedsPermission": "Notifications permission is off — enable it in system settings, then retry.",
+    "reregisterNeedsDevice": "Could not get a push token (simulators cannot register). Try on a physical device."
   }
 }

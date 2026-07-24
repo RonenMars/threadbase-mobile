@@ -164,6 +164,8 @@
     "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
     "hintRevoked": "This token was revoked on the server.",
     "hintHealthy": "Recent deliveries succeeded.",
-    "openRow": "בריאות משלוח"
+    "openRow": "בריאות משלוח",
+    "reregisterNeedsPermission": "הרשאת התראות כבויה — הפעל בהגדרות המערכת ונסה שוב.",
+    "reregisterNeedsDevice": "לא ניתן לקבל אסימון push (סימולטורים אינם נרשמים). נסה במכשיר אמיתי."
   }
 }

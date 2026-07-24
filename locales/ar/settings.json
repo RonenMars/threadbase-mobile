@@ -164,6 +164,8 @@
     "hintDelivery": "Delivery failures are accumulating on the server — re-register or check Expo credentials.",
     "hintRevoked": "This token was revoked on the server.",
     "hintHealthy": "Recent deliveries succeeded.",
-    "openRow": "صحة التسليم"
+    "openRow": "صحة التسليم",
+    "reregisterNeedsPermission": "إذن الإشعارات متوقف — فعّله في إعدادات النظام ثم أعد المحاولة.",
+    "reregisterNeedsDevice": "تعذّر الحصول على رمز دفع (المحاكيات لا تسجّل). جرّب على جهاز حقيقي."
   }
 }
