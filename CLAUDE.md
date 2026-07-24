@@ -187,6 +187,60 @@ To validate a build from one of these tags before merging, run the `Deploy` work
 
 ---
 
+---
+
+## PR Titles & Branches
+
+Derived from the dominant pattern in PRs created 2026-07-19 → 2026-07-24
+(e.g. `#348`–`#394`, `#368`, `#376`, `#378`–`#393`). Prefer this over ad-hoc
+formats. Never mention Cursor, Codex, Claude, or other AI tooling in the title,
+branch name, body, or commit message.
+
+### Title format
+
+```
+type(scope): imperative summary
+```
+
+- **type** — one of: `feat`, `fix`, `chore`, `docs`, `test`, `ci`, `perf`, `refactor`
+- **scope** — optional but preferred when clear (`session`, `terminal`, `conversation`,
+  `onboarding`, `servers`, `ios`, `ci`, `deps`, `e2e`, `i18n`, …)
+- **summary** — imperative, lowercase start, no trailing period; describe the
+  user-visible or operational change, not the implementation dump
+
+Examples from recent history:
+
+- `feat(conversation): add in-chat search entry on detail screen`
+- `fix(terminal): fall back to HTTP output when WS replay is blank`
+- `chore(ios): bump build number to 171 [skip-ci]`
+- `docs(session): correct hold_session comments to describe grace-timer behavior`
+- `test(e2e): wire server drag-reorder into the mock Maestro suite`
+- `ci: gate locale parity and dead keys with an i18n job` (scope may be omitted)
+
+Version-bump PRs keep the `[skip-ci]` suffix. Dependabot-style titles stay as
+`chore(deps): …`.
+
+Do **not** use bracket-slug titles like `[feat][task-name]` for new PRs — that
+was a short-lived experiment and does not match the repo’s established style.
+
+### Branch format
+
+```
+type/kebab-case-summary
+```
+
+Match the title’s type. Examples: `feat/in-chat-search`,
+`fix/terminal-empty-replay-fallback`, `chore/bump-ios-version-171`,
+`docs/hold-session-comments`. Never prefix with tool names (`cursor/…`, `cc/…`).
+
+### Base branch (this integration wave)
+
+For work targeting the current integration line, open PRs against
+`integration-merge-354-355-376` (not `main`). Rebase onto the latest tip of that
+branch before merge. Squash title must still follow `type(scope): summary`.
+
+---
+
 ## Merging PRs — Rebase + Squash, Linear History
 
 Keep `main` a straight line — one commit per PR, no merge commits. Every PR follows the same two operations, in this order:
