@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { createApiForServer } from './api-client'
+import { getDeviceClientId } from './device-id'
 import type { PushRegisterPayload } from '@/types/api'
 
 Notifications.setNotificationHandler({
@@ -41,6 +42,7 @@ export async function registerPushToken(serverId: string): Promise<void> {
   const payload: PushRegisterPayload = {
     token,
     platform: Platform.OS as 'ios' | 'android',
+    deviceId: await getDeviceClientId(),
   }
 
   const api = createApiForServer(serverId)

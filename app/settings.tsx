@@ -621,7 +621,7 @@ await refreshServerInfo(serverId)
           ) : null}
         </View>
 
-        <SectionHeader title={t('section.notifications')} badge={t('comingSoonBadge')} />
+        <SectionHeader title={t('section.notifications')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill />
           <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
@@ -630,10 +630,17 @@ await refreshServerInfo(serverId)
           <SettingsRow label={t('notifications.diffReady')} value={notifications.diffReady} onValueChange={(v) => setNotifications({ diffReady: v })} />
           <SettingsRow label={t('notifications.showBadgeCount')} value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
           <SettingsRow label={t('notifications.quietHours')} value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
-          <TouchableOpacity style={s.testBtn} onPress={handleTestNotification}>
+          <TouchableOpacity style={s.testBtn} onPress={handleTestNotification} testID="settings-send-test-notification">
             <Text style={s.testBtnText}>{t('notifications.sendTest')}</Text>
           </TouchableOpacity>
-          <View style={s.comingSoonOverlay} pointerEvents="auto" />
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/notification-health')}
+            testID="settings-notification-health-row"
+          >
+            <Text style={s.rowLabel}>{t('notificationHealth.openRow')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
         </View>
 
         <SectionHeader title={t('sessionNaming.title')} />
@@ -878,7 +885,6 @@ await refreshServerInfo(serverId)
             description={t('permissions.notificationsDesc')}
             status={permStatuses.notifications}
             onPress={permStatuses.notifications === 'undetermined' ? () => requestPermission('notifications') : openPermissionSettings}
-            badge={t('comingSoonBadge')}
             isLast
           />
         </View>
