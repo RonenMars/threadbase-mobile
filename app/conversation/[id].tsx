@@ -26,6 +26,7 @@ import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
 import { ConversationSearchView } from '@/components/conversation/ConversationSearchView'
+import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
@@ -528,6 +529,22 @@ export default function ConversationDetailScreen() {
   const headerActions = (
     <View style={styles.headerActions}>
       {isLive ? <LivePauseControl paused={livePaused} onToggle={toggleLivePaused} /> : null}
+      <Pressable
+        onPress={() => setSearchBarState((prev) => ({ ...prev, open: !prev.open }))}
+        hitSlop={8}
+        accessibilityLabel={t('search.open')}
+        testID="conversation-search-btn"
+        style={({ pressed }) => [
+          styles.headerButton,
+          searchOpen && styles.headerButtonActive,
+          { opacity: pressed ? 0.5 : 1 },
+        ]}
+      >
+        <MagnifyingGlass
+          size={22}
+          color={searchOpen ? theme.text.primary : theme.text.secondary}
+        />
+      </Pressable>
       <Pressable
         onPress={() => {
           void toggleFavorite()
