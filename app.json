@@ -100,7 +100,8 @@
           "bundleIdentifier": "com.ronenmars.threadbase.widgets",
           "groupIdentifier": "group.com.ronenmars.threadbase"
         }
-      ]
+      ],
+      "./plugins/withLiveActivityTarget"
     ],
     "experiments": {
       "typedRoutes": true,
