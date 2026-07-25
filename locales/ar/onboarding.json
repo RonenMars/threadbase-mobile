@@ -27,7 +27,6 @@
     "qrHeadline": "امسح للإقران.",
     "openCamera": "فتح الكاميرا",
     "ready": "✓ جاهز",
-    "footnote": "// على سطح مكتبك، شغّل tb pair لطباعة توكن.",
     "manualSectionLabel": "على جهازك",
     "manualSectionHint": "افتح Terminal وشغّل:",
     "manualSectionPasteHint": "يطبع URL + رمزًا (أو رابط threadbase://) — الصق أدناه.",
@@ -40,6 +39,8 @@
     "connectBusy": "…جارٍ الاتصال",
     "connectErrHint": "انتهت صلاحية الرمز؟ شغّل tb pair مجدداً على جهازك.",
     "backToOptions": "← خيارات أخرى",
+    "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
+    "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
     "step3": "3. وجّه هاتفك نحو رمز QR. الرمز صالح لمدة 3 دقائق؛ إن انتهت صلاحيته، شغّل tb pair مجدداً."
   },
   "done": {

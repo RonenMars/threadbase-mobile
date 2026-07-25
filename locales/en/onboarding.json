@@ -25,7 +25,6 @@
     "qrHeadline": "Scan to pair.",
     "openCamera": "Open camera",
     "ready": "✓ ready",
-    "footnote": "// On your desktop, run tb pair to print a token.",
     "manualSectionLabel": "On your computer",
     "manualSectionHint": "Open Terminal and run:",
     "manualSectionPasteHint": "It prints a URL + token (or a threadbase:// link) — paste below.",
@@ -40,6 +39,8 @@
     "connectBusy": "…connecting",
     "connectErrHint": "Token expired? Run tb pair again on your computer.",
     "backToOptions": "← Other options",
+    "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
+    "step2": "2. Tap Open camera below. Threadbase will ask permission to use the camera — that's only used to read the QR.",
     "step3": "3. Point your phone at the QR. The pair token is valid for 3 minutes; if it expires, just run tb pair again."
   },
   "done": {
