@@ -59,6 +59,12 @@ if (( EXPORT_OK == 0 )); then
   exit 70
 fi
 
+# Gate the upload on dyld symbol resolution. A pod version skew archives and
+# exports cleanly but aborts at launch ("DYLD 4 Symbol missing"), which no
+# compile-time check catches — build 173 shipped that way.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR/verify-dyld-symbols.sh"
+
 # Upload IPA explicitly via altool so we get a real success/failure response.
 # (method: app-store exports only; xcodebuild's built-in upload with
 # method: app-store-connect silently drops builds on Apple's ingestion side.)
