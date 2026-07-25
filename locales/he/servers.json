@@ -14,8 +14,7 @@
   "dialog": {
     "removeTitle": "הסר שרת",
     "removeMessage": "להתנתק מ-{{server}}?",
-    "removeConfirm": "הסר",
-    "removeDismiss": "ביטול"
+    "removeConfirm": "הסר"
   },
   "form": {
     "labelOptional": "תווית (אופציונלי)",
