@@ -2,6 +2,10 @@
   "nav": {
     "back": "‹ Back",
     "recentDirs": "Recent directories ({{count}})",
+    "displayAll": "Display all",
+    "allRecentDirs": "Recent directories",
+    "searchRecentDirs": "Search locations",
+    "noMatchingDirs": "No matching locations",
     "newFolder": "New Folder",
     "create": "Create",
     "startSession": "Start Session Here"
