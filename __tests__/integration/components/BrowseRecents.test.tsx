@@ -173,6 +173,39 @@ describe('BrowseScreen — recent directories accordion', () => {
     expect(queryByText('/home/user/projects/gamma')).toBeNull()
   })
 
+  it('lists recent directories newest-first', async () => {
+    mockSessions.current = [
+      makeSession({
+        id: 'old',
+        projectPath: '/home/user/projects/older',
+        projectName: 'older',
+        startedAt: '2024-01-01T00:00:00Z',
+      }),
+      makeSession({
+        id: 'new',
+        projectPath: '/home/user/projects/newer',
+        projectName: 'newer',
+        startedAt: '2024-01-05T00:00:00Z',
+      }),
+      makeSession({
+        id: 'mid',
+        projectPath: '/home/user/projects/middle',
+        projectName: 'middle',
+        startedAt: '2024-01-03T00:00:00Z',
+      }),
+    ]
+
+    const { getAllByText } = await renderScreen()
+    const paths = getAllByText(/\/home\/user\/projects\//).map(
+      (node) => node.props.children as string,
+    )
+    expect(paths).toEqual([
+      '/home/user/projects/newer',
+      '/home/user/projects/middle',
+      '/home/user/projects/older',
+    ])
+  })
+
   it('caps the list at 8 entries even when more sessions exist', async () => {
     mockSessions.current = Array.from({ length: 12 }, (_, i) =>
       makeSession({
@@ -182,8 +215,52 @@ describe('BrowseScreen — recent directories accordion', () => {
         startedAt: `2024-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
       }),
     )
-    const { getByText } = await renderScreen()
+    const { getByText, queryByText, getByTestId } = await renderScreen()
     expect(getByText('Recent directories (8)')).toBeTruthy()
+    // Preview shows only the 3 newest; older paths stay hidden until Display all
+    expect(getByText('/home/user/projects/p11')).toBeTruthy()
+    expect(getByText('/home/user/projects/p10')).toBeTruthy()
+    expect(getByText('/home/user/projects/p9')).toBeTruthy()
+    expect(queryByText('/home/user/projects/p8')).toBeNull()
+    expect(getByTestId('recent-dirs-display-all')).toBeTruthy()
+  })
+
+  it('opens Display all modal with searchable full list when more than 3 recents', async () => {
+    mockSessions.current = Array.from({ length: 5 }, (_, i) =>
+      makeSession({
+        id: `s${i}`,
+        projectPath: `/home/user/projects/p${i}`,
+        projectName: `p${i}`,
+        startedAt: `2024-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+      }),
+    )
+
+    const { getByTestId, queryByTestId, getByPlaceholderText } = await renderScreen()
+
+    expect(queryByTestId('recent-dir-row-/home/user/projects/p1')).toBeNull()
+    await fireEvent.press(getByTestId('recent-dirs-display-all'))
+
+    expect(getByTestId('recent-dirs-modal')).toBeTruthy()
+    expect(getByTestId('recent-dir-row-/home/user/projects/p1')).toBeTruthy()
+    expect(getByTestId('recent-dir-row-/home/user/projects/p0')).toBeTruthy()
+
+    await fireEvent.changeText(getByPlaceholderText('Search locations'), 'p1')
+    expect(getByTestId('recent-dir-row-/home/user/projects/p1')).toBeTruthy()
+    expect(queryByTestId('recent-dir-row-/home/user/projects/p0')).toBeNull()
+    expect(queryByTestId('recent-dir-row-/home/user/projects/p4')).toBeNull()
+  })
+
+  it('hides Display all when there are 3 or fewer recent directories', async () => {
+    mockSessions.current = Array.from({ length: 3 }, (_, i) =>
+      makeSession({
+        id: `s${i}`,
+        projectPath: `/home/user/projects/p${i}`,
+        projectName: `p${i}`,
+        startedAt: `2024-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+      }),
+    )
+    const { queryByTestId } = await renderScreen()
+    expect(queryByTestId('recent-dirs-display-all')).toBeNull()
   })
 
   it('navigates to /session/new with the absolute path when a recent row is tapped', async () => {
