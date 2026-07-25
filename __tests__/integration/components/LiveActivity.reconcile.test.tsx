@@ -1,4 +1,8 @@
-import { reconcile, resetLiveActivities } from '@/services/live-activity'
+import {
+  adoptRunningActivities,
+  reconcile,
+  resetLiveActivities,
+} from '@/services/live-activity'
 import type { Session } from '@/types/api'
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
 
@@ -75,5 +79,29 @@ describe('live activity reconciler', () => {
     await reconcile('srv-1', session())
     await reconcile('srv-2', session())
     expect(factory.start).toHaveBeenCalledTimes(2)
+  })
+
+  describe('adoption at app start', () => {
+    it('ends surfaces left over from a previous launch', async () => {
+      // Simulates a restart: raise a surface, then drop the in-memory tracking
+      // the way a fresh JS context would, leaving the native activity behind.
+      // A survivor carries no props back, so it can never be matched to a
+      // session or updated — leaving it would freeze it on stale data.
+      await reconcile('srv-1', session())
+      const orphan = factory.start.mock.results[0].value
+      resetLiveActivities()
+      factory.getInstances.mockReturnValueOnce([orphan])
+
+      adoptRunningActivities()
+
+      expect(orphan.end).toHaveBeenCalledWith('immediate')
+    })
+
+    it('does not disturb a session started after adoption ran', async () => {
+      adoptRunningActivities()
+      await reconcile('srv-1', session())
+      const handle = factory.start.mock.results[0].value
+      expect(handle.end).not.toHaveBeenCalled()
+    })
   })
 })

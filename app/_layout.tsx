@@ -30,7 +30,10 @@ import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
 import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
-import { reconcile as reconcileLiveActivity } from '@/services/live-activity'
+import {
+  adoptRunningActivities,
+  reconcile as reconcileLiveActivity,
+} from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
@@ -105,6 +108,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // Reading from the closure is correct here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, isLoading, mode, navState?.key])
+
+  // Live surfaces outlive the JS context. Anything still on screen from a
+  // previous launch is untracked and could never be updated or ended, so it
+  // would sit frozen on stale data — clear it before the first session_update
+  // can start new ones. Mount-only: re-running per server change would tear
+  // down surfaces this session had just raised.
+  useEffect(() => {
+    void adoptRunningActivities()
+  }, [])
 
   // Wire WebSocket for all servers
   useEffect(() => {
