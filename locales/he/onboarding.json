@@ -27,7 +27,6 @@
     "qrHeadline": "סרוק כדי לזווג.",
     "openCamera": "פתח מצלמה",
     "ready": "✓ מוכן",
-    "footnote": "// על שולחן העבודה שלך, הרץ tb pair כדי להדפיס טוקן.",
     "manualSectionLabel": "במחשב שלך",
     "manualSectionHint": "פתח טרמינל והרץ:",
     "manualSectionPasteHint": "הוא מדפיס URL + טוקן (או קישור threadbase://) — הדבק למטה.",
@@ -40,6 +39,8 @@
     "connectBusy": "…מתחבר",
     "connectErrHint": "פג תוקף הטוקן? הרץ tb pair שוב במחשב.",
     "backToOptions": "← אפשרויות אחרות",
+    "step1": "1. על השרת שלך, הרץ tb pair. QR יודפס לטרמינל.",
+    "step2": "2. הקש על פתח מצלמה למטה. Threadbase תבקש הרשאה להשתמש במצלמה — היא משמשת רק לקריאת ה-QR.",
     "step3": "3. כוון את הטלפון ל-QR. הטוקן תקף ל-3 דקות; אם פג, הרץ tb pair שוב."
   },
   "done": {
