@@ -2,6 +2,10 @@
   "nav": {
     "back": "‹ Назад",
     "recentDirs": "Недавние директории ({{count}})",
+    "displayAll": "Показать все",
+    "allRecentDirs": "Недавние директории",
+    "searchRecentDirs": "Поиск расположений",
+    "noMatchingDirs": "Нет подходящих расположений",
     "newFolder": "Новая папка",
     "create": "Создать",
     "startSession": "Начать сессию здесь"
