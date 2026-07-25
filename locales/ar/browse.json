@@ -2,6 +2,10 @@
   "nav": {
     "back": "‹ رجوع",
     "recentDirs": "المجلدات الأخيرة ({{count}})",
+    "displayAll": "عرض الكل",
+    "allRecentDirs": "المجلدات الأخيرة",
+    "searchRecentDirs": "البحث في المواقع",
+    "noMatchingDirs": "لا توجد مواقع مطابقة",
     "newFolder": "مجلد جديد",
     "create": "إنشاء",
     "startSession": "ابدأ سيشن هنا"
