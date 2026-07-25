@@ -167,6 +167,27 @@ jobs:
         with:
           run: npm run test:i18n
 
+  # ── Native dependency coherence ──────────────────────────────────────────────
+  # Two versions of one native module resolve fine for npm and compile fine for
+  # Xcode, then abort at launch in dyld with "Symbol not found" — a pod built
+  # against one version of a shared dependency against a different version of it
+  # bundled. TestFlight build 173 shipped that way (expo-camera 57.0.1 against
+  # expo-modules-core 57.0.7) and crashed on every launch with a green CI.
+  # `expo-doctor` catches the duplicate at the npm level in seconds, on Linux;
+  # `scripts/verify-dyld-symbols.sh` is the belt-and-braces check at ship time.
+  native-deps:
+    name: Native deps
+    runs-on: ubuntu-latest
+    needs: [gate, setup]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Duplicate native modules
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
+        with:
+          run: npm run check:native-deps
+
   # ── Maestro E2E (iOS sim, monthly schedule only) ─────────────────────────────
   # Runs once per month (00:00 UTC on the 1st) via the schedule trigger above.
   # The macOS runner + iOS app build is ~15 minutes and ~$3/run, so this acts
