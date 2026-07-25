@@ -125,6 +125,18 @@ async function apply(action: LiveActivityAction): Promise<void> {
     return
   }
   if (action.type === 'start') {
+    // KNOWN LIMITATION — a surface started here disappears silently at Apple's
+    // ~8h ceiling, while the session may well still be running. To the user that
+    // reads as "the session ended". It is not a bug in this file.
+    //
+    // The intended mitigation was `staleDate`, which greys the surface out
+    // instead of dropping it. expo-widgets hardcodes `staleDate: nil`
+    // (ios/LiveActivity.swift:23,35 and ios/LiveActivityFactory.swift:30) and
+    // exposes no JS parameter, so it cannot be set from here at all.
+    //
+    // Do not patch expo-widgets or work around this. Phase 1b's streamer-side
+    // APNs renewal removes the 8h ceiling outright and makes the whole question
+    // moot; until it lands, silent expiry is the accepted behavior.
     const activity = SessionLiveActivity.start(action.state, deepLink(action.state))
     handles.set(action.key, { key: action.key, lastUpdatedAt: ++touchCounter, activity })
     return
