@@ -13,7 +13,11 @@ import { clientLog } from '@/lib/clientLog'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
-  | { type: 'terminal_output'; sessionId: string; data: string }
+  // `seq` is a per-session monotonically increasing chunk counter from the
+  // streamer (starts at 1). Additive; old streamers omit it. Lets the client
+  // detect a stale chunk delivered after a reconnect race instead of
+  // trusting raw WS arrival order.
+  | { type: 'terminal_output'; sessionId: string; data: string; seq?: number }
   | { type: 'session_list'; sessions: Session[] }
   | { type: 'notification'; event: NotificationEvent }
   | { type: 'plan_ready'; sessionId: string; plan: string }
@@ -21,7 +25,16 @@ export type WSMessage =
   // client can positively identify user-owned output instead of parsing the
   // `❯ <text>` transcript line heuristically. Additive; old streamers omit it.
   | { type: 'user_message'; sessionId: string; text: string; ts: number }
-  | { type: 'terminal_replay'; sessionId: string; lines: string[]; userMessages?: { text: string; ts: number }[] }
+  // `seq` is the streamer's last-emitted terminal_output seq at replay time,
+  // letting the client baseline before trusting subsequent chunks. Additive;
+  // old streamers omit it.
+  | {
+      type: 'terminal_replay'
+      sessionId: string
+      lines: string[]
+      userMessages?: { text: string; ts: number }[]
+      seq?: number
+    }
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }

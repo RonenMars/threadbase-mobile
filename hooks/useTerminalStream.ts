@@ -56,6 +56,14 @@ export function useTerminalStream(
   const replayReceivedRef = useRef(false)
   // Track whether history has been fed (from replay or HTTP) to avoid double-feeding
   const historyFedRef = useRef(false)
+  // Last terminal_output seq accepted for the current session/connection
+  // generation. A stale frame from a superseded WS connection can otherwise
+  // land after a reconnect reset; any terminal_output whose seq isn't
+  // greater than this is dropped instead of being fed to the VT. Reset to 0
+  // alongside the other per-session refs; baselined from terminal_replay's
+  // seq (undefined when the streamer predates this field, or via the HTTP
+  // fallback, which carries no seq — the guard then never rejects).
+  const lastSeqRef = useRef(0)
 
   // HTTP fallback query — disabled by default, enabled only when WS replay times out
   const [httpFallbackEnabled, setHttpFallbackEnabled] = useState(false)
@@ -88,9 +96,10 @@ export function useTerminalStream(
     meta: { persist: false },
   })
 
-  function feedHistory(raw: string) {
+  function feedHistory(raw: string, baselineSeq = 0) {
     if (historyFedRef.current) return
     historyFedRef.current = true
+    lastSeqRef.current = baselineSeq
     vtRef.current!.reset()
     vtRef.current!.setProvider(provider)
     setLines([])
@@ -124,6 +133,7 @@ export function useTerminalStream(
     vtRef.current!.reset()
     replayReceivedRef.current = false
     historyFedRef.current = false
+    lastSeqRef.current = 0
     queueMicrotask(() => {
       setLines([])
       setParseConfidence('high')
@@ -189,7 +199,7 @@ export function useTerminalStream(
           fallbackTimer = null
         }
         if (msg.userMessages) addUserMessages(msg.userMessages.map((m) => m.text))
-        feedHistory(msg.lines.join('\n'))
+        feedHistory(msg.lines.join('\n'), msg.seq ?? 0)
       })
 
       // Start fallback timer — if no terminal_replay within 2s, fall back to HTTP
@@ -207,6 +217,12 @@ export function useTerminalStream(
       if (!client) return
       unsubOutput = client.on('terminal_output', (msg) => {
         if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
+        // A stale frame from a superseded connection can arrive after a
+        // reconnect reset baselined lastSeqRef higher — drop it rather than
+        // feeding it out of order. Streamers that omit seq (older versions)
+        // never trip this: seq stays undefined and the check is skipped.
+        if (msg.seq != null && msg.seq <= lastSeqRef.current) return
+        if (msg.seq != null) lastSeqRef.current = msg.seq
 
         setIsStreaming(true)
         vtRef.current!.feed(msg.data)
