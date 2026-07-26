@@ -37,7 +37,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "plugins": [
@@ -93,7 +94,15 @@
         }
       ],
       "./plugins/withAndroidReleaseSigning",
-      "@sentry/react-native/expo"
+      "@sentry/react-native/expo",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.ronenmars.threadbase.widgets",
+          "groupIdentifier": "group.com.ronenmars.threadbase"
+        }
+      ],
+      "./plugins/withLiveActivityTarget"
     ],
     "experiments": {
       "typedRoutes": true,
