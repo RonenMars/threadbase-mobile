@@ -15,10 +15,7 @@ const path = require('path');
 
 const xcode = require('xcode');
 
-const {
-  configureProvisioningProfiles,
-  reorderEmbedPhase,
-} = require('../../../plugins/withLiveActivityTarget');
+const { reorderEmbedPhase } = require('../../../plugins/withLiveActivityTarget');
 
 const PBXPROJ = path.resolve(
   __dirname,
@@ -34,23 +31,10 @@ function parseProject() {
   return project;
 }
 
-function nativeTarget(project, name) {
-  return Object.values(project.pbxNativeTargetSection()).find(
-    (target) => target && target.name === name,
-  );
-}
-
 function appTarget(project) {
-  return nativeTarget(project, 'Threadbase');
-}
-
-function releaseBuildSettings(project, targetName) {
-  const target = nativeTarget(project, targetName);
-  const configurationList = project.pbxXCConfigurationList()[target.buildConfigurationList];
-  const releaseRef = configurationList.buildConfigurations.find(
-    (configuration) => configuration.comment === 'Release',
+  return Object.values(project.pbxNativeTargetSection()).find(
+    (target) => target && target.name === 'Threadbase',
   );
-  return project.pbxXCBuildConfigurationSection()[releaseRef.value].buildSettings;
 }
 
 function phaseNames(target) {
@@ -134,29 +118,5 @@ describe('withLiveActivityTarget', () => {
     expect(() => reorderEmbedPhase(project)).toThrow(
       /live-activity-embed-order.*Could not find native target/s,
     );
-  });
-
-  it('keeps distinct app and widget profile variables in Release builds', () => {
-    const project = parseProject();
-
-    expect(releaseBuildSettings(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER)
-      .toBe('"$(IOS_PROVISION_PROFILE_UUID)"');
-    expect(
-      releaseBuildSettings(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER,
-    ).toBe('"$(IOS_WIDGET_PROVISION_PROFILE_UUID)"');
-  });
-
-  it('restores target-specific profile variables idempotently', () => {
-    const project = parseProject();
-    delete releaseBuildSettings(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER;
-    delete releaseBuildSettings(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER;
-
-    expect(configureProvisioningProfiles(project)).toBe(true);
-    expect(configureProvisioningProfiles(project)).toBe(false);
-    expect(releaseBuildSettings(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER)
-      .toBe('"$(IOS_PROVISION_PROFILE_UUID)"');
-    expect(
-      releaseBuildSettings(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER,
-    ).toBe('"$(IOS_WIDGET_PROVISION_PROFILE_UUID)"');
   });
 });

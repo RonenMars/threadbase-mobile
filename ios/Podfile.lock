@@ -3121,7 +3121,7 @@ SPEC CHECKSUMS:
   ExpoLocalization: 659243b03b3a3e9589793cee2f728a899e181329
   ExpoLogBox: 8a3cfa2897e088083cd49fc1ff7fdb2de4385547
   ExpoMailComposer: 101933dc6bdb4d7a46495d1dd87420365325adb9
-  ExpoModulesCore: 3082834d5d10d2ea67c1fbfcd7f191518ed3aec4
+  ExpoModulesCore: 9c8a797ca025477d163f848837f56808f7bd2e8e
   ExpoModulesJSI: b20fefa4cdd9097e7e6b715466d1900b8c5d4711
   ExpoModulesWorklets: b21b8f233b5fd71ca74327217601fa4ead9ddaaf
   ExpoModulesWorkletsAdapter: 6b3dffb299973f4f2b1a96738aa2cb46987b18e1
@@ -3138,7 +3138,7 @@ SPEC CHECKSUMS:
   EXUpdates: cbdbe424e30c11983c2841930050114c1b8bea0c
   EXUpdatesInterface: 92d2aa5194b6fb93ca8ab749db75665cb28b2e60
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
-  hermes-engine: 7a039a55e4e8ca01b3efce17360bea8c248fb90d
+  hermes-engine: 7963b2f5de4c0c4dfaaf3b2f8108576c1b6eec27
   RCTDeprecation: 2a74a2c57675e64419bd89078efde81f7c1de90b
   RCTRequired: 30451112e6fef4e6f31b4e7eee0845156e35e4b0
   RCTSwiftUI: 5aaf0b07e747ba749dc6acc94d8bd41eea4b570f
@@ -3229,4 +3229,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 94e17165220537496478ae60f0a1aec3f63425da
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

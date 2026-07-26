@@ -1,5 +1,5 @@
-// Keeps the widget extension's build-phase order and manual-signing settings
-// intact across `expo prebuild`.
+// Moves the widget extension's "Embed Foundation Extensions" phase ahead of the
+// app target's script phases. Idempotent across `expo prebuild`.
 //
 // expo-widgets appends the embed phase LAST, after these script phases:
 //   [Expo Dev Launcher] Strip Local Network Keys for Release
@@ -22,17 +22,10 @@ const configPluginsEntry = require.resolve('@expo/config-plugins', { paths: [exp
 const { withXcodeProject } = require(configPluginsEntry);
 
 const TAG = 'live-activity-embed-order';
-const SIGNING_TAG = 'live-activity-signing';
 
 const APP_TARGET = 'Threadbase';
-const WIDGET_TARGET = 'ExpoWidgetsTarget';
 const EMBED_PHASE = 'Embed Foundation Extensions';
 const ANCHOR_PHASE = 'Resources';
-const RELEASE_CONFIGURATION = 'Release';
-const PROFILE_VARIABLE_BY_TARGET = {
-  [APP_TARGET]: 'IOS_PROVISION_PROFILE_UUID',
-  [WIDGET_TARGET]: 'IOS_WIDGET_PROVISION_PROFILE_UUID',
-};
 
 function findNativeTarget(project, name) {
   const targets = project.pbxNativeTargetSection();
@@ -90,53 +83,14 @@ function reorderEmbedPhase(project) {
   return true;
 }
 
-function releaseBuildSettings(project, targetName) {
-  const target = findNativeTarget(project, targetName);
-  if (!target) {
-    throw new Error(`[${SIGNING_TAG}] Could not find native target '${targetName}'.`);
-  }
-
-  const configurationList = project.pbxXCConfigurationList()[target.buildConfigurationList];
-  const releaseReference = configurationList?.buildConfigurations?.find(
-    (configuration) => configuration.comment === RELEASE_CONFIGURATION,
-  );
-  const releaseConfiguration = releaseReference
-    ? project.pbxXCBuildConfigurationSection()[releaseReference.value]
-    : null;
-  if (!releaseConfiguration?.buildSettings) {
-    throw new Error(
-      `[${SIGNING_TAG}] Could not find '${RELEASE_CONFIGURATION}' settings for '${targetName}'.`,
-    );
-  }
-
-  return releaseConfiguration.buildSettings;
-}
-
-function configureProvisioningProfiles(project) {
-  let changed = false;
-
-  for (const [targetName, variable] of Object.entries(PROFILE_VARIABLE_BY_TARGET)) {
-    const buildSettings = releaseBuildSettings(project, targetName);
-    const desired = `"$(${variable})"`;
-    if (buildSettings.PROVISIONING_PROFILE_SPECIFIER !== desired) {
-      buildSettings.PROVISIONING_PROFILE_SPECIFIER = desired;
-      changed = true;
-    }
-  }
-
-  return changed;
-}
-
 const withLiveActivityTarget = (config) => {
   return withXcodeProject(config, (cfg) => {
     reorderEmbedPhase(cfg.modResults);
-    configureProvisioningProfiles(cfg.modResults);
     return cfg;
   });
 };
 
 module.exports = withLiveActivityTarget;
 // Exposed for __tests__/unit/scripts/withLiveActivityTarget.test.js: driving the
-// mutations directly avoids standing up a full Expo config context just to reach them.
-module.exports.configureProvisioningProfiles = configureProvisioningProfiles;
+// reorder directly avoids standing up a full Expo config context just to reach it.
 module.exports.reorderEmbedPhase = reorderEmbedPhase;
