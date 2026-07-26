@@ -14,7 +14,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "175",
+      "buildNumber": "176",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
