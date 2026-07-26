@@ -25,6 +25,10 @@ const IGNORED_CSI = new Set(['m', 'h', 'l', 'n', 't', 'q', 'c', 's', 'u', 'p'])
 
 const HANDLED_CSI = new Set(['A', 'B', 'C', 'D', 'G', 'H', 'f', 'J', 'K', 'L', 'M', 'S', 'T', 'r'])
 
+// Whole-line box-drawing borders (e.g. the status-bar box Claude Code draws)
+// — box-drawing/block glyphs and whitespace only, nothing else.
+const BOX_BORDER_RE = /^[\s─-╿▀-▟]+$/
+
 export class VirtualTerminal {
   private grid: string[][] = [[]]
   private row = 0
@@ -93,11 +97,16 @@ export class VirtualTerminal {
     }
   }
 
-  /** Unfiltered visible lines (empty rows dropped). Used for raw fallback UI. */
+  /**
+   * Unfiltered visible lines (empty rows and box-drawing border rows
+   * dropped). Used for raw fallback UI. Only whole border rows (e.g. the
+   * status-bar box drawn by Claude Code's TUI) are dropped — a content line
+   * that merely contains a box-drawing glyph is kept as-is.
+   */
   getRawLines(): string[] {
     return this.grid
       .map((chars) => chars.join('').trimEnd())
-      .filter((line) => line.length > 0)
+      .filter((line) => line.length > 0 && !BOX_BORDER_RE.test(line))
   }
 
   /**
