@@ -20,11 +20,12 @@ SECRETS="scripts/.signing-secrets"
 # shellcheck disable=SC1090
 source "$SECRETS"
 
-# ASC_AUTH_KEY_B64 / IOS_PROVISION_PROFILE_B64 / IOS_DIST_CERT_P12_B64 may be given
-# either as raw base64 (B64) or as a path to the file (…_FILE). Materialize B64 from FILE.
-[[ -n "${ASC_AUTH_KEY_FILE:-}"          ]] && export ASC_AUTH_KEY_B64="$(base64 -i "$ASC_AUTH_KEY_FILE")"
-[[ -n "${IOS_PROVISION_PROFILE_FILE:-}" ]] && export IOS_PROVISION_PROFILE_B64="$(base64 -i "$IOS_PROVISION_PROFILE_FILE")"
-[[ -n "${IOS_DIST_CERT_FILE:-}"         ]] && export IOS_DIST_CERT_P12_B64="$(base64 -i "$IOS_DIST_CERT_FILE")"
+# ASC auth, app/widget profiles, and the Distribution cert may be given as raw
+# base64 (B64) or as a path to the file (…_FILE). Materialize B64 from FILE.
+[[ -n "${ASC_AUTH_KEY_FILE:-}"                 ]] && export ASC_AUTH_KEY_B64="$(base64 -i "$ASC_AUTH_KEY_FILE")"
+[[ -n "${IOS_PROVISION_PROFILE_FILE:-}"        ]] && export IOS_PROVISION_PROFILE_B64="$(base64 -i "$IOS_PROVISION_PROFILE_FILE")"
+[[ -n "${IOS_WIDGET_PROVISION_PROFILE_FILE:-}" ]] && export IOS_WIDGET_PROVISION_PROFILE_B64="$(base64 -i "$IOS_WIDGET_PROVISION_PROFILE_FILE")"
+[[ -n "${IOS_DIST_CERT_FILE:-}"                ]] && export IOS_DIST_CERT_P12_B64="$(base64 -i "$IOS_DIST_CERT_FILE")"
 
 # bootstrap-ios-signing.sh imports the Distribution cert into $RUNNER_TEMP (a CI var).
 # On a local Mac set it to a temp dir so that block works; skip cert import entirely if

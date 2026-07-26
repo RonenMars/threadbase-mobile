@@ -101,6 +101,8 @@ jobs:
           IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
           IOS_PROVISION_PROFILE_B64: ${{ secrets.IOS_PROVISION_PROFILE_B64 }}
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
+          IOS_WIDGET_PROVISION_PROFILE_B64: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_B64 }}
+          IOS_WIDGET_PROVISION_PROFILE_UUID: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_UUID }}
         run: ./scripts/bootstrap-ios-signing.sh
 
       - name: Install npm dependencies
@@ -151,6 +153,7 @@ jobs:
           IOS_TARGET: ${{ inputs.target }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
+          IOS_WIDGET_PROVISION_PROFILE_UUID: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_UUID }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
