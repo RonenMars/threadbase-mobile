@@ -67,7 +67,7 @@ export function useTerminalStream(
     // Low parse confidence → raw lines so we never present chrome-filtered
     // output as if normalization were authoritative.
     const visible = confidence === 'low' ? vt.getRawLines() : vt.getLines()
-    setLines(visible.slice(-maxLines))
+    setLines(visible)
   }
 
   const historyQuery = useQuery({
