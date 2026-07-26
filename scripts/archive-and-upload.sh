@@ -10,6 +10,8 @@ set -euo pipefail
 : "${ASC_TEAM_ID:?source .env.signing first}"
 : "${ASC_KEY_PATH:?source .env.signing first}"
 : "${EXPORT_OPTIONS_PLIST:?source .env.signing first}"
+: "${IOS_PROVISION_PROFILE_UUID:?source .env.signing first}"
+: "${IOS_WIDGET_PROVISION_PROFILE_UUID:?source .env.signing first}"
 
 WORKSPACE="${WORKSPACE:-ios/Threadbase.xcworkspace}"
 SCHEME="${SCHEME:-Threadbase}"
@@ -31,7 +33,8 @@ xcodebuild \
   DEVELOPMENT_TEAM="${ASC_TEAM_ID}" \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="Apple Distribution" \
-  PROVISIONING_PROFILE_SPECIFIER="${IOS_PROVISION_PROFILE_UUID}" \
+  IOS_PROVISION_PROFILE_UUID="${IOS_PROVISION_PROFILE_UUID}" \
+  IOS_WIDGET_PROVISION_PROFILE_UUID="${IOS_WIDGET_PROVISION_PROFILE_UUID}" \
   CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
   archive | tee build/archive.log
 
