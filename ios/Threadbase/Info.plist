@@ -40,6 +40,10 @@
     </array>
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>ExpoWidgetsAppGroupIdentifier</key>
+    <string>group.com.ronenmars.threadbase</string>
+    <key>ExpoWidgets_EnablePushNotifications</key>
+    <false/>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
@@ -69,6 +73,10 @@
     <string>Allow Threadbase to attach photos from your library to Claude Code sessions.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Threadbase converts your speech to text on-device.</string>
+    <key>NSSupportsLiveActivities</key>
+    <true/>
+    <key>NSSupportsLiveActivitiesFrequentUpdates</key>
+    <false/>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

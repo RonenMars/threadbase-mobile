@@ -1,7 +1,7 @@
 import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
-import { Pressable, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
   Stack,
@@ -30,6 +30,10 @@ import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
 import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
+import {
+  adoptRunningActivities,
+  reconcile as reconcileLiveActivity,
+} from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
@@ -39,7 +43,8 @@ import { GlassView } from '@/components/ui/GlassView'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
-import { shouldSkipAutoNav } from '@/lib/sessionNavGuard'
+import { markNavigatedToSession, shouldSkipAutoNav } from '@/lib/sessionNavGuard'
+import { resolveColdStartRoute, sessionRouteFromNotificationData } from '@/lib/coldStartDeepLink'
 import { useTranslation } from 'react-i18next'
 import { RootErrorBoundary } from '@/components/RootErrorBoundary'
 import { CacheAlertSync } from '@/components/servers/CacheAlertSync'
@@ -105,6 +110,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, isLoading, mode, navState?.key])
 
+  // Live surfaces outlive the JS context. Anything still on screen from a
+  // previous launch is untracked and could never be updated or ended, so it
+  // would sit frozen on stale data — clear it before the first session_update
+  // can start new ones. Mount-only: re-running per server change would tear
+  // down surfaces this session had just raised.
+  useEffect(() => {
+    void adoptRunningActivities()
+  }, [])
+
   // Wire WebSocket for all servers
   useEffect(() => {
     if (activeServerIds.length === 0) return
@@ -134,6 +148,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       // the list yet (e.g. a newly-alive external session), invalidate so it
       // appears without a manual pull-to-refresh.
       applySessionUpdateToEagerCache(queryClient, msg.serverId, msg.session)
+      // Live surfaces are driven from this one frame — it is the only place
+      // every status change passes through with its serverId already stamped.
+      void reconcileLiveActivity(msg.serverId, msg.session)
     })
     // External-session liveness ping: a conversation's JSONL grew without a PTY
     // the streamer owns. Refresh the eager conversations list so its row updates.
@@ -216,17 +233,52 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   // Handle notification taps
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as {
-        sessionId?: string
-        serverId?: string
-      }
-      if (data.sessionId) {
-        const serverParam = data.serverId ? `?server=${data.serverId}` : ''
-        router.push(`/session/${data.sessionId}${serverParam}`)
-      }
+      const target = sessionRouteFromNotificationData(
+        response.notification.request.content.data as { sessionId?: string; serverId?: string },
+      )
+      if (target) router.push(target.path)
     })
     return () => sub.remove()
   }, [router])
+
+  // Cold start: a tap that launched the app is never delivered to the warm
+  // handlers above, so the launch URL / notification response has to be read
+  // back explicitly. Held until servers hydrate and the navigator has a key,
+  // otherwise the push lands before there is a route tree to push onto and
+  // AuthGate's redirect stomps it.
+  const coldStartHandled = React.useRef(false)
+  useEffect(() => {
+    if (coldStartHandled.current) return
+    if (isLoading || !navState?.key) return
+    if (activeServerIds.length === 0) return
+    coldStartHandled.current = true
+
+    let cancelled = false
+    void (async () => {
+      const [url, response] = await Promise.all([
+        Linking.getInitialURL(),
+        Notifications.getLastNotificationResponseAsync(),
+      ])
+      if (cancelled) return
+      const target = resolveColdStartRoute({
+        url,
+        notificationData: response
+          ? (response.notification.request.content.data as {
+              sessionId?: string
+              serverId?: string
+            })
+          : null,
+      })
+      if (!target) return
+      // Mark before pushing so the session_ready listener does not fire a
+      // second, duplicate navigation for the same session.
+      markNavigatedToSession(target.sessionId)
+      router.push(target.path)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [activeServerIds, isLoading, navState?.key, router])
 
   return (
     <>

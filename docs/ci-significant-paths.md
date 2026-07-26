@@ -42,6 +42,7 @@ Source dirs (consumed at runtime or by tests):
 - `locales/` — i18n JSON, imported at runtime
 - `plugins/` — Expo config plugins
 - `assets/` — icons referenced by `app.json`
+- `widgets/` — Live Activity layouts compiled into the iOS widget extension
 
 Tests + test infra:
 
