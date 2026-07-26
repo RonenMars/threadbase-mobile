@@ -69,29 +69,14 @@ if [[ -n "${IOS_DIST_CERT_P12_B64:-}" ]]; then
   security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
   rm -f "${CERT_PATH}"
   echo "  Distribution cert imported into keychain: ${KEYCHAIN_PATH}"
-fi
 
-# Install provisioning profiles from base64 when supplied. Deliberately outside
-# the cert-import block above: locally the Distribution cert already lives in the
-# login keychain, so that block is skipped — but the profiles may still be absent
-# from Xcode's cache, and the archive then fails on a missing profile UUID.
-PROFILES_DIR="${HOME}/Library/MobileDevice/Provisioning Profiles"
-install_profile() {
-  local b64="$1" uuid="$2" label="$3"
-  [[ -z "${b64}" ]] && return 0
+  PROFILES_DIR="${HOME}/Library/MobileDevice/Provisioning Profiles"
   mkdir -p "${PROFILES_DIR}"
-  printf '%s' "${b64}" | base64 -d > "${PROFILES_DIR}/${uuid}.mobileprovision"
-  # A truncated or wrong-field secret decodes to garbage that xcodebuild only
-  # rejects much later, mid-archive — catch it here instead.
-  if ! grep -qa 'DOCTYPE plist\|<?xml' "${PROFILES_DIR}/${uuid}.mobileprovision"; then
-    echo "ERROR: ${label} profile ${uuid} did not decode to a valid .mobileprovision." >&2
-    rm -f "${PROFILES_DIR}/${uuid}.mobileprovision"
-    exit 1
-  fi
-  echo "  ${label} provisioning profile installed: ${uuid}"
-}
-install_profile "${IOS_PROVISION_PROFILE_B64:-}" "${IOS_PROVISION_PROFILE_UUID}" "App"
-install_profile "${IOS_WIDGET_PROVISION_PROFILE_B64:-}" "${IOS_WIDGET_PROVISION_PROFILE_UUID}" "Widget"
+  printf '%s' "${IOS_PROVISION_PROFILE_B64}" | base64 -d > "${PROFILES_DIR}/${IOS_PROVISION_PROFILE_UUID}.mobileprovision"
+  echo "  Provisioning profile installed: ${IOS_PROVISION_PROFILE_UUID}"
+  printf '%s' "${IOS_WIDGET_PROVISION_PROFILE_B64}" | base64 -d > "${PROFILES_DIR}/${IOS_WIDGET_PROVISION_PROFILE_UUID}.mobileprovision"
+  echo "  Widget provisioning profile installed: ${IOS_WIDGET_PROVISION_PROFILE_UUID}"
+fi
 
 cat > .env.signing <<EOF
 export ASC_KEY_ID="${ASC_KEY_ID}"
@@ -102,20 +87,6 @@ export EXPORT_OPTIONS_PLIST="$(pwd)/build/ExportOptions.plist"
 export IOS_PROVISION_PROFILE_UUID="${IOS_PROVISION_PROFILE_UUID}"
 export IOS_WIDGET_PROVISION_PROFILE_UUID="${IOS_WIDGET_PROVISION_PROFILE_UUID}"
 EOF
-
-# Sentry credentials, when supplied. sentry-cli runs during archive and fails the
-# build without them; ship-ios.sh sources this file, so writing them here is what
-# makes a local ship symbolicate. Appended rather than inlined above so the file
-# stays valid when Sentry is not configured — it is optional, unlike signing.
-if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
-  cat >> .env.signing <<EOF
-export SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}"
-export SENTRY_ORG="${SENTRY_ORG}"
-export SENTRY_PROJECT="${SENTRY_PROJECT}"
-EOF
-  echo "  Sentry:            org ${SENTRY_ORG} / project ${SENTRY_PROJECT}"
-fi
-chmod 600 .env.signing
 
 echo "iOS signing bootstrapped:"
 echo "  .p8 key:           ${ASC_KEY_PATH}"
