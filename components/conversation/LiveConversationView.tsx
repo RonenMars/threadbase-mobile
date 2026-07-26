@@ -141,6 +141,18 @@ export function LiveConversationView({
     })
   }, [serverId, sessionId, qc])
 
+  // A session_update emitted while the app is backgrounded (socket
+  // suspended) is lost forever — reconnect re-auths but never replays it.
+  // Refetch on every reconnect so a missed status flip (e.g. running → idle
+  // while backgrounded) doesn't strand the thinking bubble indefinitely.
+  useEffect(() => {
+    return wsManager.onStatusChange(serverId, (s) => {
+      if (s === 'connected') {
+        qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+      }
+    })
+  }, [serverId, sessionId, qc])
+
   // PTY lines shown inside the thinking bubble while agent is running
   const { lines: ptyLines, isStreaming } = useTerminalStream(serverId, sessionId)
 
