@@ -217,6 +217,12 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
     expect(feedAndGet('╰────────╯')).toEqual([])
   })
 
+  it('drops box-drawing border rows from raw lines too', () => {
+    const vt = new VirtualTerminal()
+    vt.feed('content\n╭────────╮\nmore content\n╰────────╯')
+    expect(vt.getRawLines()).toEqual(['content', 'more content'])
+  })
+
   // ── Startup banner / Clawd ──
   it('filters Clawd ASCII art (block elements)', () => {
     expect(feedAndGet('▛███▜\n▙███▟')).toEqual([])
