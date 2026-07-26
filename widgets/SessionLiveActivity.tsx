@@ -47,9 +47,12 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
     const statusLabel = isWaiting ? 'Waiting for input' : 'Running'
 
     // A live surface renders a self-ticking native timer counting up from the
-    // session's start, so the range only needs a floor — never a per-second push.
+    // session's start — never a per-second push. `Text(timerInterval:)` needs a
+    // real (non-zero) range to animate; `upper` matches the server's own 8h
+    // Live Activity cap (ACTIVITY_MAX_LIFETIME_MS in tb-streamer) since the OS
+    // ends the activity by then anyway.
     const startedAt = new Date(props.startedAt)
-    const elapsed = { lower: startedAt, upper: startedAt }
+    const elapsed = { lower: startedAt, upper: new Date(props.startedAt + 8 * 60 * 60 * 1000) }
 
     return {
       banner: (
