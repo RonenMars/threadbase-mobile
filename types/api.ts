@@ -13,6 +13,8 @@ export interface Session {
   projectPath: string
   projectName: string
   branch?: string
+  /** Git remote origin URL for the project, when discoverable. Additive; older servers omit it. */
+  repoUrl?: string
   machineName?: string
   /**
    * JSONL-derived conversation name (the scanner's slug, or the first user
@@ -88,6 +90,8 @@ export interface Conversation {
   projectId?: string
   projectPath: string
   branch?: string
+  /** Git remote origin URL for the project, when discoverable. Additive; older servers omit it. */
+  repoUrl?: string
   account?: string
   preview?: string
   messageCount: number
