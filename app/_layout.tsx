@@ -37,6 +37,7 @@ import {
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
+import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassView } from '@/components/ui/GlassView'
@@ -494,6 +495,7 @@ function RootLayout() {
                 <ErrorBanner />
                 <ThemedStatusBar />
                 <ThemedStack router={router} />
+                <NavigationLockOverlay />
               </BiometricLockGate>
             </AuthGate>
           </PersistQueryClientProvider>

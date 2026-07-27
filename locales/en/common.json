@@ -41,5 +41,8 @@
   "renderError": {
     "title": "Couldn’t render this item",
     "message": "Showing a raw fallback instead of crashing the screen."
+  },
+  "navLock": {
+    "opening": "Opening…"
   }
 }
