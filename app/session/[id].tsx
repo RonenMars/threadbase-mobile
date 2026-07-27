@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
+import { HeaderOverflowMenu } from '@/components/shared/HeaderOverflowMenu'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
@@ -50,6 +51,7 @@ import {
 import { NotFoundError } from '@/services/api-client'
 import { preferRawTerminal } from '@/lib/renderConfidence'
 import { ReviewSheet } from '@/components/review/ReviewSheet'
+import { buildReviewFromMessages } from '@/lib/reviewFromConversation'
 import { useConversation } from '@/hooks/useConversations'
 
 const PENDING_PHRASES = [
@@ -513,7 +515,11 @@ export default function SessionDetailScreen() {
   const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
     enabled: Boolean(serverId && reviewConversationId),
   })
-  const reviewMessages = reviewConversation?.messages ?? []
+  const reviewMessages = useMemo(() => reviewConversation?.messages ?? [], [reviewConversation])
+  const hasDiffs = useMemo(
+    () => buildReviewFromMessages(reviewMessages).files.length > 0,
+    [reviewMessages],
+  )
 
   // Bug 16: leaving a never-used fresh session should hard-stop the PTY so it
   // doesn't linger in the hub as an empty idle entry. Fire-and-forget — don't
@@ -732,6 +738,7 @@ export default function SessionDetailScreen() {
         { label: 'Server', value: serverId },
         { label: 'Project Name', value: session?.projectName },
         { label: 'Project Path', value: session?.projectPath },
+        { label: 'Repo URL', value: session?.repoUrl },
         { label: 'Branch', value: session?.branch },
         { label: 'Machine', value: session?.machineName },
         { label: 'Status', value: session?.status ?? (isLoading ? 'loading…' : 'not found') },
@@ -801,9 +808,9 @@ export default function SessionDetailScreen() {
           style={({ pressed }) => ({ opacity: pressed || sendKeys.isPending ? 0.5 : 1 })}
         >
           {sendKeys.isPending ? (
-            <ActivityIndicator size="small" color={theme.text.danger} />
+            <ActivityIndicator size="small" color={theme.text.accent} />
           ) : (
-            <StopCircle size={22} color={theme.text.danger} weight="fill" />
+            <StopCircle size={22} color={theme.text.accent} weight="fill" />
           )}
         </Pressable>
       ) : null}
@@ -827,24 +834,27 @@ export default function SessionDetailScreen() {
       >
         <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
       </Pressable>
-      <Pressable
-        testID="session-review-button"
-        onPress={() => setReviewVisible(true)}
-        hitSlop={8}
-        accessibilityLabel={t('conversation:review.open')}
-        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-      >
-        <GitDiff size={22} color={theme.text.secondary} />
-      </Pressable>
-      <Pressable
-        testID="session-info-button"
-        onPress={() => setInfoVisible(true)}
-        hitSlop={8}
-        accessibilityLabel="Session info"
-        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-      >
-        <InfoIcon size={22} color={theme.text.secondary} />
-      </Pressable>
+      <HeaderOverflowMenu
+        testID="session-overflow-menu"
+        accessibilityLabel="More options"
+        items={[
+          {
+            key: 'info',
+            label: 'Info',
+            icon: InfoIcon,
+            onPress: () => setInfoVisible(true),
+            testID: 'session-info-button',
+          },
+          {
+            key: 'diffs',
+            label: t('conversation:review.open'),
+            icon: GitDiff,
+            onPress: () => setReviewVisible(true),
+            disabled: !hasDiffs,
+            testID: 'session-review-button',
+          },
+        ]}
+      />
     </View>
   )
 
