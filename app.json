@@ -102,7 +102,8 @@
           "groupIdentifier": "group.com.ronenmars.threadbase"
         }
       ],
-      "./plugins/withLiveActivityTarget"
+      "./plugins/withLiveActivityTarget",
+      "./plugins/withLiveActivityLogo"
     ],
     "experiments": {
       "typedRoutes": true,
