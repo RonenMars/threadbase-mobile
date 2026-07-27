@@ -98,42 +98,79 @@ describe('toLiveState', () => {
 describe('decideActions', () => {
   const key = liveActivityKey('srv-1', 'sess-1')
 
-  function tracked(...entries: [string, number][]): TrackedActivity[] {
-    return entries.map(([k, lastUpdatedAt]) => ({ key: k, lastUpdatedAt }))
+  function tracked(...entries: [string, number, boolean][]): TrackedActivity[] {
+    return entries.map(([k, lastUpdatedAt, turnOpen]) => ({ key: k, lastUpdatedAt, turnOpen }))
   }
 
-  it('starts an untracked session while slots are free', () => {
+  it('does nothing for a session’s very first running — no prior turn to open', () => {
     const state = makeState()
-    expect(decideActions([], state, key)).toEqual([{ type: 'start', key, state }])
+    expect(decideActions([], undefined, state, key)).toEqual([])
   })
 
-  it('updates a session already on screen', () => {
+  it('opens a turn on waiting_input → running while slots are free', () => {
     const state = makeState()
-    expect(decideActions(tracked([key, 1]), state, key)).toEqual([{ type: 'update', key, state }])
+    expect(decideActions([], 'waiting_input', state, key)).toEqual([
+      { type: 'start', key, state },
+    ])
   })
 
-  it('ends a tracked session that turned terminal', () => {
-    expect(decideActions(tracked([key, 1]), null, key)).toEqual([{ type: 'end', key }])
+  it('updates an already-open turn on a same-status re-emit', () => {
+    const state = makeState({ lastOutput: 'still going' })
+    expect(decideActions(tracked([key, 1, true]), 'running', state, key)).toEqual([
+      { type: 'update', key, state },
+    ])
   })
 
-  it('does nothing for an untracked terminal session', () => {
-    expect(decideActions([], null, key)).toEqual([])
+  it('does nothing for a same-status re-emit with no turn open', () => {
+    const state = makeState({ status: 'waiting_input' })
+    expect(decideActions([], 'waiting_input', state, key)).toEqual([])
   })
 
-  it('evicts the least-recently-updated when at the cap', () => {
+  it('closes an open turn on running → waiting_input with a finished frame', () => {
+    const state = makeState({ status: 'waiting_input' })
+    expect(decideActions(tracked([key, 1, true]), 'running', state, key)).toEqual([
+      { type: 'end', key, finalState: state },
+    ])
+  })
+
+  it('does nothing on running → waiting_input if no turn was actually open', () => {
+    const state = makeState({ status: 'waiting_input' })
+    expect(decideActions([], 'running', state, key)).toEqual([])
+  })
+
+  it('ends an open turn with no final frame when the session goes non-renderable', () => {
+    expect(decideActions(tracked([key, 1, true]), 'running', null, key)).toEqual([
+      { type: 'end', key },
+    ])
+  })
+
+  it('does nothing for a non-renderable session with no open turn', () => {
+    expect(decideActions([], 'running', null, key)).toEqual([])
+  })
+
+  it('evicts the least-recently-updated when opening a turn at the cap', () => {
     const state = makeState()
-    const actions = decideActions(tracked(['a', 30], ['b', 10], ['c', 20]), state, key)
+    const actions = decideActions(
+      tracked(['a', 30, true], ['b', 10, true], ['c', 20, true]),
+      'waiting_input',
+      state,
+      key,
+    )
     expect(actions).toEqual([
       { type: 'end', key: 'b' },
       { type: 'start', key, state },
     ])
   })
 
-  it('frees a slot when a tracked session ends, letting the next one start', () => {
-    const full = tracked(['a', 30], ['b', 10], ['c', 20])
-    expect(decideActions(full, null, 'b')).toEqual([{ type: 'end', key: 'b' }])
+  it('frees a slot when a tracked turn closes, letting the next one open', () => {
+    const full = tracked(['a', 30, true], ['b', 10, true], ['c', 20, true])
+    expect(decideActions(full, 'running', makeState({ status: 'waiting_input' }), 'b')).toEqual([
+      { type: 'end', key: 'b', finalState: makeState({ status: 'waiting_input' }) },
+    ])
     const state = makeState()
     const afterEviction = full.filter((t) => t.key !== 'b')
-    expect(decideActions(afterEviction, state, key)).toEqual([{ type: 'start', key, state }])
+    expect(decideActions(afterEviction, 'waiting_input', state, key)).toEqual([
+      { type: 'start', key, state },
+    ])
   })
 })
