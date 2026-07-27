@@ -31,6 +31,7 @@ import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
+import { useNavLockStore } from '@/stores/navLock'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useRenameSession } from '@/hooks/useSessionName'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
@@ -422,6 +423,10 @@ export default function SessionDetailScreen() {
   const serverId = server || fallbackServerId
   const { sessionView, setSessionView } = useSettingsStore()
   const [forceRawTerminal, setForceRawTerminal] = useState(false)
+
+  useEffect(() => {
+    useNavLockStore.getState().clear()
+  }, [])
 
   const isStarting = starting === '1'
   const isPending = (id?.startsWith('pending_') ?? false) || isStarting

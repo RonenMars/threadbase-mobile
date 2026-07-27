@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
+import { useNavLockStore } from '@/stores/navLock'
 import { useSettingsStore } from '@/stores/settings'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useFetchSessionNames } from '@/hooks/useSessionName'
@@ -675,7 +676,10 @@ function MergedClassicList({
       <TouchableOpacity
         style={[styles.convCard, isGlass && styles.convCardGlass]}
         activeOpacity={0.75}
-        onPress={() => router.push(conversationHref(item.id, item.serverId, searchQuery))}
+        onPress={() => {
+          useNavLockStore.getState().lock()
+          router.push(conversationHref(item.id, item.serverId, searchQuery))
+        }}
         onLongPress={() => setActiveConvItem(item)}
         accessibilityLabel={item.title || item.projectPath}
         testID={`conversation-row-${item.id}`}
@@ -786,6 +790,7 @@ function MergedClassicList({
             onBrowse={() => setActiveConvItem(null)}
             onOpenSession={() => {
               setActiveConvItem(null)
+              useNavLockStore.getState().lock()
               router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, searchQuery))
             }}
             onTogglePin={() => {

@@ -27,6 +27,7 @@ import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
 import { ConversationSearchView } from '@/components/conversation/ConversationSearchView'
 import { useLoadingStateStore } from '@/stores/loading-state'
+import { useNavLockStore } from '@/stores/navLock'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
@@ -81,6 +82,10 @@ export default function ConversationDetailScreen() {
   const searchQuery = typeof search === 'string' && search.trim().length > 0 ? search : undefined
   const anchorParam = typeof anchor_index === 'string' ? Number.parseInt(anchor_index, 10) : NaN
   const hasAnchorParam = Number.isFinite(anchorParam)
+
+  useEffect(() => {
+    useNavLockStore.getState().clear()
+  }, [])
 
   // In-chat search entry: toggles a query bar that writes ?search= on submit.
   // Prefills / auto-opens when navigation already carries a search param (Hub).

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
+import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
@@ -44,7 +45,10 @@ export function DrillView({ node, serverId, onBack }: Props) {
     status: s.status,
     serverId: s.serverId,
     serverLabel: s.serverLabel,
-    onPress: () => router.push(`/session/${s.id}?server=${s.serverId}`),
+    onPress: () => {
+      useNavLockStore.getState().lock()
+      router.push(`/session/${s.id}?server=${s.serverId}`)
+    },
   }))
 
   const conversationItems: DrillItem[] = node.conversations.map((c) => ({
@@ -58,7 +62,10 @@ export function DrillView({ node, serverId, onBack }: Props) {
     serverId: c.serverId,
     serverLabel: c.serverLabel,
     provider: c.provider,
-    onPress: () => router.push(`/conversation/${c.id}?server=${c.serverId}`),
+    onPress: () => {
+      useNavLockStore.getState().lock()
+      router.push(`/conversation/${c.id}?server=${c.serverId}`)
+    },
   }))
 
   const backRow = (
