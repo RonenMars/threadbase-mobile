@@ -13,6 +13,7 @@ import { ConversationListItem } from '@/components/sessions/shared/ConversationL
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { useServersStore } from '@/stores/servers'
+import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
 import { makeStyles } from './TreeSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
@@ -96,7 +97,10 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
             density="comfortable"
             leading="avatar"
             highlight={debouncedQuery}
-            onPress={() => router.push(`/session/${s.id}?server=${s.serverId}`)}
+            onPress={() => {
+              useNavLockStore.getState().lock()
+              router.push(`/session/${s.id}?server=${s.serverId}`)
+            }}
           />
         )
       }
@@ -119,7 +123,10 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           leading="avatar"
           highlight={debouncedQuery}
           provider={c.provider}
-          onPress={() => router.push(conversationHref(c.id, c.serverId, debouncedQuery))}
+          onPress={() => {
+            useNavLockStore.getState().lock()
+            router.push(conversationHref(c.id, c.serverId, debouncedQuery))
+          }}
           onLongPress={() => setActiveConvItem(c)}
         />
       )
@@ -385,6 +392,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
             onBrowse={() => setActiveConvItem(null)}
             onOpenSession={() => {
               setActiveConvItem(null)
+              useNavLockStore.getState().lock()
               router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, debouncedQuery))
             }}
             onTogglePin={() => {

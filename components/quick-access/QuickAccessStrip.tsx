@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useServersStore } from '@/stores/servers'
+import { useNavLockStore } from '@/stores/navLock'
 import { QuickAccessChip, type ChipItem, type QuickAccessTab } from './QuickAccessChip'
 import { QuickAccessActionSheet } from './QuickAccessActionSheet'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -115,6 +116,7 @@ export function QuickAccessStrip() {
   const handleOpenSession = () => {
     if (!activeItem?.serverId) return
     const [, id] = activeItem.id.split('::')
+    useNavLockStore.getState().lock()
     if (activeItem.type === 'conversation') {
       router.push(`/conversation/${id}?server=${activeItem.serverId}`)
     } else {

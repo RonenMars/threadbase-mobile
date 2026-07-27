@@ -4,6 +4,7 @@ import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } f
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/settings'
+import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
@@ -213,6 +214,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
             onBrowse={() => setActiveConv(null)}
             onOpenSession={() => {
               setActiveConv(null)
+              useNavLockStore.getState().lock()
               router.push(`/conversation/${activeConv.id}?server=${activeConv.serverId}`)
             }}
             onTogglePin={() => {

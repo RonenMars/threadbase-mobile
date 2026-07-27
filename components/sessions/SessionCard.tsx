@@ -19,6 +19,7 @@ import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useNavLockStore } from '@/stores/navLock'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
@@ -79,6 +80,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
+    useNavLockStore.getState().lock()
     if (isExternal) {
       const convId = session.boundConversationId ?? session.conversationId ?? session.id
       router.push(conversationHref(convId, session.serverId))

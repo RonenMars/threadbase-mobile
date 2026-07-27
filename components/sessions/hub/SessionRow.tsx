@@ -6,6 +6,7 @@ import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
+import { useNavLockStore } from '@/stores/navLock'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession } from '@/lib/externalSession'
@@ -28,6 +29,7 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
+    useNavLockStore.getState().lock()
     if (presentation.capabilities.isObserveOnly || isExternal) {
       const convId = session.boundConversationId ?? session.conversationId ?? session.id
       router.push(conversationHref(convId, session.serverId))

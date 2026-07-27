@@ -8,6 +8,7 @@ import { useProjectGroups } from './useProjectGroups'
 import { useServerGroups } from './useServerGroups'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { useServersStore } from '@/stores/servers'
+import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
@@ -92,6 +93,7 @@ export function ProjectHubList({
 
   const handleConversationPress = useCallback(
     (item: MultiConversation) => {
+      useNavLockStore.getState().lock()
       router.push(conversationHref(item.id, item.serverId, debouncedQuery))
     },
     [router, debouncedQuery],
@@ -99,6 +101,7 @@ export function ProjectHubList({
 
   const handleSessionPress = useCallback(
     (item: MultiSession) => {
+      useNavLockStore.getState().lock()
       // External sessions are read-only — route to the conversation view, never
       // the PTY screen (which exposes the destructive Overtake / input paths).
       if (isExternalSession(item)) {
@@ -373,6 +376,7 @@ export function ProjectHubList({
             onBrowse={() => setActiveConvItem(null)}
             onOpenSession={() => {
               setActiveConvItem(null)
+              useNavLockStore.getState().lock()
               router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, debouncedQuery))
             }}
             onTogglePin={() => {
