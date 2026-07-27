@@ -58,41 +58,70 @@ export function toLiveState(session: Session, serverId: string): LiveSessionStat
 export type LiveActivityAction =
   | { type: 'start'; key: string; state: LiveSessionState }
   | { type: 'update'; key: string; state: LiveSessionState }
-  | { type: 'end'; key: string }
+  | { type: 'end'; key: string; finalState?: LiveSessionState }
 
-/** What the reconciler already has on screen. `lastUpdatedAt` only has to order. */
+/**
+ * What the reconciler already has on screen. `lastUpdatedAt` only has to
+ * order; `turnOpen` mirrors the streamer's per-activity tracking so a turn
+ * boundary can be detected from one session snapshot to the next.
+ */
 export interface TrackedActivity {
   key: string
   lastUpdatedAt: number
+  turnOpen: boolean
 }
 
 /**
  * Decides what to do about one incoming session, given everything currently on
- * screen. Pure so the whole cap/eviction policy is testable without a device.
+ * screen and the previous status for the same key. Pure so the whole
+ * open/close/cap policy is testable without a device.
+ *
+ * Per-turn, matching the streamer's push design (docs/guides/live-activity-push.md
+ * in tb-streamer): a turn opens on `waiting_input → running` — the user sent a
+ * prompt — and closes on the matching `running → waiting_input`, rendering one
+ * last "Finished" frame via `end`'s `finalState` rather than staying live. A
+ * session's very first `running`, with no prior `waiting_input`, opens
+ * nothing — that's what keeps a freshly booted or idling session from showing
+ * a surface before the user has asked for anything. Any other terminal signal
+ * on an open turn also ends it with a "Finished" frame — the push design does
+ * not distinguish a clean turn-close from a session dying mid-turn either.
  */
 export function decideActions(
   tracked: readonly TrackedActivity[],
+  previousStatus: 'running' | 'waiting_input' | undefined,
   incoming: LiveSessionState | null,
   key: string,
 ): LiveActivityAction[] {
+  const entry = tracked.find((t) => t.key === key)
+
   if (!incoming) {
-    return tracked.some((t) => t.key === key) ? [{ type: 'end', key }] : []
+    // Not renderable: the session is no longer live. Close an open turn with
+    // its last frame; otherwise there is nothing to close.
+    return entry?.turnOpen ? [{ type: 'end', key }] : []
   }
-  if (tracked.some((t) => t.key === key)) {
-    return [{ type: 'update', key, state: incoming }]
+
+  if (incoming.status === 'running' && previousStatus === 'waiting_input') {
+    if (entry) return [{ type: 'update', key, state: incoming }]
+    if (tracked.length < MAX_LIVE_ACTIVITIES) return [{ type: 'start', key, state: incoming }]
+    // Evict by staleness of the last update, not by start time: an old session
+    // still emitting output is more worth a slot than a newer silent one.
+    const victim = tracked.reduce((oldest, t) => (t.lastUpdatedAt < oldest.lastUpdatedAt ? t : oldest))
+    return [
+      { type: 'end', key: victim.key },
+      { type: 'start', key, state: incoming },
+    ]
   }
-  if (tracked.length < MAX_LIVE_ACTIVITIES) {
-    return [{ type: 'start', key, state: incoming }]
+
+  if (incoming.status === 'waiting_input' && previousStatus === 'running') {
+    // Only a real turn end if one was actually opened — the session's very
+    // first waiting_input (boot ready, no prior turn) has none.
+    return entry?.turnOpen ? [{ type: 'end', key, finalState: incoming }] : []
   }
-  // Evict by staleness of the last update, not by start time: an old session
-  // still emitting output is more worth a slot than a newer silent one.
-  const victim = tracked.reduce((oldest, t) =>
-    t.lastUpdatedAt < oldest.lastUpdatedAt ? t : oldest,
-  )
-  return [
-    { type: 'end', key: victim.key },
-    { type: 'start', key, state: incoming },
-  ]
+
+  // Any other same-status re-emit on an open turn refreshes lastOutput; a
+  // session with no open turn (first running, first waiting_input) is not
+  // tracked and gets nothing.
+  return entry?.turnOpen ? [{ type: 'update', key, state: incoming }] : []
 }
 
 interface LiveHandle extends TrackedActivity {
@@ -101,13 +130,25 @@ interface LiveHandle extends TrackedActivity {
 
 const handles = new Map<string, LiveHandle>()
 
+/**
+ * Last `running`/`waiting_input` seen per key, kept independent of `handles`:
+ * a session can sit at `waiting_input` with no open turn (no handle) for a
+ * while before the user sends a prompt, and that prior status is still what
+ * turns the next `running` into a turn-open edge.
+ */
+const lastStatus = new Map<string, 'running' | 'waiting_input'>()
+
 // A monotonic counter, not a clock: several updates routinely land inside the
 // same millisecond, and `Date.now()` ties would make LRU eviction pick an
 // arbitrary victim. Only the ordering matters.
 let touchCounter = 0
 
 function tracked(): TrackedActivity[] {
-  return [...handles.values()].map(({ key, lastUpdatedAt }) => ({ key, lastUpdatedAt }))
+  return [...handles.values()].map(({ key, lastUpdatedAt, turnOpen }) => ({
+    key,
+    lastUpdatedAt,
+    turnOpen,
+  }))
 }
 
 function deepLink(state: LiveSessionState): string {
@@ -119,7 +160,13 @@ async function apply(action: LiveActivityAction): Promise<void> {
     const handle = handles.get(action.key)
     if (!handle) return
     handles.delete(action.key)
-    // 'immediate' so a finished session's surface does not linger on the Lock Screen.
+    if (action.finalState) {
+      // 'default' so the "Finished" frame stays visible for the OS's normal
+      // post-end grace period instead of vanishing the instant it appears.
+      await handle.activity.end('default', action.finalState)
+      return
+    }
+    // 'immediate' — an evicted or otherwise turn-less end has no frame to show.
     await handle.activity.end('immediate')
     return
   }
@@ -137,7 +184,12 @@ async function apply(action: LiveActivityAction): Promise<void> {
     // APNs renewal removes the 8h ceiling outright and makes the whole question
     // moot; until it lands, silent expiry is the accepted behavior.
     const activity = SessionLiveActivity.start(action.state, deepLink(action.state))
-    handles.set(action.key, { key: action.key, lastUpdatedAt: ++touchCounter, activity })
+    handles.set(action.key, {
+      key: action.key,
+      lastUpdatedAt: ++touchCounter,
+      turnOpen: true,
+      activity,
+    })
     return
   }
   const handle = handles.get(action.key)
@@ -152,8 +204,15 @@ async function apply(action: LiveActivityAction): Promise<void> {
  */
 export async function reconcile(serverId: string, session: Session): Promise<void> {
   const key = liveActivityKey(serverId, session.id)
-  for (const action of decideActions(tracked(), toLiveState(session, serverId), key)) {
+  const incoming = toLiveState(session, serverId)
+  const previousStatus = lastStatus.get(key)
+  for (const action of decideActions(tracked(), previousStatus, incoming, key)) {
     await apply(action)
+  }
+  if (session.status === 'running' || session.status === 'waiting_input') {
+    lastStatus.set(key, session.status)
+  } else {
+    lastStatus.delete(key)
   }
 }
 
@@ -169,9 +228,11 @@ export function adoptRunningActivities(): void {
     void activity.end('immediate')
   }
   handles.clear()
+  lastStatus.clear()
 }
 
-/** Test seam — the module-level map would otherwise leak between cases. */
+/** Test seam — the module-level maps would otherwise leak between cases. */
 export function resetLiveActivities(): void {
   handles.clear()
+  lastStatus.clear()
 }

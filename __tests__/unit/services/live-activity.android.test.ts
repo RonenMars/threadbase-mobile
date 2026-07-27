@@ -45,8 +45,19 @@ describe('android live session notifications', () => {
     schedule.mockImplementation(async () => `notif-${++n}`)
   })
 
-  it('posts an ongoing notification carrying the session identity', async () => {
+  /** Opens a turn the way the streamer does: waiting_input, then running. */
+  async function openTurn(serverId: string, overrides: Partial<Session> = {}): Promise<void> {
+    await reconcile(serverId, session({ ...overrides, status: 'waiting_input' }))
+    await reconcile(serverId, session({ ...overrides, status: 'running' }))
+  }
+
+  it('does nothing for a session’s very first running — no prior turn to open', async () => {
     await reconcile('srv-1', session())
+    expect(schedule).not.toHaveBeenCalled()
+  })
+
+  it('posts an ongoing notification when a turn opens', async () => {
+    await openTurn('srv-1')
     expect(schedule).toHaveBeenCalledTimes(1)
     const request = schedule.mock.calls[0][0]
     expect(request.content).toMatchObject({
@@ -58,30 +69,36 @@ describe('android live session notifications', () => {
     expect(request.trigger).toBeNull()
   })
 
-  it('distinguishes waiting_input from running in the body', async () => {
-    await reconcile('srv-1', session({ status: 'waiting_input' }))
-    expect(schedule.mock.calls[0][0].content.body).toContain('Waiting for input')
-  })
-
-  it('replaces in place on update rather than stacking a second notification', async () => {
-    await reconcile('srv-1', session())
-    await reconcile('srv-1', session({ lastOutput: 'still going' }))
+  it('replaces in place on a same-status re-emit rather than stacking a second notification', async () => {
+    await openTurn('srv-1')
+    await reconcile('srv-1', session({ status: 'running', lastOutput: 'still going' }))
     expect(schedule).toHaveBeenCalledTimes(2)
     expect(schedule.mock.calls[1][0].identifier).toBe('notif-1')
   })
 
-  it('dismisses the notification when the session turns terminal', async () => {
-    await reconcile('srv-1', session())
-    await reconcile('srv-1', session({ processLiveness: 'gone' }))
+  it('replaces the ongoing notification with a dismissible finished one when the turn closes', async () => {
+    await openTurn('srv-1')
+    await reconcile('srv-1', session({ status: 'waiting_input' }))
+    expect(dismiss).not.toHaveBeenCalled()
+    expect(schedule).toHaveBeenCalledTimes(2)
+    const request = schedule.mock.calls[1][0]
+    expect(request.identifier).toBe('notif-1')
+    expect(request.content).toMatchObject({ sticky: false, autoDismiss: true })
+    expect(request.content.body).toContain('Finished')
+  })
+
+  it('dismisses the notification with no final frame when a turn dies mid-turn', async () => {
+    await openTurn('srv-1')
+    await reconcile('srv-1', session({ status: 'running', processLiveness: 'gone' }))
     expect(dismiss).toHaveBeenCalledWith('notif-1')
   })
 
   it('honors the shared cap, evicting the least recently updated', async () => {
-    await reconcile('srv-1', session({ id: 'a' }))
-    await reconcile('srv-1', session({ id: 'b' }))
-    await reconcile('srv-1', session({ id: 'c' }))
-    await reconcile('srv-1', session({ id: 'a', lastOutput: 'fresh' }))
-    await reconcile('srv-1', session({ id: 'd' }))
+    await openTurn('srv-1', { id: 'a' })
+    await openTurn('srv-1', { id: 'b' })
+    await openTurn('srv-1', { id: 'c' })
+    await reconcile('srv-1', session({ id: 'a', status: 'running', lastOutput: 'fresh' }))
+    await openTurn('srv-1', { id: 'd' })
     // 'b' was posted second, so its id is notif-2.
     expect(dismiss).toHaveBeenCalledWith('notif-2')
   })
