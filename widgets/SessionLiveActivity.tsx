@@ -1,10 +1,13 @@
 import { HStack, Image, Spacer, Text, VStack } from '@expo/ui/swift-ui'
 import {
+  clipShape,
   font,
   foregroundColor,
+  frame,
   lineLimit,
   minimumScaleFactor,
   padding,
+  resizable,
 } from '@expo/ui/swift-ui/modifiers'
 import { createLiveActivity } from 'expo-widgets'
 
@@ -58,6 +61,10 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
       banner: (
         <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 14 })]}>
           <HStack spacing={8}>
+            <Image
+              assetName="ThreadbaseLogo"
+              modifiers={[resizable(), frame({ width: 16, height: 16 }), clipShape('circle')]}
+            />
             <Image systemName={statusSymbol} size={14} color={statusColor} />
             <Text
               modifiers={[
