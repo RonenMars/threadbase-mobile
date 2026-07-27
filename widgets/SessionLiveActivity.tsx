@@ -25,9 +25,16 @@ import type { LiveSessionState } from '@/types/live-activity'
  *
  * That isolation is also why colors are literals rather than `constants/theme`
  * tokens: they are the `dark` / `light` palette's `status.running`,
- * `status.waiting`, `text.primary`, and `text.secondary` values, kept in sync by
- * hand. Icons are SF Symbols rather than Phosphor for the same reason — Phosphor
- * is a React Native view library and there is no RN renderer in this process.
+ * `status.completed`, `text.primary`, and `text.secondary` values, kept in
+ * sync by hand. Icons are SF Symbols rather than Phosphor for the same reason
+ * — Phosphor is a React Native view library and there is no RN renderer in
+ * this process.
+ *
+ * `status: 'waiting_input'` is always this surface's terminal frame, never an
+ * ongoing one — `services/live-activity.ts` only ever delivers it as the
+ * final state passed to `end()`, matching the streamer's per-turn push design
+ * (docs/guides/live-activity-push.md in tb-streamer): a turn closes, not the
+ * session, so this renders "Finished" rather than "Waiting for input".
  */
 const SessionLiveActivity = createLiveActivity<LiveSessionState>(
   'SessionLiveActivity',
@@ -35,19 +42,19 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
     'widget'
 
     const isDark = environment.colorScheme === 'dark'
-    const isWaiting = props.status === 'waiting_input'
+    const isFinished = props.status === 'waiting_input'
 
-    const statusColor = isWaiting
+    const statusColor = isFinished
       ? isDark
-        ? '#d29922'
-        : '#9a6700'
+        ? '#58a6ff'
+        : '#0969da'
       : isDark
         ? '#3fb950'
         : '#1a7f37'
     const primaryText = isDark ? '#e6edf3' : '#1f2328'
     const secondaryText = isDark ? '#7d8590' : '#57606a'
-    const statusSymbol = isWaiting ? 'questionmark.circle.fill' : 'circle.dotted'
-    const statusLabel = isWaiting ? 'Waiting for input' : 'Running'
+    const statusSymbol = isFinished ? 'checkmark.circle.fill' : 'circle.dotted'
+    const statusLabel = isFinished ? 'Finished' : 'Running'
 
     // A live surface renders a self-ticking native timer counting up from the
     // session's start — never a per-second push. `Text(timerInterval:)` needs a
@@ -65,7 +72,6 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
               assetName="ThreadbaseLogo"
               modifiers={[resizable(), frame({ width: 16, height: 16 }), clipShape('circle')]}
             />
-            <Image systemName={statusSymbol} size={14} color={statusColor} />
             <Text
               modifiers={[
                 font({ textStyle: 'headline' }),
@@ -76,14 +82,18 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
               {props.projectName}
             </Text>
             <Spacer />
-            <Text
-              timerInterval={elapsed}
-              countsDown={false}
-              modifiers={[
-                font({ textStyle: 'headline', design: 'monospaced' }),
-                foregroundColor(statusColor),
-              ]}
-            />
+            {isFinished ? (
+              <Image systemName={statusSymbol} size={20} color={statusColor} />
+            ) : (
+              <Text
+                timerInterval={elapsed}
+                countsDown={false}
+                modifiers={[
+                  font({ textStyle: 'headline', design: 'monospaced' }),
+                  foregroundColor(statusColor),
+                ]}
+              />
+            )}
           </HStack>
           <Text
             modifiers={[font({ textStyle: 'caption' }), foregroundColor(statusColor), lineLimit(1)]}
@@ -102,8 +112,15 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
           </Text>
         </VStack>
       ),
-      compactLeading: <Image systemName={statusSymbol} size={12} color={statusColor} />,
-      compactTrailing: (
+      compactLeading: (
+        <Image
+          assetName="ThreadbaseLogo"
+          modifiers={[resizable(), frame({ width: 20, height: 20 }), clipShape('circle')]}
+        />
+      ),
+      compactTrailing: isFinished ? (
+        <Image systemName={statusSymbol} size={16} color={statusColor} />
+      ) : (
         <Text
           timerInterval={elapsed}
           countsDown={false}
