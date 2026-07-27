@@ -799,6 +799,7 @@ export default function ConversationDetailScreen() {
           { label: 'Title', value: conversation.title },
           { label: 'Session Name', value: conversation.sessionName },
           { label: 'Project Path', value: conversation.projectPath },
+          { label: 'Repo URL', value: conversation.repoUrl },
           { label: 'File Path', value: conversation.filePath },
           { label: 'Branch', value: conversation.branch },
           { label: 'Account', value: conversation.account },
