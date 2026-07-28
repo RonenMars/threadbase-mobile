@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
+import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
@@ -32,6 +33,16 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
 
   return (
     <View style={styles.container}>
+      {onCancel ? (
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel={t('button.cancel')}
+        >
+          <X size={16} color="#8b949e" />
+        </TouchableOpacity>
+      ) : null}
       {q.header ? <Text style={styles.header}>{q.header}</Text> : null}
       {q.detail ? <Text style={styles.detail}>{q.detail}</Text> : null}
       <Text style={styles.question}>{q.question}</Text>
@@ -78,6 +89,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d1117',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.md,
+    zIndex: 1,
+    padding: 4,
   },
   header: {
     color: '#58a6ff',
