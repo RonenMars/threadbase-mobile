@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
@@ -90,6 +91,10 @@ interface Props {
 
 export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTexts, onSendInput, onSendKeys, activeQuestion, onAnswer }: Props) {
   const { t } = useTranslation('common')
+  const collapsedLines = useMemo(
+    () => collapseWrappedUserLines(lines, userMessageTexts),
+    [lines, userMessageTexts],
+  )
   const listRef = useRef<FlashListRef<TerminalLine>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
   // here to drive the jump-to-top / jump-to-bottom pill visibility. Plain
@@ -143,12 +148,12 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
   // Computed once per `lines` change so FlatList can call keyExtractor in any order.
   const keys = useMemo(() => {
     const counts = new Map<string, number>()
-    return lines.map((item) => {
+    return collapsedLines.map((item) => {
       const c = counts.get(item) ?? 0
       counts.set(item, c + 1)
       return `${item}#${c}`
     })
-  }, [lines])
+  }, [collapsedLines])
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
   const questionBlock = useMemo(() => {
@@ -156,9 +161,9 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     // Defense in depth on top of parseQuestionBlock's numbered-cursor rule:
     // drop lines the streamer confirmed as user messages so a `❯ <text>`
     // prompt echo can never be scraped as a menu cursor.
-    const window = lines.slice(-30).filter((l) => !isUserLine(stripAnsi(l), userMessageTexts))
+    const window = collapsedLines.slice(-30).filter((l) => !isUserLine(stripAnsi(l), userMessageTexts))
     return parseQuestionBlock(window)
-  }, [lines, onSendKeys, userMessageTexts])
+  }, [collapsedLines, onSendKeys, userMessageTexts])
 
   const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
@@ -185,7 +190,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     <View style={styles.container}>
       <FlashList
         ref={listRef}
-        data={lines}
+        data={collapsedLines}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onScroll={handleScroll}
