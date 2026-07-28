@@ -210,6 +210,24 @@ Opened 2026-07-23, **after** the kick-off and **not** part of the 20-PR chain ab
 **#387 is stacked on #386** (its base is `#386`'s branch, so its diff shows only the `VirtualTerminal` change): merge #386 first, then rebase #387 `--onto main` before merging it — otherwise a squash of #387 would drag #386's commit onto `main` a second time.
 Include all three in the pre-flight sweep even though they are not in the count of 20.
 
+## New conflict — J: `ios/Podfile.lock` `ExpoWidgets` checksum on rebase
+
+Found 2026-07-28 rebasing `26-07-2026.18-44-integration` (~100 commits, containing this repo's own live-activity work) onto `origin/main` (which already carries the shipped live-activity/ExpoWidgets integration, build 180+). Conflict surfaced once, in the `SPEC CHECKSUMS` section, applying commit `feat(live-activity): add cross-platform session surfaces`:
+
+```
+<<<<<<< HEAD
+  ExpoWidgets: 683ecb150cd36b85b003b5e362b2207385912ef4
+=======
+  ExpoWidgets: a6e84ddf2e369bb066c020728019b2dad978a337
+>>>>>>> 858d799f (feat(live-activity): add cross-platform session surfaces)
+```
+
+The rest of the ~3200-line lockfile auto-merged cleanly — only this single pod's checksum diverged, because both `main` and the integration branch shipped their own independent `ExpoWidgets`/live-activity implementation.
+
+**Resolution:** keep `HEAD`'s value (`main`'s checksum) — `main` is the branch being rebased onto and already carries the working, shipped live-activity integration; the integration branch's own older checksum is superseded duplicate work. A full `pod install` regeneration was attempted first but failed (`Cannot find module 'expo-widgets/package.json'` — `node_modules` in this worktree didn't have `expo-widgets` installed for this tree state); textual resolution was used instead since `Podfile.lock` gets regenerated fresh via `pod install` before any real ship anyway per this repo's native-dependency rule.
+
+**Do this before shipping from the rebased branch:** run `pod install` from `ios/` once `node_modules` is in sync (`npm ci` if needed) to regenerate `Podfile.lock` for real, rather than trusting the manually-resolved checksum.
+
 ## Local integration merge — PRs #354, #355, and #376
 
 On 2026-07-23, the three PRs previously reported as missing were merged into the isolated worktree `/private/tmp/tb-mobile-merge-354-355-376`, based on integration tip `5502eb3`, in this order: **#354 → #355 → #376**.
