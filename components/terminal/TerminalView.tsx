@@ -2,6 +2,7 @@ import React from 'react'
 import { Alert, View, Text, StyleSheet } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useTranslation } from 'react-i18next'
+import { Warning } from 'phosphor-react-native'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -78,6 +79,7 @@ export function TerminalView({
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
       {confidence === 'low' ? (
         <View style={styles.rawNote} testID="terminal-raw-mode-note">
+          <Warning size={14} color="#d29922" weight="fill" />
           <Text style={styles.rawNoteText}>{t('session.rawModeNote')}</Text>
         </View>
       ) : null}
@@ -141,6 +143,9 @@ export function TerminalView({
 
 const styles = StyleSheet.create({
   rawNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: '#21262d',
@@ -148,6 +153,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#30363d',
   },
   rawNoteText: {
+    flex: 1,
     color: '#d29922',
     fontSize: 11,
     lineHeight: 15,

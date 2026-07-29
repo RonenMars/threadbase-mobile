@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
-import { InfoIcon, PencilSimple, Star, StopCircle, GitDiff } from 'phosphor-react-native'
+import { InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -911,12 +911,10 @@ export default function SessionDetailScreen() {
   const viewModeLabel = showTerminalSurface
     ? t('session.viewModeTerminal')
     : t('session.viewModeChat')
-  const rawFallbackBanner =
-    parseConfidence === 'low' || renderMode.reason === 'low_parse_confidence'
-      ? t('session.rawFallbackBanner')
-      : forceRawTerminal
-        ? t('session.ptyActiveFallbackBanner')
-        : null
+  // TerminalView renders its own low-confidence note (rawModeNote) whenever
+  // showTerminalSurface is true for that reason, so this banner only covers
+  // the forceRawTerminal case — otherwise the two banners duplicate.
+  const rawFallbackBanner = forceRawTerminal ? t('session.ptyActiveFallbackBanner') : null
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -968,6 +966,7 @@ export default function SessionDetailScreen() {
             ) : null}
             {rawFallbackBanner ? (
               <View style={styles.rawBanner} testID="session-raw-fallback-banner">
+                <Warning size={14} color={theme.text.warning} weight="fill" />
                 <Text style={styles.rawBannerText}>{rawFallbackBanner}</Text>
               </View>
             ) : null}
@@ -1096,13 +1095,16 @@ function makeStyles(theme: Theme) {
     prompts: { color: theme.text.secondary, fontSize: font.sm },
     metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     rawBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       backgroundColor: theme.bg.secondary,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
-    rawBannerText: { color: theme.text.warning, fontSize: font.xs, lineHeight: 16 },
+    rawBannerText: { flex: 1, color: theme.text.warning, fontSize: font.xs, lineHeight: 16 },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
     staleContent: { opacity: 0.45 },
