@@ -2,7 +2,7 @@ import { HStack, Image, Spacer, Text, VStack } from '@expo/ui/swift-ui'
 import {
   clipShape,
   font,
-  foregroundColor,
+  foregroundStyle,
   frame,
   lineLimit,
   minimumScaleFactor,
@@ -23,10 +23,12 @@ import type { LiveSessionState } from '@/types/live-activity'
  * function cannot close over module constants or shared helpers, which is why
  * every other value it needs is inlined.
  *
- * That isolation is also why colors are literals rather than `constants/theme`
- * tokens: they are the `dark` / `light` palette's `status.running`,
- * `status.completed`, `text.primary`, and `text.secondary` values, kept in
- * sync by hand. Icons are SF Symbols rather than Phosphor for the same reason
+ * That isolation is also why the status colors are literals rather than
+ * `constants/theme` tokens: they are the `dark` / `light` palette's
+ * `status.running` and `status.completed` values, kept in sync by hand. Title
+ * and body text use SwiftUI's hierarchical `primary` / `secondary` styles
+ * instead, so the system resolves them against whatever material it draws the
+ * activity on. Icons are SF Symbols rather than Phosphor for the same reason
  * — Phosphor is a React Native view library and there is no RN renderer in
  * this process.
  *
@@ -51,8 +53,6 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
       : isDark
         ? '#3fb950'
         : '#1a7f37'
-    const primaryText = isDark ? '#e6edf3' : '#1f2328'
-    const secondaryText = isDark ? '#7d8590' : '#57606a'
     const statusSymbol = isFinished ? 'checkmark.circle.fill' : 'circle.dotted'
     const statusLabel = isFinished ? 'Finished' : 'Running'
 
@@ -75,7 +75,7 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
             <Text
               modifiers={[
                 font({ textStyle: 'headline' }),
-                foregroundColor(primaryText),
+                foregroundStyle({ type: 'hierarchical', style: 'primary' }),
                 lineLimit(1),
               ]}
             >
@@ -90,20 +90,20 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
                 countsDown={false}
                 modifiers={[
                   font({ textStyle: 'headline', design: 'monospaced' }),
-                  foregroundColor(statusColor),
+                  foregroundStyle(statusColor),
                 ]}
               />
             )}
           </HStack>
           <Text
-            modifiers={[font({ textStyle: 'caption' }), foregroundColor(statusColor), lineLimit(1)]}
+            modifiers={[font({ textStyle: 'caption' }), foregroundStyle(statusColor), lineLimit(1)]}
           >
             {statusLabel}
           </Text>
           <Text
             modifiers={[
               font({ textStyle: 'caption', design: 'monospaced' }),
-              foregroundColor(secondaryText),
+              foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
               lineLimit(2),
               minimumScaleFactor(0.8),
             ]}
@@ -126,7 +126,7 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
           countsDown={false}
           modifiers={[
             font({ textStyle: 'caption2', design: 'monospaced' }),
-            foregroundColor(statusColor),
+            foregroundStyle(statusColor),
           ]}
         />
       ),
