@@ -147,18 +147,23 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
               />
             ) : def.valueType === 'enum' ? (
               <View style={styles.enumRow}>
-                {(def.enumValues ?? []).map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[styles.chip, value === option && styles.chipActive]}
-                    onPress={() => stage(def, value === option ? undefined : option)}
-                    testID={`claude-flag-${def.id}-${option}`}
-                  >
-                    <Text style={[styles.chipText, value === option && styles.chipTextActive]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {(def.enumValues ?? []).map((option) => {
+                  const selected = value === option
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.chip, selected && styles.chipActive]}
+                      onPress={() => stage(def, selected ? undefined : option)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      testID={`claude-flag-${def.id}-${option}`}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
             ) : (
               <TextInput
@@ -236,7 +241,12 @@ const makeStyles = (theme: Theme) =>
     enumRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, maxWidth: '55%' },
     chip: {
       paddingHorizontal: spacing.sm,
-      paddingVertical: 4,
+      // minHeight, not paddingVertical: these chips set permissionMode (and now
+      // model/effort), so they need a real 44pt tap target rather than the ~24pt
+      // that paddingVertical: 4 alone produced. Centering keeps the label where
+      // it was, so the visual weight of the row is unchanged.
+      minHeight: 44,
+      justifyContent: 'center',
       borderRadius: radius.sm,
       backgroundColor: theme.bg.secondary,
     },
