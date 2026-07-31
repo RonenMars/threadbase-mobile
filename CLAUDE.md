@@ -96,7 +96,11 @@ Whenever `package.json` or `package-lock.json` changes:
 1. Run `bundle exec pod install` from the `ios/` directory — never a bare `pod install`.
 2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
 
-**Always `bundle exec`.** The `Gemfile` pins CocoaPods to 1.16.2 so local installs match `pod install --deployment` in deploy CI. A Homebrew CocoaPods on `PATH` shadows that pin, and a bare `pod install` run against it rewrites `COCOAPODS:` and the pod checksums in `ios/Podfile.lock` — which then flip back the next time CI or a `bundle exec` user regenerates it. That ping-pong is the usual source of `ExpoWidgets`/`hermes-engine` checksum conflicts on rebases.
+**Always `bundle exec`.** The `Gemfile` pins CocoaPods to 1.16.2 so local installs match `pod install --deployment` in deploy CI. A Homebrew CocoaPods on `PATH` shadows that pin, and a bare `pod install` run against it rewrites the `COCOAPODS:` line in `ios/Podfile.lock`, which then flips back the next time CI or a `bundle exec` user regenerates it.
+
+**Three checksums are path-dependent and are not yours to commit.** `ExpoModulesCore`, `ExpoWidgets` and `hermes-engine` generate their podspecs at install time and bake the checkout's absolute path into them (`HERMES_CLI_PATH`, the precompiled `ExpoModulesCore` tarball `file://` URL, the `ExpoWidgets` bundle copy script). A pod's `SPEC CHECKSUM` is the SHA1 of its generated podspec, so those three values differ for every worktree, every machine and every CI runner — `bundle exec` does not stabilise them. Committing them is what makes `ios/Podfile.lock` ping-pong between whoever ran `pod install` last, and is the usual source of `ExpoWidgets`/`hermes-engine` checksum conflicts on rebases.
+
+`scripts/reset-podfile-lock-path-noise.sh` reverts `ios/Podfile.lock` when those three lines are the *only* drift (a genuine pod change also moves that pod's version line, so it is left alone). The ship and deploy pipelines run it right after `pod install`; run it yourself after a manual `pod install` — or just `git checkout -- ios/Podfile.lock` when the diff is only those three lines.
 
 ---
 

@@ -25,6 +25,7 @@ cd ios
 rm -rf Pods
 bundle exec pod install
 cd ..
+./scripts/reset-podfile-lock-path-noise.sh
 
 echo "▸ Running native tunnel build for device: $DEVICE_UDID"
 DEVICE_UDID="$DEVICE_UDID" ./scripts/start-cloudflared.sh --native
