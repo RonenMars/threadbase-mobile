@@ -1,11 +1,13 @@
 # Investigation: missing Sentry Release metadata (`ronen-mars/threadbase`)
 
 **Date:** 2026-07-31
-**Method:** live queries via the Sentry MCP against org `ronen-mars` / project
-`threadbase`, cross-referenced with the iOS build pipeline in this repo
-(including the vendored `@sentry/react-native` Xcode build-phase scripts).
-Nothing here is asserted from documentation alone — every claim below cites
-either an MCP tool result or a specific file+line.
+**Method:** live queries via the Sentry MCP and the Sentry dashboard (via
+claude-in-chrome) against org `ronen-mars` / project `threadbase`,
+cross-referenced with the iOS build pipeline in this repo (including the
+vendored `@sentry/react-native` Xcode build-phase scripts and today's actual
+`build/archive.log` from shipping build 183). Nothing here is asserted from
+documentation alone — every claim below cites an MCP tool result, a dashboard
+page, a build log line, or a specific file+line.
 
 ## Corrected premise
 
@@ -84,50 +86,67 @@ whether a Release exists.
 
 ### 2. Does the release NAME match between the SDK and the upload?
 
-Almost certainly yes — no explicit override exists on either side, and both
-sides compute the name the same way:
+**No — confirmed directly from today's build 183 archive log, and this is the
+real root cause.** `build/archive.log` (produced by `scripts/archive-and-upload.sh`
+during today's local ship) shows the actual sentry-cli sourcemap upload:
 
-- **SDK side** (`services/safe-metadata.ts:131-134`):
-  ```ts
-  export function getReleaseString(): string {
-    const { appVersion, buildNumber } = getSafeBuildMetadata()
-    return `threadbase-mobile@${appVersion}+${buildNumber}`
-  }
-  ```
-  → `threadbase-mobile@1.0.0+163`, matching exactly what `find_releases` shows.
-- **sentry-cli side:** neither `sentry-xcode.sh` nor `sentry-xcode-debug-files.sh`
-  ever sets `SENTRY_RELEASE` (grepped `scripts/`, `.github/workflows/`, and both
-  vendored scripts — no repo code sets it). `sentry-cli react-native xcode`
-  auto-detects the release name from the built `Info.plist`
-  (`CFBundleShortVersionString` + `CFBundleVersion`), which is the same source
-  of truth the app's own `app.json`/EAS build config stamps before Xcode runs.
+```
+output: sentry-cli - > Organization: ronen-mars
+output: sentry-cli - > Projects: threadbase
+output: sentry-cli - > Release: com.ronenmars.threadbase@1.0+183
+output: sentry-cli - > Dist: 183
+output: sentry-cli - > Upload type: artifact bundle
+```
 
-So this dimension is not the source of the gap — the fact that all three
-Sentry release *names* already match `getReleaseString()`'s output exactly
-confirms this empirically, independent of the reasoning above.
+Compare to what the SDK tags every event with
+(`services/safe-metadata.ts:131-134`):
+
+```ts
+export function getReleaseString(): string {
+  const { appVersion, buildNumber } = getSafeBuildMetadata()
+  return `threadbase-mobile@${appVersion}+${buildNumber}`
+}
+```
+→ `threadbase-mobile@1.0.0+183`.
+
+**These are two different strings, both package name and version:**
+
+| | Package | Version |
+|---|---|---|
+| SDK (`getReleaseString()`) | `threadbase-mobile` (hardcoded) | `1.0.0` (`app.json` → `expo.version`) |
+| sentry-cli (auto-detected) | `com.ronenmars.threadbase` (Info.plist `CFBundleIdentifier`, i.e. the iOS bundle id) | `1.0` (Info.plist `CFBundleShortVersionString`, stale relative to `app.json`) |
+
+Neither `sentry-xcode.sh` nor `sentry-xcode-debug-files.sh` ever sets
+`SENTRY_RELEASE` (grepped `scripts/`, `.github/workflows/`, and both vendored
+scripts — no repo code sets it), so `sentry-cli react-native xcode` falls back
+to its own convention (bundle id `@` marketing version), which has no relation
+to the SDK's hardcoded `threadbase-mobile` package name. This is why
+`find_releases` never returns a `com.ronenmars.threadbase@...` release: the
+sourcemap upload's debug-ID artifact bundle gets tagged with that release
+string for association purposes, but it's not the release Sentry events are
+ever tagged with — so the release the Releases UI shows (`threadbase-mobile@1.0.0+183`)
+reports **0 source map artifacts** even though an upload happened successfully
+in the same build.
+
+**My original conclusion for this question — that the names "should" match
+because both sides use the same `Info.plist`— was wrong.** It assumed the SDK
+release string was itself derived from `Info.plist`, but it isn't: it's a
+hardcoded `threadbase-mobile` literal in application code, independent of the
+iOS bundle identifier. Only the live archive log surfaced this; static
+reasoning about the code wasn't enough here.
 
 ### 3. Is `dist` set consistently?
 
-The SDK sets `dist: getSafeBuildMetadata().buildNumber` (`services/sentry.ts:171`,
-e.g. `"163"`). On the sentry-cli side, `SENTRY_DIST` is never set explicitly
-either — same auto-detection from `Info.plist`'s `CFBundleVersion` applies,
-which should produce the identical value. This is architecturally the same
-non-issue as (2): nothing in the repo could cause a mismatch because nothing
-overrides either side away from the shared source of truth (the built
-`Info.plist`).
+Yes, `dist` itself is fine — `> Dist: 183` in the log above matches
+`services/sentry.ts:171`'s `dist: getSafeBuildMetadata().buildNumber` exactly.
+The mismatch is entirely in the release name (see §2), not dist.
 
-**Caveat — could not verify directly:** the Sentry MCP server exposes
-`find_releases` and `get_release_details` but **no tool to list a release's
-uploaded artifacts/files** (searched `search_sentry_tools` for "release
-artifacts", "sourcemaps upload check", "debug files list" — none of the
-returned tools cover this). So whether sourcemaps actually *bound* to
-`+163`/`+164`/`+183` under the right dist could not be confirmed from this
-session. Given `dateReleased: null` for all three, it's more likely no
-sourcemaps were uploaded at all for any of them (see §1) than that they were
-uploaded under a mismatched dist. To close this out: run
-`sentry-cli releases files threadbase-mobile@1.0.0+183 list` (needs
-`SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` in the shell) or check the
-Artifacts tab on the release page in the Sentry UI directly.
+**Confirmed via Sentry dashboard (not just the archive log):** navigated to
+`https://ronen-mars.sentry.io/explore/releases/threadbase-mobile%401.0.0%2B183/`
+via claude-in-chrome — the release detail page shows **"Source Maps — 0
+artifacts"** and a **"Finalize"** action still available (i.e. not finalized),
+directly confirming that the sourcemap upload seen in the archive log landed
+on a different release object than the one events/the UI reference.
 
 ### 4. Is commit association configured at all?
 
@@ -152,30 +171,65 @@ these is added explicitly to the pipeline — which requires:
 - An explicit `sentry-cli releases deploys new -e production <release>` call
   to populate the deploy marker.
 
-This is a deliberate scope cut for this investigation (findings-only, no
-pipeline changes) — see the "Follow-up" section below.
+**Also confirmed via the Sentry dashboard:** `Settings → Repositories`
+(`https://ronen-mars.sentry.io/settings/repos/`) and `Settings → Integrations`
+both show every VCS provider (GitHub included) as **"Not Installed"/"Connect"**
+— there is currently no repository connected to this Sentry org at all. This
+means `set-commits`/suspect-commits cannot work yet regardless of any pipeline
+change; connecting a repository is an org-admin action in the Sentry dashboard
+that has to happen before any code change here can populate commit metadata.
+This is a genuine blocker, not a pipeline gap — left as a manual follow-up for
+the user rather than something this branch can fix.
 
 ## Summary
 
 | Question | Finding |
 |---|---|
 | Are Release objects created? | Yes, 3 exist — but likely via Sentry's auto-create-on-event fallback rather than a completed sentry-cli finalize, at least for `+163`/`+164`. `dateReleased` is null for all three. |
-| Does the release name match? | Yes — both sides derive from the same `Info.plist` values, and the 3 live release versions already match `getReleaseString()`'s output exactly. |
-| Is `dist` consistent? | Architecturally yes (same shared source), but artifact binding under that dist could not be verified — no MCP tool exposes it; check via `sentry-cli releases files list` or the Sentry UI. |
-| Is commit association configured? | No — never called anywhere in this repo, unconditionally. This is the only gap that persists even if the release/finalize step succeeds. |
+| Does the release name match? | **No — this is the root cause.** sentry-cli auto-detects `com.ronenmars.threadbase@1.0+183` (bundle id + stale marketing version) while the SDK tags events `threadbase-mobile@1.0.0+183`. Confirmed directly in today's `build/archive.log`. **Fixed in this branch.** |
+| Is `dist` consistent? | Yes — `Dist: 183` in the archive log matches the SDK's `dist: buildNumber` exactly. Not the issue. |
+| Is commit association configured? | No — never called anywhere in this repo, unconditionally. Additionally blocked externally: no VCS integration/repository is connected in the Sentry org at all (confirmed via dashboard), so `set-commits` can't work yet regardless of pipeline changes. |
 
-## Follow-up (explicitly out of scope for this investigation)
+## Fix implemented (this branch)
+
+`scripts/archive-and-upload.sh` now exports `SENTRY_RELEASE` and `SENTRY_DIST`
+— computed identically to `services/safe-metadata.ts`'s `getReleaseString()` —
+before invoking `xcodebuild archive`. sentry-cli honors these env vars over its
+own Info.plist-derived auto-detection, so the sourcemap upload will land on the
+same release object (`threadbase-mobile@<version>+<build>`) that the SDK tags
+events with, going forward.
+
+This is used by both the local ship path (`scripts/ship-ios.sh` →
+`archive-and-upload.sh`) and CI (`.github/workflows/deploy.yml` →
+`ship-ios.sh`), so one change covers both.
+
+**What this fix does not (yet) do:**
+- It doesn't finalize the release or create commit/deploy markers — the
+  sourcemap upload path used here (`sentry-cli react-native xcode`, debug-ID
+  artifact bundle) never calls `releases finalize`, `set-commits`, or
+  `deploys new` regardless of release-name correctness. `dateReleased` will
+  likely stay `null` even for future builds unless that's added separately.
+- It doesn't retroactively fix `+163`/`+164`/`+183` — those already-uploaded
+  artifact bundles are stuck under their mismatched release names; only future
+  archives benefit.
+- Commit association remains blocked on connecting a repository in the Sentry
+  dashboard (see §4 above) — no code change can work around that.
+
+## Follow-up (not done in this branch)
 
 1. Confirm whether `SENTRY_DISABLE_AUTO_UPLOAD` was set for builds 163/164 (or
    whether `SENTRY_AUTH_TOKEN` was simply absent/invalid at the time) — if so,
    their releases exist only via the event-ingestion fallback and never had a
    real finalize/sourcemap-upload attempt.
-2. Run `sentry-cli releases files <version> list` (or check the Sentry UI
-   Artifacts tab) for `+183` once it has had time to fully process, to confirm
-   sourcemaps actually bound.
-3. If commit/deploy metadata is wanted going forward: confirm a GitHub
-   integration is connected in the Sentry org, then wire
-   `sentry-cli releases set-commits --auto` and
+2. Ship a build with this fix and confirm via the Sentry dashboard that the
+   matching `threadbase-mobile@<version>+<build>` release now shows non-zero
+   Source Map artifacts.
+3. Fix the stale `MARKETING_VERSION` ("1.0" instead of "1.0.0") in the Xcode
+   project if it matters for anything else — it's now irrelevant to Sentry
+   since `SENTRY_RELEASE` overrides it, but it's still a real drift from
+   `app.json`.
+4. If commit/deploy metadata is wanted: connect a repository under
+   `Settings → Repositories` in the Sentry dashboard (user action, not
+   code), then wire `sentry-cli releases set-commits --auto` and
    `sentry-cli releases deploys new -e production` into the ship pipeline
-   after the existing Xcode build phases (or as a discrete step in
-   `.github/workflows/deploy.yml`).
+   after the archive step.
