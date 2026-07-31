@@ -25,14 +25,28 @@ function session(overrides: Partial<Session> = {}): Session {
   }
 }
 
+/**
+ * A surface only opens on a `waiting_input → running` edge, so every case that
+ * needs one on screen has to drive that edge — a bare `running` opens nothing.
+ */
+async function openTurn(serverId: string, running: Session): Promise<void> {
+  await reconcile(serverId, { ...running, status: 'waiting_input' })
+  await reconcile(serverId, running)
+}
+
 describe('live activity reconciler', () => {
   beforeEach(() => {
     resetLiveActivities()
     factory.start.mockClear()
   })
 
-  it('starts an activity deep-linked to the session on its server', async () => {
+  it('opens nothing for a session’s first running — no turn has been asked for', async () => {
     await reconcile('srv-1', session())
+    expect(factory.start).not.toHaveBeenCalled()
+  })
+
+  it('starts an activity deep-linked to the session on its server', async () => {
+    await openTurn('srv-1', session())
     expect(factory.start).toHaveBeenCalledTimes(1)
     const [state, url] = factory.start.mock.calls[0]
     expect(state).toMatchObject({ sessionId: 'sess-1', serverId: 'srv-1', status: 'running' })
@@ -40,7 +54,7 @@ describe('live activity reconciler', () => {
   })
 
   it('updates rather than restarts a session it already tracks', async () => {
-    await reconcile('srv-1', session())
+    await openTurn('srv-1', session())
     const handle = factory.start.mock.results[0].value
     await reconcile('srv-1', session({ lastOutput: 'still going' }))
     expect(factory.start).toHaveBeenCalledTimes(1)
@@ -50,21 +64,21 @@ describe('live activity reconciler', () => {
   })
 
   it('ends the activity when the session turns terminal', async () => {
-    await reconcile('srv-1', session())
+    await openTurn('srv-1', session())
     const handle = factory.start.mock.results[0].value
     await reconcile('srv-1', session({ completedAt: '2026-07-25T11:00:00.000Z' }))
     expect(handle.end).toHaveBeenCalledWith('immediate')
   })
 
   it('never exceeds three activities, evicting the least recently updated', async () => {
-    await reconcile('srv-1', session({ id: 'a' }))
-    await reconcile('srv-1', session({ id: 'b' }))
-    await reconcile('srv-1', session({ id: 'c' }))
+    await openTurn('srv-1', session({ id: 'a' }))
+    await openTurn('srv-1', session({ id: 'b' }))
+    await openTurn('srv-1', session({ id: 'c' }))
     // Touch 'a' so 'b' becomes the least recently updated.
     await reconcile('srv-1', session({ id: 'a', lastOutput: 'fresh' }))
 
     const evicted = factory.start.mock.results[1].value
-    await reconcile('srv-1', session({ id: 'd' }))
+    await openTurn('srv-1', session({ id: 'd' }))
 
     expect(factory.start).toHaveBeenCalledTimes(4)
     expect(evicted.end).toHaveBeenCalledWith('immediate')
@@ -76,8 +90,8 @@ describe('live activity reconciler', () => {
   })
 
   it('keys by server so the same session id on two servers gets its own surface', async () => {
-    await reconcile('srv-1', session())
-    await reconcile('srv-2', session())
+    await openTurn('srv-1', session())
+    await openTurn('srv-2', session())
     expect(factory.start).toHaveBeenCalledTimes(2)
   })
 
@@ -87,7 +101,7 @@ describe('live activity reconciler', () => {
       // the way a fresh JS context would, leaving the native activity behind.
       // A survivor carries no props back, so it can never be matched to a
       // session or updated — leaving it would freeze it on stale data.
-      await reconcile('srv-1', session())
+      await openTurn('srv-1', session())
       const orphan = factory.start.mock.results[0].value
       resetLiveActivities()
       factory.getInstances.mockReturnValueOnce([orphan])
@@ -99,7 +113,7 @@ describe('live activity reconciler', () => {
 
     it('does not disturb a session started after adoption ran', async () => {
       adoptRunningActivities()
-      await reconcile('srv-1', session())
+      await openTurn('srv-1', session())
       const handle = factory.start.mock.results[0].value
       expect(handle.end).not.toHaveBeenCalled()
     })
