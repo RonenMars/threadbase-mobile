@@ -4,6 +4,7 @@ import {
   renderReportText,
   submitFeedback,
   copyReportToClipboard,
+  FEEDBACK_EMAIL,
 } from '@/services/feedback-transport'
 import { submitFeedbackViaSentry } from '@/services/sentry'
 import type { FeedbackReport } from '@/types/feedback'
@@ -100,7 +101,11 @@ describe('submitFeedback — fallback chain', () => {
     await submitFeedback(baseReport())
     const opts = (MailComposer.composeAsync as jest.Mock).mock.calls[0][0]
     expect(opts.body).toContain('The hub flickers on cold launch.')
-    expect(opts.recipients).toEqual(['ronenmars@gmail.com'])
+    // Asserts against the constant rather than a literal address, so changing the
+    // inbox does not break the test. FEEDBACK_EMAIL falls back to SUPPORT_EMAIL
+    // when EXPO_PUBLIC_FEEDBACK_EMAIL is unset, which is the case here — so this
+    // pins the recipient, not the support/feedback split.
+    expect(opts.recipients).toEqual([FEEDBACK_EMAIL])
   })
 
   it('returns ok:false (copy fallback) when Sentry and email both fail', async () => {
