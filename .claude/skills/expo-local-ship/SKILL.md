@@ -174,7 +174,7 @@ These bit us in real ships — call them out before they cost an hour.
 - **Apple Development vs Distribution signing** — the local archive can be Apple-Development-signed and still upload fine: `xcodebuild -exportArchive` with `signingStyle=automatic` + API-key auth re-signs for Distribution at export time.
 - **Build number must monotonically increase** per `bundleIdentifier` per `version`. Bump it before re-uploading.
 - **Node version must match Expo SDK's engine field.** Expo SDK 54 requires Node `^20.19.0 || ^22.13.0 || >=24` — Node 22.12.x silently breaks Metro's *absolute path* resolution at bundle time (you'll see `Unable to resolve module /abs/path/...` for files that exist on disk). `npm install` only warns (`EBADENGINE`); the failure happens later during archive. Use `nvm use` with a compatible version before shipping.
-- **`pod install` is required after any `node_modules` refresh.** If you ever delete or reinstall `node_modules`, `cd ios && pod install` before archiving — otherwise `ReactCodegen` will fail with *"Build input file cannot be found"* errors for `*-generated.cpp` / `*JSI-generated.cpp` files. Pod install regenerates the autolinking codegen Run Script Phase that produces those inputs.
+- **`bundle exec pod install` is required after any `node_modules` refresh.** If you ever delete or reinstall `node_modules`, `cd ios && bundle exec pod install` before archiving — otherwise `ReactCodegen` will fail with *"Build input file cannot be found"* errors for `*-generated.cpp` / `*JSI-generated.cpp` files. Pod install regenerates the autolinking codegen Run Script Phase that produces those inputs.
 - **Watchman state corruption** can produce non-deterministic Metro errors where each run fails on a *different* `node_modules` file with *"this file does not exist"* even though the file is on disk. Reset it: `watchman watch-del-all && watchman shutdown-server`, then purge `$TMPDIR/metro-*` and `$TMPDIR/haste-*` before retrying.
 - **JWT for App Store Connect API must be ES256 with raw r||s signature (IEEE P1363, 64 bytes), not DER.** `openssl dgst -sha256 -binary -sign` emits DER and Apple's API will reject the JWT with `401 NOT_AUTHORIZED`. Use Node's `crypto.createSign(...).sign({key, dsaEncoding: "ieee-p1363"})` instead — `asc-jwt.sh` now does this.
 
@@ -217,14 +217,14 @@ jobs:
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | Bootstrap dies on PEM sanity check | `ASC_AUTH_KEY_B64` is missing or invalid | Re-encode: `base64 -i AuthKey_*.p8` and export `ASC_AUTH_KEY_B64` |
-| Archive succeeds, upload rejected: "Invalid Bundle Structure" | Stale Pods after a config-plugin change | `cd ios && pod install --repo-update && cd ..` then re-archive |
+| Archive succeeds, upload rejected: "Invalid Bundle Structure" | Stale Pods after a config-plugin change | `cd ios && bundle exec pod install --repo-update && cd ..` then re-archive |
 | `processingState=INVALID` | App Store Connect rejected the binary | `curl …/v1/builds/<id>` for reason; common: missing privacy manifest, deprecated APIs |
 | `xcodebuild` hangs at signing | Distribution profile missing | Pass `-allowProvisioningUpdates` + the API-key flags (the scripts already do this) |
-| `CocoaPods out of sync` warning | Lockfile drift | `cd ios && pod install --repo-update` |
+| `CocoaPods out of sync` warning | Lockfile drift | `cd ios && bundle exec pod install --repo-update` |
 | Gradle: `Unsupported Java version` | Wrong JDK | `export JAVA_HOME=$(/usr/libexec/java_home -v 17)` |
 | `Metro port 8081 in use` | Stale bundler | `lsof -ti :8081 \| xargs kill` |
 | `Unable to resolve module /abs/path/...` for files that exist on disk | Node version older than Expo SDK requires (e.g. Node 22.12.x with SDK 54) | Check `package.json`'s `engines` warning at install time; `nvm use` a compatible version (Expo SDK 54 → `>=22.13` or `>=24`) |
-| `error: Build input file cannot be found: '...rnscreensJSI-generated.cpp'` (or similar `*-generated.{cpp,mm}`) | Pods out of sync with `node_modules` after a refresh | `cd ios && pod install` then re-archive |
+| `error: Build input file cannot be found: '...rnscreensJSI-generated.cpp'` (or similar `*-generated.{cpp,mm}`) | Pods out of sync with `node_modules` after a refresh | `cd ios && bundle exec pod install` then re-archive |
 | Metro fails on a *different* `node_modules` file each run, all "exist but unresolved" | Watchman / Metro haste-map state corruption | `watchman watch-del-all && watchman shutdown-server`, then `rm -rf $TMPDIR/metro-* $TMPDIR/haste-* node_modules/.cache .expo` |
 | ASC API returns `401 NOT_AUTHORIZED` despite valid `.p8` | JWT signature is DER (`openssl dgst -sign`) instead of raw r||s (IEEE P1363) | Ensure `asc-jwt.sh` signs with Node's `crypto.createSign(...).sign({key, dsaEncoding: "ieee-p1363"})` — Apple rejects DER ES256 |
 | White screen after install | Bundler unreachable from device | Confirm Metro is running on `--lan`/`--tunnel` matching the device's network |

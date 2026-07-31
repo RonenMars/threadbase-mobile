@@ -92,7 +92,7 @@ fi
 - `android/gradle.properties` — `-Xmx6144m -XX:MaxMetaspaceSize=2048m` heap tuning for R8/lint.
 - `plugins/withAndroidReleaseSigning.js` re-injects the signing block, but is template-shaped for a specific SDK.
 
-**Fix:** Always run `npx expo prebuild --no-clean` on this repo so it patches the existing folders in place instead of regenerating them. If you already ran a clean prebuild, `git checkout -- ios android` to restore the committed config, then `cd ios && pod install`.
+**Fix:** Always run `npx expo prebuild --no-clean` on this repo so it patches the existing folders in place instead of regenerating them. If you already ran a clean prebuild, `git checkout -- ios android` to restore the committed config, then `cd ios && bundle exec pod install` (the `bundle exec` keeps CocoaPods on the Gemfile-pinned 1.16.2 — see [`CLAUDE.md`](../CLAUDE.md) → "Native Dependencies After Package Changes").
 
 **Note:** The `ship-ios.sh` / `ship-android.sh` scripts are unaffected — they only prebuild when the native dir is missing (`[[ ! -d ios ]]`), where there is nothing to clean.
 
