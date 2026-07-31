@@ -93,8 +93,10 @@ Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR 
 
 Whenever `package.json` or `package-lock.json` changes:
 
-1. Run `pod install` from the `ios/` directory.
+1. Run `bundle exec pod install` from the `ios/` directory — never a bare `pod install`.
 2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
+
+**Always `bundle exec`.** The `Gemfile` pins CocoaPods to 1.16.2 so local installs match `pod install --deployment` in deploy CI. A Homebrew CocoaPods on `PATH` shadows that pin, and a bare `pod install` run against it rewrites `COCOAPODS:` and the pod checksums in `ios/Podfile.lock` — which then flip back the next time CI or a `bundle exec` user regenerates it. That ping-pong is the usual source of `ExpoWidgets`/`hermes-engine` checksum conflicts on rebases.
 
 ---
 

@@ -23,7 +23,7 @@ npm install
 echo "▸ Reinstalling Pods"
 cd ios
 rm -rf Pods
-pod install
+bundle exec pod install
 cd ..
 
 echo "▸ Running native tunnel build for device: $DEVICE_UDID"

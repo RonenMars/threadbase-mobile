@@ -133,7 +133,7 @@
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.0",
-    "babel-preset-expo": "~57.0.1",
+    "babel-preset-expo": "~57.0.4",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~57.0.0",
     "eslint-plugin-i18next": "^6.1.4",
