@@ -28,8 +28,25 @@ import type {
   FeedbackTransportKind,
 } from '@/types/feedback'
 
-/** Support address used for the email fallback. */
-export const SUPPORT_EMAIL = 'ronenmars@gmail.com'
+/**
+ * Support address used for the email fallback.
+ *
+ * Overridable so a fork or a white-label build can point support at its own inbox
+ * without patching source. The literal stays as the default rather than requiring
+ * the variable: unset, an override-only version would open a composer with no
+ * recipient — a silent failure the user only discovers after writing the message.
+ */
+export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || 'support@threadbase.sh'
+
+/**
+ * Where structured feedback reports are mailed when the HTTPS endpoint is
+ * unavailable. Separate from SUPPORT_EMAIL because the two are different kinds of
+ * mail: support is a person asking for help, this is a generated report with a
+ * category, a rendered body and often a screenshot. Falls back to the support
+ * address so an unset variable still reaches a human.
+ */
+export const FEEDBACK_EMAIL =
+  process.env.EXPO_PUBLIC_FEEDBACK_EMAIL || SUPPORT_EMAIL
 /** Public feedback page users are pointed to for the copy-and-paste fallback. */
 export const FEEDBACK_PAGE_URL = 'https://www.threadbase.sh/feedback'
 
@@ -127,7 +144,7 @@ async function tryEmail(report: FeedbackReport): Promise<boolean> {
     const available = await MailComposer.isAvailableAsync()
     if (!available) return false
     const result = await MailComposer.composeAsync({
-      recipients: [SUPPORT_EMAIL],
+      recipients: [FEEDBACK_EMAIL],
       subject: emailSubject(report),
       body: renderReportText(report),
       attachments: report.attachment ? [report.attachment.uri] : undefined,
