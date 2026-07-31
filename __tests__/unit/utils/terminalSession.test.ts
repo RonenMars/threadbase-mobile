@@ -29,6 +29,24 @@ describe('isTerminalSession', () => {
     expect(isTerminalSession({ ...base, promptCount: 1 })).toBe(false)
   })
 
+  it('is NOT terminal for a managed session with prompt history', () => {
+    expect(isTerminalSession({ ...base, ownership: 'managed', promptCount: 17 })).toBe(false)
+  })
+
+  it('is terminal for a rehydrated historical session despite its prompt history', () => {
+    expect(isTerminalSession({ ...base, ownership: 'historical', promptCount: 17 })).toBe(true)
+  })
+
+  it('is terminal for a historical session with no prompt history', () => {
+    expect(isTerminalSession({ ...base, ownership: 'historical' })).toBe(true)
+  })
+
+  it('is NOT terminal for a historical session that still has a live PTY', () => {
+    expect(
+      isTerminalSession({ ...base, ownership: 'historical', promptCount: 17, ptyAttached: true }),
+    ).toBe(false)
+  })
+
   it('is NOT terminal when there is buffered output', () => {
     expect(isTerminalSession({ ...base, lastOutput: 'hello' })).toBe(false)
   })
