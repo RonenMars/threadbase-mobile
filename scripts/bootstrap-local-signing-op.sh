@@ -176,6 +176,32 @@ resolve_profile() {
   echo "    base64 -i <profile>.mobileprovision | op item edit '${OP_ITEM}' --vault '${OP_VAULT}' '${op_field}[password]=-'" >&2
 }
 
+# ── Sentry (optional) ───────────────────────────────────────────────────────────
+# sentry-cli runs as a build phase during archive and aborts the whole build when it
+# has credentials for neither org nor project. CI supplies these from repository
+# secrets; locally they came from nowhere, so a local ship died mid-archive until
+# SENTRY_DISABLE_AUTO_UPLOAD was set — which silently costs symbolication.
+# Optional by design: absent Sentry config must not block signing.
+SENTRY_AUTH_TOKEN=""; SENTRY_ORG=""; SENTRY_PROJECT=""
+if [[ -n "${OP_SENTRY_VAULT:-}" && -n "${OP_SENTRY_ITEM:-}" ]]; then
+  sread() { op read "op://${OP_SENTRY_VAULT}/${OP_SENTRY_ITEM}/$1" 2>/dev/null || true; }
+  SENTRY_AUTH_TOKEN="$(sread "${OP_SENTRY_TOKEN_FIELD:-token}")"
+  # org SLUG, not org id — sentry-cli builds API paths from it, and an id 404s.
+  SENTRY_ORG="$(sread "${OP_SENTRY_ORG_FIELD:-org_slug}")"
+  SENTRY_PROJECT="$(sread "${OP_SENTRY_PROJECT_FIELD:-project}")"
+  export SENTRY_AUTH_TOKEN SENTRY_ORG SENTRY_PROJECT
+  if [[ -n "$SENTRY_AUTH_TOKEN" && -n "$SENTRY_ORG" && -n "$SENTRY_PROJECT" ]]; then
+    (( DRY_RUN )) && echo "  Sentry: OK — token, org '${SENTRY_ORG}', project '${SENTRY_PROJECT}'"
+  else
+    echo "  Sentry: INCOMPLETE — token=$([[ -n "$SENTRY_AUTH_TOKEN" ]] && echo set || echo MISSING)" \
+         "org=$([[ -n "$SENTRY_ORG" ]] && echo "$SENTRY_ORG" || echo MISSING)" \
+         "project=$([[ -n "$SENTRY_PROJECT" ]] && echo "$SENTRY_PROJECT" || echo MISSING)" >&2
+    echo "    Archive will fail unless SENTRY_DISABLE_AUTO_UPLOAD=true. Check field names in $OP_CONFIG." >&2
+  fi
+elif (( DRY_RUN )); then
+  echo "  Sentry: not configured (set OP_SENTRY_VAULT/OP_SENTRY_ITEM) — dSYM upload will fail"
+fi
+
 if (( ! USE_PROFILE_ITEMS )); then
   resolve_profile "${IOS_PROVISION_PROFILE_UUID}" \
     "${OP_PROFILE_B64_FIELD:-provision_profile_b64}" "App" IOS_PROVISION_PROFILE_B64

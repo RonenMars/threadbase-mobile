@@ -103,6 +103,20 @@ export IOS_PROVISION_PROFILE_UUID="${IOS_PROVISION_PROFILE_UUID}"
 export IOS_WIDGET_PROVISION_PROFILE_UUID="${IOS_WIDGET_PROVISION_PROFILE_UUID}"
 EOF
 
+# Sentry credentials, when supplied. sentry-cli runs during archive and fails the
+# build without them; ship-ios.sh sources this file, so writing them here is what
+# makes a local ship symbolicate. Appended rather than inlined above so the file
+# stays valid when Sentry is not configured — it is optional, unlike signing.
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
+  cat >> .env.signing <<EOF
+export SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}"
+export SENTRY_ORG="${SENTRY_ORG}"
+export SENTRY_PROJECT="${SENTRY_PROJECT}"
+EOF
+  echo "  Sentry:            org ${SENTRY_ORG} / project ${SENTRY_PROJECT}"
+fi
+chmod 600 .env.signing
+
 echo "iOS signing bootstrapped:"
 echo "  .p8 key:           ${ASC_KEY_PATH}"
 echo "  ExportOptions:     build/ExportOptions.plist"
