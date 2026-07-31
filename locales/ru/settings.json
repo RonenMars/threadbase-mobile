@@ -74,7 +74,7 @@
   },
   "help": {
     "restartOnboarding": "Перезапустить руководство",
-    "helpSupport": "Помощь и поддержка",
+    "helpSupport": "Написать в поддержку",
     "serverHealth": "Состояние сервера",
     "pairedDevices": "Привязанные устройства",
     "backupRestore": "Резервная копия"
