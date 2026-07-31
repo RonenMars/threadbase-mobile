@@ -14,6 +14,7 @@ import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { ServerFormFields } from '@/components/servers/ServerFormFields'
 import { classifyPairCredential, type ExchangeResult } from '@/services/pair-exchange'
+import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isValidHttpServerUrl } from '@/lib/serverUrl'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
@@ -292,7 +293,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             testID="onboarding-connect-support"
             onPress={() => {
               void Linking.openURL(
-                'mailto:ronenmars@gmail.com?subject=Threadbase%20Pairing%20Help',
+                `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
               )
             }}
             style={styles.supportLink}

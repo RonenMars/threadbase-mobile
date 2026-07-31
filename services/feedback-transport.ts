@@ -28,8 +28,15 @@ import type {
   FeedbackTransportKind,
 } from '@/types/feedback'
 
-/** Support address used for the email fallback. */
-export const SUPPORT_EMAIL = 'ronenmars@gmail.com'
+/**
+ * Support address used for the email fallback.
+ *
+ * Overridable so a fork or a white-label build can point support at its own inbox
+ * without patching source. The literal stays as the default rather than requiring
+ * the variable: unset, an override-only version would open a composer with no
+ * recipient — a silent failure the user only discovers after writing the message.
+ */
+export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || 'ronenmars@gmail.com'
 /** Public feedback page users are pointed to for the copy-and-paste fallback. */
 export const FEEDBACK_PAGE_URL = 'https://www.threadbase.sh/feedback'
 

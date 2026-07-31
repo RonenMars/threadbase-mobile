@@ -21,6 +21,7 @@ import {
   type ExchangeResult,
 } from '@/services/pair-exchange'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
+import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 
 interface Props {
   visible: boolean
@@ -155,7 +156,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
           testID="pair-scanner-support"
           onPress={() => {
             void Linking.openURL(
-              'mailto:ronenmars@gmail.com?subject=Threadbase%20Pairing%20Help',
+              `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
             )
           }}
         >
