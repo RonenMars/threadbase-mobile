@@ -52,7 +52,6 @@
     "prompts_other": "{{count}} פרומפטים",
     "viewModeTerminal": "טרמינל",
     "viewModeChat": "צ׳אט",
-    "rawFallbackBanner": "מוצג טרמינל גולמי — נרמול הצ׳אט אינו ודאי עבור הזרם הזה.",
     "ptyActiveFallbackBanner": "פלט טרמינל חי פעיל לפני שזמינים הודעות שיחה.",
     "rawModeNote": "מצב טרמינל גולמי — זוהו רצפים שאינם נתמכים; הפלט אינו מסונן."
   },
