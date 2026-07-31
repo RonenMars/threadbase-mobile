@@ -80,6 +80,15 @@ else
   export TB_MOBILE_UPLOAD_KEY_ALIAS
   export TB_MOBILE_UPLOAD_KEY_PASSWORD
 
+  # sentry.gradle.kts otherwise auto-detects release/dist as
+  # "$applicationId@$versionName+$versionCode" (e.g. "com.ronenmars.threadbase@1.0.0+8"),
+  # which never matches what the SDK tags events with (services/sentry.ts ->
+  # "threadbase-mobile@1.0.0+8" via services/safe-metadata.ts). Force the same
+  # values the SDK computes so uploaded source maps land on the right release —
+  # mirrors the iOS fix in archive-and-upload.sh.
+  export SENTRY_RELEASE="threadbase-mobile@${VERSION_NAME}+${VERSION_CODE}"
+  export SENTRY_DIST="${VERSION_CODE}"
+
   (cd android && ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee ../build/gradle-bundle.log)
 
   if [[ ! -f "$AAB_PATH" ]]; then

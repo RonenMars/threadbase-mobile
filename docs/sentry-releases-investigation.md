@@ -192,16 +192,31 @@ the user rather than something this branch can fix.
 
 ## Fix implemented (this branch)
 
-`scripts/archive-and-upload.sh` now exports `SENTRY_RELEASE` and `SENTRY_DIST`
-— computed identically to `services/safe-metadata.ts`'s `getReleaseString()` —
-before invoking `xcodebuild archive`. sentry-cli honors these env vars over its
-own Info.plist-derived auto-detection, so the sourcemap upload will land on the
-same release object (`threadbase-mobile@<version>+<build>`) that the SDK tags
-events with, going forward.
+The same mismatch exists on both platforms, since both auto-detect
+release/dist from the platform bundle identifier rather than the SDK's
+hardcoded `threadbase-mobile` package name — and both `com.ronenmars.threadbase`
+(iOS bundle id, confirmed in the archive log) and `com.ronenmars.threadbase`
+(Android `expo.android.package` in `app.json`) are the same string, so Android
+would hit an identical mismatch (e.g. `com.ronenmars.threadbase@1.0.0+37`
+instead of `threadbase-mobile@1.0.0+37`).
 
-This is used by both the local ship path (`scripts/ship-ios.sh` →
-`archive-and-upload.sh`) and CI (`.github/workflows/deploy.yml` →
-`ship-ios.sh`), so one change covers both.
+- **iOS:** `scripts/archive-and-upload.sh` now exports `SENTRY_RELEASE` and
+  `SENTRY_DIST` — computed identically to `services/safe-metadata.ts`'s
+  `getReleaseString()` — before invoking `xcodebuild archive`. sentry-cli
+  honors these env vars over its own Info.plist-derived auto-detection. Used
+  by both the local ship path (`scripts/ship-ios.sh` → `archive-and-upload.sh`)
+  and CI (`.github/workflows/deploy.yml` → `ship-ios.sh`), so one change
+  covers both.
+- **Android:** `scripts/bundle-and-upload-android.sh` now exports the same two
+  vars before `./gradlew :app:bundleRelease`. `node_modules/@sentry/react-native/sentry.gradle.kts`
+  (lines 432, 442-443) explicitly falls back to
+  `$applicationId@$versionName+$versionCode` only `if SENTRY_RELEASE`/`SENTRY_DIST`
+  aren't set in the environment — same override mechanism as iOS, confirmed by
+  reading the vendored Gradle script rather than assumed. Used by both
+  `scripts/ship-android.sh` and CI.
+
+Both uploaded release/dist now land on `threadbase-mobile@<version>+<build>`,
+matching what the SDK tags events with, going forward.
 
 **What this fix does not (yet) do:**
 - It doesn't finalize the release or create commit/deploy markers — the
