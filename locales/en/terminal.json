@@ -52,7 +52,6 @@
     "prompts_other": "{{count}} prompts",
     "viewModeTerminal": "Terminal",
     "viewModeChat": "Chat",
-    "rawFallbackBanner": "Showing raw terminal — chat normalization is uncertain for this stream.",
     "ptyActiveFallbackBanner": "Live terminal output is active before conversation messages are available.",
     "rawModeNote": "Raw terminal mode — unsupported sequences detected; output is unfiltered."
   },
