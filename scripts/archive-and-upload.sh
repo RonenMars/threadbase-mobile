@@ -24,6 +24,17 @@ mkdir -p build
 BUILD_NUMBER="$(jq -r '.expo.ios.buildNumber' app.json)"
 : "${BUILD_NUMBER:?Could not read buildNumber from app.json}"
 
+# sentry-cli auto-detects release/dist from the Xcode project's bundle id and
+# marketing version (e.g. "com.ronenmars.threadbase@1.0+183"), which never
+# matches what the SDK tags events with (services/sentry.ts ->
+# "threadbase-mobile@1.0.0+183" via services/safe-metadata.ts). That mismatch
+# leaves uploaded source maps bound to a release object Sentry never
+# associates with the app's actual events. Force the same release/dist the
+# SDK computes so sentry-cli's upload lands on the right release.
+APP_VERSION="$(jq -r '.expo.version' app.json)"
+export SENTRY_RELEASE="threadbase-mobile@${APP_VERSION}+${BUILD_NUMBER}"
+export SENTRY_DIST="${BUILD_NUMBER}"
+
 xcodebuild \
   -workspace "${WORKSPACE}" \
   -scheme "${SCHEME}" \
