@@ -1,13 +1,24 @@
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
+import { getServerWarmupState } from './server-warmup'
+import type {
+  CacheAlert,
+  CacheAlertResolveAction,
+  ClaudeFlagsConfig,
+  ClaudeFlagValues,
+  ServerWarmupState,
+} from '@/types/api'
 
 export class NetworkError extends Error {
   code?: string
-  constructor(message: string, code?: string) {
+  warmupState?: ServerWarmupState
+  constructor(message: string, code?: string, warmupState?: ServerWarmupState) {
     super(message)
     this.name = 'NetworkError'
     this.code = code
+    this.warmupState = warmupState
   }
 }
 
@@ -32,10 +43,61 @@ export class SessionNotFoundError extends Error {
   }
 }
 
+/** Which signals the server used to decide a conversation is busy. */
+export type ConversationBusyDetectedBy = 'jsonl_mtime' | 'process_argv' | 'process_cwd'
+
+/**
+ * Soft 409 from `POST /api/sessions/resume`: the conversation looks like it may
+ * still be open elsewhere (e.g. an external CLI writing its JSONL). Carries the
+ * structured payload so callers can name what was detected and offer a
+ * force-override retry instead of failing with a generic error.
+ */
+export class ConversationBusyError extends Error {
+  detectedBy: ConversationBusyDetectedBy[]
+  lastActivityMs: number | null
+  likelyOwner: 'external' | 'unknown'
+  constructor(
+    message: string,
+    payload: {
+      detectedBy?: unknown
+      lastActivityMs?: unknown
+      likelyOwner?: unknown
+    } = {},
+  ) {
+    super(message)
+    this.name = 'ConversationBusyError'
+    this.detectedBy = Array.isArray(payload.detectedBy)
+      ? (payload.detectedBy.filter((d) => typeof d === 'string') as ConversationBusyDetectedBy[])
+      : []
+    this.lastActivityMs = typeof payload.lastActivityMs === 'number' ? payload.lastActivityMs : null
+    this.likelyOwner = payload.likelyOwner === 'external' ? 'external' : 'unknown'
+  }
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.
 const FIRST_ATTEMPT_TIMEOUT_MS = 8000
+
+function isWarmupFetchEndpoint(method: string, path: string): boolean {
+  if (method !== 'GET') return false
+  const pathname = path.split('?')[0]
+  return pathname === '/api/sessions' ||
+    pathname === '/api/sessions/count' ||
+    pathname === '/api/sessions/recents' ||
+    /^\/api\/sessions\/[^/]+$/.test(pathname) ||
+    pathname === '/api/conversations' ||
+    pathname === '/api/conversations/count' ||
+    /^\/api\/conversations\/[^/]+$/.test(pathname)
+}
+
+function recordWarmupError(serverId: string, errorBody: unknown): ServerWarmupState | undefined {
+  const warmupState = getServerWarmupState(errorBody) ?? undefined
+  if (warmupState) {
+    useServerFetchStatusStore.getState().recordWarmingUp(serverId, warmupState)
+  }
+  return warmupState
+}
 
 async function request<T>(
   method: string,
@@ -144,10 +206,15 @@ async function request<T>(
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
+    let warmupState: ServerWarmupState | undefined
+    // Hoisted out of the try so the 409 handler below can read the structured
+    // collision payload, not just the flattened detail/code strings.
+    let errBody: Record<string, unknown> | undefined
     try {
-      const errBody = await response.json()
-      if (errBody?.error) detail = errBody.error
-      if (errBody?.code) code = errBody.code
+      errBody = await response.json()
+      if (errBody?.error) detail = errBody.error as string
+      if (errBody?.code) code = errBody.code as string
+      if (isWarmupFetchEndpoint(method, path)) warmupState = recordWarmupError(serverId, errBody)
       if (isStartSession) {
         clientLog.info('startSession', 'start response error body', {
           status: response.status,
@@ -157,10 +224,18 @@ async function request<T>(
         })
       }
     } catch {}
-    throw new NetworkError(detail || `Server returned ${response.status}`, code)
+    // Soft resume-collision: surface the structured payload as a typed error so
+    // the caller can name what was detected and offer a force-override retry.
+    if (response.status === 409 && code === 'CONVERSATION_BUSY') {
+      throw new ConversationBusyError(detail || 'Conversation is busy', errBody ?? {})
+    }
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
   const json = (await response.json()) as T
+  if (isWarmupFetchEndpoint(method, path)) {
+    useServerFetchStatusStore.getState().recordReady(serverId)
+  }
   if (isStartSession) {
     const keys = json && typeof json === 'object' ? Object.keys(json as object) : []
     clientLog.info('startSession', 'start response body', {
@@ -275,6 +350,7 @@ async function requestWithMeta<T>(
   // 304: the cached copy is current. fetch() resolves (does not throw); the
   // body is empty, so don't call response.json().
   if (response.status === 304) {
+    useServerFetchStatusStore.getState().recordReady(serverId)
     return { status: 304, etag, body: null }
   }
 
@@ -283,14 +359,17 @@ async function requestWithMeta<T>(
   if (!response.ok) {
     let detail = ''
     let code: string | undefined
+    let warmupState: ServerWarmupState | undefined
     try {
       const errBody = await response.json()
       if (errBody?.error) detail = errBody.error
       if (errBody?.code) code = errBody.code
+      warmupState = recordWarmupError(serverId, errBody)
     } catch {}
-    throw new NetworkError(detail || `Server returned ${response.status}`, code)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
+  useServerFetchStatusStore.getState().recordReady(serverId)
   return { status: response.status, etag, body: (await response.json()) as T }
 }
 
@@ -318,6 +397,86 @@ export interface ResponseWithMeta<T> {
   body: T | null
 }
 
+export type ResolveCacheAlertResult =
+  | { ok: true; action: CacheAlertResolveAction; pruned?: number; backupPath?: string }
+  | { ok: true; alreadyResolved: true }
+  | { ok: false; conflict: true; currentFingerprint: string }
+
+// GET /api/cache/alert. A 404 means the server predates this feature — treat
+// as "no alert" rather than an error (see cache-integrity-alert contract).
+export async function getCacheAlert(serverId: string): Promise<CacheAlert | null> {
+  try {
+    const api = createApiForServer(serverId)
+    const { pending } = await api.get<{ pending: CacheAlert | null }>('/api/cache/alert')
+    return pending
+  } catch (e) {
+    if (e instanceof NotFoundError) return null
+    throw e
+  }
+}
+
+// GET /api/config/claude-flags. A 404 means the server predates this feature —
+// return null so the UI hides the section entirely rather than erroring (same
+// contract as getCacheAlert above).
+export async function getClaudeFlags(serverId: string): Promise<ClaudeFlagsConfig | null> {
+  try {
+    const api = createApiForServer(serverId)
+    return await api.get<ClaudeFlagsConfig>('/api/config/claude-flags')
+  } catch (e) {
+    if (e instanceof NotFoundError) return null
+    throw e
+  }
+}
+
+// PUT /api/config/claude-flags. Full replace, not a patch: the server has no
+// per-key delete semantics, so the client always sends the complete set.
+export async function updateClaudeFlags(
+  serverId: string,
+  values: ClaudeFlagValues,
+  extraArgs?: string,
+): Promise<ClaudeFlagsConfig> {
+  const api = createApiForServer(serverId)
+  return await api.put<ClaudeFlagsConfig>('/api/config/claude-flags', {
+    values,
+    ...(extraArgs ? { extraArgs } : {}),
+  })
+}
+
+// POST /api/cache/alert/resolve. Uses a direct fetch rather than request<T>()
+// because a 409 fingerprint_mismatch is an expected outcome (not an error) and
+// request<T>() only surfaces non-ok responses by throwing NetworkError.
+export async function resolveCacheAlert(
+  serverId: string,
+  body: { fingerprint: string; action: CacheAlertResolveAction; ids?: string[] },
+): Promise<ResolveCacheAlertResult> {
+  const server = useServersStore.getState().getServer(serverId)
+  if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
+
+  const url = `${server.url.replace(/\/$/, '')}/api/cache/alert/resolve`
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${server.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+  }
+
+  if (response.status === 401) throw new AuthError()
+  if (response.status === 409) {
+    const { currentFingerprint } = await response.json() as { currentFingerprint: string }
+    return { ok: false, conflict: true, currentFingerprint }
+  }
+  if (!response.ok) throw new NetworkError(`resolve failed: ${response.status}`)
+
+  return await response.json() as ResolveCacheAlertResult
+}
+
 export interface ServerApi {
   get: <T>(path: string, options?: RequestOptions) => Promise<T>
   /** Conditional GET exposing status + ETag; `body` is null on 304. */
@@ -325,6 +484,8 @@ export interface ServerApi {
   /** HTTP QUERY (RFC 10008) — safe/idempotent/cacheable like GET, JSON body like POST. */
   query: <T>(path: string, body: unknown, options?: RequestOptions) => Promise<T>
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
+  /** Full replace. Used by the server-config endpoints, which have no per-key delete. */
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   delete: <T>(path: string, options?: RequestOptions) => Promise<T>
 }
@@ -335,6 +496,7 @@ export function createApiForServer(serverId: string): ServerApi {
     getWithMeta: <T>(path: string, options?: RequestOptions) => requestWithMeta<T>(path, serverId, options),
     query: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('QUERY', path, body, serverId, options),
     post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('POST', path, body, serverId, options),
+    put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, body, serverId, options),
     patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, body, serverId, options),
     delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, undefined, serverId, options),
   }
@@ -357,6 +519,10 @@ export const api: ServerApi = {
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]
     return first ? request<T>('POST', path, body, first, options) : Promise.reject(new NetworkError('No servers configured'))
+  },
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => {
+    const first = useServersStore.getState().activeServerIds[0]
+    return first ? request<T>('PUT', path, body, first, options) : Promise.reject(new NetworkError('No servers configured'))
   },
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]

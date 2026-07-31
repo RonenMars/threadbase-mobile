@@ -2,10 +2,11 @@
  * SessionScreen — hold-on-background.
  *
  * Guards: when the app goes to background, the screen proactively sends a
- * { type: 'hold_session', sessionId } WS message so the server holds the PTY
- * immediately instead of waiting out its ~4.5-min grace timer. Returning to
- * 'active' force-reconnects (which re-subscribes and resumes). No message is
- * sent for other transitions (e.g. 'inactive').
+ * { type: 'hold_session', sessionId } WS message so the server (re)arms its
+ * ~4.5-min grace timer for this session, same as a WS disconnect would — the
+ * session keeps running until the timer elapses. Returning to 'active'
+ * force-reconnects (which re-subscribes and resumes). No message is sent for
+ * other transitions (e.g. 'inactive').
  */
 import React from 'react'
 import { AppState } from 'react-native'
@@ -61,6 +62,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendInput: { mutate: jest.fn() },
     sendKeys: { mutate: jest.fn(), isPending: false },
     adoptSession: { mutate: jest.fn() },
+    stopSession: { mutate: jest.fn(), isPending: false },
   }),
 }))
 jest.mock('@/hooks/useTerminalStream', () => ({
@@ -102,10 +104,14 @@ jest.mock('@/stores/settings', () => ({
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
   useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
-  useQueryClient: () => ({ invalidateQueries: jest.fn() }),
+  useQueryClient: () => ({
+    invalidateQueries: jest.fn(),
+    getQueryData: jest.fn(),
+  }),
 }))
 
 // eslint-disable-next-line import/first

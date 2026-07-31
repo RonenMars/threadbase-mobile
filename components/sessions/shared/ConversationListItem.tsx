@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -29,6 +30,13 @@ export interface ConversationListItemProps {
   branch?: string | null
   /** When set, the row gains a pulsing amber live indicator + LIVE pill. */
   live?: boolean
+  /**
+   * When set (with `live`), renders the read-only "external / observed" variant
+   * instead of the interactive amber treatment: a blue dot + EXTERNAL pill.
+   * Distinguishes a discovered process the streamer only observes from a
+   * streamer-owned live session.
+   */
+  external?: boolean
 
   /** Optional message snapshots used by `MessagePreview`. */
   firstMessage?: { text: string } | null
@@ -59,6 +67,11 @@ export interface ConversationListItemProps {
   serverChipVariant?: ServerChipVariant
   /** Total active servers in the app — used to resolve `showServer === 'auto'`. */
   activeServerCount?: number
+  /**
+   * Force the server chip even when `showServer === 'auto'` would hide it —
+   * used when the same project path exists on multiple servers.
+   */
+  forceServerChip?: boolean
 
   /** Search-result inline substring highlight. */
   highlight?: string
@@ -81,15 +94,21 @@ export interface ConversationListItemProps {
 const STRIP_WIDTH = 3
 const STRIP_RADIUS = 2
 
-function shouldShowServer(mode: ConversationListServerMode, activeServerCount: number | undefined, hasLabel: boolean): boolean {
+function shouldShowServer(
+  mode: ConversationListServerMode,
+  activeServerCount: number | undefined,
+  hasLabel: boolean,
+  forceServerChip: boolean,
+): boolean {
   if (!hasLabel) return false
   if (mode === 'never') return false
-  if (mode === 'always') return true
+  if (mode === 'always' || forceServerChip) return true
   return (activeServerCount ?? 0) > 1
 }
 
 export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const {
     title,
@@ -99,6 +118,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     messageCount,
     branch,
     live = false,
+    external = false,
     firstMessage,
     lastMessage,
     preview,
@@ -115,6 +135,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     showServer = 'auto',
     serverChipVariant = 'label',
     activeServerCount,
+    forceServerChip = false,
     highlight,
     showCount = true,
     showBranch = true,
@@ -126,10 +147,18 @@ export function ConversationListItem(props: ConversationListItemProps) {
     testID,
   } = props
 
-  const serverVisible = shouldShowServer(showServer, activeServerCount, Boolean(serverLabel))
+  // Blue for an observed external session, amber for an interactive live one.
+  const liveColor = external ? theme.status.completed : theme.status.waiting
+  const livePillLabel = external ? t('status.externalPill') : t('status.livePill')
+  const serverVisible = shouldShowServer(
+    showServer,
+    activeServerCount,
+    Boolean(serverLabel),
+    forceServerChip,
+  )
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
-    : (live ? theme.status.waiting : null)
+    : (live ? liveColor : null)
 
   // Path rendering — only consulted when no title.
   const pathParts = useMemo(() => {
@@ -215,7 +244,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       )}
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
-          <LiveDot live={live} color={live ? theme.status.waiting : theme.text.accent} size={6} />
+          <LiveDot live={live} color={live ? liveColor : theme.text.accent} size={6} />
         </View>
       )}
       {leading === 'depth' && !isChip && (
@@ -252,9 +281,11 @@ export function ConversationListItem(props: ConversationListItemProps) {
       {!isChip ? (
         <View style={styles.tail}>
           {live ? (
-            <View style={styles.livePill}>
-              <View style={styles.livePillDot} />
-              <Text style={styles.livePillText}>LIVE</Text>
+            <View style={[styles.livePill, external && { backgroundColor: `${liveColor}24` }]}>
+              <View style={[styles.livePillDot, external && { backgroundColor: liveColor }]} />
+              <Text style={[styles.livePillText, external && { color: liveColor }]}>
+                {livePillLabel}
+              </Text>
             </View>
           ) : timeText ? (
             <Text

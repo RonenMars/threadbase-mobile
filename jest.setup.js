@@ -1,3 +1,6 @@
+/* global expect, jest */
+/* eslint-disable react/display-name */
+
 const matchers = require('@testing-library/react-native/matchers')
 expect.extend(matchers)
 
@@ -24,24 +27,33 @@ jest.mock('@react-native-community/netinfo', () => ({
 }))
 
 // ─── expo-router ─────────────────────────────────────────────────────────────
-jest.mock('expo-router', () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    navigate: jest.fn(),
-    canGoBack: jest.fn(() => true),
-  })),
-  useLocalSearchParams: jest.fn(() => ({})),
-  useGlobalSearchParams: jest.fn(() => ({})),
-  useNavigation: jest.fn(() => ({ setOptions: jest.fn() })),
-  useSegments: jest.fn(() => []),
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
-  Redirect: () => null,
-  Link: ({ children }) => children,
-  Stack: { Screen: () => null },
-  Tabs: { Screen: () => null },
-}))
+jest.mock('expo-router', () => {
+  const React = require('react')
+  return {
+    useRouter: jest.fn(() => ({
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+      navigate: jest.fn(),
+      setParams: jest.fn(),
+      canGoBack: jest.fn(() => true),
+    })),
+    useLocalSearchParams: jest.fn(() => ({})),
+    useGlobalSearchParams: jest.fn(() => ({})),
+    useNavigation: jest.fn(() => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) })),
+    useSegments: jest.fn(() => []),
+    // Screens are always focused under test — run the effect on mount and
+    // return its cleanup so blur/unmount tears the interval down.
+    useFocusEffect: (cb) => {
+      React.useEffect(() => cb(), [cb])
+    },
+    router: { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) },
+    Redirect: () => null,
+    Link: ({ children }) => children,
+    Stack: { Screen: () => null },
+    Tabs: { Screen: () => null },
+  }
+})
 
 // ─── expo-haptics ────────────────────────────────────────────────────────────
 jest.mock('expo-haptics', () => ({
@@ -109,6 +121,24 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   },
 }))
 
+// ─── expo-widgets / live activity ────────────────────────────────────────────
+// The widget module is mocked rather than `expo-widgets` itself: its layout
+// carries the `'widget'` directive, which only Babel's widget transform can
+// resolve — under Jest the JSX would reference undefined SwiftUI globals.
+// `start()` returns a fresh handle per call so eviction tests can assert which
+// activity was ended.
+jest.mock('@/widgets/SessionLiveActivity', () => ({
+  __esModule: true,
+  default: {
+    start: jest.fn(() => ({
+      update: jest.fn().mockResolvedValue(undefined),
+      end: jest.fn().mockResolvedValue(undefined),
+      getPushToken: jest.fn().mockResolvedValue(null),
+    })),
+    getInstances: jest.fn(() => []),
+  },
+}))
+
 // ─── expo-notifications ──────────────────────────────────────────────────────
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
@@ -118,6 +148,11 @@ jest.mock('expo-notifications', () => ({
   scheduleNotificationAsync: jest.fn().mockResolvedValue('notification-id'),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  // Cold-start read-back: null means "the app was not launched by a tap".
+  getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  dismissNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  getPresentedNotificationsAsync: jest.fn().mockResolvedValue([]),
   setBadgeCountAsync: jest.fn().mockResolvedValue(undefined),
   AndroidImportance: { HIGH: 5, DEFAULT: 3 },
 }))

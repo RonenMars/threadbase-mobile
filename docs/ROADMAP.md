@@ -6,6 +6,8 @@ This doc tracks **features**: new capabilities, UX changes, or feature-flag work
 
 Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an idea is ready to commit to, promote it into this file as a numbered Feature.
 
+New discrete tasks also land under [`roadmap/`](./roadmap/index.md) (one file per task, indexed there) — preferred layout for freshly filed work going forward.
+
 ---
 
 ## Status overview
@@ -14,9 +16,9 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 |---|---|
 | Feature 1 — Tree directory view: pre-fill new-session path with current directory | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
 | Feature 2 — Move Export button from Historical session bottom bar into the info shelf | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
-| Feature 3 — Attach multiple files to a single message | Planned (larger — split into its own plan when picked up) |
+| Feature 3 — Attach multiple files to a single message | 🟡 Partial — multi-select/upload shipped; Bug 5 `@path` fix in flight (#345 / streamer #241) |
 | Feature 4 — Auto-deploy to App Store + Google Play | Planned (CI/release infra) |
-| Feature 5 — Polish the onboarding flow | Planned (scope to be defined) |
+| Feature 5 — Polish the onboarding flow | Planned (scope to be defined) — **next action** for OSS invite polish |
 | Feature 6 — Cross-session search with hit context + "open in session" | Planned (orchestration) |
 | Feature 7 — Workspace tagging across sessions / conversations / projects | Planned (orchestration) |
 | Feature 8 — Saved views: persisted filter + sort + tag combos as named tabs | Planned (orchestration) |
@@ -28,7 +30,7 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) |
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
 | Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) |
-| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) |
+| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) — **next action**; release suite still ungreen |
 | Feature 18 — Upgrade to Expo SDK 56 | ✅ Shipped 2026-05-25 (TestFlight build 104; React Compiler re-enabled in 106) |
 | Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
 | Feature 20 — Visual regression gate on Maestro screenshots | Planned (CI/quality, follow-on to Feature 17) |
@@ -44,10 +46,10 @@ Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an
 | Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned (platform/noise, low-priority) |
 | Feature 32 — Handle batched `conversation_events` WS event | Planned (perf, low-priority) |
 | Feature 34 — Structured prompt cards for Codex sessions | Planned (cross-repo, streamer-side) |
-| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | Planned (privacy/product decision) |
-| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | Planned (privacy/product decision) |
+| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | 🔄 In flight — option (a) in [PR #343](https://github.com/RonenMars/threadbase-mobile/pull/343) |
+| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | 🟡 Partial — code path in #343; store/legal/on-device evidence still human-only |
 
-**Suggested order for the remaining originals:** **Feature 5** (onboarding polish — needs a scoping pass first) → **Feature 4** (auto-deploy — pick up once releases are happening regularly enough to justify CI investment) → **Feature 3** (multi-file attachments, larger; diagnose [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) first — the two may collapse). Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
+**Suggested order for the remaining originals (2026-07-22):** Merge **Feature 35/36** (#343) + **Bug 5** (#345). Then **typecheck green** → **Feature 17 / Maestro suite** → **Feature 5** (onboarding polish — needs a scoping pass). **Feature 4** (auto-deploy) after releases are regular. Feature 3 multi-select largely shipped; finish via Bug 5 PRs. Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
 
 **Suggested order for the orchestration cluster (6–15):** **Feature 13 Mission Control** (biggest daily-orchestration unlock, no native modules, reuses existing infra) → **Feature 6 Cross-session search** (already half-shipped at `hooks/useConversations.ts:431`; finishing it changes what the app is for) → **Feature 12 Live Activities** (highest mobile-native ceiling) → **Feature 15 Scheduled prompts** (strong async-teammate unlock if streamer cron is cheap) → **Feature 7 Tagging** → **Feature 8 Saved views** (builds on 7) → **Feature 10 Snippets** → **Feature 11 Workspace sync** (only after 7/8/10 exist and are worth syncing) → **Feature 14 Voice** (great but possibly overkill before #6 and #13 settle the workflow) → **Feature 9 Split view** (fun but iPad-coded; deprioritize if primary device is iPhone).
 
@@ -132,7 +134,8 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 ### Feature 5 — Polish the onboarding flow
 
-**Filed:** 2026-05-22.
+**Filed:** 2026-05-22. **Status (2026-07-22):** 🔄 In flight on `feat/onboarding-polish-top5` — audit complete; shipping top XS/S wins (Skip/swipe empty-Hub guard, QR advance without re-handshake, back-to-choose, Mac→computer copy + i18n QR steps, default port 8766). Still open: manual `tb pair` token exchange in `useTBPair`, NotificationsStep re-wire.
+
 
 **Goal:** Refine the first-launch onboarding experience. Today's flow (`app/onboarding.tsx` + `components/onboarding/{OnboardingShell,OnboardingNavigator}.tsx` + `components/onboarding/steps/*`) gets users from cold install to a paired server, but the rough edges haven't been cataloged or prioritized.
 
@@ -390,6 +393,8 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 - `services/ws-client.ts` — hook session_update events into the activity update path
 - `app/session/[id].tsx` — "Make live" action
 - streamer: send activity-update pushes alongside the existing session-update notifications
+
+**Related:** [Smartwatch surfaces](./roadmap/tasks/smartwatch-session-surfaces.md) — once phone Live Activities / Live Updates exist, extend glanceability to paired smartwatches (mirroring first, native watch companions later if needed). See also [`docs/roadmap/`](./roadmap/index.md).
 
 ---
 
@@ -1089,7 +1094,35 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 ### Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only)
 
-**Filed:** 2026-07-13.
+**Filed:** 2026-07-13. **Implemented:** 2026-07-18 — decision **(a)**.
+
+**Decision:** Option **(a)** — explicit user-initiated actions (one-shot crash report AND Help & Feedback) both self-init Sentry for the duration of the submit, then tear down if standing consent is off. Standing/automatic reporting remains gated by the Settings toggle (off by default).
+
+**What was implemented:**
+
+1. **`services/sentry.ts`** — `submitFeedbackViaSentry` now self-inits like `reportOneShot`: when the user taps Send, it initializes Sentry for that one submission even if the standing toggle is off, then tears down afterward so the "reporting is off" state is genuinely unaffected.
+2. **`app/help-feedback.tsx`** — success view now shows a brief note indicating which delivery method was used ("Sent via Sentry crash-reporting service" or "Sent via email"), addressing the "user expectation mismatch" concern by making the delivery path visible.
+3. **`locales/en/feedback.json`** — added translation keys for the delivery-path notes.
+4. **`docs/privacy-policy/proposed-privacy-policy.md`** — updated to clearly describe that feedback submissions may use Sentry even when the standing toggle is off, matching the one-shot crash report behavior.
+5. **`docs/store-privacy-checklist.md`** — updated cross-cutting reminder to describe both crash report and feedback as user-initiated Sentry paths independent of the standing toggle.
+6. **`docs/store-console-wording.md`** — updated App Store Connect and Google Play Console draft wording to include feedback submissions alongside crash reports as cases where Sentry may be used.
+
+**Consent model summary:**
+
+| Path | Standing toggle required? | How it works |
+|------|--------------------------|--------------|
+| Automatic crash reporting | Yes | Only initializes if toggle is on |
+| Manual crash report ("Report this crash") | No | Self-inits for one send, tears down after |
+| Help & Feedback submission | No | Self-inits for one send, tears down after |
+
+All three paths still require a DSN and an environment that permits reporting — those gates are unconditional. The only thing the standing toggle controls is whether Sentry stays running in the background to catch crashes automatically.
+
+**Not implemented (follow-up):** The full first-crash recovery screen from `docs/privacy-policy/threadbase-crash-reporting-ux-recommendation.md` (showing what's included/excluded, offering "Always send" as a separate opt-in) — this can be a future enhancement but is not required for the consent-model consistency fix.
+
+---
+
+<details>
+<summary>Original problem statement (archived)</summary>
 
 **Goal:** Resolve a design gap surfaced while testing the Sentry feedback flow (`feat/sentry-crash-reporting`, PR #303): two of the app's Sentry entry points behave inconsistently with each other around the "Share anonymous reports" toggle, and the inconsistency itself raises a real product question — should *any* Sentry path work without the standing toggle being on?
 
@@ -1113,7 +1146,7 @@ Today there are three ways data can reach Sentry, and they don't agree on what "
 - **Consistency reduces support/debug burden.** Right now, "does this feature work?" has a different answer depending on which Sentry entry point is asked — as seen in this session's own back-and-forth diagnosing why feedback attachments/diagnostics weren't appearing. A single consistent rule (whichever direction) removes an entire class of "why didn't this work" investigation.
 - **Silent fallback vs. explicit failure.** Path 3's current silent fallback to email is defensible (the user still gets their feedback delivered), but it means the "Include technical diagnostics" and screenshot-attachment work only reliably reaches Sentry when the toggle happens to already be on — which may be rare for typical users who never visit Settings.
 
-**Not yet decided — do not implement without picking (a) or (b) first**, since they're mutually exclusive framings of what "the toggle" means app-wide.
+**Status (2026-07-22):** Decision **(a)** chosen — explicit feedback self-inits Sentry like one-shot crash. Implementation in flight: [PR #343](https://github.com/RonenMars/threadbase-mobile/pull/343). Update this entry to ✅ when #343 merges.
 
 **Files likely involved:**
 - `services/sentry.ts` — `submitFeedbackViaSentry`, `reportOneShot`, `initCrashReporting`

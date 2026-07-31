@@ -15,7 +15,7 @@
 #   4. source .env.signing && npm run ship:ios
 #
 # Where each piece comes from:
-#   - ASC API key + issuer/team/key ids + the profile UUID: your 1Password item
+#   - ASC API key + issuer/team/key ids + both profile UUIDs: your 1Password item
 #     (configured via scripts/.env.signing-op).
 #   - Distribution cert: the login-keychain "Apple Distribution" identity — so we skip
 #     the cert import.
@@ -48,6 +48,7 @@ export ASC_ISSUER_ID="$(opread "${OP_ISSUER_ID_FIELD:-issuer_id}")"
 export ASC_TEAM_ID="$(opread "${OP_TEAM_ID_FIELD:-team_id}")"
 export ASC_AUTH_KEY_B64="$(opread "${OP_AUTH_KEY_B64_FIELD:-auth_key_b64}")"
 export IOS_PROVISION_PROFILE_UUID="$(opread "${OP_PROFILE_UUID_FIELD:-provision_profile_uuid}")"
+export IOS_WIDGET_PROVISION_PROFILE_UUID="$(opread "${OP_WIDGET_PROFILE_UUID_FIELD:-widget_provision_profile_uuid}")"
 
 # ── Provisioning profile file: from Xcode's local cache (not stored in op) ───────
 XCODE_PROFILE="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/${IOS_PROVISION_PROFILE_UUID}.mobileprovision"
@@ -58,6 +59,16 @@ if [[ -f "$XCODE_PROFILE" ]]; then
   echo "  Provisioning profile installed from Xcode cache: ${IOS_PROVISION_PROFILE_UUID}"
 else
   echo "WARNING: profile ${IOS_PROVISION_PROFILE_UUID} not found in Xcode cache." >&2
+  echo "  Open Xcode > Settings > Accounts > Download Manual Profiles, or re-run a device build, then retry." >&2
+fi
+
+XCODE_WIDGET_PROFILE="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/${IOS_WIDGET_PROVISION_PROFILE_UUID}.mobileprovision"
+if [[ -f "$XCODE_WIDGET_PROFILE" ]]; then
+  mkdir -p "$DEST_DIR"
+  cp "$XCODE_WIDGET_PROFILE" "$DEST_DIR/${IOS_WIDGET_PROVISION_PROFILE_UUID}.mobileprovision"
+  echo "  Widget provisioning profile installed from Xcode cache: ${IOS_WIDGET_PROVISION_PROFILE_UUID}"
+else
+  echo "WARNING: widget profile ${IOS_WIDGET_PROVISION_PROFILE_UUID} not found in Xcode cache." >&2
   echo "  Open Xcode > Settings > Accounts > Download Manual Profiles, or re-run a device build, then retry." >&2
 fi
 

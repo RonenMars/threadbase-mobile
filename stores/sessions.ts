@@ -13,6 +13,7 @@ interface SessionsStore {
   addToQueue: (serverId: string, sessionId: string, prompt: QueuedPrompt) => void
   removeFromQueue: (serverId: string, sessionId: string, promptId: string) => void
   reorderQueue: (serverId: string, sessionId: string, queue: QueuedPrompt[]) => void
+  clearServer: (serverId: string) => void
 }
 
 export const useSessionsStore = create<SessionsStore>((set) => ({
@@ -48,5 +49,12 @@ export const useSessionsStore = create<SessionsStore>((set) => ({
   reorderQueue: (serverId, sessionId, queue) =>
     set((state) => ({
       promptQueues: { ...state.promptQueues, [compoundKey(serverId, sessionId)]: queue },
+    })),
+
+  clearServer: (serverId) =>
+    set((state) => ({
+      promptQueues: Object.fromEntries(
+        Object.entries(state.promptQueues).filter(([key]) => !key.startsWith(`${serverId}::`)),
+      ),
     })),
 }))

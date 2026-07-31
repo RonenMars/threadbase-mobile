@@ -3,41 +3,21 @@
     "cancel": "ביטול",
     "confirm": "אישור",
     "save": "שמירה",
-    "done": "סיום",
     "back": "חזרה",
     "close": "סגירה",
     "retry": "נסה שוב",
-    "remove": "הסרה",
-    "apply": "החל",
-    "skip": "דלג",
-    "create": "צור",
-    "export": "ייצוא",
-    "copy": "העתק",
-    "paste": "הדבק",
-    "openSettings": "פתח הגדרות"
+    "apply": "החל"
   },
   "error": {
-    "generic": "משהו השתבש",
-    "loadFailed": "נכשל בטעינה",
-    "connectionFailed": "החיבור נכשל"
-  },
-  "state": {
-    "loading": "טוען…",
-    "empty": "אין כאן כלום עדיין",
-    "noResults": "אין תוצאות"
+    "loadFailed": "נכשל בטעינה"
   },
   "search": {
-    "placeholder": "חיפוש…",
-    "clear": "נקה חיפוש"
+    "placeholder": "חיפוש…"
   },
   "nav": {
     "top": "↑ למעלה",
     "bottom": "↓ למטה",
-    "backArrow": "› חזרה"
-  },
-  "time": {
-    "now": "עכשיו",
-    "yesterday": "אתמול"
+    "copyAll": "העתק הכל"
   },
   "biometricLock": {
     "title": "Threadbase נעול",
@@ -57,5 +37,12 @@
       "enable": "הפעל",
       "notNow": "לא עכשיו"
     }
+  },
+  "renderError": {
+    "title": "לא ניתן להציג פריט זה",
+    "message": "מוצג גיבוי גולמי במקום קריסת המסך."
+  },
+  "navLock": {
+    "opening": "פותח…"
   }
 }

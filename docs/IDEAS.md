@@ -147,6 +147,7 @@ Idea 6 (workspace sync) is "necessary eventually but only after we have more thi
 - On session start (or "make this session live"), register an ActivityKit activity.
 - The WS `session_update` stream pushes updates via push tokens (already wired in `services/push.ts`).
 - Android gets a foreground service notification equivalent.
+- Follow-on: smartwatch surfaces via OS mirroring / Wear OS Live Updates — see [Smartwatch session surfaces](./roadmap/tasks/smartwatch-session-surfaces.md).
 
 **Scope:** ~2 weeks iOS + ~1 week Android. Native module work is the spiky part. iOS Live Activities have a 12-hour cap per Apple — needs renewal logic for long-running sessions.
 

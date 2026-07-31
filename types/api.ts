@@ -1,4 +1,5 @@
 import type { ProviderName } from '@/constants/providers'
+import type { DeviceCapability } from '@/types/devices'
 
 export type SessionStatus = 'running' | 'waiting_input' | 'idle'
 
@@ -12,7 +13,30 @@ export interface Session {
   projectPath: string
   projectName: string
   branch?: string
+  /** Git remote origin URL for the project, when discoverable. Additive; older servers omit it. */
+  repoUrl?: string
   machineName?: string
+  /**
+   * JSONL-derived conversation name (the scanner's slug, or the first user
+   * message when there is no slug). Set on resumed/historical sessions; absent
+   * on a freshly-started session with no history yet. Additive; older servers omit it.
+   */
+  sessionName?: string
+  /**
+   * Model powering the live session, scraped from Claude's status line
+   * (e.g. 'Opus 4.8 (1M context)'). Additive; older servers omit it.
+   */
+  model?: string
+  /**
+   * Reasoning-effort tier from the status line (e.g. 'high'). Live sessions
+   * only — absent for historical shapes. Additive; older servers omit it.
+   */
+  effort?: string
+  /**
+   * Active permission mode from the status line (e.g. 'accept edits on').
+   * Live sessions only. Additive; older servers omit it.
+   */
+  permissionMode?: string
   lastOutput: string
   elapsedMs: number
   promptCount: number
@@ -29,6 +53,27 @@ export interface Session {
    * session.id). Prefer this for REST conversation history when present.
    */
   boundConversationId?: string | null
+  /**
+   * OS process id of the underlying CLI. The server sends this for discovered
+   * external processes; absent for managed PTY sessions and historical shapes.
+   */
+  pid?: number
+  /**
+   * Who owns this session's process. `managed` = streamer-owned PTY;
+   * `external` = a CLI the streamer discovered but does not own; `historical` =
+   * a resumable shape reconstructed from disk. Additive; older servers omit it.
+   */
+  ownership?: 'managed' | 'external' | 'historical'
+  /**
+   * Liveness of the underlying process when the streamer does not own the PTY.
+   * `unknown` when it can't be determined. Additive; older servers omit it.
+   */
+  processLiveness?: 'alive' | 'gone' | 'unknown'
+  /**
+   * Inferred activity from JSONL tailing (not authoritative process status).
+   * Additive; older servers omit it.
+   */
+  activity?: { state: 'active_writing' | 'quiet'; lastEventAt: string; source: 'jsonl' }
 }
 
 export interface MessageSnapshot {
@@ -45,6 +90,8 @@ export interface Conversation {
   projectId?: string
   projectPath: string
   branch?: string
+  /** Git remote origin URL for the project, when discoverable. Additive; older servers omit it. */
+  repoUrl?: string
   account?: string
   preview?: string
   messageCount: number
@@ -215,6 +262,58 @@ export interface ServerInfo {
   machineName: string
   platform: string
   activeSessions: number
+  /** Additive: true when the server serves /api/config/claude-flags. Absent on older servers. */
+  claudeFlags?: boolean
+}
+
+// ── Per-server Claude CLI flags ──────────────────────────────────────────────
+// The registry is served BY the streamer (only it knows which claude binary is
+// installed locally), so the app renders the form generically from this metadata
+// rather than hardcoding a flag list that would drift on a CLI upgrade.
+
+export type ClaudeFlagValueType = 'boolean' | 'string' | 'enum' | 'list'
+
+/** How risky enabling a flag is. `dangerous` requires an explicit confirmation. */
+export type ClaudeFlagRisk = 'low' | 'elevated' | 'dangerous'
+
+export interface ClaudeFlagDefinition {
+  /** Stable key used in requests and for i18n lookup — not the CLI spelling. */
+  id: string
+  flag: string
+  valueType: ClaudeFlagValueType
+  enumValues?: string[]
+  risk: ClaudeFlagRisk
+}
+
+export type ClaudeFlagValue = string | string[] | boolean
+export type ClaudeFlagValues = Record<string, ClaudeFlagValue>
+
+export interface ClaudeFlagsConfig {
+  registry: ClaudeFlagDefinition[]
+  values: ClaudeFlagValues
+  extraArgs: string | null
+  /** False when the server was started with --claude-flag: changes won't survive a restart. */
+  persisted: boolean
+  warning?: string
+}
+
+/**
+ * Permission modes that disable the human-in-the-loop confirmation entirely.
+ * Mirrors DANGEROUS_PERMISSION_MODES in the streamer's src/claude-flags.ts.
+ */
+export const DANGEROUS_PERMISSION_MODES = ['bypassPermissions', 'dontAsk']
+
+/** Effective risk of a specific value — only permissionMode is value-dependent. */
+export function claudeFlagValueRisk(
+  def: ClaudeFlagDefinition,
+  value: ClaudeFlagValue,
+): ClaudeFlagRisk {
+  if (def.id === 'permissionMode') {
+    return typeof value === 'string' && DANGEROUS_PERMISSION_MODES.includes(value)
+      ? 'dangerous'
+      : 'low'
+  }
+  return def.risk
 }
 
 export interface QueuedPrompt {
@@ -245,6 +344,7 @@ export interface NotificationPreferences {
 export interface PushRegisterPayload {
   token: string
   platform: 'ios' | 'android'
+  deviceId?: string
 }
 
 // ── Browse types ────────────────────────────────────────────────────
@@ -272,7 +372,32 @@ export interface ServerConfig {
   color?: string
   /** Optional Phosphor icon name used by the 'symbol' chip variant. */
   symbol?: string
+  /** Paired-device id from `/api/pair/exchange` (C5). Not a secret. */
+  deviceId?: string
+  /** Capability list from pair exchange; absent means legacy owner key (full access). */
+  deviceCapabilities?: DeviceCapability[]
 }
+
+export type CacheAlertSeverity = 'high' | 'low'
+export type CacheAlertResolveAction = 'prune_all' | 'prune_selected' | 'ignore' | 'reset_rescan'
+
+/**
+ * Pending cache-integrity alert. Same shape as the server's `GET /api/cache/alert`
+ * response; the WS `cache_alert` broadcast carries a `sample` (first 20) instead
+ * of the full `missing` list, so store the WS variant with `missing` unset until
+ * `GET /api/cache/alert` fills it in.
+ */
+export interface CacheAlert {
+  fingerprint: string
+  severity: CacheAlertSeverity
+  detectedAt: string
+  missingCount: number
+  totalRows: number
+  backupPath?: string
+  missing?: { id: string; filePath: string; title?: string; tailed: boolean }[]
+}
+
+export type ServerWarmupState = 'startup' | 'cache_reset' | 'conversation_refresh'
 
 export interface MultiSession extends Session {
   serverId: string

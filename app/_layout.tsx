@@ -1,7 +1,7 @@
 import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
-import { Pressable, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
   Stack,
@@ -23,25 +23,32 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import * as Notifications from 'expo-notifications'
 import { useServersStore } from '@/stores/servers'
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { wsManager } from '@/services/ws-client'
-import type { Session, MultiSession } from '@/types/api'
+import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
+import type { Session } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
+import {
+  adoptRunningActivities,
+  reconcile as reconcileLiveActivity,
+} from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
+import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassView } from '@/components/ui/GlassView'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
-import { shouldSkipAutoNav } from '@/lib/sessionNavGuard'
+import { markNavigatedToSession, shouldSkipAutoNav } from '@/lib/sessionNavGuard'
+import { resolveColdStartRoute, sessionRouteFromNotificationData } from '@/lib/coldStartDeepLink'
 import { useTranslation } from 'react-i18next'
 import { RootErrorBoundary } from '@/components/RootErrorBoundary'
+import { CacheAlertSync } from '@/components/servers/CacheAlertSync'
 import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
 import { wrap as sentryWrap } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
@@ -67,9 +74,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrateSessionNames = useSessionNamesStore((s) => s.hydrate)
   const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
-  const setCacheReady = useServersStore((s) => s.setCacheReady)
-  const recordFetchSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
+  const setCacheAlert = useServersStore((s) => s.setCacheAlert)
+  const clearCacheAlert = useServersStore((s) => s.clearCacheAlert)
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -104,6 +111,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, isLoading, mode, navState?.key])
 
+  // Live surfaces outlive the JS context. Anything still on screen from a
+  // previous launch is untracked and could never be updated or ended, so it
+  // would sit frozen on stale data — clear it before the first session_update
+  // can start new ones. Mount-only: re-running per server change would tear
+  // down surfaces this session had just raised.
+  useEffect(() => {
+    void adoptRunningActivities()
+  }, [])
+
   // Wire WebSocket for all servers
   useEffect(() => {
     if (activeServerIds.length === 0) return
@@ -128,19 +144,20 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData<Session>(key, (prev) =>
         prev ? { ...prev, ...msg.session } : (msg.session as Session),
       )
-      // Patch the eager paginated sessions cache (home-screen list) in place
-      // so the row's status flips without an HTTP refetch.
-      queryClient.setQueriesData<MultiSession[]>(
-        { queryKey: ['sessions-eager'] },
-        (old) =>
-          Array.isArray(old)
-            ? old.map((s) =>
-                s.serverId === msg.serverId && s.id === msg.session.id
-                  ? { ...s, ...msg.session }
-                  : s,
-              )
-            : old,
-      )
+      // Patch the eager paginated sessions cache (home-screen list) in place so
+      // the row's status flips without an HTTP refetch; if the session isn't in
+      // the list yet (e.g. a newly-alive external session), invalidate so it
+      // appears without a manual pull-to-refresh.
+      applySessionUpdateToEagerCache(queryClient, msg.serverId, msg.session)
+      // Live surfaces are driven from this one frame — it is the only place
+      // every status change passes through with its serverId already stamped.
+      void reconcileLiveActivity(msg.serverId, msg.session)
+    })
+    // External-session liveness ping: a conversation's JSONL grew without a PTY
+    // the streamer owns. Refresh the eager conversations list so its row updates.
+    const unsubConvUpdated = wsManager.onAll('conversation_updated', (msg) => {
+      if (msg.type !== 'conversation_updated') return
+      refreshEagerConversations(queryClient)
     })
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
@@ -171,12 +188,28 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubCacheReady = wsManager.onAll('cache_ready', (msg) => {
       if (msg.type !== 'cache_ready') return
-      setCacheReady(msg.serverId)
-      recordFetchSuccess(msg.serverId)
+      void queryClient.invalidateQueries({ queryKey: ['sessions-eager'] })
+      void queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      void queryClient.invalidateQueries({ queryKey: ['conversations-eager'] })
+      void queryClient.invalidateQueries({ queryKey: ['conversations'] })
     })
     const unsubScanProgress = wsManager.onAll('scan_progress', (msg) => {
       if (msg.type !== 'scan_progress') return
       setScanProgress(msg.serverId, msg.scanned, msg.total)
+    })
+    const unsubCacheAlert = wsManager.onAll('cache_alert', (msg) => {
+      if (msg.type !== 'cache_alert') return
+      setCacheAlert(msg.serverId, {
+        fingerprint: msg.fingerprint,
+        severity: msg.severity,
+        detectedAt: msg.detectedAt,
+        missingCount: msg.missingCount,
+        totalRows: msg.totalRows,
+      })
+    })
+    const unsubCacheAlertResolved = wsManager.onAll('cache_alert_resolved', (msg) => {
+      if (msg.type !== 'cache_alert_resolved') return
+      clearCacheAlert(msg.serverId, msg.fingerprint)
     })
 
     // Register push tokens for all servers
@@ -184,33 +217,76 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     return () => {
       unsubUpdate()
+      unsubConvUpdated()
       unsubReady()
       unsubStatus()
       unsubCacheReady()
       unsubScanProgress()
+      unsubCacheAlert()
+      unsubCacheAlertResolved()
       wsManager.disconnectAll()
     }
-    // router from expo-router is a stable singleton; setConnected/setCacheReady
-    // are stable Zustand setters. Wiring is intentionally scoped to activeServerIds changes.
+    // router from expo-router is a stable singleton; setConnected is a stable
+    // Zustand setter. Wiring is intentionally scoped to activeServerIds changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds])
 
   // Handle notification taps
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as {
-        sessionId?: string
-        serverId?: string
-      }
-      if (data.sessionId) {
-        const serverParam = data.serverId ? `?server=${data.serverId}` : ''
-        router.push(`/session/${data.sessionId}${serverParam}`)
-      }
+      const target = sessionRouteFromNotificationData(
+        response.notification.request.content.data as { sessionId?: string; serverId?: string },
+      )
+      if (target) router.push(target.path)
     })
     return () => sub.remove()
   }, [router])
 
-  return <>{children}</>
+  // Cold start: a tap that launched the app is never delivered to the warm
+  // handlers above, so the launch URL / notification response has to be read
+  // back explicitly. Held until servers hydrate and the navigator has a key,
+  // otherwise the push lands before there is a route tree to push onto and
+  // AuthGate's redirect stomps it.
+  const coldStartHandled = React.useRef(false)
+  useEffect(() => {
+    if (coldStartHandled.current) return
+    if (isLoading || !navState?.key) return
+    if (activeServerIds.length === 0) return
+    coldStartHandled.current = true
+
+    let cancelled = false
+    void (async () => {
+      const [url, response] = await Promise.all([
+        Linking.getInitialURL(),
+        Notifications.getLastNotificationResponseAsync(),
+      ])
+      if (cancelled) return
+      const target = resolveColdStartRoute({
+        url,
+        notificationData: response
+          ? (response.notification.request.content.data as {
+              sessionId?: string
+              serverId?: string
+            })
+          : null,
+      })
+      if (!target) return
+      // Mark before pushing so the session_ready listener does not fire a
+      // second, duplicate navigation for the same session.
+      markNavigatedToSession(target.sessionId)
+      router.push(target.path)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [activeServerIds, isLoading, navState?.key, router])
+
+  return (
+    <>
+      <CacheAlertSync />
+      {children}
+    </>
+  )
 }
 
 function BiometricLockGate({ children }: { children: React.ReactNode }) {
@@ -300,6 +376,22 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       <Stack.Screen
         name="diagnostics"
         options={{ title: i18n.t('feedback:diagnostics.screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
+        name="server-health"
+        options={{ title: i18n.t('servers:health.screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
+        name="notification-health"
+        options={{ title: i18n.t('settings:notificationHealth.screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
+        name="paired-devices"
+        options={{ title: i18n.t('settings:pairedDevices.screenTitle'), headerShown: true }}
+      />
+      <Stack.Screen
+        name="backup-restore"
+        options={{ title: i18n.t('settings:backup.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="project/[id]"
@@ -403,6 +495,7 @@ function RootLayout() {
                 <ErrorBanner />
                 <ThemedStatusBar />
                 <ThemedStack router={router} />
+                <NavigationLockOverlay />
               </BiometricLockGate>
             </AuthGate>
           </PersistQueryClientProvider>

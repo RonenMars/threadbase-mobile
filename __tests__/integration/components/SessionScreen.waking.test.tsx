@@ -22,6 +22,7 @@ const mockQc = {
   invalidateQueries: mockInvalidate,
   cancelQueries: jest.fn(),
   removeQueries: jest.fn(),
+  getQueryData: jest.fn(),
 }
 
 // Live, still-waking session: running + ptyAttached, no prompt reached yet.
@@ -96,6 +97,7 @@ jest.mock('@/stores/settings', () => ({ useSettingsStore: () => ({ sessionView: 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'sess-real-id', server: 'srv1' }),
   useRouter: () => ({ replace: jest.fn(), back: jest.fn(), push: jest.fn() }),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),

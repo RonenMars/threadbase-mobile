@@ -217,6 +217,12 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
     expect(feedAndGet('╰────────╯')).toEqual([])
   })
 
+  it('drops box-drawing border rows from raw lines too', () => {
+    const vt = new VirtualTerminal()
+    vt.feed('content\n╭────────╮\nmore content\n╰────────╯')
+    expect(vt.getRawLines()).toEqual(['content', 'more content'])
+  })
+
   // ── Startup banner / Clawd ──
   it('filters Clawd ASCII art (block elements)', () => {
     expect(feedAndGet('▛███▜\n▙███▟')).toEqual([])
@@ -355,6 +361,38 @@ describe('VirtualTerminal – Claude Code TUI chrome filtering', () => {
   it('filters effort indicators', () => {
     expect(feedAndGet('◑ medium')).toEqual([])
     expect(feedAndGet('● high')).toEqual([])
+  })
+
+  // Claude only repaints the spinner when it has other output to draw, so the
+  // elapsed number freezes at its last painted value and reads as a hung
+  // session. Elapsed time is surfaced natively from the session detail instead.
+  it('filters the spinner line carrying the live counter', () => {
+    expect(feedAndGet('✽ Swirling… (56s · ↑ 3.4k tokens)')).toEqual([])
+    expect(feedAndGet('✽ Blanching… (15s · ↓ 271 tokens)')).toEqual([])
+    expect(feedAndGet('Swirling… (5s)')).toEqual([])
+  })
+
+  it('filters completed-turn timers', () => {
+    expect(feedAndGet('✻ Crunched for 3m 17s')).toEqual([])
+    expect(feedAndGet('✽ Cogitated for 13s')).toEqual([])
+  })
+
+  it('keeps real output that merely looks like a spinner line', () => {
+    const keep = [
+      'Testing… (this is real output)',
+      'Refactoring… (see notes below)',
+      'Building the project for 10s of users',
+    ]
+    for (const line of keep) {
+      expect(feedAndGet(line)).toEqual([line])
+    }
+  })
+
+  it('filters the model status line without a minor version', () => {
+    // "Sonnet 5" has no ".x" part, and the separator is a box-drawing pipe.
+    expect(feedAndGet('Sonnet 5 │ ~/dev/ai-tools/tb-streamer')).toEqual([])
+    expect(feedAndGet('Sonnet 5 [Check local streamer session timeout limits]')).toEqual([])
+    expect(feedAndGet('Opus is a great model')).toEqual(['Opus is a great model'])
   })
 
   it('filters hotkey hints', () => {
@@ -527,5 +565,23 @@ describe('VirtualTerminal – realistic Claude Code PTY data', () => {
 
   it('handles \r\n line endings (Windows-style)', () => {
     expect(feedAndGet('line1\r\nline2\r\nline3')).toEqual(['line1', 'line2', 'line3'])
+  })
+})
+
+// ── Scrollback cap ───────────────────────────────────────────────────────────
+describe('VirtualTerminal – scrollback cap', () => {
+  const MAX_ROWS = 10_000
+
+  it('bounds the grid for an append-only stream and keeps the newest lines', () => {
+    const vt = new VirtualTerminal()
+    const total = MAX_ROWS + 5000
+    // Append-only feed (no screen clears) — the unbounded-growth case.
+    for (let i = 0; i < total; i++) vt.feed(`line ${i}\n`)
+
+    const lines = vt.getLines()
+    expect(lines.length).toBeLessThanOrEqual(MAX_ROWS)
+    // The most recent line survives; the oldest is trimmed away.
+    expect(lines).toContain(`line ${total - 1}`)
+    expect(lines).not.toContain('line 0')
   })
 })

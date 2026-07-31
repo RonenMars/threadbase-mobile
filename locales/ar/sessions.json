@@ -8,62 +8,30 @@
   },
   "filter": {
     "label": "تصفية وفرز",
-    "all": "الكل",
-    "active": "نشط",
-    "waiting": "قيد الانتظار",
-    "completed": "مكتمل",
-    "failed": "فشل"
-  },
-  "sort": {
-    "label": "فرز",
-    "newest": "الأحدث",
-    "oldest": "الأقدم",
-    "az": "أ–ي"
+    "all": "الكل"
   },
   "list": {
-    "sessionCount_zero": "لا سيشنات",
-    "sessionCount_one": "سيشن واحد",
-    "sessionCount_two": "سيشنان",
-    "sessionCount_few": "{{count}} سيشنات",
-    "sessionCount_many": "{{count}} سيشنًا",
-    "sessionCount_other": "{{count}} سيشن",
     "empty": "لا توجد سيشنات",
     "emptySubtitle": "ابدأ سيشن Claude Code\nلرؤيته هنا",
     "noResults": "لا توجد نتائج",
     "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
-    "emptyProjects": "لا توجد مشاريع بعد"
+    "serverEmpty": "لا توجد سيشنات على هذا الخادم",
+    "serverEmptySubtitle": "ابدأ سيشن هنا أو بدّل الخادم.",
+    "serverOffline": "الخادم غير متاح",
+    "serverOfflineSubtitle": "يُعرض الخوادم الأخرى. أعد المحاولة عندما يعود المضيف.",
+    "serverWarming": "الخادم قيد التجهيز",
+    "serverWarmingSubtitle": "سيظهر السجل عند انتهاء الفهرسة."
   },
   "card": {
-    "status": {
-      "active": "نشط",
-      "waiting": "في انتظار الإدخال",
-      "completed": "اكتمل السيشن",
-      "failed": "فشل السيشن",
-      "starting": "جارٍ البدء…",
-      "stopping": "جارٍ الإيقاف…"
-    },
-    "connectedTo": "{{server}}",
     "copyId": "نسخ معرّف السيشن",
     "sendInput": "إرسال إدخال",
     "cancel": "إلغاء السيشن",
-    "remove": "إزالة السيشن",
-    "viewError": "عرض خطأ الاتصال",
     "prompts_zero": "لا برومبتات",
     "prompts_one": "برومبت واحد",
     "prompts_two": "برومبتان",
     "prompts_few": "{{count}} برومبتات",
     "prompts_many": "{{count}} برومبتًا",
     "prompts_other": "{{count}} برومبت"
-  },
-  "takeover": {
-    "prompt": "عميل آخر يتحكّم في هذا السيشن",
-    "takeControl": "تولَّ التحكم",
-    "dismiss": "تجاهل"
-  },
-  "directory": {
-    "empty": "مجلد فارغ",
-    "loadFailed": "تعذّر تحميل المجلدات",
-    "browsingNotConfigured": "التصفّح غير مُهيّأ"
   },
   "hub": {
     "seeAll_zero": "لا محادثات →",
@@ -77,13 +45,7 @@
     "msgs_two": "رسالتان",
     "msgs_few": "{{count}} رسائل",
     "msgs_many": "{{count}} رسالة",
-    "msgs_other": "{{count}} رسالة",
-    "prompts_zero": "لا برومبتات",
-    "prompts_one": "برومبت واحد",
-    "prompts_two": "برومبتان",
-    "prompts_few": "{{count}} برومبتات",
-    "prompts_many": "{{count}} برومبتًا",
-    "prompts_other": "{{count}} برومبت"
+    "msgs_other": "{{count}} رسالة"
   },
   "loading": {
     "title": "جارٍ تحميل السيشنات",
@@ -107,12 +69,6 @@
     "headerIdle_few": "خامل · {{count}}",
     "headerIdle_many": "خامل · {{count}}",
     "headerIdle_other": "خامل · {{count}}"
-  },
-  "rename": {
-    "title": "إعادة تسمية السيشن",
-    "placeholder": "اسم السيشن",
-    "cancel": "إلغاء",
-    "save": "حفظ"
   },
   "preview": {
     "liveUnavailable": "معاينة السيشن المباشر غير متاحة — افتح السيشن لرؤية الطرفية المباشرة.",
@@ -140,5 +96,25 @@
   "sync": {
     "cachedData": "عرض بيانات مخزنة مؤقتًا",
     "cachedDataSyncing": "عرض بيانات مخزنة مؤقتًا — جارٍ المزامنة…"
+  },
+  "status": {
+    "running": "قيد التشغيل",
+    "waiting": "في الانتظار",
+    "idle": "خامل",
+    "externalLive": "خارجي",
+    "historical": "سجل",
+    "resumed": "مُستأنف",
+    "onHold": "معلّق",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    "unavailablePath": "غير متاح",
+    "unavailableWorktree": "لا يوجد worktree",
+    "stale": "قديم",
+    "livePill": "LIVE",
+    "externalPill": "EXTERNAL"
+  },
+  "capability": {
+    "observeOnly": "للمشاهدة فقط",
+    "liveControl": "تحكم مباشر"
   }
 }

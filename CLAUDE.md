@@ -19,6 +19,20 @@ When adding new Maestro flows:
 
 ---
 
+## Jest — Confirm Suite Failures in Isolation
+
+The `SessionScreen.*` suites are heavy enough that jest's parallel workers oversubscribe some machines, so a batch run can report failures that aren't real. Verify them serially:
+
+```bash
+npx jest --ci --runInBand --testPathPattern "SessionScreen"
+```
+
+**Never classify a batch failure without re-running that suite alone** — a load artifact and a genuine defect are indistinguishable in batch output. Passes alone → artifact. Fails alone → real, fix it. Both mistakes are easy: during the 2026-07-22 integration snapshot four genuinely broken suites were nearly dismissed as flakes, while two others really were artifacts.
+
+The load-sensitive suites, the `.claude/` worktree gotcha (`npx jest` finds **0 tests** there), and their fixes are documented in [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "Jest test suites".
+
+---
+
 ## Comments — Non-Trivial Only
 
 Never add comments that restate what the code already says. Only comment when the code is complex, non-obvious, or would surprise a reader without context.
@@ -79,8 +93,10 @@ Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR 
 
 Whenever `package.json` or `package-lock.json` changes:
 
-1. Run `pod install` from the `ios/` directory.
+1. Run `bundle exec pod install` from the `ios/` directory — never a bare `pod install`.
 2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
+
+**Always `bundle exec`.** The `Gemfile` pins CocoaPods to 1.16.2 so local installs match `pod install --deployment` in deploy CI. A Homebrew CocoaPods on `PATH` shadows that pin, and a bare `pod install` run against it rewrites `COCOAPODS:` and the pod checksums in `ios/Podfile.lock` — which then flip back the next time CI or a `bundle exec` user regenerates it. That ping-pong is the usual source of `ExpoWidgets`/`hermes-engine` checksum conflicts on rebases.
 
 ---
 
@@ -170,6 +186,60 @@ test-<env>/v<version>-<sha>-<date>
 **Example:** `test-dev/v1.0.0-bfc800d-2026-07-20` — a dev-only test tag combining several open PRs at app version 1.0.0, pointing at commit `bfc800d` on 2026-07-20.
 
 To validate a build from one of these tags before merging, run the `Deploy` workflow (`.github/workflows/deploy.yml`) with `deploy_ref` set to the tag name — `deploy_ref` accepts any branch, tag, or commit SHA.
+
+---
+
+---
+
+## PR Titles & Branches
+
+Derived from the dominant pattern in PRs created 2026-07-19 → 2026-07-24
+(e.g. `#348`–`#394`, `#368`, `#376`, `#378`–`#393`). Prefer this over ad-hoc
+formats. Never mention Cursor, Codex, Claude, or other AI tooling in the title,
+branch name, body, or commit message.
+
+### Title format
+
+```
+type(scope): imperative summary
+```
+
+- **type** — one of: `feat`, `fix`, `chore`, `docs`, `test`, `ci`, `perf`, `refactor`
+- **scope** — optional but preferred when clear (`session`, `terminal`, `conversation`,
+  `onboarding`, `servers`, `ios`, `ci`, `deps`, `e2e`, `i18n`, …)
+- **summary** — imperative, lowercase start, no trailing period; describe the
+  user-visible or operational change, not the implementation dump
+
+Examples from recent history:
+
+- `feat(conversation): add in-chat search entry on detail screen`
+- `fix(terminal): fall back to HTTP output when WS replay is blank`
+- `chore(ios): bump build number to 171 [skip-ci]`
+- `docs(session): correct hold_session comments to describe grace-timer behavior`
+- `test(e2e): wire server drag-reorder into the mock Maestro suite`
+- `ci: gate locale parity and dead keys with an i18n job` (scope may be omitted)
+
+Version-bump PRs keep the `[skip-ci]` suffix. Dependabot-style titles stay as
+`chore(deps): …`.
+
+Do **not** use bracket-slug titles like `[feat][task-name]` for new PRs — that
+was a short-lived experiment and does not match the repo’s established style.
+
+### Branch format
+
+```
+type/kebab-case-summary
+```
+
+Match the title’s type. Examples: `feat/in-chat-search`,
+`fix/terminal-empty-replay-fallback`, `chore/bump-ios-version-171`,
+`docs/hold-session-comments`. Never prefix with tool names (`cursor/…`, `cc/…`).
+
+### Base branch (this integration wave)
+
+For work targeting the current integration line, open PRs against
+`integration-merge-354-355-376` (not `main`). Rebase onto the latest tip of that
+branch before merge. Squash title must still follow `type(scope): summary`.
 
 ---
 

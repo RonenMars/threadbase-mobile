@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { InfoIcon, PencilSimple, Star, StopCircle } from 'phosphor-react-native'
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
+import { InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -25,11 +26,13 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
+import { HeaderOverflowMenu } from '@/components/shared/HeaderOverflowMenu'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
+import { useNavLockStore } from '@/stores/navLock'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useRenameSession } from '@/hooks/useSessionName'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
@@ -39,6 +42,17 @@ import { LiveConversationView } from '@/components/conversation/LiveConversation
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
+import { clearSessionUsed, wasSessionUsed } from '@/lib/sessionUsage'
+import {
+  evictStaleSessionFavorite,
+  rehydrateSessionAfterReconnect,
+  removeSessionFromEagerCache,
+} from '@/lib/sessionLifecycle'
+import { NotFoundError } from '@/services/api-client'
+import { preferRawTerminal } from '@/lib/renderConfidence'
+import { ReviewSheet } from '@/components/review/ReviewSheet'
+import { buildReviewFromMessages } from '@/lib/reviewFromConversation'
+import { useConversation } from '@/hooks/useConversations'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -88,6 +102,10 @@ function PendingSessionScreen({
   const [elapsedMs, setElapsedMs] = useState(0)
   const [stuck, setStuck] = useState(false)
   const [waitNonce, setWaitNonce] = useState(0)
+  // Synchronously invalidate in-flight ticks from the previous wait window.
+  // Fake-timer tests (and rare real races) can flush an old interval after
+  // "Wait more" sets stuck=false but before the effect cleanup runs.
+  const waitEpochRef = useRef(0)
   // pendingId is `pending_<realSessionId>` (see navigateToNewSession) — strip
   // the prefix to get the id the server/stop-session API actually knows.
   const realSessionId = pendingId.replace(/^pending_/, '')
@@ -103,10 +121,12 @@ function PendingSessionScreen({
   // Bumping waitNonce (via "Wait more") re-arms this timer from a fresh
   // baseline. The press handler resets elapsed/stuck (not this effect) so the
   // reset stays out of the effect body — react-hooks/set-state-in-effect — and
-  // the new baseline lands before the next 250ms tick can re-flip `stuck`.
+  // waitEpochRef drops any stale tick that would re-flip `stuck`.
   useEffect(() => {
+    const epoch = waitEpochRef.current
     const startedAt = Date.now()
     const timer = setInterval(() => {
+      if (waitEpochRef.current !== epoch) return
       const elapsed = Date.now() - startedAt
       setElapsedMs(elapsed)
       if (elapsed >= STUCK_AFTER_MS) setStuck(true)
@@ -115,6 +135,7 @@ function PendingSessionScreen({
   }, [waitNonce])
 
   const handleWaitMore = () => {
+    waitEpochRef.current += 1
     setElapsedMs(0)
     setStuck(false)
     setWaitNonce((n) => n + 1)
@@ -388,7 +409,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
-  const { t } = useTranslation(['terminal', 'common'])
+  const { t } = useTranslation(['terminal', 'common', 'sessions', 'conversation'])
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { id, server, starting } = useLocalSearchParams<{
@@ -397,16 +418,23 @@ export default function SessionDetailScreen() {
     starting?: string
   }>()
   const router = useRouter()
+  const navigation = useNavigation()
 
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
-  const { sessionView } = useSettingsStore()
+  const { sessionView, setSessionView } = useSettingsStore()
+  const [forceRawTerminal, setForceRawTerminal] = useState(false)
+
+  useEffect(() => {
+    useNavLockStore.getState().clear()
+  }, [])
 
   const isStarting = starting === '1'
   const isPending = (id?.startsWith('pending_') ?? false) || isStarting
-  const { data: session, isLoading } = useSessionDetail(serverId, id)
+  const { data: session, isLoading, error: sessionError } = useSessionDetail(serverId, id)
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
+  const isSessionNotFound = sessionError instanceof NotFoundError
 
   // When the app returns from background, iOS may have torn down the WS
   // connection without firing onclose, and the streamer may have restarted
@@ -419,21 +447,39 @@ export default function SessionDetailScreen() {
     const sub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         wsManager.forceReconnect(serverId)
-        qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+        const cached = qc.getQueryData<{
+          boundConversationId?: string | null
+          conversationId?: string | null
+        }>(['session', serverId, id])
+        rehydrateSessionAfterReconnect(
+          qc,
+          serverId,
+          id,
+          cached?.boundConversationId ?? cached?.conversationId,
+        )
         return
       }
-      // Backgrounding/inactive: proactively ask the server to hold this session
-      // now instead of waiting out its ~4.5-min grace timer. The PTY is put on
-      // hold (SIGINT + screen disposal, history intact) and resumes on the next
+      // Backgrounding/inactive: proactively (re)arm the server's ~4.5-min grace
+      // timer for this session, same as a WS disconnect would. The session keeps
+      // running until the timer elapses; only then is the PTY put on hold
+      // (SIGINT + screen disposal, history intact), resuming on the next
       // subscribe (the 'active' branch above force-reconnects). Harmless no-op
       // server-side if the session isn't live. iOS suspends JS right after this,
-      // so it's best-effort — the grace timer remains the backstop.
+      // so it's best-effort — the WS-disconnect grace timer remains the backstop.
       if (nextState === 'background') {
         wsManager.send(serverId, { type: 'hold_session', sessionId: id })
       }
     })
     return () => sub.remove()
   }, [serverId, id, isPending, qc])
+
+  // Stale favorite / hub row → vanished session: evict caches so back-nav
+  // cannot reopen the same dead id.
+  useEffect(() => {
+    if (!isSessionNotFound || !serverId || !id) return
+    removeSessionFromEagerCache(qc, serverId, id)
+    evictStaleSessionFavorite(serverId, id)
+  }, [isSessionNotFound, serverId, id, qc])
 
   // Connection staleness: a dead WS must not masquerade as a live session.
   // Delay the visible stale state so brief WS reconnects don't interrupt the UI.
@@ -451,6 +497,7 @@ export default function SessionDetailScreen() {
 
   const [infoVisible, setInfoVisible] = useState(false)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
+  const [reviewVisible, setReviewVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
   const [planVisible, setPlanVisible] = useState(false)
 
@@ -460,9 +507,54 @@ export default function SessionDetailScreen() {
 
   const getName = useSessionNamesStore((s) => s.getName)
   const renameSession = useRenameSession(serverId)
-  const sessionName = getName(serverId, id) ?? session?.projectName
+  // User rename wins; then the JSONL-derived conversation name; then project name.
+  const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
-  const { sendKeys } = useSessionActions(serverId, id ?? '')
+  const { sendKeys, sendInput, stopSession } = useSessionActions(serverId, id ?? '')
+  const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
+  const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
+    enabled: Boolean(serverId && reviewConversationId),
+  })
+  const reviewMessages = useMemo(() => reviewConversation?.messages ?? [], [reviewConversation])
+  const hasDiffs = useMemo(
+    () => buildReviewFromMessages(reviewMessages).files.length > 0,
+    [reviewMessages],
+  )
+
+  // Bug 16: leaving a never-used fresh session should hard-stop the PTY so it
+  // doesn't linger in the hub as an empty idle entry. Fire-and-forget — don't
+  // block the back gesture. Skips resumes and sessions the user already typed in.
+  useEffect(() => {
+    if (isPending || !id) return
+    const unsub = navigation.addListener('beforeRemove', () => {
+      const unusedFresh =
+        session != null &&
+        session.ptyAttached === true &&
+        (session.status === 'running' || session.status === 'waiting_input') &&
+        session.promptCount === 0 &&
+        !session.resumedFromConversationId &&
+        !wasSessionUsed(id)
+      if (!unusedFresh) return
+      clientLog.info('session', 'discard unused empty session on back', { sessionId: id, serverId })
+      clearSessionUsed(id)
+      stopSession.mutate(undefined, {
+        onError: (err) => {
+          clientLog.info('session', 'discard stop failed', {
+            sessionId: id,
+            err: err instanceof Error ? err.message : String(err),
+          })
+        },
+      })
+    })
+    return unsub
+  }, [
+    navigation,
+    isPending,
+    id,
+    serverId,
+    session,
+    stopSession.mutate,
+  ])
 
   // Mirrors the `isLive` check computed later (post early-returns) — needed
   // here too since useTerminalStream must be called unconditionally, before
@@ -471,7 +563,12 @@ export default function SessionDetailScreen() {
     session?.ptyAttached === true &&
     (session?.status === 'waiting_input' || session?.status === 'running') &&
     !(session != null && isTerminalSession(session))
-  const { isStreaming } = useTerminalStream(serverId, id ?? '', !isLiveForStream)
+  const { isStreaming, parseConfidence, lines: streamPreviewLines } = useTerminalStream(
+    serverId,
+    id ?? '',
+    !isLiveForStream,
+    session?.provider,
+  )
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
     sendKeys.mutate('\x1b', {
@@ -565,7 +662,16 @@ export default function SessionDetailScreen() {
         console.log(`[waking-backstop] still waking after ${WAKING_UP_BACKSTOP_MS}ms — invalidating session ${id} + WS reconnect`)
       }
       wsManager.forceReconnect(serverId)
-      void qc.invalidateQueries({ queryKey: ['session', serverId, id] })
+      const cached = qc.getQueryData<{
+        boundConversationId?: string | null
+        conversationId?: string | null
+      }>(['session', serverId, id])
+      rehydrateSessionAfterReconnect(
+        qc,
+        serverId,
+        id,
+        cached?.boundConversationId ?? cached?.conversationId,
+      )
     }, WAKING_UP_BACKSTOP_MS)
     return () => clearTimeout(timer)
   }, [isWakingUpEarly, serverId, id, qc])
@@ -604,9 +710,12 @@ export default function SessionDetailScreen() {
 
   if (
     session &&
+    session.ownership !== 'external' &&
     session.ptyAttached === false &&
     (session.status === 'running' || session.status === 'waiting_input')
   ) {
+    // External sessions are read-only — never surface the Overtake path (which
+    // SIGTERMs the user's real terminal process). Gated regardless of routing.
     return <DiscoveredSessionScreen serverId={serverId} sessionId={id!} />
   }
 
@@ -629,9 +738,13 @@ export default function SessionDetailScreen() {
         { label: 'Server', value: serverId },
         { label: 'Project Name', value: session?.projectName },
         { label: 'Project Path', value: session?.projectPath },
+        { label: 'Repo URL', value: session?.repoUrl },
         { label: 'Branch', value: session?.branch },
         { label: 'Machine', value: session?.machineName },
         { label: 'Status', value: session?.status ?? (isLoading ? 'loading…' : 'not found') },
+        { label: 'Model', value: session?.model },
+        { label: 'Effort', value: session?.effort },
+        { label: 'Permission Mode', value: session?.permissionMode },
         { label: 'PTY Attached', value: session != null ? String(session.ptyAttached) : undefined },
         { label: 'Prompt Count', value: session != null ? String(session.promptCount) : undefined },
         { label: 'Elapsed', value: session != null ? formatElapsed(session.elapsedMs) : undefined },
@@ -659,13 +772,22 @@ export default function SessionDetailScreen() {
       return <DiscoveredSessionScreen serverId={serverId} sessionId={id} />
     }
     return (
-      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.flex} edges={['top', 'bottom']} testID="session-not-found">
         <ScreenHeader />
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
           <Text style={styles.discoveredTitle}>{t('session.notFound')}</Text>
           <Text style={[styles.discoveredText, { textAlign: 'center', marginTop: spacing.sm }]}>
-            {`No session found for ID:\n${id}`}
+            {t('session.notFoundBody')}
           </Text>
+          <TouchableOpacity
+            testID="session-not-found-back"
+            style={[styles.retryBtn, { marginTop: spacing.lg }]}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('session.backToHub')}
+          >
+            <Text style={styles.retryBtnText}>{t('session.backToHub')}</Text>
+          </TouchableOpacity>
         </View>
         {infoModal}
       </SafeAreaView>
@@ -686,9 +808,9 @@ export default function SessionDetailScreen() {
           style={({ pressed }) => ({ opacity: pressed || sendKeys.isPending ? 0.5 : 1 })}
         >
           {sendKeys.isPending ? (
-            <ActivityIndicator size="small" color={theme.text.danger} />
+            <ActivityIndicator size="small" color={theme.text.accent} />
           ) : (
-            <StopCircle size={22} color={theme.text.danger} weight="fill" />
+            <StopCircle size={22} color={theme.text.accent} weight="fill" />
           )}
         </Pressable>
       ) : null}
@@ -712,15 +834,27 @@ export default function SessionDetailScreen() {
       >
         <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
       </Pressable>
-      <Pressable
-        testID="session-info-button"
-        onPress={() => setInfoVisible(true)}
-        hitSlop={8}
-        accessibilityLabel="Session info"
-        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-      >
-        <InfoIcon size={22} color={theme.text.secondary} />
-      </Pressable>
+      <HeaderOverflowMenu
+        testID="session-overflow-menu"
+        accessibilityLabel="More options"
+        items={[
+          {
+            key: 'info',
+            label: 'Info',
+            icon: InfoIcon,
+            onPress: () => setInfoVisible(true),
+            testID: 'session-info-button',
+          },
+          {
+            key: 'diffs',
+            label: t('conversation:review.open'),
+            icon: GitDiff,
+            onPress: () => setReviewVisible(true),
+            disabled: !hasDiffs,
+            testID: 'session-review-button',
+          },
+        ]}
+      />
     </View>
   )
 
@@ -742,6 +876,12 @@ export default function SessionDetailScreen() {
   const isLive =
     session.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running')
+  const presentation = deriveSessionPresentation(session)
+  const capabilityLabel = presentation.capabilities.isObserveOnly
+    ? t('sessions:capability.observeOnly')
+    : presentation.live
+      ? t('sessions:capability.liveControl')
+      : null
 
   // A live PTY may not have a conversationId yet (no JSONL written), but it can
   // already be showing an interactive prompt. LiveConversationView needs the
@@ -753,6 +893,28 @@ export default function SessionDetailScreen() {
   // for REST so history resolves; fall back to conversationId for Claude / pre-bind.
   const historyConversationId = session.boundConversationId ?? session.conversationId
   const hasConversationId = !!historyConversationId
+  const renderMode = preferRawTerminal({
+    sessionView: forceRawTerminal ? 'terminal' : sessionView,
+    hasConversationId,
+    // Message count is owned by LiveConversationView; session-level routing
+    // only gates on preference, conversation id, and parse confidence.
+    conversationMessageCount: forceRawTerminal ? 0 : 1,
+    ptyVisibleLineCount: streamPreviewLines.length,
+    parseConfidence,
+  })
+  const showTerminalSurface =
+    sessionView === 'terminal' ||
+    !hasConversationId ||
+    forceRawTerminal ||
+    parseConfidence === 'low' ||
+    renderMode.mode === 'terminal'
+  const viewModeLabel = showTerminalSurface
+    ? t('session.viewModeTerminal')
+    : t('session.viewModeChat')
+  // TerminalView renders its own low-confidence note (rawModeNote) whenever
+  // showTerminalSurface is true for that reason, so this banner only covers
+  // the forceRawTerminal case — otherwise the two banners duplicate.
+  const rawFallbackBanner = forceRawTerminal ? t('session.ptyActiveFallbackBanner') : null
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -764,7 +926,32 @@ export default function SessionDetailScreen() {
         <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
-            <SessionStatusBadge status={session.status} isRefetching={false} />
+            <SessionStatusBadge status={session.status} session={session} isRefetching={false} />
+            {session.provider ? (
+              <Text style={styles.metaChip} testID="session-provider-chip">
+                {session.provider === 'codex-cli' ? 'Codex' : 'Claude'}
+              </Text>
+            ) : null}
+            {capabilityLabel ? (
+              <Text style={styles.metaChip} testID="session-capability-chip">
+                {capabilityLabel}
+              </Text>
+            ) : null}
+            {isLive ? (
+              <TouchableOpacity
+                onPress={() => {
+                  const next = showTerminalSurface ? 'chat' : 'terminal'
+                  if (!hasConversationId && next === 'chat') return
+                  setForceRawTerminal(false)
+                  setSessionView(next)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={viewModeLabel}
+                testID="session-view-mode-chip"
+              >
+                <Text style={styles.metaChip}>{viewModeLabel}</Text>
+              </TouchableOpacity>
+            ) : null}
             <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
             <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
           </View>
@@ -777,11 +964,19 @@ export default function SessionDetailScreen() {
             {showReconnectBanner ? (
               <ConnectionBanner variant="reconnecting" />
             ) : null}
+            {rawFallbackBanner ? (
+              <View style={styles.rawBanner} testID="session-raw-fallback-banner">
+                <Warning size={14} color={theme.text.warning} weight="fill" />
+                <Text style={styles.rawBannerText}>{rawFallbackBanner}</Text>
+              </View>
+            ) : null}
             <View style={showReconnectBanner ? [styles.flex, styles.staleContent] : styles.flex}>
-            {sessionView === 'terminal' || !hasConversationId ? (
+            {showTerminalSurface ? (
               <TerminalView
                 serverId={serverId}
                 sessionId={id}
+                provider={session.provider}
+                parseConfidence={parseConfidence}
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
@@ -792,9 +987,11 @@ export default function SessionDetailScreen() {
                 serverId={serverId}
                 sessionId={id}
                 conversationId={historyConversationId!}
+                provider={session.provider}
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+                onPreferRawTerminal={() => setForceRawTerminal(true)}
               />
             )}
             </View>
@@ -862,6 +1059,20 @@ export default function SessionDetailScreen() {
         }}
         onCancel={() => setRenameSheetVisible(false)}
       />
+
+      <ReviewSheet
+        visible={reviewVisible}
+        messages={reviewMessages}
+        projectPath={session.projectPath}
+        machineName={session.machineName}
+        canSendNote={isLive && !isWakingUp}
+        onClose={() => setReviewVisible(false)}
+        onSendNote={(note) => {
+          sendInput.mutate(note, {
+            onSettled: () => setReviewVisible(false),
+          })
+        }}
+      />
     </SafeAreaView>
   )
 }
@@ -882,6 +1093,18 @@ function makeStyles(theme: Theme) {
     },
     elapsed: { color: theme.text.secondary, fontSize: font.sm },
     prompts: { color: theme.text.secondary, fontSize: font.sm },
+    metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    rawBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    rawBannerText: { flex: 1, color: theme.text.warning, fontSize: font.xs, lineHeight: 16 },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
     staleContent: { opacity: 0.45 },
@@ -933,6 +1156,19 @@ function makeStyles(theme: Theme) {
       fontSize: font.sm,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    retryBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    retryBtnText: {
+      color: theme.text.onAccent,
+      fontWeight: '700',
+      fontSize: font.base,
     },
   })
 }

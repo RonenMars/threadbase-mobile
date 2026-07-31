@@ -8,6 +8,7 @@
   <key>provisioningProfiles</key>
   <dict>
     <key>com.ronenmars.threadbase</key><string>PROVISION_PROFILE_UUID_PLACEHOLDER</string>
+    <key>com.ronenmars.threadbase.widgets</key><string>WIDGET_PROVISION_PROFILE_UUID_PLACEHOLDER</string>
   </dict>
   <key>uploadSymbols</key><true/>
   <key>stripSwiftSymbols</key><true/>

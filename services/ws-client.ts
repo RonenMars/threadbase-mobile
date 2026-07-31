@@ -5,13 +5,19 @@ import type {
   QuestionCancelledWsMessage,
   PermissionWsMessage,
   PermissionCancelledWsMessage,
+  CacheAlertSeverity,
+  CacheAlertResolveAction,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
-  | { type: 'terminal_output'; sessionId: string; data: string }
+  // `seq` is a per-session monotonically increasing chunk counter from the
+  // streamer (starts at 1). Additive; old streamers omit it. Lets the client
+  // detect a stale chunk delivered after a reconnect race instead of
+  // trusting raw WS arrival order.
+  | { type: 'terminal_output'; sessionId: string; data: string; seq?: number }
   | { type: 'session_list'; sessions: Session[] }
   | { type: 'notification'; event: NotificationEvent }
   | { type: 'plan_ready'; sessionId: string; plan: string }
@@ -19,10 +25,29 @@ export type WSMessage =
   // client can positively identify user-owned output instead of parsing the
   // `❯ <text>` transcript line heuristically. Additive; old streamers omit it.
   | { type: 'user_message'; sessionId: string; text: string; ts: number }
-  | { type: 'terminal_replay'; sessionId: string; lines: string[]; userMessages?: { text: string; ts: number }[] }
+  // `seq` is the streamer's last-emitted terminal_output seq at replay time,
+  // letting the client baseline before trusting subsequent chunks. Additive;
+  // old streamers omit it.
+  | {
+      type: 'terminal_replay'
+      sessionId: string
+      lines: string[]
+      userMessages?: { text: string; ts: number }[]
+      seq?: number
+    }
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }
+  | {
+      type: 'cache_alert'
+      fingerprint: string
+      severity: CacheAlertSeverity
+      missingCount: number
+      totalRows: number
+      detectedAt: string
+      sample: { id: string; title?: string }[]
+    }
+  | { type: 'cache_alert_resolved'; fingerprint: string; action: CacheAlertResolveAction }
   | { type: 'conversation_event'; sessionId: string; line: string }
   // Additive batched variant (streamer #202): one frame carries all lines from
   // a single watcher read. `seqs`, when present, is parallel to `lines` —
@@ -30,6 +55,9 @@ export type WSMessage =
   // Absent for non-claude providers. Old clients ignore this and rely on the
   // singular conversation_event.
   | { type: 'conversation_events'; sessionId: string; lines: string[]; seqs?: (number | null)[] }
+  // External-session liveness ping: the conversation's JSONL grew (or its owner
+  // changed) without a PTY the streamer owns. Additive; no subscriber wired yet.
+  | { type: 'conversation_updated'; conversationId: string; messageCount: number; lastActivity: string; ownership: 'external' | 'managed' }
   | QuestionWsMessage
   | QuestionCancelledWsMessage
   | PermissionWsMessage

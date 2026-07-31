@@ -3,41 +3,21 @@
     "cancel": "إلغاء",
     "confirm": "تأكيد",
     "save": "حفظ",
-    "done": "تم",
     "back": "رجوع",
     "close": "إغلاق",
     "retry": "إعادة المحاولة",
-    "remove": "إزالة",
-    "apply": "تطبيق",
-    "skip": "تخطي",
-    "create": "إنشاء",
-    "export": "تصدير",
-    "copy": "نسخ",
-    "paste": "لصق",
-    "openSettings": "فتح الإعدادات"
+    "apply": "تطبيق"
   },
   "error": {
-    "generic": "حدث خطأ ما",
-    "loadFailed": "تعذّر التحميل",
-    "connectionFailed": "فشل الاتصال"
-  },
-  "state": {
-    "loading": "جارٍ التحميل…",
-    "empty": "لا يوجد شيء هنا بعد",
-    "noResults": "لا توجد نتائج"
+    "loadFailed": "تعذّر التحميل"
   },
   "search": {
-    "placeholder": "بحث…",
-    "clear": "مسح البحث"
+    "placeholder": "بحث…"
   },
   "nav": {
     "top": "↑ الأعلى",
     "bottom": "↓ الأسفل",
-    "backArrow": "‹ رجوع"
-  },
-  "time": {
-    "now": "الآن",
-    "yesterday": "أمس"
+    "copyAll": "نسخ الكل"
   },
   "biometricLock": {
     "title": "Threadbase مقفل",
@@ -57,5 +37,12 @@
       "enable": "تفعيل",
       "notNow": "ليس الآن"
     }
+  },
+  "renderError": {
+    "title": "تعذر عرض هذا العنصر",
+    "message": "يتم عرض بديل خام بدلًا من تعطّل الشاشة."
+  },
+  "navLock": {
+    "opening": "جارٍ الفتح…"
   }
 }

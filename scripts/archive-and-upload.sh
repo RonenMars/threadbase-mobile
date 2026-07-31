@@ -10,6 +10,8 @@ set -euo pipefail
 : "${ASC_TEAM_ID:?source .env.signing first}"
 : "${ASC_KEY_PATH:?source .env.signing first}"
 : "${EXPORT_OPTIONS_PLIST:?source .env.signing first}"
+: "${IOS_PROVISION_PROFILE_UUID:?source .env.signing first}"
+: "${IOS_WIDGET_PROVISION_PROFILE_UUID:?source .env.signing first}"
 
 WORKSPACE="${WORKSPACE:-ios/Threadbase.xcworkspace}"
 SCHEME="${SCHEME:-Threadbase}"
@@ -31,7 +33,8 @@ xcodebuild \
   DEVELOPMENT_TEAM="${ASC_TEAM_ID}" \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="Apple Distribution" \
-  PROVISIONING_PROFILE_SPECIFIER="${IOS_PROVISION_PROFILE_UUID}" \
+  IOS_PROVISION_PROFILE_UUID="${IOS_PROVISION_PROFILE_UUID}" \
+  IOS_WIDGET_PROVISION_PROFILE_UUID="${IOS_WIDGET_PROVISION_PROFILE_UUID}" \
   CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
   archive | tee build/archive.log
 
@@ -58,6 +61,12 @@ if (( EXPORT_OK == 0 )); then
   echo "exportArchive failed after $MAX_RETRIES attempts" >&2
   exit 70
 fi
+
+# Gate the upload on dyld symbol resolution. A pod version skew archives and
+# exports cleanly but aborts at launch ("DYLD 4 Symbol missing"), which no
+# compile-time check catches — build 173 shipped that way.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR/verify-dyld-symbols.sh"
 
 # Upload IPA explicitly via altool so we get a real success/failure response.
 # (method: app-store exports only; xcodebuild's built-in upload with

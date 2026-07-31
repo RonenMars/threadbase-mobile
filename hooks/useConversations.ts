@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
+import { getServerWarmupState } from '@/services/server-warmup'
 import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
 import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
+import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, DiffHunk, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
 import {
   deriveCursor,
@@ -27,6 +28,7 @@ interface RawSessionMeta {
   id: string
   profile_id?: string
   project_name?: string
+  session_name?: string
   project_path?: string
   last_updated_at?: string
   message_count?: number
@@ -67,7 +69,8 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
   }
   const conversations: Conversation[] = raw.filter((s): s is RawSessionMeta => s != null).map((s) => ({
     id: s.id,
-    title: s.project_name ?? 'Conversation',
+    title: s.session_name?.trim() || s.project_name || 'Conversation',
+    sessionName: s.session_name,
     projectPath: s.project_path ?? '',
     branch: s.git_branch,
     messageCount: s.message_count ?? 0,
@@ -95,10 +98,11 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
 
   const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
+  const recordWarmingUp = useServerFetchStatusStore((s) => s.recordWarmingUp)
 
   return useInfiniteQuery({
     queryKey: ['conversations', filter, refreshEpoch, ...displayedServerIds],
-    queryFn: async ({ pageParam = 0 }): Promise<MultiConversationPage> => {
+    queryFn: async ({ pageParam = 0, signal }): Promise<MultiConversationPage> => {
       // Bug 32: use allSettled so one unreachable server doesn't blank the Hub.
       // Rejected results update the per-server fetch-status store, which the
       // header dot + ServerStatusModal read to surface partial failure.
@@ -118,11 +122,14 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
           }
           const raw = await api.get<RawSessionMeta[] | ConversationPage>(
             `/api/conversations?${params.toString()}`,
+            { signal },
           )
           const page = adaptPage(raw, pageParam as number, limit)
           return { serverId, page }
         })
       )
+
+      if (signal.aborted) throw new Error('aborted')
 
       const fulfilled: { serverId: string; page: ConversationPage }[] = []
       const failedServers: string[] = []
@@ -133,7 +140,9 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
           recordSuccess(serverId)
         } else {
           failedServers.push(serverId)
-          recordFailure(serverId, result.reason)
+          const warmupState = getServerWarmupState(result.reason)
+          if (warmupState) recordWarmingUp(serverId, warmupState)
+          else recordFailure(serverId, result.reason)
         }
       })
 
@@ -189,6 +198,9 @@ interface RawContentBlock {
   tool_use_id?: string
   content?: string
   is_error?: boolean
+  // structured diff (when streamer emits it)
+  filename?: string
+  hunks?: DiffHunk[]
 }
 
 interface RawMessage {
@@ -263,6 +275,8 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
           content: block.content ?? '',
           isError: block.is_error,
         })
+      } else if (block.type === 'diff' && block.filename && Array.isArray(block.hunks)) {
+        content.push({ type: 'diff', filename: block.filename, hunks: block.hunks })
       }
     }
     // The server carries assistant prose in the top-level `text` field, never
@@ -312,6 +326,26 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
   }
 }
 
+// Reuse the previous render's Message object for any id whose content is
+// unchanged, so a rebuilt list keeps stable references for existing rows.
+// FlashList then treats a live reload as an append, not a full data swap, and
+// never blank-remeasures. Content compared by JSON equality — Messages are
+// plain data (no functions), so this is exact and cheap at conversation sizes.
+export function reuseMessageIdentities(prev: Message[], next: Message[]): Message[] {
+  if (prev.length === 0) return next
+  const prevById = new Map(prev.map((m) => [m.id, m]))
+  let changed = false
+  const out = next.map((m) => {
+    const old = prevById.get(m.id)
+    if (old && old !== m && JSON.stringify(old) === JSON.stringify(m)) {
+      changed = true
+      return old
+    }
+    return m
+  })
+  return changed ? out : next
+}
+
 /** Pages are ordered newest-chunk first (infinite query page 0 = tail). Merge oldest → newest. */
 function mergeConversationPages(pages: RawConversationDetail[]): ConversationDetail {
   if (pages.length === 0) {
@@ -331,7 +365,7 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
 
   return {
     id: convId,
-    title: first.meta.project_name ?? 'Conversation',
+    title: first.meta.session_name?.trim() || first.meta.project_name || 'Conversation',
     projectPath: first.meta.project_path ?? '',
     branch: first.meta.git_branch,
     messageCount: first.meta.message_count ?? messages.length,
@@ -474,8 +508,19 @@ export function useConversation(
     queryRef.current = query
   })
 
+  // Imperative handle to the delta drain below. Consumers (the read-only
+  // conversation view's focus-poll interval + conversation_updated listener)
+  // invoke it to run one throttled drain. Points at a no-op whenever the effect
+  // is inactive (anchored window / disabled consumer), so a stale runDelta can
+  // never fire after the deps flip.
+  const triggerDeltaRef = useRef<() => void>(() => {})
+  const triggerDelta = useCallback(() => triggerDeltaRef.current(), [])
+
   const triggerEnabled = opts?.enabled !== false
   useEffect(() => {
+    // Reset the imperative handle first; only the active tail-view path below
+    // re-points it at a live runDelta.
+    triggerDeltaRef.current = () => {}
     // Delta-on-open lives only on the tail view; anchored windows are
     // navigation artifacts with their own bidirectional pagination. A consumer
     // that mounts with enabled: false must not trigger either — imperative
@@ -554,6 +599,13 @@ export function useConversation(
       }
     }
 
+    // Expose the drain to imperative callers (focus-poll interval,
+    // conversation_updated listener). Same throttle applies — runDelta gates on
+    // canTrigger internally.
+    triggerDeltaRef.current = () => {
+      void runDelta()
+    }
+
     // Mount.
     void runDelta()
 
@@ -597,9 +649,27 @@ export function useConversation(
     }
   }, [serverId, id, anchorIndex, queryKeyHash, queryClient, triggerEnabled])
 
+  // Every drain rebuilds ConversationDetail from raw pages, so each Message is a
+  // fresh object even when its content is byte-identical to the one already on
+  // screen. Feeding FlashList a wholly new-identity array on a live reload makes
+  // it drop and re-measure every cell (startRenderingFromBottom), which paints a
+  // blank frame — the reload "blink". Reuse the prior object for any id whose
+  // content is unchanged so existing rows keep stable references and only genuine
+  // appends read as new. (See reuseMessageIdentities.test.ts.)
+  //
+  // The prev-messages cache is a plain render-time identity cache: it only swaps
+  // equal objects for equal objects, so it can never change WHETHER this memo
+  // recomputes (that is fully decided by the query.data dep) — the exact case
+  // the refs-in-render lint exists to catch does not apply here.
+  const prevMessagesRef = useRef<Message[]>([])
   const data = useMemo(() => {
     if (!query.data?.pages.length) return undefined
-    return mergeConversationPages(query.data.pages)
+    const merged = mergeConversationPages(query.data.pages)
+    // eslint-disable-next-line react-hooks/refs -- render-time identity cache; see note above
+    merged.messages = reuseMessageIdentities(prevMessagesRef.current, merged.messages)
+    // eslint-disable-next-line react-hooks/refs -- render-time identity cache; see note above
+    prevMessagesRef.current = merged.messages
+    return merged
   }, [query.data])
 
   const firstPage = query.data?.pages[0]
@@ -625,20 +695,9 @@ export function useConversation(
     isFetchingNewerPage: query.isFetchingPreviousPage,
     totalMessages,
     loadedMessages,
+    // Imperative delta-drain trigger (throttled) for freshness pollers.
+    triggerDelta,
   }
-}
-
-// Sentinel thrown when the /conversations/count request times out so the outer
-// handler can classify the server as "indexing" rather than "unreachable".
-class CountTimeoutError extends Error {
-  constructor(cause: unknown) {
-    super(cause instanceof Error ? cause.message : String(cause))
-    this.name = 'CountTimeoutError'
-  }
-}
-
-function isCountTimeoutError(err: unknown): boolean {
-  return err instanceof CountTimeoutError
 }
 
 // Drain one server's pages sequentially — keeps server load proportional to
@@ -658,22 +717,11 @@ async function fetchAllConversationPagesForServer(
   if (filter?.projectPath) countParams.set('project', filter.projectPath)
   if (filter?.provider) countParams.set('provider', filter.provider)
   const countQs = countParams.toString()
-  let total: number
-  try {
-    const res = await api.get<{ total: number }>(
-      `/api/conversations/count${countQs ? `?${countQs}` : ''}`,
-      { signal },
-    )
-    total = res.total
-  } catch (err) {
-    // Re-throw aborts as CountTimeoutError so the caller can distinguish
-    // "server is indexing" from "server is unreachable".
-    const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes('AbortError') || msg.includes('cancelled') || msg.includes('timed out')) {
-      throw new CountTimeoutError(err)
-    }
-    throw err
-  }
+  const count = await api.get<{ total: number }>(
+    `/api/conversations/count${countQs ? `?${countQs}` : ''}`,
+    { signal },
+  )
+  const total = count.total
 
   onProgress(0, total)
 
@@ -717,7 +765,7 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
   const [progress, setProgress] = useState<EagerConversationsProgress>({ loaded: 0, total: 0 })
   const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
-  const recordIndexing = useServerFetchStatusStore((s) => s.recordIndexing)
+  const recordWarmingUp = useServerFetchStatusStore((s) => s.recordWarmingUp)
 
   const queryKey = useMemo(
     () => ['conversations-eager', filter, refreshEpoch, ...displayedServerIds],
@@ -796,13 +844,9 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
           // Extract serverId from the rejection — find matching index.
           const idx = settled.indexOf(result)
           if (idx !== -1) {
-            // A count-request timeout means the server responded to other requests
-            // but the index scan is still warm — show "indexing", not "unreachable".
-            if (isCountTimeoutError(result.reason)) {
-              recordIndexing(displayedServerIds[idx])
-            } else {
-              recordFailure(displayedServerIds[idx], result.reason)
-            }
+            const warmupState = getServerWarmupState(result.reason)
+            if (warmupState) recordWarmingUp(displayedServerIds[idx], warmupState)
+            else recordFailure(displayedServerIds[idx], result.reason)
           }
         }
       }

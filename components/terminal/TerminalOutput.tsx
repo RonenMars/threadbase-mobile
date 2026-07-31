@@ -14,10 +14,16 @@ import Animated, {
 } from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
+import * as Clipboard from 'expo-clipboard'
+import { CopySimple } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
+import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
+import i18n from '@/lib/i18n'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -47,31 +53,53 @@ interface LineRowProps {
 // `LineText` (the heavier ANSI-strip + styled <Text>) doesn't re-render when
 // only the position changes — which happens on every WS frame.
 const LineGutter = memo(function LineGutter({ index }: { index: number }) {
-  return <Text style={styles.lineNum} selectable={false}>{index + 1}</Text>
+  return (
+    <Text
+      style={styles.lineNum}
+      selectable={false}
+      maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
+    >
+      {index + 1}
+    </Text>
+  )
 })
 
-const LineText = memo(function LineText({ line, userMessageTexts }: { line: string; userMessageTexts?: Set<string> }) {
+const LineText = memo(function LineText({
+  line,
+  userMessageTexts,
+  accessibilityLabel,
+}: {
+  line: string
+  userMessageTexts?: Set<string>
+  accessibilityLabel?: string
+}) {
   const clean = stripAnsi(line)
-  // '❯ <text>' transcript lines are the user's submitted messages — style
-  // them so they stand out from agent output.
   const userOwned = isUserLine(clean, userMessageTexts)
   return (
-    <Text style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText} selectable>
+    <Text
+      style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText}
+      selectable
+      maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
+      accessibilityLabel={accessibilityLabel}
+    >
       {clean}
     </Text>
   )
 })
 
-// Outer wrapper stays cheap (only `index` changes); LineText memoises on `line`.
 const LineRow = memo(function LineRow({ line, index, userMessageTexts }: LineRowProps) {
+  const clean = stripAnsi(line)
+  const a11yLabel = i18n.t('terminal:a11y.line', { n: index + 1, text: clean })
   return (
-    <View
-      style={styles.lineRow}
-      testID="terminal-line-row"
-    >
-      <LineGutter index={index} />
-      <LineText line={line} userMessageTexts={userMessageTexts} />
-    </View>
+    <RenderErrorBoundary tag="terminal_line" rawFallback={clean}>
+      <View
+        style={styles.lineRow}
+        testID="terminal-line-row"
+      >
+        <LineGutter index={index} />
+        <LineText line={line} userMessageTexts={userMessageTexts} accessibilityLabel={a11yLabel} />
+      </View>
+    </RenderErrorBoundary>
   )
 })
 
@@ -90,6 +118,10 @@ interface Props {
 
 export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTexts, onSendInput, onSendKeys, activeQuestion, onAnswer }: Props) {
   const { t } = useTranslation('common')
+  const collapsedLines = useMemo(
+    () => collapseWrappedUserLines(lines, userMessageTexts),
+    [lines, userMessageTexts],
+  )
   const listRef = useRef<FlashListRef<TerminalLine>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
   // here to drive the jump-to-top / jump-to-bottom pill visibility. Plain
@@ -133,6 +165,12 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     setShowJumpButton(0)
   }, [scrollToBottom])
 
+  const copyAll = useCallback(async () => {
+    const text = collapsedLines.map((l) => stripAnsi(l)).join('\n')
+    if (!text.trim()) return
+    await Clipboard.setStringAsync(text)
+  }, [collapsedLines])
+
   const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
     return <LineRow line={item} index={index} userMessageTexts={userMessageTexts} />
   }, [userMessageTexts])
@@ -143,12 +181,12 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
   // Computed once per `lines` change so FlatList can call keyExtractor in any order.
   const keys = useMemo(() => {
     const counts = new Map<string, number>()
-    return lines.map((item) => {
+    return collapsedLines.map((item) => {
       const c = counts.get(item) ?? 0
       counts.set(item, c + 1)
       return `${item}#${c}`
     })
-  }, [lines])
+  }, [collapsedLines])
   const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
 
   const questionBlock = useMemo(() => {
@@ -156,9 +194,9 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     // Defense in depth on top of parseQuestionBlock's numbered-cursor rule:
     // drop lines the streamer confirmed as user messages so a `❯ <text>`
     // prompt echo can never be scraped as a menu cursor.
-    const window = lines.slice(-30).filter((l) => !isUserLine(stripAnsi(l), userMessageTexts))
+    const window = collapsedLines.slice(-30).filter((l) => !isUserLine(stripAnsi(l), userMessageTexts))
     return parseQuestionBlock(window)
-  }, [lines, onSendKeys, userMessageTexts])
+  }, [collapsedLines, onSendKeys, userMessageTexts])
 
   const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
@@ -185,7 +223,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     <View style={styles.container}>
       <FlashList
         ref={listRef}
-        data={lines}
+        data={collapsedLines}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onScroll={handleScroll}
@@ -220,6 +258,15 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
           <Text style={styles.jumpBtnText}>{t('nav.top')}</Text>
         </TouchableOpacity>
       </Animated.View>
+
+      <TouchableOpacity
+        onPress={copyAll}
+        accessibilityLabel={t('nav.copyAll')}
+        style={styles.copyBtn}
+        testID="terminal-copy-all"
+      >
+        <CopySimple size={16} color="rgba(255, 255, 255, 0.7)" />
+      </TouchableOpacity>
 
       <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
@@ -282,6 +329,20 @@ const styles = StyleSheet.create({
     bottom: undefined,
     top: spacing.md,
   },
+  copyBtn: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    backgroundColor: 'rgba(31, 111, 235, 0.18)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(88, 166, 255, 0.25)',
+    padding: 8,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   jumpBtnInner: {
     backgroundColor: 'rgba(31, 111, 235, 0.18)',
     borderRadius: 20,
@@ -289,6 +350,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(88, 166, 255, 0.25)',
     paddingHorizontal: 14,
     paddingVertical: 6,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   jumpBtnText: {
     color: 'rgba(255, 255, 255, 0.7)',

@@ -122,6 +122,40 @@ describe('WSClient – message handling', () => {
     unsub()
   })
 
+  it('dispatches cache_alert to registered handler', () => {
+    const handler = jest.fn()
+    const unsub = wsClient.on('cache_alert', handler)
+
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    const msg = {
+      type: 'cache_alert',
+      fingerprint: 'fp1',
+      severity: 'high',
+      missingCount: 3,
+      totalRows: 10,
+      detectedAt: '2026-07-18T00:00:00.000Z',
+      sample: [{ id: 'a', title: 'Session A' }],
+    }
+    mockSocket.onmessage!({ data: JSON.stringify(msg) })
+
+    expect(handler).toHaveBeenCalledWith(msg)
+    unsub()
+  })
+
+  it('dispatches cache_alert_resolved to registered handler', () => {
+    const handler = jest.fn()
+    const unsub = wsClient.on('cache_alert_resolved', handler)
+
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    const msg = { type: 'cache_alert_resolved', fingerprint: 'fp1', action: 'ignore' }
+    mockSocket.onmessage!({ data: JSON.stringify(msg) })
+
+    expect(handler).toHaveBeenCalledWith(msg)
+    unsub()
+  })
+
   it('silently ignores invalid JSON', () => {
     const handler = jest.fn()
     const unsub = wsClient.on('session_update', handler)

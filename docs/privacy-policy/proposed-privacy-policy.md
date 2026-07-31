@@ -119,7 +119,14 @@ Submitting feedback is always a deliberate action you take. Tapping the **Send**
   you provide one, and — only if you leave the "Include technical diagnostics"
   option enabled — the same sanitized technical diagnostics described for diagnostics below. Before you submit, the screen shows you exactly what
   will be included. Technical diagnostics are optional and can be disabled before sending.
-- **How it is sent.** Depending on the feature you choose, feedback may be delivered through a configured feedback endpoint, the Sentry User Feedback channel, your device's email application, or a copy-to-clipboard option. Before anything is transmitted, Threadbase clearly indicates which delivery method will be used. Feedback submissions are always initiated by you and do not require automatic crash reporting to be enabled.
+- **How it is sent.** When you tap Send, Threadbase first attempts to deliver
+  your feedback through the Sentry User Feedback channel. This works even if
+  you have not turned on automatic crash reporting — just like the one-time
+  "Report this crash" button, tapping Send is treated as explicit consent for
+  that single submission. If Sentry is unavailable, feedback falls back to your
+  device's email application, or a copy-to-clipboard option. The success screen
+  shows which delivery method was used. Feedback submissions are always
+  initiated by you and do not enable automatic crash reporting.
 - **Optional email.** If you provide a reply email, it is stored with your
   feedback so we can respond. Leaving it blank keeps your submission anonymous.
 - **What is excluded.** As with crash reports, feedback does not intentionally

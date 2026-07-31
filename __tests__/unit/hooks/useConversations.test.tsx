@@ -69,7 +69,7 @@ const metaHandlers: Record<
 
 jest.mock('@/services/api-client', () => ({
   createApiForServer: (serverId: string) => ({
-    get: (path: string) => {
+    get: (path: string, _opts?: { signal?: AbortSignal }) => {
       const h = handlers[serverId]
       if (!h) return Promise.reject(new Error(`no handler for ${serverId}`))
       return h(path)
@@ -475,6 +475,22 @@ describe('useConversations — partial failure (Bug 32)', () => {
     expect(statuses['srv-B']?.error).toContain('host unreachable')
   })
 
+  it('preserves an explicit warm-up response instead of recording a fetch error', async () => {
+    setActiveServers(['srv-A'])
+    handlers['srv-A'] = () => Promise.reject({
+      code: 'SERVER_WARMING_UP',
+      warmupState: 'startup',
+    })
+
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']).toMatchObject({
+      status: 'warming_up',
+      warmupState: 'startup',
+    })
+  })
+
   it('single failing server still surfaces as a query error', async () => {
     setActiveServers(['srv-A'])
     handlers['srv-A'] = () => Promise.reject(new Error('down'))
@@ -482,6 +498,33 @@ describe('useConversations — partial failure (Bug 32)', () => {
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.data).toBeUndefined()
+  })
+
+  it('keeps healthy results when peers are slow, offline, or malformed', async () => {
+    setActiveServers(['srv-healthy', 'srv-slow', 'srv-offline', 'srv-malformed'])
+
+    handlers['srv-healthy'] = () =>
+      Promise.resolve([rawSession('healthy-1')]) as Promise<unknown>
+    handlers['srv-slow'] = () =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve([rawSession('slow-1')]), 40)
+      })
+    handlers['srv-offline'] = () => Promise.reject(new Error('ECONNREFUSED'))
+    handlers['srv-malformed'] = () => Promise.reject(new Error('Unexpected token < in JSON'))
+
+    const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data?.pages.length).toBe(1))
+
+    const ids = result.current.data!.pages[0].conversations.map((c) => c.id)
+    expect(ids).toEqual(expect.arrayContaining(['healthy-1', 'slow-1']))
+    expect(ids).toHaveLength(2)
+    expect(result.current.isError).toBe(false)
+
+    const statuses = useServerFetchStatusStore.getState().statuses
+    expect(statuses['srv-healthy']?.status).toBe('ok')
+    expect(statuses['srv-slow']?.status).toBe('ok')
+    expect(statuses['srv-offline']?.status).toBe('error')
+    expect(statuses['srv-malformed']?.status).toBe('error')
   })
 })
 
@@ -558,7 +601,7 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
     }
   })
 
-  it('records indexing (not error) when the count request times out', async () => {
+  it('records an error when the count request times out', async () => {
     setActiveServers(['srv-slow'])
 
     handlers['srv-slow'] = (path: string) => {
@@ -575,7 +618,31 @@ describe('useEagerConversations — cold-start count (fix: no refresh=1)', () =>
     await waitFor(() => expect(result.current.isDone).toBe(true))
 
     const statuses = useServerFetchStatusStore.getState().statuses
-    expect(statuses['srv-slow']?.status).toBe('indexing')
+    expect(statuses['srv-slow']?.status).toBe('error')
+  })
+
+  it('records warming_up only for the explicit server status', async () => {
+    setActiveServers(['srv-warm'])
+
+    handlers['srv-warm'] = (path: string) => {
+      if (path.includes('/api/conversations/count')) {
+        return Promise.reject({
+          code: 'SERVER_WARMING_UP',
+          warmupState: 'conversation_refresh',
+        })
+      }
+      return Promise.resolve([]) as Promise<unknown>
+    }
+
+    const { result } = await renderHook(() => useEagerConversations(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(useServerFetchStatusStore.getState().statuses['srv-warm']).toMatchObject({
+      status: 'warming_up',
+      warmupState: 'conversation_refresh',
+    })
   })
 })
 

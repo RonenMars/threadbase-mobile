@@ -6,9 +6,11 @@ import type { PairResult } from '@/hooks/useTBPair'
 import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
 import { DoneStep } from './steps/DoneStep'
+import { NotificationsStep } from './steps/NotificationsStep'
 import { WelcomeStep } from './steps/WelcomeStep'
 
-export const TOTAL_STEPS = 3
+// Welcome → Connect → Notifications → Done (redesign: Notifications after pair)
+export const TOTAL_STEPS = 4
 export const ONBOARDED_KEY = 'threadbase_onboarded'
 const PAIRED_TOKEN_HASH_KEY = 'threadbase_paired_token_hash'
 
@@ -42,7 +44,7 @@ function derivePort(url: string): string {
     if (parsed.port) return parsed.port
     return parsed.protocol === 'https:' ? '443' : '80'
   } catch {
-    return '7331'
+    return '8766'
   }
 }
 
@@ -62,10 +64,19 @@ export function OnboardingNavigator({ onDone }: Props) {
 
   const onNext = useCallback(() => {
     setIndex((curr) => {
+      // Connect step: swipe/forward must not jump to Done unpaired.
+      if (curr === 1 && !paired) return curr
       if (curr >= TOTAL_STEPS - 1) return curr
       setDirection(1)
       return curr + 1
     })
+  }, [paired])
+
+  // ConnectStep calls this after a successful pair — bypass the unpaired guard
+  // (paired state may not have flushed yet when onAdvance runs).
+  const advanceAfterPair = useCallback(() => {
+    setDirection(1)
+    setIndex(2)
   }, [])
 
   const onBack = useCallback(() => {
@@ -76,9 +87,11 @@ export function OnboardingNavigator({ onDone }: Props) {
     })
   }, [])
 
+  // Skip / pair-later: jump to Done, skipping Notifications when unpaired.
   const onSkip = useCallback(() => {
+    if (index !== 1) return
     goto(TOTAL_STEPS - 1)
-  }, [goto])
+  }, [goto, index])
 
   const handlePaired = useCallback((result: PairResult) => {
     setPaired(result)
@@ -87,7 +100,11 @@ export function OnboardingNavigator({ onDone }: Props) {
   const handleEnter = useCallback(async () => {
     try {
       if (paired) {
-        await addServer(paired.url, paired.apiKey)
+        await addServer(paired.url, paired.apiKey, paired.label, {
+          deviceId: paired.deviceId,
+          deviceToken: paired.deviceToken,
+          capabilities: paired.capabilities,
+        })
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,
           hashToken(paired.apiKey),
@@ -107,16 +124,20 @@ export function OnboardingNavigator({ onDone }: Props) {
       onNext={onNext}
       onBack={onBack}
       onSkip={onSkip}
+      showSkip={index === 1}
+      skipLabelKey="shell.pairLater"
     >
       {index === 0 && <WelcomeStep onNext={onNext} />}
       {index === 1 && (
-        <ConnectStep onPaired={handlePaired} onAdvance={onNext} />
+        <ConnectStep onPaired={handlePaired} onAdvance={advanceAfterPair} />
       )}
-      {index === 2 && (
+      {index === 2 && <NotificationsStep onNext={onNext} />}
+      {index === 3 && (
         <DoneStep
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}
           serverPort={paired ? derivePort(paired.url) : undefined}
+          serverLabel={paired?.label}
         />
       )}
     </OnboardingShell>

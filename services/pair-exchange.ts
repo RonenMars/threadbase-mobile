@@ -1,5 +1,6 @@
 import nacl from 'tweetnacl'
 import naclUtil from 'tweetnacl-util'
+import { parseCapabilityList, type DeviceCapability } from '@/types/devices'
 
 export interface PairUri {
   url: string
@@ -12,9 +13,17 @@ export interface ExchangeResult {
   apiKey: string
   publicUrl: string | null
   machineName: string | null
+  /** Per-device id minted at exchange (C5). Absent on older streamers. */
+  deviceId: string | null
+  /** Scoped credential — store only in SecureStore; never display. */
+  deviceToken: string | null
+  capabilities: DeviceCapability[] | null
 }
 
 export type PairUriErrorCode = 'invalid' | 'expired' | 'bad-server-url'
+
+/** How a pasted manual-entry credential should be resolved. */
+export type PairCredentialKind = 'pair-uri' | 'pair-token' | 'api-key'
 
 export class PairUriError extends Error {
   readonly code: PairUriErrorCode
@@ -23,6 +32,15 @@ export class PairUriError extends Error {
     this.name = 'PairUriError'
     this.code = code
   }
+}
+
+/** Classify a pasted token / URI for the manual onboarding pair path. */
+export function classifyPairCredential(raw: string): PairCredentialKind {
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('threadbase:')) return 'pair-uri'
+  // Short-lived tokens from `tb pair` / `/api/pair/start` (`pt_<hex>`).
+  if (trimmed.startsWith('pt_')) return 'pair-token'
+  return 'api-key'
 }
 
 export class PairExchangeError extends Error {
@@ -83,9 +101,13 @@ function assertNotExpired(exp?: number): void {
 export async function exchangeToken({
   url,
   token,
+  deviceName,
+  readOnly = false,
 }: {
   url: string
   token: string
+  deviceName?: string
+  readOnly?: boolean
 }): Promise<ExchangeResult> {
   assertHttpServerUrl(url)
   const trimmedUrl = url.replace(/\/$/, '')
@@ -95,12 +117,21 @@ export async function exchangeToken({
   const timeoutController = new AbortController()
   const timeoutId = setTimeout(() => timeoutController.abort(), PAIR_EXCHANGE_TIMEOUT_MS)
 
+  const bodyPayload: {
+    token: string
+    clientPublicKey: string
+    deviceName?: string
+    readOnly?: boolean
+  } = { token, clientPublicKey }
+  if (deviceName?.trim()) bodyPayload.deviceName = deviceName.trim().slice(0, 100)
+  if (readOnly) bodyPayload.readOnly = true
+
   let res: Response
   try {
     res = await fetch(`${trimmedUrl}/api/pair/exchange`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, clientPublicKey }),
+      body: JSON.stringify(bodyPayload),
       signal: timeoutController.signal,
     })
   } catch (err) {
@@ -130,6 +161,9 @@ export async function exchangeToken({
     ephemeralPublicKey?: string
     publicUrl?: string | null
     machineName?: string | null
+    deviceId?: string
+    deviceToken?: string
+    capabilities?: unknown
   } | null
 
   if (!body?.ciphertext || !body.nonce || !body.ephemeralPublicKey) {
@@ -154,11 +188,20 @@ export async function exchangeToken({
   const resolvedUrl = body.publicUrl ?? trimmedUrl
   assertHttpServerUrl(resolvedUrl)
 
+  const deviceId = typeof body.deviceId === 'string' ? body.deviceId : null
+  const deviceToken = typeof body.deviceToken === 'string' ? body.deviceToken : null
+  const capabilities = Array.isArray(body.capabilities)
+    ? parseCapabilityList(body.capabilities)
+    : null
+
   return {
     url: resolvedUrl,
     apiKey: naclUtil.encodeUTF8(plain),
     publicUrl: body.publicUrl ?? null,
     machineName: body.machineName ?? null,
+    deviceId,
+    deviceToken,
+    capabilities,
   }
 }
 

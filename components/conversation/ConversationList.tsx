@@ -23,6 +23,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import { useNavLockStore } from '@/stores/navLock'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MultiConversation } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
@@ -83,7 +84,10 @@ const ConversationRow = React.memo(function ConversationRow({
       showServer={serverIndicator}
       serverChipVariant={chipVariant}
       highlight={highlight}
-      onPress={() => router.push(conversationHref(c.id, c.serverId, highlight))}
+      onPress={() => {
+        useNavLockStore.getState().lock()
+        router.push(conversationHref(c.id, c.serverId, highlight))
+      }}
     />
   )
 })

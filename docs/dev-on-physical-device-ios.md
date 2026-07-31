@@ -52,7 +52,7 @@ npx expo run:ios --device "<your-device-udid>"
 
 What happens:
 
-1. `pod install` if needed (~30s).
+1. `bundle exec pod install` if needed (~30s) — `bundle exec` keeps CocoaPods on the Gemfile-pinned 1.16.2.
 2. Xcode build (~3–5 min cold, faster on warm cache).
 3. Install over USB.
 4. Metro starts on port 8081.
@@ -91,7 +91,7 @@ and the full `EXPO_PACKAGER_PROXY_URL` command variants.
 | Metro warns `Recrawled this watch N times` or fails on path resolution | Watchman TCC bug (surfaces after `npm ci`, branch switch, or big rebase) | Prepend `EXPO_NO_WATCHMAN=1` and add `-c` to clear the poisoned cache |
 | `Could not find device with UDID` | Phone unplugged / locked / not trusted | Plug back in, unlock, tap "Trust this computer" if prompted |
 | Bundle fails on different file names every run | Watchman cache out of sync | `watchman watch-del "$PWD" && rm -rf $TMPDIR/metro-*` |
-| Build phase missing after `node_modules` refresh | Pods drift | `cd ios && pod install && cd ..` |
+| Build phase missing after `node_modules` refresh | Pods drift | `cd ios && bundle exec pod install && cd ..` |
 | Node version "incompatible with Expo SDK X" | Node version mismatch | SDK 54+ needs Node ≥22.13 or ≥24. Check `node -v`. |
 | Hermes crashes on iOS 26 | Old Hermes (0.12.x) | We're on SDK 55+ (Hermes 0.14+). Don't downgrade. |
 | App stays on splash screen | Device + Mac on different Wi-Fi | Use the tunnel flow — see [remote-dev-tunnel.md](remote-dev-tunnel.md) |

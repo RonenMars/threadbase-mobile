@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createApiForServer } from '@/services/api-client'
+import { getServerWarmupState } from '@/services/server-warmup'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type {
@@ -117,6 +118,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   const servers = useServersStore((s) => s.servers)
   const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
+  const recordWarmingUp = useServerFetchStatusStore((s) => s.recordWarmingUp)
 
   const sortBy: SortBy = args.sort?.sortBy ?? 'lastActivity'
   const order: SortOrder = args.sort?.order ?? 'desc'
@@ -195,7 +197,9 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
             return sessions
           } catch (err) {
             if (signal?.aborted) throw err
-            recordFailure(serverId, err)
+            const warmupState = getServerWarmupState(err)
+            if (warmupState) recordWarmingUp(serverId, warmupState)
+            else recordFailure(serverId, err)
             return [] as MultiSession[]
           } finally {
             const slice = serverProgressRef.current.get(serverId)
@@ -282,5 +286,8 @@ export function useSessionDetail(serverId: string, sessionId: string) {
     // Don't persist session detail across app restarts — each session is
     // ephemeral and stale persisted state causes false status flickers.
     meta: { persist: false },
+    // A vanished session is authoritative — retrying a 404 only delays the
+    // not-found recovery UI and keeps stale favorites pinned longer.
+    retry: false,
   })
 }

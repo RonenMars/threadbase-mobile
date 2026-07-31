@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, Keyboard } from 'react-native'
+import { ActivityIndicator, Alert, StyleSheet, Text, View, Keyboard } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -15,25 +15,33 @@ import { MessageItem } from '@/components/conversation/MessageItem'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
+import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { wsManager } from '@/services/ws-client'
+import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
-import { type Theme } from '@/constants/theme'
+import { spacing, type Theme } from '@/constants/theme'
+import type { ProviderName } from '@/constants/providers'
+import { preferRawTerminal } from '@/lib/renderConfidence'
+import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 
 interface Props {
   serverId: string
   sessionId: string
   conversationId: string
+  provider?: ProviderName | string | null
   /** Disable the composer while the session's PTY is still waking up. */
   disabled?: boolean
   /** Plan to preview, surfaced from the session screen's plan_ready listener. */
   pendingPlan?: string | null
   onClosePlan?: () => void
+  /** Prefer raw terminal when chat normalization looks unreliable. */
+  onPreferRawTerminal?: () => void
 }
 
 // Concatenate a user message's text blocks for echo matching.
@@ -63,9 +71,11 @@ export function LiveConversationView({
   serverId,
   sessionId,
   conversationId,
+  provider,
   disabled = false,
   pendingPlan = null,
   onClosePlan,
+  onPreferRawTerminal,
 }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -78,7 +88,7 @@ export function LiveConversationView({
   const [pendingSends, setPendingSends] = useState<Message[]>([])
 
   // Historical messages (REST)
-  const { data } = useConversation(serverId, conversationId)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId)
   const historicalMessages: Message[] = data?.messages ?? []
 
   // Live appended messages (WS)
@@ -113,17 +123,10 @@ export function LiveConversationView({
     return remaining
   })()
 
-  // Order: historical → optimistic user bubble → live WS messages. Dedup by id
-  // last (uuid-less messages fall back to timestamp-type-role ids that can
-  // collide across REST/WS; duplicate FlashList keys trigger a render loop).
-  const allMessages = (() => {
-    const seen = new Set<string>()
-    return [...orderedHistorical, ...stillPending, ...newLive].filter((m) => {
-      if (seen.has(m.id)) return false
-      seen.add(m.id)
-      return true
-    })
-  })()
+  // Order: historical → optimistic user bubble → live WS messages. Dedup by
+  // uuid then id (shared with the read-only conversation view). newLive above is
+  // recomputed inside the helper — kept local here only for the echo matching.
+  const allMessages = mergeLiveMessages(orderedHistorical, liveMessages, stillPending)
 
   // Session status for thinking indicator
   const { data: session } = useSessionDetail(serverId, sessionId)
@@ -141,8 +144,38 @@ export function LiveConversationView({
     })
   }, [serverId, sessionId, qc])
 
+  // A session_update emitted while the app is backgrounded (socket
+  // suspended) is lost forever — reconnect re-auths but never replays it.
+  // Refetch on every reconnect so a missed status flip (e.g. running → idle
+  // while backgrounded) doesn't strand the thinking bubble indefinitely.
+  useEffect(() => {
+    return wsManager.onStatusChange(serverId, (s) => {
+      if (s === 'connected') {
+        qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+      }
+    })
+  }, [serverId, sessionId, qc])
+
   // PTY lines shown inside the thinking bubble while agent is running
-  const { lines: ptyLines, isStreaming } = useTerminalStream(serverId, sessionId)
+  const { lines: ptyLines, isStreaming, parseConfidence } = useTerminalStream(
+    serverId,
+    sessionId,
+    false,
+    provider,
+  )
+
+  useEffect(() => {
+    const decision = preferRawTerminal({
+      sessionView: 'chat',
+      hasConversationId: true,
+      conversationMessageCount: allMessages.length,
+      ptyVisibleLineCount: ptyLines.length,
+      parseConfidence,
+    })
+    if (decision.mode === 'terminal' && !decision.chatAuthoritative) {
+      onPreferRawTerminal?.()
+    }
+  }, [allMessages.length, ptyLines.length, parseConfidence, onPreferRawTerminal])
 
   // Show thinking bubble whenever the session is running. Mid-turn assistant
   // messages (interim replies, sub-agent dispatches) land while Claude is
@@ -182,6 +215,7 @@ export function LiveConversationView({
       Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
       return
     }
+    markSessionUsed(sessionId)
     if (optimisticText) {
       setPendingSends((prev) => [...prev, makeOptimisticMessage(optimisticText)])
     }
@@ -213,25 +247,17 @@ export function LiveConversationView({
   } = useComposerState({ serverId, sessionId, onSend: send })
 
   // Auto-scroll to bottom when keyboard opens or app resumes with keyboard already up.
+  // New-message/thinking-bubble scrolling is left to FlashList's native
+  // maintainVisibleContentPosition bottom-anchoring below — a JS scrollToEnd
+  // fired from an effect races FlashList's cell measurement for the new row,
+  // landing short until a manual scroll forces a re-layout (see
+  // ConversationHistoryList's comment on this same hand-rolled machinery).
   useEffect(() => {
     const onShow = () => listRef.current?.scrollToEnd({ animated: true })
     const subShow = Keyboard.addListener('keyboardDidShow', onShow)
     const subChange = Keyboard.addListener('keyboardDidChangeFrame', onShow)
     return () => { subShow.remove(); subChange.remove() }
   }, [])
-
-  // Auto-scroll to bottom when a new message appears or the thinking bubble shows.
-  useEffect(() => {
-    if (allMessages.length > 0) {
-      listRef.current?.scrollToEnd({ animated: true })
-    }
-  }, [allMessages.length])
-
-  useEffect(() => {
-    if (thinkingState === 'thinking') {
-      listRef.current?.scrollToEnd({ animated: true })
-    }
-  }, [thinkingState])
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding" automaticOffset>
@@ -240,9 +266,24 @@ export function LiveConversationView({
         data={allMessages}
         keyExtractor={(m) => m.id}
         renderItem={({ item, index }) => (
-          <MessageItem message={item} isLast={index === allMessages.length - 1} />
+          <RenderErrorBoundary
+            tag="message_item"
+            rawFallback={userMessageText(item) || item.role}
+          >
+            <MessageItem message={item} isLast={index === allMessages.length - 1} />
+          </RenderErrorBoundary>
         )}
+        maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
+        onStartReached={hasNextPage ? fetchNextPage : undefined}
+        onStartReachedThreshold={0.3}
+        ListHeaderComponent={
+          isFetchingNextPage ? (
+            <View style={styles.pageLoading}>
+              <ActivityIndicator color={theme.text.secondary} />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           // A freshly-started / waiting_input session has no JSONL yet, so there
           // are no conversation messages (REST) and no conversation_event (WS).
@@ -322,19 +363,28 @@ function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme })
   if (visibleLines.length === 0) return null
   const styles = makeStyles(theme)
   return (
-    <ScrollView style={styles.ptyContainer} contentContainerStyle={styles.ptyContent}>
-      {visibleLines.map((line, i) => (
-        <Text key={i} style={styles.ptyLine} numberOfLines={1}>
-          {line}
+    <FlashList
+      data={visibleLines}
+      keyExtractor={(item, index) => `${index}:${item.slice(0, 24)}`}
+      renderItem={({ item }) => (
+        <Text style={styles.ptyLine} numberOfLines={1}>
+          {item}
         </Text>
-      ))}
-    </ScrollView>
+      )}
+      style={styles.ptyContainer}
+      contentContainerStyle={styles.ptyContent}
+    />
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
+    pageLoading: {
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     ptyContainer: { flex: 1, paddingHorizontal: 12 },
     ptyContent: { paddingVertical: 12 },
     ptyLine: {

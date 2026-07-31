@@ -5,16 +5,16 @@ describe('i18n', () => {
     expect(i18n.t('common:button.cancel')).toBe('Cancel');
   });
 
-  it('returns singular session count', () => {
-    expect(i18n.t('sessions:list.sessionCount', { count: 1 })).toBe('1 session');
+  it('returns singular prompt count', () => {
+    expect(i18n.t('sessions:card.prompts', { count: 1 })).toBe('1 prompt');
   });
 
-  it('returns plural session count', () => {
-    expect(i18n.t('sessions:list.sessionCount', { count: 3 })).toBe('3 sessions');
+  it('returns plural prompt count', () => {
+    expect(i18n.t('sessions:card.prompts', { count: 3 })).toBe('3 prompts');
   });
 
   it('interpolates server name', () => {
-    expect(i18n.t('sessions:card.connectedTo', { server: 'My Mac' })).toBe('My Mac');
+    expect(i18n.t('servers:error.subtitle', { server: 'My Mac' })).toContain('My Mac');
   });
 
   it('falls back to key when translation is missing', () => {

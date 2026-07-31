@@ -15,26 +15,25 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { CaretDown, CaretRight, ClockCounterClockwise } from 'phosphor-react-native'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
+import { RecentDirsModal, type RecentDir } from '@/components/browse/RecentDirsModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 import { clientLog } from '@/lib/clientLog'
+import { useProviderHealth } from '@/hooks/useProviderHealth'
+import { findProviderHealth } from '@/types/provider-health'
 
 const MAX_RECENT_DIRS = 8
-
-interface RecentDir {
-  path: string
-  name: string
-  lastUsedAt: string
-}
+const PREVIEW_RECENT_DIRS = 3
 
 export default function BrowseScreen() {
   const theme = useTheme()
@@ -53,9 +52,20 @@ export default function BrowseScreen() {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [isRecentsOpen, setIsRecentsOpen] = useState(true)
+  const [showAllRecents, setShowAllRecents] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
+  const { data: providerHealth } = useProviderHealth(serverId)
+  const selectedHealth = findProviderHealth(providerHealth?.providers, selectedProvider)
+  const selectedUnavailable = selectedHealth?.available === false
+  const selectedWarnings = selectedHealth?.warnings ?? []
+  const showProviderNotes =
+    selectedUnavailable ||
+    selectedWarnings.length > 0 ||
+    selectedHealth?.capabilities.structuredQuestions === false ||
+    selectedHealth?.capabilities.liveControl === false
 
   const { data: allSessions = [] } = useSessions()
+  // Newest → oldest by last session start; first hit wins for path dedupe.
   const recentDirs = useMemo<RecentDir[]>(() => {
     if (!serverId) {
       return []
@@ -83,6 +93,8 @@ export default function BrowseScreen() {
     }
     return dirs
   }, [allSessions, serverId])
+  const previewRecentDirs = recentDirs.slice(0, PREVIEW_RECENT_DIRS)
+  const hasMoreRecents = recentDirs.length > PREVIEW_RECENT_DIRS
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
@@ -233,6 +245,7 @@ export default function BrowseScreen() {
     (dir: RecentDir) => {
       if (isStarting) return
       setIsStarting(true)
+      setShowAllRecents(false)
       clientLog.info('browse', 'start from recent pressed', { path: dir.path, serverId })
       navigateToStartScreen(dir.path, dir.name)
     },
@@ -268,7 +281,7 @@ export default function BrowseScreen() {
 
   return (
     <GestureDetector gesture={swipeBack}>
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']} testID="browse-screen">
       {/* Breadcrumbs */}
       <View style={styles.breadcrumbs} testID={`browse-cwd-${currentPath || '~'}`}>
         <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)}>
@@ -301,18 +314,23 @@ export default function BrowseScreen() {
             <Text style={styles.recentsHeaderText}>
               {t('nav.recentDirs', { count: recentDirs.length })}
             </Text>
-            <Text style={styles.recentsChevron}>{isRecentsOpen ? '▾' : '▸'}</Text>
+            {isRecentsOpen ? (
+              <CaretDown size={14} color={theme.text.secondary} weight="bold" />
+            ) : (
+              <CaretRight size={14} color={theme.text.secondary} weight="bold" />
+            )}
           </TouchableOpacity>
           {isRecentsOpen ? (
             <View style={styles.recentsList}>
-              {recentDirs.map((dir) => (
+              {previewRecentDirs.map((dir) => (
                 <TouchableOpacity
                   key={dir.path}
                   style={styles.recentRow}
                   onPress={() => handleStartFromRecent(dir)}
                   disabled={isStarting}
+                  testID={`recent-dir-preview-${dir.path}`}
                 >
-                  <Text style={styles.recentIcon}>🕘</Text>
+                  <ClockCounterClockwise size={18} color={theme.text.secondary} />
                   <View style={styles.recentTextWrap}>
                     <Text style={styles.recentName} numberOfLines={1}>
                       {dir.name}
@@ -321,13 +339,31 @@ export default function BrowseScreen() {
                       {dir.path}
                     </Text>
                   </View>
-                  <Text style={styles.chevron}>›</Text>
+                  <CaretRight size={16} color={theme.text.secondary} />
                 </TouchableOpacity>
               ))}
+              {hasMoreRecents ? (
+                <TouchableOpacity
+                  style={styles.displayAllBtn}
+                  onPress={() => setShowAllRecents(true)}
+                  accessibilityRole="button"
+                  testID="recent-dirs-display-all"
+                >
+                  <Text style={styles.displayAllText}>{t('nav.displayAll')}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : null}
         </View>
       ) : null}
+
+      <RecentDirsModal
+        visible={showAllRecents}
+        dirs={recentDirs}
+        onClose={() => setShowAllRecents(false)}
+        onSelect={handleStartFromRecent}
+        disabled={isStarting}
+      />
 
       {/* Directory list */}
       <View style={styles.listContainer}>
@@ -397,6 +433,8 @@ export default function BrowseScreen() {
             { value: CODEX_CLI_PROVIDER, label: 'Codex', color: brand.codex },
           ]).map((option) => {
             const selected = selectedProvider === option.value
+            const health = findProviderHealth(providerHealth?.providers, option.value)
+            const unavailable = health?.available === false
             return (
               <TouchableOpacity
                 key={option.value}
@@ -404,10 +442,11 @@ export default function BrowseScreen() {
                   styles.providerOption,
                   selected && styles.providerOptionSelected,
                   selected ? { borderColor: option.color } : null,
+                  unavailable && styles.providerOptionDisabled,
                 ]}
                 onPress={() => setSelectedProvider(option.value)}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityState={{ selected, disabled: unavailable }}
                 testID={`start-provider-${option.value}`}
               >
                 <View style={[styles.providerDot, { backgroundColor: option.color }]} />
@@ -416,6 +455,7 @@ export default function BrowseScreen() {
                     styles.providerOptionText,
                     selected && styles.providerOptionTextSelected,
                     selected ? { color: option.color } : null,
+                    unavailable && styles.providerOptionTextDisabled,
                   ]}
                 >
                   {option.label}
@@ -424,6 +464,31 @@ export default function BrowseScreen() {
             )
           })}
         </View>
+        {showProviderNotes ? (
+          <View style={styles.providerWarning} testID="browse-provider-warning">
+            {selectedUnavailable ? (
+              <Text style={styles.providerWarningText}>{t('provider.unavailable')}</Text>
+            ) : null}
+            {selectedWarnings.map((w) => {
+              let warningLabel = t('provider.warning.version_unverified')
+              if (w.code === 'provider_not_found') warningLabel = t('provider.warning.provider_not_found')
+              else if (w.code === 'version_undetectable') {
+                warningLabel = t('provider.warning.version_undetectable')
+              }
+              return (
+                <Text key={w.code} style={styles.providerWarningText}>
+                  {warningLabel}
+                </Text>
+              )
+            })}
+            {selectedHealth && !selectedHealth.capabilities.structuredQuestions ? (
+              <Text style={styles.providerWarningText}>{t('provider.noStructuredQuestions')}</Text>
+            ) : null}
+            {selectedHealth && !selectedHealth.capabilities.liveControl ? (
+              <Text style={styles.providerWarningText}>{t('provider.observeOnly')}</Text>
+            ) : null}
+          </View>
+        ) : null}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.newFolderToggle}
@@ -433,9 +498,13 @@ export default function BrowseScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.startBtn, isStarting && styles.startBtnDisabled]}
+            style={[
+              styles.startBtn,
+              (isStarting || selectedUnavailable) && styles.startBtnDisabled,
+            ]}
             onPress={handleStartSession}
-            disabled={isStarting}
+            disabled={isStarting || selectedUnavailable}
+            testID="browse-start-session"
           >
             {isStarting ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -506,10 +575,6 @@ function makeStyles(theme: Theme) {
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  recentsChevron: {
-    color: theme.text.secondary,
-    fontSize: font.sm,
-  },
   recentsList: {
     paddingVertical: spacing.xs,
   },
@@ -519,12 +584,9 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  recentIcon: {
-    fontSize: 16,
-    marginRight: spacing.md,
-  },
   recentTextWrap: {
     flex: 1,
+    marginLeft: spacing.md,
   },
   recentName: {
     color: theme.text.primary,
@@ -534,6 +596,16 @@ function makeStyles(theme: Theme) {
     color: theme.text.secondary,
     fontSize: font.xs,
     marginTop: 2,
+  },
+  displayAllBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  displayAllText: {
+    color: theme.text.accent,
+    fontSize: font.sm,
+    fontWeight: '600',
   },
   skeletons: {
     padding: spacing.lg,
@@ -560,6 +632,27 @@ function makeStyles(theme: Theme) {
   },
   providerOptionSelected: {
     backgroundColor: theme.bg.card,
+  },
+  providerOptionDisabled: {
+    opacity: 0.55,
+  },
+  providerOptionTextDisabled: {
+    color: theme.text.secondary,
+  },
+  providerWarning: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.bg.secondary,
+    gap: 4,
+  },
+  providerWarningText: {
+    color: theme.text.warning,
+    fontSize: font.xs,
+    lineHeight: 16,
   },
   providerDot: {
     width: 8,

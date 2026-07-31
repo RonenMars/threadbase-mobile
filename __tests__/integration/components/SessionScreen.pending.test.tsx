@@ -81,6 +81,7 @@ jest.mock('@/stores/settings', () => ({ useSettingsStore: () => ({ sessionView: 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'pending_sess-real-id', server: 'srv1' }),
   useRouter: () => ({ replace: mockReplace, back: mockBack, push: jest.fn() }),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
@@ -89,6 +90,11 @@ jest.mock('@tanstack/react-query', () => ({
 
 // eslint-disable-next-line import/first
 import SessionDetailScreen from '@/app/session/[id]'
+
+/** Fresh fake clock per test — cumulative advances across tests were blanking the tree. */
+function installPendingFakeTimers() {
+  jest.useFakeTimers({ now: new Date('2024-01-01T00:00:00.000Z') })
+}
 
 describe('SessionScreen — pending session', () => {
   beforeEach(() => {
@@ -107,6 +113,7 @@ describe('SessionScreen — pending session', () => {
     // of the next one, and so fake timers (installed per-test below) start
     // from a clean slate.
     cleanup()
+    jest.clearAllTimers()
     jest.useRealTimers()
   })
 
@@ -135,7 +142,7 @@ describe('SessionScreen — pending session', () => {
   })
 
   it('shows a stuck state with View console / Stop session after 20s with no signal', async () => {
-    jest.useFakeTimers()
+    installPendingFakeTimers()
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
     await act(async () => {
@@ -143,18 +150,23 @@ describe('SessionScreen — pending session', () => {
     })
 
     expect(screen.queryByText('Starting session…')).toBeNull()
+    expect(screen.getByText('Wait more')).toBeTruthy()
     const viewConsole = screen.getByText('View console')
     const stop = screen.getByText('Stop session')
 
-    fireEvent.press(viewConsole)
+    await act(async () => {
+      fireEvent.press(viewConsole)
+    })
     expect(mockReplace).toHaveBeenCalledWith('/session/sess-real-id?server=srv1')
 
-    fireEvent.press(stop)
+    await act(async () => {
+      fireEvent.press(stop)
+    })
     expect(mockStopMutate).toHaveBeenCalled()
   })
 
   it('does not show the stuck state before 20s', async () => {
-    jest.useFakeTimers()
+    installPendingFakeTimers()
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
     await act(async () => {
@@ -166,7 +178,7 @@ describe('SessionScreen — pending session', () => {
   })
 
   it('"Wait more" dismisses the stuck state and returns to the spinner', async () => {
-    jest.useFakeTimers()
+    installPendingFakeTimers()
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
     await act(async () => {
@@ -176,7 +188,9 @@ describe('SessionScreen — pending session', () => {
 
     await act(async () => {
       fireEvent.press(screen.getByText('Wait more'))
-      // Re-arming the timer resets stuck/elapsed on the effect re-run; let it flush.
+    })
+    // Let the re-armed 250ms interval tick once without re-entering stuck.
+    await act(async () => {
       await jest.advanceTimersByTimeAsync(250)
     })
 

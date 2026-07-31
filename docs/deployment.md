@@ -361,16 +361,20 @@ that `CODE_SIGN_STYLE=Automatic` causes).
 
 `scripts/bootstrap-ios-signing.sh` runs before the archive step and:
 1. Imports the Distribution cert (`.p12`) into a temporary keychain
-2. Installs the provisioning profile to `~/Library/MobileDevice/Provisioning Profiles/`
+2. Installs the app and widget provisioning profiles to `~/Library/MobileDevice/Provisioning Profiles/`
 3. Copies the ASC `.p8` API key to `~/.appstoreconnect/private_keys/` for altool
 
 `scripts/archive-and-upload.sh` then archives with:
 ```
 CODE_SIGN_STYLE=Manual
 CODE_SIGN_IDENTITY="Apple Distribution"
-PROVISIONING_PROFILE_SPECIFIER=<UUID>
+IOS_PROVISION_PROFILE_UUID=<app UUID>
+IOS_WIDGET_PROVISION_PROFILE_UUID=<widget UUID>
 CURRENT_PROJECT_VERSION=<buildNumber from app.json>
 ```
+
+The app and widget Release configurations map those variables to separate
+`PROVISIONING_PROFILE_SPECIFIER` values.
 
 `ios/Threadbase/Info.plist` uses `$(CURRENT_PROJECT_VERSION)` (not a hardcoded value)
 so the build number injected via the xcodebuild flag actually lands in the IPA.
@@ -386,8 +390,10 @@ Upload is via `xcrun altool --upload-app`.
 | `ASC_AUTH_KEY_B64` | Base64 of the `.p8` API key file |
 | `IOS_DIST_CERT_P12_B64` | Base64 of the Distribution cert `.p12` |
 | `IOS_DIST_CERT_PASSWORD` | Password protecting the `.p12` |
-| `IOS_PROVISION_PROFILE_B64` | Base64 of the App Store provisioning profile |
-| `IOS_PROVISION_PROFILE_UUID` | UUID of the provisioning profile |
+| `IOS_PROVISION_PROFILE_B64` | Base64 of the main app's App Store provisioning profile |
+| `IOS_PROVISION_PROFILE_UUID` | UUID of the main app's provisioning profile |
+| `IOS_WIDGET_PROVISION_PROFILE_B64` | Base64 of the widget extension's App Store provisioning profile |
+| `IOS_WIDGET_PROVISION_PROFILE_UUID` | UUID of the widget extension's provisioning profile |
 | `GH_PAT` | GitHub PAT used to push bump branches and admin squash-merge them onto `main` (repo admin role bypasses required-check rulesets) |
 
 ### Rotating the Distribution cert or provisioning profile
@@ -395,11 +401,12 @@ Upload is via `xcrun altool --upload-app`.
 1. Export a new `.p12` from Keychain Access (right-click the "Apple Distribution" cert → Export)
 2. `base64 -i new-cert.p12 | pbcopy` → update `IOS_DIST_CERT_P12_B64` secret
 3. Update `IOS_DIST_CERT_PASSWORD` if the password changed
-4. Download a new App Store provisioning profile from developer.apple.com (must be manually created, not "Xcode Managed")
-5. `base64 -i profile.mobileprovision | pbcopy` → update `IOS_PROVISION_PROFILE_B64`
-6. Get the UUID: `security cms -D -i profile.mobileprovision | grep -A1 UUID | tail -1 | tr -d ' <>/string'` → update `IOS_PROVISION_PROFILE_UUID`
+4. Download manually created App Store profiles for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.widgets` from developer.apple.com
+5. Ensure both App IDs and profiles include the `group.com.ronenmars.threadbase` App Group
+6. Base64 each profile and update `IOS_PROVISION_PROFILE_B64` and `IOS_WIDGET_PROVISION_PROFILE_B64`
+7. Read each profile UUID with `security cms -D -i profile.mobileprovision | grep -A1 UUID | tail -1 | tr -d ' <>/string'`, then update `IOS_PROVISION_PROFILE_UUID` and `IOS_WIDGET_PROVISION_PROFILE_UUID`
 
-The provisioning profile must be linked to the same Distribution cert that's in the `.p12`.
+Both provisioning profiles must be linked to the same Distribution cert that's in the `.p12`.
 
 ### Why not `CODE_SIGN_STYLE=Automatic`?
 

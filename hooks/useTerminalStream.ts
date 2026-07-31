@@ -5,6 +5,8 @@ import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { QUERY_GC_TIME } from '@/services/query-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
+import type { ProviderName } from '@/constants/providers'
+import type { ParseConfidence } from '@/lib/renderConfidence'
 
 export type TerminalLine = string
 
@@ -21,9 +23,15 @@ const TERMINAL_REPLAY_TIMEOUT_MS = 2000
 // the app is in the foreground). Force a reconnect so streaming resumes.
 const WS_SILENCE_TIMEOUT_MS = 45_000
 
-export function useTerminalStream(serverId: string, sessionId: string, skipLiveStream = false) {
+export function useTerminalStream(
+  serverId: string,
+  sessionId: string,
+  skipLiveStream = false,
+  provider?: ProviderName | string | null,
+) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<TerminalLine[]>([])
+  const [parseConfidence, setParseConfidence] = useState<ParseConfidence>('high')
   const [isStreaming, setIsStreaming] = useState(false)
   // Ground-truth set of texts the streamer wrote to the PTY, normalized (trim).
   // Lets the renderer positively identify user-owned lines instead of guessing.
@@ -48,9 +56,27 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const replayReceivedRef = useRef(false)
   // Track whether history has been fed (from replay or HTTP) to avoid double-feeding
   const historyFedRef = useRef(false)
+  // Last terminal_output seq accepted for the current session/connection
+  // generation. A stale frame from a superseded WS connection can otherwise
+  // land after a reconnect reset; any terminal_output whose seq isn't
+  // greater than this is dropped instead of being fed to the VT. Reset to 0
+  // alongside the other per-session refs; baselined from terminal_replay's
+  // seq (undefined when the streamer predates this field, or via the HTTP
+  // fallback, which carries no seq — the guard then never rejects).
+  const lastSeqRef = useRef(0)
 
   // HTTP fallback query — disabled by default, enabled only when WS replay times out
   const [httpFallbackEnabled, setHttpFallbackEnabled] = useState(false)
+
+  function publishLines() {
+    const vt = vtRef.current!
+    const confidence = vt.getParseConfidence()
+    setParseConfidence(confidence)
+    // Low parse confidence → raw lines so we never present chrome-filtered
+    // output as if normalization were authoritative.
+    const visible = confidence === 'low' ? vt.getRawLines() : vt.getLines()
+    setLines(visible)
+  }
 
   const historyQuery = useQuery({
     queryKey: ['terminal-output', serverId, sessionId],
@@ -70,14 +96,15 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     meta: { persist: false },
   })
 
-  function feedHistory(raw: string) {
+  function feedHistory(raw: string, baselineSeq = 0) {
     if (historyFedRef.current) return
     historyFedRef.current = true
+    lastSeqRef.current = baselineSeq
     vtRef.current!.reset()
+    vtRef.current!.setProvider(provider)
     setLines([])
     vtRef.current!.feed(raw)
-    const visible = vtRef.current!.getLines()
-    setLines(visible.slice(-maxLines))
+    publishLines()
   }
 
   // Feed HTTP fallback history whenever it loads (only if replay wasn't received)
@@ -106,12 +133,23 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
     vtRef.current!.reset()
     replayReceivedRef.current = false
     historyFedRef.current = false
+    lastSeqRef.current = 0
     queueMicrotask(() => {
       setLines([])
+      setParseConfidence('high')
       setHttpFallbackEnabled(false)
       setUserMessageTexts(new Set())
     })
   }, [serverId, sessionId])
+
+  useEffect(() => {
+    vtRef.current?.setProvider(provider)
+    if (historyFedRef.current || lines.length > 0) {
+      publishLines()
+    }
+    // Re-apply chrome filter when provider identity arrives after first paint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider])
 
   useEffect(() => {
     if (skipLiveStream) return
@@ -148,13 +186,20 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       unsubReplay?.()
       unsubReplay = client.on('terminal_replay', (msg) => {
         if (msg.type !== 'terminal_replay' || msg.sessionId !== sessionId) return
+        // A card-parked session can replay only blank ring-buffer rows. Treating
+        // that as a successful load latches replayReceivedRef and disarms the
+        // HTTP fallback, stranding the terminal blank even though /output holds
+        // the full transcript. Only accept a replay that carries content; leave
+        // the fallback timer armed otherwise so /output fills the screen.
+        const hasContent = msg.lines.some((line) => line.trim().length > 0)
+        if (!hasContent) return
         replayReceivedRef.current = true
         if (fallbackTimer) {
           clearTimeout(fallbackTimer)
           fallbackTimer = null
         }
         if (msg.userMessages) addUserMessages(msg.userMessages.map((m) => m.text))
-        feedHistory(msg.lines.join('\n'))
+        feedHistory(msg.lines.join('\n'), msg.seq ?? 0)
       })
 
       // Start fallback timer — if no terminal_replay within 2s, fall back to HTTP
@@ -172,10 +217,16 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
       if (!client) return
       unsubOutput = client.on('terminal_output', (msg) => {
         if (msg.type !== 'terminal_output' || msg.sessionId !== sessionId) return
+        // A stale frame from a superseded connection can arrive after a
+        // reconnect reset baselined lastSeqRef higher — drop it rather than
+        // feeding it out of order. Streamers that omit seq (older versions)
+        // never trip this: seq stays undefined and the check is skipped.
+        if (msg.seq != null && msg.seq <= lastSeqRef.current) return
+        if (msg.seq != null) lastSeqRef.current = msg.seq
 
         setIsStreaming(true)
         vtRef.current!.feed(msg.data)
-        setLines(vtRef.current!.getLines().slice(-maxLines))
+        publishLines()
 
         clearTimeout(idleTimer)
         idleTimer = setTimeout(() => setIsStreaming(false), 1500)
@@ -242,7 +293,15 @@ export function useTerminalStream(serverId: string, sessionId: string, skipLiveS
   const clear = useCallback(() => {
     vtRef.current!.reset()
     setLines([])
+    setParseConfidence('high')
   }, [])
 
-  return { lines, isStreaming, userMessageTexts, isLoadingHistory: historyQuery.isPending && httpFallbackEnabled, clear }
+  return {
+    lines,
+    isStreaming,
+    userMessageTexts,
+    parseConfidence,
+    isLoadingHistory: historyQuery.isPending && httpFallbackEnabled,
+    clear,
+  }
 }

@@ -46,10 +46,12 @@ jest.mock('@/hooks/useSessionActions', () => ({
 
 // The composer guards sends on a connected WS client. Report connected so the
 // send path runs under test. send() is called by useTerminalStream.
+const mockOnStatusChange = jest.fn((_serverId: string, _listener: (s: string) => void) => jest.fn())
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
     getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }),
     onAnyStatusChange: jest.fn(() => jest.fn()),
+    onStatusChange: (serverId: string, listener: (s: string) => void) => mockOnStatusChange(serverId, listener),
     forceReconnect: jest.fn(),
   },
 }))
@@ -121,9 +123,20 @@ async function renderView() {
 describe('LiveConversationView — optimistic sent message', () => {
   beforeEach(() => {
     mockMutate.mockClear()
+    mockOnStatusChange.mockClear()
     mockHistorical = []
     mockLive = []
     mockPtyLines = []
+  })
+
+  it('subscribes to WS reconnect so a status flip missed while backgrounded is resynced', async () => {
+    // Regression: session_update is a fire-once WS push. If the app is
+    // backgrounded when the server emits it, the frame is lost and the
+    // thinking bubble stays stuck forever unless something resyncs on
+    // reconnect. Assert the reconnect listener is wired up.
+    await renderView()
+
+    expect(mockOnStatusChange).toHaveBeenCalledWith('srv1', expect.any(Function))
   })
 
   it('shows live PTY output when there are no conversation messages yet', async () => {

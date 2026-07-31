@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import {
   PairUriError,
   type ExchangeResult,
 } from '@/services/pair-exchange'
+import { defaultPairDeviceName } from '@/services/pair-device-name'
 
 interface Props {
   visible: boolean
@@ -75,7 +77,11 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       setPhase('exchanging')
       try {
         const parsed = parsePairUri(data)
-        const result = await exchangeToken({ url: parsed.url, token: parsed.token })
+        const result = await exchangeToken({
+          url: parsed.url,
+          token: parsed.token,
+          deviceName: defaultPairDeviceName(),
+        })
         reset()
         onSuccess(result)
         onClose()
@@ -105,6 +111,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
         <Text style={styles.permissionBody}>{t('scanner.permissionBody')}</Text>
         {permission.canAskAgain ? (
           <TouchableOpacity
+            testID="pair-scanner-allow-camera"
             style={styles.primaryBtn}
             onPress={async () => {
               const next = await requestPermission()
@@ -114,7 +121,18 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
             <Text style={styles.primaryBtnText}>{t('scanner.allowCamera')}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.permissionHint}>{t('scanner.permissionHint')}</Text>
+          <>
+            <Text style={styles.permissionHint}>{t('scanner.permissionHint')}</Text>
+            <TouchableOpacity
+              testID="pair-scanner-open-settings"
+              style={styles.primaryBtn}
+              onPress={() => {
+                void Linking.openSettings()
+              }}
+            >
+              <Text style={styles.primaryBtnText}>{t('scanner.openSettings')}</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     )
@@ -130,8 +148,18 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={reset}>
+        <TouchableOpacity testID="pair-scanner-try-again" style={styles.primaryBtn} onPress={reset}>
           <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="pair-scanner-support"
+          onPress={() => {
+            void Linking.openURL(
+              'mailto:ronenmars@gmail.com?subject=Threadbase%20Pairing%20Help',
+            )
+          }}
+        >
+          <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -163,7 +191,12 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
     >
       <View style={styles.root} testID="pair-scanner-modal">
         {body}
-        <TouchableOpacity style={styles.closeBtn} onPress={handleClose} accessibilityLabel="Close">
+        <TouchableOpacity
+          testID="pair-scanner-close-btn"
+          style={styles.closeBtn}
+          onPress={handleClose}
+          accessibilityLabel={t('scanner.close')}
+        >
           <Text style={styles.closeText}>×</Text>
         </TouchableOpacity>
       </View>
@@ -244,6 +277,12 @@ function makeStyles(theme: Theme) {
       fontSize: font.base,
       textAlign: 'center',
       lineHeight: 22,
+    },
+    supportLink: {
+      color: theme.text.accent,
+      fontSize: font.sm,
+      fontWeight: '600',
+      marginTop: spacing.sm,
     },
   })
 }

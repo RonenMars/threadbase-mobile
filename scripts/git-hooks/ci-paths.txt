@@ -25,6 +25,7 @@ utils/
 locales/
 plugins/
 assets/
+widgets/
 
 # tests + infra
 __tests__/
@@ -48,3 +49,4 @@ scripts/
 fastlane/
 eas.json
 Gemfile
+patches/

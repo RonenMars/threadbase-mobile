@@ -92,7 +92,7 @@ fi
 - `android/gradle.properties` — `-Xmx6144m -XX:MaxMetaspaceSize=2048m` heap tuning for R8/lint.
 - `plugins/withAndroidReleaseSigning.js` re-injects the signing block, but is template-shaped for a specific SDK.
 
-**Fix:** Always run `npx expo prebuild --no-clean` on this repo so it patches the existing folders in place instead of regenerating them. If you already ran a clean prebuild, `git checkout -- ios android` to restore the committed config, then `cd ios && pod install`.
+**Fix:** Always run `npx expo prebuild --no-clean` on this repo so it patches the existing folders in place instead of regenerating them. If you already ran a clean prebuild, `git checkout -- ios android` to restore the committed config, then `cd ios && bundle exec pod install` (the `bundle exec` keeps CocoaPods on the Gemfile-pinned 1.16.2 — see [`CLAUDE.md`](../CLAUDE.md) → "Native Dependencies After Package Changes").
 
 **Note:** The `ship-ios.sh` / `ship-android.sh` scripts are unaffected — they only prebuild when the native dir is missing (`[[ ! -d ios ]]`), where there is nothing to clean.
 
@@ -134,6 +134,57 @@ even though the package is listed in `package.json` and `package-lock.json`.
 **Cause:** The package is missing from `node_modules` despite being present in the lockfile — `npm ls <package>` shows it as absent (`node_modules` had drifted out of sync with the lockfile from an earlier partial/incomplete install).
 
 **Fix:** `npm install` to reconcile `node_modules` with the lockfile, then retry `expo start`.
+
+---
+
+## Jest test suites
+
+### `SessionScreen.*` suites fail in a batch but pass one at a time
+
+**When:** Running the integration suites together — `npx jest`, `npm run test:integration`, or `npx jest --testPathPattern "SessionScreen"` — several `SessionScreen.*` suites fail, but re-running any one of them alone passes. The reported errors are often unrelated to each other and shift between runs.
+
+**Cause:** Those suites each render the full session screen with fake timers, WebSocket stubs and long backstop timeouts, so they are heavy. Jest's default parallel workers oversubscribe the machine and the slower workers miss timing-dependent assertions. This is environmental, not a defect in the code under test.
+
+**Fix:** Verify them serially:
+
+```bash
+npx jest --ci --runInBand --testPathPattern "SessionScreen"
+```
+
+**The trap runs both ways — do not use this to wave failures away.** A batch failure can be a load artifact *or* a real defect, and they look identical in the batch output. Always confirm by re-running the single suite in isolation:
+
+- Passes alone → load artifact, ignore it.
+- Fails alone → real defect, fix it.
+
+During the 2026-07-22 integration snapshot, four genuinely broken suites were nearly dismissed as flakes on this basis, while two others really were load artifacts. Only the isolation re-run distinguished them.
+
+### Suites known to be load-sensitive
+
+These pass in isolation and on a green full run, but can fail under a loaded parallel run. Re-check in isolation before investigating:
+
+| Suite | Typical symptom |
+|---|---|
+| `__tests__/e2e/feedback-flow.test.tsx` | exceeds the 5 s per-test timeout (also fails on `main`, Windows only) |
+| `__tests__/unit/components/servers/CacheAlertModal.test.tsx` | assertion timeouts |
+| `__tests__/integration/conversation-live-view.test.tsx` | streamed-event assertions |
+| `__tests__/integration/conversation-detail-gating.test.tsx` | render timeouts |
+| `__tests__/integration/conversation-search-anchor.test.tsx` | render timeouts |
+
+### `npx jest` reports "No tests found" in a git worktree
+
+**When:** A worktree created under `.claude/` (e.g. `.claude/worktrees/<name>`) reports `No tests found` with `0 matches`, and scripts like `npm run test:i18n` look broken even though they work in the main checkout.
+
+**Cause:** `jest.config`'s `testPathIgnorePatterns` excludes `\\.claude\\`, so every test path inside such a worktree is filtered out. Nothing is wrong with the test or the script.
+
+**Fix:** Create worktrees **outside** `.claude/` — e.g. `worktrees/<name>` alongside the repo. To run in place anyway, override the ignore list:
+
+```bash
+npx jest --testPathIgnorePatterns "/node_modules/"
+```
+
+Note that the override also re-enables `__tests__/unit/scripts/`, which the main config excludes deliberately (it runs under `jest.config.scripts.js` via `npm run test:scripts`) and which fails on Windows. Ignore those failures.
+
+Each worktree needs its own `npm ci` — jest resolves modules from the worktree root, not the main checkout.
 
 ---
 

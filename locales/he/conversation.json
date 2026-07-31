@@ -5,20 +5,39 @@
   },
   "list": {
     "loadingMore": "טוען עוד…",
-    "empty": "אין הודעות בשיחה זו.",
-    "msgs_one": "הודעה אחת",
-    "msgs_other": "{{count}} הודעות",
-    "tokens": "{{count}}k טוקנים"
+    "empty": "אין הודעות בשיחה זו."
   },
   "error": {
     "loadFailed": "לא ניתן לטעון שיחה",
     "notFound": "שיחה זו כבר אינה זמינה בשרת.",
+    "back": "חזרה למרכז",
     "resumeTimeout": "השרת לא הגיב בזמן. הסשן עדיין עשוי להתחיל — בדוק ברשימת הסשנים שלך לפני שתנסה שוב."
   },
   "unavailable": {
     "pathMissing": "תיקיית הפרויקט של שיחה זו הועברה או נמחקה. ניתן לקרוא את ההיסטוריה, אך לא ניתן לחדש אותה.",
     "worktreeRemoved": "שיחה זו רצה ב‑worktree של git שכבר אינו קיים. ניתן לקרוא את ההיסטוריה, אך לא ניתן לחדש אותה.",
     "cannotResume": "לא ניתן לחדש"
+  },
+  "resume": {
+    "resuming": "ממשיך…",
+    "collisionTitle": "להמשיך את השיחה הזו?",
+    "collisionMessage": "ייתכן שהשיחה הזו עדיין פתוחה בטרמינל במחשב שלך — {{reasons}}. המשך כאן עלול להפריע לאותו סשן.",
+    "confirm": "המשך בכל זאת",
+    "failed": "לא ניתן היה להמשיך את השיחה. נסה שוב.",
+    "reason": {
+      "jsonl_mtime": "ההיסטוריה שלה עודכנה לפני רגע",
+      "process_argv": "ייתכן שתהליך טרמינל תואם עדיין פועל",
+      "process_cwd": "ייתכן שתהליך עדיין משתמש בתיקיית הפרויקט שלה",
+      "unknown": "ייתכן שתוכנה אחרת עדיין משתמשת בה"
+    },
+    "takeOver": "השתלט",
+    "takeOverFailed": "לא ניתן היה להשתלט על הסשן הזה. נסה שוב."
+  },
+  "live": {
+    "indicator": "חי",
+    "paused": "מושהה",
+    "pause": "השהה עדכונים חיים",
+    "resume": "חדש עדכונים חיים"
   },
   "action": {
     "export": "ייצוא",
@@ -41,12 +60,36 @@
     "matchCount": "{{current}} מתוך {{total}}",
     "previousMatch": "התאמה קודמת",
     "nextMatch": "התאמה הבאה",
-    "clearSearch": "נקה חיפוש"
+    "clearSearch": "נקה חיפוש",
+    "placeholder": "חיפוש בשיחה…",
+    "open": "חיפוש בשיחה"
   },
   "slowLoading": {
     "title1": "מתירים שרשור ארוך…",
     "title2": "ההודעות מאחרות באלגנטיות…",
     "title3": "ההודעות נתקעו בפקק…",
     "message": "לא ציפינו שהן יהיו כל כך כבדות. אנחנו טוענים הכי מהר שאפשר."
+  },
+  "review": {
+    "title": "סקירת שינויים",
+    "open": "פתח סקירה",
+    "summary": "{{files}} קבצים · +{{added}} / −{{removed}}",
+    "incompleteWarning": "נבנה מכלי Edit/Write בשיחה — ייתכן שאינו מלא מול git status.",
+    "oversizedWarning": "חלק מה-diff קוצצו לביצועים. העתיקו את החבילה לסקירה בשולחן העבודה.",
+    "filterAll": "הכל",
+    "kindEdited": "נערך",
+    "kindWritten": "נכתב",
+    "kindDiff": "Diff",
+    "kindUnknown": "אחר",
+    "searchPlaceholder": "סינון קבצים…",
+    "empty": "עדיין אין שינויי קבצים בשיחה זו.",
+    "selectFile": "בחרו קובץ כדי לראות את ה-diff.",
+    "copyHandoff": "העתק לשולחן העבודה",
+    "sendNote": "שלח הערה לסוכן",
+    "sendNoteTitle": "לשלוח הערת סקירה?",
+    "sendNoteBody": "שולח רשימת קבצים מקוצרת לקלט הסשן החי.",
+    "cancel": "ביטול",
+    "send": "שלח",
+    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
   }
 }

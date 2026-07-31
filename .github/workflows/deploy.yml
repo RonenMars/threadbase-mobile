@@ -35,7 +35,7 @@ on:
         required: false
         type: string
       deploy_ref:
-        description: 'Branch, tag, or commit SHA to build (default: main). Set to a feature branch or a snapshot tag (see CLAUDE.md → Rollup / Snapshot Tag Naming) to validate a build before merging: the ref is built + uploaded to the store, and only the version bump lands on main (via an auto-merged PR, after a successful upload). A branch''s other code lands on main via its own PR; a tag is a pinned snapshot with no separate PR.'
+        description: 'Branch, tag, or commit SHA to build (default: main)'
         required: false
         default: main
         type: string
@@ -54,6 +54,10 @@ jobs:
       # needs Xcode 26+. The macos-15 runner defaults to Xcode 16.4 (Swift 6.1),
       # so the archive fails at SPM resolution. Point the whole toolchain at the
       # Xcode 26.3 that's preinstalled on the image.
+      # Xcode 26.3's Swift 6 compiler also hits an abs() overload-ambiguity bug in
+      # expo-modules-jsi (patched via patches/expo-modules-jsi+*.patch — see Expo
+      # issue #47875). Expo's real fix is Xcode 26.4, not preinstalled on macos-15
+      # yet; bump this to 26.4 and drop the patch once the runner image has it.
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - name: Warn when building a non-main ref
@@ -97,6 +101,8 @@ jobs:
           IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
           IOS_PROVISION_PROFILE_B64: ${{ secrets.IOS_PROVISION_PROFILE_B64 }}
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
+          IOS_WIDGET_PROVISION_PROFILE_B64: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_B64 }}
+          IOS_WIDGET_PROVISION_PROFILE_UUID: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_UUID }}
         run: ./scripts/bootstrap-ios-signing.sh
 
       - name: Install npm dependencies
@@ -147,6 +153,7 @@ jobs:
           IOS_TARGET: ${{ inputs.target }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
+          IOS_WIDGET_PROVISION_PROFILE_UUID: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_UUID }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}

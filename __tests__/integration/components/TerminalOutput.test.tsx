@@ -119,6 +119,32 @@ describe('TerminalOutput – ground-truth user ownership', () => {
   })
 })
 
+describe('TerminalOutput – wrapped prompt collapsing', () => {
+  it('collapses a wrapped user prompt into one highlighted row', async () => {
+    const wrappedLines = [
+      '❯ this is a long prompt that got',
+      'wrapped across multiple',
+      'terminal rows',
+    ]
+    const userMessageTexts = new Set([
+      'this is a long prompt that got wrapped across multiple terminal rows',
+    ])
+
+    const { queryByText } = await render(
+      <TerminalOutput
+        lines={wrappedLines}
+        isStreaming={false}
+        userMessageTexts={userMessageTexts}
+      />
+    )
+
+    expect(
+      queryByText('❯ this is a long prompt that got wrapped across multiple terminal rows')
+    ).toBeTruthy()
+    expect(queryByText('wrapped across multiple')).toBeNull()
+  })
+})
+
 describe('TerminalOutput – row testIDs', () => {
   it('renders LineRow with testID for each line', async () => {
     const { queryAllByTestId } = await render(

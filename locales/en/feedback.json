@@ -63,16 +63,12 @@
   "success": {
     "title": "Feedback committed",
     "message": "Thanks — your report made it into the queue with no merge conflicts.",
+    "viaSentry": "Sent via Sentry crash-reporting service",
+    "viaEmail": "Sent via email",
     "done": "Done"
   },
   "error": {
-    "title": "Push failed",
-    "message": "We couldn't send your report. Your feedback is still here, so you can try again.",
-    "tryAgain": "Try again"
-  },
-  "offline": {
-    "title": "Looks like the network branch is offline",
-    "message": "Reconnect and try again, or copy the report for later."
+    "message": "We couldn't send your report. Your feedback is still here, so you can try again."
   },
   "screenshotError": {
     "title": "That screenshot won't fit",

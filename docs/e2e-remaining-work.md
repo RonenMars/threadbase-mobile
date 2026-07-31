@@ -1,14 +1,15 @@
 # E2E (Maestro) Mock Suite — Remaining Work
 
 Status of the `npm run test:e2e:mock` flow suite after the fixes in this branch.
-The suite runs 11 flows against `e2e/mock-server.js` on an **iOS 17 simulator**
+The suite runs 12 flows against `e2e/mock-server.js` on an **iOS 17 simulator**
 (Maestro 2.0.10 cannot drive iOS 26 reliably — the preflight in `e2e/check-sim.js`
 rejects it).
 
 ## Passing
 
 - `launch`
-- `browse` — _regressed to a crash in the last full run; see below_
+- `browse` — see §5 for the earlier "App crashed" misattribution; FilterSortSheet
+  open is healthy when setup reaches the hub (successful Jul 12 runs + screenshot)
 - `bug6_bottom_bar_inset`
 - `codex_parity`
 - `settings_qr_scanner`
@@ -18,6 +19,7 @@ rejects it).
 These have had their root cause addressed but were not yet confirmed green after
 the latest edits:
 
+- `server_drag_reorder` — added to `test:e2e:mock`; swipe removed (Bug 18); default path asserts single-server lock-toggle gate
 - `feat2_export_in_info_shelf` — deep link switched `launchApp {url}` → `openLink`;
   route assertion switched from the brittle `"Resume Session"` text (the button is
   now `▶ Resume Session` inside an `Animated.Text`) to the `conversation-bottom-bar`
@@ -28,9 +30,19 @@ the latest edits:
 - `voice_dictation` — stale testIDs `message-input` / `message-input-mic` replaced
   with `chat-message-input` / `chat-mic-button`. **Still blocked**, see below.
 
+## Bug 18 / `server_drag_reorder` (done)
+
+Included in `test:e2e:mock`. Flow no longer swipes drag handles (known NestableDraggableFlatList crash).
+Mock default = one paired server → asserts `server-order-toggle` hidden. Remaining risk: multi-server
+edit-order path is smoke-only (toggle + screenshot); true reorder still lives in integration tests.
+A full green re-run of the mock suite has not been confirmed in this change.
+
 ## Still to do
 
 ### 1. `voice_dictation` — speech-recognition permission prerequisite
+
+**Status (2026-07-22):** `e2e/ensure-release-build.js` now grants `speech-recognition` + `microphone` via `simctl privacy` before the suite runs. Re-run to confirm green.
+
 
 `chat-mic-button` only renders when `micGranted === true`
 (`components/conversation/ChatComposer.tsx:147`). `micGranted` comes from
@@ -49,13 +61,10 @@ Options:
 
 ### 2. `feat1_tree_drill_new_session` — hub renders a flat list, not a tree
 
-The flow expects `tree-row-/home/user/my-project` and `drill-cwd-...`, but the hub
-now renders a flat "LIVE" session list by default (the flow comment's "TreeView is
-the default layout" is stale). Confirm the current default `sessionsLayout` and
-either (a) toggle tree view on in the flow before drilling, or (b) update the flow
-to the current hub interaction. Tree testIDs still exist in
-`components/sessions/tree/TreeSessionsList.tsx` (`tree-row-…`, `conversation-row-…`),
-so tree view is reachable — it is just not the default.
+**Fixed in this branch:** default `sessionsLayout` is `classic`
+(`stores/settings.ts`). The flow now opens `FilterSortSheet`, taps
+`layout-option-tree`, closes via `filter-sort-close-btn`, then drills
+`tree-row-/home/user/my-project`. Re-run to confirm green.
 
 ### 3. `05_chat_flow` — no live session card / composer
 
@@ -77,13 +86,23 @@ query "wombat" and that `/api/conversations/conv-search-anchor` + its
 `search-target` route serve the fixture the flow asserts (`"2 of 2"`,
 `"wombat timeout"`).
 
-### 5. `browse` — app crash
+### 5. `browse` — "App crashed" (misattributed to FilterSortSheet)
 
-Last full run: "App crashed or stopped while executing flow." The flow taps
-`filter-sort-button` → expects `filter-sort-sheet`
-(`components/servers/FilterSortSheet.tsx`). Read the newest Threadbase crash in
-`~/Library/Logs/DiagnosticReports` to get the faulting frame before deciding
-whether it is a flow issue or a real app bug in the filter/sort sheet.
+**Diagnosis (artifact-backed):** Maestro's "App crashed or stopped while
+executing flow" on browse did **not** fail at `filter-sort-button` /
+`filter-sort-sheet`. Successful runs (`2026-07-12_195509`, `200450`) completed
+the full tap → assert → screenshot path. Failed runs (`2026-07-12_210105`,
+baseline `2026-07-16_044809`) died inside `setup.yaml` — either stuck on the
+splash / evaluating `onboarding-welcome-cta`, or `hideKeyboard` failing on the
+pair URL field. No `*Threadbase*` crash report appeared in
+`~/Library/Logs/DiagnosticReports`; the checked-in `crash-log.txt` is a
+**SpringBoard / XCTAutomationSupport** SIGSEGV (Maestro XCUITest driver), not
+an app JS/native frame in FilterSortSheet.
+
+**Mitigations in this branch:** browse.yaml uses `extendedWaitUntil` for the
+sheet + asserts `fab-new-session`; FilterSortSheet adds layout/close testIDs and
+aligns reset/default layout with `classic`. Remaining flake is setup /
+XCUITest-driver infrastructure (see Environment gotchas), not a sheet open bug.
 
 ## Environment gotchas discovered
 

@@ -1,7 +1,4 @@
 {
-  "header": {
-    "session": "السيشن"
-  },
   "connection": {
     "reconnectingTitle": "جارٍ إعادة الاتصال…",
     "reconnectingMessage": "انقطع الاتصال — قد يكون المحتوى أدناه قديمًا.",
@@ -9,38 +6,24 @@
     "stalledMessage": "متصل، لكن لم يصل أي إخراج منذ فترة."
   },
   "action": {
-    "copyId": "نسخ معرّف السيشن",
     "sendInput": "إرسال إدخال",
-    "cancel": "إلغاء السيشن",
-    "stop": "إيقاف السيشن",
-    "more": "المزيد"
+    "stop": "إيقاف السيشن"
   },
   "voice": {
     "start": "بدء الإملاء",
-    "stop": "إيقاف الإملاء",
-    "permissionDeniedTitle": "تم رفض إذن الميكروفون",
-    "permissionDeniedBody": "يحتاج Threadbase إلى الوصول للميكروفون لإملاء البرومبتات. فعّله في الإعدادات."
+    "stop": "إيقاف الإملاء"
   },
   "dialog": {
     "cancelTitle": "إلغاء السيشن",
     "cancelMessage": "هل أنت متأكد أنك تريد إلغاء هذا السيشن؟",
     "cancelConfirm": "إلغاء السيشن",
-    "cancelDismiss": "إبقاؤه يعمل",
     "removeTitle": "إزالة السيشن",
-    "removeMessage": "هل أنت متأكد أنك تريد إزالة هذا السيشن؟",
     "removeConfirm": "إزالة",
-    "removeDismiss": "إبقاء",
     "stopTitle": "إيقاف السيشن",
-    "stopMessage": "هل تريد إيقاف هذا السيشن؟ سيتم مقاطعة Claude.",
-    "stopConfirm": "إيقاف",
-    "stopDismiss": "إبقاؤه يعمل",
     "stopFailed": "تعذّر إيقاف السيشن. تحقق من الاتصال وحاول مرة أخرى."
   },
   "status": {
-    "connecting": "جارٍ الاتصال…",
-    "reconnecting": "جارٍ إعادة الاتصال…",
     "disconnected": "غير متصل",
-    "waking": "جارٍ الإيقاظ…",
     "starting": "جارٍ بدء السيشن…",
     "stuckTitle": "لا يزال قيد البدء…",
     "stuckBody": "لم يصل السيشن إلى نقطة الاستعداد بعد. يمكنك مشاهدة مخرجات الطرفية له مباشرة بدلاً من الانتظار.",
@@ -48,11 +31,12 @@
     "waitMore": "الانتظار أكثر"
   },
   "input": {
-    "placeholder": "أرسل رسالة…",
-    "send": "إرسال"
+    "placeholder": "أرسل رسالة…"
   },
   "session": {
     "notFound": "السيشن غير موجود",
+    "notFoundBody": "لم يعد هذا السيشن موجودًا على الخادم. ربما انتهى أو تمت إزالته.",
+    "backToHub": "العودة إلى المركز",
     "ended": "انتهت الجلسة",
     "endedBody": "انتهت هذه الجلسة دون إنتاج أي مخرجات.",
     "failedToStart": "فشل بدء السيشن",
@@ -70,10 +54,12 @@
     "prompts_few": "{{count}} برومبتات",
     "prompts_many": "{{count}} برومبتًا",
     "prompts_other": "{{count}} برومبت",
-    "tabTerminal": "الطرفية",
-    "tabChat": "الدردشة"
+    "viewModeTerminal": "طرفية",
+    "viewModeChat": "محادثة",
+    "ptyActiveFallbackBanner": "مخرجات الطرفية المباشرة نشطة قبل توفر رسائل المحادثة.",
+    "rawModeNote": "وضع الطرفية الخام — تم اكتشاف تسلسلات غير مدعومة؛ المخرجات غير مفلترة."
   },
-  "banner": {
-    "streamingInfo": "تُبَثّ استدعاءات الأدوات والمخرجات هنا في الوقت الفعلي. اكتب متابعة بالأسفل بينما لا يزال Claude يعمل."
+  "a11y": {
+    "line": "السطر {{n}}: {{text}}"
   }
 }

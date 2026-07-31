@@ -8,58 +8,28 @@
   },
   "filter": {
     "label": "Фильтр и сортировка",
-    "all": "Все",
-    "active": "Активные",
-    "waiting": "Ожидание",
-    "completed": "Завершённые",
-    "failed": "С ошибками"
-  },
-  "sort": {
-    "label": "Сортировка",
-    "newest": "Новые",
-    "oldest": "Старые",
-    "az": "А–Я"
+    "all": "Все"
   },
   "list": {
-    "sessionCount_one": "{{count}} сессия",
-    "sessionCount_few": "{{count}} сессии",
-    "sessionCount_many": "{{count}} сессий",
-    "sessionCount_other": "{{count}} сессий",
     "empty": "Нет сессий",
     "emptySubtitle": "Запустите сессию Claude Code,\nчтобы увидеть её здесь",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
-    "emptyProjects": "Проектов пока нет"
+    "serverEmpty": "На этом сервере нет сессий",
+    "serverEmptySubtitle": "Запустите сессию здесь или переключите сервер.",
+    "serverOffline": "Сервер недоступен",
+    "serverOfflineSubtitle": "Показаны другие серверы. Повторите попытку, когда хост вернётся.",
+    "serverWarming": "Сервер прогревается",
+    "serverWarmingSubtitle": "История появится после завершения индексации."
   },
   "card": {
-    "status": {
-      "active": "Активна",
-      "waiting": "Ожидание ввода",
-      "completed": "Сессия завершена",
-      "failed": "Ошибка сессии",
-      "starting": "Запуск…",
-      "stopping": "Остановка…"
-    },
-    "connectedTo": "{{server}}",
     "copyId": "Копировать ID сессии",
     "sendInput": "Отправить ввод",
     "cancel": "Отменить сессию",
-    "remove": "Удалить сессию",
-    "viewError": "Показать ошибку подключения",
     "prompts_one": "{{count}} промпт",
     "prompts_few": "{{count}} промпта",
     "prompts_many": "{{count}} промптов",
     "prompts_other": "{{count}} промптов"
-  },
-  "takeover": {
-    "prompt": "Другой клиент управляет этой сессией",
-    "takeControl": "Взять управление",
-    "dismiss": "Закрыть"
-  },
-  "directory": {
-    "empty": "Пустая директория",
-    "loadFailed": "Не удалось загрузить директории",
-    "browsingNotConfigured": "Просмотр не настроен"
   },
   "hub": {
     "seeAll_one": "Показать {{count}} беседу →",
@@ -69,11 +39,7 @@
     "msgs_one": "{{count}} сообщение",
     "msgs_few": "{{count}} сообщения",
     "msgs_many": "{{count}} сообщений",
-    "msgs_other": "{{count}} сообщений",
-    "prompts_one": "{{count}} промпт",
-    "prompts_few": "{{count}} промпта",
-    "prompts_many": "{{count}} промптов",
-    "prompts_other": "{{count}} промптов"
+    "msgs_other": "{{count}} сообщений"
   },
   "loading": {
     "title": "Загрузка сессий",
@@ -93,12 +59,6 @@
     "headerIdle_few": "БЕЗ АКТИВНОСТИ · {{count}}",
     "headerIdle_many": "БЕЗ АКТИВНОСТИ · {{count}}",
     "headerIdle_other": "БЕЗ АКТИВНОСТИ · {{count}}"
-  },
-  "rename": {
-    "title": "Переименовать сессию",
-    "placeholder": "Название сессии",
-    "cancel": "Отмена",
-    "save": "Сохранить"
   },
   "preview": {
     "liveUnavailable": "Предпросмотр активной сессии недоступен — откройте сессию, чтобы увидеть терминал в реальном времени.",
@@ -126,5 +86,25 @@
   "sync": {
     "cachedData": "Показаны кэшированные данные",
     "cachedDataSyncing": "Показаны кэшированные данные — синхронизация…"
+  },
+  "status": {
+    "running": "Работает",
+    "waiting": "Ожидание",
+    "idle": "Простой",
+    "externalLive": "Внешняя",
+    "historical": "История",
+    "resumed": "Возобновлена",
+    "onHold": "На паузе",
+    "completed": "Завершена",
+    "failed": "Ошибка",
+    "unavailablePath": "Недоступна",
+    "unavailableWorktree": "Нет worktree",
+    "stale": "Устарела",
+    "livePill": "LIVE",
+    "externalPill": "EXTERNAL"
+  },
+  "capability": {
+    "observeOnly": "Только просмотр",
+    "liveControl": "Управление"
   }
 }

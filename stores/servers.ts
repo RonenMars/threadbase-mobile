@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import * as SecureStore from '@/services/secure-store'
-import type { ServerConfig, ServerInfo } from '@/types/api'
+import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
+import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 
@@ -15,6 +16,16 @@ function secureKeyForServer(serverId: string): string {
   return `threadbase_api_key_${serverId}`
 }
 
+function secureKeyForDeviceToken(serverId: string): string {
+  return `threadbase_device_token_${serverId}`
+}
+
+export interface AddServerDeviceMeta {
+  deviceId?: string
+  deviceToken?: string
+  capabilities?: DeviceCapability[]
+}
+
 /** Minimal shape persisted to AsyncStorage (no secrets). */
 interface PersistedServer {
   id: string
@@ -23,6 +34,8 @@ interface PersistedServer {
   connectionError?: string
   color?: string
   symbol?: string
+  deviceId?: string
+  deviceCapabilities?: DeviceCapability[]
 }
 
 interface ServersStore {
@@ -32,20 +45,26 @@ interface ServersStore {
   /** Ordered subset of servers visible in sessions/history. */
   displayedServerIds: string[]
   isLoading: boolean
-  /** Per-server flag: true once the server emits `cache_ready` (scan+index done). */
-  cacheReady: Record<string, boolean>
   /** Per-server scan progress received from `scan_progress` WS events. */
   scanProgress: Record<string, { scanned: number; total: number }>
   /** True once the user has added at least one server (ever). Used to distinguish first launch from "removed all servers". */
   hasEverHadServer: boolean
+  /** Per-server pending cache-integrity alert, or null if none. */
+  cacheAlert: Record<string, CacheAlert | null>
 
-  addServer: (url: string, apiKey: string, label?: string) => Promise<string | { error: 'duplicate' }>
+  addServer: (
+    url: string,
+    apiKey: string,
+    label?: string,
+    device?: AddServerDeviceMeta,
+  ) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
-  setCacheReady: (serverId: string) => void
   setScanProgress: (serverId: string, scanned: number, total: number) => void
+  setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
+  clearCacheAlert: (serverId: string, fingerprint: string) => void
   refreshServerInfo: (serverId: string) => Promise<void>
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
@@ -78,6 +97,8 @@ async function persistServerList(
       connectionError: servers[id].connectionError ?? undefined,
       color: servers[id].color,
       symbol: servers[id].symbol,
+      deviceId: servers[id].deviceId,
+      deviceCapabilities: servers[id].deviceCapabilities,
     }))
   const payload = {
     list,
@@ -97,27 +118,14 @@ function toValidUniqueIds(ids: string[], activeServerIds: string[]): string[] {
   return Array.from(new Set(ids)).filter((id) => activeServerIds.includes(id))
 }
 
-// If the server never emits `cache_ready` (timeout, crash, slow scan), dismiss
-// the banner after this many milliseconds so it doesn't hang indefinitely.
-const CACHE_READY_TIMEOUT_MS = 30_000
-const cacheReadyTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
-
-function clearCacheReadyTimer(serverId: string) {
-  const t = cacheReadyTimers.get(serverId)
-  if (t !== undefined) {
-    clearTimeout(t)
-    cacheReadyTimers.delete(serverId)
-  }
-}
-
 export const useServersStore = create<ServersStore>((set, get) => ({
   servers: {},
   activeServerIds: [],
   displayedServerIds: [],
   isLoading: true,
-  cacheReady: {},
   scanProgress: {},
   hasEverHadServer: false,
+  cacheAlert: {},
 
   get serverUrl() {
     const { servers, activeServerIds } = get()
@@ -133,7 +141,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
   getServer: (serverId: string) => get().servers[serverId],
 
-  addServer: async (url: string, apiKey: string, label?: string): Promise<string | { error: 'duplicate' }> => {
+  addServer: async (
+    url: string,
+    apiKey: string,
+    label?: string,
+    device?: AddServerDeviceMeta,
+  ): Promise<string | { error: 'duplicate' }> => {
     const normalised = url.replace(/\/+$/, '')
 
     // Duplicate check: same normalised URL AND same API key
@@ -147,6 +160,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
     const id = serverIdFromUrl(normalised)
     await SecureStore.setItemAsync(secureKeyForServer(id), apiKey)
+    if (device?.deviceToken) {
+      await SecureStore.setItemAsync(secureKeyForDeviceToken(id), device.deviceToken)
+    }
 
     const usedColors = activeServerIds.map((sid) => servers[sid]?.color)
     const color = pickNextServerColor(usedColors)
@@ -160,6 +176,8 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       serverInfo: null,
       connectionError: null,
       color,
+      deviceId: device?.deviceId,
+      deviceCapabilities: device?.capabilities,
     }
 
     set((state) => {
@@ -180,6 +198,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
   removeServer: async (serverId: string) => {
     await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
+    await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
     recordDiagnosticEvent('server_removed')
 
     set((state) => {
@@ -223,49 +242,40 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     set((state) => {
       const server = state.servers[serverId]
       if (!server) return state
-      // Reset cacheReady and scanProgress when disconnected so the banner reappears on reconnect.
-      const cacheReady = connected
-        ? state.cacheReady
-        : { ...state.cacheReady, [serverId]: false }
+      // Reset scan progress when disconnected so stale progress is not reused.
       const scanProgress = connected
         ? state.scanProgress
         : { ...state.scanProgress, [serverId]: { scanned: 0, total: 0 } }
-
-      if (connected) {
-        // Start a fallback timer: if `cache_ready` never arrives, dismiss the
-        // banner after the timeout rather than leaving it stuck indefinitely.
-        clearCacheReadyTimer(serverId)
-        const timer = setTimeout(() => {
-          cacheReadyTimers.delete(serverId)
-          useServersStore.getState().setCacheReady(serverId)
-        }, CACHE_READY_TIMEOUT_MS)
-        cacheReadyTimers.set(serverId, timer)
-      } else {
-        // Disconnected — cancel any pending timeout; banner resets above.
-        clearCacheReadyTimer(serverId)
-      }
+      // Stale alert state from a disconnected server shouldn't linger in the UI.
+      const cacheAlert = connected
+        ? state.cacheAlert
+        : { ...state.cacheAlert, [serverId]: null }
 
       return {
         servers: {
           ...state.servers,
           [serverId]: { ...server, isConnected: connected, serverInfo: info ?? server.serverInfo },
         },
-        cacheReady,
         scanProgress,
+        cacheAlert,
       }
     })
-  },
-
-  setCacheReady: (serverId: string) => {
-    // Cancel the fallback timeout — the real event arrived first.
-    clearCacheReadyTimer(serverId)
-    set((state) => ({ cacheReady: { ...state.cacheReady, [serverId]: true } }))
   },
 
   setScanProgress: (serverId: string, scanned: number, total: number) =>
     set((state) => ({
       scanProgress: { ...state.scanProgress, [serverId]: { scanned, total } },
     })),
+
+  setCacheAlert: (serverId: string, alert: CacheAlert | null) =>
+    set((state) => ({ cacheAlert: { ...state.cacheAlert, [serverId]: alert } })),
+
+  clearCacheAlert: (serverId: string, fingerprint: string) =>
+    set((state) => {
+      const current = state.cacheAlert[serverId]
+      if (!current || current.fingerprint !== fingerprint) return state
+      return { cacheAlert: { ...state.cacheAlert, [serverId]: null } }
+    }),
 
   refreshServerInfo: async (serverId: string): Promise<void> => {
     const server = get().servers[serverId]
@@ -398,6 +408,8 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             connectionError: entry.connectionError ?? null,
             color,
             symbol: entry.symbol,
+            deviceId: entry.deviceId,
+            deviceCapabilities: entry.deviceCapabilities,
           }
           activeServerIds.push(entry.id)
         }

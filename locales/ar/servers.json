@@ -4,39 +4,26 @@
   },
   "status": {
     "connected": "متصل",
-    "disconnected": "غير متصل",
-    "connecting": "جارٍ الاتصال…",
-    "error": "خطأ في الاتصال"
+    "disconnected": "غير متصل"
   },
   "action": {
     "add": "إضافة خادم",
-    "edit": "تعديل",
-    "remove": "إزالة الخادم",
-    "viewError": "عرض خطأ الاتصال",
     "connect": "اتصال",
     "details": "التفاصيل"
   },
   "dialog": {
     "removeTitle": "إزالة الخادم",
-    "removeMessage": "هل أنت متأكد أنك تريد إزالة هذا الخادم؟",
-    "removeConfirm": "إزالة",
-    "removeDismiss": "إلغاء"
+    "removeMessage": "قطع الاتصال بـ {{server}}؟",
+    "removeConfirm": "إزالة"
   },
   "form": {
-    "name": "الاسم",
-    "url": "عنوان URL",
-    "namePlaceholder": "خادمي",
-    "urlPlaceholder": "http://localhost:3000",
     "labelOptional": "التسمية (اختياري)",
     "serverUrl": "عنوان الخادم",
     "apiKey": "مفتاح API",
     "hint": "شغّل cch serve --tunnel --qr على جهاز Mac للحصول على عنوان قابل للمسح عبر QR."
   },
   "manage": {
-    "title": "الخوادم",
-    "addServer": "إضافة خادم",
-    "addServerHint": "اتصل بنسخة tb-streamer",
-    "empty": "لم تتم إضافة أي خوادم بعد."
+    "addServer": "إضافة خادم"
   },
   "filter": {
     "title": "عوامل التصفية",
@@ -69,7 +56,6 @@
     "rememberChoice": "تذكّر هذا الاختيار"
   },
   "statusModal": {
-    "title": "حالة الخوادم",
     "close": "✕",
     "menuEdit": "تعديل",
     "menuRefresh": "تحديث",
@@ -85,5 +71,134 @@
     "label": "جارٍ فحص وفهرسة المحادثات…",
     "subtitle": "يقوم خادمك بالإحماء وبناء فهرس المحادثات للمرة الأولى. يحدث هذا مرة واحدة فقط — سيظهر السجل فور أن يصبح جاهزًا.",
     "progress": "{{scanned}} / {{total}} ملفات"
+  },
+  "cacheAlert": {
+    "bannerTitle": "{{count}} من سجلات المحادثات مفقودة على {{server}}",
+    "title": "{{missing}} من أصل {{total}} من سجلات المحادثات مفقودة على {{server}}",
+    "backupHint": "يُنصح بالتحقق من نسخة احتياطية عبر Time Machine (أو ما يعادلها) قبل تنفيذ أي إجراء غير قابل للتراجع.",
+    "actionPruneAll": "حذف الكل",
+    "actionPruneSelected": "حذف المحدد",
+    "actionIgnore": "تجاهل",
+    "actionResetRescan": "إعادة التعيين وإعادة الفحص",
+    "confirmTitle": "هل أنت متأكد؟",
+    "confirmPruneAll": "سيؤدي هذا إلى إزالة جميع المحادثات المفقودة البالغ عددها {{count}} من الذاكرة المؤقتة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+    "confirmPruneSelected": "سيؤدي هذا إلى إزالة {{count}} من المحادثات المحددة من الذاكرة المؤقتة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+    "confirmResetRescan": "سيؤدي هذا إلى إعادة تعيين الذاكرة المؤقتة وإعادة فحص القرص. لا يمكن التراجع عن هذا الإجراء.",
+    "confirmCancel": "إلغاء",
+    "confirmProceed": "متابعة",
+    "selectAll": "تحديد الكل",
+    "selectNone": "إلغاء التحديد",
+    "successToast": "تم الحل. تم حفظ النسخة الاحتياطية في {{backupPath}}",
+    "successToastNoBackup": "تم الحل.",
+    "selectAtLeastOne": "حدد محادثة واحدة على الأقل للحذف."
+  },
+  "claudeFlags": {
+    "title": "أعلام Claude CLI",
+    "description": "تُطبَّق على كل جلسة يبدأها هذا الخادم. تسري من الجلسة التالية.",
+    "notPersisted": "بدأ هذا الخادم بأعلام سطر الأوامر، لذا تسري التغييرات الآن لكنها تُعاد عند إعادة التشغيل.",
+    "extraArgsLabel": "وسائط إضافية",
+    "extraArgsUnsupported": "تُمرَّر كما هي دون تحقق. استخدمها على مسؤوليتك.",
+    "listHint": "مفصولة بفواصل",
+    "save": "حفظ الأعلام",
+    "confirmTitle": "تعطيل طلبات الإذن؟",
+    "confirmApprove": "موافقة",
+    "confirmContinue": "متابعة",
+    "dangerousExplanation": "سيشغّل كلود أوامر على هذا الجهاز دون سؤالك، في كل جلسة قادمة. وأي شخص يملك مفتاح API لهذا الخادم يحصل على القدرة نفسها.",
+    "flags": {
+      "permissionMode": {
+        "label": "وضع الأذونات",
+        "description": "مدى استئذان كلود قبل التنفيذ. أوضاع التجاوز تلغي كل تأكيد."
+      },
+      "addDir": {
+        "label": "مجلدات إضافية",
+        "description": "مجلدات إضافية يمكن لكلود قراءتها وتعديلها خارج المشروع."
+      },
+      "allowedTools": {
+        "label": "الأدوات المسموحة",
+        "description": "هذه الأدوات فقط تعمل دون سؤال. بديل أكثر أمانًا لوضع التجاوز."
+      },
+      "disallowedTools": {
+        "label": "الأدوات المحظورة",
+        "description": "أدوات لن يشغلها كلود أبدًا على هذا الخادم."
+      },
+      "maxBudgetUsd": {
+        "label": "حد الميزانية (USD)",
+        "description": "يحدّ إنفاق الجلسة الواحدة. مفيد عند تعطيل التأكيدات."
+      },
+      "fallbackModel": {
+        "label": "النموذج البديل",
+        "description": "النموذج الذي يتم التبديل إليه عند عدم توفر الأساسي."
+      }
+    }
+  },
+  "health": {
+    "heading": "صحة الخادم",
+    "subtitle": "فحوصات مستقلة من كل ستريمر مقترن. تتضمن الأعطال رمزًا وإجراءًا مقترحًا. لا تُدرج الأسرار.",
+    "screenTitle": "صحة الخادم",
+    "emptyTitle": "لا خوادم بعد",
+    "emptyBody": "اربط خادمًا أولاً، ثم عد هنا لفحص صحته.",
+    "loading": "جارٍ فحص الخادم…",
+    "loadFailed": "تعذّر تحميل صحة الخادم.",
+    "retry": "إعادة المحاولة",
+    "overall": "الإجمالي",
+    "generatedAt": "أُنشئ في {{at}}",
+    "copy": "نسخ التقرير",
+    "copied": "تم النسخ",
+    "copyFailed": "تعذّر نسخ التقرير.",
+    "share": "مشاركة التقرير",
+    "shareFailed": "تعذّر مشاركة التقرير.",
+    "unsupportedContract": "يُبلّغ الستريمر عن عقد تشخيص v{{version}}. يتوقع التطبيق v1 — قد تكون بعض الحقول ناقصة.",
+    "status": {
+      "ok": "سليم",
+      "degraded": "متراجع",
+      "failed": "فشل",
+      "unknown": "غير معروف"
+    },
+    "checks": {
+      "streamer": "الستريمر",
+      "providerClaude": "Claude Code CLI",
+      "providerCodex": "Codex CLI",
+      "cache": "ذاكرة المحادثات",
+      "pty": "نظام PTY",
+      "filesystem": "مجلد سجل المزوّد"
+    },
+    "remediation": {
+      "PROVIDER_NOT_INSTALLED": {
+        "title": "CLI المزوّد غير مثبت",
+        "action": "على جهاز Mac الذي يشغّل الستريمر، ثبّت CLI المزوّد وتأكد أنه في PATH، ثم أعد المحاولة."
+      },
+      "PROVIDER_VERSION_UNVERIFIED": {
+        "title": "إصدار المزوّد غير موثّق",
+        "action": "حدّث CLI إلى إصدار وثّقه الستريمر، ثم أعد المحاولة."
+      },
+      "DB_UNAVAILABLE": {
+        "title": "قاعدة البيانات غير متاحة",
+        "action": "أعد تشغيل الستريمر. إن استمر الأمر، افحص مساحة القرص وسجلات المضيف."
+      },
+      "DB_MIGRATION_PENDING": {
+        "title": "ترحيل قاعدة بيانات معلّق",
+        "action": "رقِّ الستريمر وأعد تشغيله لتطبيق الترحيلات."
+      },
+      "PTY_UNAVAILABLE": {
+        "title": "PTY غير متاح",
+        "action": "أعد تثبيت/بناء الستريمر لتحميل وحدة PTY، ثم أعد التشغيل."
+      },
+      "CACHE_DEGRADED": {
+        "title": "ذاكرة المحادثات متراجعة",
+        "action": "افتح الخوادم ← عالج تنبيه سلامة الذاكرة على هذا المضيف، ثم أعد المحاولة."
+      },
+      "CLOCK_SKEWED": {
+        "title": "انحراف الساعة",
+        "action": "اضبط ساعة المضيف (وقت تلقائي). تنتهي رموز الاقتران خلال دقائق."
+      },
+      "FS_SCOPE_MISSING": {
+        "title": "مجلد السجل مفقود",
+        "action": "تأكد أن المزوّد أنشأ مجلد السجل على المضيف، ثم أعد المحاولة."
+      },
+      "NONE": {
+        "title": "لا إجراء مطلوب",
+        "action": ""
+      }
+    }
   }
 }

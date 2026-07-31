@@ -418,7 +418,11 @@ await refreshServerInfo(serverId)
   const handleScanQrSuccess = async (result: ExchangeResult) => {
     setQrScannerOpen(false)
     const label = result.machineName?.trim() || undefined
-    const addResult = await addServer(result.url, result.apiKey, label)
+    const addResult = await addServer(result.url, result.apiKey, label, {
+      deviceId: result.deviceId ?? undefined,
+      deviceToken: result.deviceToken ?? undefined,
+      capabilities: result.capabilities ?? undefined,
+    })
     if (typeof addResult === 'string') {
       wsManager.connect(addResult, result.url, result.apiKey)
     }
@@ -621,7 +625,7 @@ await refreshServerInfo(serverId)
           ) : null}
         </View>
 
-        <SectionHeader title={t('section.notifications')} badge={t('comingSoonBadge')} />
+        <SectionHeader title={t('section.notifications')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill />
           <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
@@ -630,10 +634,17 @@ await refreshServerInfo(serverId)
           <SettingsRow label={t('notifications.diffReady')} value={notifications.diffReady} onValueChange={(v) => setNotifications({ diffReady: v })} />
           <SettingsRow label={t('notifications.showBadgeCount')} value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
           <SettingsRow label={t('notifications.quietHours')} value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
-          <TouchableOpacity style={s.testBtn} onPress={handleTestNotification}>
+          <TouchableOpacity style={s.testBtn} onPress={handleTestNotification} testID="settings-send-test-notification">
             <Text style={s.testBtnText}>{t('notifications.sendTest')}</Text>
           </TouchableOpacity>
-          <View style={s.comingSoonOverlay} pointerEvents="auto" />
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/notification-health')}
+            testID="settings-notification-health-row"
+          >
+            <Text style={s.rowLabel}>{t('notificationHealth.openRow')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
         </View>
 
         <SectionHeader title={t('sessionNaming.title')} />
@@ -878,7 +889,6 @@ await refreshServerInfo(serverId)
             description={t('permissions.notificationsDesc')}
             status={permStatuses.notifications}
             onPress={permStatuses.notifications === 'undetermined' ? () => requestPermission('notifications') : openPermissionSettings}
-            badge={t('comingSoonBadge')}
             isLast
           />
         </View>
@@ -899,6 +909,30 @@ await refreshServerInfo(serverId)
         <SectionHeader title={t('section.help')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill />
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/server-health')}
+            testID="settings-server-health-row"
+          >
+            <Text style={s.rowLabel}>{t('help.serverHealth')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/paired-devices')}
+            testID="settings-paired-devices-row"
+          >
+            <Text style={s.rowLabel}>{t('help.pairedDevices')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => router.push('/backup-restore')}
+            testID="settings-backup-restore-row"
+          >
+            <Text style={s.rowLabel}>{t('help.backupRestore')}</Text>
+            <Text style={s.rowValue}>›</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={s.row}
             onPress={() => router.push('/help-feedback')}
@@ -1001,14 +1035,6 @@ function styles(theme: ReturnType<typeof useTheme>) {
     },
     cardGlass: {
       backgroundColor: 'transparent',
-    },
-    comingSoonOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: theme.colorMode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.65)',
     },
     segmentedControlGlass: {
       backgroundColor: 'transparent',

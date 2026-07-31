@@ -2,10 +2,12 @@ import React from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import { FileCode } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
 import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { dark, font, radius, spacing } from '@/constants/theme'
+import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { DiffHunk } from '@/types/api'
 
 const COLLAPSE_THRESHOLD = 100
@@ -62,14 +64,11 @@ export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
 
   const copyPatch = () => Clipboard.setStringAsync(toPatch(filename, hunks))
 
-  const ext = filename.split('.').pop() ?? ''
-  const fileIcon = ext === 'ts' || ext === 'tsx' ? '📘' : ext === 'go' ? '🐹' : ext === 'md' ? '📝' : '📄'
-
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessible accessibilityLabel={filename}>
       <View style={styles.header}>
-        <Text style={styles.fileIcon}>{fileIcon}</Text>
-        <Text style={styles.filename} numberOfLines={1}>{filename}</Text>
+        <FileCode size={14} color="#8b949e" />
+        <Text style={styles.filename} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}>{filename}</Text>
         <Text style={styles.added}>+{added}</Text>
         <Text style={styles.removed}>−{removed}</Text>
         <TouchableOpacity onPress={copyPatch} style={styles.copyBtn}>
@@ -135,7 +134,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     backgroundColor: '#1c2128',
   },
-  fileIcon: { fontSize: font.sm },
   filename: {
     color: dark.text.primary,
     fontSize: font.sm,
@@ -144,7 +142,7 @@ const styles = StyleSheet.create({
   },
   added: { color: dark.status.running, fontSize: font.sm, fontWeight: '600' },
   removed: { color: dark.status.failed, fontSize: font.sm, fontWeight: '600' },
-  copyBtn: { paddingHorizontal: spacing.sm, minHeight: 44, justifyContent: 'center' },
+  copyBtn: { paddingHorizontal: spacing.sm, minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, justifyContent: 'center' },
   copyText: { color: dark.text.secondary, fontSize: font.xs },
   collapseBtn: {
     padding: spacing.md,
