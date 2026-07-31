@@ -148,6 +148,10 @@ else
   # which land-version-bump.sh then commits as ship drift.
   (cd ios && bundle exec pod install --silent)
 fi
+# Drop the ExpoModulesCore/ExpoWidgets/hermes-engine checksums when they only moved
+# because this checkout lives at a different absolute path — otherwise
+# land-version-bump.sh commits them as ship drift.
+"$SCRIPT_DIR/reset-podfile-lock-path-noise.sh"
 
 # 7. Archive + upload
 echo "▸ [7/$TOTAL_STEPS] Archive and upload"

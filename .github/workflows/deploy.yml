@@ -127,7 +127,12 @@ jobs:
         # No restore-keys fallback: either both lockfiles match (full hit, Pods/ is
         # fully consistent) or we cold-install. A partial hit would allow a stale
         # Pods/Local Podspecs when node_modules changed, causing "changed version" errors.
-        run: cd ios && bundle exec pod install
+        run: |
+          (cd ios && bundle exec pod install)
+          # The runner's checkout path differs from every developer machine, so three
+          # pods regenerate path-dependent checksums here. Drop that noise so the
+          # version-bump PR below only lands real lockfile changes.
+          ./scripts/reset-podfile-lock-path-noise.sh
 
       - name: Validate and bump version + build number (working tree only)
         run: |
