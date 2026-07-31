@@ -19,6 +19,14 @@ const EXPORT_TEMPLATE = path.join(REPO_ROOT, 'scripts/ExportOptions.template.pli
 const ARCHIVE = path.join(REPO_ROOT, 'scripts/archive-and-upload.sh');
 const BASH = '/bin/bash';
 
+/**
+ * Minimal plist-shaped stand-in for a .mobileprovision. `marker` keeps each
+ * fixture distinguishable so a test can prove the app and widget profiles are
+ * installed to their own paths rather than one overwriting the other.
+ */
+const PROFILE_FIXTURE = (marker) =>
+  `<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>marker</key><string>${marker}</string></dict></plist>\n`;
+
 function run(script, cwd, env) {
   try {
     const stdout = execFileSync(BASH, [script], {
@@ -63,9 +71,12 @@ function bootstrapEnv(root, bin, overrides = {}) {
     ).toString('base64'),
     IOS_DIST_CERT_P12_B64: Buffer.from('certificate').toString('base64'),
     IOS_DIST_CERT_PASSWORD: 'password',
-    IOS_PROVISION_PROFILE_B64: Buffer.from('app-profile').toString('base64'),
+    // Plist-shaped rather than arbitrary bytes: the script rejects anything that
+    // does not decode to a real .mobileprovision, so a truncated or wrong-field
+    // secret fails at bootstrap instead of much later inside xcodebuild.
+    IOS_PROVISION_PROFILE_B64: Buffer.from(PROFILE_FIXTURE('app-profile')).toString('base64'),
     IOS_PROVISION_PROFILE_UUID: 'app-profile-uuid',
-    IOS_WIDGET_PROVISION_PROFILE_B64: Buffer.from('widget-profile').toString('base64'),
+    IOS_WIDGET_PROVISION_PROFILE_B64: Buffer.from(PROFILE_FIXTURE('widget-profile')).toString('base64'),
     IOS_WIDGET_PROVISION_PROFILE_UUID: 'widget-profile-uuid',
     ...overrides,
   };
@@ -89,9 +100,9 @@ describe('bootstrap-ios-signing.sh', () => {
       'home/Library/MobileDevice/Provisioning Profiles',
     );
     expect(fs.readFileSync(path.join(profiles, 'app-profile-uuid.mobileprovision'), 'utf8'))
-      .toBe('app-profile');
+      .toBe(PROFILE_FIXTURE('app-profile'));
     expect(fs.readFileSync(path.join(profiles, 'widget-profile-uuid.mobileprovision'), 'utf8'))
-      .toBe('widget-profile');
+      .toBe(PROFILE_FIXTURE('widget-profile'));
 
     const exportOptions = fs.readFileSync(
       path.join(fixture.root, 'build/ExportOptions.plist'),
@@ -109,6 +120,32 @@ describe('bootstrap-ios-signing.sh', () => {
     expect(signingEnv).toContain(
       'IOS_WIDGET_PROVISION_PROFILE_UUID="widget-profile-uuid"',
     );
+  });
+
+  it('rejects a profile whose base64 does not decode to a .mobileprovision', () => {
+    // A truncated secret or a value copied from the wrong 1Password field decodes
+    // to garbage that xcodebuild only rejects much later, mid-archive, with signing
+    // errors that point nowhere near the real cause. Fail at bootstrap instead.
+    fixture = makeBootstrapFixture();
+    const script = path.join(fixture.root, 'scripts/bootstrap-ios-signing.sh');
+    const result = run(
+      script,
+      fixture.root,
+      bootstrapEnv(fixture.root, fixture.bin, {
+        IOS_WIDGET_PROVISION_PROFILE_B64: Buffer.from('not-a-profile').toString('base64'),
+      }),
+    );
+
+    expect(result.code).not.toBe(0);
+    // The bad profile must not be left on disk for a later run to pick up.
+    expect(
+      fs.existsSync(
+        path.join(
+          fixture.root,
+          'home/Library/MobileDevice/Provisioning Profiles/widget-profile-uuid.mobileprovision',
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('fails before archiving when the widget profile UUID is missing', () => {
