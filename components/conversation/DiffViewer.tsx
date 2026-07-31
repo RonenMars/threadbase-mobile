@@ -86,7 +86,7 @@ export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
           <GestureDetector gesture={pinchGesture}>
             <Animated.View style={animatedStyle}>
               <ScrollView horizontal showsHorizontalScrollIndicator>
-                <View>
+                <View style={styles.hunksContainer}>
                   {hunks.map((hunk, hi) => (
                     <View key={hi}>
                       {/* eslint-disable-next-line i18next/no-literal-string */}
@@ -161,6 +161,9 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
+  },
+  hunksContainer: {
+    minWidth: '100%',
   },
   lineRow: {
     flexDirection: 'row',
