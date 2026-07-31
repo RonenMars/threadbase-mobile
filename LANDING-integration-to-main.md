@@ -1,6 +1,6 @@
 # Landing `land/integration-prep` onto `main` in reviewable slices
 
-> **Status:** Steps 0 and 1 are done. `land/integration-prep` is the live branch to slice from — it is `main` plus 107 commits, already rebased and pushed.
+> **Status:** Steps 0 and 1 (the one-time prep rebase) are done, but `land/integration-prep` has **diverged from `main` again** since — `main` picked up 3 more commits (2 version bumps + a Sentry release fix) that landed directly rather than by rebasing the prep branch. `land/integration-prep` is **not** currently a straight `main` + N commits; it must be re-rebased onto `origin/main` before Step 2 slicing starts. See Step 1a below.
 > The source branch has been renamed to `archive/26-07-2026.18-44-integration` and is frozen; it survives only as the independent witness for Step 3's reconciliation.
 > References below to the archived name are historical (what was measured, where the work came from), not instructions to act on it.
 
@@ -8,11 +8,11 @@
 
 All mobile work for the last two weeks has been landing on the integration branch
 `archive/26-07-2026.18-44-integration` rather than on `main`, mostly by direct push rather than through PRs.
-`main` is now **106 commits behind**, and during a triage of 38 open PRs every single one reported "not on main" — their content had reached the integration branch and stopped there.
+`main` is now **111 commits behind** `land/integration-prep`, and during a triage of 38 open PRs every single one reported "not on main" — their content had reached the integration branch and stopped there.
 
-That divergence is what produced the recurring problems this work surfaced: PRs sitting red for days against a base that had already absorbed their content, PRs whose diffs silently regressed version numbers because their branch point predated a bump, and 23 PRs that turned out to be fully redundant.
+That divergence is what produced the recurring problems this work surfaced: PRs sitting red for days against a base that had already absorbed their content, PRs whose diffs silently regressed version numbers because their branch point predated a bump, and 23 PRs that turned out to be fully redundant. That same divergence has recurred once already since the prep rebase (see Step 1a) — it is an ongoing risk, not a one-time fix.
 
-The goal is to get those 106 commits onto `main` as a sequence of reviewable, independently-green PRs, instead of one opaque merge — so `main` regains bisectability and release granularity, and so the integration branch stops being a parallel trunk.
+The goal is to get those 111 commits onto `main` as a sequence of reviewable, independently-green PRs, instead of one opaque merge — so `main` regains bisectability and release granularity, and so the integration branch stops being a parallel trunk.
 
 **Deliberately out of scope:** any change to app behaviour. This is a history/merge operation only. If a slice needs a code fix to go green, that fix is part of the slice, not a separate feature.
 
@@ -24,11 +24,11 @@ Gathered against `origin/main` and `origin/archive/26-07-2026.18-44-integration`
 
 | Fact | Value | Consequence |
 |---|---|---|
-| Commits ahead of `main` | **106** (07-18 → 07-31) | Too many for one reviewable PR |
+| Commits ahead of `main` | **111** (07-18 → 07-31) | Too many for one reviewable PR |
 | Merge commits in range | **0** — perfectly linear | Contiguous slices replay conflict-free |
-| `main`-only commits | **2** (`95490237` build 181, `3ecd31da` versionCode 37) | `main` is *not* an ancestor; cannot fast-forward directly |
+| `main`-only commits | **3** (`9cf00d99` build 182, `a6cfa742` build 183, `77190a2b` sentry-cli release fix) | `main` is *not* an ancestor; cannot fast-forward directly. Grows over time — re-check before slicing (Step 1a) |
 | Same-subject commit runs | **9 commits** across 7 subjects | Must be squashed, **not dropped** (see below) |
-| Known-red window | `4ec7544c` → `5b325d4d` (~25 commits) | Constrains boundary placement unless healed |
+| Known-red window | *(healed)* — the fix was folded into the breaking commit during the prep rebase | No longer constrains boundary placement |
 
 ### Hotspot files — why thematic cherry-picking fails
 
@@ -42,28 +42,30 @@ Gathered against `origin/main` and `origin/archive/26-07-2026.18-44-integration`
 
 These touches interleave across every theme. Grouping commits by feature means a "terminal" PR and a "conversation" PR both edit the same regions at different points in history — producing repeated conflict resolution and trees that never actually existed or were tested.
 
-### The duplicates are iterations, not copies
+### The duplicates are iterations, not copies — **still outstanding**
 
 > **Correction — this reverses an earlier recommendation.**
 > An earlier draft of this plan said to **drop** the 9 duplicate commits during the prep rebase.
 > **That was wrong and would have silently discarded real content.** The instruction below (`fixup`, not `drop`) supersedes it.
 
-The 9 commits share subject lines but **not patches**. Verified with `git patch-id --stable`:
+None of this squashing has happened yet — all 7 same-subject groups (9 commits total, plus the 4-way conversation run below) are still present, separate, in `land/integration-prep` today.
+
+The 9 commits share subject lines but **not patches**. Re-verified against current SHAs with `git patch-id --stable`:
 
 ```
-76f97204 vs be8e0373  DIFFER     feat(servers): add cache integrity alert resolution
-c11e0fbf vs 99f070c0  DIFFER     fix(cache): clear server state after destructive actions
-8168ec9f vs 7b46f488  DIFFER     fix(cache): handle explicit server warm-up states
-898ec0af vs e46346f9  DIFFER     feat(servers): show warm-up progress for every server
-fa112653 vs a6e45d96  DIFFER     feat(sessions): add read-only live view for external sessions
-40dfd8a4 vs 1ccabdd7  IDENTICAL  test(cache): extend modal render timeout in CI   <- the only true duplicate
+eea821ee vs 2989d62c  DIFFER     feat(servers): add cache integrity alert resolution
+e677fcda vs 4beb76bc  DIFFER     fix(cache): clear server state after destructive actions
+b2866176 vs 20efc8bf  DIFFER     fix(cache): handle explicit server warm-up states
+f4013e06 vs d63cc321  DIFFER     feat(servers): show warm-up progress for every server
+623c826d vs 80272f81  DIFFER     feat(sessions): add read-only live view for external sessions
+be419a59 vs 4cc8e758  IDENTICAL  test(cache): extend modal render timeout in CI   <- the only true duplicate
 ```
 
-The four `feat(conversation): stabilize live reload…` commits (`0da854cd`, `ef6db815`, `4ec7544c`, `3ce8ab6b`) likewise have **four distinct patch-ids**.
+The four `feat(conversation): stabilize live reload…` commits (`44f2af96`, `eff1dd3a`, `46d87335`, `9e84b0df`) likewise have **four distinct patch-ids**.
 
-So these are *iterations of the same work carrying a copy-pasted commit message*, not repeated applications of one patch. Only `40dfd8a4`/`1ccabdd7` is a genuine duplicate.
+So these are *iterations of the same work carrying a copy-pasted commit message*, not repeated applications of one patch. Only `be419a59`/`4cc8e758` is a genuine duplicate.
 
-**Therefore: squash same-subject runs with `fixup`; never `drop` them.** Squashing preserves the net tree exactly while collapsing the noise. The post-rebase diff check in Step 1 exists specifically to catch this class of mistake.
+**Therefore: squash same-subject runs with `fixup`; never `drop` them.** Squashing preserves the net tree exactly while collapsing the noise. The post-rebase diff check in Step 1 exists specifically to catch this class of mistake. This squash still needs to happen — before Step 2 slicing, so a duplicate run doesn't end up split across two slice boundaries.
 
 Reusable check for any future "is this commit already applied?" question — patch-id compares diffs independently of SHA, author and date:
 
@@ -72,20 +74,24 @@ pid() { git show "$1" | git patch-id --stable | cut -d' ' -f1; }
 [ "$(pid A)" = "$(pid B)" ] && echo IDENTICAL || echo DIFFER
 ```
 
-### The broken window
+### The broken window — **healed**
 
-`app/conversation/[id].tsx` calls `makeSearchStyles(theme)` but loses its import for a stretch of history:
+`app/conversation/[id].tsx` calls `makeSearchStyles(theme)`, and for roughly 25 commits in the pre-rebase history it lost its import — the same defect that kept PRs #421–#423 red.
+
+During the prep rebase this was healed: the import fix was folded into the commit that introduces the break (`feat(conversation): add in-chat search entry on detail screen`, now `b09338cd`) instead of arriving ~25 commits later. Walking every commit in `origin/main..origin/land/integration-prep` that touches the file confirms the window no longer exists:
 
 ```
-84fabef4  import=1 uses=1   ok
-78c5b321  import=1 uses=1   ok
-4ec7544c  import=0 uses=1   <- BREAKS
-…~25 commits…
-5b325d4d  import=0 uses=1   <- still broken
-4f036da6  import=1 uses=1   <- fixed ("restore in-chat search button and repair locale drift")
+623c826d  import=0 uses=0   (doesn't touch makeSearchStyles yet)
+44f2af96  import=0 uses=0
+b09338cd  import=1 uses=1   ok — search entry added, import lands with it
+46d87335  import=1 uses=1   ok
+7c648751  import=1 uses=1   ok
+e06629de  import=1 uses=1   ok — "restore in-chat search button and repair locale drift"
+527cdb42  import=1 uses=1   ok
+09805dde  import=1 uses=1   ok
 ```
 
-This is the same defect that kept PRs #421–#423 red. Any slice boundary inside that window ships a red PR.
+`broken=0` across all 8 commits touching the file. Any slice boundary can now fall anywhere in this range without shipping a red PR.
 
 ---
 
@@ -111,9 +117,11 @@ The branch was renamed to `archive/26-07-2026.18-44-integration`, which freezes 
 
 Work on `land/integration-prep`, never on the integration branch itself, so the original stays intact as a reference.
 
-> **What actually happened.** The rebase replayed 107 commits onto `main` with **zero conflicts**; `a5766408` was auto-dropped as already applied (it reached `main` as `ff8bd0ba` via #434). Verified afterwards: 0 commits from the archived branch are absent from prep, the whole-tree delta is only `app.json` and `android/app/build.gradle`, and prep carries `main`'s higher values (buildNumber `181`, versionCode `37`).
+> **What actually happened.** The rebase replayed 107 commits onto `main` with **zero conflicts**; `a5766408` was auto-dropped as already applied (it reached `main` as `ff8bd0ba` via #434). Verified afterwards: 0 commits from the archived branch are absent from prep, the whole-tree delta is only `app.json` and `android/app/build.gradle`, and prep carried `main`'s higher values at the time (buildNumber `181`, versionCode `37`).
 >
-> **Sub-steps 2 and 3 below were NOT performed.** It was a plain rebase, so the 9 same-subject commits are still separate and **the broken window still exists in prep's history**. Slices 3 and 4 must either absorb that window or it must be healed before they are cut.
+> The broken-window heal (originally planned as this rebase's sub-step 3) **was done**: the `makeSearchStyles` import fix was folded into the commit that introduces the break instead of arriving ~25 commits later. Verified — see "The broken window — healed" above.
+>
+> **Sub-step 2 (squashing the same-subject runs) was NOT performed.** The 9 same-subject commits across 7 subjects are still separate in prep's history today. See Step 2's duplicates note.
 
 ```bash
 G=/opt/homebrew/bin/git   # the zsh `git` function shadows the binary; use the absolute path
@@ -122,13 +130,12 @@ $G checkout -b land/integration-prep origin/archive/26-07-2026.18-44-integration
 $G rebase -i origin/main
 ```
 
-Three things happen in this rebase:
+Two things happened in this rebase:
 
-1. **Rebase onto `main`** — resolves the 2-commit divergence. Conflicts will appear in `app.json` and `android/app/build.gradle`; **take `main`'s higher values** (buildNumber `181`, versionCode `37`). Taking the branch's older numbers is the exact regression trap found in PR #434.
-2. **Squash the same-subject runs** — mark the later copies `fixup` (`f`) under the first of each run. Seven runs, listed above. Net tree unchanged; 9 commits collapse away. **Do not use `drop`.**
-3. **Heal the broken window** — move the `makeSearchStyles` import fix out of `4f036da6` and into `4ec7544c` (where the break is introduced), as a `fixup` or a manual edit during that step.
+1. **Rebase onto `main`** — resolved the divergence at the time. Conflicts appeared in `app.json` and `android/app/build.gradle`; **took `main`'s higher values** (buildNumber `181`, versionCode `37`). Taking the branch's older numbers is the exact regression trap found in PR #434.
+2. **Healed the broken window** — moved the `makeSearchStyles` import fix out of the later fix commit and into the commit that introduces the break, as a `fixup`.
 
-Step 3 is the high-value move: it converts a hard constraint into a free choice. Without it, slices 3–4 are hostage to the red zone and must be merged as one oversized ~36-commit PR.
+That heal was the high-value move: it converted a hard constraint into a free choice. Without it, slices 3–4 would have been hostage to the red zone and forced to merge as one oversized ~36-commit PR.
 
 **Verify the prep rebase preserved content** — the tree at the end must match the original branch tip except for the version bumps:
 
@@ -142,21 +149,66 @@ If that diff is non-empty, something was dropped rather than squashed. Stop and 
 
 ---
 
+## Step 1a — Re-rebase before slicing — **REQUIRED, not yet done**
+
+`land/integration-prep` has drifted behind `main` again since Step 1: `main` picked up 3 more commits that were never replayed onto prep —
+
+```
+9cf00d99 chore(ios): bump build number to 182 [skip-ci] (#458)
+a6cfa742 chore(ios): bump build number to 183 [skip-ci] (#461)
+77190a2b fix(ios,android): make sentry-cli release match SDK release string
+```
+
+`main` is now at buildNumber `183` / versionCode `37`; `land/integration-prep` is still at buildNumber `182`. Cutting slices from prep today would base every PR on a tree that is behind `main`, reintroducing the exact version-regression trap this document warns about (PR #434) the moment any slice touches `app.json`.
+
+Before starting Step 2, re-rebase:
+
+```bash
+$G fetch origin
+$G checkout land/integration-prep
+$G rebase origin/main
+# conflicts, if any, in app.json / android/app/build.gradle: take main's higher values
+# (buildNumber 183, versionCode 37) — same rule as Step 1
+$G push --force-with-lease
+```
+
+Then re-verify the final divergence check in the Verification section reports `3  111` before the rebase and `0  111` after (commit count may shift slightly if the rebase produces no-ops).
+
+This step recurs by nature — a live `main` moving out from under a long-lived prep branch is the same problem Step 0 froze the *source* branch to avoid. Re-check `$G rev-list --left-right --count origin/main...origin/land/integration-prep` immediately before cutting Step 2's slices, not just once here.
+
+---
+
 ## Step 2 — Seven slices
 
-Boundaries chosen at thematic seams. Counts are from the pre-rebase branch and shrink slightly after squashing.
+Boundaries chosen at thematic seams. The rebase does not reorder commits, so a slice tip is identified by **subject line**, which survives a rebase — the SHA column from the original draft (`f8c21e49`, `fdd69cd8`, `b311ac6c`, `4f036da6`, `368e8282`, `bb67d2d1`, `0b2e8907`) no longer resolves on `land/integration-prep` and has been replaced below.
 
-| # | Slice tip | Theme | ~n |
+| # | Slice tip (subject) | Theme | n |
 |---|---|---|---|
-| 1 | `f8c21e49` | cache integrity + warm-up, Sentry crash consent, external-session live view, i18n gates | 23 |
-| 2 | `fdd69cd8` | onboarding polish + pair-token exchange, e2e hardening, session test mocks | 21 |
-| 3 | `b311ac6c` | JSONL session name, conversation live view, terminal/session perf | 10 |
-| 4 | `4f036da6` | terminal-conversation rendering (#403), C-series (diagnostics/capabilities/push/devices/backup), browse | 26 |
-| 5 | `368e8282` | iOS SDK 57.0.8 alignment, dyld gate, Swift 6 `abs()` patch | 3 |
-| 6 | `bb67d2d1` | live activity iOS + Android, terminal history/seq fixes | 13 |
-| 7 | `0b2e8907` | terminal UX (question card, wrapped rows, banner dedupe), CI fix | 10 |
+| 1 | `test(e2e): grant speech-recognition before Maestro mock suite` | cache integrity + warm-up, Sentry crash consent, external-session live view, i18n gates | 23 |
+| 2 | `docs(runbooks): add mobile land-open-prs runbook with session-name follow-up chain [skip-ci]` | onboarding polish + pair-token exchange, e2e hardening, session test mocks | 21 |
+| 3 | `docs(runbook): append session-load and slowdown follow-up PR chain [skip-ci]` | JSONL session name, conversation live view, terminal/session perf | 10 |
+| 4 | `fix(conversation): restore in-chat search button and repair locale drift` | terminal-conversation rendering (#403), C-series (diagnostics/capabilities/push/devices/backup), browse | 26 |
+| 5 | `fix(ios): patch expo-modules-jsi Swift 6 abs() overload ambiguity` | iOS SDK 57.0.8 alignment, dyld gate, Swift 6 `abs()` patch | 3 |
+| 6 | `feat(live-activity): render a per-turn Finished state and add the logo` | live activity iOS + Android, terminal history/seq fixes | 12 |
+| 7 | `fix(settings): label the support row for what it does (#462)` | terminal UX (question card, wrapped rows, banner dedupe), CI fix, iOS signing/1Password hardening, support-email label | 16 |
 
-Total 106. The ~20 `docs`/`[skip-ci]` commits are not a separate slice — they sit inside whichever range they belong to.
+Total 111. The ~20 `docs`/`[skip-ci]` commits are not a separate slice — they sit inside whichever range they belong to.
+
+**Slice 6 count revised from ~13 to 12** — re-walking the current history places `feat(terminal): add close button to question card` at the start of slice 7's "question card" theme rather than the end of slice 6, which is one commit earlier than the original estimate. The original count was explicitly a tilde-estimate ("shrink slightly after squashing"), so this is within the stated tolerance.
+
+**Slice 7 grew from ~10 to 16** to absorb content that landed after the original slice table was written — the seven trailing commits below, only four of which are genuinely new (see reasoning after the list):
+
+```
+049844ce fix(ci): unblock integration and i18n jobs on the integration base (#454)
+4fed7774 fix(session): treat historical sessions as terminal despite prompt history (#456)
+a2673e67 fix(ios): run pod install through bundle exec so Podfile.lock stops flip-flopping (#455)
+8d8499f1 docs: add runbook for landing the integration branch onto main [skip-ci]
+f4d97734 docs: add smartwatch session surfaces to task roadmap [skip-ci]
+7574791b fix(ios): source provisioning profiles from 1Password profile items (#459)
+841afeea fix(settings): label the support row for what it does (#462)
+```
+
+The first three (`#454`, `#456`, `#455`) were already merged into the archived integration branch before the prep rebase and were folded into the original ~10-commit slice 7 estimate — `#454` is literally the "CI fix" the original theme names. The last four (the two `docs` commits, `#459`, `#462`) landed **after** the slice table was written and are genuinely new. Per this document's existing rule, the two `docs` commits ride inside whichever range they belong to rather than getting a slice of their own. The two fixes (`#459`: iOS signing scripts + tests, `#462`: support-email constant + 3 call sites) are small, self-contained, and thematically continuous with slice 7's existing CI/infra/terminal-polish scope — extending slice 7 to absorb all four costs one slightly larger PR rather than opening an eighth slice for content too small to justify its own review/CI cycle.
 
 After the prep rebase, re-identify each tip by subject (SHAs change):
 
@@ -235,8 +287,9 @@ $G rev-list --left-right --count origin/main...land/integration-prep
 
 | Risk | Mitigation |
 |---|---|
-| Squash-vs-drop confusion loses content | Only `40dfd8a4`/`1ccabdd7` is patch-identical; everything else is `fixup`. The post-rebase diff check catches any loss. |
-| Version regression on `app.json` / `build.gradle` | Take `main`'s values in the prep rebase; re-check before each slice PR. |
+| Squash-vs-drop confusion loses content | Only `be419a59`/`4cc8e758` is patch-identical; everything else is `fixup`. The post-rebase diff check catches any loss. |
+| Version regression on `app.json` / `build.gradle` | Currently live: `main` is at buildNumber `183` / versionCode `37`; `land/integration-prep` is at buildNumber `182`. Take `main`'s (higher) values when re-rebasing (Step 1a) and re-check before each slice PR. |
+| `land/integration-prep` drifts behind `main` again | Already happened once (Step 1a). Re-rebase before Step 2, and re-check divergence immediately before cutting slices, not just once. |
 | A slice is red despite local checks | Fix forward inside that slice; never merge red. If the fix is large, split the slice rather than carrying it. |
 | Integration branch moves mid-operation | Step 0 freeze. |
 | `ios/Podfile.lock` churn between slices | Always `bundle exec pod install` (PR #455 fixes the scripts and docs that cause this). |
