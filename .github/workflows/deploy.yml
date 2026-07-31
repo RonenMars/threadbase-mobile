@@ -157,6 +157,12 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          # Runtime DSN, baked into the JS bundle by Metro. The three above are
+          # build-time only (sentry-cli dSYM upload) — without this one the SDK
+          # never initialises and no build reports crashes at all. A `vars` entry
+          # rather than a secret: the DSN ships inside the app, so masking it in
+          # logs hides nothing and only makes "was it set?" harder to answer.
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
         run: |
           ARGS=(
             --target "$IOS_TARGET"
@@ -383,6 +389,9 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          # Same as the iOS job: the Android build bundles the same JS, so without
+          # the runtime DSN the SDK never initialises and the APK reports nothing.
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
         run: |
           ./scripts/ship-android.sh \
             --track "$ANDROID_TRACK" \
