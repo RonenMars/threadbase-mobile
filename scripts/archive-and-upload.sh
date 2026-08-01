@@ -96,6 +96,19 @@ echo
 echo "Uploaded. Poll processing state with the App Store Connect API"
 echo "(see Step 6 of the expo-local-build skill)."
 
+# A Sentry problem here must never fail a ship whose binary is already uploaded,
+# but a warning buried in a 20-minute log is the same as no warning. In CI emit a
+# workflow command so it surfaces as an annotation on the run and the checks UI;
+# locally fall back to stderr. Workflow commands are read from stdout, so this
+# deliberately does not redirect when GITHUB_ACTIONS is set.
+sentry_warn() {
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::warning::$*"
+  else
+    echo "  ! $*" >&2
+  fi
+}
+
 # sentry-cli's sourcemap and dSYM uploads are keyed by debug ID, so neither one
 # creates the Release object — a build only appears under Releases once a crash
 # arrives from it. Create it explicitly so every shipped build is there from the
@@ -107,18 +120,25 @@ if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJEC
      "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
      "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$DEPLOY_ENV"; then
     echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${DEPLOY_ENV}"
-    # Suspect commits. Kept out of the chain above and non-fatal on purpose:
-    # --auto resolves the commit range from local git history, so a shallow
-    # clone fails here and must not report an otherwise-successful release as
-    # broken. CI checkouts need fetch-depth: 0 for this to resolve.
-    if "$SENTRY_CLI" releases set-commits --auto "$SENTRY_RELEASE"; then
-      echo "  ✓ Sentry commits associated"
+    # Suspect commits, pinned to the exact commit this build came from rather
+    # than `--auto`. --auto derives a range from local git lineage, which is
+    # wrong whenever the deploy ref diverged from the previous release: release
+    # 187 picked up ten commits spanning a rebase that way. Naming one commit
+    # lets Sentry compute the range server-side from the previous release, which
+    # is both correct and immune to how this checkout was cloned.
+    HEAD_SHA="$(git rev-parse HEAD 2>/dev/null || true)"
+    if [[ -z "$HEAD_SHA" ]]; then
+      sentry_warn "Sentry commit association skipped for ${SENTRY_RELEASE} — not a git checkout"
+    elif "$SENTRY_CLI" releases set-commits \
+           --commit "${SENTRY_REPO:-RonenMars/threadbase-mobile}@${HEAD_SHA}" \
+           "$SENTRY_RELEASE"; then
+      echo "  ✓ Sentry commits associated at ${HEAD_SHA}"
     else
-      echo "  ! Sentry commit association skipped — needs full git history" >&2
+      sentry_warn "Sentry commit association failed for ${SENTRY_RELEASE} — is the repo connected in Sentry?"
     fi
   else
-    echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
+    sentry_warn "Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials"
   fi
 else
-  echo "  ! SENTRY_AUTH_TOKEN/ORG/PROJECT unset — skipping Sentry release creation" >&2
+  sentry_warn "SENTRY_AUTH_TOKEN/ORG/PROJECT unset — skipping Sentry release creation"
 fi

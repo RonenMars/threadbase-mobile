@@ -295,6 +295,17 @@ echo
 echo "The build is now in review by Google. Internal track builds are"
 echo "typically available to testers within a few minutes."
 
+# Same visibility rule as iOS: a Sentry problem must not fail a ship whose AAB is
+# already on Play, but it must not vanish into the log either. Workflow commands
+# are read from stdout, so the CI branch deliberately does not redirect.
+sentry_warn() {
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::warning::$*"
+  else
+    echo "  ! $*" >&2
+  fi
+}
+
 # Mirrors the iOS fix in archive-and-upload.sh: sentry-cli's uploads are keyed by
 # debug ID and never create the Release object, so a build only appears under
 # Releases once a crash arrives from it. Non-fatal — the AAB is already on Play.
@@ -305,16 +316,22 @@ if [[ -n "${SENTRY_RELEASE:-}" && -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_OR
      "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
      "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$ANDROID_TRACK"; then
     echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${ANDROID_TRACK}"
-    # Mirrors iOS: separate and non-fatal, because --auto needs full git history
-    # and a shallow CI clone must not fail an otherwise-successful release.
-    if "$SENTRY_CLI" releases set-commits --auto "$SENTRY_RELEASE"; then
-      echo "  ✓ Sentry commits associated"
+    # Mirrors iOS: pin the exact commit instead of --auto, so Sentry derives the
+    # range server-side from the previous release rather than from whatever local
+    # lineage this checkout happens to have.
+    HEAD_SHA="$(git rev-parse HEAD 2>/dev/null || true)"
+    if [[ -z "$HEAD_SHA" ]]; then
+      sentry_warn "Sentry commit association skipped for ${SENTRY_RELEASE} — not a git checkout"
+    elif "$SENTRY_CLI" releases set-commits \
+           --commit "${SENTRY_REPO:-RonenMars/threadbase-mobile}@${HEAD_SHA}" \
+           "$SENTRY_RELEASE"; then
+      echo "  ✓ Sentry commits associated at ${HEAD_SHA}"
     else
-      echo "  ! Sentry commit association skipped — needs full git history" >&2
+      sentry_warn "Sentry commit association failed for ${SENTRY_RELEASE} — is the repo connected in Sentry?"
     fi
   else
-    echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
+    sentry_warn "Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials"
   fi
 else
-  echo "  ! SENTRY_AUTH_TOKEN/ORG/PROJECT unset — skipping Sentry release creation" >&2
+  sentry_warn "SENTRY_AUTH_TOKEN/ORG/PROJECT unset — skipping Sentry release creation"
 fi
