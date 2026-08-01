@@ -74,6 +74,14 @@ export interface Session {
    * Additive; older servers omit it.
    */
   activity?: { state: 'active_writing' | 'quiet'; lastEventAt: string; source: 'jsonl' }
+  /**
+   * What a rehydrated session was doing when the streamer stopped it. Its
+   * `status` has to flatten to `idle` (no PTY), which erases that bit; this
+   * carries it alongside. Set only on a stub the streamer's own shutdown ended
+   * — never on a live session or a crashed row. Presentation only: the session
+   * is still idle and still needs a resume. Additive; older servers omit it.
+   */
+  interruptedStatus?: 'running' | 'waiting_input'
 }
 
 export interface MessageSnapshot {

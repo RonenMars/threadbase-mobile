@@ -103,6 +103,8 @@
     "idle": "خامل",
     "externalLive": "خارجي",
     "historical": "سجل",
+    "interrupted": "متوقفة",
+    "interruptedWaiting": "كانت تنتظر",
     "resumed": "مُستأنف",
     "onHold": "معلّق",
     "completed": "مكتمل",

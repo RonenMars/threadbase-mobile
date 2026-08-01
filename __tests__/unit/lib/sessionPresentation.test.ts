@@ -85,7 +85,38 @@ describe('deriveSessionPresentation', () => {
       ),
     ).toMatchObject({
       kind: 'historical',
+      labelKey: 'status.historical',
       capabilities: { canResume: true, isObserveOnly: true },
+    })
+  })
+
+  it('labels an interrupted historical session by what it was doing', () => {
+    const historical = { status: 'idle', ownership: 'historical' as const, ptyAttached: false }
+    expect(
+      deriveSessionPresentation(base({ ...historical, interruptedStatus: 'running' })).labelKey,
+    ).toBe('status.interrupted')
+    expect(
+      deriveSessionPresentation(base({ ...historical, interruptedStatus: 'waiting_input' }))
+        .labelKey,
+    ).toBe('status.interruptedWaiting')
+  })
+
+  it('keeps an interrupted session idle, resumable and grey', () => {
+    expect(
+      deriveSessionPresentation(
+        base({
+          status: 'idle',
+          ownership: 'historical',
+          ptyAttached: false,
+          interruptedStatus: 'running',
+        }),
+      ),
+    ).toMatchObject({
+      kind: 'historical',
+      live: false,
+      externalLive: false,
+      colorToken: 'idle',
+      capabilities: { canResume: true, canSendInput: false, isObserveOnly: true },
     })
   })
 })
