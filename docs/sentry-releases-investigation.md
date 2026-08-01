@@ -1,4 +1,4 @@
-# Investigation: missing Sentry Release metadata (`ronen-mars/threadbase`)
+# Investigation: missing Sentry Release metadata (`your-org/threadbase`)
 
 > **Superseded in part — see [Update — 2026-08-01](#update--2026-08-01) at the bottom.**
 > §2's root-cause finding (release-name mismatch) still holds and its fix shipped.
@@ -10,7 +10,7 @@
 
 **Date:** 2026-07-31
 **Method:** live queries via the Sentry MCP and the Sentry dashboard (via
-claude-in-chrome) against org `ronen-mars` / project `threadbase`,
+claude-in-chrome) against org `your-org` / project `threadbase`,
 cross-referenced with the iOS build pipeline in this repo (including the
 vendored `@sentry/react-native` Xcode build-phase scripts and today's actual
 `build/archive.log` from shipping build 183). Nothing here is asserted from
@@ -22,7 +22,7 @@ page, a build log line, or a specific file+line.
 The task described the Releases page as showing **no application Releases at
 all**. That's not what the live data shows.
 
-`find_releases(organizationSlug='ronen-mars', projectSlug='threadbase')` returns
+`find_releases(organizationSlug='your-org', projectSlug='threadbase')` returns
 three release objects:
 
 | Release | Created | First event | Last event | New issues |
@@ -99,7 +99,7 @@ real root cause.** `build/archive.log` (produced by `scripts/archive-and-upload.
 during today's local ship) shows the actual sentry-cli sourcemap upload:
 
 ```
-output: sentry-cli - > Organization: ronen-mars
+output: sentry-cli - > Organization: your-org
 output: sentry-cli - > Projects: threadbase
 output: sentry-cli - > Release: com.ronenmars.threadbase@1.0+183
 output: sentry-cli - > Dist: 183
@@ -153,7 +153,7 @@ Yes, `dist` itself is fine — `> Dist: 183` in the log above matches
 The mismatch is entirely in the release name (see §2), not dist.
 
 **Confirmed via Sentry dashboard (not just the archive log):** navigated to
-`https://ronen-mars.sentry.io/explore/releases/threadbase-mobile%401.0.0%2B183/`
+`https://your-org.sentry.io/explore/releases/threadbase-mobile%401.0.0%2B183/`
 via claude-in-chrome — the release detail page shows **"Source Maps — 0
 artifacts"** and a **"Finalize"** action still available (i.e. not finalized),
 directly confirming that the sourcemap upload seen in the archive log landed
@@ -183,7 +183,7 @@ these is added explicitly to the pipeline — which requires:
   to populate the deploy marker.
 
 **Also confirmed via the Sentry dashboard:** `Settings → Repositories`
-(`https://ronen-mars.sentry.io/settings/repos/`) and `Settings → Integrations`
+(`https://your-org.sentry.io/settings/repos/`) and `Settings → Integrations`
 both show every VCS provider (GitHub included) as **"Not Installed"/"Connect"**
 — there is currently no repository connected to this Sentry org at all. This
 means `set-commits`/suspect-commits cannot work yet regardless of any pipeline
