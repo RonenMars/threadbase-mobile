@@ -405,7 +405,7 @@ describe('useConversation — { resume } delta on the tail view', () => {
     // Tail first page: messages 0..2, total 3. No has_more_newer field (plain tail).
     metaHandlers.srv_resume = () =>
       Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_r', ['a', 'b', 'c']) })
-    // after_index=2 delta: two new messages 3,4 out of total 5, no more newer.
+    // after_index=3 delta: two new messages 3,4 out of total 5, no more newer.
     handlers.srv_resume = (path) => {
       paths.push(path)
       return Promise.resolve(
@@ -422,11 +422,39 @@ describe('useConversation — { resume } delta on the tail view', () => {
     await result.current.fetchNewerPage()
     await waitFor(() => expect(result.current.data!.messages.length).toBe(5))
 
-    expect(paths.some((p) => p.includes('after_index=2'))).toBe(true)
+    // The server window is [after_index, …) INCLUSIVE, so resuming from held
+    // max index 2 must request after_index=3 — asking with 2 re-downloads the
+    // tail message and appends a duplicate-id row on every delta poll.
+    expect(paths.some((p) => p.includes('after_index=3'))).toBe(true)
+    expect(paths.some((p) => p.includes('after_index=2'))).toBe(false)
     expect(paths.some((p) => p.includes('msg_limit=80'))).toBe(true)
     // Delta path must NOT send If-None-Match (it's a plain get, not getWithMeta).
     const indexes = result.current.data!.messages.map((m) => m.messageIndex)
     expect(indexes).toEqual([0, 1, 2, 3, 4])
+  })
+
+  it('drops duplicate message indexes when a delta page overlaps already-held rows', async () => {
+    setActiveServers(['srv_dup'])
+    // Tail first page: messages 0..2.
+    metaHandlers.srv_dup = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_d', ['a', 'b', 'c']) })
+    // Overlapping delta: the server re-sends index 2 alongside the new index 3
+    // (inclusive-window behavior). The flatten must keep exactly one row per
+    // message_index — duplicate ids break FlashList's keyExtractor and its
+    // maintainVisibleContentPosition anchor (phantom blank space + scroll jumps).
+    handlers.srv_dup = () =>
+      Promise.resolve(rawAnchoredPage('c_d', 2, 2, 4, { has_more_newer: false, next_after_index: null }))
+
+    const { result } = await renderHook(() => useConversation('srv_dup', 'c_d'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(3))
+
+    await result.current.fetchNewerPage()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(4))
+
+    const indexes = result.current.data!.messages.map((m) => m.messageIndex)
+    expect(indexes).toEqual([0, 1, 2, 3])
+    const ids = result.current.data!.messages.map((m) => m.id)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('does not expose a resume cursor when no messages are cached (fresh install)', async () => {
@@ -796,7 +824,9 @@ describe('useConversation — consolidated delta trigger', () => {
 
     const { result } = await renderHook(() => useConversation('srv_mt', 'c_mt'), { wrapper })
 
-    await waitFor(() => expect(paths.filter((p) => p.includes('after_index=2'))).toHaveLength(1))
+    // Warm cache holds 0..2, and the server window is inclusive of after_index,
+    // so resuming asks for the first index we do NOT have: 3.
+    await waitFor(() => expect(paths.filter((p) => p.includes('after_index=3'))).toHaveLength(1))
     await waitFor(() => expect(result.current.data!.messages.length).toBe(4))
     // Only the delta fired, never a tail (-1) fetch.
     expect(paths.every((p) => p.includes('after_index'))).toBe(true)
@@ -805,10 +835,12 @@ describe('useConversation — consolidated delta trigger', () => {
   it('drains a >80-message backlog across sequential after_index pages, guard stamped once', async () => {
     setActiveServers(['srv_drain'])
     const paths: string[] = []
-    // Warm cache ends at index 2 (cursor 2). Backlog: 3 pages.
+    // Warm cache holds 0..2, so the first hop asks for index 3 — the server
+    // window is [after_index, after_index + limit), inclusive of the cursor.
+    // Backlog: 3 pages.
     handlers.srv_drain = (path) => {
       paths.push(path)
-      if (path.includes('after_index=2')) {
+      if (path.includes('after_index=3')) {
         // 80 new (3..82), more newer.
         return Promise.resolve(rawAnchoredPage('c_dr', 3, 80, 243, { has_more_newer: true, next_after_index: 83 }))
       }
@@ -828,7 +860,7 @@ describe('useConversation — consolidated delta trigger', () => {
     // Exactly three sequential after_index GETs.
     const afterPaths = paths.filter((p) => p.includes('after_index'))
     expect(afterPaths).toHaveLength(3)
-    expect(afterPaths[0]).toContain('after_index=2')
+    expect(afterPaths[0]).toContain('after_index=3')
     expect(afterPaths[1]).toContain('after_index=83')
     expect(afterPaths[2]).toContain('after_index=163')
     // Full range 0..242, no gap.
@@ -993,10 +1025,11 @@ describe('useConversation — drain etag (item 3)', () => {
   it('(e) strips the mismatched hop and stops — no resetQueries, hop-1 kept, resumable', async () => {
     setActiveServers(['srv_etag'])
     const paths: string[] = []
-    // Warm cache ends at index 2 (cursor 2). Two-hop backlog, but hop 2's etag differs.
+    // Warm cache holds 0..2, so hop 1 asks for index 3 (the window is inclusive
+    // of after_index). Two-hop backlog, but hop 2's etag differs.
     handlers.srv_etag = (path) => {
       paths.push(path)
-      if (path.includes('after_index=2')) {
+      if (path.includes('after_index=3')) {
         // hop 1: 80 new (3..82), more newer, etag "A".
         return Promise.resolve(rawAnchoredPage('c_et', 3, 80, 243, { has_more_newer: true, next_after_index: 83, etag: '"A"' }))
       }

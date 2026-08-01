@@ -353,14 +353,25 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
   }
   const first = pages[0]
   const convId = first.meta.id
+  // Server pages can overlap (the after_index window is inclusive of its
+  // cursor, and anchored windows widen backward near the tail), so the same
+  // message_index may arrive in more than one cached page. The adapted id is
+  // `${convId}-${index}`, and FlashList's keyExtractor + its
+  // maintainVisibleContentPosition anchor both require unique keys — duplicate
+  // ids reserve phantom layout space and misplace the scroll anchor. Dedup at
+  // this single choke point; first (oldest-page) occurrence wins.
+  const seenIndexes = new Set<number>()
   const messages: Message[] = [...pages]
     .reverse()
     .flatMap((page) =>
       (page.messages ?? [])
         .filter((m) => !(m.role === 'user' && typeof m.text === 'string' && isCodexInjectedContext(m.text)))
-        .map((m, i) =>
-          adaptRawMessage(m, convId, m.message_index ?? (page.message_pagination?.from_index ?? 0) + i),
-        ),
+        .flatMap((m, i) => {
+          const idx = m.message_index ?? (page.message_pagination?.from_index ?? 0) + i
+          if (seenIndexes.has(idx)) return []
+          seenIndexes.add(idx)
+          return [adaptRawMessage(m, convId, idx)]
+        }),
     )
 
   return {
@@ -417,7 +428,14 @@ export function useConversation(
       // If-None-Match would be misleading dead code.
       if (typeof pageParam === 'object') {
         const isResume = 'resume' in pageParam
-        const cursor = isResume ? pageParam.resume : pageParam.after
+        // The server window is [after_index, after_index + limit) — INCLUSIVE
+        // of the cursor. { after } carries the server's own next_after_index
+        // (already the first index we don't have), but { resume } is the
+        // client-derived max index we DO have — so it must be bumped by one.
+        // Without the +1 every delta drain re-fetches the tail message, and
+        // each re-fetch appends a duplicate-id row (see mergeConversationPages)
+        // that grows the list by one phantom message per poll tick.
+        const cursor = isResume ? pageParam.resume + 1 : pageParam.after
         params.set('msg_limit', String(isResume ? CONVERSATION_MESSAGE_LIMIT : CONVERSATION_ANCHORED_LIMIT))
         params.set('after_index', String(cursor))
         return api.get<RawConversationDetail>(
