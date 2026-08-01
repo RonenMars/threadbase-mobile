@@ -102,9 +102,11 @@ echo "(see Step 6 of the expo-local-build skill)."
 # start. Non-fatal: the app is already on App Store Connect by this point.
 if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
   SENTRY_CLI="node_modules/@sentry/cli/bin/sentry-cli"
+  DEPLOY_ENV="${SENTRY_DEPLOY_ENV:-testflight}"
   if "$SENTRY_CLI" releases new "$SENTRY_RELEASE" &&
-     "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE"; then
-    echo "  ✓ Sentry release ${SENTRY_RELEASE} created"
+     "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
+     "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$DEPLOY_ENV"; then
+    echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${DEPLOY_ENV}"
   else
     echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
   fi
