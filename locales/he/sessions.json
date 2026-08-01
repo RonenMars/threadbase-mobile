@@ -83,6 +83,8 @@
     "idle": "לא פעיל",
     "externalLive": "חיצוני",
     "historical": "היסטוריה",
+    "interrupted": "הופסק",
+    "interruptedWaiting": "המתין",
     "resumed": "חודש",
     "onHold": "בהמתנה",
     "completed": "הושלם",
