@@ -23,11 +23,17 @@ const GIT = fs.existsSync('/opt/homebrew/bin/git')
 
 const sha = (c) => c.repeat(40);
 
-/** A minimal Podfile.lock tail: the two entries the script may drop plus one it may not. */
-function lock({ expoModulesCore, hermes, reachability = sha('c') }) {
+/** A minimal Podfile.lock tail: the entries the script may drop plus one it may not. */
+function lock({
+  expoModulesCore,
+  hermes,
+  rnSentry = sha('d'),
+  reachability = sha('c'),
+}) {
   return [
     'SPEC CHECKSUMS:',
     `  ExpoModulesCore: ${expoModulesCore}`,
+    `  RNSentry: ${rnSentry}`,
     `  ReachabilitySwift: ${reachability}`,
     `  hermes-engine: ${hermes}`,
     '',
@@ -80,6 +86,18 @@ const writeLock = (contents) =>
 
 test('reverts a diff limited to the path-dependent checksums', () => {
   writeLock(lock({ expoModulesCore: sha('1'), hermes: sha('2') }));
+  run();
+  expect(readLock()).toBe(lock({ expoModulesCore: sha('a'), hermes: sha('b') }));
+});
+
+test('reverts RNSentry drift alongside the others', () => {
+  writeLock(lock({ expoModulesCore: sha('1'), hermes: sha('2'), rnSentry: sha('3') }));
+  run();
+  expect(readLock()).toBe(lock({ expoModulesCore: sha('a'), hermes: sha('b') }));
+});
+
+test('reverts RNSentry drift on its own', () => {
+  writeLock(lock({ expoModulesCore: sha('a'), hermes: sha('b'), rnSentry: sha('3') }));
   run();
   expect(readLock()).toBe(lock({ expoModulesCore: sha('a'), hermes: sha('b') }));
 });
