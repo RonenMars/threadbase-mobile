@@ -17,6 +17,8 @@
   "nav": {
     "top": "↑ Top",
     "bottom": "↓ Bottom",
+    "scrollToTop": "Scroll to top",
+    "scrollToBottom": "Scroll to bottom",
     "copyAll": "Copy all"
   },
   "biometricLock": {
