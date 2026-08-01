@@ -290,8 +290,22 @@ __tests__/unit/scripts/reset-podfile-lock-path-noise.test.js
 
 For each such file a slice touches, `$G diff origin/main <trunk> -- <file>` must show only
 additions on top of `main`'s version. A removed line that `main` currently has is a revert until
-proven otherwise. Regenerate the list before each slice; it grows every time `main` takes a
-content commit.
+proven otherwise.
+
+**Regenerate the list before each slice — but membership is not the check.** The list grows when
+`main` touches a file it has not touched before; it stays the same size when `main` touches one
+already on it, and that second case is the dangerous one, because a regenerated-but-identical
+list reads as "nothing changed" when the baseline moved underneath it. Always re-diff against
+`main`'s *current* content, never against the list alone.
+
+A live instance, as of 2026-08-01: PR `#495`
+(`fix(ios): add RNSentry to the path-dependent Podfile.lock checksum list`) touches `CLAUDE.md`,
+`scripts/reset-podfile-lock-path-noise.sh` and its test. All three are already on the 21-file
+list, so the list is still 21 entries after it merges — and yet `CLAUDE.md` is touched by
+`309bd80e` in slice B and by `f3487f97` in slice C. Both slices therefore carry a copy of
+`CLAUDE.md` that predates `#495`, and Guard B is the only thing standing between that and a
+silent revert of the fix. Rebase both onto `main` after `#495` lands and re-run Guard B against
+the new content.
 
 ---
 
