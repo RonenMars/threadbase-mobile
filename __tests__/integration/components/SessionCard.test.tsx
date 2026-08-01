@@ -103,6 +103,18 @@ describe('SessionCard', () => {
   it('has correct accessibility label', async () => {
     const session = makeSession({ projectName: 'my-project', status: 'running', elapsedMs: 30000 })
     const { getByLabelText } = await render(<SessionCard session={session} />)
-    expect(getByLabelText('Session my-project, status running, 30s')).toBeTruthy()
+    expect(getByLabelText('Session my-project, status Running, 30s')).toBeTruthy()
+  })
+
+  it('announces the same state the badge shows, not the raw wire status', async () => {
+    const session = makeSession({
+      projectName: 'my-project',
+      status: 'idle',
+      ownership: 'historical',
+      interruptedStatus: 'waiting_input',
+      elapsedMs: 30000,
+    })
+    const { getByLabelText } = await render(<SessionCard session={session} />)
+    expect(getByLabelText('Session my-project, status Was waiting, 30s')).toBeTruthy()
   })
 })

@@ -98,4 +98,52 @@ describe('SessionCard — external session', () => {
     const { getByText } = await render(<SessionCard session={session} />)
     expect(getByText('Idle')).toBeTruthy()
   })
+
+  it('does not read a managed session as external just because it is writing JSONL', async () => {
+    const session = makeSession({
+      status: 'running',
+      ptyAttached: true,
+      ownership: 'managed',
+      activity: { state: 'active_writing', lastEventAt: '2024-01-01T00:00:00Z', source: 'jsonl' },
+    })
+    const { getByText, queryByText } = await render(<SessionCard session={session} />)
+    expect(getByText('Running')).toBeTruthy()
+    expect(queryByText('External')).toBeNull()
+  })
+})
+
+describe('SessionCard — recovered session', () => {
+  it('renders a rehydrated session as history rather than a bare idle', async () => {
+    const session = makeSession({ status: 'idle', ownership: 'historical' })
+    const { getByText, queryByText } = await render(<SessionCard session={session} />)
+    expect(getByText('History')).toBeTruthy()
+    expect(queryByText('Idle')).toBeNull()
+  })
+
+  it('renders what an interrupted session was doing when the streamer stopped it', async () => {
+    const running = await render(
+      <SessionCard
+        session={makeSession({ status: 'idle', ownership: 'historical', interruptedStatus: 'running' })}
+      />,
+    )
+    expect(running.getByText('Interrupted')).toBeTruthy()
+
+    const waiting = await render(
+      <SessionCard
+        session={makeSession({
+          id: 'sess-2',
+          status: 'idle',
+          ownership: 'historical',
+          interruptedStatus: 'waiting_input',
+        })}
+      />,
+    )
+    expect(waiting.getByText('Was waiting')).toBeTruthy()
+  })
+
+  it('renders a gone external process as stale', async () => {
+    const session = makeSession({ status: 'idle', ownership: 'external', processLiveness: 'gone' })
+    const { getByText } = await render(<SessionCard session={session} />)
+    expect(getByText('Stale')).toBeTruthy()
+  })
 })
