@@ -1,7 +1,18 @@
 # Landing `land/integration-prep` onto `main` in reviewable slices
 
-> **Status:** Steps 0, 1 and 1a are done. Audited and rehearsed end-to-end on 2026-08-01; the
-> plan below is the rehearsed one, not the original.
+> **Status: EXECUTED. All three slices are on `main`.** Landed 2026-08-01 as `#497` (slice A,
+> merged `8eeaa823`), `#498` (slice B, 9 commits `aaef4af7`…`dcc8c096`) and `#499` (slice C, 13
+> commits). Zero conflicts in all three. The final tree comparison against the frozen prep
+> snapshot came back with nine differing files, every one classified EXPECTED — no drift, nothing
+> unexplained. The run log, with the full conflict ledger and per-slice verification output, is at
+> `../tb-mobile-landing-run/RUN-LOG.md`.
+>
+> What follows is now a **record of a completed operation**, kept because the same shape recurs.
+> Sections below written in the imperative are the procedure as executed, corrected where the run
+> proved them wrong. `land/integration-prep`, `backup/prep-landing-2026-08-01` and the
+> `archive/prep-*` tags are retained deliberately — after `9cf00d99`, the branch is the only
+> remaining witness to what this content was supposed to be.
+>
 > **Do not trust any commit count or SHA written here.** Every number moves — `main` takes a
 > version bump on every ship, and prep is still a live merge target. Re-measure immediately
 > before acting:
@@ -186,10 +197,28 @@ are the historical bulk and are handled by the slices below, not by the loop.
 ### PR #457
 
 `#457` is `land/integration-prep → main` — **the integration branch's own PR, not an
-alternative to slicing.** As each slice merges its diff shrinks; when the last slice lands it is
-empty and closes itself. **Do not merge it whole mid-slicing** — that lands every remaining
+alternative to slicing.** **Do not merge it whole mid-slicing** — that lands every remaining
 slice in one opaque commit and discards exactly the bisectability this operation exists to
 recover.
+
+> **Correction — it does not close itself.** An earlier revision said "when the last slice lands
+> it is empty and closes itself". That is wrong, and the real run proved it: after all three
+> slices merged, `#457` was still OPEN and still reporting **73 changed files, +3446 / −1126**,
+> while the actual tip-to-tip tree diff had drained to nine EXPECTED files.
+>
+> **A PR's diff is computed against the merge-base, not tip-to-tip.** Every prep commit landed on
+> `main` under a *new* SHA — slice A as a fresh cherry-pick commit, B and C as rebased replays —
+> so nothing prep points at became reachable from `main`. The merge-base never moved, and GitHub
+> keeps rendering the entire historical divergence. It will sit there looking like unlanded work
+> forever.
+>
+> **Close it by hand once the last slice merges**, after confirming the tip-to-tip diff is clean:
+> ```bash
+> $G diff --stat origin/main origin/land/integration-prep   # expect only the EXPECTED set
+> gh pr close 457
+> ```
+> This generalises: any PR whose content is landed by *replay* rather than by merge must be
+> closed manually. Self-closing only happens when the head commits themselves become reachable.
 
 ---
 
@@ -294,18 +323,56 @@ proven otherwise.
 
 **Regenerate the list before each slice — but membership is not the check.** The list grows when
 `main` touches a file it has not touched before; it stays the same size when `main` touches one
-already on it, and that second case is the dangerous one, because a regenerated-but-identical
-list reads as "nothing changed" when the baseline moved underneath it. Always re-diff against
-`main`'s *current* content, never against the list alone.
+already on it, and that second case *looks* dangerous, because a regenerated-but-identical list
+reads as "nothing changed" when the baseline moved underneath it. Always re-diff against `main`'s
+*current* content, never against the list alone.
 
-A live instance, as of 2026-08-01: PR `#495`
-(`fix(ios): add RNSentry to the path-dependent Podfile.lock checksum list`) touches `CLAUDE.md`,
-`scripts/reset-podfile-lock-path-noise.sh` and its test. All three are already on the 21-file
-list, so the list is still 21 entries after it merges — and yet `CLAUDE.md` is touched by
-`309bd80e` in slice B and by `f3487f97` in slice C. Both slices therefore carry a copy of
-`CLAUDE.md` that predates `#495`, and Guard B is the only thing standing between that and a
-silent revert of the fix. Rebase both onto `main` after `#495` lands and re-run Guard B against
-the new content.
+### The enumeration must reach back past the fork — do not narrow it
+
+> **Correction, and the most important one this run produced.** A companion document rewrote the
+> enumeration above as:
+> ```bash
+> $G log --format='' --name-only --no-merges $FORK..origin/main | sort -u
+> ```
+> and expected it to reproduce the 21-file list. **It does not — it yields 8** — and the
+> difference is not cosmetic. Seven of the eight commits hand-listed above are **ancestors of
+> `$FORK`**, so a `$FORK..origin/main` range excludes them by construction.
+
+The 15 files that narrower range drops include `package.json`, `.github/workflows/test.yml`,
+`.github/workflows/deploy.yml` and `KICKOFF-landing-runbook.md` — **which are precisely the
+regressions `fee27061` exists to undo and that slice A excludes by hand.** The guard that is
+supposed to catch that class of mistake would have been blind to all of it.
+
+The reason is structural and worth stating once: **prep's history is older than the fork.** A
+slice can therefore revert `main` work that landed *before* the divergence point, not only after
+it. Any enumeration bounded below by `$FORK` cannot see that class. Enumerate `main`'s
+content-bearing commits directly, as the `for c in …` loop above does, and accept that the list
+must be curated rather than derived from a range.
+
+**Nothing slipped through on the real run**, but only by luck of composition, and it was checked
+rather than assumed. Retroactively re-running the wider 21-file guard across the whole landing
+(`$G diff <pre-landing-main> origin/main -- <the 21 files>`) shows every removed line is a
+genuine supersession: `package.json` drops `expo-mcp` (`#489`) and rewrites `test:e2e:mock`
+(`#470`), the ship scripts move their `SENTRY_RELEASE` exports, `docs/sentry-releases-investigation.md`
+loses the real org names by design, and this document supersedes its own earlier text.
+`.github/workflows/deploy.yml`, `CLAUDE.md` and `docs/troubleshooting.md` are additions only.
+**No file on `main` was reverted.**
+
+### What actually happened to `CLAUDE.md`
+
+`#495` (`fix(ios): add RNSentry to the path-dependent Podfile.lock checksum list`) touches
+`CLAUDE.md`, `scripts/reset-podfile-lock-path-noise.sh` and its test, and landed on `main` after
+prep had already been cut. `CLAUDE.md` is touched by `309bd80e` in slice B and by `f3487f97` in
+slice C, so **both slices carried a copy predating `#495`**.
+
+Guard B was run against `main`'s current content on both, and both came back **additions only** —
+`+16 / −0` on slice B, `+10 / −0` on slice C — with `#495`'s four-checksum paragraph intact.
+
+**The mechanism, which was likely but never guaranteed: `git rebase` applies patches, not whole
+files.** `309bd80e` adds a "Worktrees" section and `f3487f97` adds an "Expo MCP" section; neither
+hunk overlaps `#495`'s, so all three compose. Had any of them edited the same paragraph, the
+replay would have carried the stale text and the guard is the only thing that would have caught
+it. Run it regardless — a guard that only fires when you already suspect trouble is not a guard.
 
 ---
 
@@ -459,6 +526,41 @@ rebase and was only removed once the flag was added.
 Merge strictly in order, one at a time, waiting for green — per `CLAUDE.md` → "One PR at a
 time".
 
+### Before any `--delete-branch`, enumerate what depends on that ref
+
+**Rule: before running `gh pr merge --delete-branch` (or deleting any branch on `origin`), list
+every dependent of that ref — open PRs that use it as a *base branch* included, not only things
+downstream of it in ancestry.**
+
+Two kinds of dependency look alike and behave nothing alike:
+
+- **Ancestry-stacked** — a later branch was cut from this one. Deleting the ref is harmless; the
+  commits are reachable from wherever they landed. Re-point the rebase at the merge target:
+  ```bash
+  $G rebase --no-keep-empty --onto origin/main <previous-slice-tip>
+  ```
+- **Base-ref-stacked** — an *open PR* declares this branch as its base. **Deleting the ref makes
+  GitHub close that PR automatically**, and the closure reads like ordinary cleanup in the log.
+
+This run hit the benign kind: `gh pr merge --delete-branch` removed `land/slice-a` before slice B
+needed it as a rebase base. `--onto origin/main $A_END` is the same operation, since the merged
+trunk and the deleted branch had identical trees, and nothing was lost.
+
+**The same GitHub behaviour is not benign in the other case, and it has already cost real work.**
+An hour earlier, the equivalent landing on the streamer repo deleted a branch that an open PR
+declared as its base. GitHub silently closed that PR, its content dropped out of the landing
+entirely, and the automation reported success — the failure produced no error, only a missing
+PR nobody was looking for. Check first:
+
+```bash
+gh pr list --state open --json number,title,baseRefName \
+  --jq '.[] | select(.baseRefName == "<branch-about-to-be-deleted>")'
+```
+
+If that returns anything, re-target those PRs (`gh pr edit <n> --base main`) **before** merging
+the branch away. An empty result is what makes `--delete-branch` safe, and it costs one command
+to establish.
+
 ---
 
 ## Verification
@@ -528,14 +630,15 @@ The first three are exactly `#481`, which `main` has and prep never absorbed. Th
 | Risk | Mitigation |
 |---|---|
 | A slice reverts `main`'s post-divergence work | Guard A + Guard B, every slice, no exceptions. This is what `fee27061` cost. |
-| Version regression on `app.json` / `build.gradle` | Take `main`'s (higher) values. Read the live numbers — they moved seven times in the last week. Both branches happened to sit at 187/39 during the rehearsal, so this was *not* exercised. |
+| Version regression on `app.json` / `build.gradle` | Take `main`'s (higher) values. Read the live numbers — they moved seven times in the last week. **Still unexercised.** Both branches sat at 187/39 through the rehearsal, and on the real run `main` was ahead at 188/40 but *no slice touched either file*, so no conflict arose. This path has never been tested and must not be treated as proven. |
 | Squash-vs-drop confusion loses content | Two pairs are patch-identical; everything else is `fixup`. Never `drop`. |
 | Plain `rebase <trunk>` replays the wrong range | Always `rebase --no-keep-empty --onto <trunk> <previous-tip>`. |
 | An already-empty commit survives the rebase | `--no-keep-empty`. |
 | `land/integration-prep` drifts | The snapshot is the freeze (Step 0b). Cut slices from the snapshot, never the live branch. |
-| PR #457 merged whole by accident | It drains and closes itself. Never merge it during slicing. |
+| PR #457 merged whole by accident | Never merge it during slicing. It does **not** close itself — its diff is computed against a merge-base that replay never moves. Close it by hand after the last slice. |
+| A branch deleted out from under an open PR that bases on it | Enumerate base-ref dependents before every `--delete-branch`. GitHub closes such PRs silently; this already destroyed a PR's content on the streamer landing. |
 | A slice is red despite local checks | Fix forward inside that slice; never merge red. |
-| `ios/Podfile.lock` churn | Always `bundle exec pod install`, then `scripts/reset-podfile-lock-path-noise.sh`. **Note the script's `NOISE` regex does not cover `RNSentry`,** which drifts the same way at an unchanged version. |
+| `ios/Podfile.lock` churn | Always `bundle exec pod install`, then `scripts/reset-podfile-lock-path-noise.sh`. The gap this row used to flag — the `NOISE` regex missing `RNSentry` — was closed by `#495`; all four path-dependent checksums are covered on `main` now. |
 | A batch Jest failure mistaken for a defect | Re-run the suite alone. `sessionNames.test.ts` failed in batch and passed in isolation during the rehearsal, exactly like the documented `SessionScreen.*` suites. |
 
 **Rollback:** nothing is destructive until a slice merges. `land/*` branches are scratch;
@@ -560,13 +663,31 @@ them shipping a regression, is not a trade worth making.
 
 ---
 
-## Rehearsal
+## Rehearsal, then the real run
 
-The full landing was rehearsed locally on 2026-08-01 against this three-slice plan: all three
-slices applied, **zero conflicts**, all five checks green per slice, and the final tree matching
-the prep snapshot except for `#481` and `Podfile.lock` noise.
+The landing was rehearsed locally on 2026-08-01 against this three-slice plan: all three slices
+applied, **zero conflicts**, all five checks green per slice, and the final tree matching the prep
+snapshot except for `#481` and `Podfile.lock` noise. The rehearsal notes — provenance SHAs, the
+conflict ledger, verbatim verification output, the B4 classification and the exact ordered replay
+script for `origin` — are committed at
+[`docs/landing/2026-08-01-rehearsal-notes.md`](docs/landing/2026-08-01-rehearsal-notes.md),
+alongside the prompts that produced them in the same directory.
 
-The rehearsal notes — provenance SHAs, the conflict ledger, verbatim verification output, the
-B4 classification and the exact ordered replay script for `origin` — live outside the repo at
-`../tb-mobile-landing-rehearsal/REHEARSAL-NOTES.md`, alongside the audit that produced this
-plan in `PHASE-A-REPORT.md`.
+**The real run then reproduced the rehearsal almost exactly.** Same boundary SHAs, same slice A
+file list, same 10-requested / 9-applied on slice B, same `fee27061` self-neutralisation from five
+files to two, and the same verification counts to the test (956 / 255, 957 / 255, 960 / 261).
+Slice C ran 13 commits rather than 11 because `#494` and `#496` reached prep after the rehearsal
+ended; landing the documents that describe the landing was a deliberate choice, not an oversight.
+
+Where the real run diverged, it diverged in what the *documents* claimed rather than in what the
+history did — the Guard B enumeration, `#457`'s self-closing, and the `--delete-branch`
+dependency check, all corrected above. The run log with the full ledger is at
+`../tb-mobile-landing-run/RUN-LOG.md`.
+
+### Still outstanding
+
+One rehearsal correction remains unapplied: `sessionNames.test.ts` should be added to the
+load-sensitive suite list in [`docs/troubleshooting.md`](docs/troubleshooting.md) → "Jest test
+suites". It failed in batch and passed in isolation during the rehearsal, exactly like the
+`SessionScreen.*` suites already documented, and it did not recur on the real run. That file lives
+on `main` and needs its own one-line PR against `main` — it is deliberately not bundled here.
