@@ -102,6 +102,19 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
   node "$SCRIPT_DIR/promote-android.js" "$PACKAGE" "$PROMOTE_VERSION" "$TRACK" "$CREDS_PATH"
   echo
   echo "✅  versionCode $PROMOTE_VERSION promoted to Play ($TRACK track)."
+
+  # A promote ships the same artifact to another track, so its Sentry release
+  # already exists from the build that produced it — record where it went rather
+  # than minting a second release for the same versionCode. Assumes expo.version
+  # hasn't moved since that build, which is what makes the release name match.
+  if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
+    PROMOTE_RELEASE="threadbase-mobile-android@$(jq -r '.expo.version' app.json)+${PROMOTE_VERSION}"
+    if node_modules/@sentry/cli/bin/sentry-cli deploys new -r "$PROMOTE_RELEASE" -e "$TRACK"; then
+      echo "  ✓ Sentry deploy recorded: ${PROMOTE_RELEASE} → ${TRACK}"
+    else
+      echo "  ! Sentry deploy not recorded for ${PROMOTE_RELEASE} — release may not exist" >&2
+    fi
+  fi
   exit 0
 fi
 

@@ -302,8 +302,9 @@ echo "typically available to testers within a few minutes."
 if [[ -n "${SENTRY_RELEASE:-}" && -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
   SENTRY_CLI="node_modules/@sentry/cli/bin/sentry-cli"
   if "$SENTRY_CLI" releases new "$SENTRY_RELEASE" &&
-     "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE"; then
-    echo "  ✓ Sentry release ${SENTRY_RELEASE} created"
+     "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
+     "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$ANDROID_TRACK"; then
+    echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${ANDROID_TRACK}"
   else
     echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
   fi
