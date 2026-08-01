@@ -426,7 +426,19 @@ describe('sanitizeEvent — allowlist', () => {
 
   it('strips user to id only, dropping email/ip/username', () => {
     const out = sanitizeEvent(baseEvent()) as Record<string, unknown>
-    expect(out.user).toEqual({ id: 'anon-uuid-1234' })
+    expect(out.user).toEqual({ id: 'anon-uuid-1234', ip_address: null })
+  })
+
+  it('sends ip_address as an explicit null rather than omitting it', () => {
+    // Not the same thing: Sentry backfills an *absent* ip_address from the
+    // connection the event arrived on and derives a city-level user.geo from it,
+    // which the privacy policy does not list among a crash report's contents.
+    // An explicit null tells Sentry not to infer. Deleting this assertion would
+    // silently reintroduce coarse location data.
+    const out = sanitizeEvent(baseEvent()) as Record<string, unknown>
+    const user = out.user as Record<string, unknown>
+    expect('ip_address' in user).toBe(true)
+    expect(user.ip_address).toBeNull()
   })
 
   it('drops sensitive tags but keeps safe ones', () => {

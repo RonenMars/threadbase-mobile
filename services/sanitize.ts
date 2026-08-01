@@ -523,12 +523,19 @@ function sanitizeContexts(contexts: unknown): Record<string, unknown> | undefine
 /**
  * `user` may only ever carry an anonymous, non-network id we minted for issue
  * grouping. Strip email, username, ip_address, and every other field.
+ *
+ * `ip_address: null` is deliberate and is not the same as omitting the field.
+ * We never send an IP, but Sentry backfills an *absent* ip_address from the
+ * connection the event arrived on and derives a city-level `user.geo` from it —
+ * which no payload scrubbing can reach, and which the privacy policy does not
+ * list among the things a crash report contains. An explicit null tells Sentry
+ * not to infer, so the geo is never derived in the first place.
  */
-function sanitizeUser(user: unknown): { id: string } | undefined {
+function sanitizeUser(user: unknown): { id: string; ip_address: null } | undefined {
   if (!user || typeof user !== 'object') return undefined
   const id = (user as Record<string, unknown>).id
   if (typeof id === 'string' && id.length > 0 && id.length <= 64 && !valueLooksSensitive(id)) {
-    return { id }
+    return { id, ip_address: null }
   }
   return undefined
 }
