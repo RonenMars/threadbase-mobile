@@ -107,6 +107,15 @@ if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJEC
      "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
      "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$DEPLOY_ENV"; then
     echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${DEPLOY_ENV}"
+    # Suspect commits. Kept out of the chain above and non-fatal on purpose:
+    # --auto resolves the commit range from local git history, so a shallow
+    # clone fails here and must not report an otherwise-successful release as
+    # broken. CI checkouts need fetch-depth: 0 for this to resolve.
+    if "$SENTRY_CLI" releases set-commits --auto "$SENTRY_RELEASE"; then
+      echo "  ✓ Sentry commits associated"
+    else
+      echo "  ! Sentry commit association skipped — needs full git history" >&2
+    fi
   else
     echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
   fi

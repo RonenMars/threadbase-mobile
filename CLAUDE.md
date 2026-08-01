@@ -33,6 +33,22 @@ The load-sensitive suites, the `.claude/` worktree gotcha (`npx jest` finds **0 
 
 ---
 
+## Worktrees — Always Outside the Repo Root
+
+Create every git worktree **outside** the repo, as a sibling directory:
+
+```bash
+git worktree add ../tb-mobile-worktrees/<branch-slug> <branch>
+```
+
+Never nest one under the repo root (`.worktrees/`, `tb-mobile-worktrees/`, or anywhere inside the checkout).
+
+**Why:** a nested worktree is a full second copy of the tree, so every repo-root tool walks into it and treats those files as part of *this* project. Jest is the one that bites — it discovers the copied `__tests__/` and reports failures from a stale branch that don't exist in your working tree. On 2026-08-01 that produced two phantom `safe-metadata` failures whose "fix" would have been to break working code. `jest.config`'s `testPathIgnorePatterns` only lists `<rootDir>/.worktrees/`, so any other nested path is unguarded — and the same applies to ESLint, TypeScript, Metro and `git grep`.
+
+Keeping them siblings also means `rm -rf` on a worktree can never touch the real checkout.
+
+---
+
 ## Comments — Non-Trivial Only
 
 Never add comments that restate what the code already says. Only comment when the code is complex, non-obvious, or would surprise a reader without context.

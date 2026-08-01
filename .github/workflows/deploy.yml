@@ -76,6 +76,10 @@ jobs:
           ref: ${{ inputs.deploy_ref }}
           # persist-credentials lets us push the version-bump branch
           persist-credentials: true
+          # Full history: `sentry-cli releases set-commits --auto` resolves the
+          # commit range from local git, and the default shallow clone (depth 1)
+          # gives it nothing to diff against. ~960 commits, so the cost is small.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
@@ -331,6 +335,8 @@ jobs:
         with:
           ref: ${{ inputs.deploy_ref }}
           persist-credentials: true
+          # Same reason as the iOS job: set-commits --auto needs full history.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:

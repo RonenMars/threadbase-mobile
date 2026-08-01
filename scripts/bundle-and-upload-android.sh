@@ -305,6 +305,13 @@ if [[ -n "${SENTRY_RELEASE:-}" && -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_OR
      "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
      "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$ANDROID_TRACK"; then
     echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${ANDROID_TRACK}"
+    # Mirrors iOS: separate and non-fatal, because --auto needs full git history
+    # and a shallow CI clone must not fail an otherwise-successful release.
+    if "$SENTRY_CLI" releases set-commits --auto "$SENTRY_RELEASE"; then
+      echo "  ✓ Sentry commits associated"
+    else
+      echo "  ! Sentry commit association skipped — needs full git history" >&2
+    fi
   else
     echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
   fi
