@@ -328,6 +328,27 @@ already uploaded by that point, so a Sentry failure must not fail the ship):
 Because the scripts are shared, this covers CI and local ships alike — "local
 only" was not achievable, and would have been wrong anyway.
 
+A deploy marker follows the finalize, so the release timeline records *where* a
+build went, not just that it exists:
+
+```bash
+"$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$DEPLOY_ENV"
+```
+
+`ship-ios.sh` passes `SENTRY_DEPLOY_ENV="$TARGET"` (testflight / production) and
+the Android script uses `$ANDROID_TRACK` (alpha / internal / beta / production).
+`ship-android.sh --promote` records a deploy against the *existing* release
+rather than minting a second one — a promote reships the same artifact, so the
+release already exists from the build that produced it.
+
+### Release health is on (2026-08-01)
+
+`enableAutoSessionTracking` was `false`, which meant no crash-free rate and no
+adoption data — a Releases page that could list builds but never rank them. It
+is now `true`. A session is a start/end timestamp plus an `ok`/`errored`/
+`crashed` status; it carries no content and no PII, so it does not weaken the
+privacy hardening around it. Everything else in that block stays off.
+
 ### Release strings now carry the platform
 
 `services/safe-metadata.ts` `getReleaseString()` interpolates
@@ -354,9 +375,83 @@ creates only the `-ios` release, `platform: android` only the `-android` one,
 and `all` creates both. Keep it that way — hoisting release creation into a
 shared workflow step would require that step to know which jobs actually ran.
 
+### Do not filter alerts on `os.name` — it is absent from JS errors
+
+This cost a pair of broken alert rules before it was caught, so it is worth
+stating plainly: **`os.name` is not populated on this project's JavaScript
+errors.** `filterIntegrations()` in `services/sentry.ts` blocks `DeviceContext`,
+and that integration is what supplies the `os` and `device` contexts. Only
+native crashes — which arrive through the platform SDK rather than the JS layer
+— carry it.
+
+Live confirmation, aggregating every error in the project:
+
+| release | `os.name` | `platform` | count |
+|---|---|---|---|
+| `…+163` | *(empty)* | `javascript` | 2 |
+| `…+163` | `iOS` | `cocoa` | 1 |
+| `…+164` | *(empty)* | `javascript` | 1 |
+
+For a React Native app the `javascript` rows are the normal case, so an alert
+rule filtering `os.name equals iOS` fires on almost nothing, and the Android
+equivalent fires on nothing at all. Both rules were built that way on
+2026-08-01 and had to be rewritten.
+
+**Filter on `release` instead.** It is set in `Sentry.init` itself, so it is on
+every event regardless of which integrations are stripped, and since the release
+string now carries the platform it answers "which platform" and "which build" at
+once:
+
+```
+release  starts with  threadbase-mobile-ios@
+release  starts with  threadbase-mobile-android@
+```
+
+A quick way to tell a real tag from a phantom one: type it into the alert
+builder's tag field. Sentry offers an existing tag as a plain suggestion, but a
+name it has never indexed comes back as *Create "…"*. `release` suggests;
+`os.name` offered to create.
+
+Two related traps in the same area:
+
+- **`platform` is a reserved Sentry event field** (`javascript`, `cocoa`,
+  `java`), so `scope.setTag('platform', …)` is shadowed by it and never becomes
+  queryable. The tag is now `app.platform`, matching the `app.version` /
+  `app.build` prefix already in use.
+- **Verify a tag against a JS error, not a native crash.** The single
+  `os.name: iOS` row above came from a `cocoa` event and is exactly what made
+  the tag look present when it was not.
+
+### Commit association — unblocked and wired (2026-08-01)
+
+**§4's "no repository is connected" finding is obsolete.** The GitHub integration
+was installed and `RonenMars/threadbase-mobile` connected shortly after that
+check. Confirmed from both sides on 2026-08-01: `Settings → Integrations` shows
+GitHub *Installed, 1 Configuration*, `Settings → Repositories` lists the repo,
+and `sentry-cli repos list` returns it. The external blocker §4 described is
+gone, so the pipeline half was added:
+
+```bash
+"$SENTRY_CLI" releases set-commits --auto "$SENTRY_RELEASE"
+```
+
+Deliberately **outside** the `new && finalize && deploys new` chain and
+non-fatal. `--auto` resolves the commit range from *local* git history, so it is
+the one call here that can fail for an environment reason rather than a
+credential one — and a failure there must not report an otherwise-successful
+release as broken.
+
+That local-history requirement also needed a CI change: both `deploy.yml`
+checkout steps now set `fetch-depth: 0`. `actions/checkout` defaults to a depth-1
+shallow clone, which gives `--auto` nothing to diff against. At ~960 commits the
+full clone costs little.
+
+What this unlocks once a build ships with it: suspect commits on each issue,
+suggested assignees from code owners, "resolved via commit/PR", and — per the
+Repositories page — Seer.
+
 ### Still open
 
-- Commit association remains blocked on connecting a repository in the Sentry
-  org (§4) — unchanged.
-- No deploy markers. `sentry-cli releases deploys new -e <env> <release>` would
-  populate them if the track/environment is worth recording.
+- Nothing blocking. The remaining Sentry items are verification: the deploy
+  marker, `set-commits`, and both alert rules have all been written but not yet
+  exercised by a real ship or a real event.
