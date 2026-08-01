@@ -17,6 +17,8 @@
   "nav": {
     "top": "↑ Вверх",
     "bottom": "↓ Вниз",
+    "scrollToTop": "Прокрутить вверх",
+    "scrollToBottom": "Прокрутить вниз",
     "copyAll": "Копировать всё"
   },
   "biometricLock": {
