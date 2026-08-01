@@ -22,17 +22,22 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  # Decide whether to skip the heavy CI work. The PR jobs (Type check, Unit
-  # tests, Integration tests, Lint) are enforced as required status checks by
-  # branch protection, so they must ALWAYS run and report success — a job
+  # Decide whether to skip the heavy CI work. Five jobs (Lint, Type check, Unit
+  # tests, Integration tests, i18n) are enforced as required status checks by the
+  # `main protection` ruleset — a ruleset, not classic branch protection, so the
+  # branches/main/protection API answers "Branch not protected"; read
+  # /rulesets instead. They must ALWAYS run and report success — a job
   # skipped via a job-level `if:` reports "skipped", which does NOT satisfy a
   # required check and would leave the PR un-mergeable forever. Instead each job
   # checks out (cheap, and required so the local composite action exists) and
   # then runs a single guarded `run-ci` step. When the bracketed tag `[skip-ci]`
   # is present in the latest commit message, the PR title, or the PR body, that
   # one step is skipped, the job still succeeds, and the check context goes
-  # green in seconds. The tag is bracketed so prose that merely mentions it does
-  # not accidentally trip the skip. (The monthly e2e-maestro job is schedule-
+  # green in seconds. Bracketing only stops an unbracketed mention of the words
+  # from tripping the skip — writing the bracketed tag itself in a PR body or
+  # title DOES trip it, even in prose saying the run should not be skipped. A PR
+  # that discusses this gate must therefore avoid reproducing the literal tag, or
+  # it silently skips its own suite. (The monthly e2e-maestro job is schedule-
   # only and is intentionally not gated.)
   gate:
     name: Gate
