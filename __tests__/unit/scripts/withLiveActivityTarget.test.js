@@ -44,13 +44,21 @@ function appTarget(project) {
   return nativeTarget(project, 'Threadbase');
 }
 
-function releaseBuildSettings(project, targetName) {
+function buildSettings(project, targetName, configurationName) {
   const target = nativeTarget(project, targetName);
   const configurationList = project.pbxXCConfigurationList()[target.buildConfigurationList];
-  const releaseRef = configurationList.buildConfigurations.find(
-    (configuration) => configuration.comment === 'Release',
+  const ref = configurationList.buildConfigurations.find(
+    (configuration) => configuration.comment === configurationName,
   );
-  return project.pbxXCBuildConfigurationSection()[releaseRef.value].buildSettings;
+  return project.pbxXCBuildConfigurationSection()[ref.value].buildSettings;
+}
+
+function releaseBuildSettings(project, targetName) {
+  return buildSettings(project, targetName, 'Release');
+}
+
+function debugBuildSettings(project, targetName) {
+  return buildSettings(project, targetName, 'Debug');
 }
 
 function phaseNames(target) {
@@ -146,17 +154,46 @@ describe('withLiveActivityTarget', () => {
     ).toBe('"$(IOS_WIDGET_PROVISION_PROFILE_UUID)"');
   });
 
+  it('keeps distinct app and widget profile variables in Debug builds', () => {
+    // Debug needs the same per-target mapping as Release: xcodebuild applies
+    // command-line build settings to every target at once, so an on-device Debug
+    // build could not otherwise give the app and the widget different profiles.
+    const project = parseProject();
+
+    expect(debugBuildSettings(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER)
+      .toBe('"$(IOS_PROVISION_PROFILE_UUID)"');
+    expect(
+      debugBuildSettings(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER,
+    ).toBe('"$(IOS_WIDGET_PROVISION_PROFILE_UUID)"');
+  });
+
+  it('leaves Debug on automatic signing so a plain build needs no profiles', () => {
+    // The specifier above is inert until someone supplies the UUIDs. If this ever
+    // flips to Manual in the committed project, every Debug build starts requiring
+    // provisioning profiles that most machines will not have.
+    const project = parseProject();
+
+    expect(debugBuildSettings(project, 'Threadbase').CODE_SIGN_STYLE).not.toBe('Manual');
+  });
+
   it('restores target-specific profile variables idempotently', () => {
     const project = parseProject();
-    delete releaseBuildSettings(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER;
-    delete releaseBuildSettings(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER;
+    for (const settings of [
+      releaseBuildSettings(project, 'Threadbase'),
+      releaseBuildSettings(project, 'ExpoWidgetsTarget'),
+      debugBuildSettings(project, 'Threadbase'),
+      debugBuildSettings(project, 'ExpoWidgetsTarget'),
+    ]) {
+      delete settings.PROVISIONING_PROFILE_SPECIFIER;
+    }
 
     expect(configureProvisioningProfiles(project)).toBe(true);
     expect(configureProvisioningProfiles(project)).toBe(false);
-    expect(releaseBuildSettings(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER)
-      .toBe('"$(IOS_PROVISION_PROFILE_UUID)"');
-    expect(
-      releaseBuildSettings(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER,
-    ).toBe('"$(IOS_WIDGET_PROVISION_PROFILE_UUID)"');
+    for (const get of [releaseBuildSettings, debugBuildSettings]) {
+      expect(get(project, 'Threadbase').PROVISIONING_PROFILE_SPECIFIER)
+        .toBe('"$(IOS_PROVISION_PROFILE_UUID)"');
+      expect(get(project, 'ExpoWidgetsTarget').PROVISIONING_PROFILE_SPECIFIER)
+        .toBe('"$(IOS_WIDGET_PROVISION_PROFILE_UUID)"');
+    }
   });
 });
