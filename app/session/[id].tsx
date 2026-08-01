@@ -944,7 +944,7 @@ export default function SessionDetailScreen() {
         <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
-            <SessionStatusBadge status={session.status} session={session} isRefetching={false} />
+            <SessionStatusBadge session={session} isRefetching={false} />
             {session.provider ? (
               <Text style={styles.metaChip} testID="session-provider-chip">
                 {session.provider === 'codex-cli' ? 'Codex' : 'Claude'}

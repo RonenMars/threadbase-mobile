@@ -16,6 +16,10 @@ import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
+import {
+  deriveSessionPresentation,
+  type SessionPresentationInput,
+} from '@/lib/sessionPresentation'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -64,7 +68,21 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   // on the liveness fields with a pid fallback for older servers, so it does
   // not require `ownership` to be present.
   const isExternal = isExternalSession(session)
-  const externalAlive = isExternalAlive(session)
+  // Liveness is strict once the server states `ownership`; an unstated one is
+  // an older server, which still sends `pid` for a process it only discovered
+  // (managed PTY and historical shapes never carry one). Gating the loose read
+  // behind the absent-ownership case keeps a managed session that happens to be
+  // writing JSONL from reading as external.
+  const legacyDiscovered = session.ownership == null && session.pid != null
+  const externalAlive = isExternal ? isExternalAlive(session) : legacyDiscovered
+  // `deriveSessionPresentation` keys external strictly on `ownership` so that
+  // routing stays strict, which leaves it nothing to read on the legacy shape —
+  // name it here so the badge and the accessibility label agree on one answer
+  // rather than each deriving its own.
+  const presentedSession: SessionPresentationInput = legacyDiscovered
+    ? { ...session, ownership: 'external', processLiveness: 'alive' }
+    : session
+  const statusLabel = t(deriveSessionPresentation(presentedSession).labelKey)
   // Brand thread spine: amber for live (running / waiting_input), blue for an
   // alive external (observed) session, then the server's assigned identity
   // color when multi-server (so you can see at a glance which server the card
@@ -144,7 +162,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
         onPress={handlePress}
         onLongPress={handleLongPress}
         activeOpacity={0.75}
-        accessibilityLabel={`Session ${displayName}, status ${session.status}, ${elapsedLabel}`}
+        accessibilityLabel={`Session ${displayName}, status ${statusLabel}, ${elapsedLabel}`}
         accessibilityRole="button"
         style={styles.touchable}
       >
@@ -174,7 +192,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
             {/* Line 2: status + runtime + prompts in mono. The bullets give
                 the row a terminal-log rhythm without adding chrome. */}
             <View style={styles.statusRow}>
-              <SessionStatusBadge status={session.status} externalAlive={externalAlive} />
+              <SessionStatusBadge session={presentedSession} />
               <Text style={styles.metaSeparator}>•</Text>
               <Text style={styles.metaMono}>{elapsedLabel}</Text>
               <Text style={styles.metaSeparator}>•</Text>
