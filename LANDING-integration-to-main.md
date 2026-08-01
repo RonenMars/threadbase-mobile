@@ -600,6 +600,54 @@ npx expo run:ios --device "<simulator-udid>"
 
 Expect the session hub to render with server groups, session cards and conversation rows.
 
+#### On a physical device, that command cannot sign — use `dev:device`
+
+> **Correction.** The block above is correct for a **simulator** only, and the `<simulator-udid>`
+> placeholder is the only thing that says so. On a physical device a bare `npx expo run:ios
+> --device` fails during "Planning build" with six App Groups errors and `xcodebuild` exit 65 —
+> **by design**, not as a regression:
+> ```
+> Provisioning Profile "iOS Team Provisioning Profile: com.ronenmars.threadbase"
+> does not support the App Groups capability.
+>   ❌ Threadbase          → group.com.ronenmars.threadbase
+>   ❌ ExpoWidgetsTarget   → group.com.ronenmars.threadbase
+> ```
+> Xcode's automatic signing regenerates its own Team Provisioning Profile on every build and
+> ignores hand-made ones, so the profile it produces never carries App Groups. `#480` exists
+> precisely to solve this and ships `scripts/dev-device.sh`, which discovers an installed
+> development profile per target and injects manual signing through `XCODE_XCCONFIG_FILE`:
+> ```bash
+> DEVICE_UDID=<device-udid> npm run dev:device
+> ```
+> `#480` deliberately leaves Debug on `CODE_SIGN_STYLE = Automatic` in the committed project, so
+> an unset UUID behaves exactly as before and simulator builds, fresh clones and CI are all
+> unaffected. Seeing those six errors means the wrong command was used, not that signing broke.
+
+**Prefer a physical device for this check.** The landing carries `#480` (App Groups signing for
+on-device Debug builds), the Live Activity work and the widget target; a simulator exercises none
+of them.
+
+#### Serve the bundle from the tree under test, or the check proves nothing
+
+**A Metro already listening on 8081 silently invalidates this whole step.** `expo run:ios` is
+non-interactive here, so it answers its own "use port 8082 instead?" prompt with `Skipping dev
+server` and the device attaches to whatever is already on 8081. If that is a checkout of a
+*different* branch, the app renders that branch's JS while the log reports success.
+
+Verified on 2026-08-01: the device attached to a Metro rooted at the repo root on
+`land/integration-prep` and red-screened with a module path that gave it away —
+`Unable to resolve module react/jsx-runtime from /Users/ronenmars/dev/ai-tools/tb-mobile/app/session/[id].tsx`.
+That server had been running for eight hours while its tree was rewritten underneath it, so its
+resolver cache was stale; `react/jsx-runtime.js` was present on disk the whole time.
+
+Check the owner before trusting the result, and confirm the bundle came from the right root:
+
+```bash
+lsof -nP -iTCP:8081 -sTCP:LISTEN            # who owns the port
+npx expo start --dev-client --clear         # from the worktree under test
+# then confirm in the Metro log:  iOS Bundled …ms node_modules/expo-router/entry.js
+```
+
 ### The final check is a tree diff, not a commit count
 
 > **The old `0  0` target is unreachable and has been removed.** It read
