@@ -54,9 +54,9 @@ describe('getSafeBuildMetadata', () => {
 })
 
 describe('getReleaseString', () => {
-  it('is name@version+build with no sensitive content', () => {
+  it('is name-platform@version+build with no sensitive content', () => {
     const rel = getReleaseString()
-    expect(rel).toMatch(/^threadbase-mobile@\d/)
+    expect(rel).toMatch(/^threadbase-mobile-(ios|android)@\d/)
     expect(rel.includes('+')).toBe(true)
   })
 })
