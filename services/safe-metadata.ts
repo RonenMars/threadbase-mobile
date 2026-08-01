@@ -127,8 +127,12 @@ export function getSafeBuildMetadata(): SafeBuildMetadata {
 /**
  * Sentry release string in the conventional `name@version+build` form. Contains
  * only the public package name and build metadata.
+ *
+ * The platform is part of the package name so iOS and Android land on separate
+ * releases inside the one shared Sentry project — their build counters run
+ * independently and would otherwise collide on the same `version+build`.
  */
 export function getReleaseString(): string {
-  const { appVersion, buildNumber } = getSafeBuildMetadata()
-  return `threadbase-mobile@${appVersion}+${buildNumber}`
+  const { appVersion, buildNumber, platform } = getSafeBuildMetadata()
+  return `threadbase-mobile-${platform}@${appVersion}+${buildNumber}`
 }
