@@ -33,8 +33,11 @@ jobs:
   # then runs a single guarded `run-ci` step. When the bracketed tag `[skip-ci]`
   # is present in the latest commit message, the PR title, or the PR body, that
   # one step is skipped, the job still succeeds, and the check context goes
-  # green in seconds. The tag is bracketed so prose that merely mentions it does
-  # not accidentally trip the skip. (The monthly e2e-maestro job is schedule-
+  # green in seconds. Bracketing only stops an unbracketed mention of the words
+  # from tripping the skip — writing the bracketed tag itself in a PR body or
+  # title DOES trip it, even in prose saying the run should not be skipped. A PR
+  # that discusses this gate must therefore avoid reproducing the literal tag, or
+  # it silently skips its own suite. (The monthly e2e-maestro job is schedule-
   # only and is intentionally not gated.)
   gate:
     name: Gate
