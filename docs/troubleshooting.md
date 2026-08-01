@@ -188,6 +188,28 @@ Each worktree needs its own `npm ci` — jest resolves modules from the worktree
 
 ---
 
+## CI signals
+
+Both entries here are cases where the signal is misleading rather than the code being wrong — CI reports something that looks conclusive and is not.
+
+### A green PR whose CI ran nothing (`[skip-ci]`)
+
+**When:** The required checks on a PR go green in seconds instead of minutes, and you take that as proof the merge is safe.
+
+**Cause:** `.github/workflows/test.yml` greps the head commit message, PR title and PR body for the bracketed `[skip-ci]` tag and skips the heavy step, while still *reporting* every required context as success. It has to report success — a job skipped via a job-level `if:` reports "skipped", which never satisfies a required check and would leave the PR permanently un-mergeable. The `commit-msg` hook adds `[skip-ci]` automatically to any commit touching none of the paths in `scripts/git-hooks/ci-paths.txt`, so this arrives without anyone opting in. See [`ci-significant-paths.md`](./ci-significant-paths.md).
+
+**Fix:** Judge the run, not the badge. A real `Type check` takes minutes; seconds means nothing executed. Before trusting green on a merge that matters, confirm the head commit does not carry `[skip-ci]` — and if it does, push a commit that omits the tag rather than reasoning about whether the skip was harmless.
+
+### A stacked PR looks un-CI'd but isn't
+
+**When:** A PR whose base is another feature branch rather than `main`, where you assume CI didn't really run and verify locally instead.
+
+**Cause:** The opposite of the usual setup. `test.yml`'s `pull_request` trigger has **no `branches:` filter**, so it fires for a PR targeting any base branch. Stacked PRs get the same `Type check` / `Unit tests` / `Integration tests` / `Lint` / `i18n` run as anything targeting `main`.
+
+**Fix:** Trust the checks — but read them, since this depends on the trigger staying unfiltered. If `test.yml` ever gains a `branches:` filter on `pull_request`, this reverts and stacked PRs really would need local verification.
+
+---
+
 ## iOS Simulator console noise
 
 ### `CHHapticPattern` / `CHHapticEngine` "hapticpatternlibrary.plist" errors flooding the log
