@@ -29,6 +29,7 @@ const WIDGET_TARGET = 'ExpoWidgetsTarget';
 const EMBED_PHASE = 'Embed Foundation Extensions';
 const ANCHOR_PHASE = 'Resources';
 const RELEASE_CONFIGURATION = 'Release';
+const DEBUG_CONFIGURATION = 'Debug';
 const PROFILE_VARIABLE_BY_TARGET = {
   [APP_TARGET]: 'IOS_PROVISION_PROFILE_UUID',
   [WIDGET_TARGET]: 'IOS_WIDGET_PROVISION_PROFILE_UUID',
@@ -90,37 +91,50 @@ function reorderEmbedPhase(project) {
   return true;
 }
 
-function releaseBuildSettings(project, targetName) {
+function configurationBuildSettings(project, targetName, configurationName) {
   const target = findNativeTarget(project, targetName);
   if (!target) {
     throw new Error(`[${SIGNING_TAG}] Could not find native target '${targetName}'.`);
   }
 
   const configurationList = project.pbxXCConfigurationList()[target.buildConfigurationList];
-  const releaseReference = configurationList?.buildConfigurations?.find(
-    (configuration) => configuration.comment === RELEASE_CONFIGURATION,
+  const reference = configurationList?.buildConfigurations?.find(
+    (configuration) => configuration.comment === configurationName,
   );
-  const releaseConfiguration = releaseReference
-    ? project.pbxXCBuildConfigurationSection()[releaseReference.value]
+  const configuration = reference
+    ? project.pbxXCBuildConfigurationSection()[reference.value]
     : null;
-  if (!releaseConfiguration?.buildSettings) {
+  if (!configuration?.buildSettings) {
     throw new Error(
-      `[${SIGNING_TAG}] Could not find '${RELEASE_CONFIGURATION}' settings for '${targetName}'.`,
+      `[${SIGNING_TAG}] Could not find '${configurationName}' settings for '${targetName}'.`,
     );
   }
 
-  return releaseConfiguration.buildSettings;
+  return configuration.buildSettings;
 }
 
 function configureProvisioningProfiles(project) {
   let changed = false;
 
-  for (const [targetName, variable] of Object.entries(PROFILE_VARIABLE_BY_TARGET)) {
-    const buildSettings = releaseBuildSettings(project, targetName);
-    const desired = `"$(${variable})"`;
-    if (buildSettings.PROVISIONING_PROFILE_SPECIFIER !== desired) {
-      buildSettings.PROVISIONING_PROFILE_SPECIFIER = desired;
-      changed = true;
+  // Both configurations, not just Release. The app and the widget each need their
+  // own profile, and xcodebuild applies command-line build settings to every
+  // target at once — so the per-target mapping has to live here, in the project.
+  //
+  // Debug still ships with CODE_SIGN_STYLE = Automatic, so this is inert by
+  // default: an unset IOS_*_PROVISION_PROFILE_UUID leaves the specifier empty and
+  // automatic signing behaves exactly as before. A device build opts in by
+  // supplying the UUIDs and CODE_SIGN_STYLE = Manual (see scripts/dev-device.sh),
+  // which is the only way to get App Groups onto a development profile — Xcode's
+  // auto-managed "iOS Team Provisioning Profile" does not carry them, so an
+  // on-device Debug build of this app fails to sign without it.
+  for (const configurationName of [RELEASE_CONFIGURATION, DEBUG_CONFIGURATION]) {
+    for (const [targetName, variable] of Object.entries(PROFILE_VARIABLE_BY_TARGET)) {
+      const buildSettings = configurationBuildSettings(project, targetName, configurationName);
+      const desired = `"$(${variable})"`;
+      if (buildSettings.PROVISIONING_PROFILE_SPECIFIER !== desired) {
+        buildSettings.PROVISIONING_PROFILE_SPECIFIER = desired;
+        changed = true;
+      }
     }
   }
 
