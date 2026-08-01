@@ -14,8 +14,6 @@ import Animated, {
 } from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
-import * as Clipboard from 'expo-clipboard'
-import { CopySimple } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
@@ -165,12 +163,6 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     setShowJumpButton(0)
   }, [scrollToBottom])
 
-  const copyAll = useCallback(async () => {
-    const text = collapsedLines.map((l) => stripAnsi(l)).join('\n')
-    if (!text.trim()) return
-    await Clipboard.setStringAsync(text)
-  }, [collapsedLines])
-
   const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
     return <LineRow line={item} index={index} userMessageTexts={userMessageTexts} />
   }, [userMessageTexts])
@@ -259,15 +251,6 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
         </TouchableOpacity>
       </Animated.View>
 
-      <TouchableOpacity
-        onPress={copyAll}
-        accessibilityLabel={t('nav.copyAll')}
-        style={styles.copyBtn}
-        testID="terminal-copy-all"
-      >
-        <CopySimple size={16} color="rgba(255, 255, 255, 0.7)" />
-      </TouchableOpacity>
-
       <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
           onPress={jumpToBottom}
@@ -328,20 +311,6 @@ const styles = StyleSheet.create({
   jumpBtnTop: {
     bottom: undefined,
     top: spacing.md,
-  },
-  copyBtn: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    backgroundColor: 'rgba(31, 111, 235, 0.18)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(88, 166, 255, 0.25)',
-    padding: 8,
-    minWidth: MIN_TOUCH_TARGET,
-    minHeight: MIN_TOUCH_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   jumpBtnInner: {
     backgroundColor: 'rgba(31, 111, 235, 0.18)',

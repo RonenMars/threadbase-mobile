@@ -13,7 +13,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
-import { InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
+import * as Clipboard from 'expo-clipboard'
+import { CopySimple, InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -50,6 +51,8 @@ import {
 } from '@/lib/sessionLifecycle'
 import { NotFoundError } from '@/services/api-client'
 import { preferRawTerminal } from '@/lib/renderConfidence'
+import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
+import { stripAnsi } from '@/utils/stripAnsi'
 import { ReviewSheet } from '@/components/review/ReviewSheet'
 import { buildReviewFromMessages } from '@/lib/reviewFromConversation'
 import { useConversation } from '@/hooks/useConversations'
@@ -563,12 +566,19 @@ export default function SessionDetailScreen() {
     session?.ptyAttached === true &&
     (session?.status === 'waiting_input' || session?.status === 'running') &&
     !(session != null && isTerminalSession(session))
-  const { isStreaming, parseConfidence, lines: streamPreviewLines } = useTerminalStream(
+  const { isStreaming, parseConfidence, lines: streamPreviewLines, userMessageTexts } = useTerminalStream(
     serverId,
     id ?? '',
     !isLiveForStream,
     session?.provider,
   )
+  const copyTranscript = async () => {
+    const text = collapseWrappedUserLines(streamPreviewLines, userMessageTexts)
+      .map(stripAnsi)
+      .join('\n')
+    if (!text.trim()) return
+    await Clipboard.setStringAsync(text)
+  }
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
     sendKeys.mutate('\x1b', {
@@ -852,6 +862,14 @@ export default function SessionDetailScreen() {
             onPress: () => setReviewVisible(true),
             disabled: !hasDiffs,
             testID: 'session-review-button',
+          },
+          {
+            key: 'copy',
+            label: t('common:nav.copyAll'),
+            icon: CopySimple,
+            onPress: copyTranscript,
+            disabled: streamPreviewLines.length === 0,
+            testID: 'terminal-copy-all',
           },
         ]}
       />
