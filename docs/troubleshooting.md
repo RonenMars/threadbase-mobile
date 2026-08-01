@@ -80,6 +80,37 @@ fi
 
 ---
 
+### `Provisioning Profile "iOS Team Provisioning Profile" does not support the App Groups capability`
+
+**When:** `npm run dev:device` (or a bare `npx expo run:ios --device`) fails during "Planning build" with six errors — the app and `ExpoWidgetsTarget` both rejecting `group.com.ronenmars.threadbase` — and `xcodebuild` exits 65. Release builds and TestFlight ships are unaffected.
+
+**Cause:** Xcode's *automatic* signing generates a profile named "iOS Team Provisioning Profile" that does not carry App Groups, and both targets require it. Enabling the capability on the App ID is not enough: automatic signing regenerates its own profile every build and ignores hand-made ones, so the fix has to be manual signing with an explicit profile per target.
+
+That in turn cannot be expressed on the `xcodebuild` command line, because command-line build settings apply to *every* target at once while the app and the widget need different profiles. The project therefore maps them per target via `IOS_PROVISION_PROFILE_UUID` / `IOS_WIDGET_PROVISION_PROFILE_UUID` (`plugins/withLiveActivityTarget.js`), for Debug as well as Release.
+
+**Fix:** you need one development provisioning profile per target, each granting the App Group and including your device. `scripts/dev-device.sh` then discovers them automatically — it scans installed profiles for a development profile (one with `ProvisionedDevices`) whose app-id matches and which grants App Groups — and feeds them to the build through `XCODE_XCCONFIG_FILE`. No per-machine configuration.
+
+If the script reports `signing: automatic — no development profile with App Groups found`, create them. Everything needed is usually already on the account; check first rather than assuming:
+
+```bash
+source .env.signing
+JWT=$(./scripts/asc-jwt.sh)
+curl -sH "Authorization: Bearer $JWT" \
+  https://api.appstoreconnect.apple.com/v1/bundleIds/<id>/bundleIdCapabilities   # APP_GROUPS present?
+curl -sH "Authorization: Bearer $JWT" https://api.appstoreconnect.apple.com/v1/devices        # device registered?
+curl -sH "Authorization: Bearer $JWT" https://api.appstoreconnect.apple.com/v1/certificates   # DEVELOPMENT cert?
+```
+
+With those in place, `POST /v1/profiles` with `profileType: IOS_APP_DEVELOPMENT` for each bundle id, referencing the DEVELOPMENT certificate and the devices, then base64-decode `profileContent` into `~/Library/MobileDevice/Provisioning Profiles/<uuid>.mobileprovision`. Verify before rebuilding — a profile missing the group will fail the same way:
+
+```bash
+security cms -D -i <profile>.mobileprovision | plutil -p - | grep -A2 application-groups
+```
+
+**Note:** Debug stays on `CODE_SIGN_STYLE = Automatic` in the committed project, so a plain simulator build still needs no profiles at all. The specifier is inert until `dev-device.sh` supplies the UUIDs.
+
+---
+
 ## Native builds / prebuild
 
 ### `expo prebuild` wiped the committed native config (SwiftUICore hook, gradle tuning) — SDK 57+
