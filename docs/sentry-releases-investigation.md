@@ -432,19 +432,36 @@ and `sentry-cli repos list` returns it. The external blocker §4 described is
 gone, so the pipeline half was added:
 
 ```bash
-"$SENTRY_CLI" releases set-commits --auto "$SENTRY_RELEASE"
+"$SENTRY_CLI" releases set-commits \
+  --commit "${SENTRY_REPO:-RonenMars/threadbase-mobile}@$(git rev-parse HEAD)" \
+  "$SENTRY_RELEASE"
 ```
 
 Deliberately **outside** the `new && finalize && deploys new` chain and
-non-fatal. `--auto` resolves the commit range from *local* git history, so it is
-the one call here that can fail for an environment reason rather than a
-credential one — and a failure there must not report an otherwise-successful
-release as broken.
+non-fatal — a Sentry problem must never fail a ship whose binary is already at
+the store.
 
-That local-history requirement also needed a CI change: both `deploy.yml`
-checkout steps now set `fetch-depth: 0`. `actions/checkout` defaults to a depth-1
-shallow clone, which gives `--auto` nothing to diff against. At ~960 commits the
-full clone costs little.
+**Why one commit rather than `--auto`.** The first implementation used `--auto`,
+which derives the range from *local* git lineage. That is wrong whenever the
+deploy ref has diverged from whatever the previous release was cut from: on
+release 187 it swept in ten commits spanning a rebase, including unrelated
+landing work. Naming a single commit lets Sentry compute the range server-side
+from the previous release, which is both more accurate and independent of how
+the checkout was cloned.
+
+That second property removed a CI change too. `--auto` had forced
+`fetch-depth: 0` on both `deploy.yml` checkout steps, because `actions/checkout`
+defaults to a depth-1 shallow clone and a range needs history. `git rev-parse
+HEAD` works fine in a shallow clone, so both checkouts went back to the default
+and every future deploy keeps the cheaper clone.
+
+**Failures are annotated, not buried.** All three non-fatal paths route through a
+`sentry_warn` helper that emits a `::warning::` workflow command under
+`GITHUB_ACTIONS` and falls back to stderr locally. A silently-degraded release
+pipeline is the failure mode nobody notices, and a `!` line inside a 20-minute
+log is functionally invisible; an annotation surfaces on the run summary and the
+checks UI without failing the build. Workflow commands are read from stdout, so
+that branch deliberately does not redirect to stderr.
 
 What this unlocks once a build ships with it: suspect commits on each issue,
 suggested assignees from code owners, "resolved via commit/PR", and — per the
