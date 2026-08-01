@@ -107,27 +107,34 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     const animateIdsRef = useRef<Set<string>>(new Set())
     const seededRef = useRef(false)
     const [animateEpoch, setAnimateEpoch] = useState(0)
+    // Keyed on the messages array identity so the O(messages) walk runs only
+    // when data actually changes, not on every unrelated re-render (FAB state,
+    // theme). Ids can only be added on a data change, so this is behavior-
+    // preserving; the epoch bump stays a render-phase update, which is how the
+    // first render of a new tail row already carries animateIn=true.
     /* eslint-disable react-hooks/refs -- render-time seen/animate id cache; see note above */
-    if (!seededRef.current) {
-      seededRef.current = true
-      animateIdsRef.current = new Set() // seed nothing → history renders silently
-      messages.forEach((m) => animateIdsRef.current.add(`seen:${m.id}`))
-    } else {
-      const set = animateIdsRef.current
-      const tailStart = Math.max(0, messages.length - ANIMATE_TAIL_WINDOW)
-      let grew = false
-      messages.forEach((m, i) => {
-        const seenKey = `seen:${m.id}`
-        if (!set.has(seenKey)) {
-          set.add(seenKey)
-          if (i >= tailStart) {
-            set.add(m.id)
-            grew = true
+    useMemo(() => {
+      if (!seededRef.current) {
+        seededRef.current = true
+        animateIdsRef.current = new Set() // seed nothing → history renders silently
+        messages.forEach((m) => animateIdsRef.current.add(`seen:${m.id}`))
+      } else {
+        const set = animateIdsRef.current
+        const tailStart = Math.max(0, messages.length - ANIMATE_TAIL_WINDOW)
+        let grew = false
+        messages.forEach((m, i) => {
+          const seenKey = `seen:${m.id}`
+          if (!set.has(seenKey)) {
+            set.add(seenKey)
+            if (i >= tailStart) {
+              set.add(m.id)
+              grew = true
+            }
           }
-        }
-      })
-      if (grew) setAnimateEpoch((e) => e + 1)
-    }
+        })
+        if (grew) setAnimateEpoch((e) => e + 1)
+      }
+    }, [messages])
     const animateIds = animateIdsRef.current
     /* eslint-enable react-hooks/refs */
 
@@ -146,17 +153,26 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
       [lastMessageId, highlight, highlightIndex, onMatchLayout, animateEpoch],
     )
 
-    // Distinguish row shapes so FlashList only recycles cells of the same kind;
-    // without this a recycled tool-card cell can bleed under a text row.
+    // Item type drives two FlashList v2 mechanisms: the recycling pool AND the
+    // per-type running-average height used to place rows that haven't been
+    // measured yet. Real conversations span ~46pt (collapsed Reasoning header)
+    // to ~3,100pt (markdown-table answers), so lumping every thinking/tool/diff
+    // row into one 'tool' pool poisons that average — measured as ±10-20k pt
+    // content-size swings that shove the mVCP anchor around while scrolling up
+    // (the blank-gap / viewport-teleport bug). Split by the row's dominant
+    // shape so each pool's average tracks rows that actually look alike.
     const getItemType = useCallback((item: Message) => {
-      const hasToolOrDiff = item.content.some(
-        (b) =>
-          b.type === 'thinking' ||
-          b.type === 'tool_use' ||
-          b.type === 'tool_result' ||
-          b.type === 'diff',
-      )
-      if (hasToolOrDiff) return 'tool'
+      let hasThinking = false
+      let hasTool = false
+      let hasDiff = false
+      for (const b of item.content) {
+        if (b.type === 'thinking') hasThinking = true
+        else if (b.type === 'tool_use' || b.type === 'tool_result') hasTool = true
+        else if (b.type === 'diff') hasDiff = true
+      }
+      if (hasDiff) return 'diff'
+      if (hasTool) return 'tool'
+      if (hasThinking) return 'thinking'
       return item.role === 'user' ? 'user' : 'assistant'
     }, [])
 
@@ -168,6 +184,30 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
           ? { disabled: true }
           : { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true },
       [disableAutoAnchor],
+    )
+
+    // FlashList re-lays-out the header/footer whenever the element identity
+    // changes, and an inline conditional recreates it on every parent render —
+    // during an onStartReached page fetch that churn feeds extra mVCP anchor
+    // corrections (upstream guidance: keep these stable, Shopify/flash-list#1844).
+    // Memoized so identity only changes when the fetching state itself flips.
+    const listHeader = useMemo(
+      () =>
+        isFetchingOlder ? (
+          <View style={styles.pageLoading}>
+            <ActivityIndicator color={theme.text.secondary} />
+          </View>
+        ) : null,
+      [isFetchingOlder, styles, theme],
+    )
+    const listFooter = useMemo(
+      () =>
+        isFetchingNewer ? (
+          <View style={styles.pageLoading}>
+            <ActivityIndicator color={theme.text.secondary} />
+          </View>
+        ) : null,
+      [isFetchingNewer, styles, theme],
     )
 
     // Only drives the two scroll FABs — no pagination or scroll logic here.
@@ -194,6 +234,16 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
           keyExtractor={(m) => m.id}
           renderItem={renderItem}
           getItemType={getItemType}
+          // drawDistance is PIXELS of pre-rendered runway, not rows, and the
+          // iOS default is 250 — split 70/30 toward the scroll direction, so
+          // scrolling up pre-renders only ~350px above the viewport and evicts
+          // rows ~150px below it. A single table answer here measures ~3,100px
+          // (≈5 viewports), so the default buffer is outrun by any real flick
+          // and just-passed rows unmount into visible blanks. 2000px keeps the
+          // engaged window ahead of momentum scrolling and clears the known-bad
+          // "item taller than 2×drawDistance" mVCP-correction regime
+          // (Shopify/flash-list#2136) for rows up to 4,000px.
+          drawDistance={2000}
           contentContainerStyle={contentContainerStyle}
           maintainVisibleContentPosition={maintainVisibleContentPosition}
           onLoad={onReady}
@@ -203,20 +253,8 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
           onStartReachedThreshold={0.3}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
-          ListHeaderComponent={
-            isFetchingOlder ? (
-              <View style={styles.pageLoading}>
-                <ActivityIndicator color={theme.text.secondary} />
-              </View>
-            ) : null
-          }
-          ListFooterComponent={
-            isFetchingNewer ? (
-              <View style={styles.pageLoading}>
-                <ActivityIndicator color={theme.text.secondary} />
-              </View>
-            ) : null
-          }
+          ListHeaderComponent={listHeader}
+          ListFooterComponent={listFooter}
         />
         {showScrollTop ? (
           <TouchableOpacity

@@ -1,0 +1,224 @@
+# Maestro E2E — conversation scroll-up blank gaps (regression)
+#
+# Repro of the paused-session bug: scrolling UP fast through a conversation
+# whose rows range from ~50pt (collapsed Reasoning headers) to ~3,000pt
+# (markdown-table answers) opened progressively larger blank regions, and a
+# small scroll could teleport the viewport. Root causes fixed together:
+#   - delta-poll off-by-one appending a duplicate-id tail row every tick
+#   - FlashList drawDistance left at the 250px default vs multi-viewport rows
+#   - one coarse getItemType pool poisoning the estimated-height average
+#
+# The flow flings to the top of the fixture conversation with NO settle time
+# between gestures, then requires the top rows to be drawn within a tight
+# timeout. On the pre-fix build the top region stays blank (or lands
+# elsewhere) until a corrective down-scroll, so the assertions fail.
+#
+# Fixture: e2e/fixtures/conv-scroll-gaps.json (heights mirror the real
+# session that reproduced the bug). Requires the mock server on :7071.
+# Usage: maestro test e2e/07_conversation_scroll_gaps.yaml
+
+appId: com.ronenmars.threadbase
+---
+# Inline pairing instead of setup.yaml: Maestro 2.6.1's `hideKeyboard` does not
+# dismiss the iOS 26.x keyboard, so this prelude never needs it — the form is
+# scrolled above the keyboard and the token input submits via its return key
+# (ConnectStep wires onSubmitEditing to the handshake).
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-welcome-cta"
+    commands:
+      - tapOn:
+          id: "onboarding-welcome-cta"
+      - tapOn:
+          id: "onboarding-connect-paste-card"
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - inputText: "http://localhost:7071"
+      # Scroll the KeyboardAwareScrollView so the token input clears the keyboard.
+      - swipe:
+          start: 50%, 45%
+          end: 50%, 25%
+          duration: 300
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - inputText: "mock-key-123"
+      # returnKeyType="done" → onSubmitEditing fires the handshake.
+      - pressKey: Enter
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 8000
+      - tapOn:
+          id: "onboarding-notifications-cta"
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-done-cta"
+          timeout: 8000
+      - tapOn:
+          id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+# Deeplink straight into the fixture conversation; no ?server= param — the
+# screen falls back to the freshly paired mock server.
+- openLink: "threadbase://conversation/conv-scroll-gaps"
+
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 8000
+
+# The tail view opens bottom-anchored: the last message must be on screen.
+- extendedWaitUntil:
+    visible:
+      id: "conversation-last-message"
+    timeout: 8000
+
+# Dwell ~10s at the tail (slow no-op swipes at the bottom edge) so the delta
+# poll runs a few ticks first — on the pre-fix client each tick appends a
+# duplicate tail row, churning layout exactly like the reported live session.
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+- swipe:
+    start: 50%, 60%
+    end: 50%, 58%
+    duration: 3000
+
+# After the dwell the tail must be unchanged: the second-to-last message still
+# shares the viewport with the last one. The pre-fix client has appended a
+# duplicate ~330pt copy of the tail row per poll tick by now, pushing
+# SPEC-MARKER off-screen — this is the deterministic duplicate-append signal.
+- assertVisible:
+    text: ".*SPEC-MARKER.*"
+- assertVisible:
+    id: "conversation-last-message"
+
+# ── Fling gauntlet: fast upward scrolls, zero settle time ─────────────────────
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+- swipe:
+    start: 50%, 25%
+    end: 50%, 80%
+    duration: 120
+
+# ── The render window must have kept up with the flings ───────────────────────
+# Tight timeout on purpose: pre-fix, the blank region persists until a
+# corrective down-scroll, so waiting longer would not help a broken build.
+- extendedWaitUntil:
+    visible:
+      text: ".*SCROLL-GAPS-TOP-MARKER.*"
+    timeout: 4000
+- assertVisible:
+    text: ".*TOP-NEIGHBOR-MARKER.*"
+
+- takeScreenshot: e2e/_artifacts/screenshots/scroll-gaps-top-after-flings

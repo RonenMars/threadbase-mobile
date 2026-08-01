@@ -151,6 +151,38 @@ async function handleRequest(req, res) {
     if (conversationMatch[1] === 'conv-codex-1') {
       return json(res, 200, readFixture('codex-conversation-detail.json'))
     }
+    // Scroll-gaps regression fixture (07_conversation_scroll_gaps.yaml): row
+    // heights mirroring the real conversation that reproduced the blank-gap
+    // bug — two ~3,000pt markdown-table answers and a tall code fence between
+    // 50-350pt rows. The delta poll's after_index window is served with the
+    // real streamer's INCLUSIVE [after_index, after_index + limit) semantics:
+    // a client that resumes from its max held index re-downloads the tail row
+    // every poll (the duplicate-append bug this fixture regression-tests),
+    // while a client that resumes from maxHeld + 1 gets an empty page.
+    if (conversationMatch[1] === 'conv-scroll-gaps') {
+      // readFixture returns the raw string; this route needs the parsed object.
+      const fixture = JSON.parse(readFixture('conv-scroll-gaps.json'))
+      if (url.searchParams.has('after_index')) {
+        const total = fixture.message_pagination.total
+        const limit = Math.max(1, parseInt(url.searchParams.get('msg_limit') ?? '80', 10) || 80)
+        const from = Math.min(Math.max(parseInt(url.searchParams.get('after_index'), 10) || 0, 0), total)
+        const to = Math.min(total, from + limit)
+        return json(res, 200, {
+          meta: fixture.meta,
+          messages: fixture.messages.slice(from, to),
+          message_pagination: {
+            total,
+            before_index: to,
+            from_index: from,
+            has_more_older: from > 0,
+            next_before_index: from > 0 ? from : null,
+            has_more_newer: to < total,
+            next_after_index: to < total ? to : null,
+          },
+        })
+      }
+      return json(res, 200, fixture)
+    }
     if (conversationMatch[1] === 'conv-search-anchor') {
       if (url.searchParams.has('anchor_index')) {
         return json(res, 200, readFixture('conv-search-anchor.json'))
