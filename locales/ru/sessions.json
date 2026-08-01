@@ -93,6 +93,8 @@
     "idle": "Простой",
     "externalLive": "Внешняя",
     "historical": "История",
+    "interrupted": "Прервана",
+    "interruptedWaiting": "Ожидала",
     "resumed": "Возобновлена",
     "onHold": "На паузе",
     "completed": "Завершена",

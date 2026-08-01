@@ -33,6 +33,8 @@ export type SessionStatusLabelKey =
   | 'status.idle'
   | 'status.externalLive'
   | 'status.historical'
+  | 'status.interrupted'
+  | 'status.interruptedWaiting'
   | 'status.resumed'
   | 'status.onHold'
   | 'status.completed'
@@ -58,6 +60,7 @@ export type SessionPresentationInput = {
   status: string
   ownership?: 'managed' | 'external' | 'historical'
   processLiveness?: 'alive' | 'gone' | 'unknown'
+  interruptedStatus?: 'running' | 'waiting_input'
   activity?: { state: 'active_writing' | 'quiet'; lastEventAt: string; source: 'jsonl' }
   pid?: number
   ptyAttached?: boolean
@@ -198,9 +201,19 @@ export function deriveSessionPresentation(
   }
 
   if (session.ownership === 'historical' || (external && !externalAlive)) {
+    // A rehydrated stub's `status` had to flatten to `idle`; `interruptedStatus`
+    // is the streamer telling us what it was actually doing when it stopped it.
+    // Label only — kind, colour and capabilities stay put, so the row is still
+    // idle and still needs a resume tap.
+    const historicalLabelKey: SessionStatusLabelKey =
+      session.interruptedStatus === 'running'
+        ? 'status.interrupted'
+        : session.interruptedStatus === 'waiting_input'
+          ? 'status.interruptedWaiting'
+          : 'status.historical'
     return {
       kind: 'historical',
-      labelKey: 'status.historical',
+      labelKey: historicalLabelKey,
       live: false,
       externalLive: false,
       colorToken: 'idle',
