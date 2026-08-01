@@ -76,14 +76,14 @@ describe('TerminalOutput – controls', () => {
     const { getByLabelText } = await render(
       <TerminalOutput lines={['line']} isStreaming={false} />
     )
-    expect(getByLabelText('Jump to bottom')).toBeTruthy()
+    expect(getByLabelText('Scroll to bottom')).toBeTruthy()
   })
 
   it('renders jump-to-top button', async () => {
     const { getByLabelText } = await render(
       <TerminalOutput lines={['line']} isStreaming={false} />
     )
-    expect(getByLabelText('Jump to top')).toBeTruthy()
+    expect(getByLabelText('Scroll to top')).toBeTruthy()
   })
 })
 

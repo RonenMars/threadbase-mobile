@@ -252,7 +252,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
       <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
           onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
-          accessibilityLabel="Jump to top"
+          accessibilityLabel={t('nav.scrollToTop')}
           style={styles.jumpBtnInner}
         >
           <Text style={styles.jumpBtnText}>{t('nav.top')}</Text>
@@ -271,7 +271,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
       <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
           onPress={jumpToBottom}
-          accessibilityLabel="Jump to bottom"
+          accessibilityLabel={t('nav.scrollToBottom')}
           style={styles.jumpBtnInner}
         >
           <Text style={styles.jumpBtnText}>{t('nav.bottom')}</Text>

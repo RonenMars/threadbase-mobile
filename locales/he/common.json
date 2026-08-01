@@ -17,6 +17,8 @@
   "nav": {
     "top": "↑ למעלה",
     "bottom": "↓ למטה",
+    "scrollToTop": "גלול למעלה",
+    "scrollToBottom": "גלול למטה",
     "copyAll": "העתק הכל"
   },
   "biometricLock": {

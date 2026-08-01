@@ -222,3 +222,34 @@ appId: com.ronenmars.threadbase
     text: ".*TOP-NEIGHBOR-MARKER.*"
 
 - takeScreenshot: e2e/_artifacts/screenshots/scroll-gaps-top-after-flings
+
+# ── The `↑ Top` FAB still works after the translucent restyle ─────────────────
+# It is now always mounted and faded by opacity rather than conditionally
+# mounted, so "still hittable" is a real risk: an opacity-0 overlay that keeps
+# `pointerEvents: auto` would swallow list touches, and one that never regains
+# `auto` would stop scrolling to the top. Scroll back down past the 200pt
+# threshold, then drive the whole affordance through the FAB itself.
+- swipe:
+    start: 50%, 80%
+    end: 50%, 25%
+    duration: 120
+- swipe:
+    start: 50%, 80%
+    end: 50%, 25%
+    duration: 120
+- swipe:
+    start: 50%, 80%
+    end: 50%, 25%
+    duration: 120
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-scroll-top"
+    timeout: 4000
+- takeScreenshot: e2e/_artifacts/screenshots/scroll-gaps-top-fab-over-content
+- tapOn:
+    id: "conversation-scroll-top"
+- extendedWaitUntil:
+    visible:
+      text: ".*SCROLL-GAPS-TOP-MARKER.*"
+    timeout: 4000

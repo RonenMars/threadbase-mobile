@@ -241,7 +241,7 @@ export function ConversationList({
       <Animated.View style={[styles.scrollBtn, styles.scrollBtnTop, topBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
           onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
-          accessibilityLabel="Scroll to top"
+          accessibilityLabel={t('common:nav.scrollToTop')}
           style={styles.scrollBtnInner}
         >
           <Text style={styles.scrollBtnText}>{t('common:nav.top')}</Text>
@@ -251,7 +251,7 @@ export function ConversationList({
       <Animated.View style={[styles.scrollBtn, styles.scrollBtnBottom, bottomBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity
           onPress={() => listRef.current?.scrollToEnd({ animated: true })}
-          accessibilityLabel="Scroll to bottom"
+          accessibilityLabel={t('common:nav.scrollToBottom')}
           style={styles.scrollBtnInner}
         >
           <Text style={styles.scrollBtnText}>{t('common:nav.bottom')}</Text>
