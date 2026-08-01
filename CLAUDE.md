@@ -285,3 +285,13 @@ Rules:
 - **Dependency order first.** If PR B is stacked on PR A (GitHub shows A's branch as B's base), merge A before B and rebase B onto the updated `main` afterward.
 - **CI gate.** Only squash-merge when required checks are green. If CI is red on a flaky/infra failure, re-run it **once**; if the re-run still fails, stop and report — do not merge red.
 - **Stuck cap.** If any single step hangs for more than ~3–4 minutes (CI not progressing, a rebase that won't resolve cleanly), stop and report rather than waiting indefinitely.
+
+---
+
+## Expo MCP (`expo-local`)
+
+Expo MCP is configured **globally** (user scope) for both Claude Code and Codex as `expo-local` — there is no per-project install, and nothing in this repo needs to change to use it.
+
+- It talks to a **locally running Expo/Metro dev server at `http://127.0.0.1:8081`**. Start it first (`npm start -- --port 8081`); without it the MCP tools have nothing to attach to.
+- Use it for **screenshots, device/app logs, and verifying UI on the simulator or emulator**.
+- **Do not use remote tunneling** (`--mcp-server-url` / `@expo/mcp-tunnel`) unless explicitly asked. Local dev server only.
