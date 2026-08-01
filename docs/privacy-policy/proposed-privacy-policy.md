@@ -85,9 +85,12 @@ service.
 - **What is excluded.** Crash reports do not intentionally include prompts,
   terminal output, source code, file contents, credentials, authentication
   tokens, server addresses, hostnames, IP addresses, repository names or paths,
-  session names or content, or your device name. A sanitization step runs on
-  every report before it is transmitted; anything that cannot be confidently
-  sanitized is dropped rather than sent.
+  session names or content, or your device name. A sanitization step runs in the
+  app on every report it sends, and anything that cannot be confidently
+  sanitized is dropped rather than sent. Crashes captured by the underlying iOS
+  or Android platform layer are transmitted by that platform's own crash
+  handler; those are covered instead by server-side scrubbing rules configured
+  on our error-reporting account, including the exclusion of IP addresses.
 - **A note on absolutes.** We design crash reporting to exclude the categories
   above, and we apply sanitization before sending. We cannot, however, describe
   unexpected behavior in the underlying SDK or platform as an absolute

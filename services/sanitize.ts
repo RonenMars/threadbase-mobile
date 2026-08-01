@@ -1,11 +1,27 @@
 /**
  * Centralized sanitization layer for crash reporting, diagnostics, and feedback.
  *
- * PRIVACY-CRITICAL. This is the single chokepoint through which every payload
- * that may leave the device passes. It is written allowlist-first and fails
+ * PRIVACY-CRITICAL. This is the chokepoint through which every payload the
+ * JavaScript layer sends passes. It is written allowlist-first and fails
  * closed: anything not provably safe is removed, and any error during
  * sanitization collapses the value to a redaction marker rather than leaking
  * the original.
+ *
+ * SCOPE — this covers the JS layer only, and that boundary is real rather than
+ * theoretical. `beforeSend`/`beforeBreadcrumb` are JavaScript hooks, so a native
+ * iOS or Android crash captured by the platform SDK is transmitted without ever
+ * reaching this file. The same is true of `filterIntegrations` in
+ * services/sentry.ts: it filters JS integrations, and the native SDK keeps its
+ * own. Observed directly in this project — a `platform: cocoa` event arrived
+ * carrying `os.name`, which the blocked `DeviceContext` integration strips from
+ * every `platform: javascript` event.
+ *
+ * Native events are therefore covered only by Sentry's server-side scrubbing
+ * (org Security & Privacy → Require Data Scrubber, Require Using Default
+ * Scrubbers, Global Sensitive Fields, Prevent Storing of IP Addresses). Those
+ * settings are load-bearing, not redundancy. Anything added to the threat model
+ * below should be mirrored into Global Sensitive Fields, or it is unprotected on
+ * the native path.
  *
  * Threat model — Threadbase handles highly sensitive developer data. The
  * following must NEVER leave the device via a sanitized payload: prompts,
