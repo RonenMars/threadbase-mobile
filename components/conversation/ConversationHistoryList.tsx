@@ -10,11 +10,12 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown } from 'phosphor-react-native'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import type { Message } from '@/types/api'
-import { font, spacing, type Theme } from '@/constants/theme'
+import { spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
 // The message list core, shared by the tail history view and the anchored
@@ -90,8 +91,13 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
       [],
     )
 
-    const [showScrollTop, setShowScrollTop] = useState(false)
     const [showScrollBottom, setShowScrollBottom] = useState(false)
+    const showTopVal = useSharedValue(0)
+
+    const topBtnStyle = useAnimatedStyle(() => ({
+      opacity: withTiming(showTopVal.value, { duration: 220 }),
+      pointerEvents: showTopVal.value > 0 ? 'auto' : 'none',
+    }))
 
     // Ids that should play the fade-in-from-bottom entrance. A message id not yet
     // seen is new; it animates ONLY when it lands in the tail window (a live
@@ -214,9 +220,9 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
       const distFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height
-      setShowScrollTop(contentOffset.y > 200)
+      showTopVal.value = contentOffset.y > 200 ? 1 : 0
       setShowScrollBottom(distFromBottom > 100)
-    }, [])
+    }, [showTopVal])
 
     const scrollToTop = useCallback(() => {
       listRef.current?.scrollToOffset({ offset: 0, animated: true })
@@ -256,15 +262,19 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
           ListHeaderComponent={listHeader}
           ListFooterComponent={listFooter}
         />
-        {showScrollTop ? (
+        <Animated.View
+          style={[styles.scrollBtn, styles.scrollBtnTop, topBtnStyle]}
+          pointerEvents="box-none"
+        >
           <TouchableOpacity
-            style={[styles.scrollBtn, styles.scrollBtnTop]}
+            style={styles.scrollBtnInner}
             onPress={scrollToTop}
-            accessibilityLabel="Scroll to top"
+            accessibilityLabel={t('common:nav.scrollToTop')}
+            testID="conversation-scroll-top"
           >
             <Text style={styles.scrollBtnText}>{t('common:nav.top')}</Text>
           </TouchableOpacity>
-        ) : null}
+        </Animated.View>
         {showScrollBottom ? (
           <TouchableOpacity
             style={styles.scrollBtnBottom}
@@ -292,12 +302,19 @@ function makeStyles(theme: Theme) {
     scrollBtn: {
       position: 'absolute',
       alignSelf: 'center',
-      backgroundColor: theme.text.accent,
-      borderRadius: 20,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
     },
     scrollBtnTop: { top: spacing.md },
+    // Translucent so message text stays legible underneath — this pill sits over
+    // the centered text column, not in a gutter. Matches ConversationList and
+    // TerminalOutput.
+    scrollBtnInner: {
+      backgroundColor: 'rgba(31, 111, 235, 0.14)',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(88, 166, 255, 0.2)',
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+    },
     scrollBtnBottom: {
       position: 'absolute',
       right: spacing.md,
@@ -314,6 +331,6 @@ function makeStyles(theme: Theme) {
       shadowRadius: 4,
       elevation: 4,
     },
-    scrollBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
+    scrollBtnText: { color: 'rgba(230, 237, 243, 0.6)', fontSize: 12, fontWeight: '500' },
   })
 }
