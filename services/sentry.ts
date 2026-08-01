@@ -129,7 +129,9 @@ function applySafeTags(): void {
     const scope = Sentry.getGlobalScope()
     scope.setTag('app.version', meta.appVersion)
     scope.setTag('app.build', meta.buildNumber)
-    scope.setTag('platform', meta.platform)
+    // Not 'platform': that is a reserved Sentry event field (javascript/cocoa/java),
+    // so a tag of that name is shadowed by it and never becomes queryable.
+    scope.setTag('app.platform', meta.platform)
     scope.setTag('os.version', meta.osVersion)
     scope.setTag('js.engine', meta.jsEngine)
     scope.setTag('environment', resolveEnvironment())
@@ -180,7 +182,11 @@ async function performInit(): Promise<boolean> {
     enableCaptureFailedRequests: false,
     enableUserInteractionTracing: false,
     enableAutoPerformanceTracing: false,
-    enableAutoSessionTracking: false,
+    // The one capture that stays ON. A session is a start/end timestamp plus an
+    // ok/errored/crashed status — no content, no PII — and it is the only source
+    // of crash-free rate and release adoption. Without it the Releases page can
+    // list a build but never say whether it is healthier than the one before.
+    enableAutoSessionTracking: true,
     enableAutoConsoleLogs: false,
     enableWatchdogTerminationTracking: false,
     enableNativeNagger: false,

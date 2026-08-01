@@ -77,7 +77,9 @@ describe('sentry service — defensive init config', () => {
     expect(opts.enableCaptureFailedRequests).toBe(false)
     expect(opts.enableUserInteractionTracing).toBe(false)
     expect(opts.enableAutoConsoleLogs).toBe(false)
-    expect(opts.enableAutoSessionTracking).toBe(false)
+    // Sessions carry no content — only a timestamp pair and ok/errored/crashed —
+    // so this one stays on to feed crash-free rate and release adoption.
+    expect(opts.enableAutoSessionTracking).toBe(true)
     expect(opts.replaysSessionSampleRate).toBe(0)
     expect(opts.replaysOnErrorSampleRate).toBe(0)
     expect(opts.tracesSampleRate).toBe(0)
@@ -142,7 +144,10 @@ describe('sentry service — defensive init config', () => {
     expect(typeof userArg.id).toBe('string')
     // Tags applied are safe metadata only
     const tagKeys = scope.setTag.mock.calls.map((c: string[]) => c[0])
-    expect(tagKeys).toContain('platform')
+    // 'app.platform', not 'platform' — the latter is a reserved Sentry event
+    // field, so a tag by that name is shadowed and never becomes queryable.
+    expect(tagKeys).toContain('app.platform')
+    expect(tagKeys).not.toContain('platform')
     expect(tagKeys).toContain('app.version')
     expect(tagKeys.some((k: string) => k.includes('url') || k.includes('server'))).toBe(false)
   })
