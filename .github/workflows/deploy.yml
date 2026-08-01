@@ -168,6 +168,10 @@ jobs:
           # rather than a secret: the DSN ships inside the app, so masking it in
           # logs hides nothing and only makes "was it set?" harder to answer.
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          # Support and feedback inboxes. Baked into the bundle like the DSN, so an
+          # unset value silently falls back to the in-source default rather than failing.
+          EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
+          EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
           ARGS=(
             --target "$IOS_TARGET"
@@ -397,6 +401,10 @@ jobs:
           # Same as the iOS job: the Android build bundles the same JS, so without
           # the runtime DSN the SDK never initialises and the APK reports nothing.
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          # Support and feedback inboxes. Baked into the bundle like the DSN, so an
+          # unset value silently falls back to the in-source default rather than failing.
+          EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
+          EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
           ./scripts/ship-android.sh \
             --track "$ANDROID_TRACK" \

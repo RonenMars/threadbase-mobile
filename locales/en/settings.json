@@ -74,7 +74,7 @@
   },
   "help": {
     "restartOnboarding": "Restart onboarding",
-    "helpSupport": "Help & Support",
+    "helpSupport": "Email our support",
     "serverHealth": "Server health",
     "pairedDevices": "Paired devices",
     "backupRestore": "Backup & restore"
