@@ -467,8 +467,59 @@ What this unlocks once a build ships with it: suspect commits on each issue,
 suggested assignees from code owners, "resolved via commit/PR", and — per the
 Repositories page — Seer.
 
+### Native crashes bypass the JavaScript sanitizer
+
+`services/sanitize.ts` described itself as "the single chokepoint through which
+every payload that may leave the device passes". That is not true for native
+crashes, and the gap is observable in this project's own data rather than
+theoretical:
+
+| release | `platform` | `os.name` |
+|---|---|---|
+| `…+163` | `javascript` | *(empty)* |
+| `…+163` | `cocoa` | `iOS` |
+
+`filterIntegrations` blocks `DeviceContext`, which is what supplies `os.name`.
+Every `javascript` event obeys that. The `cocoa` event did not — because
+`beforeSend`, `beforeBreadcrumb` and `filterIntegrations` are all **JavaScript**
+constructs, and a crash captured by the native iOS/Android SDK is transmitted
+without passing through any of them. Native crash handling is on by default and
+is not overridden.
+
+So for native crashes the entire hardening in `services/sentry.ts` and
+`services/sanitize.ts` simply does not apply. Until 2026-08-01 nothing else did
+either.
+
+### Org-level Sentry settings are load-bearing, not belt-and-braces
+
+Configured 2026-08-01 under `Settings → Security & Privacy`. These are the only
+protection on the native path, which is why they are recorded here rather than
+left as dashboard state nobody has written down:
+
+| Setting | State | Why |
+|---|---|---|
+| Require Data Scrubber | on | server-side scrubbing for events the JS layer never sees |
+| Require Using Default Scrubbers | on | passwords, card numbers, common secret shapes |
+| Global Sensitive Fields | `serverUrl`, `sessionName`, `projectPath`, `repoName`, `machineName`, `deviceName`, `prompt` | the Threadbase-specific vocabulary the defaults do not know |
+| Prevent Storing of IP Addresses | on | org-level pair to the SDK's `ip_address: null` |
+| Enhanced Privacy | on | keeps PII and source code out of notification bodies |
+| Allow Shared Issues | off | no anonymous public links to issue data |
+| Allow JavaScript Source Fetching | off | inert for a mobile app — no public URL to scrape — so pure attack surface |
+| Store Minidumps As Attachments | disabled | minidumps can contain arbitrary process memory |
+
+**Global Sensitive Fields, not Global Safe Fields.** The two boxes sit adjacent
+with near-identical labels and opposite meanings: "Safe" *exempts* a field from
+scrubbing. Putting the list in the wrong box is worse than leaving both empty,
+because it whitelists exactly the fields the threat model is about.
+
+Anything added to the threat model in `services/sanitize.ts` should be mirrored
+into Global Sensitive Fields, or it stays unprotected on the native path.
+
 ### Still open
 
 - Nothing blocking. The remaining Sentry items are verification: the deploy
   marker, `set-commits`, and both alert rules have all been written but not yet
   exercised by a real ship or a real event.
+- Source-map symbolication has not been confirmed since the release-name fix. A
+  real crash showing filenames and line numbers rather than bundle offsets would
+  settle it.
