@@ -1,6 +1,7 @@
 # Landing `land/integration-prep` onto `main` in reviewable slices
 
-> **Status:** Steps 0 and 1 (the one-time prep rebase) are done, but `land/integration-prep` has **diverged from `main` again** since — `main` picked up 3 more commits (2 version bumps + a Sentry release fix) that landed directly rather than by rebasing the prep branch. `land/integration-prep` is **not** currently a straight `main` + N commits; it must be re-rebased onto `origin/main` before Step 2 slicing starts. See Step 1a below.
+> **Status:** Steps 0, 1 and 1a are done. As of 2026-08-01 `land/integration-prep` is a straight `main` + **92** commits (`0 92` on the divergence check) and Step 2 slicing can start.
+> Divergence has recurred twice already and will recur again — `main` takes a version-bump commit on every ship. Re-run the divergence check immediately before cutting each slice rather than trusting this line; Step 1a is the procedure, and it is repeatable, not one-time.
 > The source branch has been renamed to `archive/26-07-2026.18-44-integration` and is frozen; it survives only as the independent witness for Step 3's reconciliation.
 > References below to the archived name are historical (what was measured, where the work came from), not instructions to act on it.
 
@@ -8,11 +9,11 @@
 
 All mobile work for the last two weeks has been landing on the integration branch
 `archive/26-07-2026.18-44-integration` rather than on `main`, mostly by direct push rather than through PRs.
-`main` is now **111 commits behind** `land/integration-prep`, and during a triage of 38 open PRs every single one reported "not on main" — their content had reached the integration branch and stopped there.
+`main` was **111 commits behind** `land/integration-prep` when this work started, and during a triage of 38 open PRs every single one reported "not on main" — their content had reached the integration branch and stopped there.
 
-That divergence is what produced the recurring problems this work surfaced: PRs sitting red for days against a base that had already absorbed their content, PRs whose diffs silently regressed version numbers because their branch point predated a bump, and 23 PRs that turned out to be fully redundant. That same divergence has recurred once already since the prep rebase (see Step 1a) — it is an ongoing risk, not a one-time fix.
+That divergence is what produced the recurring problems this work surfaced: PRs sitting red for days against a base that had already absorbed their content, PRs whose diffs silently regressed version numbers because their branch point predated a bump, and 23 PRs that turned out to be fully redundant. That same divergence has recurred twice since the prep rebase (see Step 1a) — it is an ongoing risk, not a one-time fix.
 
-The goal is to get those 111 commits onto `main` as a sequence of reviewable, independently-green PRs, instead of one opaque merge — so `main` regains bisectability and release granularity, and so the integration branch stops being a parallel trunk.
+The goal is to get that work onto `main` as a sequence of reviewable, independently-green PRs, instead of one opaque merge — so `main` regains bisectability and release granularity, and so the integration branch stops being a parallel trunk. The commit count shrinks on each re-rebase as already-landed work replays empty (111 → 92 by 2026-08-01), so treat the tree as the measure, not the count.
 
 **Deliberately out of scope:** any change to app behaviour. This is a history/merge operation only. If a slice needs a code fix to go green, that fix is part of the slice, not a separate feature.
 
@@ -26,7 +27,7 @@ Gathered against `origin/main` and `origin/archive/26-07-2026.18-44-integration`
 |---|---|---|
 | Commits ahead of `main` | **111** (07-18 → 07-31) | Too many for one reviewable PR |
 | Merge commits in range | **0** — perfectly linear | Contiguous slices replay conflict-free |
-| `main`-only commits | **3** (`9cf00d99` build 182, `a6cfa742` build 183, `77190a2b` sentry-cli release fix) | `main` is *not* an ancestor; cannot fast-forward directly. Grows over time — re-check before slicing (Step 1a) |
+| `main`-only commits | **0** as of 2026-08-01 (last re-rebase) | `main` *is* an ancestor right now. Regrows on every ship — re-check before slicing (Step 1a) |
 | Same-subject commit runs | **9 commits** across 7 subjects | Must be squashed, **not dropped** (see below) |
 | Known-red window | *(healed)* — the fix was folded into the breaking commit during the prep rebase | No longer constrains boundary placement |
 
@@ -149,30 +150,28 @@ If that diff is non-empty, something was dropped rather than squashed. Stop and 
 
 ---
 
-## Step 1a — Re-rebase before slicing — **REQUIRED, not yet done**
+## Step 1a — Re-rebase before slicing — **repeat before every slice**
 
-`land/integration-prep` has drifted behind `main` again since Step 1: `main` picked up 3 more commits that were never replayed onto prep —
+Not a one-time step. `main` takes a version-bump commit on every ship, so prep falls behind again within hours. Run this whenever the divergence check reports a non-zero left-hand number.
 
-```
-9cf00d99 chore(ios): bump build number to 182 [skip-ci] (#458)
-a6cfa742 chore(ios): bump build number to 183 [skip-ci] (#461)
-77190a2b fix(ios,android): make sentry-cli release match SDK release string
-```
+Last run 2026-08-01: prep rebased onto `main` at `68439f04` (buildNumber `187` / versionCode `39`), landing at `main` + 92 commits with zero conflicts.
 
-`main` is now at buildNumber `183` / versionCode `37`; `land/integration-prep` is still at buildNumber `182`. Cutting slices from prep today would base every PR on a tree that is behind `main`, reintroducing the exact version-regression trap this document warns about (PR #434) the moment any slice touches `app.json`.
+Cutting slices from a prep branch that is behind `main` bases every PR on a stale tree, reintroducing the version-regression trap this document warns about (PR #434) the moment a slice touches `app.json`.
 
-Before starting Step 2, re-rebase:
+To re-rebase:
 
 ```bash
 $G fetch origin
 $G checkout land/integration-prep
 $G rebase origin/main
-# conflicts, if any, in app.json / android/app/build.gradle: take main's higher values
-# (buildNumber 183, versionCode 37) — same rule as Step 1
+# conflicts, if any, in app.json / android/app/build.gradle: take main's higher
+# values — same rule as Step 1. Never assume a number; read main's current one.
 $G push --force-with-lease
 ```
 
-Then re-verify the final divergence check in the Verification section reports `3  111` before the rebase and `0  111` after (commit count may shift slightly if the rebase produces no-ops).
+Then re-verify the divergence check in the Verification section reports `0` on the left. The right-hand count shifts between runs as commits already represented on `main` replay empty and drop — 115 became 92 across the 2026-08-01 runs. A shrinking count is expected, not a sign of lost work; the tree is what to check, not the commit count.
+
+If a rebase of the full branch produces conflicts on nearly every commit, do not grind through it — see [`docs/runbooks/2026-08-01-rebase-integration-prep-conflicts.md`](docs/runbooks/2026-08-01-rebase-integration-prep-conflicts.md) for the squash-first technique that reduced ~100 conflict sets to 18, and for the per-file resolutions.
 
 This step recurs by nature — a live `main` moving out from under a long-lived prep branch is the same problem Step 0 froze the *source* branch to avoid. Re-check `$G rev-list --left-right --count origin/main...origin/land/integration-prep` immediately before cutting Step 2's slices, not just once here.
 
@@ -288,8 +287,8 @@ $G rev-list --left-right --count origin/main...land/integration-prep
 | Risk | Mitigation |
 |---|---|
 | Squash-vs-drop confusion loses content | Only `be419a59`/`4cc8e758` is patch-identical; everything else is `fixup`. The post-rebase diff check catches any loss. |
-| Version regression on `app.json` / `build.gradle` | Currently live: `main` is at buildNumber `183` / versionCode `37`; `land/integration-prep` is at buildNumber `182`. Take `main`'s (higher) values when re-rebasing (Step 1a) and re-check before each slice PR. |
-| `land/integration-prep` drifts behind `main` again | Already happened once (Step 1a). Re-rebase before Step 2, and re-check divergence immediately before cutting slices, not just once. |
+| Version regression on `app.json` / `build.gradle` | Take `main`'s (higher) values when re-rebasing (Step 1a) and re-check before each slice PR. Read the live numbers rather than any written here — at 2026-08-01 `main` was buildNumber `187` / versionCode `39`, and it moves on every ship. |
+| `land/integration-prep` drifts behind `main` again | Happened twice already (Step 1a). Re-check divergence immediately before cutting each slice, not once at the start. |
 | A slice is red despite local checks | Fix forward inside that slice; never merge red. If the fix is large, split the slice rather than carrying it. |
 | Integration branch moves mid-operation | Step 0 freeze. |
 | `ios/Podfile.lock` churn between slices | Always `bundle exec pod install` (PR #455 fixes the scripts and docs that cause this). |
