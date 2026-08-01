@@ -1156,6 +1156,30 @@ Today there are three ways data can reach Sentry, and they don't agree on what "
 
 ---
 
+### Sentry Mobile Builds — app-size tracking and build distribution
+
+**Goal:** Decide whether to adopt [Sentry Mobile Builds](https://docs.sentry.io/api/mobile-builds/), which ingests the IPA/AAB itself to give app-size analysis, size-regression alerts, and build distribution to testers.
+
+**Recommendation (2026-08-01): not yet.** Deferred deliberately, for three reasons:
+
+- **The layer underneath only just started working.** Until 2026-08-01 nothing in the pipeline created a Sentry Release at all — a build appeared only if it happened to crash. That is now fixed (`releases new` + `finalize` + a deploy marker per ship), but the fix has one shipped build behind it. Let releases and deploy markers prove themselves across a few ships before stacking another surface on them.
+- **Half of it is redundant.** Distribution is already handled by TestFlight and the Play internal track. Adopting Mobile Builds for that would add a second, parallel channel testers have no reason to use.
+- **Signal volume does not justify it.** The project has had 4 error events in 90 days. Instrumentation is worth adding when it will be read.
+
+**What would make it worth revisiting:**
+
+- App size becomes a live concern. This is the genuinely valuable half, and the risk is real for this app: an RN JS bundle plus a widget extension plus Live Activities all grow independently, and nothing currently tracks the total or alerts on a regression.
+- Releases and deploy markers have been reliable for several ships, and commit association is connected (see the investigation doc), so a build in Sentry can be traced to the change that caused a size jump.
+
+**Cost when adopted:** a `sentry-cli build upload` step in both `scripts/archive-and-upload.sh` and `scripts/bundle-and-upload-android.sh`, following the same credential guard and non-fatal pattern as the existing release calls. The Mobile Build monitors page is reachable on the current plan (verified 2026-08-01: it loads with an empty monitor list and no upgrade wall), unlike saved searches, which are gated behind Team.
+
+**Files likely involved:**
+- `scripts/archive-and-upload.sh`, `scripts/bundle-and-upload-android.sh` — the upload step
+- `.github/workflows/deploy.yml` — no change expected; the scripts are shared between CI and local ships
+- `docs/sentry-releases-investigation.md` — record the outcome alongside the release/deploy work
+
+---
+
 ## Shipped
 
 Historical implementation plans archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/). Each was the source of truth for that feature's build sequence at the time it shipped — useful when revisiting the area, but not active work.
