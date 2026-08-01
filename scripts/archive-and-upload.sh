@@ -27,12 +27,12 @@ BUILD_NUMBER="$(jq -r '.expo.ios.buildNumber' app.json)"
 # sentry-cli auto-detects release/dist from the Xcode project's bundle id and
 # marketing version (e.g. "com.ronenmars.threadbase@1.0+183"), which never
 # matches what the SDK tags events with (services/sentry.ts ->
-# "threadbase-mobile@1.0.0+183" via services/safe-metadata.ts). That mismatch
+# "threadbase-mobile-ios@1.0.0+183" via services/safe-metadata.ts). That mismatch
 # leaves uploaded source maps bound to a release object Sentry never
 # associates with the app's actual events. Force the same release/dist the
 # SDK computes so sentry-cli's upload lands on the right release.
 APP_VERSION="$(jq -r '.expo.version' app.json)"
-export SENTRY_RELEASE="threadbase-mobile@${APP_VERSION}+${BUILD_NUMBER}"
+export SENTRY_RELEASE="threadbase-mobile-ios@${APP_VERSION}+${BUILD_NUMBER}"
 export SENTRY_DIST="${BUILD_NUMBER}"
 
 xcodebuild \
@@ -95,3 +95,19 @@ xcrun altool --upload-app \
 echo
 echo "Uploaded. Poll processing state with the App Store Connect API"
 echo "(see Step 6 of the expo-local-build skill)."
+
+# sentry-cli's sourcemap and dSYM uploads are keyed by debug ID, so neither one
+# creates the Release object — a build only appears under Releases once a crash
+# arrives from it. Create it explicitly so every shipped build is there from the
+# start. Non-fatal: the app is already on App Store Connect by this point.
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
+  SENTRY_CLI="node_modules/@sentry/cli/bin/sentry-cli"
+  if "$SENTRY_CLI" releases new "$SENTRY_RELEASE" &&
+     "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE"; then
+    echo "  ✓ Sentry release ${SENTRY_RELEASE} created"
+  else
+    echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
+  fi
+else
+  echo "  ! SENTRY_AUTH_TOKEN/ORG/PROJECT unset — skipping Sentry release creation" >&2
+fi

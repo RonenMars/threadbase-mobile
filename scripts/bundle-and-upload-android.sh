@@ -83,10 +83,10 @@ else
   # sentry.gradle.kts otherwise auto-detects release/dist as
   # "$applicationId@$versionName+$versionCode" (e.g. "com.ronenmars.threadbase@1.0.0+8"),
   # which never matches what the SDK tags events with (services/sentry.ts ->
-  # "threadbase-mobile@1.0.0+8" via services/safe-metadata.ts). Force the same
-  # values the SDK computes so uploaded source maps land on the right release —
+  # "threadbase-mobile-android@1.0.0+8" via services/safe-metadata.ts). Force the
+  # same values the SDK computes so uploaded source maps land on the right release —
   # mirrors the iOS fix in archive-and-upload.sh.
-  export SENTRY_RELEASE="threadbase-mobile@${VERSION_NAME}+${VERSION_CODE}"
+  export SENTRY_RELEASE="threadbase-mobile-android@${VERSION_NAME}+${VERSION_CODE}"
   export SENTRY_DIST="${VERSION_CODE}"
 
   (cd android && ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee ../build/gradle-bundle.log)
@@ -294,3 +294,19 @@ echo "  ✓ AAB and deobfuscation file uploaded to Play ($ANDROID_TRACK track, v
 echo
 echo "The build is now in review by Google. Internal track builds are"
 echo "typically available to testers within a few minutes."
+
+# Mirrors the iOS fix in archive-and-upload.sh: sentry-cli's uploads are keyed by
+# debug ID and never create the Release object, so a build only appears under
+# Releases once a crash arrives from it. Non-fatal — the AAB is already on Play.
+# SENTRY_RELEASE is only set on the Gradle path, so --skip-bundle skips this too.
+if [[ -n "${SENTRY_RELEASE:-}" && -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
+  SENTRY_CLI="node_modules/@sentry/cli/bin/sentry-cli"
+  if "$SENTRY_CLI" releases new "$SENTRY_RELEASE" &&
+     "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE"; then
+    echo "  ✓ Sentry release ${SENTRY_RELEASE} created"
+  else
+    echo "  ! Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials" >&2
+  fi
+else
+  echo "  ! SENTRY_AUTH_TOKEN/ORG/PROJECT unset — skipping Sentry release creation" >&2
+fi
