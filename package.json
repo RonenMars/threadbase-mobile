@@ -188,6 +188,7 @@
   "private": true,
   "allowScripts": {
     "fsevents@2.3.3": true,
-    "unrs-resolver@1.12.2": true
+    "unrs-resolver@1.12.2": true,
+    "@sentry/cli@3.6.0": true
   }
 }
