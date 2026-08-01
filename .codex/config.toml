@@ -4,9 +4,6 @@ inherit = "core"
 [shell_environment_policy.set]
 GH_TOKEN = ""
 
-[mcp_servers.expo_local]
-command = "./node_modules/.bin/expo-mcp"
-
 [mcp_servers.github]
 command = "docker"
 args = [
