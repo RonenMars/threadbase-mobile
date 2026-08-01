@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from './LiveDot'
-import type { SessionStatus } from '@/types/api'
 import {
   deriveSessionPresentation,
   type SessionColorToken,
@@ -11,15 +10,9 @@ import {
 } from '@/lib/sessionPresentation'
 
 interface Props {
-  status: SessionStatus
+  /** Kind, label and colour all come from the shared presentation helper. */
+  session: SessionPresentationInput
   isRefetching?: boolean
-  /**
-   * When true, render the distinct "external — alive" treatment. Prefer
-   * passing `session` so kind/label come from `deriveSessionPresentation`.
-   */
-  externalAlive?: boolean
-  /** When set, badge kind/label/color come from the shared presentation helper. */
-  session?: SessionPresentationInput
 }
 
 function colorForToken(theme: Theme, token: SessionColorToken): string {
@@ -38,20 +31,12 @@ function colorForToken(theme: Theme, token: SessionColorToken): string {
   }
 }
 
-export function SessionStatusBadge({ status, isRefetching, externalAlive, session }: Props) {
+export function SessionStatusBadge({ session, isRefetching }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
 
-  const presentation = session
-    ? deriveSessionPresentation(session)
-    : deriveSessionPresentation({
-        status: externalAlive ? 'idle' : status,
-        ownership: externalAlive ? 'external' : 'managed',
-        processLiveness: externalAlive ? 'alive' : undefined,
-        ptyAttached: !externalAlive && (status === 'running' || status === 'waiting_input'),
-      })
-
+  const presentation = deriveSessionPresentation(session)
   const color = colorForToken(theme, presentation.colorToken)
   const label = t(presentation.labelKey)
 
