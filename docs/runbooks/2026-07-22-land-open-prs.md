@@ -2,6 +2,12 @@
 
 **Status:** superseded 2026-08-01. Do not follow this procedure — the PR chain it sequenced no longer exists.
 
+> **Delete this file once [`../../LANDING-integration-to-main.md`](../../LANDING-integration-to-main.md)
+> is done.** It survives only as a tombstone for the links that still point here and
+> as a warning against rebuilding the same plan while that landing is in flight.
+> Once `land/integration-prep` is fully on `main`, the last reason to keep it is
+> gone — remove the file and its row in [`README.md`](README.md).
+
 This runbook ordered 20 open PRs onto `main` one at a time, with a phase order, per-conflict resolutions (**A–J**), and a set of traps that produce a green signal while something is wrong.
 
 ## What actually happened

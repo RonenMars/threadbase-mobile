@@ -239,11 +239,20 @@ Match the title’s type. Examples: `feat/in-chat-search`,
 `fix/terminal-empty-replay-fallback`, `chore/bump-ios-version-171`,
 `docs/hold-session-comments`. Never prefix with tool names (`cursor/…`, `cc/…`).
 
-### Base branch (this integration wave)
+### Base branch
 
-For work targeting the current integration line, open PRs against
-`integration-merge-354-355-376` (not `main`). Rebase onto the latest tip of that
-branch before merge. Squash title must still follow `type(scope): summary`.
+Open PRs against `main`. Rebase onto the latest `origin/main` before merge; squash
+title must follow `type(scope): summary`.
+
+> **Temporary — delete this note once [`LANDING-integration-to-main.md`](./LANDING-integration-to-main.md)
+> is done.** One wave of work has not reached `main` yet: `land/integration-prep`
+> is being landed in reviewable slices by that runbook. Until it finishes, prefer
+> basing new work on `main` anyway — a slice that has already landed is on `main`,
+> and one that has not will be rebased regardless.
+>
+> An earlier version of this section told you to base PRs on
+> `integration-merge-354-355-376`. That branch does not exist (only a `-v2`), and
+> every open PR targets `main`.
 
 ---
 

@@ -22,9 +22,11 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  # Decide whether to skip the heavy CI work. The PR jobs (Type check, Unit
-  # tests, Integration tests, Lint) are enforced as required status checks by
-  # branch protection, so they must ALWAYS run and report success — a job
+  # Decide whether to skip the heavy CI work. Five jobs (Lint, Type check, Unit
+  # tests, Integration tests, i18n) are enforced as required status checks by the
+  # `main protection` ruleset — a ruleset, not classic branch protection, so the
+  # branches/main/protection API answers "Branch not protected"; read
+  # /rulesets instead. They must ALWAYS run and report success — a job
   # skipped via a job-level `if:` reports "skipped", which does NOT satisfy a
   # required check and would leave the PR un-mergeable forever. Instead each job
   # checks out (cheap, and required so the local composite action exists) and
