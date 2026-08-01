@@ -200,6 +200,8 @@ Both entries here are cases where the signal is misleading rather than the code 
 
 **Fix:** Judge the run, not the badge. A real `Type check` takes minutes; seconds means nothing executed. Before trusting green on a merge that matters, confirm the head commit does not carry `[skip-ci]` — and if it does, push a commit that omits the tag rather than reasoning about whether the skip was harmless.
 
+**The trap inside the trap:** the haystack is the commit message **plus the PR title and body**, matched with a literal `grep -F`. So *writing* the bracketed tag anywhere in a PR description skips that PR's suite — including in a sentence explaining that the suite should not be skipped. This is not hypothetical: PR #474, whose purpose was correcting claims about this gate, skipped its own run that way. When a PR needs to discuss the tag, refer to it without reproducing it literally (say "the skip tag"), and re-run CI after editing the body — GitHub does not re-trigger the workflow on a description edit, so an empty commit or a re-run is required for the fixed body to take effect.
+
 ### A stacked PR looks un-CI'd but isn't
 
 **When:** A PR whose base is another feature branch rather than `main`, where you assume CI didn't really run and verify locally instead.
