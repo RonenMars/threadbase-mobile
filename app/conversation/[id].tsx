@@ -17,7 +17,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { ExportIcon, InfoIcon, MagnifyingGlass, Star } from 'phosphor-react-native'
+import { ExportIcon, InfoIcon, MagnifyingGlass, Play, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -692,6 +692,12 @@ export default function ConversationDetailScreen() {
       ? t('unavailable.worktreeRemoved')
       : t('unavailable.pathMissing')
     : null
+  const canResume = !notResumable && !resume.isPending
+  const resumeLabel = notResumable
+    ? t('unavailable.cannotResume')
+    : resume.isPending
+      ? t('resume.resuming')
+      : t('resume.start')
 
   const showSearchView =
     isAnchored &&
@@ -772,13 +778,8 @@ export default function ConversationDetailScreen() {
               disabled={notResumable || resume.isPending}
               testID="resume-button"
             >
-              <Text style={styles.resumeBtnText}>
-                {notResumable
-                  ? t('unavailable.cannotResume')
-                  : resume.isPending
-                    ? t('resume.resuming')
-                    : '▶ Resume Session'}
-              </Text>
+              {canResume ? <Play size={16} weight="fill" color="#fff" /> : null}
+              <Text style={styles.resumeBtnText}>{resumeLabel}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -862,6 +863,8 @@ function makeStyles(theme: Theme) {
       backgroundColor: theme.text.accent,
       borderRadius: 10,
       minHeight: 44,
+      flexDirection: 'row',
+      gap: spacing.xs,
       justifyContent: 'center',
       alignItems: 'center',
     },

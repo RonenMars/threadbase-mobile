@@ -39,12 +39,16 @@ appId: com.ronenmars.threadbase
       - tapOn: "Open"
 
 # Confirm we are on the conversation route: the footer action bar mounts
-# with a stable testID (the Resume button text carries a ▶ prefix and lives
-# in an Animated.Text, so match the container testID instead).
+# with a stable testID.
 - extendedWaitUntil:
     visible:
       id: "conversation-bottom-bar"
     timeout: 8000
+
+# The primary action renders its label. Asserted positively here because the
+# only other coverage of this string is codex_parity.yaml's assertNotVisible,
+# which would also pass if the label rendered empty (a missing i18n key).
+- assertVisible: "Resume Session"
 
 # Export must NOT be a bottom-bar sibling of Resume Session anymore.
 - assertNotVisible:
