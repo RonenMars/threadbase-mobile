@@ -1,0 +1,114 @@
+// Conversation-open timing probe. One open = one trace: screen mount → request
+// issued → response headers → body parsed → messages merged/adapted → FlashList
+// drew its rows. Prints one table so a slow open can be attributed to a stage
+// instead of guessed at.
+//
+// It also runs a JS-thread stall watchdog for the duration of the open. That is
+// the part a server log cannot show: a blocked JS thread produces a long gap
+// with no network activity at all, which reads as "the server was slow" from
+// the outside and as "nothing happened" from the inside.
+//
+// Off unless EXPO_PUBLIC_OPEN_TRACE=1 — the watchdog's 16 ms interval is not
+// something to ship enabled.
+
+const ENABLED = process.env.EXPO_PUBLIC_OPEN_TRACE === '1'
+
+export type OpenPhase =
+  | 'mount'
+  | 'request'
+  | 'response'
+  | 'parsed'
+  | 'merged'
+  | 'listDrawn'
+
+const PHASE_ORDER: OpenPhase[] = ['mount', 'request', 'response', 'parsed', 'merged', 'listDrawn']
+
+interface Trace {
+  id: string
+  t0: number
+  marks: { phase: OpenPhase; at: number; note?: string }[]
+  stalls: { at: number; blockedMs: number }[]
+  timer: ReturnType<typeof setInterval> | null
+  lastTick: number
+  printed: boolean
+}
+
+let current: Trace | null = null
+
+// A tick that lands this far past its 16 ms slot means the JS thread was busy
+// for that long — under it, ordinary React work and timer coalescing dominate.
+const STALL_THRESHOLD_MS = 250
+const TICK_MS = 16
+// Backstop: an open that never reaches listDrawn must still report, or the
+// watchdog interval outlives the screen.
+const MAX_TRACE_MS = 30_000
+
+export function startOpenTrace(id: string) {
+  if (!ENABLED) return
+  stopWatchdog()
+  const now = Date.now()
+  current = { id, t0: now, marks: [], stalls: [], timer: null, lastTick: now, printed: false }
+  mark('mount')
+  current.timer = setInterval(() => {
+    const t = Date.now()
+    const late = t - (current?.lastTick ?? t) - TICK_MS
+    if (current) {
+      if (late >= STALL_THRESHOLD_MS) current.stalls.push({ at: t - current.t0, blockedMs: late })
+      current.lastTick = t
+      if (t - current.t0 > MAX_TRACE_MS) finishOpenTrace('timeout')
+    }
+  }, TICK_MS)
+}
+
+export function mark(phase: OpenPhase, note?: string) {
+  if (!ENABLED || !current) return
+  // First occurrence wins: back-pages and delta hops re-enter the same call
+  // sites, and the open is defined by the first page reaching the screen.
+  if (current.marks.some((m) => m.phase === phase)) return
+  current.marks.push({ phase, at: Date.now() - current.t0, note })
+}
+
+/** Lets hot call sites (every HTTP request) skip their path regex when off. */
+export function isTracing(): boolean {
+  return ENABLED && current !== null
+}
+
+function stopWatchdog() {
+  if (current?.timer) clearInterval(current.timer)
+  if (current) current.timer = null
+}
+
+export function finishOpenTrace(reason: 'listDrawn' | 'timeout' | 'unmount' = 'listDrawn') {
+  if (!ENABLED || !current || current.printed) return
+  current.printed = true
+  stopWatchdog()
+  const trace = current
+  current = null
+
+  const byPhase = new Map(trace.marks.map((m) => [m.phase, m]))
+  const lines: string[] = []
+  let prev = 0
+  for (const phase of PHASE_ORDER) {
+    const m = byPhase.get(phase)
+    if (!m) {
+      lines.push(`  ${phase.padEnd(12)}        —  (not reached)`)
+      continue
+    }
+    lines.push(
+      `  ${phase.padEnd(12)} ${String(Math.round(m.at)).padStart(6)} ms  (+${String(Math.round(m.at - prev)).padStart(5)} ms)${m.note ? `  ${m.note}` : ''}`,
+    )
+    prev = m.at
+  }
+
+  const stalled = trace.stalls.reduce((sum, s) => sum + s.blockedMs, 0)
+  const stallLines = trace.stalls.length
+    ? trace.stalls.map((s) => `  at +${Math.round(s.at)} ms — JS thread blocked ${Math.round(s.blockedMs)} ms`)
+    : ['  none over 250 ms']
+
+  // eslint-disable-next-line no-console
+  console.log(
+    `\n[open-trace] conversation ${trace.id} — ${reason}, total ${Math.round(prev)} ms\n` +
+      `${lines.join('\n')}\n` +
+      `  JS-thread stalls (${trace.stalls.length}, ${Math.round(stalled)} ms total):\n${stallLines.join('\n')}\n`,
+  )
+}

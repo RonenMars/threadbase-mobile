@@ -35,6 +35,7 @@ import { createApiForServer, ConversationBusyError, NotFoundError } from '@/serv
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
+import { startOpenTrace, mark as traceMark, finishOpenTrace } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
@@ -86,6 +87,14 @@ export default function ConversationDetailScreen() {
   useEffect(() => {
     useNavLockStore.getState().clear()
   }, [])
+
+  // Opens the timing probe as early in the screen's life as an effect can run,
+  // so `mount` is the zero point every later stage is measured against.
+  // No-op unless EXPO_PUBLIC_OPEN_TRACE=1.
+  useEffect(() => {
+    startOpenTrace(id)
+    return () => finishOpenTrace('unmount')
+  }, [id])
 
   // In-chat search entry: toggles a query bar that writes ?search= on submit.
   // Prefills / auto-opens when navigation already carries a search param (Hub).
@@ -380,7 +389,11 @@ export default function ConversationDetailScreen() {
   const isReady = conversation !== undefined && listDrawn
   const isGated = useMinDisplayTime(isReady, 400, id)
 
-  const handleListReady = useCallback(() => setListDrawn(true), [])
+  const handleListReady = useCallback(() => {
+    traceMark('listDrawn')
+    finishOpenTrace('listDrawn')
+    setListDrawn(true)
+  }, [])
 
   // Empty conversations never fire onLoad (ListEmptyComponent path) — lift the
   // gate so we don't sit under a skeleton for an empty state.

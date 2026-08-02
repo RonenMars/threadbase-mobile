@@ -3,6 +3,7 @@ import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
 import { getServerWarmupState } from './server-warmup'
+import { mark as traceMark, isTracing } from '@/lib/openTrace'
 import type {
   CacheAlert,
   CacheAlertResolveAction,
@@ -79,6 +80,13 @@ const REQUEST_TIMEOUT_MS = 15000
 // shouldn't burn the full 15 s before the retry even starts.
 const FIRST_ATTEMPT_TIMEOUT_MS = 8000
 
+// Splits "response headers back" from "body read + parsed" for the conversation
+// detail fetch — the two are one await in every caller, and only the trace
+// needs them apart.
+function isConversationDetail(path: string): boolean {
+  return isTracing() && /^\/api\/conversations\/[^/?]+(\?|$)/.test(path)
+}
+
 function isWarmupFetchEndpoint(method: string, path: string): boolean {
   if (method !== 'GET') return false
   const pathname = path.split('?')[0]
@@ -144,6 +152,8 @@ async function request<T>(
   }
   let response: Response
   const t0 = Date.now()
+  const traced = isConversationDetail(path)
+  if (traced) traceMark('request', `${path.split('?')[1] ?? 'no query params'}`)
   try {
     response = await fetch(url, {
       method,
@@ -232,7 +242,9 @@ async function request<T>(
     throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
   }
 
+  if (traced) traceMark('response', `HTTP ${response.status}`)
   const json = (await response.json()) as T
+  if (traced) traceMark('parsed')
   if (isWarmupFetchEndpoint(method, path)) {
     useServerFetchStatusStore.getState().recordReady(serverId)
   }
@@ -321,6 +333,8 @@ async function requestWithMeta<T>(
   }
 
   let response: Response
+  const traced = isConversationDetail(path)
+  if (traced) traceMark('request', `${path.split('?')[1] ?? 'no query params'}`)
   try {
     response = await fetch(url, {
       method: 'GET',
@@ -351,6 +365,10 @@ async function requestWithMeta<T>(
   // body is empty, so don't call response.json().
   if (response.status === 304) {
     useServerFetchStatusStore.getState().recordReady(serverId)
+    if (traced) {
+      traceMark('response', 'HTTP 304')
+      traceMark('parsed', 'no body — cached page reused')
+    }
     return { status: 304, etag, body: null }
   }
 
@@ -370,7 +388,10 @@ async function requestWithMeta<T>(
   }
 
   useServerFetchStatusStore.getState().recordReady(serverId)
-  return { status: response.status, etag, body: (await response.json()) as T }
+  if (traced) traceMark('response', `HTTP ${response.status}`)
+  const parsed = (await response.json()) as T
+  if (traced) traceMark('parsed')
+  return { status: response.status, etag, body: parsed }
 }
 
 export interface RequestOptions {
