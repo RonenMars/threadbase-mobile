@@ -129,9 +129,9 @@ security cms -D -i <profile>.mobileprovision | plutil -p - | grep -A2 applicatio
 
 ---
 
-## Metro from a worktree
+## Measuring the wrong thing
 
-Both entries below are the same failure mode, and it is the dangerous one: the run **starts, looks healthy, and measures the wrong thing**. Nothing in the output announces the problem, so a profile or a screenshot taken this way is plausible and wrong.
+Every entry below is the same failure mode, and it is the dangerous one: the run **starts, looks healthy, and measures the wrong thing**. Nothing in the output announces the problem, so a profile or a screenshot taken this way is plausible and wrong. Each has a different cause — the bundle comes from the wrong tree, the bundler is a different process than you think, or the profiler is pointed at the debugger instead of the app — so fixing one does not protect you from the others.
 
 ### Metro bundles the main repo instead of your worktree
 
@@ -164,6 +164,31 @@ A symlink is still fine for Jest — only Metro follows it into the wrong root.
 ```bash
 xcrun simctl openurl <SIM_UDID> "threadbase://expo-development-client/?url=http%3A%2F%2F<LAN_IP>%3A8081"
 ```
+
+### Another Metro already holds the default port — you are served someone else's branch
+
+**When:** You `npx expo start` from your worktree and it prints `Port 8081 is running threadbase-mobile in another window` followed by `Skipping dev server`. In non-interactive shells the "use another port instead?" prompt cannot be answered, so **no dev server of yours starts at all** — but the occupied port keeps serving, the app loads, and you are looking at whatever branch that other Metro was launched from.
+
+**Cause:** Concurrent sessions. Worktrees make it normal to have several checkouts, and every one of them defaults to the same port.
+
+**Fix:** Never assume the bundler on the default port is yours. Check which project it belongs to before trusting anything it serves:
+
+```bash
+grep -E "Skipping dev server|is running .* in another window" <your metro log>
+curl -s localhost:8081/status   # packager-status:running — says nothing about whose
+```
+
+Start yours on an explicit free port (`--port 8082`) and point the dev client at that port in the `expo-development-client` deep link above. Leave the other Metro alone unless you know whose it is — it may belong to another session.
+
+### The profiler is recording the debugger UI, not the app
+
+**When:** You open React Native DevTools in a browser tab and then start a recording — and get a plausible profile whose Main track is `rn_fusebox.html`, with browser-extension frames and warmup entries in the 3rd-party table.
+
+**Cause:** Chrome's own profiler was opened *on the DevTools tab*. The subject is the DevTools page, not the Hermes runtime on the device.
+
+**Fix:** Open RN DevTools attached to the device — press `j` in the Metro terminal — and record from that window's Performance panel. Sanity-check the Main track names a frame you recognise from the app before reading any number off it.
+
+**Note:** driving the Hermes profiler over CDP directly does not currently work here. `ws://localhost:<port>/inspector/debug?device=…&page=…` accepts the socket (with `Origin` set to the dev server, else it 401s) and then never answers `Runtime.enable` or `Profiler.enable`, on either a live or a stale page id.
 
 ---
 
