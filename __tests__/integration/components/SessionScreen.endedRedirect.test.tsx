@@ -16,6 +16,7 @@ const SESSION_UUID = 'b80a4f91-17f4-4375-b65f-00e46c872b01'
 
 const mockReplace = jest.fn()
 let mockSessionData: Record<string, unknown>
+let mockParams: Record<string, string>
 
 // ── heavy native deps (mirrors SessionScreen.holdOnBackground.test.tsx) ───────
 jest.mock('expo-speech-recognition', () => ({
@@ -82,7 +83,7 @@ jest.mock('@/stores/settings', () => ({
   useSettingsStore: () => ({ sessionView: 'chat' }),
 }))
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({ id: 'b80a4f91-17f4-4375-b65f-00e46c872b01', server: 'srv1' }),
+  useLocalSearchParams: () => mockParams,
   useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
   useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
@@ -109,6 +110,7 @@ const endedSession = (overrides: Record<string, unknown>) => ({
 describe('SessionScreen — ended-session redirect', () => {
   beforeEach(() => {
     mockReplace.mockClear()
+    mockParams = { id: SESSION_UUID, server: 'srv1' }
   })
 
   it('redirects to the conversation when the ended session has a conversationId, even with promptCount 0', async () => {
@@ -126,6 +128,28 @@ describe('SessionScreen — ended-session redirect', () => {
   it('does NOT redirect when the ended session has no conversation at all', async () => {
     mockSessionData = endedSession({ conversationId: null, boundConversationId: null, promptCount: 0 })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  // A just-resumed session reads idle + detached until its PTY attaches, which
+  // looks identical to an ended one. Redirecting then bounced the user straight
+  // back to the conversation they had just tapped Resume on.
+  it('does NOT redirect a starting session that has not attached its PTY yet', async () => {
+    mockParams = { id: SESSION_UUID, server: 'srv1', starting: '1' }
+    mockSessionData = endedSession({ conversationId: SESSION_UUID, promptCount: 0 })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('drops the starting screen once the PTY is attached', async () => {
+    mockParams = { id: SESSION_UUID, server: 'srv1', starting: '1' }
+    mockSessionData = endedSession({
+      conversationId: SESSION_UUID,
+      ptyAttached: true,
+      status: 'waiting_input',
+    })
+    const { queryByText } = await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(queryByText('Starting session…')).toBeNull()
     expect(mockReplace).not.toHaveBeenCalled()
   })
 })

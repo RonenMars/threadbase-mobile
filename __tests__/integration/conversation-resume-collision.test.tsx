@@ -20,6 +20,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { ConversationBusyError } from '@/services/api-client'
+import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+
+jest.mock('@/lib/sessionNavGuard', () => ({ markNavigatedToSession: jest.fn() }))
 
 const CONV_ID = 'conv-resume'
 
@@ -123,6 +126,7 @@ describe('conversation detail — resume collision', () => {
   beforeEach(() => {
     seedServer()
     mockPost.mockReset()
+    ;(markNavigatedToSession as jest.Mock).mockClear()
     mockReplace = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({
       push: jest.fn(),
@@ -208,6 +212,10 @@ describe('conversation detail — resume collision', () => {
     expect(mockPost.mock.calls[0][1]).toEqual({ sessionId: CONV_ID })
     const target = mockReplace.mock.calls[0][0] as string
     expect(target).toContain('/session/sess-clean')
+    // The PTY is not attached yet: hand off to the starting screen, and claim
+    // the navigation so the global session_ready listener doesn't push it again.
+    expect(target).toContain('starting=1')
+    expect(markNavigatedToSession).toHaveBeenCalledWith('sess-clean')
     expect(alertSpy).not.toHaveBeenCalled()
 
     alertSpy.mockRestore()

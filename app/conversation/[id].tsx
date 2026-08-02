@@ -36,6 +36,7 @@ import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace } from '@/lib/openTrace'
+import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
@@ -415,6 +416,13 @@ export default function ConversationDetailScreen() {
   // Seed the session cache from the resume snapshot (so /session/:id renders
   // without a round-trip) then hand off to the live session, carrying the
   // conversation it was resumed from.
+  //
+  // `starting=1` lands on the pending screen: /api/sessions/resume answers
+  // before the PTY attaches, so the session reads idle+detached for a moment —
+  // which the session screen's ended-session redirect would otherwise mistake
+  // for "finished" and bounce straight back here. The pending screen replaces
+  // itself with the live session on session_ready. markNavigatedToSession stops
+  // the global session_ready listener pushing that same route a second time.
   const navigateToResumedSession = useCallback(
     (result: ResumeResult) => {
       if (result.sessionSnapshot) {
@@ -425,6 +433,8 @@ export default function ConversationDetailScreen() {
       const projectPath = result.projectPath ?? conversation?.projectPath
       if (projectPath) startParams.set('projectPath', projectPath)
       startParams.set('resumedFromConversationId', result.conversationId)
+      startParams.set('starting', '1')
+      markNavigatedToSession(result.sessionId)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       router.replace(`/session/${result.sessionId}?${startParams.toString()}` as any)
     },
@@ -451,7 +461,11 @@ export default function ConversationDetailScreen() {
   // writing one transcript (which is what "open anyway" risks).
   const takeOverSession = useCallback(() => {
     adoptSession.mutate(undefined, {
-      onSuccess: (data) => router.replace(`/session/${data.sessionId}?server=${serverId}`),
+      onSuccess: (data) => {
+        // Same spawn race as resume — see navigateToResumedSession.
+        markNavigatedToSession(data.sessionId)
+        router.replace(`/session/${data.sessionId}?server=${serverId}&starting=1`)
+      },
       onError: (err) =>
         Alert.alert(t('resume.takeOverFailed'), err instanceof Error ? err.message : String(err)),
     })
