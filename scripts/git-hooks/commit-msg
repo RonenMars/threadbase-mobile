@@ -12,18 +12,50 @@ PATHS_FILE="$REPO_ROOT/scripts/git-hooks/ci-paths.txt"
 grep -qF -- '[skip-ci]' "$MSG_FILE" && exit 0
 [ -f "$PATHS_FILE" ] || exit 0
 
-# Staged files. Empty (merge commit, --allow-empty) → nothing to classify, leave as-is.
+# What the tag describes is the BRANCH, not this one commit. The gate reads the
+# PR title on a pull_request run, and `gh pr create` defaults that title to the
+# commit subject, so a tag earned by one commit becomes a property of the whole
+# PR — it has to be classified that way from the start.
+#
+# Classifying the staged set alone got this wrong in both directions, and the
+# `--amend` case was the dangerous one: `git diff --cached` compares the index
+# against the commit being amended, so amending a doc file onto a commit that
+# also touches lib/ and app/ yields a doc-only list. The tag lands, `gh pr
+# create` lifts it into the PR title, and the suite reports green in seconds
+# without having run.
+#
+# Union of: what this commit stages, and everything the branch already changed
+# relative to where it forked from origin/main.
 staged="$(git diff --cached --name-only --diff-filter=ACMRD)"
-[ -n "$staged" ] || exit 0
 
-# Any staged path under a CI-significant prefix / exact file? → real change, leave as-is.
+# Fail toward RUNNING: the two errors are not symmetric. A wrong tag puts
+# unverified code on main; a missing tag costs one CI run. So anything that
+# leaves the branch's file set unknown — no origin/main, no HEAD, a failed
+# diff — must leave the message untagged rather than guess.
+git rev-parse --verify --quiet HEAD >/dev/null || exit 0
+base="$(git merge-base HEAD origin/main 2>/dev/null)" || exit 0
+[ -n "$base" ] || exit 0
+branch="$(git diff --name-only --diff-filter=ACMRD "$base" HEAD)" || exit 0
+
+# Empty (merge commit, --allow-empty, nothing on the branch yet) → nothing to
+# classify, leave as-is.
+#
+# `|| true` is load-bearing, not defensive noise: grep exits 1 when every line
+# was blank, and under the `set -euo pipefail` above that status propagates and
+# aborts the commit. A guard that kills the operation it exists to protect is
+# the same failure the fail-toward-running rule is about — an uncertain
+# classification must cost a CI run, never a commit.
+files="$(printf '%s\n%s\n' "$staged" "$branch" | grep -v '^$' | sort -u || true)"
+[ -n "$files" ] || exit 0
+
+# Any path under a CI-significant prefix / exact file? → real change, leave as-is.
 while IFS= read -r pattern; do
   pattern="${pattern%%#*}"; pattern="$(printf '%s' "$pattern" | tr -d '[:space:]')"
   [ -n "$pattern" ] || continue
   if [ "${pattern%/}" != "$pattern" ]; then
-    printf '%s\n' "$staged" | grep -q "^${pattern}" && exit 0   # dir prefix
+    printf '%s\n' "$files" | grep -q "^${pattern}" && exit 0   # dir prefix
   else
-    printf '%s\n' "$staged" | grep -qx "$pattern" && exit 0      # exact file
+    printf '%s\n' "$files" | grep -qx "$pattern" && exit 0      # exact file
   fi
 done < "$PATHS_FILE"
 

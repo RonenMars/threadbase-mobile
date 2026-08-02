@@ -2,17 +2,34 @@
 
 The canonical list of folders and files that affect **app functionality**, **tests**, or **CI**.
 
-Used by the `commit-msg` git hook (`scripts/git-hooks/commit-msg`): when a commit
-touches **none** of these paths, the hook appends `[skip-ci]` to the commit title and
-body. The CI gate (`.github/workflows/test.yml`) greps the commit message for the
-bracketed `[skip-ci]` tag and skips the heavy jobs (typecheck / unit / integration /
-lint), reporting the required checks green in seconds.
+Used by the `commit-msg` git hook (`scripts/git-hooks/commit-msg`): when **nothing on
+the branch** touches these paths, the hook appends the bracketed skip tag to the commit
+title and body. The CI gate (`.github/workflows/test.yml`) greps for that tag and skips
+the heavy jobs (typecheck / unit / integration / lint), reporting the required checks
+green in seconds.
 
 CI runs: `tsc --noEmit` (all `.ts`/`.tsx`), jest (`test:unit` / `test:integration` /
 `test:scripts`), `eslint "**/*.{ts,tsx}"`. Deploy ships via `scripts/`.
 
 The machine-readable source of truth is **`scripts/git-hooks/ci-paths.txt`** — one
 glob/prefix per line. Edit that file to change what counts; this doc explains it.
+
+## Two rules the classifier follows
+
+**The tag is a property of the branch, not of one commit.** The hook classifies the
+union of what the commit stages and everything the branch already changed since it
+forked from `origin/main`. It has to: on a `pull_request` run the gate reads the PR
+*title*, and `gh pr create` defaults that title to the commit subject — so a tag one
+commit earns silently becomes a property of the whole PR. Classifying the staged set
+alone also broke under `git commit --amend`, where `git diff --cached` compares the
+index against the commit being amended, so amending a doc file onto a commit that also
+touched `lib/` and `app/` produced a doc-only file list and tagged real code.
+
+**The two failure modes are not symmetric, so the classifier fails toward RUNNING.** A
+wrong tag puts unverified code on `main`; a missing tag wastes one CI run. Every
+uncertain case therefore leaves the message untagged — no reachable `origin/main`, no
+`HEAD`, a failed diff. Regression tests for both rules are in
+`__tests__/unit/scripts/commit-msg-hook.test.js`.
 
 ## Affects functionality / tests / CI
 
