@@ -129,6 +129,44 @@ security cms -D -i <profile>.mobileprovision | plutil -p - | grep -A2 applicatio
 
 ---
 
+## Metro from a worktree
+
+Both entries below are the same failure mode, and it is the dangerous one: the run **starts, looks healthy, and measures the wrong thing**. Nothing in the output announces the problem, so a profile or a screenshot taken this way is plausible and wrong.
+
+### Metro bundles the main repo instead of your worktree
+
+**When:** You create a worktree (per [`CLAUDE.md`](../CLAUDE.md) → "Worktrees — Always Outside the Repo Root"), point its `node_modules` at the main checkout with a symlink to save time, then `npx expo start` from the worktree. The app loads, Metro reports a successful bundle, and none of your changes are in it.
+
+**Cause:** Metro resolves the project root *through* the symlink and lands in the main checkout, so it serves that tree's app code. The only tell is in `.expo/dev/logs/start.log`:
+
+```
+# wrong — resolved through the symlink into the main repo
+{"_e":"metro:bundling:started", ... "entry":"../../tb-mobile/node_modules/expo-router/entry.js"}
+
+# right — resolved inside the worktree
+{"_e":"metro:bundling:started", ... "entry":"node_modules/expo-router/entry.js"}
+```
+
+**Fix:** Give the worktree a real `node_modules`. On APFS `cp -Rc` clones it in ~20 s and costs no extra disk:
+
+```bash
+cp -Rc ../../tb-mobile/node_modules ./node_modules
+```
+
+A symlink is still fine for Jest — only Metro follows it into the wrong root.
+
+### `simctl launch` opens the dev-launcher, not the app
+
+**When:** You install a `Debug-iphonesimulator` build and `xcrun simctl launch com.ronenmars.threadbase`. You get the Expo **dev client**'s server-picker rather than Threadbase, so an automated run that looks started never started.
+
+**Fix:** Deep-link straight to the bundle, taking the LAN host from the launcher row (the dev client records the LAN address, not `localhost`):
+
+```bash
+xcrun simctl openurl <SIM_UDID> "threadbase://expo-development-client/?url=http%3A%2F%2F<LAN_IP>%3A8081"
+```
+
+---
+
 ## Windows dev machine
 
 ### `spawn npx ENOENT` when running `npm run dev:metro` / `dev:android:js` on Windows
