@@ -19,6 +19,7 @@ import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
+import { useLiveInstanceCount } from '@/lib/openTrace'
 import { useSettingsStore } from '@/stores/settings'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useFetchSessionNames } from '@/hooks/useSessionName'
@@ -75,6 +76,7 @@ function SessionNamesSyncer({ serverId }: { serverId: string }) {
 }
 
 export default function ProjectsHub() {
+  useLiveInstanceCount('ProjectsHub')
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)

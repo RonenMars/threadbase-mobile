@@ -1,0 +1,21 @@
+# Repeated conversation opens for the open-path profile. Not part of any
+# test:e2e:* suite — it asserts nothing and needs a real paired server; run it by
+# hand with EXPO_PUBLIC_OPEN_TRACE=1 and read the traces out of the Metro log.
+#
+# The back tap is the point. Driving opens with `openurl` alone pushes a screen
+# that never unmounts, so every successive open measures the app plus N leaked
+# hubs — see docs/conversation-open-profile.md.
+appId: com.ronenmars.threadbase
+---
+- repeat:
+    times: 24
+    commands:
+      - openLink: "threadbase://conversation/${CONVERSATION_ID}?server=${SERVER_ID}"
+      - extendedWaitUntil:
+          visible:
+            id: "conversation-bottom-bar"
+          timeout: 40000
+      # Header back button — by point because it carries no testID.
+      - tapOn:
+          point: "8%,10%"
+      - waitForAnimationToEnd
