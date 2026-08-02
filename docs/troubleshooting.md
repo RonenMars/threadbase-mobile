@@ -255,6 +255,26 @@ Note that the override also re-enables `__tests__/unit/scripts/`, which the main
 
 Each worktree needs its own `npm ci` — jest resolves modules from the worktree root, not the main checkout.
 
+### `npx jest` hangs with no output in a fresh worktree
+
+**When:** The first `npx jest` run in a newly created worktree prints nothing at all — no `PASS`, no `FAIL`, not even a suite header — and stays that way for tens of minutes. `npx jest --listTests` in the same worktree answers instantly, so discovery and module resolution are fine.
+
+**Cause:** watchman. A new worktree is an unknown root, so watchman crawls it from scratch, and jest blocks on that crawl before running anything. The tell is that the jest process sits at **0% CPU** with a couple of seconds of accumulated CPU time — it is waiting, not working:
+
+```bash
+ps -o pid,etime,time,%cpu -p $(pgrep -f "[j]est" | tr '\n' ',' | sed 's/,$//')
+```
+
+An elapsed time of minutes against a `TIME` of seconds means the crawl, not a slow suite. `--listTests` on the same worktree returns immediately and prints watchman's own recrawl warning, which is what names the culprit.
+
+**Fix:** skip watchman — jest falls back to its own crawler, which is fast enough here:
+
+```bash
+npx jest --ci --runInBand --watchman=false --testPathPattern "<suite>"
+```
+
+The warning also suggests clearing watchman's state for the path (`watchman watch-del <worktree> ; watchman watch-project <worktree>`); that route is untried here, and `--watchman=false` needs no daemon interaction, which makes it the safer default in a throwaway worktree.
+
 ---
 
 ## CI signals
