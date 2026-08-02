@@ -267,6 +267,8 @@ ps -o pid,etime,time,%cpu -p $(pgrep -f "[j]est" | tr '\n' ',' | sed 's/,$//')
 
 An elapsed time of minutes against a `TIME` of seconds means the crawl, not a slow suite. `--listTests` on the same worktree returns immediately and prints watchman's own recrawl warning, which is what names the culprit.
 
+**0% CPU on its own does not name watchman.** A suite that finished and left an open handle idles exactly the same way, and `--watchman=false` does nothing for it — see the next entry. What separates them is whether jest printed anything before going quiet: no output at all is the crawl, a complete `PASS` / `Tests:` summary followed by silence is an open handle. Check that first, because the two remedies do not overlap.
+
 **Fix:** skip watchman — jest falls back to its own crawler, which is fast enough here:
 
 ```bash
@@ -274,6 +276,26 @@ npx jest --ci --runInBand --watchman=false --testPathPattern "<suite>"
 ```
 
 The warning also suggests clearing watchman's state for the path (`watchman watch-del <worktree> ; watchman watch-project <worktree>`); that route is untried here, and `--watchman=false` needs no daemon interaction, which makes it the safer default in a throwaway worktree.
+
+### `npx jest` finishes a passing run and then never exits
+
+**When:** The suite reports `PASS` and a full `Tests:` summary, and then the process just sits there at **0% CPU** — the same tell as the watchman crawl above, which is what makes this one easy to misdiagnose. Left running it looks like a hang, and `--watchman=false` does not help because watchman was never involved. Jest says so itself, below the summary where it is easy to scroll past:
+
+```
+Jest did not exit one second after the test run has completed.
+```
+
+**Cause:** an open handle — a timer, socket or subscription a test left running. The run is complete and its results are valid; only teardown is stuck. This is not one bad suite: on 2026-08-02, `conversation-detail-gating`, `SessionCard` and `conversation-resume-collision` all did it on an unmodified `main`, while the pure-unit `resumeSession-cache` exited immediately. Assume any integration suite that renders a component can do this.
+
+**Fix:** `--forceExit`. Everything printed above the hang is real, so the run can be trusted:
+
+```bash
+npx jest --ci --runInBand --forceExit <suite>
+```
+
+`--detectOpenHandles` names the culprit if you want to fix the leak rather than work around it, but it serialises the run, so keep it for diagnosis rather than routine use.
+
+**Why this matters beyond the annoyance:** a batch run that hangs after some suites have already passed is easy to kill and read as "the suite hangs", which is how a passing run gets recorded as a failure. Scroll up before concluding anything — the summary is usually already there.
 
 ---
 
