@@ -88,13 +88,19 @@ export default function ConversationDetailScreen() {
     useNavLockStore.getState().clear()
   }, [])
 
-  // Opens the timing probe as early in the screen's life as an effect can run,
-  // so `mount` is the zero point every later stage is measured against.
-  // No-op unless EXPO_PUBLIC_OPEN_TRACE=1.
-  useEffect(() => {
+  // Started during RENDER, not in an effect. useConversation's merge memo runs
+  // in this same first render pass, so an effect-started trace misses it
+  // entirely on a warm open — the memo's marks and counters land while
+  // `current` is still null and are silently dropped. Ref-guarded so it opens
+  // once per conversation. No-op unless EXPO_PUBLIC_OPEN_TRACE=1.
+  const tracedIdRef = useRef<string | null>(null)
+  /* eslint-disable react-hooks/refs -- render-phase probe start; see note above */
+  if (tracedIdRef.current !== id) {
+    tracedIdRef.current = id
     startOpenTrace(id)
-    return () => finishOpenTrace('unmount')
-  }, [id])
+  }
+  /* eslint-enable react-hooks/refs */
+  useEffect(() => () => finishOpenTrace('unmount'), [id])
 
   // In-chat search entry: toggles a query bar that writes ?search= on submit.
   // Prefills / auto-opens when navigation already carries a search param (Hub).
