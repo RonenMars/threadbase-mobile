@@ -7,6 +7,10 @@
  *   - surface a confirm dialog naming what was detected, and NOT resume;
  *   - retry with { force: true } only if the user proceeds.
  * A clean 200 resume proceeds straight to the live session, no dialog.
+ *
+ * Resume bodies here use the server's real shape (`id` + `conversationId`, no
+ * `sessionId`). Mocking the shape mobile *declared* instead is what hid the
+ * defect in #511: the suite drove a branch no real response ever took.
  */
 import React from 'react'
 import { Alert, type AlertButton } from 'react-native'
@@ -48,6 +52,23 @@ function mockMakeDetail(extra: Record<string, unknown> = {}) {
   }
 }
 
+// The 201/200 body POST /api/sessions/resume actually returns: the streamer's
+// SessionResponse. `id` is the live session, `conversationId` the transcript it
+// was resumed from — kept distinct here because a codex-cli rollout id differs
+// from the requested id.
+function mockResumeResponse(sessionId: string) {
+  return {
+    id: sessionId,
+    conversationId: CONV_ID,
+    projectId: 'proj-1',
+    projectPath: '/tmp/p',
+    projectName: 'Resume Test',
+    startedAt: '2026-06-10T11:00:00Z',
+    status: 'running',
+    ptyAttached: true,
+  }
+}
+
 const mockPost = jest.fn()
 
 jest.mock('@/services/api-client', () => {
@@ -83,10 +104,14 @@ function seedServer() {
   } as never)
 }
 
+// Held at module scope so a test can assert what the resume seeded into it.
+let testQc: QueryClient
+
 function wrapper() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
+  testQc = qc
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
@@ -142,13 +167,7 @@ describe('conversation detail — resume collision', () => {
       .mockRejectedValueOnce(
         new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
       )
-      .mockResolvedValueOnce({
-        conversationId: CONV_ID,
-        sessionId: 'sess-forced',
-        projectId: 'proj-1',
-        projectPath: '/tmp/p',
-        status: 'resumed',
-      })
+      .mockResolvedValueOnce(mockResumeResponse('sess-forced'))
 
     const { btn } = await renderAndFindResume()
     await act(async () => {
@@ -177,13 +196,7 @@ describe('conversation detail — resume collision', () => {
 
   it('a normal 200 resume proceeds with no dialog', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-    mockPost.mockResolvedValue({
-      conversationId: CONV_ID,
-      sessionId: 'sess-clean',
-      projectId: 'proj-1',
-      projectPath: '/tmp/p',
-      status: 'resumed',
-    })
+    mockPost.mockResolvedValue(mockResumeResponse('sess-clean'))
 
     const { btn } = await renderAndFindResume()
     await act(async () => {
@@ -198,6 +211,49 @@ describe('conversation detail — resume collision', () => {
     expect(alertSpy).not.toHaveBeenCalled()
 
     alertSpy.mockRestore()
+  })
+
+  // #511: the session id lives on `id`, and the seed is what lets /session/:id
+  // render without a GET. Both were dead before — the read keyed on a
+  // `sessionId` the server never sends, so the snapshot was always null and
+  // projectId never reached the route.
+  it('reads the session id from `id` and seeds the session cache', async () => {
+    mockPost.mockResolvedValue(mockResumeResponse('sess-real'))
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+    expect(testQc.getQueryData(['session', 'srv1', 'sess-real'])).toMatchObject({
+      id: 'sess-real',
+      projectName: 'Resume Test',
+      startedAt: '2026-06-10T11:00:00Z',
+    })
+
+    const target = mockReplace.mock.calls[0][0] as string
+    expect(target).toContain('/session/sess-real')
+    expect(target).toContain('projectId=proj-1')
+    expect(target).toContain('resumedFromConversationId=' + CONV_ID)
+  })
+
+  // A server old enough to answer with a bare { id } still navigates; it just
+  // pays the round-trip because there is no snapshot to seed.
+  it('still navigates on the legacy { id } body, with no seed', async () => {
+    mockPost.mockResolvedValue({ id: 'sess-legacy' })
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+    expect(testQc.getQueryData(['session', 'srv1', 'sess-legacy'])).toBeUndefined()
+    const target = mockReplace.mock.calls[0][0] as string
+    expect(target).toContain('/session/sess-legacy')
+    // Falls back to the requested conversation id when the body omits one.
+    expect(target).toContain('resumedFromConversationId=' + CONV_ID)
   })
 
   // Take-over is the SAFE destructive path (server stops the old process and

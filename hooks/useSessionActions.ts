@@ -103,28 +103,25 @@ export function useSessionActions(serverId: string, sessionId: string) {
   // (spawns a PTY) — retry:false so a client timeout never double-spawns. A soft
   // 409 (the conversation may still be open elsewhere) surfaces as a
   // ConversationBusyError to onError, carrying the structured detection payload;
-  // callers confirm and retry with `{ force: true }`. Normalises both the modern
-  // ResumeConversationResponse and the legacy `{ id }` shape.
+  // callers confirm and retry with `{ force: true }`.
+  //
+  // The session id comes from `id` — the server sends no `sessionId` key. There
+  // is no shape branch: normalizeResumeResponse returns null for the legacy
+  // `{ id }` body and a Session for a full one, which is the only difference
+  // between them that matters here.
   const resume = useMutation({
     mutationFn: async ({ force }: { force?: boolean } = {}): Promise<ResumeResult> => {
-      const resp = await api.post<ResumeConversationResponse | { id: string }>(
+      const resp = await api.post<ResumeConversationResponse>(
         '/api/sessions/resume',
         { sessionId, ...(force ? { force: true } : {}) },
         { retry: false },
       )
-      if ('sessionId' in resp) {
-        return {
-          sessionId: resp.sessionId,
-          projectId: resp.projectId,
-          projectPath: resp.projectPath,
-          conversationId: resp.conversationId,
-          sessionSnapshot: normalizeResumeResponse(resp),
-        }
-      }
       return {
-        sessionId: resp.id,
-        conversationId: sessionId,
-        sessionSnapshot: null,
+        sessionId: resp.sessionId ?? resp.id,
+        projectId: resp.projectId,
+        projectPath: resp.projectPath,
+        conversationId: resp.conversationId ?? sessionId,
+        sessionSnapshot: normalizeResumeResponse(resp),
       }
     },
   })
