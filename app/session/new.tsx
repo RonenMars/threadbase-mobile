@@ -189,29 +189,22 @@ export default function NewSessionScreen() {
       sessionSnapshot: Session | null
     }> => {
       const api = createApiForServer(serverId)
-      // Backend may return either the modern ResumeConversationResponse or the
-      // legacy `{ id }` shape during migration — normalise here. Resume is
-      // non-idempotent (spawns a PTY) — retry: false so a client timeout never
-      // double-spawns; same budget as start.
-      const resp = await api.post<ResumeConversationResponse | { id: string }>(
+      // The session id comes from `id` — the server sends no `sessionId` key.
+      // A legacy `{ id }` body just leaves the rest undefined, and
+      // normalizeResumeResponse returns null for it. Resume is non-idempotent
+      // (spawns a PTY) — retry: false so a client timeout never double-spawns;
+      // same budget as start.
+      const resp = await api.post<ResumeConversationResponse>(
         '/api/sessions/resume',
         { sessionId: resumeId },
         { timeoutMs: START_SESSION_TIMEOUT_MS, retry: false },
       )
-      if ('sessionId' in resp) {
-        return {
-          sessionId: resp.sessionId,
-          projectId: resp.projectId,
-          projectPath: resp.projectPath,
-          conversationId: resp.conversationId,
-          sessionSnapshot: normalizeResumeResponse(resp),
-        }
-      }
       return {
-        sessionId: resp.id,
-        projectPath: params.projectPath,
-        conversationId: resumeId ?? '',
-        sessionSnapshot: null,
+        sessionId: resp.sessionId ?? resp.id,
+        projectId: resp.projectId,
+        projectPath: resp.projectPath ?? params.projectPath,
+        conversationId: resp.conversationId ?? resumeId ?? '',
+        sessionSnapshot: normalizeResumeResponse(resp),
       }
     },
   })

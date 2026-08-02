@@ -73,12 +73,22 @@ export interface CreateSessionResponse {
   conversationId?: string | null
 }
 
+/**
+ * Response shape for `POST /api/sessions/resume`.
+ *
+ * The server answers with its `SessionResponse` — keyed `id` + `conversationId`.
+ * It sends no `sessionId` key and no `status: 'resumed'`; both were declared
+ * here and never existed server-side (confirmed against a live server on
+ * 2026-08-02). Read the session id from `id`. Older servers answered with a
+ * bare `{ id }`, so everything past `id` is optional.
+ */
 export interface ResumeConversationResponse {
-  conversationId: string
-  sessionId: string
-  projectId: string
+  id: string
+  conversationId?: string
+  projectId?: string
   projectPath?: string | null
-  status: 'resumed'
+  /** Never sent. Tolerated so adding it server-side stays a no-op here. */
+  sessionId?: string
 }
 
 // ── Identity helper ─────────────────────────────────────────────────────
