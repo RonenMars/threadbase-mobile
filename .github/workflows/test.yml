@@ -31,14 +31,21 @@ jobs:
   # required check and would leave the PR un-mergeable forever. Instead each job
   # checks out (cheap, and required so the local composite action exists) and
   # then runs a single guarded `run-ci` step. When the bracketed tag `[skip-ci]`
-  # is present in the latest commit message, the PR title, or the PR body, that
-  # one step is skipped, the job still succeeds, and the check context goes
-  # green in seconds. Bracketing only stops an unbracketed mention of the words
-  # from tripping the skip — writing the bracketed tag itself in a PR body or
-  # title DOES trip it, even in prose saying the run should not be skipped. A PR
-  # that discusses this gate must therefore avoid reproducing the literal tag, or
-  # it silently skips its own suite. (The monthly e2e-maestro job is schedule-
-  # only and is intentionally not gated.)
+  # is present, that one step is skipped, the job still succeeds, and the check
+  # context goes green in seconds. Which sources are searched depends on the
+  # event: a pull_request run sees only the PR title and body (head_commit is
+  # null there), while a push to main sees only the head commit message. So a
+  # tagged commit inside an untagged PR does NOT skip that PR's checks — they
+  # run in full, which is why a docs-only commit riding in a code PR is safe.
+  # Both outcomes report success, so duration is the only reliable way to tell
+  # a real run from a skipped one: a skipped job finishes in seconds, a real
+  # one in minutes (as of 2026-08-02, Unit ran 68 s against 4 s skipped).
+  # Compare against a run you know was skipped rather than against a number. Bracketing only stops an unbracketed
+  # mention of the words from tripping the skip — writing the bracketed tag
+  # itself in a PR body or title DOES trip it, even in prose saying the run
+  # should not be skipped. A PR that discusses this gate must therefore avoid
+  # reproducing the literal tag, or it silently skips its own suite. (The
+  # monthly e2e-maestro job is schedule-only and is intentionally not gated.)
   gate:
     name: Gate
     runs-on: ubuntu-latest
@@ -47,6 +54,9 @@ jobs:
     steps:
       - id: decide
         env:
+          # On pull_request, github.event.head_commit is null, so fall back to
+          # the PR title/body. On push to main, the PR fields are empty and we
+          # use the head commit message.
           HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
