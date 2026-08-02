@@ -40,8 +40,8 @@ appId: com.ronenmars.threadbase
       id: "conversation-bottom-bar"
     timeout: 60000
 
-# codex-cli conversations must show "Can't resume", not "▶ Resume Session".
-- assertNotVisible: "▶ Resume Session"
+# codex-cli conversations must show "Can't resume", not "Resume Session".
+- assertNotVisible: "Resume Session"
 - assertVisible: "Can't resume"
 # Messages must be present — the empty-state text must not appear.
 - assertNotVisible: "No messages in this conversation."

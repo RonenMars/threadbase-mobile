@@ -32,7 +32,7 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 # Resume Session is replaced with "Can't resume" for codex-cli conversations.
-- assertNotVisible: "▶ Resume Session"
+- assertNotVisible: "Resume Session"
 - assertVisible: "Can't resume"
 
 # Open the info modal to verify the Provider field.
