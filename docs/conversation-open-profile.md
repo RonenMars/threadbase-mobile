@@ -59,6 +59,22 @@ The same pathology shows up outside the conversation screen. During this session
 - The 4,780-message case used a synthetic JSONL built by concatenating a real 2,093-message conversation; it was deleted after the run.
 - The in-app tunnel ladder was **not** completed — the tunnel server could not be paired. The tunnel comparison rests on direct HTTP timing only.
 
+## How these measurements were arrived at
+
+Recorded here because the failures were more informative than the successes, and because each one produced a plausible result rather than an error.
+
+Four hypotheses died in sequence — conversation size, then message content shape, then cached page count, then the merge memo. Each fit the data available when it was formed and was refuted by data that did not exist yet. The page-count one is the instructive case: it explained every anomaly in the dataset and was killed by a single test, a conversation holding *more* cached pages opening ~27x faster — 019edbc1 at 519 messages across 8 pages in 474 ms, against 11b58c01 at 450 messages across 7 pages in 12,971 ms. That ratio is not stable across runs (11b58c01 has since opened in 2-4 s), which is itself part of why the hypothesis was wrong. Running the discriminating test cost two minutes; reasoning about the hypothesis would have kept it alive another round.
+
+Three separate times, correct work was applied outside the window that decides the outcome, and none of the three raised an error:
+
+- The probe started in a `useEffect`, which runs after the render it was measuring.
+- A commit was retyped while the PR title — which is what a squash merge takes — kept the old type.
+- A profiler was pointed at the React Native DevTools tab, producing a real profile of the wrong subject.
+
+The environment traps that go with these (a symlinked `node_modules`, a second bundler on the default port, profiling the debugger UI) are in [`troubleshooting.md`](./troubleshooting.md) → "Measuring the wrong thing", with the specific remedy for each.
+
+The general form worth carrying: name the window that decides the outcome, then confirm the change is inside it. *Is this right* and *where does this land* are different questions, and only the second fails quietly.
+
 ## Reproducing
 
 ```bash
