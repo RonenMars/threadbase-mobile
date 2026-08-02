@@ -434,8 +434,11 @@ export default function SessionDetailScreen() {
   }, [])
 
   const isStarting = starting === '1'
-  const isPending = (id?.startsWith('pending_') ?? false) || isStarting
   const { data: session, isLoading, error: sessionError } = useSessionDetail(serverId, id)
+  // A `starting=1` route whose PTY is already attached is not starting any
+  // more: its session_ready fired before we got here, and the pending screen
+  // would sit on the spinner waiting for an event that will never come again.
+  const isPending = (id?.startsWith('pending_') ?? false) || (isStarting && session?.ptyAttached !== true)
   const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
   const isSessionNotFound = sessionError instanceof NotFoundError
 
@@ -592,6 +595,11 @@ export default function SessionDetailScreen() {
     // promptCount counts only prompts sent through the app, so an adopted /
     // externally-started session that has real history reads promptCount 0 and
     // would otherwise strand on the read-only placeholder.
+    //
+    // Skip while starting: a session that is spawning also reads
+    // idle + detached, and redirecting then bounces the user back to the very
+    // conversation they just resumed from.
+    if (isPending) return
     const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
     if (session?.ptyAttached === false &&
       session?.status === 'idle' &&
@@ -600,7 +608,7 @@ export default function SessionDetailScreen() {
     ) {
       router.replace(`/conversation/${id}?server=${serverId}`)
     }
-  }, [session?.ptyAttached, session?.status, session?.boundConversationId, session?.conversationId, id, serverId, router])
+  }, [isPending, session?.ptyAttached, session?.status, session?.boundConversationId, session?.conversationId, id, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
