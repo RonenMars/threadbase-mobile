@@ -11,6 +11,8 @@
 // Off unless EXPO_PUBLIC_OPEN_TRACE=1 — the watchdog's 16 ms interval is not
 // something to ship enabled.
 
+import { useEffect } from 'react'
+
 const ENABLED = process.env.EXPO_PUBLIC_OPEN_TRACE === '1'
 
 export type OpenPhase =
@@ -46,6 +48,65 @@ const TICK_MS = 16
 // Backstop: an open that never reaches listDrawn must still report, or the
 // watchdog interval outlives the screen.
 const MAX_TRACE_MS = 30_000
+
+const BOOTED_AT = Date.now()
+/** ms since this module loaded — the common clock for the [stall] and [live] lines. */
+export function sinceBoot(): number {
+  return Date.now() - BOOTED_AT
+}
+
+const LIVE = new Map<string, number>()
+
+/**
+ * Counts live mounted instances of a screen.
+ * A screen that should exist once but reports 6 live instances is a navigation
+ * leak, and every extra instance re-renders on every store/query update — which
+ * a per-screen render profile cannot see, because each instance looks fine.
+ * That is what turned an open costing 400 ms into one costing 5,000 ms here.
+ */
+export function useLiveInstanceCount(name: string) {
+  useEffect(() => {
+    if (!ENABLED) return
+    const n = (LIVE.get(name) ?? 0) + 1
+    LIVE.set(name, n)
+    // eslint-disable-next-line no-console
+    console.log(`[live] +${sinceBoot()} mount ${name} — ${n} live`)
+    return () => {
+      const m = (LIVE.get(name) ?? 1) - 1
+      LIVE.set(name, m)
+      // eslint-disable-next-line no-console
+      console.log(`[live] +${sinceBoot()} unmount ${name} — ${m} live`)
+    }
+  }, [name])
+}
+
+// Always-on stall watchdog, independent of any open. The per-trace watchdog can
+// only see blocks between a conversation mount and its listDrawn, so it reports
+// every block as if the conversation screen caused it. This one runs for the
+// whole process and timestamps against app start, which is what separates "the
+// open is slow" from "the app is periodically frozen".
+//
+// Guarded on globalThis, not on module scope: Fast Refresh re-evaluates this
+// module on every edit, and an unguarded interval would leave the previous one
+// running. Four stacked watchdogs report the same block four times and add their
+// own load to the thread they are measuring.
+const GLOBAL_WATCHDOG = '__tbOpenTraceWatchdog'
+const globals = globalThis as typeof globalThis & { [GLOBAL_WATCHDOG]?: boolean }
+
+if (ENABLED && !globals[GLOBAL_WATCHDOG]) {
+  globals[GLOBAL_WATCHDOG] = true
+  const bootedAt = BOOTED_AT
+  let last = bootedAt
+  setInterval(() => {
+    const t = Date.now()
+    const late = t - last - TICK_MS
+    last = t
+    if (late >= STALL_THRESHOLD_MS) {
+      // eslint-disable-next-line no-console
+      console.log(`[stall] +${Math.round(t - bootedAt)} ms since boot — JS thread blocked ${Math.round(late)} ms`)
+    }
+  }, TICK_MS)
+}
 
 export function startOpenTrace(id: string) {
   if (!ENABLED) return

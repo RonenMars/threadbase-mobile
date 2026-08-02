@@ -35,7 +35,7 @@ import { createApiForServer, ConversationBusyError, NotFoundError } from '@/serv
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
-import { startOpenTrace, mark as traceMark, finishOpenTrace } from '@/lib/openTrace'
+import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
@@ -65,6 +65,7 @@ interface SearchTargetResponse {
 }
 
 export default function ConversationDetailScreen() {
+  useLiveInstanceCount('ConversationDetail')
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
