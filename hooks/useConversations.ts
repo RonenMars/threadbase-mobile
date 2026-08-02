@@ -9,6 +9,7 @@ import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, DiffHunk, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
+import { mark as traceMark, count as traceCount } from '@/lib/openTrace'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
 import {
   deriveCursor,
@@ -682,11 +683,22 @@ export function useConversation(
   const prevMessagesRef = useRef<Message[]>([])
   const data = useMemo(() => {
     if (!query.data?.pages.length) return undefined
+    /* eslint-disable react-hooks/purity -- measurement only; the clock reads
+       never feed the returned value, so the memo stays idempotent. Whole block
+       is inert unless EXPO_PUBLIC_OPEN_TRACE=1. */
+    const tMerge = Date.now()
     const merged = mergeConversationPages(query.data.pages)
+    const tAdapted = Date.now()
     // eslint-disable-next-line react-hooks/refs -- render-time identity cache; see note above
     merged.messages = reuseMessageIdentities(prevMessagesRef.current, merged.messages)
     // eslint-disable-next-line react-hooks/refs -- render-time identity cache; see note above
     prevMessagesRef.current = merged.messages
+    const tDone = Date.now()
+    traceCount('mergeMemo', tDone - tMerge)
+    traceCount('adaptPages', tAdapted - tMerge)
+    traceCount('reuseIds', tDone - tAdapted)
+    /* eslint-enable react-hooks/purity */
+    traceMark('merged', `${merged.messages.length} msgs from ${query.data.pages.length} page(s)`)
     return merged
   }, [query.data])
 
