@@ -165,20 +165,20 @@ A symlink is still fine for Jest — only Metro follows it into the wrong root.
 xcrun simctl openurl <SIM_UDID> "threadbase://expo-development-client/?url=http%3A%2F%2F<LAN_IP>%3A8081"
 ```
 
-### A second Metro is already on port 8081 — you are served someone else's branch
+### Another Metro already holds the default port — you are served someone else's branch
 
-**When:** You `npx expo start` from your worktree and it prints `Port 8081 is running threadbase-mobile in another window` followed by `Skipping dev server`. In non-interactive shells the "use port 8082 instead?" prompt cannot be answered, so **no dev server of yours starts at all** — but 8081 keeps serving, the app loads, and you are looking at whatever branch that other Metro was launched from.
+**When:** You `npx expo start` from your worktree and it prints `Port 8081 is running threadbase-mobile in another window` followed by `Skipping dev server`. In non-interactive shells the "use another port instead?" prompt cannot be answered, so **no dev server of yours starts at all** — but the occupied port keeps serving, the app loads, and you are looking at whatever branch that other Metro was launched from.
 
-**Cause:** Concurrent sessions. Worktrees make it normal to have several checkouts, and every one of them defaults to 8081.
+**Cause:** Concurrent sessions. Worktrees make it normal to have several checkouts, and every one of them defaults to the same port.
 
-**Fix:** Check which project the server on the port actually belongs to before trusting anything it serves:
+**Fix:** Never assume the bundler on the default port is yours. Check which project it belongs to before trusting anything it serves:
 
 ```bash
-curl -s localhost:8081/status                      # packager-status:running — says nothing about whose
-grep -E "Skipping dev server|Port 8081" <your metro log>
+grep -E "Skipping dev server|is running .* in another window" <your metro log>
+curl -s localhost:8081/status   # packager-status:running — says nothing about whose
 ```
 
-Start yours on an explicit free port (`--port 8082`) and point the dev client at that port in the `expo-development-client` deep link above. Do not kill the other Metro — it belongs to another session.
+Start yours on an explicit free port (`--port 8082`) and point the dev client at that port in the `expo-development-client` deep link above. Leave the other Metro alone unless you know whose it is — it may belong to another session.
 
 ### The profiler is recording the debugger UI, not the app
 
