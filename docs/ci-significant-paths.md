@@ -6,7 +6,12 @@ Used by the `commit-msg` git hook (`scripts/git-hooks/commit-msg`): when **nothi
 the branch** touches these paths, the hook appends the bracketed skip tag to the commit
 title and body. The CI gate (`.github/workflows/test.yml`) greps for that tag and skips
 the heavy jobs (typecheck / unit / integration / lint), reporting the required checks
-green in seconds.
+green in seconds. The gate only searches the commit **subject** and the PR **title** —
+never the commit body or the PR body — because the tag is a title-line marker, and
+searching either body would make a PR that merely quotes or discusses the tag skip its
+own suite. The hook still also appends the tag as a trailing body line, but that body
+copy is now belt-and-braces only — the gate never reads it, and the subject is what
+actually trips the skip.
 
 CI runs: `tsc --noEmit` (all `.ts`/`.tsx`), jest (`test:unit` / `test:integration` /
 `test:scripts`), `eslint "**/*.{ts,tsx}"`. Deploy ships via `scripts/`.

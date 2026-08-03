@@ -33,8 +33,8 @@ jobs:
   # then runs a single guarded `run-ci` step. When the bracketed tag `[skip-ci]`
   # is present, that one step is skipped, the job still succeeds, and the check
   # context goes green in seconds. Which sources are searched depends on the
-  # event: a pull_request run sees only the PR title and body (head_commit is
-  # null there), while a push to main sees only the head commit message. So a
+  # event: a pull_request run sees only the PR title (head_commit is null
+  # there), while a push to main sees only the head commit subject. So a
   # tagged commit inside an untagged PR does NOT skip that PR's checks — they
   # run in full, which is why a docs-only commit riding in a code PR is safe.
   # Both outcomes report success, so duration is the only reliable way to tell
@@ -42,10 +42,12 @@ jobs:
   # one in minutes (as of 2026-08-02, Unit ran 68 s against 4 s skipped).
   # Compare against a run you know was skipped rather than against a number. Bracketing only stops an unbracketed
   # mention of the words from tripping the skip — writing the bracketed tag
-  # itself in a PR body or title DOES trip it, even in prose saying the run
-  # should not be skipped. A PR that discusses this gate must therefore avoid
-  # reproducing the literal tag, or it silently skips its own suite. (The
-  # monthly e2e-maestro job is schedule-only and is intentionally not gated.)
+  # itself in a PR title DOES trip it, even in prose saying the run should not
+  # be skipped. The PR body is deliberately NOT searched: a PR that discusses
+  # this gate (e.g. quoting the tag in a code fence, or linking the issue that
+  # introduced it) would otherwise skip its own suite just by describing it —
+  # PR #525 had to avoid reproducing the literal tag in its body to dodge this.
+  # (The monthly e2e-maestro job is schedule-only and is intentionally not gated.)
   gate:
     name: Gate
     runs-on: ubuntu-latest
@@ -55,18 +57,20 @@ jobs:
       - id: decide
         env:
           # On pull_request, github.event.head_commit is null, so fall back to
-          # the PR title/body. On push to main, the PR fields are empty and we
-          # use the head commit message.
+          # the PR title. On push to main, the PR fields are empty and we use
+          # the head commit message. Only the commit subject (first line) and
+          # the PR title are searched — never the commit body or PR body —
+          # since the tag is a title-line marker the hook writes onto the
+          # subject and `gh pr create` lifts into the PR title.
           HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
           PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          haystack="${HEAD_COMMIT_MSG}
-          ${PR_TITLE}
-          ${PR_BODY}"
+          commit_subject="${HEAD_COMMIT_MSG%%$'\n'*}"
+          haystack="${commit_subject}
+          ${PR_TITLE}"
           if printf '%s' "$haystack" | grep -qF -- '[skip-ci]'; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice title=CI skipped::'[skip-ci]' found in commit message / PR title / PR body — run-ci step skipped, check reported green."
+            echo "::notice title=CI skipped::'[skip-ci]' found in commit subject / PR title — run-ci step skipped, check reported green."
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
