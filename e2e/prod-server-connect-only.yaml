@@ -14,13 +14,14 @@ appId: com.ronenmars.threadbase
 # Wait for onboarding splash screen
 - waitForAnimationToEnd
 
-# Should see the welcome screen with "Begin handshake"
+# Should see the welcome screen and its CTA. Match by testID, not the visible
+# string — "Begin handshake" never shipped; the real copy is "Get started"
+# and testID/copy drift is exactly what broke this assertion before.
 - assertVisible:
-    text: "Begin handshake"
+    id: "onboarding-welcome-cta"
 
-# Instead of Skip, tap "Begin handshake" to go to connection flow
 - tapOn:
-    text: "Begin handshake"
+    id: "onboarding-welcome-cta"
 
 # Wait for pairing options screen
 - waitForAnimationToEnd
@@ -181,7 +182,13 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "session-detail-screen"
 
-# Test the info button functionality
+# Test the info button functionality — it lives behind the header overflow
+# menu, not as a directly tappable button
+- tapOn:
+    id: "session-overflow-menu"
+
+- waitForAnimationToEnd
+
 - tapOn:
     id: "session-info-button"
 
