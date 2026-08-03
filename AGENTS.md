@@ -8,12 +8,13 @@ Maestro flows live in `e2e/`. Run the full mock suite with:
 npm run test:e2e:mock
 ```
 
-This checks for a booted iOS simulator, starts `e2e/mock-server.js` on port 7071, runs `03_hub.yaml` + `04_session_detail.yaml`, then kills the server.
+This checks for a booted iOS simulator, ensures a Release build is installed (building one if needed), starts `e2e/mock-server.js` on ports 7071 and 7072, runs the mock-suite flows, then kills the server.
+The authoritative flow list is the `test:e2e:mock` script in `package.json` — read it there rather than duplicating it here.
 
 **Prerequisites (one-time):** `brew install maestro` + `npm run ios` to get the app on the sim.
 
 When adding new Maestro flows:
-- Use `testID` props (not text) for elements without stable visible text — see `e2e/03_hub.yaml` for examples
+- Use `testID` props (not text) for elements without stable visible text — see `e2e/browse.yaml` for examples
 - Add new flows to the relevant `test:e2e:*` script in `package.json`
 - Fixtures are in `e2e/fixtures/` — extend them if the new flow needs additional data
 
