@@ -34,6 +34,7 @@ import { useWsStatus } from '@/hooks/useWsStatus'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useNavLockStore } from '@/stores/navLock'
+import { useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useRenameSession } from '@/hooks/useSessionName'
 import { MatrixRain } from '@/components/terminal/MatrixRain'
@@ -412,6 +413,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function SessionDetailScreen() {
+  useLiveInstanceCount('SessionDetail')
   const { t } = useTranslation(['terminal', 'common', 'sessions', 'conversation'])
   const theme = useTheme()
   const styles = makeStyles(theme)
