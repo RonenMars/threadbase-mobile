@@ -86,6 +86,18 @@ export function useLiveInstanceCount(name: string) {
 // whole process and timestamps against app start, which is what separates "the
 // open is slow" from "the app is periodically frozen".
 //
+// WHAT THIS CANNOT TELL YOU: it measures how late a setInterval tick lands, and
+// a tick is late for two reasons that look identical here — the JS thread was
+// busy, or the JS thread was starved of CPU by something else on the machine.
+// Other agent sessions, a terminal rendering their output, a second bundler or
+// a pile of leftover simulator processes all produce "JS thread blocked" lines
+// indistinguishable from real app work. One published finding was retracted
+// over exactly this (see docs/conversation-open-profile.md → the idle freeze),
+// where the load turned out to be the apparatus running the investigation.
+// Before attributing any number from here to app code, census the machine's
+// processes — load average alone will not show it — and discard the run if
+// anything moved.
+//
 // Guarded on globalThis, not on module scope: Fast Refresh re-evaluates this
 // module on every edit, and an unguarded interval would leave the previous one
 // running. Four stacked watchdogs report the same block four times and add their
