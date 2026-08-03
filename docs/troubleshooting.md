@@ -345,7 +345,7 @@ npx jest --ci --runInBand --forceExit <suite>
 
 ## CI signals
 
-Both entries here are cases where the signal is misleading rather than the code being wrong — CI reports something that looks conclusive and is not.
+Every entry here is a case where the signal is misleading rather than the code being wrong — CI or `gh` reports something that looks conclusive and is not.
 
 ### A green PR whose CI ran nothing (`[skip-ci]`)
 
@@ -364,6 +364,21 @@ Both entries here are cases where the signal is misleading rather than the code 
 **Cause:** The opposite of the usual setup. `test.yml`'s `pull_request` trigger has **no `branches:` filter**, so it fires for a PR targeting any base branch. Stacked PRs get the same `Type check` / `Unit tests` / `Integration tests` / `Lint` / `i18n` run as anything targeting `main`.
 
 **Fix:** Trust the checks — but read them, since this depends on the trigger staying unfiltered. If `test.yml` ever gains a `branches:` filter on `pull_request`, this reverts and stacked PRs really would need local verification.
+
+### `gh pr merge --delete-branch` reports failure after a successful merge
+
+**When:** You squash-merge from a worktree and `gh` exits non-zero with `failed to run git: fatal: 'main' is already used by worktree at '…/tb-mobile'`. Read as a failed merge, the natural next step is to retry — against a PR that is already merged.
+
+**Cause:** The merge is a GitHub API call and it succeeded. What failed is the *local* cleanup afterwards: `--delete-branch` tries to check out the base branch, and `main` is checked out in the primary worktree, so no other worktree may hold it. The remote branch is deleted; only the local switch fails. The exit status covers both phases and cannot distinguish them.
+
+**Fix:** Confirm against the artefact, not the exit code — `gh pr view <N> --json state,mergeCommit` tells you what actually happened. Then finish the cleanup by hand from the worktree:
+
+```bash
+git checkout --detach <merge-sha> && git branch -D <branch>
+git fetch origin --prune
+```
+
+The general rule this is an instance of: when a command does two things and returns one status, the status is a summary you cannot invert. Ask the system what state it is in rather than inferring it from the exit code.
 
 ---
 
