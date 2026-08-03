@@ -160,7 +160,7 @@ describe('Onboarding – error handling', () => {
 
     const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
 
-    // Keep default localhost URL, just add API key
+    await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), 'localhost:8766')
     await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
 
     await act(async () => {
