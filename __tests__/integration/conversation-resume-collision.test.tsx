@@ -336,4 +336,71 @@ describe('conversation detail — resume collision', () => {
 
     alertSpy.mockRestore()
   })
+
+  // The recovery affordance ported from the now-deleted /session/new resume
+  // branch (issue #507): a plain (non-409) failure offers Retry, which
+  // re-issues the same mutation rather than leaving the user stuck.
+  it('a generic resume failure offers Retry, which re-issues the same mutation', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost
+      .mockRejectedValueOnce(new Error('network blip'))
+      .mockResolvedValueOnce(mockResumeResponse('sess-retried'))
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    const retry = buttons.find((b) => b.text === 'Retry')
+    await act(async () => {
+      retry?.onPress?.()
+    })
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2))
+    expect(mockPost.mock.calls[1][1]).toEqual({ sessionId: CONV_ID })
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+    expect(mockReplace.mock.calls[0][0] as string).toContain('/session/sess-retried')
+
+    alertSpy.mockRestore()
+  })
+
+  // Retry must preserve force:true — a retry of a forced resume is still a
+  // forced resume, not a fresh preflight that could re-open the same 409.
+  it('retrying a failed forced resume re-sends force: true', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost
+      .mockRejectedValueOnce(
+        new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
+      )
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(mockResumeResponse('sess-force-retried'))
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+
+    const collisionButtons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    const confirm = collisionButtons.find((b) => b.style === undefined)
+    await act(async () => {
+      confirm?.onPress?.()
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+    const failureButtons = (alertSpy.mock.calls[1][2] ?? []) as AlertButton[]
+    const retry = failureButtons.find((b) => b.text === 'Retry')
+    await act(async () => {
+      retry?.onPress?.()
+    })
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(3))
+    expect(mockPost.mock.calls[2][1]).toEqual({ sessionId: CONV_ID, force: true })
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+    expect(mockReplace.mock.calls[0][0] as string).toContain('/session/sess-force-retried')
+
+    alertSpy.mockRestore()
+  })
 })
