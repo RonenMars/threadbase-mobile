@@ -53,7 +53,7 @@
     "viewModeTerminal": "Terminal",
     "viewModeChat": "Chat",
     "ptyActiveFallbackBanner": "Live terminal output is active before conversation messages are available.",
-    "rawModeNote": "Raw terminal mode — unsupported sequences detected; output is unfiltered.",
+    "rawModeNote": "RAW terminal mode — unsupported sequences detected; output is unfiltered.",
     "resumedEmptyScrollback": "Earlier output isn't available for a resumed session.",
     "resumedEmptyScrollbackLink": "View the conversation history →"
   },
