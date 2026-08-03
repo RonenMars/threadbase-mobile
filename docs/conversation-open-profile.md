@@ -114,9 +114,12 @@ One side sampled the streamer twice, got 60% and 72.2%, and built a server-defec
 The other sampled three times, got 87.5% / 10.2% / 10.0%, and published the peak as the level — with its own contradicting samples already in hand.
 Neither noticed until a third round of sampling returned near-zero.
 
-The lesson is not "sample more", it is that **a percentage is a measurement and a count is a fact**.
-Percentages quoted here without a stated sample size and window should be assumed to be peaks.
-That is why the paragraph above leads with process counts and why the re-run block asks for a census rather than a CPU figure.
+The lesson is not "sample more" — a third round was not needed, since the contradicting samples were already in hand both times.
+
+The durable distinction is **how each quantity changes**.
+A count moves in steps, when something starts or stops, so one reading stays valid for as long as the configuration holds.
+A percentage oscillates continuously, so one reading is valid for nothing but the instant it was taken.
+That is why a process census survives being quoted once and a CPU figure does not — and it also says when a count is *unsafe*: `218 CoreSimulator` is a single observation too, and it reads 0 the moment the simulator is shut. Quote a count only alongside the configuration it describes.
 
 ### What this costs the mobile side
 
@@ -141,6 +144,18 @@ There is currently **no measured instance** of the JS thread being held for seco
 ## How this was arrived at
 
 Recorded because the failures were more informative than the successes, and because each one produced a plausible result rather than an error.
+
+**The finding that outranks every result below: these were reading failures, not measurement failures.**
+Four wrong conclusions were published here — conversation size, cached page count, the merge memo and the row renderer; then the harness stacking; then the `flushAggregate` attribution; then a server defect that did not exist.
+In every case the contradicting evidence had already been collected *before* the wrong conclusion was written down.
+The page-count hypothesis died to a conversation already in the dataset.
+The stacking was visible in run-order the whole time.
+`flushAggregate` was refuted by a counter that had been added specifically to check it.
+The server claim was contradicted by the second and third CPU samples in the same tool call as the first.
+
+No extra rigour, instrument or round of sampling would have prevented any of them, because the data was already sufficient each time.
+What failed was reading the collected data for the number that fit the story already in hand — the same mechanism as writing a falsifier and then not applying it.
+That is worth carrying further than any individual result in this document: when a hypothesis feels confirmed, the useful question is not "what else should I measure" but "what have I already measured that I have not re-read".
 
 Five hypotheses died in sequence — conversation size, message content shape, cached page count, the merge memo, and finally the row renderer.
 Each fit the data available when it was formed and was refuted by data that did not exist yet.
