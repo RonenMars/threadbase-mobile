@@ -391,20 +391,33 @@ That version existed only on the PR branch at the time.
 
 **Fix:** Trust the checks — but read them, since this depends on the trigger staying unfiltered. If `test.yml` ever gains a `branches:` filter on `pull_request`, this reverts and stacked PRs really would need local verification.
 
-### `gh pr merge --delete-branch` reports failure after a successful merge
+### A non-zero `gh pr merge` says nothing about whether the merge happened
 
-**When:** You squash-merge from a worktree and `gh` exits non-zero with `failed to run git: fatal: 'main' is already used by worktree at '…/tb-mobile'`. Read as a failed merge, the natural next step is to retry — against a PR that is already merged.
+**When:** You squash-merge and `gh` exits non-zero. Both of these occurred on 2026-08-03, hours apart, and they point in **opposite directions**:
 
-**Cause:** The merge is a GitHub API call and it succeeded. What failed is the *local* cleanup afterwards: `--delete-branch` tries to check out the base branch, and `main` is checked out in the primary worktree, so no other worktree may hold it. The remote branch is deleted; only the local switch fails. The exit status covers both phases and cannot distinguish them.
+| Error | Merge actually… | `gh pr view --json state` |
+| --- | --- | --- |
+| `failed to run git: fatal: 'main' is already used by worktree at '…/tb-mobile'` | **succeeded** | `MERGED`, with a `mergeCommit` |
+| `GraphQL: Base branch was modified. Review and try the merge again.` | **did not happen** | `OPEN`, `mergeCommit: null` |
 
-**Fix:** Confirm against the artefact, not the exit code — `gh pr view <N> --json state,mergeCommit` tells you what actually happened. Then finish the cleanup by hand from the worktree:
+**Cause:** `gh pr merge --delete-branch` does two things — a GitHub API call, then local cleanup — and returns one status for both. The worktree error is the *second* phase failing after the first succeeded: `--delete-branch` tries to check out the base branch, and `main` is held by the primary worktree, so no other worktree may take it. The remote branch is deleted; only the local switch fails. The base-branch error is the *first* phase failing because `main` moved between your rebase and the merge call.
+
+**Fix:** Confirm against the artefact, never the exit code:
+
+```bash
+gh pr view <N> --json state,mergedAt,mergeCommit
+```
+
+If it merged, finish the cleanup by hand from the worktree:
 
 ```bash
 git checkout --detach <merge-sha> && git branch -D <branch>
 git fetch origin --prune
 ```
 
-The general rule this is an instance of: when a command does two things and returns one status, the status is a summary you cannot invert. Ask the system what state it is in rather than inferring it from the exit code.
+If it did not, re-fetch, rebase onto the new `origin/main`, wait for the CI re-run the force-push triggers, and merge again.
+
+**Why this entry is a law rather than a caution.** With one instance it reads as "this command sometimes lies in a known direction", which is still actionable by adjusting your reading of it. With two instances pointing opposite ways, the exit status is not biased — it is **uninformative**. That is worse than having no signal, because a status that is right about half the time still looks like evidence, and will be read as evidence under time pressure. The general rule: when a command does two things and returns one status, that status is a summary you cannot invert. Ask the system what state it is in.
 
 ---
 
