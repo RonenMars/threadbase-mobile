@@ -2,7 +2,7 @@
 
 **2026-08-02: every measurement in the previous version of this document was invalid.** They were taken through a harness that leaked a screen per run, so run order — not any property of the app — drove the timings. On a clean harness the same conversation opens in **~400 ms**, stable across 24 consecutive opens.
 
-**This does not close the original report.** A 14-second open was observed in ordinary use, before any of this rig existed. Nothing here reproduces it and nothing here disproves it; it is **unexplained**, not resolved. The leading candidate is in ["Where to look next"](#where-to-look-next) below — the app reaches `router.push` on notification taps, `session_ready` events and cold-start deep links, which is the same never-popped push the harness made, on a real device with no test rig involved. It is untested.
+**This does not close the original report.** A 14-second open was observed in ordinary use, before any of this rig existed. Nothing here reproduces it and nothing here disproves it; it is **unexplained**, not resolved — and as of 2026-08-03 it has no suspect either: the navigation-stacking candidate that this document previously named was tested and [refuted](#the-navigation-stacking-candidate-is-dead).
 
 What this document can now say: the message list, the merge memo, the parse path, the server and the network are all excluded, and any remaining cost is not paid per-open on the tail path.
 
@@ -32,7 +32,7 @@ One build, one conversation (`11b58c01`, 968 messages), same session, only the n
 Extended to 24 consecutive opens on the clean harness, twice: max 629 ms and max 855 ms (both first-of-run), median ~400 ms, no multi-second outliers in either.
 The `[live]` log confirms `unmount ConversationDetail — 0 live` after every one.
 
-Tapping the header back button unmounts the conversation screen, so *that* path does not accumulate. Nothing here tests the other ways the app navigates — see ["Where to look next"](#where-to-look-next).
+Tapping the header back button unmounts the conversation screen, so that path does not accumulate. Neither do the app's own navigations — [measured separately](#the-navigation-stacking-candidate-is-dead); only a push to the **root** route duplicates, which is what the harness did and the app never does.
 
 ## What the bisection ruled out
 
@@ -51,21 +51,30 @@ These sit on top of the earlier eliminations, all of which still hold and none o
 
 ## Where to look next
 
-**This is the leading candidate for the original 14-second report, and it is untested.**
+What is still known about the original 14-second report, and survives the harness being thrown out: the server log showed two requests totalling 159 ms of server time with an 11-second gap between them, and no client timeout can produce that gap — the two are 8 s (`FIRST_ATTEMPT_TIMEOUT_MS`) and 15 s (`REQUEST_TIMEOUT_MS`), react-query's retry is `0`, and the server answered the first request in 43 ms so nothing timed out.
+Whatever the cause is, it blocks the JS thread long enough for timers to fire late.
+That constrains the search. It does not name a suspect, and as of 2026-08-03 nothing does.
 
-What is still known about that report, and survives the harness being thrown out: the server log showed two requests totalling 159 ms of server time with an 11-second gap between them, and no client timeout can produce that gap — the two are 8 s (`FIRST_ATTEMPT_TIMEOUT_MS`) and 15 s (`REQUEST_TIMEOUT_MS`), react-query's retry is `0`, and the server answered the first request in 43 ms so nothing timed out. Whatever the cause is, it is something that blocks the JS thread long enough for timers to fire late. That constrains the search; it does not name a suspect.
+### The navigation-stacking candidate is dead
 
-The harness leaked screens because a deep link pushes and expo-router does not collapse a push onto a route already in the stack. The app reaches `router.push` on three paths that need no test rig:
+An earlier version of this section named `router.push` on notification taps, `session_ready` and cold-start deep links as the leading candidate, on the theory that they stack screens the way the harness did. **Measured 2026-08-03 with `useLiveInstanceCount` on all three screens — they do not.**
 
-- Notification taps — `router.push(target.path)` in [`app/_layout.tsx`](../app/_layout.tsx), on every `addNotificationResponseReceivedListener` fire.
-- `session_ready` auto-navigation — `router.push` on a WebSocket event, which arrives with no user action at all.
-- Cold-start deep links and launch URLs — `router.push(target.path)` in the cold-start resolver.
+| Navigation | Live instances |
+| --- | --- |
+| Same session deep link ×5 | 1 mount total — identical URL is deduped |
+| Four *different* session ids | 1 mount total — params swap on the existing screen, 4 re-renders |
+| Conversation ↔ session, 8 alternations (16 navigations) | oscillates 1↔2, never higher |
+| **Control:** root `threadbase://` ↔ conversation, ×5 | **1 → 5, zero unmounts** |
 
-These target `/session/<id>`, not the hub, so they would stack session screens rather than the `ProjectsHub` instances the harness accumulated — a different population with different subscriptions, and the per-instance cost is unmeasured. What carries over is the shape: a push that nothing pops, repeated, leaving live screens that keep re-rendering on every query and store update. That shape is what turned a 400 ms open into a 5,000 ms one here.
+Only the last one grows, and it is the harness's own pattern. The distinguishing factor is the **root** route: pushing `/` while already deep in the stack duplicates the hub instead of returning to it. Leaf routes reconcile — same URL dedupes, different params swap in place, and alternating leaf patterns hold at depth ≤ 2.
 
-**Nobody has measured any of this.** The test is cheap now that the instrument exists: add `useLiveInstanceCount` to `app/session/[id].tsx`, run with `EXPO_PUBLIC_OPEN_TRACE=1`, fire each of the three paths a few times, and read the `[live]` count. If it climbs past 1 and stays there, the original report has a candidate explanation and the fix is at those three call sites, not in the conversation screen. If it returns to 0, this thread is dead and the 14-second open still needs one.
+That kills the candidate on two counts. All three `router.push` call sites target `/session/<id>`, a leaf route, so they do not accumulate. And the harm mechanism was never "a stacked screen" in the abstract — it was *N live `ProjectsHub` instances each re-rendering 605 sessions on every update*. None of the three paths targets `/`, so none of them can reproduce it even if a session screen did stack.
 
-Either way, treat that open as an open bug with a named suspect — not as something this document ruled out.
+**What this test did not cover:** the pushes were driven through deep links, which enter expo-router through linking reconciliation, whereas the notification listener calls `router.push` imperatively. Both end in the same navigator, but they are not the same entry point, and the imperative one could not be exercised unattended — a foreground notification renders no tappable banner. So the leaf-route result is strong evidence, not proof. The second argument above does not depend on it.
+
+### So the 14-second open is unexplained, with no suspect
+
+It is still an open bug. What is now excluded: the message list, row rendering, row count, the merge memo, parse/adapt, the server, the network, cached page count, conversation length, and navigation stacking on any path the app itself takes. What remains unexamined is whatever else can hold the JS thread for seconds — the [idle freeze below](#second-open-thread--the-idle-freeze-plausible-and-unconfirmed) is the only reproduced instance of that shape, and its attribution is unconfirmed.
 
 ## Second open thread — the idle freeze, plausible and unconfirmed
 
@@ -122,7 +131,7 @@ The general form worth carrying: name the window that decides the outcome, then 
 *Is this right* and *where does this land* are different questions, and only the second fails quietly.
 Extend it to the apparatus: before comparing runs, give the harness one invariant that must hold on every run — live screen count, open handles, cache size — so drift announces itself instead of being absorbed by whichever hypothesis is current.
 
-The environment traps that go with these (a symlinked `node_modules`, a second bundler on the default port, profiling the debugger UI, and now a stacking deep link) are in [`troubleshooting.md`](./troubleshooting.md) → "Measuring the wrong thing", with the specific remedy for each.
+The environment traps that go with these (a symlinked `node_modules`, a second bundler on the default port, profiling the debugger UI, and now a deep link to the ROOT route, which duplicates the hub instead of returning to it) are in [`troubleshooting.md`](./troubleshooting.md) → "Measuring the wrong thing", with the specific remedy for each.
 
 ## Reproducing
 

@@ -195,8 +195,9 @@ Start yours on an explicit free port (`--port 8082`) and point the dev client at
 **When:** You benchmark a screen by opening it in a loop — `xcrun simctl openurl threadbase://` to get back to the hub, then `xcrun simctl openurl threadbase://conversation/<id>` to open it again — and each successive run is slower than the last.
 The first is fast, the sixth takes seconds, and the escalation looks like a leak in the screen under test.
 
-**Cause:** a deep link **pushes**. It never pops, and expo-router does not collapse a push onto a route already in the stack, so both screens accumulate.
+**Cause:** the `threadbase://` half. A deep link to the **root** route pushes a *duplicate* hub instead of returning to the existing one, and nothing pops it.
 After six iterations the stack holds six live `ProjectsHub` instances, each still subscribed to `sessions-eager` and each re-rendering its full session list on every query and store update.
+Leaf routes are fine — an identical URL is deduped, a different `[id]` swaps params on the existing screen, and alternating two leaf patterns holds at depth ≤ 2 ([measured](./conversation-open-profile.md#the-navigation-stacking-candidate-is-dead)). It is specifically returning to the root by URL that accumulates.
 The screen you are timing is queued behind all of them.
 Nothing errors, every individual screen behaves correctly, and the timings are real measurements of a state no user can reach.
 This is what made [`conversation-open-profile.md`](./conversation-open-profile.md) wrong for three sessions.
@@ -205,7 +206,7 @@ This is what made [`conversation-open-profile.md`](./conversation-open-profile.m
 `useLiveInstanceCount` in [`lib/openTrace.ts`](../lib/openTrace.ts) logs a `[live]` line on every mount and unmount with the running total — if it climbs past 1, stop and fix the harness before reading any number under it.
 [`e2e/perf/conversation-open-loop.yaml`](../e2e/perf/conversation-open-loop.yaml) is the working shape: deep-link in, tap the header back button, repeat.
 
-Tapping the header back button unmounts correctly, so that path does not stack. Whether the app's own `router.push` on notification taps, `session_ready` events and cold-start deep links stacks the same way has not been tested — see [Where to look next](./conversation-open-profile.md#where-to-look-next).
+Tapping the header back button unmounts correctly, so that path does not stack. The app's own `router.push` on notification taps, `session_ready` events and cold-start deep links all target `/session/<id>` — a leaf route, which [does not accumulate](./conversation-open-profile.md#the-navigation-stacking-candidate-is-dead). This trap is the harness's, not the app's.
 
 **The general form, and the reason this entry exists:** an unattended harness is code, and code nobody tested measures whatever it happens to do rather than what it was meant to do. This rig was a deliberate, sensible choice — scripted `openurl` is the only way to drive repeated opens with nobody watching — and it was specified by the same person who wrote the rule about verifying what you are measuring. That is not a contradiction. The rule is habitually applied to the thing under test, and the apparatus is not usually thought of as being under test. It should be: before comparing runs, give the harness one invariant that must hold on every run (live screen count, open handles, cache size, row count) and check it, because otherwise drift in the rig gets absorbed by whichever hypothesis is current and reads as evidence for it.
 
