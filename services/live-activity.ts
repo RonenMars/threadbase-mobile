@@ -1,6 +1,7 @@
 import type { LiveActivity } from 'expo-widgets'
 
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
+import { sessionPhase } from '@/lib/sessionPresentation'
 import type { Session } from '@/types/api'
 import {
   LAST_OUTPUT_MAX_CHARS,
@@ -23,7 +24,10 @@ export function liveActivityKey(serverId: string, sessionId: string): string {
 export function isTerminal(session: Session): boolean {
   return (
     session.processLiveness === 'gone' ||
-    !!session.completedAt ||
+    sessionPhase(session) === 'ended' ||
+    // A live activity only ever exists for a session that already went live,
+    // so unlike a cold landing this can't be a not-yet-started session —
+    // idle+detached here means it ended on a server too old to set completedAt.
     (session.status === 'idle' && !session.ptyAttached)
   )
 }
