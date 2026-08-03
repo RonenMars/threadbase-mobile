@@ -210,14 +210,10 @@ jobs:
   # ── Jest E2E (__tests__/e2e) ─────────────────────────────────────────────────
   # Seven suites under `__tests__/e2e/` had an npm script (`test:e2e`) but no
   # workflow invoked it (#535) — they were free to rot with nothing watching.
-  # This job wires them in. It is deliberately NOT added to the `main
-  # protection` ruleset's required-status-check list — that list
-  # (Lint/Type check/Unit tests/Integration tests/i18n) is a ruleset edit, not
-  # a workflow-file one, and it's the repo owner's call, not this PR's:
-  # tb-streamer's docs/testing/cross-platform-ci.md records a required check
-  # absent from the target branch making every PR permanently unmergeable on
-  # 2026-08-01, reverted after the fact. Promote this to required once it has
-  # a green history on `main`.
+  # This job wires them in. It runs on every PR but is deliberately advisory,
+  # not a required status check in the `main protection` ruleset
+  # (Lint/Type check/Unit tests/Integration tests/i18n) — the repo owner's
+  # decision, 2026-08-03.
   #
   # Falsifier: if this goes red on `main` for a reason unrelated to whatever
   # PR triggered it, the correct response is to investigate the suite, not
