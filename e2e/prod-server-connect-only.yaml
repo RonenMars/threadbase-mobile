@@ -53,8 +53,14 @@ appId: com.ronenmars.threadbase
 # Wait a moment for input to settle
 - waitForAnimationToEnd
 
-# Hide keyboard before moving to next field
-- hideKeyboard
+# Maestro 2.6.1's hideKeyboard does not dismiss the iOS 26.x keyboard
+# (docs/superpowers/plans/2026-08-01-extract-scroll-fab.md). Scroll the
+# KeyboardAwareScrollView instead so the token field clears the keyboard,
+# matching the precedent in 07_conversation_scroll_gaps.yaml.
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
 - waitForAnimationToEnd
 
 # Tap token input and clear any existing content
@@ -69,8 +75,13 @@ appId: com.ronenmars.threadbase
 # Wait a moment for input to settle
 - waitForAnimationToEnd
 
-# Hide keyboard
-- hideKeyboard
+# Same Maestro/iOS-26 hideKeyboard limitation as above — the on-screen
+# keyboard sits on top of the handshake CTA (docs/research/2026-05-26-...),
+# so scroll instead of hiding to bring it back into view.
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
 
 # Tap the connect/handshake button
 - tapOn:
