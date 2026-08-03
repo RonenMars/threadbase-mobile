@@ -258,7 +258,9 @@ jobs:
 
       - name: Build and install iOS app (Release)
         run: |
-          npx expo prebuild --platform ios --non-interactive
+          # SDK 57 defaults prebuild to --clean, which would wipe the committed
+          # ios/Podfile (SwiftUICore/Xcode-26 hook) and regenerate it from scratch.
+          npx expo prebuild --platform ios --no-clean
           xcodebuild \
             -workspace ios/Threadbase.xcworkspace \
             -scheme Threadbase \
