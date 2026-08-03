@@ -207,6 +207,34 @@ jobs:
         with:
           run: npm run check:native-deps
 
+  # ── Jest E2E (__tests__/e2e) ─────────────────────────────────────────────────
+  # Seven suites under `__tests__/e2e/` had an npm script (`test:e2e`) but no
+  # workflow invoked it (#535) — they were free to rot with nothing watching.
+  # This job wires them in. It is deliberately NOT added to the `main
+  # protection` ruleset's required-status-check list — that list
+  # (Lint/Type check/Unit tests/Integration tests/i18n) is a ruleset edit, not
+  # a workflow-file one, and it's the repo owner's call, not this PR's:
+  # tb-streamer's docs/testing/cross-platform-ci.md records a required check
+  # absent from the target branch making every PR permanently unmergeable on
+  # 2026-08-01, reverted after the fact. Promote this to required once it has
+  # a green history on `main`.
+  #
+  # Falsifier: if this goes red on `main` for a reason unrelated to whatever
+  # PR triggered it, the correct response is to investigate the suite, not
+  # remove the job — that is exactly how these suites went dark the first time.
+  e2e-jest:
+    name: E2E jest
+    runs-on: ubuntu-latest
+    needs: [gate, setup]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: E2E jest
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
+        with:
+          run: npm run test:e2e
+
   # ── Maestro E2E (iOS sim, monthly schedule only) ─────────────────────────────
   # Runs once per month (00:00 UTC on the 1st) via the schedule trigger above.
   # The macOS runner + iOS app build is ~15 minutes and ~$3/run, so this acts
