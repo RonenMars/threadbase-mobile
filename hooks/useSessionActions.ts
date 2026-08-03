@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer, NetworkError, stopSession } from '@/services/api-client'
+import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
 import type { ResumeConversationResponse } from '@/types/projectChat'
@@ -100,8 +101,9 @@ export function useSessionActions(serverId: string, sessionId: string) {
   })
 
   // Resumes the conversation `sessionId` into a live PTY session. Non-idempotent
-  // (spawns a PTY) — retry:false so a client timeout never double-spawns. A soft
-  // 409 (the conversation may still be open elsewhere) surfaces as a
+  // (spawns a PTY) — retry:false so a client timeout never double-spawns. Uses
+  // START_SESSION_TIMEOUT_MS since resume spawns a PTY the same way start does.
+  // A soft 409 (the conversation may still be open elsewhere) surfaces as a
   // ConversationBusyError to onError, carrying the structured detection payload;
   // callers confirm and retry with `{ force: true }`.
   //
@@ -114,7 +116,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
       const resp = await api.post<ResumeConversationResponse>(
         '/api/sessions/resume',
         { sessionId, ...(force ? { force: true } : {}) },
-        { retry: false },
+        { timeoutMs: START_SESSION_TIMEOUT_MS, retry: false },
       )
       return {
         sessionId: resp.sessionId ?? resp.id,

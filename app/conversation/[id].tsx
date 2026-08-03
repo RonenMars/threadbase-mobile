@@ -446,14 +446,22 @@ export default function ConversationDetailScreen() {
   // `force: true` always proceeds server-side (contract), so a repeat 409 is
   // not expected — any error here is a genuine failure.
   const forceResume = useCallback(() => {
-    resume.mutate(
-      { force: true },
-      {
-        onSuccess: navigateToResumedSession,
-        onError: (err) =>
-          Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err)),
-      },
-    )
+    // Named locally (not the outer const) so the Retry button can call it again
+    // without a useCallback self-reference.
+    function attempt() {
+      resume.mutate(
+        { force: true },
+        {
+          onSuccess: navigateToResumedSession,
+          onError: (err) =>
+            Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err), [
+              { text: t('common:button.cancel'), style: 'cancel' },
+              { text: t('common:button.retry'), onPress: attempt },
+            ]),
+        },
+      )
+    }
+    attempt()
   }, [resume, navigateToResumedSession, t])
 
   // Take over: stop the process that already owns this conversation, then adopt
@@ -478,43 +486,51 @@ export default function ConversationDetailScreen() {
   // still be open, never "is open") — and only then retry with force. A clean
   // resume proceeds straight through.
   const handleResume = useCallback(() => {
-    resume.mutate(
-      {},
-      {
-        onSuccess: navigateToResumedSession,
-        onError: (err) => {
-          if (err instanceof ConversationBusyError) {
-            const entries = err.detectedBy.length > 0 ? err.detectedBy : ['unknown']
-            const reasons = Array.from(
-              new Set(
-                entries.map((d) =>
-                  t(`resume.reason.${d}`, { defaultValue: t('resume.reason.unknown') }),
+    // Named locally (not the outer const) so the Retry button can call it again
+    // without a useCallback self-reference.
+    function attempt() {
+      resume.mutate(
+        {},
+        {
+          onSuccess: navigateToResumedSession,
+          onError: (err) => {
+            if (err instanceof ConversationBusyError) {
+              const entries = err.detectedBy.length > 0 ? err.detectedBy : ['unknown']
+              const reasons = Array.from(
+                new Set(
+                  entries.map((d) =>
+                    t(`resume.reason.${d}`, { defaultValue: t('resume.reason.unknown') }),
+                  ),
                 ),
-              ),
-            ).join('; ')
-            // Taking over needs a process we can actually signal. The server only
-            // reports likelyOwner 'external' when it matched a real PID (argv/cwd);
-            // a bare mtime hit ('unknown') has nothing to adopt, so we don't offer it.
-            const canTakeOver = err.likelyOwner === 'external'
-            Alert.alert(t('resume.collisionTitle'), t('resume.collisionMessage', { reasons }), [
-              { text: t('common:button.cancel'), style: 'cancel' },
-              ...(canTakeOver
-                ? [
-                    {
-                      text: t('resume.takeOver'),
-                      style: 'destructive' as const,
-                      onPress: takeOverSession,
-                    },
-                  ]
-                : []),
-              { text: t('resume.confirm'), onPress: forceResume },
-            ])
-          } else {
-            Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err))
-          }
+              ).join('; ')
+              // Taking over needs a process we can actually signal. The server only
+              // reports likelyOwner 'external' when it matched a real PID (argv/cwd);
+              // a bare mtime hit ('unknown') has nothing to adopt, so we don't offer it.
+              const canTakeOver = err.likelyOwner === 'external'
+              Alert.alert(t('resume.collisionTitle'), t('resume.collisionMessage', { reasons }), [
+                { text: t('common:button.cancel'), style: 'cancel' },
+                ...(canTakeOver
+                  ? [
+                      {
+                        text: t('resume.takeOver'),
+                        style: 'destructive' as const,
+                        onPress: takeOverSession,
+                      },
+                    ]
+                  : []),
+                { text: t('resume.confirm'), onPress: forceResume },
+              ])
+            } else {
+              Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err), [
+                { text: t('common:button.cancel'), style: 'cancel' },
+                { text: t('common:button.retry'), onPress: attempt },
+              ])
+            }
+          },
         },
-      },
-    )
+      )
+    }
+    attempt()
   }, [resume, navigateToResumedSession, forceResume, takeOverSession, t])
 
   const handleShare = useCallback(async () => {
