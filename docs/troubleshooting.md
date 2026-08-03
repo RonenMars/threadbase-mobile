@@ -358,6 +358,29 @@ Every entry here is a case where the signal is misleading rather than the code b
 
 **The trap inside the trap (historical):** the gate used to search the commit message **plus the PR title and body**, matched with a literal `grep -F`. So *writing* the bracketed tag anywhere in a PR description skipped that PR's suite — including in a sentence explaining that the suite should not be skipped. This is not hypothetical: PR #474, whose purpose was correcting claims about this gate, skipped its own run that way, and PR #525 had to avoid reproducing the literal tag in its own body for the same reason. The gate was narrowed to only the commit subject and the PR title — never either body — precisely to close that hole, so a PR can now discuss or quote the tag freely in its description without tripping the skip.
 
+### A PR *can* test its own workflow change — `pull_request` runs the head's file
+
+**When:** You change something in `.github/workflows/` and cannot tell whether the PR's own CI run exercised the new version or the one still on `main`. It decides whether the change is verified before merge or only after.
+
+**Cause:** Not a failure — a fact worth knowing, because guessing it wrong in either direction is expensive. A `pull_request` event evaluates the workflow from the **PR head**, not from the base branch. So a workflow edit takes effect on the very PR that introduces it, and you can prove a CI change works before merging it.
+
+**Evidence, rather than the docs:** PR #529 narrowed the `[skip-ci]` gate to the commit subject and PR title. Its own `Gate` step ran while `main` still carried the old three-source version, and the job log shows the *new* script executing, with `PR_BODY` absent from the step's `env:` block entirely:
+
+```
+Run commit_subject="${HEAD_COMMIT_MSG%%$'\n'*}"
+    haystack="${commit_subject}
+    ${PR_TITLE}"
+env:
+  HEAD_COMMIT_MSG:
+  PR_TITLE: fix(ci): scope the skip-ci gate to the commit subject and PR title
+```
+
+That version existed only on the PR branch at the time.
+
+**How to check it yourself for any workflow change:** read the job log, not the summary. `gh run view <run-id> --log` prints each `run:` block verbatim along with its resolved `env:`, so you can see which version of the script executed and what inputs it was given. The `env:` block is the stronger signal of the two — an input that is absent cannot be matched, which is a structural guarantee rather than a behavioural one.
+
+**Corollary:** a workflow change that lands unverified did not have to. If a CI edit is worth making, its own PR is the place to prove it.
+
 ### A stacked PR looks un-CI'd but isn't
 
 **When:** A PR whose base is another feature branch rather than `main`, where you assume CI didn't really run and verify locally instead.
