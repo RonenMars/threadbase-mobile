@@ -30,7 +30,7 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 16 | Back from never-typed-in new session leaves an empty session alive | ✅ DONE on integration — stop unused fresh PTY on `beforeRemove` (`a17a2f2`); public PR #346 |
 | Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | 🟡 Partial — live list uses native MVCP (`da5638c` / #382); reconnect also rehydrates bound conversation (U1) |
 | Bug 18 | Maestro flow `server_drag_reorder` — swipe crash / suite wiring | ✅ DONE — wired into `test:e2e:mock`; swipe removed (reorder covered by integration tests) |
-| Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Open — flow skipped |
+| Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Closed — flow deleted as unrun (issue #519) |
 | Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
 | Bug 21 | "Open Session" from Recents lands on "Session not found" | ✅ DONE — Recents removed; U1 evicts stale session/conversation favorites on 404 + recovery CTA |
 | Bug 22 | Settings QR-scanner button is a no-op on the UI layer | Open — not diagnosed |
@@ -644,7 +644,7 @@ If all of the above are still empty at exit time, the session is a discard.
 
 ## Bug 19 — Maestro flow `tree_server_headers.yaml.skip` can't return to hub after pairing second server
 
-**Filed:** 2026-05-24. **Status:** flow skipped in `test:e2e:mock` (renamed to `.yaml.skip`). Re-include by renaming back to `.yaml` once fixed.
+**Filed:** 2026-05-24. **Status:** flow was skipped in `test:e2e:mock` (renamed to `.yaml.skip`) and never re-included; deleted as unrun (issue #519).
 
 **Symptom:** The flow's single-server assertions pass (`tree-headers-01-single-server.png` is captured cleanly). It then deeplinks to `threadbase://onboarding?mode=add` to pair a second mock server on `:7072`. After filling the URL + key and tapping "Connect", the assertion `extendedWaitUntil: visible: { id: "hub-screen" }, timeout: 8000` fails with *"Assertion is false: id: hub-screen is visible"* after the full 8s timeout (run took 45s total because of upstream retries). The multi-server screenshot (`tree-headers-02-multi-server.png`) never gets taken.
 
@@ -660,11 +660,11 @@ If all of the above are still empty at exit time, the session is a discard.
 3. If the deeplink param is being dropped, add a one-time `assertVisible: { id: "onboarding-add-server-screen" }` (or whatever the testID is for the add-server-only carousel slide) immediately after the deeplink to confirm the flow is on the right screen.
 4. Increase `extendedWaitUntil` timeout to 15s as a last resort — the pair handshake involves multiple round trips and 8s may be too tight under macOS sim load.
 
-**Re-enable:** `git mv e2e/tree_server_headers.yaml.skip e2e/tree_server_headers.yaml` and add the file back to the `maestro test` arglist in `package.json` → `test:e2e:mock`.
+**Re-enable:** N/A — the flow was deleted 2026-08-03 as unrun (issue #519); this investigation is preserved for reference only.
 
 **Files likely involved:**
 
-- `e2e/tree_server_headers.yaml.skip` — the flow
+- `e2e/tree_server_headers.yaml.skip` — the flow (deleted)
 - `e2e/mock-server.js` — the `:7072` second-server bind + `/api/profiles` + pair endpoints
 - `services/pair-exchange.ts` — second-server pair-success handler
 - `app/_layout.tsx` — deeplink routing for `threadbase://onboarding?mode=add`
@@ -698,7 +698,7 @@ Working-tree changes from prior agent sessions, left untouched during the cleanu
 
 - `e2e/pagination-classic.yaml` (modified) — replaces unreliable `- back` swipe-from-edge with `- tapOn: "Back"` chevron + bumps hub-screen timeout 5 s → 10 s. Looks correct; needs a smoke run before committing.
 - `e2e/pagination-hub.yaml` (modified) — same `back` → `tapOn: "Back"` + timeout bump fix. Ship alongside `pagination-classic.yaml`.
-- `e2e/diagnose-local-sessions.yaml` (new, untracked) — diagnostic Maestro flow that pairs against the local streamer instead of the mock; written to investigate the "sessions are not displayed at all" report from 2026-05-24. The session-rendering issue is resolved, so decide whether to keep this as a permanent diagnostic flow or delete.
+- `e2e/diagnose-local-sessions.yaml` — diagnostic Maestro flow that paired against the local streamer instead of the mock; written to investigate the "sessions are not displayed at all" report from 2026-05-24. The session-rendering issue is resolved and the flow was never wired into any script, so it was deleted as unrun (issue #519).
 - `docs/research/2026-05-24-threadbase-competitive-landscape.md` (new, untracked) — competitive-landscape research doc. Independent of the e2e changes; review and commit to `docs/research/` if it stays relevant.
 
 **Suggested split:** one commit for the two e2e fixes (they share a fix + rationale), one commit for the research doc, one decision on the diagnostic flow.
