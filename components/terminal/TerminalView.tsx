@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { Alert, View, Text, StyleSheet } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { Warning } from 'phosphor-react-native'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -13,6 +14,7 @@ import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
+import { conversationHref } from '@/lib/conversationHref'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { ProviderName } from '@/constants/providers'
 import type { ParseConfidence } from '@/lib/renderConfidence'
@@ -25,6 +27,8 @@ interface Props {
   disabled?: boolean
   pendingPlan?: string | null
   onClosePlan?: () => void
+  /** Conversation that was resumed into this session — when set, disclose missing PTY scrollback. */
+  resumedConversationId?: string | null
 }
 
 export function TerminalView({
@@ -35,8 +39,10 @@ export function TerminalView({
   disabled = false,
   pendingPlan = null,
   onClosePlan,
+  resumedConversationId = null,
 }: Props) {
   const { t } = useTranslation('terminal')
+  const router = useRouter()
   const { lines, isStreaming, userMessageTexts, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
@@ -46,6 +52,11 @@ export function TerminalView({
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
+
+  const onViewResumedConversation = useCallback(() => {
+    if (!resumedConversationId) return
+    router.push(conversationHref(resumedConversationId, serverId) as never)
+  }, [resumedConversationId, router, serverId])
 
   const onSend = (payload: string) => {
     markSessionUsed(sessionId)
@@ -91,6 +102,7 @@ export function TerminalView({
         onSendKeys={(keys) => sendKeys.mutate(keys)}
         activeQuestion={activeQuestion}
         onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+        onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
       />
       <ChatComposer
         value={inputText}

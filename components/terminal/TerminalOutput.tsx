@@ -112,10 +112,25 @@ interface Props {
   activeQuestion?: QuestionBlock | null
   /** Answer a structured AskUserQuestion (POST). Permission gates answer via onSendKeys. */
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /**
+   * Resumed sessions start a fresh PTY — prior terminal bytes are gone.
+   * When set, show a scrollback-top disclosure linking to the durable conversation.
+   */
+  onViewResumedConversation?: () => void
 }
 
-export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTexts, onSendInput, onSendKeys, activeQuestion, onAnswer }: Props) {
+export function TerminalOutput({
+  lines,
+  isStreaming: _isStreaming,
+  userMessageTexts,
+  onSendInput,
+  onSendKeys,
+  activeQuestion,
+  onAnswer,
+  onViewResumedConversation,
+}: Props) {
   const { t } = useTranslation('common')
+  const { t: tTerminal } = useTranslation('terminal')
   const collapsedLines = useMemo(
     () => collapseWrappedUserLines(lines, userMessageTexts),
     [lines, userMessageTexts],
@@ -211,6 +226,22 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
     onAnswer?.(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
   }, [activeQuestion, onAnswer, onSendKeys])
 
+  const listHeader = useMemo(() => {
+    if (!onViewResumedConversation) return null
+    return (
+      <TouchableOpacity
+        style={styles.resumedNotice}
+        onPress={onViewResumedConversation}
+        accessibilityRole="link"
+        accessibilityLabel={`${tTerminal('session.resumedEmptyScrollback')} ${tTerminal('session.resumedEmptyScrollbackLink')}`}
+        testID="terminal-resumed-scrollback-notice"
+      >
+        <Text style={styles.resumedNoticeText}>{tTerminal('session.resumedEmptyScrollback')}</Text>
+        <Text style={styles.resumedNoticeLink}>{tTerminal('session.resumedEmptyScrollbackLink')}</Text>
+      </TouchableOpacity>
+    )
+  }, [onViewResumedConversation, tTerminal])
+
   return (
     <View style={styles.container}>
       <FlashList
@@ -218,6 +249,7 @@ export function TerminalOutput({ lines, isStreaming: _isStreaming, userMessageTe
         data={collapsedLines}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
+        ListHeaderComponent={listHeader}
         onScroll={handleScroll}
         scrollEventThrottle={100}
         maintainVisibleContentPosition={{
@@ -276,6 +308,28 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 8,
     paddingHorizontal: 4,
+  },
+  resumedNotice: {
+    marginHorizontal: 8,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#21262d',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#30363d',
+    gap: 4,
+  },
+  resumedNoticeText: {
+    color: '#8b949e',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  resumedNoticeLink: {
+    color: '#58a6ff',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
   },
   lineRow: {
     flexDirection: 'row',

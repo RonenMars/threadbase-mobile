@@ -1,6 +1,6 @@
 import React from 'react'
 import { StyleSheet } from 'react-native'
-import { render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 
 describe('TerminalOutput – rendering', () => {
@@ -151,5 +151,41 @@ describe('TerminalOutput – row testIDs', () => {
       <TerminalOutput lines={['hello', 'world']} isStreaming={false} />
     )
     expect(queryAllByTestId('terminal-line-row')).toHaveLength(2)
+  })
+})
+
+describe('TerminalOutput – resumed scrollback notice', () => {
+  it('does not render the notice without onViewResumedConversation', async () => {
+    const { queryByTestId } = await render(
+      <TerminalOutput lines={[]} isStreaming={false} />
+    )
+    expect(queryByTestId('terminal-resumed-scrollback-notice')).toBeNull()
+  })
+
+  it('renders the notice at the top of scrollback when the callback is set', async () => {
+    const onView = jest.fn()
+    const { getByTestId, getByText } = await render(
+      <TerminalOutput
+        lines={['startup']}
+        isStreaming={false}
+        onViewResumedConversation={onView}
+      />
+    )
+    expect(getByTestId('terminal-resumed-scrollback-notice')).toBeTruthy()
+    expect(getByText("Earlier output isn't available for a resumed session.")).toBeTruthy()
+    expect(getByText('View the conversation history →')).toBeTruthy()
+  })
+
+  it('invokes onViewResumedConversation when the notice is pressed', async () => {
+    const onView = jest.fn()
+    const { getByTestId } = await render(
+      <TerminalOutput
+        lines={[]}
+        isStreaming={false}
+        onViewResumedConversation={onView}
+      />
+    )
+    await fireEvent.press(getByTestId('terminal-resumed-scrollback-notice'))
+    expect(onView).toHaveBeenCalledTimes(1)
   })
 })

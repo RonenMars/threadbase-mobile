@@ -29,6 +29,12 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }))
 
+const mockPush = jest.fn()
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
+  useLocalSearchParams: () => ({}),
+}))
+
 // ── feature mocks ────────────────────────────────────────────────────────────
 const mockSendInputMutate = jest.fn()
 const mockSendKeysMutate = jest.fn()
@@ -93,9 +99,9 @@ jest.mock('@/components/queue/PlanPreviewSheet', () => ({
 // eslint-disable-next-line import/first
 import { TerminalView } from '@/components/terminal/TerminalView'
 
-async function renderView() {
+async function renderView(props?: { resumedConversationId?: string }) {
   return await render(
-    <TerminalView serverId="srv1" sessionId="sess1" />,
+    <TerminalView serverId="srv1" sessionId="sess1" {...props} />,
     { wrapper: createWrapper() },
   )
 }
@@ -104,6 +110,7 @@ describe('TerminalView', () => {
   beforeEach(() => {
     mockSendInputMutate.mockClear()
     mockSendKeysMutate.mockClear()
+    mockPush.mockClear()
   })
 
   it('renders terminal-line-row elements when lines are provided', async () => {
@@ -121,5 +128,18 @@ describe('TerminalView', () => {
     await renderView()
     await fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(mockSendInputMutate).toHaveBeenCalledWith('test-payload', expect.anything())
+  })
+
+  it('does not show the resumed scrollback notice for a fresh session', async () => {
+    await renderView()
+    expect(screen.queryByTestId('terminal-resumed-scrollback-notice')).toBeNull()
+  })
+
+  it('shows the resumed scrollback notice and navigates to the conversation', async () => {
+    await renderView({ resumedConversationId: 'conv-42' })
+    const notice = screen.getByTestId('terminal-resumed-scrollback-notice')
+    expect(notice).toBeTruthy()
+    await fireEvent.press(notice)
+    expect(mockPush).toHaveBeenCalledWith('/conversation/conv-42?server=srv1')
   })
 })

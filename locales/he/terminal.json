@@ -53,7 +53,9 @@
     "viewModeTerminal": "טרמינל",
     "viewModeChat": "צ׳אט",
     "ptyActiveFallbackBanner": "פלט טרמינל חי פעיל לפני שזמינים הודעות שיחה.",
-    "rawModeNote": "מצב טרמינל גולמי — זוהו רצפים שאינם נתמכים; הפלט אינו מסונן."
+    "rawModeNote": "מצב טרמינל גולמי — זוהו רצפים שאינם נתמכים; הפלט אינו מסונן.",
+    "resumedEmptyScrollback": "פלט קודם אינו זמין בסשן שחודש.",
+    "resumedEmptyScrollbackLink": "צפה בהיסטוריית השיחה ←"
   },
   "a11y": {
     "line": "שורה {{n}}: {{text}}"
