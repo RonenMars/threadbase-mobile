@@ -1,6 +1,7 @@
 import {
   deriveConversationPresentation,
   deriveSessionPresentation,
+  sessionPhase,
 } from '@/lib/sessionPresentation'
 
 function base(
@@ -118,6 +119,38 @@ describe('deriveSessionPresentation', () => {
       colorToken: 'idle',
       capabilities: { canResume: true, canSendInput: false, isObserveOnly: true },
     })
+  })
+})
+
+describe('sessionPhase', () => {
+  it('reads an idle, detached session with no completedAt as starting, not ended', () => {
+    expect(sessionPhase({ status: 'idle', ptyAttached: false })).toBe('starting')
+  })
+
+  it('reads an idle, detached session with completedAt as ended', () => {
+    expect(
+      sessionPhase({ status: 'idle', ptyAttached: false, completedAt: '2026-08-01T00:00:00Z' }),
+    ).toBe('ended')
+  })
+
+  it('reads an idle, attached session as live', () => {
+    expect(sessionPhase({ status: 'idle', ptyAttached: true })).toBe('live')
+  })
+
+  it('reads a running, detached session as live', () => {
+    expect(sessionPhase({ status: 'running', ptyAttached: false })).toBe('live')
+  })
+
+  it('reads a running, attached session as live', () => {
+    expect(sessionPhase({ status: 'running', ptyAttached: true })).toBe('live')
+  })
+
+  it('gives completedAt precedence over ptyAttached still reading true', () => {
+    // The server can report a stale ptyAttached: true on the same payload
+    // that finally sets completedAt; completedAt is the authoritative signal.
+    expect(
+      sessionPhase({ status: 'idle', ptyAttached: true, completedAt: '2026-08-01T00:00:00Z' }),
+    ).toBe('ended')
   })
 })
 

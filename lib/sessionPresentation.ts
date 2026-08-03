@@ -294,3 +294,18 @@ export function deriveConversationPresentation(
 export function isPresentationLive(session: SessionPresentationInput): boolean {
   return deriveSessionPresentation(session).live
 }
+
+export type SessionPhase = 'starting' | 'live' | 'ended'
+
+/**
+ * `ptyAttached === false && status === 'idle'` is ambiguous on its own: it is
+ * equally true of a session that has not started yet (`/api/sessions/start`
+ * and `/api/sessions/resume` both respond before the PTY attaches) and one
+ * that has already ended. `completedAt` is the field the server only sets on
+ * a genuine end, so it — not the idle/detached pair — is the discriminator.
+ */
+export function sessionPhase(s: SessionPresentationInput): SessionPhase {
+  if (s.completedAt) return 'ended'
+  if (s.ptyAttached) return 'live'
+  return s.status === 'idle' ? 'starting' : 'live'
+}
