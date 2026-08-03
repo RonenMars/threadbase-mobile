@@ -991,7 +991,7 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 - **Sub-item A — Single source of truth for mock fixtures.** Decide between (a) keeping `demo-server/` as the deployable copy and writing a sync check (CI fails if `demo-server/server.js` or `demo-server/fixtures/` drift from `e2e/`), or (b) making `demo-server/` import from `e2e/` directly via relative path so there is literally one copy. Option (b) is simpler if Fly's Docker context can reach the parent `e2e/` directory (it can, but requires moving the Dockerfile up or using `--file`). Option (a) keeps the deploy directory self-contained.
 
-- **Sub-item B — Maestro flows runnable against either backend.** Today `setup.yaml` hardcodes `http://localhost:7071`; `setup-demo.yaml` reads `DEMO_SERVER_URL` from `.env.demo`. The env-var approach is already in place for demo flows — extend it so a single parameterized flow covers both local CI runs (against `mock-server.js`) and remote/device runs (against the Fly demo). Delete the per-backend duplicates once the parameterized version is proven.
+- **Sub-item B — Maestro flows runnable against either backend.** Today `setup.yaml` hardcodes `http://localhost:7071`. `setup-demo.yaml` used to read `DEMO_SERVER_URL` from `.env.demo` the same way, but it was deleted as unrun (issue #519, no surviving caller after the `shots-*.yaml` family was removed) — the env-var approach would need to be rebuilt from scratch if this sub-item is picked up. Extend `setup.yaml` so a single parameterized flow covers both local CI runs (against `mock-server.js`) and remote/device runs (against the Fly demo).
 
 - **Sub-item C — Visual regression test harness.** Now that we have a deterministic backend producing the same fixtures every time, we can checksum or diff screenshots between builds. Tooling options: `playwright-test` against the simulator via Maestro hooks; `reg-cli` / `pixelmatch` for image diffs; or roll a tiny `vitest`-based diff suite. Decision point: where do baseline images live (the repo? Git LFS? a separate bucket?), and what is the diff threshold before we fail CI.
 
@@ -1006,8 +1006,8 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 **Files likely involved:**
 
 - `demo-server/` — Dockerfile + fly.toml + server.js (already exists)
-- `e2e/setup.yaml`, `e2e/setup-demo.yaml` — collapse into one parameterized version
-- `e2e/shots-*.yaml` — refactor to use the parameterized setup
+- `e2e/setup.yaml` — parameterize for both backends (`e2e/setup-demo.yaml`, its would-be collapse target, was deleted as unrun — issue #519)
+- `e2e/shots-*.yaml` — deleted as unrun (issue #519); would need to be rewritten if this sub-item is picked up
 - `.github/workflows/` — new visual regression job
 - A new `e2e/baselines/` (or LFS-backed equivalent) for reference images
 - `package.json` — possibly new `test:visual` script
@@ -1051,11 +1051,11 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 ### Feature 33 — Repair stale `demo-server-*.yaml` E2E flows (selector drift + Maestro 2.x syntax)
 
-**Filed:** 2026-06-30. **Status:** **Implemented (pending verification run).** All breakage below was fixed in the E2E-remediation branch (2026-06-30): `demo-server-connect-only.yaml` now uses `chat-message-input` / `chat-send-button` / `onboarding-notifications-cta` and asserts `session-detail-screen` instead of the non-existent `terminal-output`; `demo-server-test.yaml` was rewritten to delegate onboarding to `setup-demo.yaml`, drop the unsupported `assertVisible: { timeout: }` syntax, and use the FAB → browse → "Start Session Here" → `chat-*` path. `prod-server-connect-only.yaml` got the same `Skip → onboarding-notifications-cta` and `send-message-button → chat-send-button` fixes. Still needs a green run on a supported (iOS ≤ 18) sim with a Release build to close it out.
+**Filed:** 2026-06-30. **Status:** **Implemented (pending verification run).** All breakage below was fixed in the E2E-remediation branch (2026-06-30): `demo-server-connect-only.yaml` now uses `chat-message-input` / `chat-send-button` / `onboarding-notifications-cta` and asserts `session-detail-screen` instead of the non-existent `terminal-output`; `demo-server-test.yaml` was rewritten to delegate onboarding to `setup-demo.yaml`, drop the unsupported `assertVisible: { timeout: }` syntax, and use the FAB → browse → "Start Session Here" → `chat-*` path. `prod-server-connect-only.yaml` got the same `Skip → onboarding-notifications-cta` and `send-message-button → chat-send-button` fixes. Still needs a green run on a supported (iOS ≤ 18) sim with a Release build to close it out. `demo-server-test.yaml` was never wired into any script despite the rewrite, so it was deleted as unrun (issue #519); only `demo-server-connect-only.yaml` remains.
 
-**Goal:** Make the demo-server Maestro flows (`demo-server-connect-only.yaml`, `demo-server-test.yaml`) run green again against the live demo server (`threadbase-demo.fly.dev`). They were written against an older onboarding/chat UI and an older Maestro, and now fail on dead selectors and unsupported syntax — independently of the build/driver blockers tracked in the E2E failure report.
+**Goal:** Make the demo-server Maestro flow (`demo-server-connect-only.yaml`) run green again against the live demo server (`threadbase-demo.fly.dev`). It was written against an older onboarding/chat UI and an older Maestro, and now fails on dead selectors and unsupported syntax — independently of the build/driver blockers tracked in the E2E failure report.
 
-**Why:** With `.env.demo` + a Release build in place, `setup-demo.yaml` and the `shots-*.yaml` screenshot flows already work, but the two `demo-server-*` flows still reference UI that has since been renamed or removed, so they can never pass as-is. This is repair of *existing* flows, distinct from Feature 17's goal of *adding new* coverage.
+**Why:** With `.env.demo` + a Release build in place, `setup-demo.yaml` and the `shots-*.yaml` screenshot flows used to work, but both were deleted as unrun (issue #519) — `demo-server-connect-only.yaml` still references UI that has since been renamed or removed, so it can never pass as-is. This is repair of an *existing* flow, distinct from Feature 17's goal of *adding new* coverage.
 
 **Known breakage (audited 2026-06-30 against current source/locales):**
 - `demo-server-connect-only.yaml`
@@ -1063,7 +1063,7 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
   - `id: "send-message-button"` → renamed to **`chat-send-button`**.
   - `id: "terminal-output"` → no such testID exists (only a React Query key); pick a real anchor or drop the assertion.
   - `text: "New chat"` → string gone; the FAB is `fab-new-session`.
-- `demo-server-test.yaml`
+- `demo-server-test.yaml` (deleted 2026-08-03 as unrun, issue #519 — breakage below is historical)
   - **`assertVisible: { timeout: }` is not supported in Maestro 2.x** — replace with bare `assertVisible` (7s auto-retry) or `extendedWaitUntil` (per `e2e/README.md` "Maestro 2.x notes").
   - `text: "Welcome to Threadbase"` → that string is `welcome.title` in `locales/en/onboarding.json` but `WelcomeStep.tsx` renders `welcome.headline` ("Pull a thread."), not the title — assertion never matches. Assert the rendered headline or the `onboarding-welcome-cta` testID instead.
   - `text: "New chat"` → gone (as above); `text: "Type a message"` → composer placeholder is now `"Send a message…"`.
@@ -1071,7 +1071,7 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 **Scope:** ~30 min, flow-file edits only — no app-source changes. Verify with `npm run test:e2e:demo` once a Release build is installed.
 
 **Files likely involved:**
-- `e2e/demo-server-connect-only.yaml`, `e2e/demo-server-test.yaml` — selector + syntax fixes
+- `e2e/demo-server-connect-only.yaml` — selector + syntax fixes
 - `e2e/README.md` — refresh the demo-flow notes if selectors are documented there
 
 **Related:** the E2E failure report (`E2E-TESTS-FAILURE-REPORT.md`, §9) diagnosed this drift and the build/driver blockers; the `ensure-release-build.js` bundle-id/app-name/detection fix (separate commit) unblocks the Release-build half. Feature 17 covers net-new flows.
