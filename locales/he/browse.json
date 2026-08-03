@@ -29,7 +29,7 @@
   },
   "provider": {
     "unavailable": "ה־CLI של הספק אינו מותקן בשרת. בחר ספק אחר או התקן במארח.",
-    "noStructuredQuestions": "לספק זה אין תפריטי שאלות מובנים — תענה במסוף הגולמי.",
+    "noStructuredQuestions": "לספק זה אין תפריטי שאלות מובנים — תענה בטרמינל RAW.",
     "observeOnly": "שליטה חיה אינה זמינה לספק זה; הסשנים לצפייה בלבד.",
     "warning": {
       "provider_not_found": "ה־CLI של הספק לא נמצא ב־PATH של השרת.",

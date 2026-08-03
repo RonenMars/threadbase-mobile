@@ -29,7 +29,7 @@
   },
   "provider": {
     "unavailable": "This provider’s CLI is not installed on the server. Choose another provider or install it on the host.",
-    "noStructuredQuestions": "This provider has no structured question menus — you’ll answer in the raw terminal.",
+    "noStructuredQuestions": "This provider has no structured question menus — you’ll answer in the RAW terminal.",
     "observeOnly": "Live control is unavailable for this provider; sessions are observe-only.",
     "warning": {
       "provider_not_found": "Provider CLI not found on the server PATH.",
