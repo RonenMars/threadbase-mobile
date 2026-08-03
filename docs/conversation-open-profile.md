@@ -74,30 +74,69 @@ That kills the candidate on two counts. All three `router.push` call sites targe
 
 ### So the 14-second open is unexplained, with no suspect
 
-It is still an open bug. What is now excluded: the message list, row rendering, row count, the merge memo, parse/adapt, the server, the network, cached page count, conversation length, and navigation stacking on any path the app itself takes. What remains unexamined is whatever else can hold the JS thread for seconds — the [idle freeze below](#second-open-thread--the-idle-freeze-plausible-and-unconfirmed) is the only reproduced instance of that shape, and its attribution is unconfirmed.
+It is still an open bug. What is now excluded: the message list, row rendering, row count, the merge memo, parse/adapt, the server, the network, cached page count, conversation length, and navigation stacking on any path the app itself takes. What remains unexamined is whatever else can hold the JS thread for seconds. The idle freeze looked like the one reproduced instance of that shape and has since been [retracted](#second-open-thread--the-idle-freeze-retracted), so there is currently no measured instance of the app's own work holding the thread at all.
 
-## Second open thread — the idle freeze, plausible and unconfirmed
+## Second open thread — the idle freeze, RETRACTED
 
-With a **single** hub mounted and the app completely idle, the JS thread still saturates for **~2.8–3.0 s** on a recurring basis, on top of a steady ~260 ms block every 30 s.
-This is a real, reproduced observation, and it is separate from anything above.
+An earlier version of this section reported that an idle app with a single hub mounted "saturates for ~2.8–3.0 s on a recurring basis", and attributed it to `flushAggregate` firing `setAggregateProgress` once per fetched sessions page.
+**Both halves are withdrawn as of 2026-08-03.** The attribution is refuted, and the underlying measurement is not trustworthy.
 
-Logging every react-query cache event shows what fills the 2.8 s: a burst of ~28 `sessions-eager` observer updates spaced ~85–130 ms apart, bracketed exactly by one `conversations-eager` fetch going `fetching` → `idle`.
-It is not one long synchronous function — it is ~28 consecutive hub renders at ~100 ms each, which starves the 16 ms watchdog timer and reads as a single block.
+### The attribution is refuted
 
-The count matches `useEagerSessions`: `fetchAllPagesForServer` calls `onProgress` once per fetched page, and each call runs `flushAggregate()` → `setAggregateProgress` → a full hub re-render.
-605 sessions ÷ `DEFAULT_PAGE_SIZE` 50 = 13 pages, across 2 servers ≈ 14 state updates, and each produces 2 observer events.
+Six minutes of a fully-loaded idle app (617 sessions, one live `ProjectsHub`, no navigation), with `flushAggregate` instrumented to log every execution:
 
-**The attribution is not proven, and the test that would have settled it does not count.**
-Coalescing `flushAggregate` to one flush per 250 ms was tried and did not change the open series — but that series was still running on the stacked harness, where leaked screens dominated every number, so the A/B could not have shown a difference either way.
-It has not been re-run on the clean harness.
-Treat this as a named suspect awaiting a valid test, not as a finding.
+- **`flushAggregate` ran 0 times.**
+- 100 stalls were recorded, median 1,806 ms, max 18,021 ms.
 
-None of the 24 clean opens was inflated by one of these storms, so whatever the residual is, it did not reach the conversation screen in ~3 minutes of continuous open/back cycling.
+The mechanism did not execute while the freezes happened, so it cannot be the cause.
+The coalescing A/B that was supposed to settle this was never worth running: throttling a function that executes zero times cannot change anything.
+
+### The measurement is not trustworthy either
+
+The watchdog in [`lib/openTrace.ts`](../lib/openTrace.ts) measures `setInterval` lateness, and **that cannot distinguish a busy JS thread from one starved of CPU.**
+Both produce identical output.
+Every number the watchdog has ever produced carries this limitation, including the retracted 2.8–3.0 s.
+
+The run above was taken on a machine at load 7.5–9.9 across 10 cores, and the JS thread was starved rather than busy.
+**The starvation was the apparatus running the investigation**: the box was hosting several concurrent agent sessions, a terminal rendering their output, a bundler and a simulator.
+The evidence is the process census — **57 `claude`, 218 `CoreSimulator`, 148 leftover `node`/`vitest`** — and those counts are what carry the argument, because they are stable facts rather than instantaneous readings.
+
+Two things it is *not*, both of which an earlier draft of this section asserted and neither of which survived checking:
+
+- **Not the server.** The streamer's `list` statement, timed in isolation against a copy of the same 22 MB cache on an idle box, runs p50 0.38 ms / p99 0.85 ms with `idx_meta_last_activity` present and `EXPLAIN QUERY PLAN` showing `SCAN … USING INDEX` and no temp b-tree — indistinguishable from the 0.87 ms documented in `CLAUDE.md`. The 118.7 ms median seen under load is ~312× that on identical data with an optimal plan, which places the difference outside the query. `#355`'s tripwire measures wall time, so it correctly reported scheduling delay rather than SQL. There is no server defect here to chase.
+- **Not this app's polling.** The streamer's steady state is roughly nothing: six consecutive samples two seconds apart read 0.0, 0.0, 0.8, 1.0, 0.0, 0.3%.
+
+### A single reading catches a peak and reads it as a level
+
+Worth naming, because it is what produced the "pathological server" claim that this section had to withdraw, and because **both parties made it independently within the same hour on the same process**.
+
+One side sampled the streamer twice, got 60% and 72.2%, and built a server-defect argument partly on them.
+The other sampled three times, got 87.5% / 10.2% / 10.0%, and published the peak as the level — with its own contradicting samples already in hand.
+Neither noticed until a third round of sampling returned near-zero.
+
+The lesson is not "sample more", it is that **a percentage is a measurement and a count is a fact**.
+Percentages quoted here without a stated sample size and window should be assumed to be peaks.
+That is why the paragraph above leads with process counts and why the re-run block asks for a census rather than a CPU figure.
+
+### What this costs the mobile side
+
+Nothing above this section changes: the conversation-open figures are comparisons of a build against itself, taken in a single arm-to-arm sequence, and CPU contention affects both arms.
+What is lost is the standalone claim that the app freezes while idle.
+There is currently **no measured instance** of the JS thread being held for seconds by the app's own work.
+
+### Before re-running
+
+- **Count processes, not just load average.** 7.5 on 10 cores reads as unremarkable until you notice that 218 of the runnable things are one simulator. `ps -Ao comm | sort | uniq -c | sort -rn | head` before and after.
+- Close the other sessions, terminals, bundlers and simulators first — on this box the apparatus, not the app, was the load.
+- Kill the simulator app between arms rather than leaving it resident.
+- Prefer counts to percentages. If you must quote CPU, sample repeatedly during the window and state the sample size — a single reading catches a peak and reads it as a level, which is how this section acquired a server defect that did not exist.
+- Throw the run out if anything moved. Do not average over it.
 
 ## Caveats
 
 - **Debug build.** React dev mode, the React Compiler and the Metro dev bundle all inflate the ~400 ms figure; a release build will be faster. The finding is a comparison of a build against itself, so the shape transfers even though the absolute number does not.
-- A second, unreachable server (`localhost:7071`, left from an e2e run) was configured throughout, producing a continuous WebSocket reconnect-backoff loop. It was present in both arms of every comparison.
+- A second, unreachable server (`localhost:7071`, left from an e2e run) was configured throughout, producing a continuous WebSocket reconnect-backoff loop. It was present in both arms of every comparison, which controls it *for comparisons between arms* — it was never excluded as a cause of any absolute number, and an earlier version of this document treated the two as the same thing. They are not.
+- **CPU contention was not controlled at all** until it invalidated a finding. Load average and the streamer's CPU were never recorded alongside the timings, so any absolute figure here could be inflated by machine load. The arm-to-arm comparisons survive, since contention hits both arms; standalone magnitudes do not carry the same weight.
 
 ## How this was arrived at
 
