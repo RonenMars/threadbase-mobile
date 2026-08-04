@@ -145,3 +145,18 @@ Expo MCP is configured **globally** (user scope) for both Claude Code and Codex 
 - It talks to a **locally running Expo/Metro dev server at `http://127.0.0.1:8081`**. Start it first (`npm start -- --port 8081`); without it the MCP tools have nothing to attach to.
 - Use it for **screenshots, device/app logs, and verifying UI on the simulator or emulator**.
 - **Do not use remote tunneling** (`--mcp-server-url` / `@expo/mcp-tunnel`) unless explicitly asked. Local dev server only.
+
+---
+
+## Cursor Cloud specific instructions
+
+The Cursor cloud agent runs on a **headless Linux VM** — there is **no macOS, Xcode, iOS simulator, or Android SDK/emulator**. Plan work around that:
+
+- **Cannot run here:** `npm run ios`, `npm run android`, `expo run:*`, CocoaPods (`bundle exec pod install`), the `ship:*` scripts, and every Maestro E2E flow (`npm run test:e2e:*`). Those all require a Mac or a booted simulator — `e2e/check-sim.js` hard-fails first. Don't attempt them; the native `ios/`/`android/` dirs are committed but not buildable here.
+- **The runnable surface is the JS toolchain + Expo Web.** Standard commands (defined in `package.json`, don't duplicate): `npm run lint`, `npm run typecheck`, `npm run test:ci`, `npm run test:scripts`, and the app via **Expo Web** — `npx expo start --web --port 8081`. Lint warnings are allowed; only errors block (see "Lint Before Commit").
+
+**Node version.** Pinned to `.nvmrc` (currently `24.15.0`), installed via `nvm`. The sandbox ships its own `node` on `PATH` (`/exec-daemon/node`, currently v22) that can **shadow** the pinned version in non-login shells. Login/interactive shells (and `tmux`) pick up the pinned Node via a snippet appended to `~/.bashrc`. If `node -v` shows v22 in a given shell, run `source ~/.nvm/nvm.sh && nvm use` (reads `.nvmrc`) before Metro/tests. (Node 22.x also satisfies the repo's stated `>= 22.13` minimum, so most commands work either way.)
+
+**Exercising the core flow on web (no real `tb-streamer`).** The app is a thin client; to reach anything past onboarding it needs a backend. Use the bundled mock streamer: `MOCK_PORTS=7071,7072 node e2e/mock-server.js`. **Gotcha:** the mock server sends **no CORS headers**, so a browser web bundle served from `:8081` cannot call it cross-origin — front it with a tiny CORS-adding reverse proxy (dev-only, keep it outside the repo) and point onboarding at the proxy's URL. Add the server in onboarding (route `/onboarding?mode=add`) with protocol `http`, host = proxy URL, and any non-empty API key **except** the sentinel `wrong-token-000` (which the mock treats as invalid). The session list then populates from fixtures in `e2e/fixtures/`.
+
+**Web is an early spike, not full parity** (see [`docs/expo-web-support.md`](./docs/expo-web-support.md)). Known, expected on web (NOT environment bugs): a dev red-box overlay from `expo-notifications` (`ExpoNotifications.getLastNotificationResponseAsync` via `app/_layout.tsx`) fires on load — dismiss it to use the app; and native-only surfaces (Face ID, camera QR pairing, speech, keyboard-controller, bottom-sheet, the WebSocket-driven live terminal viewer on the session-detail screen) may error or render blank.
