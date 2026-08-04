@@ -55,8 +55,12 @@ export function TerminalView({
 
   const onViewResumedConversation = useCallback(() => {
     if (!resumedConversationId) return
-    router.push(conversationHref(resumedConversationId, serverId) as never)
-  }, [resumedConversationId, router, serverId])
+    router.push(
+      conversationHref(resumedConversationId, serverId, undefined, {
+        fromSession: sessionId,
+      }) as never,
+    )
+  }, [resumedConversationId, router, serverId, sessionId])
 
   const onSend = (payload: string) => {
     markSessionUsed(sessionId)

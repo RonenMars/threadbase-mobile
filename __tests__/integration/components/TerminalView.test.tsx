@@ -140,6 +140,8 @@ describe('TerminalView', () => {
     const notice = screen.getByTestId('terminal-resumed-scrollback-notice')
     expect(notice).toBeTruthy()
     await fireEvent.press(notice)
-    expect(mockPush).toHaveBeenCalledWith('/conversation/conv-42?server=srv1')
+    expect(mockPush).toHaveBeenCalledWith(
+      '/conversation/conv-42?server=srv1&fromSession=sess1',
+    )
   })
 })

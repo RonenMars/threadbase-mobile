@@ -17,7 +17,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { ExportIcon, InfoIcon, MagnifyingGlass, Play, Star } from 'phosphor-react-native'
+import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -70,17 +70,22 @@ export default function ConversationDetailScreen() {
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const searchStyles = useMemo(() => makeSearchStyles(theme), [theme])
-  const { id, server, search, anchor_index } = useLocalSearchParams<{
+  const { id, server, search, anchor_index, fromSession: fromSessionParam } = useLocalSearchParams<{
     id: string
     server?: string
     search?: string
     anchor_index?: string
+    fromSession?: string
   }>()
   const router = useRouter()
 
   // Fall back to first server if no server param provided
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
   const serverId = server || fallbackServerId
+  const fromSession =
+    typeof fromSessionParam === 'string' && fromSessionParam.trim().length > 0
+      ? fromSessionParam.trim()
+      : undefined
 
   const searchQuery = typeof search === 'string' && search.trim().length > 0 ? search : undefined
   const anchorParam = typeof anchor_index === 'string' ? Number.parseInt(anchor_index, 10) : NaN
@@ -533,6 +538,13 @@ export default function ConversationDetailScreen() {
     attempt()
   }, [resume, navigateToResumedSession, forceResume, takeOverSession, t])
 
+  const handleBackToLiveSession = useCallback(() => {
+    if (!fromSession) return
+    markNavigatedToSession(fromSession)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.replace(`/session/${fromSession}?server=${serverId}` as any)
+  }, [fromSession, router, serverId])
+
   const handleShare = useCallback(async () => {
     if (!conversation) return
     const md = conversation.messages
@@ -742,12 +754,17 @@ export default function ConversationDetailScreen() {
       ? t('unavailable.worktreeRemoved')
       : t('unavailable.pathMissing')
     : null
-  const canResume = !notResumable && !resume.isPending
-  const resumeLabel = notResumable
-    ? t('unavailable.cannotResume')
-    : resume.isPending
-      ? t('resume.resuming')
-      : t('resume.start')
+  const showBackToLive = Boolean(fromSession)
+  const canResume = !showBackToLive && !notResumable && !resume.isPending
+  const resumeLabel = showBackToLive
+    ? t('resume.backToLive')
+    : notResumable
+      ? t('unavailable.cannotResume')
+      : resume.isPending
+        ? t('resume.resuming')
+        : t('resume.start')
+  const footerActionDisabled = showBackToLive ? false : notResumable || resume.isPending
+  const footerActionTestId = showBackToLive ? 'back-to-live-session-button' : 'resume-button'
 
   const showSearchView =
     isAnchored &&
@@ -823,12 +840,16 @@ export default function ConversationDetailScreen() {
         <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
           <View style={styles.resumeWrapper}>
             <TouchableOpacity
-              style={[styles.resumeBtn, (notResumable || resume.isPending) && styles.resumeBtnDisabled]}
-              onPress={handleResume}
-              disabled={notResumable || resume.isPending}
-              testID="resume-button"
+              style={[styles.resumeBtn, footerActionDisabled && styles.resumeBtnDisabled]}
+              onPress={showBackToLive ? handleBackToLiveSession : handleResume}
+              disabled={footerActionDisabled}
+              testID={footerActionTestId}
             >
-              {canResume ? <Play size={16} weight="fill" color="#fff" /> : null}
+              {showBackToLive ? (
+                <ArrowLeft size={16} weight="bold" color="#fff" />
+              ) : canResume ? (
+                <Play size={16} weight="fill" color="#fff" />
+              ) : null}
               <Text style={styles.resumeBtnText}>{resumeLabel}</Text>
             </TouchableOpacity>
           </View>

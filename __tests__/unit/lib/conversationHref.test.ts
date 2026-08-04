@@ -24,4 +24,22 @@ describe('conversationHref', () => {
       '/conversation/c1?server=srv_a&search=a%20%26%20b%20caf%C3%A9',
     )
   })
+
+  it('appends fromSession when returning from a live session', () => {
+    expect(conversationHref('c1', 'srv_a', undefined, { fromSession: 'sess-9' })).toBe(
+      '/conversation/c1?server=srv_a&fromSession=sess-9',
+    )
+  })
+
+  it('combines search and fromSession', () => {
+    expect(conversationHref('c1', 'srv_a', 'wombat', { fromSession: 'sess-9' })).toBe(
+      '/conversation/c1?server=srv_a&search=wombat&fromSession=sess-9',
+    )
+  })
+
+  it('ignores blank fromSession', () => {
+    expect(conversationHref('c1', 'srv_a', undefined, { fromSession: '  ' })).toBe(
+      '/conversation/c1?server=srv_a',
+    )
+  })
 })
