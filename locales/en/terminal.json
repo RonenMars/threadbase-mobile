@@ -55,7 +55,11 @@
     "ptyActiveFallbackBanner": "Live terminal output is active before conversation messages are available.",
     "rawModeNote": "RAW terminal mode — unsupported sequences detected; output is unfiltered.",
     "resumedEmptyScrollback": "Earlier output isn't available for a resumed session.",
-    "resumedEmptyScrollbackLink": "View the conversation history →"
+    "resumedHistoryLinkView": "View",
+    "resumedHistoryLinkOr": " or ",
+    "resumedHistoryLinkSearch": "search",
+    "resumedHistoryLinkIn": " in ",
+    "resumedHistoryLinkTail": "the conversation history →"
   },
   "a11y": {
     "line": "Line {{n}}: {{text}}"
