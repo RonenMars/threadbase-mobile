@@ -162,30 +162,54 @@ describe('TerminalOutput – resumed scrollback notice', () => {
     expect(queryByTestId('terminal-resumed-scrollback-notice')).toBeNull()
   })
 
-  it('renders the notice at the top of scrollback when the callback is set', async () => {
+  it('renders the split view/search/history links when the callback is set', async () => {
     const onView = jest.fn()
+    const onSearch = jest.fn()
     const { getByTestId, getByText } = await render(
       <TerminalOutput
         lines={['startup']}
         isStreaming={false}
         onViewResumedConversation={onView}
+        onSearchResumedConversation={onSearch}
       />
     )
     expect(getByTestId('terminal-resumed-scrollback-notice')).toBeTruthy()
     expect(getByText("Earlier output isn't available for a resumed session.")).toBeTruthy()
-    expect(getByText('View the conversation history →')).toBeTruthy()
+    expect(getByText('View')).toBeTruthy()
+    expect(getByText('search')).toBeTruthy()
+    expect(getByText('the conversation history →')).toBeTruthy()
   })
 
-  it('invokes onViewResumedConversation when the notice is pressed', async () => {
+  it('invokes onViewResumedConversation from View and history tail', async () => {
     const onView = jest.fn()
+    const onSearch = jest.fn()
     const { getByTestId } = await render(
       <TerminalOutput
         lines={[]}
         isStreaming={false}
         onViewResumedConversation={onView}
+        onSearchResumedConversation={onSearch}
       />
     )
-    await fireEvent.press(getByTestId('terminal-resumed-scrollback-notice'))
-    expect(onView).toHaveBeenCalledTimes(1)
+    await fireEvent.press(getByTestId('terminal-resumed-history-view'))
+    await fireEvent.press(getByTestId('terminal-resumed-history-tail'))
+    expect(onView).toHaveBeenCalledTimes(2)
+    expect(onSearch).not.toHaveBeenCalled()
+  })
+
+  it('invokes onSearchResumedConversation from search', async () => {
+    const onView = jest.fn()
+    const onSearch = jest.fn()
+    const { getByTestId } = await render(
+      <TerminalOutput
+        lines={[]}
+        isStreaming={false}
+        onViewResumedConversation={onView}
+        onSearchResumedConversation={onSearch}
+      />
+    )
+    await fireEvent.press(getByTestId('terminal-resumed-history-search'))
+    expect(onSearch).toHaveBeenCalledTimes(1)
+    expect(onView).not.toHaveBeenCalled()
   })
 })
