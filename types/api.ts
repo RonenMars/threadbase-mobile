@@ -3,6 +3,20 @@ import type { DeviceCapability } from '@/types/devices'
 
 export type SessionStatus = 'running' | 'waiting_input' | 'idle'
 
+/**
+ * Process-lifetime axis from the streamer, orthogonal to `status`.
+ * Additive; older servers omit it. Prefer this over inferring end/hold from
+ * `ptyAttached` + `status` or from `completedAt` (which is stamped on both a
+ * real exit and a hold).
+ */
+export type SessionLifecycle =
+  | 'attached'
+  | 'detached'
+  | 'orphaned'
+  | 'resumable'
+  | 'completed'
+  | 'failed'
+
 export interface Session {
   id: string
   provider?: ProviderName
@@ -41,7 +55,21 @@ export interface Session {
   elapsedMs: number
   promptCount: number
   startedAt: string
+  /**
+   * ISO timestamp when the streamer recorded an end-or-hold. Not a reliable
+   * "session ended" signal on its own — `putOnHold` stamps it too. Prefer
+   * `lifecycle`. Additive; older servers omit it.
+   */
   completedAt?: string
+  /**
+   * Process-lifetime axis from the streamer. Additive; older servers omit it.
+   * When present, prefer this over `idle && !ptyAttached` for ended/hold/live.
+   */
+  lifecycle?: SessionLifecycle
+  /** How `lifecycle` was determined. Additive; older servers omit it. */
+  lifecycleSource?: 'spawn' | 'exit' | 'probe' | 'reconcile'
+  /** ISO timestamp when `lifecycle` last changed. Additive; older servers omit it. */
+  lifecycleUpdatedAt?: string
   failureReason?: string
   /** Set when this session was started via `/api/sessions/resume`. */
   resumedFromConversationId?: string | null
