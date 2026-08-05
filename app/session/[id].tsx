@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import { CopySimple, InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
-import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -592,25 +592,30 @@ export default function SessionDetailScreen() {
   }
 
   useEffect(() => {
-    // Redirect an ended session to its conversation history. Gate on "has a
-    // conversation" (boundConversationId ?? conversationId), NOT promptCount:
-    // promptCount counts only prompts sent through the app, so an adopted /
-    // externally-started session that has real history reads promptCount 0 and
-    // would otherwise strand on the read-only placeholder.
+    // Redirect when there is no live process to attach to and the session has
+    // conversation history. Prefer streamer `lifecycle` (via sessionOpensAsHistory)
+    // so a hold (`resumable`) is not conflated with a genuine end — both open
+    // history (resume lives there), but `completedAt` / idle+detached alone
+    // cannot tell them apart.
     //
-    // Skip while starting: a session that is spawning also reads
-    // idle + detached, and redirecting then bounces the user back to the very
-    // conversation they just resumed from.
+    // Gate on "has a conversation" (boundConversationId ?? conversationId), NOT
+    // promptCount: promptCount counts only prompts sent through the app, so an
+    // adopted / externally-started session that has real history reads
+    // promptCount 0 and would otherwise strand on the read-only placeholder.
+    //
+    // Skip while starting: older servers omit `lifecycle`, and a spawning
+    // session can still read idle+detached on those builds.
     if (isPending) return
     const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
-    if (session?.ptyAttached === false &&
-      session?.status === 'idle' &&
+    if (
+      session != null &&
+      sessionOpensAsHistory(session) &&
       hasConversation &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
     ) {
       router.replace(`/conversation/${id}?server=${serverId}`)
     }
-  }, [isPending, session?.ptyAttached, session?.status, session?.boundConversationId, session?.conversationId, id, serverId, router])
+  }, [isPending, session, id, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch

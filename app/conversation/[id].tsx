@@ -308,8 +308,12 @@ export default function ConversationDetailScreen() {
 
   // Only redirect to the live session view when the session is actually
   // attached. An idle, detached session bounces straight back here, so
-  // redirecting on mere existence is an infinite loop.
-  const isSessionLive = liveSession?.ptyAttached === true
+  // redirecting on mere existence is an infinite loop. Prefer streamer
+  // `lifecycle` when present; fall back to ptyAttached on older servers.
+  const isSessionLive =
+    liveSession?.lifecycle != null
+      ? liveSession.lifecycle === 'attached'
+      : liveSession?.ptyAttached === true
   useEffect(() => {
     if (isConvNotFound && isSessionLive) {
       router.replace(`/session/${id}?server=${serverId}`)

@@ -2,6 +2,7 @@
   "id": "session-first-run",
   "status": "running",
   "ptyAttached": true,
+  "lifecycle": "attached",
   "projectPath": "/home/user/my-project",
   "projectName": "my-project",
   "branch": "main",

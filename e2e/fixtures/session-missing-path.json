@@ -2,6 +2,7 @@
   "id": "session-missing-path",
   "status": "idle",
   "ptyAttached": false,
+  "lifecycle": "failed",
   "projectPath": "/Users/ronenmars/Desktop/dev/personal/new/ai-tools",
   "projectName": "ai-tools",
   "branch": "main",
