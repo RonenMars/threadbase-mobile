@@ -7,6 +7,7 @@ import { SessionCard } from '@/components/sessions/SessionCard'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { makeStyles } from './ClassicSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { MultiSession, SessionStatus } from '@/types/api'
@@ -35,9 +36,10 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const inputRef = useRef<TextInput>(null)
-  const [sessionsCollapsed, setSessionsCollapsed] = useState(
-    () => sessions.length > SESSIONS_COLLAPSE_THRESHOLD
-  )
+  const storedCollapsed = useViewPrefsStore((s) => s.classicSessionsCollapsed)
+  const setSessionsCollapsed = useViewPrefsStore((s) => s.setClassicSessionsCollapsed)
+  // `null` = no explicit choice yet, so fall back to the count-based default.
+  const sessionsCollapsed = storedCollapsed ?? sessions.length > SESSIONS_COLLAPSE_THRESHOLD
 
   useEffect(() => {
     if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
@@ -93,7 +95,7 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
               count={item.count}
               hasLive={item.hasLive}
               collapsed={item.collapsed}
-              onToggle={item.collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+              onToggle={item.collapsible ? () => setSessionsCollapsed(!sessionsCollapsed) : undefined}
             />
           ) : (
             <SessionCard session={item.session} />
