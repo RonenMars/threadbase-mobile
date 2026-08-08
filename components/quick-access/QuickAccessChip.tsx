@@ -14,6 +14,7 @@ export interface ChipItem {
   id: string
   label: string
   serverId?: string
+  conversationId?: string
   sessionCount?: number
 }
 
