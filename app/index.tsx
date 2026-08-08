@@ -43,6 +43,7 @@ import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, Fold
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { clientLog } from '@/lib/clientLog'
 import { conversationHref } from '@/lib/conversationHref'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
@@ -580,20 +581,16 @@ function MergedClassicList({
   const showServerHeaders = activeServerIds.length > 1
   const SESSIONS_COLLAPSE_THRESHOLD = 3
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
-  const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
-  const [sessionsCollapsed, setSessionsCollapsed] = useState(
-    () => items.filter((it) => it.kind === 'session').length > SESSIONS_COLLAPSE_THRESHOLD
-  )
+  // Shared with the Tree/Hub views so a collapsed server stays collapsed, and
+  // with the Tree/Classic live-sessions header, across every layout.
+  const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
+  const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
+  const storedSessionsCollapsed = useViewPrefsStore((s) => s.sessionsHeaderCollapsed)
+  const setSessionsCollapsed = useViewPrefsStore((s) => s.setSessionsHeaderCollapsed)
+  const sessionsCollapsed =
+    storedSessionsCollapsed ??
+    items.filter((it) => it.kind === 'session').length > SESSIONS_COLLAPSE_THRESHOLD
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
-
-  const toggleServer = useCallback((serverId: string) => {
-    setCollapsedServers((prev) => {
-      const next = new Set(prev)
-      if (next.has(serverId)) next.delete(serverId)
-      else next.add(serverId)
-      return next
-    })
-  }, [])
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items
@@ -663,7 +660,7 @@ function MergedClassicList({
         serverLabel: servers[id]?.label ?? id,
         totalCount: bucket.length,
       })
-      if (!collapseApplies || !collapsedServers.has(id)) result.push(...bucket)
+      if (!collapseApplies || !collapsedServers.includes(id)) result.push(...bucket)
     }
     return result
   }, [filteredItems, showServerHeaders, activeServerIds, servers, collapsedServers, sessionsCollapsed])
@@ -744,7 +741,7 @@ function MergedClassicList({
                 serverLabel={item.serverLabel}
                 totalCount={item.totalCount}
                 collapsible={visibleServerCount > 1}
-                isExpanded={!collapsedServers.has(item.serverId)}
+                isExpanded={!collapsedServers.includes(item.serverId)}
                 onToggle={() => toggleServer(item.serverId)}
                 isRefreshing={isBackgroundRefreshing}
               />
@@ -756,7 +753,7 @@ function MergedClassicList({
                 count={item.count}
                 hasLive={item.hasLive}
                 collapsed={item.collapsed}
-                onToggle={item.collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+                onToggle={item.collapsible ? () => setSessionsCollapsed(!sessionsCollapsed) : undefined}
               />
             )
           }
