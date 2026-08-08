@@ -180,6 +180,45 @@ curl -s localhost:8081/status   # packager-status:running — says nothing about
 
 Start yours on an explicit free port (`--port 8082`) and point the dev client at that port in the `expo-development-client` deep link above. Leave the other Metro alone unless you know whose it is — it may belong to another session.
 
+### Your `EXPO_PUBLIC_*` trace flag never turned on — because it was only a shell export
+
+**When:** You gate an on-device probe behind a build flag (`const ENABLED = process.env.EXPO_PUBLIC_OPEN_TRACE === '1'`), start Metro with the flag as a shell variable (`EXPO_PUBLIC_OPEN_TRACE=1 npx expo start`), and the trace logs never appear even though the code path is right there. The run looks instrumented and produces nothing, which reads as "the thing I'm tracing never happened."
+
+**Cause:** Expo inlines `EXPO_PUBLIC_*` variables into the bundle from `.env` / `.env.local` files, not from arbitrary shell exports. A shell-only var does not reach the bundle's `expoVirtualEnv.env`, so `process.env.EXPO_PUBLIC_OPEN_TRACE === '1'` compiles to a comparison against `undefined` and `ENABLED` is permanently `false`. Metro's `env: export …` banner lists only what it loaded from files, so the missing name there is the tell.
+
+**Fix:** Put the flag in `.env.local` (gitignored, so it never lands in a PR), then restart Metro with `--clear` so the transform cache is rebuilt with the new env:
+
+```bash
+echo 'EXPO_PUBLIC_OPEN_TRACE=1' >> .env.local
+npx expo start --port 8081 --clear
+```
+
+**Verify it actually inlined** by grepping the served bundle — do not trust the banner. The Expo Router entry bundle is the real one; `/index.bundle` 404s with "Unable to resolve ./index" on this app:
+
+```bash
+curl -s 'http://127.0.0.1:8081/node_modules/expo-router/entry.bundle?platform=ios&dev=true&transform.engine=hermes&transform.routerRoot=app' \
+  | grep -o 'EXPO_PUBLIC_OPEN_TRACE[^,}]*'   # want: EXPO_PUBLIC_OPEN_TRACE": "1"
+```
+
+App `console.log` output forwards to `.expo/dev/logs/start.log` — that is the reliable sink for reading probe output back on the host.
+
+### The dev client keeps serving a stale, disk-cached bundle
+
+**When:** You change the JS (or restart Metro with `--clear`, or fix the `.env.local` above) and the running app does not pick it up. A deep link to the same dev-server URL, `curl http://127.0.0.1:8081/reload`, and a plain `simctl launch` all no-op — the app keeps rendering the old code, so you measure a fix that is not loaded.
+
+**Cause:** The Expo **dev client** caches the last bundle on disk and reuses it. Once it has a cached bundle for a URL, none of the reload paths force a re-fetch from Metro.
+
+**Fix:** Clear the cache by reinstalling, then cold-launch into Metro:
+
+```bash
+xcrun simctl terminate <SIM_UDID> com.ronenmars.threadbase
+xcrun simctl uninstall  <SIM_UDID> com.ronenmars.threadbase
+xcrun simctl install    <SIM_UDID> "$(ls -dt ~/Library/Developer/Xcode/DerivedData/Threadbase-*/Build/Products/Debug-iphonesimulator/Threadbase.app | head -1)"
+xcrun simctl openurl    <SIM_UDID> "threadbase://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+```
+
+Caveat: uninstall wipes AsyncStorage, so paired servers must be re-added after this. Once the app is on the live bundle, ordinary source edits hot-reload via Fast Refresh — no reinstall needed for iteration, only to escape a stale cache.
+
 ### The profiler is recording the debugger UI, not the app
 
 **When:** You open React Native DevTools in a browser tab and then start a recording — and get a plausible profile whose Main track is `rn_fusebox.html`, with browser-extension frames and warmup entries in the 3rd-party table.

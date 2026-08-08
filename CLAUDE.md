@@ -296,3 +296,10 @@ Expo MCP is configured **globally** (user scope) for both Claude Code and Codex 
 - It talks to a **locally running Expo/Metro dev server at `http://127.0.0.1:8081`**. Start it first (`npm start -- --port 8081`); without it the MCP tools have nothing to attach to.
 - Use it for **screenshots, device/app logs, and verifying UI on the simulator or emulator**.
 - **Do not use remote tunneling** (`--mcp-server-url` / `@expo/mcp-tunnel`) unless explicitly asked. Local dev server only.
+
+## On-Device Tracing / Dev Client — Two Silent Traps
+
+When measuring or debugging on the simulator with an `EXPO_PUBLIC_*` trace flag (e.g. `EXPO_PUBLIC_OPEN_TRACE=1`), two failure modes look like "the thing I'm tracing never happened" rather than an error. Both are documented with verify-and-fix commands in [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "Measuring the wrong thing":
+
+- **A shell-exported `EXPO_PUBLIC_*` flag does not inline into the bundle.** Expo reads these from `.env` / `.env.local` files, not arbitrary shell exports, so `EXPO_PUBLIC_OPEN_TRACE=1 npx expo start` leaves `ENABLED` false. Put it in `.env.local` (gitignored), restart with `--clear`, and verify by grepping the served `expo-router/entry.bundle`. App `console.log` lands in `.expo/dev/logs/start.log`.
+- **The dev client serves a disk-cached bundle.** After a JS change or Metro `--clear`, deep-link / `/reload` / plain `simctl launch` all no-op against the cache — you measure old code. Uninstall + reinstall to force a fresh fetch (this wipes AsyncStorage, so re-pair servers); Fast Refresh handles iteration once you are on the live bundle.
