@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useThrottledCallback } from 'use-debounce'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
@@ -793,6 +794,11 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
   }, [servers])
 
   const [progress, setProgress] = useState<EagerConversationsProgress>({ loaded: 0, total: 0 })
+  // Draining N pages × M servers fires a progress update per page; pushing each
+  // straight to state re-renders the whole Hub 15-20× per refresh. Coalesce to
+  // at most one state write per 250ms (trailing flush on completion keeps the
+  // final counter exact).
+  const throttledSetProgress = useThrottledCallback(setProgress, 250)
   const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
   const recordWarmingUp = useServerFetchStatusStore((s) => s.recordWarmingUp)
@@ -805,6 +811,7 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
   const query = useQuery<MultiConversation[], Error>({
     queryKey,
     queryFn: async ({ signal }) => {
+      throttledSetProgress.cancel()
       setProgress({ loaded: 0, total: 0 })
 
       // Run all servers in parallel so an unreachable server's timeout doesn't
@@ -821,7 +828,7 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
           loaded += p.loaded
           total += p.total
         }
-        setProgress({ loaded, total })
+        throttledSetProgress({ loaded, total })
       }
 
       // The /count call can take a while on a cold server cache (background
@@ -884,6 +891,10 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
       if (fulfilledCount === 0 && displayedServerIds.length > 0) {
         throw lastFailure ?? new Error('All servers failed')
       }
+
+      // Push the final loaded/total immediately — a throttled trailing write
+      // could otherwise leave the counter one page short at "done".
+      throttledSetProgress.flush()
 
       merged.sort(sortByLastMessageDesc)
       return dedupeByServerAndId(merged)

@@ -24,7 +24,9 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 
-export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen, isBackgroundRefreshing }: TreeSessionsListProps) {
+// Memoized: the Hub root re-renders on every fetch-progress tick; with stable
+// props (query data is a stable ref mid-drain) this skips re-running the whole tree.
+export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen, isBackgroundRefreshing }: TreeSessionsListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(insets.bottom)
@@ -413,4 +415,4 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
       })() : null}
     </View>
   )
-}
+})

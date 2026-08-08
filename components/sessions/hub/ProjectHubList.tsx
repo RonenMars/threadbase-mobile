@@ -30,7 +30,9 @@ import {
 } from '@/lib/projectDisambiguation'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
-export function ProjectHubList({
+// Memoized: the Hub root re-renders on every fetch-progress tick; with stable
+// props (query data is a stable ref mid-drain) this skips re-running the list.
+export const ProjectHubList = React.memo(function ProjectHubList({
   sessions,
   conversations,
   sortBy,
@@ -392,4 +394,4 @@ export function ProjectHubList({
       })() : null}
     </View>
   )
-}
+})
