@@ -72,6 +72,7 @@ export function QuickAccessStrip() {
     id: f.id,
     label: f.label,
     serverId: f.serverId,
+    conversationId: f.type === 'conversation' ? f.conversationId : undefined,
   }))
 
   const visibleItems = allItems.slice(0, visibleCount)
@@ -115,11 +116,11 @@ export function QuickAccessStrip() {
 
   const handleOpenSession = () => {
     if (!activeItem?.serverId) return
-    const [, id] = activeItem.id.split('::')
     useNavLockStore.getState().lock()
     if (activeItem.type === 'conversation') {
-      router.push(`/conversation/${id}?server=${activeItem.serverId}`)
+      router.push(`/conversation/${activeItem.conversationId}?server=${activeItem.serverId}`)
     } else {
+      const [, id] = activeItem.id.split('::')
       router.push(`/session/${id}?server=${activeItem.serverId}`)
     }
     setActiveItem(null)
