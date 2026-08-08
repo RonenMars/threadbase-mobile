@@ -36,8 +36,8 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   const inputRef = useRef<TextInput>(null)
-  const storedCollapsed = useViewPrefsStore((s) => s.classicSessionsCollapsed)
-  const setSessionsCollapsed = useViewPrefsStore((s) => s.setClassicSessionsCollapsed)
+  const storedCollapsed = useViewPrefsStore((s) => s.sessionsHeaderCollapsed)
+  const setSessionsCollapsed = useViewPrefsStore((s) => s.setSessionsHeaderCollapsed)
   // `null` = no explicit choice yet, so fall back to the count-based default.
   const sessionsCollapsed = storedCollapsed ?? sessions.length > SESSIONS_COLLAPSE_THRESHOLD
 
