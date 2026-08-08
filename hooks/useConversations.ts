@@ -93,7 +93,11 @@ interface MultiConversationPage {
 }
 
 /** Increment (e.g. pull-to-refresh) to bust the streamer conversation cache on the first page. */
-export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) {
+export function useConversations(
+  filter?: ConversationFilter,
+  refreshEpoch = 0,
+  opts?: { enabled?: boolean },
+) {
   const limit = 50
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -180,7 +184,7 @@ export function useConversations(filter?: ConversationFilter, refreshEpoch = 0) 
     getNextPageParam: (last: MultiConversationPage, _allPages, lastPageParam) =>
       last.hasMore ? (lastPageParam as number) + limit : undefined,
     initialPageParam: 0,
-    enabled: displayedServerIds.length > 0,
+    enabled: (opts?.enabled ?? true) && displayedServerIds.length > 0,
   })
 }
 
