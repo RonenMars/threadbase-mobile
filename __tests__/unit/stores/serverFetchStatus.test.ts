@@ -37,4 +37,27 @@ describe('useServerFetchStatusStore', () => {
     expect(entry?.status).toBe('ok')
     expect(entry?.error).toBeUndefined()
   })
+
+  it('recordSuccess is a no-op reference when the server is already ok', () => {
+    useServerFetchStatusStore.getState().recordSuccess('srv-A')
+    const first = useServerFetchStatusStore.getState().statuses
+    useServerFetchStatusStore.getState().recordSuccess('srv-A')
+    // Same object identity → zustand does not notify subscribers, so a
+    // subscribed component does not re-render on an unchanged 'ok' status.
+    expect(useServerFetchStatusStore.getState().statuses).toBe(first)
+  })
+
+  it('recordReady is a no-op reference when the server is already ok', () => {
+    useServerFetchStatusStore.getState().recordReady('srv-A')
+    const first = useServerFetchStatusStore.getState().statuses
+    useServerFetchStatusStore.getState().recordReady('srv-A')
+    expect(useServerFetchStatusStore.getState().statuses).toBe(first)
+  })
+
+  it('recordReady still clears a warming_up status to ok', () => {
+    useServerFetchStatusStore.getState().recordWarmingUp('srv-A', 'startup')
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('warming_up')
+    useServerFetchStatusStore.getState().recordReady('srv-A')
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('ok')
+  })
 })
