@@ -21,6 +21,7 @@ import type { ProjectGroup } from './useProjectGroups'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 import {
@@ -68,15 +69,8 @@ export function ProjectHubList({
     () => collidingProjectPaths([...sessions, ...conversations]),
     [sessions, conversations],
   )
-  const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
-  const toggleServer = useCallback((serverId: string) => {
-    setCollapsedServers((prev) => {
-      const next = new Set(prev)
-      if (next.has(serverId)) next.delete(serverId)
-      else next.add(serverId)
-      return next
-    })
-  }, [])
+  const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
+  const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
 
   useEffect(() => {
     if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
@@ -237,7 +231,7 @@ export function ProjectHubList({
     const collapseApplies = serverGroups.length > 1
     return showServerHeaders
       ? serverGroups.flatMap((sg) => {
-          const expanded = !collapseApplies || !collapsedServers.has(sg.serverId)
+          const expanded = !collapseApplies || !collapsedServers.includes(sg.serverId)
           const body: HubFlatItem[] =
             sg.totalCount > 0
               ? sg.groups.map((g) => ({ kind: 'group' as const, group: g }))
@@ -312,7 +306,7 @@ export function ProjectHubList({
                   serverLabel={item.serverLabel}
                   totalCount={item.totalCount}
                   collapsible={serverGroups.length > 1}
-                  isExpanded={!collapsedServers.has(item.serverId)}
+                  isExpanded={!collapsedServers.includes(item.serverId)}
                   onToggle={() => toggleServer(item.serverId)}
                   isRefreshing={isBackgroundRefreshing}
                 />
