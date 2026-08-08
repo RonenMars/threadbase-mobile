@@ -55,7 +55,11 @@
     "ptyActiveFallbackBanner": "פלט טרמינל חי פעיל לפני שזמינים הודעות שיחה.",
     "rawModeNote": "מצב RAW — זוהו רצפים שאינם נתמכים; הפלט אינו מסונן.",
     "resumedEmptyScrollback": "פלט קודם אינו זמין בסשן שחודש.",
-    "resumedEmptyScrollbackLink": "צפה בהיסטוריית השיחה ←"
+    "resumedHistoryLinkView": "צפה",
+    "resumedHistoryLinkOr": " או ",
+    "resumedHistoryLinkSearch": "חפש",
+    "resumedHistoryLinkIn": " ב",
+    "resumedHistoryLinkTail": "היסטוריית השיחה ←"
   },
   "a11y": {
     "line": "שורה {{n}}: {{text}}"

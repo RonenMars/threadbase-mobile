@@ -137,9 +137,27 @@ describe('TerminalView', () => {
 
   it('shows the resumed scrollback notice and navigates to the conversation', async () => {
     await renderView({ resumedConversationId: 'conv-42' })
-    const notice = screen.getByTestId('terminal-resumed-scrollback-notice')
+    const notice = screen.getByTestId('terminal-resumed-history-view')
     expect(notice).toBeTruthy()
     await fireEvent.press(notice)
-    expect(mockPush).toHaveBeenCalledWith('/conversation/conv-42?server=srv1')
+    expect(mockPush).toHaveBeenCalledWith(
+      '/conversation/conv-42?server=srv1&fromSession=sess1',
+    )
+  })
+
+  it('navigates to conversation search when the search link is pressed', async () => {
+    await renderView({ resumedConversationId: 'conv-42' })
+    await fireEvent.press(screen.getByTestId('terminal-resumed-history-search'))
+    expect(mockPush).toHaveBeenCalledWith(
+      '/conversation/conv-42?server=srv1&fromSession=sess1&openSearch=1',
+    )
+  })
+
+  it('navigates to the conversation when the history tail link is pressed', async () => {
+    await renderView({ resumedConversationId: 'conv-42' })
+    await fireEvent.press(screen.getByTestId('terminal-resumed-history-tail'))
+    expect(mockPush).toHaveBeenCalledWith(
+      '/conversation/conv-42?server=srv1&fromSession=sess1',
+    )
   })
 })

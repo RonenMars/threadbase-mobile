@@ -11,7 +11,7 @@
  *    the list is still resizing.
  */
 import React from 'react'
-import { render, act, type RenderResult } from '@testing-library/react-native'
+import { render, act, fireEvent, type RenderResult } from '@testing-library/react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
@@ -258,6 +258,58 @@ describe('conversation detail — resumability gating', () => {
     expect(text).toContain('Resume Session')
     expect(text).not.toContain("Can't resume")
     expect(text).not.toContain('no longer exists')
+  })
+
+  it('replaces Resume with Back to Live Session when opened from a live session', async () => {
+    const mockReplace = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({
+      push: jest.fn(),
+      replace: mockReplace,
+      back: jest.fn(),
+      navigate: jest.fn(),
+      canGoBack: jest.fn(() => true),
+    })
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-gating',
+      server: 'srv1',
+      fromSession: 'sess-live-1',
+    })
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, resumable: true },
+    }
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    const text = allText(root)
+    expect(text).toContain('Back to Live Session')
+    expect(text).not.toContain('Resume Session')
+    expect(root.getByTestId('back-to-live-session-button')).toBeTruthy()
+    expect(root.queryByTestId('resume-button')).toBeNull()
+
+    await act(async () => {
+      fireEvent.press(root.getByTestId('back-to-live-session-button'))
+    })
+    expect(mockReplace).toHaveBeenCalledWith('/session/sess-live-1?server=srv1')
+  })
+
+  it('opens the search bar when navigated with openSearch=1', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-gating',
+      server: 'srv1',
+      fromSession: 'sess-live-1',
+      openSearch: '1',
+    })
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, resumable: true },
+    }
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    expect(root.getByTestId('conversation-search-bar')).toBeTruthy()
+    expect(root.getByTestId('conversation-search-input')).toBeTruthy()
+    expect(allText(root)).toContain('Back to Live Session')
   })
 })
 

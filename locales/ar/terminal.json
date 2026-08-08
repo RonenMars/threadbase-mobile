@@ -59,7 +59,11 @@
     "ptyActiveFallbackBanner": "مخرجات الطرفية المباشرة نشطة قبل توفر رسائل المحادثة.",
     "rawModeNote": "وضع RAW — تم اكتشاف تسلسلات غير مدعومة؛ المخرجات غير مفلترة.",
     "resumedEmptyScrollback": "المخرجات السابقة غير متاحة لسيشن مُستأنف.",
-    "resumedEmptyScrollbackLink": "عرض سجل المحادثة ←"
+    "resumedHistoryLinkView": "عرض",
+    "resumedHistoryLinkOr": " أو ",
+    "resumedHistoryLinkSearch": "بحث",
+    "resumedHistoryLinkIn": " في ",
+    "resumedHistoryLinkTail": "سجل المحادثة ←"
   },
   "a11y": {
     "line": "السطر {{n}}: {{text}}"

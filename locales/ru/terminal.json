@@ -57,7 +57,11 @@
     "ptyActiveFallbackBanner": "Живой вывод терминала активен до появления сообщений беседы.",
     "rawModeNote": "Режим RAW — обнаружены неподдерживаемые последовательности; вывод без фильтра.",
     "resumedEmptyScrollback": "Предыдущий вывод недоступен для возобновлённой сессии.",
-    "resumedEmptyScrollbackLink": "Открыть историю беседы →"
+    "resumedHistoryLinkView": "Просмотр",
+    "resumedHistoryLinkOr": " или ",
+    "resumedHistoryLinkSearch": "поиск",
+    "resumedHistoryLinkIn": " в ",
+    "resumedHistoryLinkTail": "истории беседы →"
   },
   "a11y": {
     "line": "Строка {{n}}: {{text}}"

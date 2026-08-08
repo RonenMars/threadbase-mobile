@@ -117,6 +117,8 @@ interface Props {
    * When set, show a scrollback-top disclosure linking to the durable conversation.
    */
   onViewResumedConversation?: () => void
+  /** Same destination as view, but opens in-chat search with the keyboard up. */
+  onSearchResumedConversation?: () => void
 }
 
 export function TerminalOutput({
@@ -128,6 +130,7 @@ export function TerminalOutput({
   activeQuestion,
   onAnswer,
   onViewResumedConversation,
+  onSearchResumedConversation,
 }: Props) {
   const { t } = useTranslation('common')
   const { t: tTerminal } = useTranslation('terminal')
@@ -228,19 +231,55 @@ export function TerminalOutput({
 
   const listHeader = useMemo(() => {
     if (!onViewResumedConversation) return null
+    const onSearch = onSearchResumedConversation ?? onViewResumedConversation
+    const linkA11y = [
+      tTerminal('session.resumedHistoryLinkView'),
+      tTerminal('session.resumedHistoryLinkOr').trim(),
+      tTerminal('session.resumedHistoryLinkSearch'),
+      tTerminal('session.resumedHistoryLinkIn').trim(),
+      tTerminal('session.resumedHistoryLinkTail'),
+    ].join(' ')
     return (
-      <TouchableOpacity
+      <View
         style={styles.resumedNotice}
-        onPress={onViewResumedConversation}
-        accessibilityRole="link"
-        accessibilityLabel={`${tTerminal('session.resumedEmptyScrollback')} ${tTerminal('session.resumedEmptyScrollbackLink')}`}
+        accessibilityLabel={`${tTerminal('session.resumedEmptyScrollback')} ${linkA11y}`}
         testID="terminal-resumed-scrollback-notice"
       >
         <Text style={styles.resumedNoticeText}>{tTerminal('session.resumedEmptyScrollback')}</Text>
-        <Text style={styles.resumedNoticeLink}>{tTerminal('session.resumedEmptyScrollbackLink')}</Text>
-      </TouchableOpacity>
+        <Text style={styles.resumedNoticeLinkRow}>
+          <Text
+            style={styles.resumedNoticeLink}
+            onPress={onViewResumedConversation}
+            accessibilityRole="link"
+            accessibilityLabel={tTerminal('session.resumedHistoryLinkView')}
+            testID="terminal-resumed-history-view"
+          >
+            {tTerminal('session.resumedHistoryLinkView')}
+          </Text>
+          <Text style={styles.resumedNoticePlain}>{tTerminal('session.resumedHistoryLinkOr')}</Text>
+          <Text
+            style={styles.resumedNoticeLink}
+            onPress={onSearch}
+            accessibilityRole="link"
+            accessibilityLabel={tTerminal('session.resumedHistoryLinkSearch')}
+            testID="terminal-resumed-history-search"
+          >
+            {tTerminal('session.resumedHistoryLinkSearch')}
+          </Text>
+          <Text style={styles.resumedNoticePlain}>{tTerminal('session.resumedHistoryLinkIn')}</Text>
+          <Text
+            style={styles.resumedNoticeLink}
+            onPress={onViewResumedConversation}
+            accessibilityRole="link"
+            accessibilityLabel={tTerminal('session.resumedHistoryLinkTail')}
+            testID="terminal-resumed-history-tail"
+          >
+            {tTerminal('session.resumedHistoryLinkTail')}
+          </Text>
+        </Text>
+      </View>
     )
-  }, [onViewResumedConversation, tTerminal])
+  }, [onSearchResumedConversation, onViewResumedConversation, tTerminal])
 
   return (
     <View style={styles.container}>
@@ -321,6 +360,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   resumedNoticeText: {
+    color: '#8b949e',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  resumedNoticeLinkRow: {
+    color: '#8b949e',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  resumedNoticePlain: {
     color: '#8b949e',
     fontSize: 12,
     lineHeight: 16,
