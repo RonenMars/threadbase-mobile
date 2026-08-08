@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
-import { useEagerConversations, useConversationSearch } from '@/hooks/useConversations'
+import { useEagerConversations, useConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
 import { useLiveInstanceCount } from '@/lib/openTrace'
@@ -58,6 +58,10 @@ import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api
 import type { SortBy, SortOrder } from '@/types/ui'
 
 const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
+
+// Stable empty reference so a memo/child does not see a fresh [] each render
+// while the paginated query is disabled or still loading its first page.
+const EMPTY_CONVERSATIONS: MultiConversation[] = []
 
 type ClassicTab = 'sessions' | 'history'
 
@@ -223,6 +227,23 @@ export default function ProjectsHub() {
     useEagerConversations(providerFilter ? { provider: providerFilter } : undefined, refreshEpoch)
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
+
+  // ADR 0001 prototype (step 1): feed the Classic History list from the infinite
+  // `useConversations` (lazy pagination) instead of the eager full-drain. Gated
+  // to only fetch when that tab is visible; the eager path still backs the
+  // tree/hub/classic-sessions surfaces, so the two coexist during migration.
+  // See docs/adr/0001-hub-data-layer-lazy-pagination.md.
+  const isClassicHistory =
+    sessionsLayout !== 'tree' && sessionsLayout !== 'hub' && !mergeChats && classicTab === 'history'
+  const convPages = useConversations(
+    providerFilter ? { provider: providerFilter } : undefined,
+    refreshEpoch,
+    { enabled: isClassicHistory },
+  )
+  const paginatedConversations = useMemo(
+    () => convPages.data?.pages.flatMap((p) => p.conversations) ?? EMPTY_CONVERSATIONS,
+    [convPages.data],
+  )
 
   // The persisted React Query cache rehydrates sessions/conversations
   // synchronously on cold start, so a warm cache already has rows here before
@@ -461,17 +482,19 @@ export default function ProjectsHub() {
                   searchOpen={searchOpen}
                 />
               ) : (
-                /* Classic history */
+                /* Classic history — ADR 0001 prototype: infinite pagination */
                 <ConversationList
-                  conversations={debouncedConvSearch ? (convSearchData?.conversations ?? []) : conversations}
+                  conversations={debouncedConvSearch ? (convSearchData?.conversations ?? []) : paginatedConversations}
                   onRefresh={handleRefresh}
-                  refreshing={showConvProgress}
-                  onEndReached={() => {}}
+                  refreshing={manualRefreshing}
+                  onEndReached={() => {
+                    if (convPages.hasNextPage && !convPages.isFetchingNextPage) void convPages.fetchNextPage()
+                  }}
                   searchQuery={classicConvSearch}
                   onSearchChange={setClassicConvSearch}
                   searchOpen={searchOpen}
-                  isLoadingInitial={false}
-                  isFetchingNextPage={false}
+                  isLoadingInitial={convPages.isLoading}
+                  isFetchingNextPage={convPages.isFetchingNextPage}
                   loadingProgress={null}
                 />
               )}
