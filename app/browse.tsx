@@ -30,6 +30,7 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 import { clientLog } from '@/lib/clientLog'
 import { useProviderHealth } from '@/hooks/useProviderHealth'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { findProviderHealth } from '@/types/provider-health'
 
 const MAX_RECENT_DIRS = 8
@@ -51,7 +52,8 @@ export default function BrowseScreen() {
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
-  const [isRecentsOpen, setIsRecentsOpen] = useState(true)
+  const isRecentsOpen = useViewPrefsStore((s) => s.recentsOpen)
+  const setRecentsOpen = useViewPrefsStore((s) => s.setRecentsOpen)
   const [showAllRecents, setShowAllRecents] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
   const { data: providerHealth } = useProviderHealth(serverId)
@@ -304,7 +306,7 @@ export default function BrowseScreen() {
         <View style={styles.recents}>
           <TouchableOpacity
             style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass]}
-            onPress={() => setIsRecentsOpen((open) => !open)}
+            onPress={() => setRecentsOpen(!isRecentsOpen)}
             accessibilityRole="button"
             accessibilityLabel={
               isRecentsOpen ? 'Hide recent directories' : 'Show recent directories'
