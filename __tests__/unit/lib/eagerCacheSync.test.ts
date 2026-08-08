@@ -67,12 +67,31 @@ describe('applySessionUpdateToEagerCache', () => {
 })
 
 describe('refreshEagerConversations', () => {
-  it('invalidates the eager conversations list', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('invalidates the eager conversations list after the debounce window', () => {
     const qc = new QueryClient()
     const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
 
     refreshEagerConversations(qc)
+    // Debounced: not fired synchronously — a chatty server must not re-drain
+    // every page on every conversation_updated frame.
+    expect(invalidateSpy).not.toHaveBeenCalled()
 
+    jest.advanceTimersByTime(1000)
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['conversations-eager'] })
+  })
+
+  it('coalesces a burst of frames into a single re-drain', () => {
+    const qc = new QueryClient()
+    const invalidateSpy = jest.spyOn(qc, 'invalidateQueries')
+
+    refreshEagerConversations(qc)
+    refreshEagerConversations(qc)
+    refreshEagerConversations(qc)
+    jest.advanceTimersByTime(1000)
+
+    expect(invalidateSpy).toHaveBeenCalledTimes(1)
   })
 })
