@@ -1,4 +1,4 @@
-import type { UnavailableReason } from '@/types/api'
+import type { SessionLifecycle, UnavailableReason } from '@/types/api'
 
 /**
  * Canonical session/conversation presentation kinds for hub rows, badges, and
@@ -67,6 +67,8 @@ export type SessionPresentationInput = {
   resumedFromConversationId?: string | null
   completedAt?: string
   failureReason?: string
+  /** Process-lifetime axis from the streamer. Additive; older servers omit it. */
+  lifecycle?: SessionLifecycle
 }
 
 export interface ConversationPresentationInput {
@@ -149,6 +151,25 @@ export function deriveSessionPresentation(
     }
   }
 
+  // Prefer streamer `lifecycle` when present — `completedAt` is stamped on both
+  // a real exit and a hold, so it cannot separate these two branches.
+  if (session.lifecycle === 'completed' || session.lifecycle === 'failed') {
+    return {
+      kind: 'completed',
+      labelKey:
+        session.lifecycle === 'failed' || session.failureReason
+          ? 'status.failed'
+          : 'status.completed',
+      live: false,
+      externalLive: false,
+      colorToken:
+        session.lifecycle === 'failed' || session.failureReason ? 'failed' : 'completed',
+      confidence,
+      activityAt,
+      capabilities: IDLE_MANAGED_CAPS,
+    }
+  }
+
   if (status === 'completed' || status === 'failed') {
     if (status === 'failed' || session.failureReason) {
       return {
@@ -200,7 +221,14 @@ export function deriveSessionPresentation(
     }
   }
 
-  if (session.ownership === 'historical' || (external && !externalAlive)) {
+  // Held / rehydrated / historical: no live process, resume from conversation.
+  // `lifecycle: "resumable"` is the streamer's signal for a hold (and for
+  // rehydrated stubs); do not conflate it with `completed` / `failed`.
+  if (
+    session.lifecycle === 'resumable' ||
+    session.ownership === 'historical' ||
+    (external && !externalAlive)
+  ) {
     // A rehydrated stub's `status` had to flatten to `idle`; `interruptedStatus`
     // is the streamer telling us what it was actually doing when it stopped it.
     // Label only — kind, colour and capabilities stay put, so the row is still
@@ -295,17 +323,43 @@ export function isPresentationLive(session: SessionPresentationInput): boolean {
   return deriveSessionPresentation(session).live
 }
 
-export type SessionPhase = 'starting' | 'live' | 'ended'
+export type SessionPhase = 'starting' | 'live' | 'ended' | 'resumable'
 
 /**
+ * Coarse client phase derived from the streamer's `lifecycle` when present.
+ *
  * `ptyAttached === false && status === 'idle'` is ambiguous on its own: it is
- * equally true of a session that has not started yet (`/api/sessions/start`
- * and `/api/sessions/resume` both respond before the PTY attaches) and one
- * that has already ended. `completedAt` is the field the server only sets on
- * a genuine end, so it — not the idle/detached pair — is the discriminator.
+ * equally true of a held (still-resumable) session and one that has genuinely
+ * ended, and `completedAt` is stamped on both. Prefer `lifecycle`.
+ *
+ * Without `lifecycle`, fall back to attach/status only — never to `completedAt`.
  */
 export function sessionPhase(s: SessionPresentationInput): SessionPhase {
-  if (s.completedAt) return 'ended'
+  switch (s.lifecycle) {
+    case 'attached':
+    case 'detached':
+    case 'orphaned':
+      return 'live'
+    case 'resumable':
+      return 'resumable'
+    case 'completed':
+    case 'failed':
+      return 'ended'
+    default:
+      break
+  }
   if (s.ptyAttached) return 'live'
   return s.status === 'idle' ? 'starting' : 'live'
+}
+
+/**
+ * Conversation history is the right surface when there is no live process to
+ * attach to — both a genuine end and a hold/rehydrate (resume lives there).
+ */
+export function sessionOpensAsHistory(s: SessionPresentationInput): boolean {
+  if (s.lifecycle != null) {
+    const phase = sessionPhase(s)
+    return phase === 'ended' || phase === 'resumable'
+  }
+  return s.ptyAttached === false && s.status === 'idle'
 }

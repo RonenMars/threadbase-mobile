@@ -1,12 +1,13 @@
 /**
  * SessionScreen — ended-session redirect.
  *
- * When a session has ended (ptyAttached:false, status:'idle') the screen should
- * open its conversation history if the session HAS a conversation. The trigger
- * is boundConversationId ?? conversationId, NOT promptCount — promptCount counts
- * only prompts sent through the app, so an adopted / externally-started session
- * with real history reads promptCount 0 and must still redirect rather than
- * strand on the read-only "Running in another terminal" placeholder.
+ * When a session has no live process (streamer `lifecycle` completed/failed/
+ * resumable, or the legacy idle+detached pair on older servers) the screen
+ * should open its conversation history if the session HAS a conversation.
+ * The trigger is boundConversationId ?? conversationId, NOT promptCount —
+ * promptCount counts only prompts sent through the app, so an adopted /
+ * externally-started session with real history reads promptCount 0 and must
+ * still redirect rather than strand on the read-only placeholder.
  */
 import React from 'react'
 import { render } from '@testing-library/react-native'
@@ -113,30 +114,71 @@ describe('SessionScreen — ended-session redirect', () => {
     mockParams = { id: SESSION_UUID, server: 'srv1' }
   })
 
-  it('redirects to the conversation when the ended session has a conversationId, even with promptCount 0', async () => {
-    mockSessionData = endedSession({ conversationId: SESSION_UUID, promptCount: 0 })
+  it('redirects when lifecycle is completed and a conversationId is present', async () => {
+    mockSessionData = endedSession({
+      conversationId: SESSION_UUID,
+      promptCount: 0,
+      lifecycle: 'completed',
+    })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
+  })
+
+  it('redirects a held (resumable) session to conversation history for resume', async () => {
+    mockSessionData = endedSession({
+      conversationId: SESSION_UUID,
+      lifecycle: 'resumable',
+      completedAt: '2026-08-01T00:00:00Z',
+    })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
   })
 
   it('redirects via boundConversationId (codex) even without conversationId', async () => {
-    mockSessionData = endedSession({ boundConversationId: SESSION_UUID, conversationId: null, promptCount: 0 })
+    mockSessionData = endedSession({
+      boundConversationId: SESSION_UUID,
+      conversationId: null,
+      promptCount: 0,
+      lifecycle: 'completed',
+    })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
   })
 
   it('does NOT redirect when the ended session has no conversation at all', async () => {
-    mockSessionData = endedSession({ conversationId: null, boundConversationId: null, promptCount: 0 })
+    mockSessionData = endedSession({
+      conversationId: null,
+      boundConversationId: null,
+      promptCount: 0,
+      lifecycle: 'completed',
+    })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(mockReplace).not.toHaveBeenCalled()
   })
 
-  // A just-resumed session reads idle + detached until its PTY attaches, which
-  // looks identical to an ended one. Redirecting then bounced the user straight
-  // back to the conversation they had just tapped Resume on.
+  it('falls back to idle+detached redirect when lifecycle is absent', async () => {
+    mockSessionData = endedSession({ conversationId: SESSION_UUID, promptCount: 0 })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
+  })
+
+  // A just-resumed session on an older server (no lifecycle) can read
+  // idle+detached until its PTY attaches. Redirecting then bounced the user
+  // straight back to the conversation they had just tapped Resume on.
   it('does NOT redirect a starting session that has not attached its PTY yet', async () => {
     mockParams = { id: SESSION_UUID, server: 'srv1', starting: '1' }
     mockSessionData = endedSession({ conversationId: SESSION_UUID, promptCount: 0 })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('does NOT redirect an attached live session', async () => {
+    mockSessionData = endedSession({
+      conversationId: SESSION_UUID,
+      ptyAttached: true,
+      status: 'waiting_input',
+      lifecycle: 'attached',
+    })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(mockReplace).not.toHaveBeenCalled()
   })
@@ -147,6 +189,7 @@ describe('SessionScreen — ended-session redirect', () => {
       conversationId: SESSION_UUID,
       ptyAttached: true,
       status: 'waiting_input',
+      lifecycle: 'attached',
     })
     const { queryByText } = await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(queryByText('Starting session…')).toBeNull()

@@ -2,6 +2,7 @@
   "id": "session-waiting",
   "status": "waiting_input",
   "ptyAttached": true,
+  "lifecycle": "attached",
   "projectPath": "/home/user/my-project",
   "projectName": "my-project",
   "branch": "main",

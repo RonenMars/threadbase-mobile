@@ -66,7 +66,10 @@ describe('live activity reconciler', () => {
   it('ends the activity when the session turns terminal', async () => {
     await openTurn('srv-1', session())
     const handle = factory.start.mock.results[0].value
-    await reconcile('srv-1', session({ completedAt: '2026-07-25T11:00:00.000Z' }))
+    await reconcile(
+      'srv-1',
+      session({ status: 'idle', ptyAttached: false, lifecycle: 'completed' }),
+    )
     expect(handle.end).toHaveBeenCalledWith('immediate')
   })
 

@@ -1,7 +1,7 @@
 import type { LiveActivity } from 'expo-widgets'
 
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
-import { sessionPhase } from '@/lib/sessionPresentation'
+import { sessionOpensAsHistory, sessionPhase } from '@/lib/sessionPresentation'
 import type { Session } from '@/types/api'
 import {
   LAST_OUTPUT_MAX_CHARS,
@@ -17,19 +17,20 @@ export function liveActivityKey(serverId: string, sessionId: string): string {
 }
 
 /**
- * A session is over when any of three signals fire. Managed servers set
- * `completedAt`; external ones report `processLiveness`; older servers do
- * neither, leaving the legacy idle-without-a-PTY heuristic as the only tell.
+ * A session should leave the Live Activity surface when there is no process
+ * left to mirror. Prefer streamer `lifecycle` (ended or resumable/held);
+ * `completedAt` alone is not enough — holds stamp it too. Older servers omit
+ * `lifecycle`, leaving the idle-without-a-PTY heuristic as the only tell —
+ * safe here because a Live Activity only ever exists for a session that
+ * already went live.
  */
 export function isTerminal(session: Session): boolean {
-  return (
-    session.processLiveness === 'gone' ||
-    sessionPhase(session) === 'ended' ||
-    // A live activity only ever exists for a session that already went live,
-    // so unlike a cold landing this can't be a not-yet-started session —
-    // idle+detached here means it ended on a server too old to set completedAt.
-    (session.status === 'idle' && !session.ptyAttached)
-  )
+  if (session.processLiveness === 'gone') return true
+  if (session.lifecycle != null) {
+    const phase = sessionPhase(session)
+    return phase === 'ended' || phase === 'resumable'
+  }
+  return sessionOpensAsHistory(session)
 }
 
 function truncateOutput(raw: string): string {

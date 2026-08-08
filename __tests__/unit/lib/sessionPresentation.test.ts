@@ -1,6 +1,7 @@
 import {
   deriveConversationPresentation,
   deriveSessionPresentation,
+  sessionOpensAsHistory,
   sessionPhase,
 } from '@/lib/sessionPresentation'
 
@@ -120,17 +121,47 @@ describe('deriveSessionPresentation', () => {
       capabilities: { canResume: true, canSendInput: false, isObserveOnly: true },
     })
   })
+
+  it('prefers lifecycle completed/failed over status idle', () => {
+    expect(
+      deriveSessionPresentation(
+        base({ status: 'idle', ptyAttached: false, lifecycle: 'completed' }),
+      ),
+    ).toMatchObject({ kind: 'completed', live: false })
+    expect(
+      deriveSessionPresentation(
+        base({
+          status: 'idle',
+          ptyAttached: false,
+          lifecycle: 'failed',
+          failureReason: 'boom',
+        }),
+      ).labelKey,
+    ).toBe('status.failed')
+  })
+
+  it('treats lifecycle resumable as historical (resume, observe-only)', () => {
+    expect(
+      deriveSessionPresentation(
+        base({ status: 'idle', ptyAttached: false, lifecycle: 'resumable' }),
+      ),
+    ).toMatchObject({
+      kind: 'historical',
+      live: false,
+      capabilities: { canResume: true, isObserveOnly: true },
+    })
+  })
 })
 
 describe('sessionPhase', () => {
-  it('reads an idle, detached session with no completedAt as starting, not ended', () => {
+  it('reads an idle, detached session with no lifecycle as starting, not ended', () => {
     expect(sessionPhase({ status: 'idle', ptyAttached: false })).toBe('starting')
   })
 
-  it('reads an idle, detached session with completedAt as ended', () => {
+  it('does not treat completedAt alone as ended (holds stamp it too)', () => {
     expect(
       sessionPhase({ status: 'idle', ptyAttached: false, completedAt: '2026-08-01T00:00:00Z' }),
-    ).toBe('ended')
+    ).toBe('starting')
   })
 
   it('reads an idle, attached session as live', () => {
@@ -145,12 +176,44 @@ describe('sessionPhase', () => {
     expect(sessionPhase({ status: 'running', ptyAttached: true })).toBe('live')
   })
 
-  it('gives completedAt precedence over ptyAttached still reading true', () => {
-    // The server can report a stale ptyAttached: true on the same payload
-    // that finally sets completedAt; completedAt is the authoritative signal.
+  it('maps streamer lifecycle onto the coarse phase', () => {
+    expect(sessionPhase({ status: 'running', ptyAttached: true, lifecycle: 'attached' })).toBe(
+      'live',
+    )
+    expect(sessionPhase({ status: 'idle', ptyAttached: false, lifecycle: 'resumable' })).toBe(
+      'resumable',
+    )
+    expect(sessionPhase({ status: 'idle', ptyAttached: false, lifecycle: 'completed' })).toBe(
+      'ended',
+    )
+    expect(sessionPhase({ status: 'idle', ptyAttached: false, lifecycle: 'failed' })).toBe(
+      'ended',
+    )
+  })
+
+  it('gives lifecycle precedence over a stale ptyAttached: true', () => {
     expect(
-      sessionPhase({ status: 'idle', ptyAttached: true, completedAt: '2026-08-01T00:00:00Z' }),
+      sessionPhase({ status: 'idle', ptyAttached: true, lifecycle: 'completed' }),
     ).toBe('ended')
+  })
+})
+
+describe('sessionOpensAsHistory', () => {
+  it('opens history for ended and resumable lifecycles', () => {
+    expect(
+      sessionOpensAsHistory({ status: 'idle', ptyAttached: false, lifecycle: 'completed' }),
+    ).toBe(true)
+    expect(
+      sessionOpensAsHistory({ status: 'idle', ptyAttached: false, lifecycle: 'resumable' }),
+    ).toBe(true)
+    expect(
+      sessionOpensAsHistory({ status: 'running', ptyAttached: true, lifecycle: 'attached' }),
+    ).toBe(false)
+  })
+
+  it('falls back to idle+detached when lifecycle is absent', () => {
+    expect(sessionOpensAsHistory({ status: 'idle', ptyAttached: false })).toBe(true)
+    expect(sessionOpensAsHistory({ status: 'running', ptyAttached: false })).toBe(false)
   })
 })
 
