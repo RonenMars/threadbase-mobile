@@ -44,7 +44,7 @@ That's the whole flow. No simulator, no UI clicks. The script:
 1. **Preflight** — runs every prerequisite check, fails loud if anything is off.
 2. **Install deps** — npm / yarn / pnpm / bun, auto-detected from lockfile.
 3. **Prebuild** — runs `npx expo prebuild` only if `ios/` is missing.
-4. **Bootstrap signing** — skipped automatically if `.env.signing` and the `.p8` key are already on disk. On a fresh machine, reads ASC API key + Team ID from environment variables, renders `ExportOptions.plist`, writes `.env.signing`.
+4. **Bootstrap signing** — skipped automatically if `.env.signing` and the `.p8` key are already on disk. On a fresh machine, reads ASC API key + Team ID from environment variables, renders `ExportOptions.plist`, writes `.env.signing`. It reads env vars only and never reaches 1Password itself, so in a fresh clone or worktree run `./scripts/bootstrap-local-signing-op.sh` first (after `eval "$(op signin)"`) or this step fails with `ASC_KEY_ID must be set`. `ship-android.sh` does call that wrapper for you; `ship-ios.sh` does not.
 5. **Git sync check** — `git fetch origin` then refuses to ship if local `main` is behind `origin/main` (someone else may have pushed an `app.json` bump from another machine that you haven't pulled). Also refuses if `app.json` has uncommitted edits.
 6. **Build-number reconciliation** — queries the App Store Connect API for the highest `buildNumber` already in TestFlight for this `bundleIdentifier`, compares against `app.json`. If local ≤ remote, auto-bumps `app.json` to `remote + 1`. A drift ≥ 2 prints a louder warning (likely sign of a multi-machine skip).
 7. **Archive + upload** — `xcodebuild archive` then `xcodebuild -exportArchive` with `destination=upload`.
@@ -65,6 +65,7 @@ defaults if needed.
 | `git-sync-check.sh` | Verifies local `main` is up to date with `origin/main` and `app.json` has no uncommitted edits. Prevents shipping from a stale base on a multi-machine setup. |
 | `check-build-number.sh` | Queries App Store Connect for the highest `buildNumber` in TestFlight, compares to `app.json`, and auto-bumps if local ≤ remote. Surfaces a louder warning when drift ≥ 2 (sign of a missed bump). |
 | `bootstrap-ios-signing.sh` | Reads API key + Team ID from environment variables, writes `.p8`, renders plist, emits `.env.signing`. |
+| `bootstrap-local-signing-op.sh` | Fills those environment variables from 1Password, for both platforms. `--platform ios\|android\|all` (default `all`), `--dry-run` to check resolution without writing. Run once per clone or worktree; the `.p8`, keystore and Play cache it produces are machine-global, but `.env.signing*` are per-checkout. |
 | `archive-and-upload.sh` | `xcodebuild archive` + `xcodebuild -exportArchive --destination=upload`. |
 | `asc-jwt.sh` | Mints a 19-min ES256 JWT for ASC API requests. |
 | `poll-build.sh` | Watches `processingState` with 7 independent kill switches (per-curl timeout, wall clock, iteration cap, failure cap, watchdog, orphan check, signal traps). `--timeout` is hard-capped at 1800 s. |
@@ -114,6 +115,7 @@ can run any step alone:
 
 ```bash
 ./scripts/preflight.sh                                   # any time
+./scripts/bootstrap-local-signing-op.sh                   # pull secrets from 1Password
 ./scripts/bootstrap-ios-signing.sh                        # refresh secrets
 source .env.signing
 ./scripts/archive-and-upload.sh                           # archive + upload only
