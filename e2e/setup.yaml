@@ -29,14 +29,14 @@ appId: com.ronenmars.threadbase
 
       - inputText: "http://localhost:7071"
 
-      - hideKeyboard
+      - pressKey: Enter
 
       - tapOn:
           id: "onboarding-connect-token-input"
 
       - inputText: "mock-key-123"
 
-      - hideKeyboard
+      - pressKey: Enter
 
       - tapOn:
           id: "onboarding-connect-handshake-cta"
@@ -48,7 +48,18 @@ appId: com.ronenmars.threadbase
           commands:
             - tapOn: "Not Now"
 
-      # Step 3 / DONE — handshake auto-advances here; enter the app
+      # Step 3 / NOTIFY — the handshake advances here, not straight to DONE.
+      # Skipping keeps the flow off the OS permission prompt, which Maestro
+      # cannot dismiss.
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 8000
+
+      - tapOn:
+          id: "onboarding-notifications-cta"
+
+      # Step 4 / DONE — enter the app
       - extendedWaitUntil:
           visible:
             id: "onboarding-done-cta"

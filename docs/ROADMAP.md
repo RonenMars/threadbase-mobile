@@ -684,7 +684,7 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 - `e2e/compare-screenshots.js` (new) — the comparator.
 - `e2e/_baselines/` (new directory) — committed PNGs.
 - `package.json` — new `test:e2e:regression` script + `pixelmatch` + `pngjs` devDependencies.
-- `.github/workflows/test.yml` — invoke regression after the existing Maestro step in the `e2e-maestro` job.
+- `.github/workflows/e2e.yml` — invoke regression after the existing Maestro step in the `e2e-maestro` job.
 - `e2e/README.md` — document how to update baselines after intentional UI changes.
 
 **Coordination:**
