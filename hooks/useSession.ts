@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useThrottledCallback } from 'use-debounce'
 import { createApiForServer } from '@/services/api-client'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { useServersStore } from '@/stores/servers'
@@ -133,6 +134,10 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
 
   // Aggregated state for the UI — updated whenever any server's slice changes.
   const [aggregateProgress, setAggregateProgress] = useState({ loaded: 0, total: 0, inFlightCount: 0 })
+  // Each page of each server ticks progress; writing every tick to state
+  // re-renders the whole Hub. Coalesce to ≤1 write per 250ms (flushed on
+  // completion so the final counter is exact).
+  const throttledSetAggregate = useThrottledCallback(setAggregateProgress, 250)
 
   const serversRef = useRef(servers)
   useEffect(() => {
@@ -157,8 +162,8 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       if (slice.total !== null) total += slice.total
       if (!slice.done) inFlight++
     }
-    setAggregateProgress({ loaded, total, inFlightCount: inFlight })
-  }, [])
+    throttledSetAggregate({ loaded, total, inFlightCount: inFlight })
+  }, [throttledSetAggregate])
 
   const query = useQuery<MultiSession[], Error>({
     queryKey,
@@ -169,6 +174,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
         initialMap.set(id, { loaded: 0, total: null, done: false })
       }
       serverProgressRef.current = initialMap
+      throttledSetAggregate.cancel()
       setAggregateProgress({ loaded: 0, total: 0, inFlightCount: activeServerIds.length })
 
       const perServerResults = await Promise.all(
@@ -210,6 +216,10 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
           }
         }),
       )
+
+      // Land the final loaded/total now — a pending trailing write would
+      // otherwise leave the counter one page short at "done".
+      throttledSetAggregate.flush()
 
       return dedupeByServerAndId(perServerResults.flat())
     },

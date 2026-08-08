@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { memo, useState, useEffect, useRef, useMemo } from 'react'
 import { View, TextInput, FlatList, RefreshControl } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -27,7 +27,9 @@ type Row =
   | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean; collapsed: boolean; collapsible: boolean }
   | { kind: 'session'; session: MultiSession }
 
-export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
+// Memoized: the Hub root re-renders on every fetch-progress tick; with stable
+// props (query data is a stable ref mid-drain) this skips re-running the list.
+export const ClassicSessionsList = memo(function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpen }: Props) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(insets.bottom)
@@ -118,4 +120,4 @@ export function ClassicSessionsList({ sessions, refreshing, onRefresh, searchOpe
       />
     </View>
   )
-}
+})
