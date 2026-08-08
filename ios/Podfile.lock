@@ -304,7 +304,7 @@ PODS:
     - ExpoModulesCore
     - ExpoUI
   - EXStructuredHeaders (57.0.0)
-  - EXUpdates (57.0.10):
+  - EXUpdates (57.0.11):
     - EASClient
     - EXManifests
     - ExpoModulesCore
@@ -3135,7 +3135,7 @@ SPEC CHECKSUMS:
   ExpoUI: 19f2ca6e82d91240530ee9762dedccc31fc6f429
   ExpoWidgets: 683ecb150cd36b85b003b5e362b2207385912ef4
   EXStructuredHeaders: 1423c3602a30eb078e03b63b251ef912267dd4c0
-  EXUpdates: cbdbe424e30c11983c2841930050114c1b8bea0c
+  EXUpdates: 35b9e901271a30b402b1163d5c87ae67ebfa5159
   EXUpdatesInterface: 92d2aa5194b6fb93ca8ab749db75665cb28b2e60
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
   hermes-engine: 82b14fe6a4b57b835581d32346f9e8d04a067b68
