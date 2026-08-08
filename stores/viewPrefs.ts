@@ -8,22 +8,23 @@ interface PersistedState {
   collapsedServers: string[]
   // Browse view "recent directories" accordion (default = open).
   recentsOpen: boolean
-  // Classic view live-sessions header. `null` = follow the count-based default
+  // Live-sessions header, shared by the Tree and Classic views so its collapsed
+  // state stays the same across them. `null` = follow the count-based default
   // (collapsed when there are many sessions); a boolean is an explicit choice.
-  classicSessionsCollapsed: boolean | null
+  sessionsHeaderCollapsed: boolean | null
 }
 
 interface ViewPrefsStore extends PersistedState {
   toggleServerCollapsed: (serverId: string) => void
   setRecentsOpen: (open: boolean) => void
-  setClassicSessionsCollapsed: (collapsed: boolean) => void
+  setSessionsHeaderCollapsed: (collapsed: boolean) => void
   hydrate: () => Promise<void>
 }
 
 const DEFAULTS: PersistedState = {
   collapsedServers: [],
   recentsOpen: true,
-  classicSessionsCollapsed: null,
+  sessionsHeaderCollapsed: null,
 }
 
 export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
@@ -38,7 +39,7 @@ export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
 
   setRecentsOpen: (recentsOpen) => set({ recentsOpen }),
 
-  setClassicSessionsCollapsed: (classicSessionsCollapsed) => set({ classicSessionsCollapsed }),
+  setSessionsHeaderCollapsed: (sessionsHeaderCollapsed) => set({ sessionsHeaderCollapsed }),
 
   hydrate: async () => {
     try {
@@ -48,7 +49,7 @@ export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
       set((s) => ({
         collapsedServers: Array.isArray(parsed.collapsedServers) ? parsed.collapsedServers : s.collapsedServers,
         recentsOpen: parsed.recentsOpen ?? s.recentsOpen,
-        classicSessionsCollapsed: parsed.classicSessionsCollapsed ?? s.classicSessionsCollapsed,
+        sessionsHeaderCollapsed: parsed.sessionsHeaderCollapsed ?? s.sessionsHeaderCollapsed,
       }))
     } catch {
       // storage unavailable or corrupted — ignore
@@ -60,7 +61,7 @@ useViewPrefsStore.subscribe((state) => {
   const payload: PersistedState = {
     collapsedServers: state.collapsedServers,
     recentsOpen: state.recentsOpen,
-    classicSessionsCollapsed: state.classicSessionsCollapsed,
+    sessionsHeaderCollapsed: state.sessionsHeaderCollapsed,
   }
   AsyncStorage.setItem(VIEW_PREFS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})
 })
