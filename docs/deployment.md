@@ -26,6 +26,79 @@ They differ in how much automation sits around the archive step.
 
 ---
 
+## Local credentials — the 1Password bootstrap
+
+Every path below needs signing credentials in the environment. Locally they come from
+1Password rather than hand-typed exports, via `scripts/bootstrap-local-signing-op.sh`.
+
+### Two kinds of artifact
+
+Knowing which is which explains why a brand-new worktree still needs a bootstrap run
+even though you already shipped from this machine yesterday.
+
+**Machine-global** — provisioned once per Mac, shared by every checkout:
+`~/.appstoreconnect/keys/AuthKey_<KEYID>.p8`, `~/.android-signing/tb-mobile-upload.keystore`,
+`~/.config/threadbase/play-console-sa.json`, and the Distribution cert in the login keychain.
+
+**Per-checkout** — gitignored files at the repo root, regenerated for each clone or worktree:
+`.env.signing` (iOS), `.env.signing.android` (Android), `build/ExportOptions.plist`.
+
+### Per checkout, once
+
+```bash
+eval "$(op signin)"
+./scripts/bootstrap-local-signing-op.sh          # both platforms
+```
+
+`--platform ios` or `--platform android` does one half only.
+`--dry-run` reports what every field resolves to and writes nothing, which is the safe way
+to check a vault change or a rotated key.
+
+Which 1Password vault, item and field each credential comes from is configured in
+`scripts/.env.signing-op` — gitignored, so the real vault names never reach the repo.
+Copy `scripts/.env.signing-op.example` and fill it in.
+The Android and Play blocks are optional: omit them and the Android half degrades to a
+skip-with-warning rather than an error.
+
+### Every ship
+
+```bash
+npm run ship:ios          # or: npm run ship:android
+npm run ship:all          # both, sequentially
+```
+
+No manual `source` is needed. `ship-ios.sh` sources `.env.signing` itself, `ship-android.sh`
+sources `.env.signing.android`, and `npm run status:ios` has the `source` baked into the
+package.json script.
+
+### The two ships are not equally self-sufficient
+
+`ship-android.sh` is fully self-bootstrapping: when the Play credential cache or
+`.env.signing.android` is missing it calls the 1Password wrapper itself, so a fresh worktree
+with nothing exported just works.
+
+`ship-ios.sh` only *skips* its bootstrap step when `.env.signing` already exists.
+Its fallback is `bootstrap-ios-signing.sh` directly, which expects `ASC_KEY_ID`,
+`ASC_ISSUER_ID`, `ASC_TEAM_ID` and `ASC_AUTH_KEY_B64` to be exported already — it never
+reaches 1Password on its own.
+So in a fresh worktree `npm run ship:ios` fails with `ASC_KEY_ID must be set` until you
+run the bootstrap above.
+That asymmetry is why the per-checkout step is genuinely required for iOS and merely a
+convenience for Android.
+
+### None of this runs in CI
+
+GitHub Actions reads its own repository secrets and never invokes `op`, so moving an item
+between 1Password vaults cannot affect a deploy run.
+The self-bootstrap hook in `ship-android.sh` is inert on a runner for two independent
+reasons: `scripts/.env.signing-op` is gitignored so it never exists there, and `deploy.yml`
+materializes both the Play cache and `.env.signing.android` in earlier steps.
+Note that `deploy.yml` does **not** export `PLAY_SA_JSON_B64` into `ship-android.sh` — that
+variable is scoped to the *Fetch Play credentials* step, and Actions `env:` is per-step — so
+the `PLAY_SA_JSON_B64` check in that guard is for a local shell, not for CI.
+
+---
+
 ## Path A — `./scripts/ship-ios.sh` (maintainer default)
 
 The full pipeline. This is what the `/expo-local-ship` skill runs, and it's
@@ -38,6 +111,9 @@ the default maintainer path.
 3. **Prebuild** — `npx expo prebuild --platform ios` if `ios/` is missing.
 4. **Bootstrap signing** — `scripts/bootstrap-ios-signing.sh` pulls the ASC
    API key + signing config from environment variables into `.env.signing`.
+   Skipped when `.env.signing` and the `.p8` are already on disk. It reads env vars only,
+   so locally you get them there by running `bootstrap-local-signing-op.sh` first — see
+   [Local credentials](#local-credentials--the-1password-bootstrap).
 5. **Git sync check** — refuses to ship if local `main` is behind `origin/main`
    or if `app.json` has uncommitted changes. Catches the multi-machine "someone
    else already shipped a higher build number on another laptop" footgun.
@@ -272,6 +348,12 @@ Other flags: `--skip-preflight`, `--skip-prebuild`, `--skip-bundle` (reuse exist
    - `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_ALIAS` (default: `upload`), `ANDROID_KEY_PASSWORD`
 2. **Play service-account JSON** available as `PLAY_SA_JSON_B64` (see `docs/google-play-mcp-setup.md`).
 3. `jq` installed for credential validation.
+
+> Locally you do not set 1 and 2 by hand — `./scripts/bootstrap-local-signing-op.sh --platform android`
+> reads them from 1Password, and `ship-android.sh` calls it for you when the credentials are missing.
+> The variables above are what CI supplies from repository secrets, and what the individual
+> steps below expect if you run them standalone.
+
 4. `ANDROID_HOME` pointing at the Android SDK, `JAVA_HOME` pointing at JDK 17.
 5. The app registered in Play Console with the bundle ID `com.ronenmars.threadbase`.
 

@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
-# Regenerate a functional .env.signing for LOCAL ships by pulling the ASC secrets from
-# 1Password (op CLI). The Distribution cert is read from the login keychain and the
+# Regenerate functional LOCAL signing config for both platforms by pulling the secrets
+# from 1Password (op CLI). The Distribution cert is read from the login keychain and the
 # App Store provisioning profile from Xcode's local cache — neither the .p12 nor the
 # .mobileprovision live in 1Password, and they don't need to.
 #
-# Nothing secret is written to disk except the .p8 / .env.signing that
-# bootstrap-ios-signing.sh already produces (both gitignored).
+# Nothing secret is written to disk except the artifacts the existing bootstrap scripts
+# already produce — .p8 / .env.signing (iOS), the keystore / .env.signing.android and the
+# Play service-account cache (Android). All gitignored or outside the repo.
 #
 # Setup:
 #   1. cp scripts/.env.signing-op.example scripts/.env.signing-op   (gitignored)
 #      then edit it so OP_VAULT / OP_ITEM / OP_*_FIELD point at YOUR 1Password entry.
 #   2. op signin        (or eval "$(op signin)")
-#   3. ./scripts/bootstrap-local-signing-op.sh
-#   4. source .env.signing && npm run ship:ios
+#   3. ./scripts/bootstrap-local-signing-op.sh              # both platforms
+#      ./scripts/bootstrap-local-signing-op.sh --platform android   # one of them
+#   4. source .env.signing && npm run ship:all
 #
 # Where each piece comes from:
 #   - ASC API key + issuer/team/key ids + both profile UUIDs: your 1Password item
@@ -20,6 +22,9 @@
 #   - Distribution cert: the login-keychain "Apple Distribution" identity — so we skip
 #     the cert import.
 #   - The .mobileprovision file: Xcode's local cache (re-downloadable from Apple).
+#   - Android upload keystore + Play publisher service account: two more 1Password
+#     items (OP_ANDROID_* / OP_PLAY_* in the config). Optional — omit them and the
+#     Android half is skipped.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # repo root
@@ -28,13 +33,24 @@ cd "$(dirname "$0")/.."   # repo root
 # no .env.signing, no profiles installed — so it is safe to run against real signing
 # config at any time. Secret values are never printed, only whether they resolved.
 DRY_RUN=0
-for arg in "$@"; do
-  case "$arg" in
+PLATFORM=all
+while (( $# )); do
+  case "$1" in
     --dry-run) DRY_RUN=1 ;;
-    -h|--help) echo "Usage: $0 [--dry-run]"; exit 0 ;;
-    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
+    --platform) PLATFORM="${2:-}"; shift ;;
+    --platform=*) PLATFORM="${1#*=}" ;;
+    -h|--help) echo "Usage: $0 [--dry-run] [--platform ios|android|all]"; exit 0 ;;
+    *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
+  shift
 done
+case "$PLATFORM" in
+  ios|android|all) ;;
+  *) echo "--platform must be one of: ios android all" >&2; exit 2 ;;
+esac
+DO_IOS=0; DO_ANDROID=0
+[[ "$PLATFORM" == ios     || "$PLATFORM" == all ]] && DO_IOS=1
+[[ "$PLATFORM" == android || "$PLATFORM" == all ]] && DO_ANDROID=1
 (( DRY_RUN )) && echo "▸ DRY RUN — nothing will be written"
 
 command -v op >/dev/null || { echo "1Password CLI (op) not installed: brew install 1password-cli" >&2; exit 1; }
@@ -47,8 +63,10 @@ OP_CONFIG="scripts/.env.signing-op"
 # shellcheck disable=SC1090
 source "$OP_CONFIG"
 
-: "${OP_VAULT:?set OP_VAULT in $OP_CONFIG}"
-: "${OP_ITEM:?set OP_ITEM in $OP_CONFIG}"
+if (( DO_IOS )); then
+  : "${OP_VAULT:?set OP_VAULT in $OP_CONFIG}"
+  : "${OP_ITEM:?set OP_ITEM in $OP_CONFIG}"
+fi
 
 op vault list >/dev/null 2>&1 || { echo "Not signed in to op. Run: eval \"\$(op signin)\"" >&2; exit 1; }
 
@@ -60,9 +78,9 @@ opread() { op read "op://${OP_VAULT}/${OP_ITEM}/$1"; }
 # with a bare error. Reports presence only — values are never echoed.
 MISSING_FIELDS=0
 require_field() {
-  local var="$1" field="$2" value
-  if ! value="$(op read "op://${OP_VAULT}/${OP_ITEM}/${field}" 2>/dev/null)" || [[ -z "$value" ]]; then
-    echo "  MISSING field '${field}' on item '${OP_ITEM}' (vault '${OP_VAULT}')" >&2
+  local var="$1" field="$2" vault="${3:-${OP_VAULT:-}}" item="${4:-${OP_ITEM:-}}" value
+  if ! value="$(op read "op://${vault}/${item}/${field}" 2>/dev/null)" || [[ -z "$value" ]]; then
+    echo "  MISSING field '${field}' on item '${item}' (vault '${vault}')" >&2
     MISSING_FIELDS=$((MISSING_FIELDS + 1))
     return 0
   fi
@@ -71,6 +89,57 @@ require_field() {
   (( DRY_RUN )) && echo "  ${field}: OK"
   return 0
 }
+
+# ── Android upload keystore + Play publisher account ────────────────────────────
+# Mirrors the iOS path: pull the secrets, then hand them to the bootstrap scripts that
+# already exist and already validate them (keytool for the keystore, a jq shape check
+# for the service-account JSON). ANDROID_* are inputs only — bootstrap-android-signing.sh
+# renames them to the TB_MOBILE_UPLOAD_* that gradle reads when it writes
+# .env.signing.android.
+bootstrap_android() {
+  if [[ -z "${OP_ANDROID_VAULT:-}" || -z "${OP_ANDROID_ITEM:-}" ]]; then
+    echo "  Android: not configured (set OP_ANDROID_VAULT/OP_ANDROID_ITEM in $OP_CONFIG) — skipping" >&2
+    return 0
+  fi
+  require_field ANDROID_KEYSTORE_B64   "${OP_ANDROID_KEYSTORE_B64_FIELD:-keystore_b64}"     "$OP_ANDROID_VAULT" "$OP_ANDROID_ITEM"
+  require_field ANDROID_STORE_PASSWORD "${OP_ANDROID_STORE_PASSWORD_FIELD:-store_password}" "$OP_ANDROID_VAULT" "$OP_ANDROID_ITEM"
+  require_field ANDROID_KEY_ALIAS      "${OP_ANDROID_KEY_ALIAS_FIELD:-key_alias}"           "$OP_ANDROID_VAULT" "$OP_ANDROID_ITEM"
+  require_field ANDROID_KEY_PASSWORD   "${OP_ANDROID_KEY_PASSWORD_FIELD:-key_password}"     "$OP_ANDROID_VAULT" "$OP_ANDROID_ITEM"
+
+  # PLAY_SA_JSON_B64 is the only variable fetch-play-credentials.sh reads, and the only
+  # credential with no local fallback — without it ship-android.sh dies at its first step.
+  local have_play=0
+  if [[ -n "${OP_PLAY_VAULT:-}" && -n "${OP_PLAY_ITEM:-}" ]]; then
+    require_field PLAY_SA_JSON_B64 "${OP_PLAY_SA_JSON_B64_FIELD:-sa_json_b64}" "$OP_PLAY_VAULT" "$OP_PLAY_ITEM"
+    have_play=1
+  else
+    echo "  Play: not configured (set OP_PLAY_VAULT/OP_PLAY_ITEM in $OP_CONFIG) — ship:android cannot upload" >&2
+  fi
+
+  if (( MISSING_FIELDS > 0 )); then
+    echo "${MISSING_FIELDS} required Android field(s) missing from 1Password — cannot continue." >&2
+    exit 1
+  fi
+  if (( DRY_RUN )); then
+    echo "  Android: OK — keystore fields resolved$( (( have_play )) && echo ", Play service account resolved")"
+    return 0
+  fi
+
+  ./scripts/bootstrap-android-signing.sh
+  (( have_play )) && ./scripts/fetch-play-credentials.sh >/dev/null
+  echo
+  echo "✓ Android signing bootstrapped. Next: npm run ship:android"
+  return 0
+}
+
+if (( DO_ANDROID )); then
+  bootstrap_android
+fi
+
+if (( ! DO_IOS )); then
+  (( DRY_RUN )) && echo "▸ DRY RUN complete — nothing written."
+  exit 0
+fi
 
 require_field ASC_KEY_ID       "${OP_KEY_ID_FIELD:-key_id}"
 require_field ASC_ISSUER_ID    "${OP_ISSUER_ID_FIELD:-issuer_id}"

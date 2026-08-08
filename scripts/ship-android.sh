@@ -86,6 +86,20 @@ _fetch_play_creds() {
   "$SCRIPT_DIR/fetch-play-credentials.sh"
 }
 
+# Cold machine: no Play service-account cache and/or no keystore. Pull both from
+# 1Password before either the promote path or the build path needs them — mirrors how
+# ship-ios.sh self-bootstraps .env.signing.
+# Inert in CI on two independent counts: scripts/.env.signing-op is gitignored so it never
+# exists on a runner, and deploy.yml materializes both artifacts in earlier steps. Note it
+# does NOT export PLAY_SA_JSON_B64 into this script — that env is scoped to its own step —
+# so the check below is for a shell that exports it directly, not for CI.
+# With no op config the fall-through is today's behavior: fetch-play-credentials.sh's error.
+if [[ ! -f "$_PLAY_CREDS_CACHE" || ! -f .env.signing.android ]] \
+   && [[ -f scripts/.env.signing-op && -z "${PLAY_SA_JSON_B64:-}" ]]; then
+  echo "▸ Bootstrap Android credentials from 1Password"
+  "$SCRIPT_DIR/bootstrap-local-signing-op.sh" --platform android
+fi
+
 if [[ -n "$PROMOTE_VERSION" ]]; then
   if [[ -f "$_PLAY_CREDS_CACHE" ]]; then
     echo "▸ [1/2] Google Play credentials already cached — skipping"
