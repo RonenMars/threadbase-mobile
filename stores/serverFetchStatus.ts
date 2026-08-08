@@ -41,21 +41,33 @@ function describeError(error: unknown): string {
 export const useServerFetchStatusStore = create<State & Actions>((set) => ({
   statuses: {},
   recordSuccess: (serverId) =>
-    set((s) => s.statuses[serverId]?.status === 'warming_up'
-      ? s
-      : {
-          statuses: {
-            ...s.statuses,
-            [serverId]: { status: 'ok', lastCheckedAt: Date.now() },
-          },
-        }),
+    // No-op when nothing changes: a warming server stays warming, and a server
+    // already 'ok' keeps its entry. Returning the same state means zustand does
+    // not notify subscribers, so a successful response for an already-healthy
+    // server does not re-render the Hub (only lastCheckedAt would differ, and
+    // it is not on any render hot path).
+    set((s) => {
+      const cur = s.statuses[serverId]?.status
+      if (cur === 'warming_up' || cur === 'ok') return s
+      return {
+        statuses: {
+          ...s.statuses,
+          [serverId]: { status: 'ok', lastCheckedAt: Date.now() },
+        },
+      }
+    }),
   recordReady: (serverId) =>
-    set((s) => ({
-      statuses: {
-        ...s.statuses,
-        [serverId]: { status: 'ok', lastCheckedAt: Date.now() },
-      },
-    })),
+    // Same identity-stability guard, but recordReady is also the transition out
+    // of 'warming_up', so it only short-circuits when already 'ok'.
+    set((s) => {
+      if (s.statuses[serverId]?.status === 'ok') return s
+      return {
+        statuses: {
+          ...s.statuses,
+          [serverId]: { status: 'ok', lastCheckedAt: Date.now() },
+        },
+      }
+    }),
   recordFailure: (serverId, error) =>
     set((s) => ({
       statuses: {
