@@ -552,7 +552,7 @@ export default function ProjectsHub() {
   )
 }
 
-function MergedClassicList({
+const MergedClassicList = React.memo(function MergedClassicList({
   items,
   refreshing,
   onRefresh,
@@ -814,7 +814,7 @@ function MergedClassicList({
       })() : null}
     </View>
   )
-}
+})
 
 
 function makeStyles(theme: Theme) {
