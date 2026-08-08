@@ -5,7 +5,7 @@ beforeEach(() => {
   useViewPrefsStore.setState({
     collapsedServers: [],
     recentsOpen: true,
-    classicSessionsCollapsed: null,
+    sessionsHeaderCollapsed: null,
   })
   ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
 })
@@ -35,25 +35,25 @@ describe('ViewPrefsStore – recents accordion', () => {
   })
 })
 
-describe('ViewPrefsStore – classic sessions header', () => {
+describe('ViewPrefsStore – sessions header (shared by tree + classic)', () => {
   it('defaults to null (follow count-based default) and stores an explicit choice', () => {
-    expect(useViewPrefsStore.getState().classicSessionsCollapsed).toBeNull()
-    useViewPrefsStore.getState().setClassicSessionsCollapsed(true)
-    expect(useViewPrefsStore.getState().classicSessionsCollapsed).toBe(true)
-    useViewPrefsStore.getState().setClassicSessionsCollapsed(false)
-    expect(useViewPrefsStore.getState().classicSessionsCollapsed).toBe(false)
+    expect(useViewPrefsStore.getState().sessionsHeaderCollapsed).toBeNull()
+    useViewPrefsStore.getState().setSessionsHeaderCollapsed(true)
+    expect(useViewPrefsStore.getState().sessionsHeaderCollapsed).toBe(true)
+    useViewPrefsStore.getState().setSessionsHeaderCollapsed(false)
+    expect(useViewPrefsStore.getState().sessionsHeaderCollapsed).toBe(false)
   })
 })
 
 describe('ViewPrefsStore – hydrate', () => {
   it('merges persisted values', async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-      JSON.stringify({ collapsedServers: ['srv9'], recentsOpen: false, classicSessionsCollapsed: true }),
+      JSON.stringify({ collapsedServers: ['srv9'], recentsOpen: false, sessionsHeaderCollapsed: true }),
     )
     await useViewPrefsStore.getState().hydrate()
     expect(useViewPrefsStore.getState().collapsedServers).toEqual(['srv9'])
     expect(useViewPrefsStore.getState().recentsOpen).toBe(false)
-    expect(useViewPrefsStore.getState().classicSessionsCollapsed).toBe(true)
+    expect(useViewPrefsStore.getState().sessionsHeaderCollapsed).toBe(true)
   })
 
   it('ignores malformed collapsedServers, keeping defaults', async () => {

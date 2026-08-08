@@ -138,9 +138,11 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServerCollapsed = useViewPrefsStore((s) => s.toggleServerCollapsed)
   const SESSIONS_COLLAPSE_THRESHOLD = 3
-  const [sessionsCollapsed, setSessionsCollapsed] = useState(
-    () => sessions.length > SESSIONS_COLLAPSE_THRESHOLD
-  )
+  // Shared with the Classic view so the live-sessions header stays in the same
+  // state across layouts. `null` = follow the count-based default.
+  const storedSessionsCollapsed = useViewPrefsStore((s) => s.sessionsHeaderCollapsed)
+  const setSessionsCollapsed = useViewPrefsStore((s) => s.setSessionsHeaderCollapsed)
+  const sessionsCollapsed = storedSessionsCollapsed ?? sessions.length > SESSIONS_COLLAPSE_THRESHOLD
   const [selectedDrill, setSelectedDrill] = useState<{ node: TreeNode; serverId: string } | null>(null)
 
   const serverTrees = useMemo((): ServerTree[] => {
@@ -261,14 +263,14 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           count={sessions.length}
           hasLive={hasLive}
           collapsed={sessionsCollapsed}
-          onToggle={collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+          onToggle={collapsible ? () => setSessionsCollapsed(!sessionsCollapsed) : undefined}
         />
         {(!collapsible || !sessionsCollapsed) && sessions.map((s) => (
           <SessionCard key={`${s.serverId}::${s.id}`} session={s} />
         ))}
       </View>
     )
-  }, [sessions, sessionsCollapsed, SESSIONS_COLLAPSE_THRESHOLD])
+  }, [sessions, sessionsCollapsed, setSessionsCollapsed, SESSIONS_COLLAPSE_THRESHOLD])
 
   if (selectedDrill && !searchOpen) {
     return (
