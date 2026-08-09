@@ -9,7 +9,8 @@ const node: TreeNode = {
   fullPath: '/',
   children: new Map(),
   sessions: [],
-  conversations: [],
+  conversationCount: 0,
+  conversationActivityMs: 0,
   totalCount: 0,
   directCount: 0,
 }

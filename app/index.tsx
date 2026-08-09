@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useEagerConversations, useConversations, useConversationSearch } from '@/hooks/useConversations'
+import { useProjectSummaries } from '@/hooks/useProjectSummaries'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
 import { useLiveInstanceCount } from '@/lib/openTrace'
@@ -224,8 +225,25 @@ export default function ProjectsHub() {
     }
   }, [refetchSessions])
 
+  // ADR 0001 step 2: the grouped views (tree, hub) render their structure from
+  // /api/projects/summary and fetch a project's conversations only when it is
+  // opened, so the eager full-drain is not mounted for them at all. Classic
+  // still uses it until its own migration lands.
+  const isGroupedLayout = sessionsLayout === 'tree' || sessionsLayout === 'hub'
+
+  const {
+    summaries,
+    unsupportedServerIds,
+    isLoading: summariesLoading,
+    isFetching: summariesFetching,
+  } = useProjectSummaries(refreshEpoch, { enabled: isGroupedLayout })
+
   const { conversations, loaded: convLoaded, total: convTotal, isDone: convDone, isCounting: convCounting } =
-    useEagerConversations(providerFilter ? { provider: providerFilter } : undefined, refreshEpoch)
+    useEagerConversations(
+      providerFilter ? { provider: providerFilter } : undefined,
+      refreshEpoch,
+      { enabled: !isGroupedLayout },
+    )
 
   const showConvProgress = !convDone && convLoaderMode === 'full'
 
@@ -251,10 +269,12 @@ export default function ProjectsHub() {
   // the refetch resolves. Show the blocking modal ONLY when there is nothing
   // cached to show (fresh install / cache cleared); any warm state gets the
   // unobtrusive "Showing cached data" spinner instead.
-  const hasCachedData = sessions.length > 0 || conversations.length > 0
-  const isStillFetching = !sessionsDone || showConvProgress
+  const hasCachedData =
+    sessions.length > 0 || (isGroupedLayout ? summaries.length > 0 : conversations.length > 0)
+  const isStillFetching = !sessionsDone || (isGroupedLayout ? summariesLoading : showConvProgress)
   const showLoadingModal = !hasCachedData && isStillFetching
-  const isBackgroundRefreshing = hasCachedData && (!sessionsDone || !convDone)
+  const isBackgroundRefreshing =
+    hasCachedData && (!sessionsDone || (isGroupedLayout ? summariesFetching : !convDone))
   // Single-server has no server-name rows to host the cached-data chip, so the
   // notice overlays the list: centered banner in Hub/Tree, caption under the
   // header fallback spinner in Classic. Multi-server is covered by the chips.
@@ -418,7 +438,8 @@ export default function ProjectsHub() {
       ) : sessionsLayout === 'tree' ? (
         <TreeSessionsList
           sessions={visibleSessions}
-          conversations={conversations}
+          summaries={summaries}
+          unsupportedServerIds={unsupportedServerIds}
           refreshing={manualRefreshing}
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
@@ -427,7 +448,8 @@ export default function ProjectsHub() {
       ) : sessionsLayout === 'hub' ? (
         <ProjectHubList
           sessions={visibleSessions}
-          conversations={conversations}
+          summaries={summaries}
+          unsupportedServerIds={unsupportedServerIds}
           sortBy={sortBy}
           sortOrder={sortOrder}
           refreshing={manualRefreshing}

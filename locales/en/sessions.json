@@ -20,7 +20,9 @@
     "serverOffline": "Server unreachable",
     "serverOfflineSubtitle": "Showing other servers. Retry when this host is back.",
     "serverWarming": "Server is warming up",
-    "serverWarmingSubtitle": "History will appear when indexing finishes."
+    "serverWarmingSubtitle": "History will appear when indexing finishes.",
+    "serverNeedsUpgrade": "Server needs an update",
+    "serverNeedsUpgradeSubtitle": "{{server}} runs a version that can't list projects. Update the Threadbase server to browse its history here."
   },
   "card": {
     "copyId": "Copy Session ID",

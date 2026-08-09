@@ -7,6 +7,9 @@ export function makeStyles(bottomInset: number = 0) {
       paddingTop: 0,
       paddingBottom: spacing.xl + bottomInset,
     },
+    unsupportedServer: {
+      paddingVertical: spacing.lg,
+    },
   })
 }
 

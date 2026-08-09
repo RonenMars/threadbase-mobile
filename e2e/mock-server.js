@@ -84,7 +84,45 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'GET' && p === '/api/conversations') {
-    return json(res, 200, readFixture('conversations.json'))
+    const project = url.searchParams.get('project')
+    const all = JSON.parse(readFixture('conversations.json'))
+    // The grouped views fetch one project at a time (?project=<path>), so the
+    // mock has to filter like the real streamer or every group would show the
+    // whole fixture. Exact path match, newest first — same contract.
+    if (project) {
+      const rows = all
+        .filter((c) => c.projectPath === project)
+        .sort((a, b) => Date.parse(b.lastActivity) - Date.parse(a.lastActivity))
+      return json(res, 200, {
+        conversations: rows,
+        hasMore: false,
+        offset: 0,
+        total: rows.length,
+      })
+    }
+    return json(res, 200, all)
+  }
+
+  // Project summaries — the group list the tree/hub build their structure from.
+  // Aggregated from the same fixture the conversation list serves, so a group's
+  // count always matches the page behind it (the real server's guarantee).
+  if (method === 'GET' && p === '/api/projects/summary') {
+    const byPath = new Map()
+    for (const c of JSON.parse(readFixture('conversations.json'))) {
+      const entry = byPath.get(c.projectPath) ?? { count: 0, lastActivity: '' }
+      entry.count += 1
+      if (c.lastActivity > entry.lastActivity) entry.lastActivity = c.lastActivity
+      byPath.set(c.projectPath, entry)
+    }
+    const projects = [...byPath.entries()]
+      .map(([projectPath, { count, lastActivity }]) => ({
+        path: projectPath,
+        name: projectPath.split('/').filter(Boolean).pop() ?? projectPath,
+        conversationCount: count,
+        lastActivity,
+      }))
+      .sort((a, b) => b.lastActivity.localeCompare(a.lastActivity) || a.path.localeCompare(b.path))
+    return json(res, 200, { projects, total: projects.length, offset: 0, hasMore: false })
   }
 
   // Search: metadata-only match list, mirroring the real streamer's
@@ -231,6 +269,9 @@ async function handleRequest(req, res) {
       machineName: 'mock-machine',
       platform: 'linux',
       activeSessions: 1,
+      // Without this the grouped views treat the mock as a pre-summary
+      // streamer and render the upgrade prompt instead of a tree.
+      projectSummary: true,
     })
   }
 

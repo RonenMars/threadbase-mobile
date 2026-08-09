@@ -12,6 +12,7 @@ import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -26,7 +27,7 @@ import { conversationHref } from '@/lib/conversationHref'
 
 // Memoized: the Hub root re-renders on every fetch-progress tick; with stable
 // props (query data is a stable ref mid-drain) this skips re-running the whole tree.
-export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen, isBackgroundRefreshing }: TreeSessionsListProps) {
+export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions, summaries, refreshing, onRefresh, searchOpen, isBackgroundRefreshing, unsupportedServerIds = [] }: TreeSessionsListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(insets.bottom)
@@ -43,16 +44,15 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
     if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
   }, [searchOpen])
 
+  // Conversations are no longer held in memory, so search goes to the server's
+  // own /api/search instead of filtering a local array. Sessions stay eager and
+  // are still filtered here.
+  const { data: convSearchData } = useConversationSearch(debouncedQuery)
+
   const searchSections = useMemo(() => {
     if (!debouncedQuery) return []
     const q = debouncedQuery.toLowerCase()
-    const matchedConversations = conversations.filter(
-      (c) =>
-        c.title?.toLowerCase().includes(q) ||
-        c.preview?.toLowerCase().includes(q) ||
-        c.firstMessage?.text?.toLowerCase().includes(q) ||
-        c.lastMessage?.text?.toLowerCase().includes(q),
-    )
+    const matchedConversations = convSearchData?.conversations ?? []
     const matchedSessions = sessions.filter(
       (s) => s.projectName?.toLowerCase().includes(q) || s.lastOutput?.toLowerCase().includes(q),
     )
@@ -72,7 +72,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
       })
     }
     return result
-  }, [debouncedQuery, conversations, sessions])
+  }, [debouncedQuery, convSearchData, sessions])
 
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const servers = useServersStore((s) => s.servers)
@@ -157,17 +157,17 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
         serverLabels[s.serverId] = s.serverLabel ?? s.serverId
       }
     }
-    for (const c of conversations) {
-      if (!serverLabels[c.serverId]) {
-        serverIds.push(c.serverId)
-        serverLabels[c.serverId] = c.serverLabel ?? c.serverId
+    for (const summary of summaries) {
+      if (!serverLabels[summary.serverId]) {
+        serverIds.push(summary.serverId)
+        serverLabels[summary.serverId] = summary.serverLabel ?? summary.serverId
       }
     }
 
     return serverIds.map((serverId) => {
       const sSessions = sessions.filter((s) => s.serverId === serverId)
-      const sConversations = conversations.filter((c) => c.serverId === serverId)
-      const raw = buildTree(sSessions, sConversations)
+      const sSummaries = summaries.filter((p) => p.serverId === serverId)
+      const raw = buildTree(sSessions, sSummaries)
       const tree = compactTree(raw)
 
       const singleRootPath = tree.children.size === 1
@@ -179,7 +179,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
 
       return { serverId, serverLabel: serverLabels[serverId], tree, singleRootPath, singleRootNode }
     })
-  }, [sessions, conversations])
+  }, [sessions, summaries])
 
   const effectiveExpandedPaths = useMemo(() => {
     const merged = new Set(expandedPaths)
@@ -227,8 +227,18 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
         }
       }
     }
+    // A server too old for /api/projects/summary has no tree at all. Show it as
+    // its own row rather than letting it vanish — an absent server reads as
+    // "no history", which is exactly the wrong conclusion.
+    for (const serverId of unsupportedServerIds) {
+      items.push({
+        kind: 'server-unsupported',
+        serverId,
+        serverLabel: servers[serverId]?.label ?? serverId,
+      })
+    }
     return items
-  }, [serverTrees, effectiveExpandedPaths, collapsedServers])
+  }, [serverTrees, effectiveExpandedPaths, collapsedServers, unsupportedServerIds, servers])
 
   const handleToggle = useCallback((path: string) => {
     if (serverTrees.some((st) => st.singleRootPath === path)) return
@@ -330,12 +340,22 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
       ) : (
         <FlatList
           data={flatItems}
-          keyExtractor={(item) =>
-            item.kind === 'server-root'
-              ? `root-${item.serverId}`
-              : `row-${item.serverId}-${item.node.fullPath}`
-          }
+          keyExtractor={(item) => {
+            if (item.kind === 'server-root') return `root-${item.serverId}`
+            if (item.kind === 'server-unsupported') return `unsupported-${item.serverId}`
+            return `row-${item.serverId}-${item.node.fullPath}`
+          }}
           renderItem={({ item }) => {
+            if (item.kind === 'server-unsupported') {
+              return (
+                <View style={styles.unsupportedServer} testID={`server-unsupported-${item.serverId}`}>
+                  <EmptyState
+                    title={t('list.serverNeedsUpgrade')}
+                    subtitle={t('list.serverNeedsUpgradeSubtitle', { server: item.serverLabel })}
+                  />
+                </View>
+              )
+            }
             if (item.kind === 'server-root') {
               return (
                 <ServerRootRow
