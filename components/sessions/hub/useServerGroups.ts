@@ -1,12 +1,6 @@
 import { useMemo } from 'react'
 import type { ProjectGroup } from './useProjectGroups'
 
-function toMs(isoString: string | undefined): number {
-  if (!isoString) return 0
-  const ms = Date.parse(isoString)
-  return isNaN(ms) ? 0 : ms
-}
-
 export interface ServerGroup {
   serverId: string
   serverLabel: string
@@ -34,33 +28,13 @@ export function useServerGroups(
       })
     }
 
+    // Groups are already built per (serverId, projectPath), so this is a
+    // bucketing pass — no per-server re-derivation of the group's own totals.
     for (const group of projectGroups) {
-      const serverIds = new Set([
-        ...group.sessions.map((s) => s.serverId),
-        ...group.conversations.map((c) => c.serverId),
-      ])
-      for (const serverId of serverIds) {
-        const serverGroup = map.get(serverId)
-        if (!serverGroup) continue
-        const filteredGroup: ProjectGroup = {
-          ...group,
-          sessions: group.sessions.filter((s) => s.serverId === serverId),
-          conversations: group.conversations.filter((c) => c.serverId === serverId),
-        }
-        filteredGroup.latestActivityMs = Math.max(
-          ...filteredGroup.sessions.map((s) =>
-            s.completedAt ? toMs(s.completedAt) : toMs(s.startedAt) + (s.elapsedMs ?? 0),
-          ),
-          ...filteredGroup.conversations.map((c) => toMs(c.lastActivity)),
-          0,
-        )
-        filteredGroup.earliestStartMs = filteredGroup.sessions.length > 0
-          ? Math.min(...filteredGroup.sessions.map((s) => toMs(s.startedAt)).filter((ms) => ms > 0))
-          : 0
-        serverGroup.groups.push(filteredGroup)
-        serverGroup.totalCount +=
-          filteredGroup.sessions.length + filteredGroup.conversations.length
-      }
+      const serverGroup = map.get(group.serverId)
+      if (!serverGroup) continue
+      serverGroup.groups.push(group)
+      serverGroup.totalCount += group.sessions.length + group.conversationCount
     }
 
     return activeServerIds

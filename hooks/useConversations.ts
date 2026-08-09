@@ -788,7 +788,11 @@ interface EagerConversationsProgress {
   total: number
 }
 
-export function useEagerConversations(filter?: ConversationFilter, refreshEpoch = 0) {
+export function useEagerConversations(
+  filter?: ConversationFilter,
+  refreshEpoch = 0,
+  opts?: { enabled?: boolean },
+) {
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
 
@@ -903,14 +907,18 @@ export function useEagerConversations(filter?: ConversationFilter, refreshEpoch 
       merged.sort(sortByLastMessageDesc)
       return dedupeByServerAndId(merged)
     },
-    enabled: displayedServerIds.length > 0,
+    enabled: (opts?.enabled ?? true) && displayedServerIds.length > 0,
     staleTime: 0,
     gcTime: QUERY_GC_TIME,
   })
 
   const conversations = query.data ?? []
+  // A disabled hook never fetches, so it is "done" by definition — otherwise
+  // every consumer of isDone would sit in a permanent syncing state.
   const isDone =
-    displayedServerIds.length === 0 || (query.isFetched && !query.isFetching)
+    opts?.enabled === false ||
+    displayedServerIds.length === 0 ||
+    (query.isFetched && !query.isFetching)
   const isCounting = !isDone && progress.total === 0
 
   return {

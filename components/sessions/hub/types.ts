@@ -1,4 +1,5 @@
 import type { MultiSession, MultiConversation } from '@/types/api'
+import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { SortBy, SortOrder } from '@/types/ui'
 
 export type { ProjectGroup } from './useProjectGroups'
@@ -11,13 +12,16 @@ export type SearchSection = {
 
 export interface ProjectHubListProps {
   sessions: MultiSession[]
-  conversations: MultiConversation[]
+  summaries: MultiProjectSummary[]
   sortBy: SortBy
   sortOrder: SortOrder
   refreshing: boolean
   onRefresh: () => void
   searchOpen: boolean
   isBackgroundRefreshing?: boolean
+  /** Servers whose streamer predates /api/projects/summary — their projects
+   *  can't be listed, so the hub shows an upgrade prompt for them. */
+  unsupportedServerIds?: string[]
 }
 
 export interface ProjectHubCardProps {

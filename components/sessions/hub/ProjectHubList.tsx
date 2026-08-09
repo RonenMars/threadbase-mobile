@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useProjectGroups } from './useProjectGroups'
 import { useServerGroups } from './useServerGroups'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
+import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
@@ -34,13 +35,14 @@ import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 // props (query data is a stable ref mid-drain) this skips re-running the list.
 export const ProjectHubList = React.memo(function ProjectHubList({
   sessions,
-  conversations,
+  summaries,
   sortBy,
   sortOrder,
   refreshing,
   onRefresh,
   searchOpen,
   isBackgroundRefreshing,
+  unsupportedServerIds = [],
 }: ProjectHubListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -56,7 +58,11 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
-  const groups = useProjectGroups(sessions, conversations, sortBy, sortOrder)
+  const groups = useProjectGroups(sessions, summaries, sortBy, sortOrder)
+
+  // Conversations live behind per-group queries now, so there is no local array
+  // to filter — search goes to the server's /api/search, as classic does.
+  const { data: convSearchData } = useConversationSearch(debouncedQuery)
 
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -68,8 +74,12 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const serverGroups = useServerGroups(groups, activeServerIds, serverLabels)
   const showServerHeaders = serverGroups.length > 0
   const collidingPaths = useMemo(
-    () => collidingProjectPaths([...sessions, ...conversations]),
-    [sessions, conversations],
+    () =>
+      collidingProjectPaths([
+        ...sessions,
+        ...summaries.map((p) => ({ projectPath: p.path, serverId: p.serverId })),
+      ]),
+    [sessions, summaries],
   )
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
@@ -114,12 +124,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     if (!debouncedQuery) return []
     const q = debouncedQuery.toLowerCase()
 
-    const matchedConversations = conversations.filter((c) =>
-      c.title?.toLowerCase().includes(q) ||
-      c.preview?.toLowerCase().includes(q) ||
-      c.firstMessage?.text?.toLowerCase().includes(q) ||
-      c.lastMessage?.text?.toLowerCase().includes(q),
-    )
+    const matchedConversations = convSearchData?.conversations ?? []
 
     const matchedSessions = sessions.filter((s) =>
       s.projectName?.toLowerCase().includes(q) ||
@@ -142,7 +147,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       })
     }
     return result
-  }, [debouncedQuery, conversations, sessions])
+  }, [debouncedQuery, convSearchData, sessions])
 
   const activeServerCount = activeServerIds.length
 
@@ -225,14 +230,22 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
     | { kind: 'group'; group: ProjectGroup }
     | { kind: 'serverEmpty'; serverId: string }
+    | { kind: 'serverUnsupported'; serverId: string; serverLabel: string }
 
   const hubFlatData = useMemo((): HubFlatItem[] => {
     // Collapse only applies with more than one visible server; with a single
     // one a stale collapsed flag would hide its groups with no way to expand
     // (the header isn't collapsible below).
     const collapseApplies = serverGroups.length > 1
+    // A server too old for /api/projects/summary gets its own row — omitting it
+    // would read as "this server has no projects", which is not what happened.
+    const unsupportedRows: HubFlatItem[] = unsupportedServerIds.map((serverId) => ({
+      kind: 'serverUnsupported' as const,
+      serverId,
+      serverLabel: servers[serverId]?.label ?? serverId,
+    }))
     return showServerHeaders
-      ? serverGroups.flatMap((sg) => {
+      ? [...serverGroups.flatMap((sg) => {
           const expanded = !collapseApplies || !collapsedServers.includes(sg.serverId)
           const body: HubFlatItem[] =
             sg.totalCount > 0
@@ -242,9 +255,9 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
             ...(expanded ? body : []),
           ]
-        })
-      : groups.map((g) => ({ kind: 'group' as const, group: g }))
-  }, [showServerHeaders, serverGroups, groups, collapsedServers])
+        }), ...unsupportedRows]
+      : [...groups.map((g) => ({ kind: 'group' as const, group: g })), ...unsupportedRows]
+  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers])
 
   return (
     <View style={styles.container}>
@@ -298,9 +311,20 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           keyExtractor={(item) => {
             if (item.kind === 'header') return `header-${item.serverId}`
             if (item.kind === 'serverEmpty') return `empty-${item.serverId}`
-            return `project:${item.group.projectId}`
+            if (item.kind === 'serverUnsupported') return `unsupported-${item.serverId}`
+            return `project:${item.group.serverId}::${item.group.projectId}`
           }}
           renderItem={({ item }) => {
+            if (item.kind === 'serverUnsupported') {
+              return (
+                <View style={styles.serverEmpty} testID={`server-unsupported-${item.serverId}`}>
+                  <EmptyState
+                    title={t('list.serverNeedsUpgrade')}
+                    subtitle={t('list.serverNeedsUpgradeSubtitle', { server: item.serverLabel })}
+                  />
+                </View>
+              )
+            }
             if (item.kind === 'header') {
               return (
                 <ServerHeaderRow

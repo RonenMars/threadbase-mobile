@@ -20,7 +20,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
   const theme = useTheme()
   const styles = makeStyles(theme)
   const hasChildren = node.children.size > 0
-  const hasItems = node.sessions.length + node.conversations.length > 0
+  const hasItems = node.sessions.length + node.conversationCount > 0
   const isLeaf = !hasChildren
   const isMixed = hasChildren && hasItems
   const accentColor = activeSessionColor(node)

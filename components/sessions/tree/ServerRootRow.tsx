@@ -20,7 +20,7 @@ export function ServerRootRow({ node, serverLabel, collapsible, isExpanded, onTo
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation('sessions')
-  const hasDirectItems = (node.sessions.length + node.conversations.length) > 0
+  const hasDirectItems = (node.sessions.length + node.conversationCount) > 0
 
   const handlePress = () => {
     if (collapsible) {

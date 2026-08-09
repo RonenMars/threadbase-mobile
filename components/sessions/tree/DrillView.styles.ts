@@ -42,5 +42,8 @@ export function makeStyles(theme: Theme) {
   drillList: {
     paddingBottom: 80,
   },
+  footerSpinner: {
+    paddingVertical: spacing.md,
+  },
   })
 }

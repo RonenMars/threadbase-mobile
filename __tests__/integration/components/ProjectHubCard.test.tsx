@@ -16,6 +16,15 @@ jest.mock('@/components/sessions/hub/SessionRow', () => {
   }
 })
 
+// The card fetches its own conversations now (expand-to-load), so the query
+// hook stands in for the rows this test used to pass in via the group.
+jest.mock('@/hooks/useProjectConversations', () => ({
+  useProjectConversations: () => ({
+    conversations: [conversation],
+    isLoading: false,
+  }),
+}))
+
 jest.mock('@/components/sessions/hub/ConvRow', () => {
   const React = require('react')
   const { Text } = require('react-native')
@@ -55,8 +64,9 @@ const group: ProjectGroup = {
   projectId: 'project-1',
   projectPath: '/tmp/project',
   projectName: 'project',
+  serverId: 'srv-1',
   sessions: [session],
-  conversations: [conversation],
+  conversationCount: 1,
   latestActivityMs: Date.parse(conversation.lastActivity),
   earliestStartMs: Date.parse(session.startedAt),
 }

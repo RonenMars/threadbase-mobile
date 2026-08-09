@@ -300,6 +300,9 @@ export interface ServerInfo {
   activeSessions: number
   /** Additive: true when the server serves /api/config/claude-flags. Absent on older servers. */
   claudeFlags?: boolean
+  /** Additive: true when the server serves /api/projects/summary. Absent on older
+   *  servers, which the grouped views cannot render — see useProjectSummaries. */
+  projectSummary?: boolean
 }
 
 // ── Per-server Claude CLI flags ──────────────────────────────────────────────
