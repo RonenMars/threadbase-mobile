@@ -41,6 +41,27 @@ The target end state is `ProjectsHub` re-rendering approximately once per real, 
 
 Each step is independently shippable and independently measurable.
 
+## Why step 2 needed a new server endpoint
+
+Recorded after the fact, because the question "why does `/api/projects/summary` exist?" is not answerable from either codebase alone, and the original request document did not survive.
+
+Step 2 reads as "paginate the tree and hub like the flat list", but that is not available to them. The grouped views are a **path-prefix tree** built from every item's `projectPath`, and all of the following are derived from the complete set:
+
+- the node shape — which directories exist, and their nesting;
+- each node's `totalCount`, aggregated up the tree from its descendants;
+- the sibling sort order, by `totalCount` descending;
+- single-child path compaction (`/Users/me` + `/dev` collapse into one row);
+- the heuristic that auto-expands a top-level directory holding ≥80% of items.
+
+So a lazily-appended flat page cannot be placed: it scatters items into a half-built tree. Two cheaper options were considered and rejected on evidence:
+
+- **Seed the structure from the eager sessions alone.** A server with 600+ conversations typically has single-digit sessions, so the tree would render a handful of directories and then visibly restructure as groups loaded. That is a wrong tree, not a skeleton.
+- **Build it from the first page of conversations.** Any project without a conversation in the first 50 simply would not appear.
+
+That leaves one requirement: `(projectPath, count, lastActivity)` for **every** project on a server, in one cheap call. Nothing served that. `/api/projects` was a filesystem scan of `~/.claude/projects` — no counts, no activity, Claude-only, and its `replace(/-/g, "/")` decode mangled any path with a hyphen in a segment. `/api/projects/popular` had the right source and real counts but was top-N with no last-activity and no pagination. The `projects` SQLite table had a maintained `latest_message_at` but was never exposed, and its `message_count` was written as `0` and never updated.
+
+Hence the request that became streamer PR #460. The hard constraint attached to it was **consistency**: the summary must aggregate the same `conversation_meta` rows that `/api/conversations?project=` pages, or a group claims one count and renders another. The streamer's own contract note in `docs/compatibility/tb-mobile.md` states that guarantee from its side.
+
 ## Consequences
 
 - Positive: removes the re-render loop and the redundant network at the source; simpler data flow (React Query owns server state, not hand-rolled counters); the interim guards (#563 throttle, #565 debounce) become unnecessary and can be deleted as their surfaces migrate.
