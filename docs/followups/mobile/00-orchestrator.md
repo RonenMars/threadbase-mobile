@@ -4,7 +4,12 @@ Seven tasks descending from [ADR 0001](../../adr/0001-hub-data-layer-lazy-pagina
 
 ## Where the work happens
 
-**Everything bases on the integration branch, in a worktree.**
+**Every task works in a worktree.** The base depends on the task:
+
+| tasks | base |
+|---|---|
+| 01, 02, 03, 04 — the ADR chain | `integration/open-prs-291-544-…-569` (they build on #576) |
+| 05+06, 07 — e2e and the pair route | `main` — independent of the ADR work, and `main` already has the onboarding repair (#578) |
 
 ```
 integration/open-prs-291-544-551-553-554-556-557-558-559-560-563-566-567-568-569
@@ -50,7 +55,7 @@ wave 3 (alone, device exclusive, nothing else building):
 
 Task 01 needs **#576 merged into the integration branch** — it builds directly on the summary-driven grouped views. If #576 is still open, either wait or base 01 on `feat/lazy-project-summary-groups`.
 
-Tasks 05+06 want **#575 merged** first, or they inherit a suite where every flow dies during onboarding.
+Tasks 05+06 base on `main` and are **unblocked**: the onboarding repair landed on `main` as PR #578 (`main` now has zero `hideKeyboard` calls in `e2e/setup.yaml`). #575 is the same fix aimed at the integration branch, which still carries the defect — it gates Maestro runs on *that* base, not on `main`.
 
 04 is deliberately last: measuring the render loop before 02 and 03 remove its final two sources produces a number you will discard.
 

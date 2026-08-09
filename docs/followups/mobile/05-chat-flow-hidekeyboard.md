@@ -3,7 +3,7 @@
 **Repo:** tb-mobile · **Base:** `main` (independent of the ADR work)
 **Owns:** `e2e/05_chat_flow.yaml` · shares the simulator with 06 — run them as one stream
 
-The full brief lives at `docs/adr/0001-followup-05-chat-flow-hidekeyboard.md`, committed on the `fix/e2e-onboarding-setup-flow` branch (PR #575) — so it resolves once that merges, not before. Read it rather than this file.
+The full brief lives at `docs/adr/0001-followup-05-chat-flow-hidekeyboard.md`, already on `main` via PR #578. Read it rather than this file.
 
 Three things it records that you would otherwise spend an hour rediscovering:
 

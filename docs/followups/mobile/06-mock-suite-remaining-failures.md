@@ -1,11 +1,11 @@
 # 06 — Three pre-existing mock-suite failures
 
-**Repo:** tb-mobile · **Base:** `main` (after PR #575) · **Owns:** `e2e/*.yaml`, the simulator
+**Repo:** tb-mobile · **Base:** `main` (the onboarding repair is already there via PR #578) · **Owns:** `e2e/*.yaml`, the simulator
 **Pair with:** 05 — same domain, same build, same device
 
 ## State of play
 
-With `e2e/setup.yaml` repaired (PR #575) the mock suite runs **11/15**, up from 1/15. Three failures remain, plus `05_chat_flow` (task 05).
+With `e2e/setup.yaml` repaired (PR #578 on `main`; PR #575 is the same fix against the integration branch) the mock suite runs **11/15**, up from 1/15. Three failures remain, plus `05_chat_flow` (task 05).
 
 All are **confirmed pre-existing**: each reproduces in isolation, and each fails on the identical assertion against a Release build of the branch base with the feature code absent. They were invisible until now because every flow died during onboarding.
 

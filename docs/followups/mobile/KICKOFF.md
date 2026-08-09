@@ -5,14 +5,14 @@
 Do this:
 
 1. Read `docs/followups/mobile/00-orchestrator.md` in full — dependency graph, worktree setup, and shared rules including five traps that have already produced wrong-but-plausible results on this work.
-2. **Work in a worktree off the integration branch**, one per task: `origin/integration/open-prs-291-544-551-553-554-556-557-558-559-560-563-566-567-568-569`. Confirm that is still the active integration branch first. Worktrees go *outside* the repo root, and `node_modules` must be a real copy (`cp -Rc`), never a symlink — a symlink makes Metro bundle the wrong tree silently.
+2. **Work in a worktree, one per task.** Tasks 01–04 base on `origin/integration/open-prs-291-544-551-553-554-556-557-558-559-560-563-566-567-568-569` (they build on #576); tasks 05+06 and 07 base on `main`, which is independent of the ADR chain. Confirm the integration branch is still the active one first. Worktrees go *outside* the repo root, and `node_modules` must be a real copy (`cp -Rc`), never a symlink — a symlink makes Metro bundle the wrong tree silently.
 3. Execute the tasks in the wave order below. Read a task's brief in `docs/followups/mobile/` before starting it; the briefs record findings that cannot be recovered by reading the code.
 4. Run a wave's tasks in parallel only if each gets its own worktree. Otherwise run them sequentially in the same order — slower, never wrong.
 5. Branch and PR per task per `CLAUDE.md`; commit approval before committing.
 6. Report each task's verification command and its **actual output**, not a summary.
 
 ```
-wave 1:  07  ‖  05+06  ‖  01     (01 needs #576 merged; 05+06 want #575 merged)
+wave 1:  07  ‖  05+06  ‖  01     (01 needs #576 merged; 05+06 are unblocked on main)
 wave 2:  02  ‖  03               (both need 01 merged)
 wave 3:  04                      (alone — device exclusive, nothing else building)
 ```
@@ -61,7 +61,7 @@ Each block is the message for that task — hand it to a subagent, a separate se
 
 > Read `docs/followups/mobile/06-mock-suite-remaining-failures.md` and `docs/followups/mobile/05-chat-flow-hidekeyboard.md`, then fix all four remaining mock-suite failures.
 >
-> Wants PR #575 merged first, or you inherit a suite where every flow dies during onboarding.
+> Base on `main`. The onboarding repair reached `main` via PR #578, so the suite already gets past onboarding there — #575 is the same fix against the integration branch and is not a prerequisite for you.
 >
 > All four are confirmed pre-existing — each reproduced in isolation and against a build of the branch base. Fix the flows, not the app; if you find a genuine product bug, stop and report it rather than folding an app change into a test PR.
 >
