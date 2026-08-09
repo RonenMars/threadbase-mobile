@@ -403,4 +403,189 @@ describe('conversation detail — resume collision', () => {
 
     alertSpy.mockRestore()
   })
+
+  // --- Codex active-writer collision -------------------------------------
+  //
+  // Codex enforces its own single-writer lock, so `force: true` cannot bypass
+  // it and killing the owner's PID may be a shared VS Code / desktop
+  // app-server. The server therefore sends explicit capabilities and the screen
+  // must honour them literally rather than inferring from likelyOwner.
+  function codexBusy(overrides: Record<string, unknown> = {}) {
+    return new ConversationBusyError('This Codex session is already open in another client', {
+      detectedBy: ['file_handle'],
+      likelyOwner: 'external',
+      reasonCode: 'CODEX_SESSION_ACTIVE',
+      provider: 'codex-cli',
+      canForce: false,
+      canTakeOver: false,
+      canFork: true,
+      ...overrides,
+    })
+  }
+
+  it('a Codex active-writer 409 stays put and offers only Cancel + Fork', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValue(codexBusy())
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    // Never lands on /session/:id?starting=1 for a session that cannot start.
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockPost).toHaveBeenCalledTimes(1)
+
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Fork into Threadbase'])
+    // canForce:false and canTakeOver:false win over likelyOwner 'external'.
+    expect(buttons.some((b) => b.text === 'Resume anyway')).toBe(false)
+    expect(buttons.some((b) => b.style === 'destructive')).toBe(false)
+
+    alertSpy.mockRestore()
+  })
+
+  it('names the file_handle signal in the Codex collision copy', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValue(codexBusy())
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    expect(alertSpy.mock.calls[0][0]).toBe('This Codex session is open elsewhere')
+    expect(alertSpy.mock.calls[0][1]).toContain('another Codex client currently has it open')
+
+    alertSpy.mockRestore()
+  })
+
+  it('an unknown future signal still renders readable fallback copy', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValue(codexBusy({ detectedBy: ['lock_file_v2'] }))
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    expect(alertSpy.mock.calls[0][1]).toContain('another program may still be using it')
+
+    alertSpy.mockRestore()
+  })
+
+  it('Fork confirms the history divergence, then forks and navigates', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValueOnce(codexBusy()).mockResolvedValueOnce({
+      id: 'sess-fork',
+      conversationId: 'conv-forked-rollout',
+      projectId: 'proj-1',
+      projectPath: '/tmp/p',
+      projectName: 'Resume Test',
+      startedAt: '2026-06-10T11:00:00Z',
+      status: 'running',
+      ptyAttached: true,
+    })
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+
+    const fork = ((alertSpy.mock.calls[0][2] ?? []) as AlertButton[]).find(
+      (b) => b.text === 'Fork into Threadbase',
+    )
+    await act(async () => {
+      fork?.onPress?.()
+    })
+
+    // Confirmation first — a fork is a divergence, not a takeover.
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+    expect(alertSpy.mock.calls[1][1]).toContain('separate continuation')
+    expect(mockPost).toHaveBeenCalledTimes(1)
+
+    const confirmFork = ((alertSpy.mock.calls[1][2] ?? []) as AlertButton[]).find(
+      (b) => b.text === 'Fork into Threadbase',
+    )
+    await act(async () => {
+      confirmFork?.onPress?.()
+    })
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2))
+    expect(mockPost.mock.calls[1][0]).toBe(`/api/sessions/${CONV_ID}/fork`)
+    // Non-idempotent: a transport-level retry could spawn a second fork.
+    expect(mockPost.mock.calls[1][2]).toMatchObject({ retry: false })
+    // Never silently degrades to resume/adopt.
+    expect(mockPost.mock.calls.some(([, body]) => (body as { force?: boolean })?.force)).toBe(false)
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+    const target = mockReplace.mock.calls[0][0] as string
+    expect(target).toContain('/session/sess-fork')
+    expect(target).toContain('starting=1')
+    // Both identities survive: what we forked from, and the rollout we got.
+    expect(target).toContain('forkedFromConversationId=' + CONV_ID)
+    expect(target).toContain('conversationId=conv-forked-rollout')
+    expect(markNavigatedToSession).toHaveBeenCalledWith('sess-fork')
+    expect(testQc.getQueryData(['session', 'srv1', 'sess-fork'])).toMatchObject({ id: 'sess-fork' })
+
+    alertSpy.mockRestore()
+  })
+
+  it('a failed fork reports the failure without re-issuing the request', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValueOnce(codexBusy()).mockRejectedValueOnce(new Error('timed out'))
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+
+    const fork = ((alertSpy.mock.calls[0][2] ?? []) as AlertButton[]).find(
+      (b) => b.text === 'Fork into Threadbase',
+    )
+    await act(async () => {
+      fork?.onPress?.()
+    })
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+    const confirmFork = ((alertSpy.mock.calls[1][2] ?? []) as AlertButton[]).find(
+      (b) => b.text === 'Fork into Threadbase',
+    )
+    await act(async () => {
+      confirmFork?.onPress?.()
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(3))
+    // Exactly one fork POST, and no Retry affordance that could make a second
+    // fork out of a request that may have succeeded server-side.
+    expect(mockPost.mock.calls.filter(([path]) => String(path).endsWith('/fork'))).toHaveLength(1)
+    const buttons = (alertSpy.mock.calls[2][2] ?? []) as AlertButton[]
+    expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
+    expect(mockReplace).not.toHaveBeenCalled()
+
+    alertSpy.mockRestore()
+  })
+
+  it('a legacy CONVERSATION_BUSY body keeps the Claude flow and offers no Fork', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValue(
+      new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
+    )
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    expect(alertSpy.mock.calls[0][0]).toBe('Resume this conversation?')
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Take over', 'Resume anyway'])
+
+    alertSpy.mockRestore()
+  })
 })

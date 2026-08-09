@@ -128,6 +128,37 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
+  // Forks the conversation into a separate managed session (`codex fork`),
+  // leaving the process that already owns the original rollout untouched. Same
+  // non-idempotent spawn as resume — retry:false, because a silent retry of a
+  // timed-out fork would create a second fork rather than reusing the first.
+  // `conversationId` is the NEW rollout the server bound; the source id stays
+  // `sessionId`, so callers can attribute both.
+  const forkSession = useMutation({
+    mutationFn: async (): Promise<ResumeResult> => {
+      const resp = await api.post<ResumeConversationResponse>(
+        `/api/sessions/${sessionId}/fork`,
+        undefined,
+        { timeoutMs: START_SESSION_TIMEOUT_MS, retry: false },
+      )
+      return {
+        sessionId: resp.sessionId ?? resp.id,
+        projectId: resp.projectId,
+        projectPath: resp.projectPath,
+        conversationId: resp.conversationId ?? resp.id,
+        sessionSnapshot: normalizeResumeResponse(resp),
+      }
+    },
+    onSuccess: () => {
+      // Refresh the source conversation now; the forked rollout's own detail is
+      // invalidated by the session screen once the placeholder binds to it.
+      qc.invalidateQueries({ queryKey: ['conversation'] })
+      qc.invalidateQueries({ queryKey: ['conversations'] })
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      qc.invalidateQueries({ queryKey: ['sessions-eager'] })
+    },
+  })
+
   // Hard-kills the PTY via /stop. Status is driven idle by the WS session_update
   // the server broadcasts after the stream closes, so we only refresh the lists.
   const stopSessionMutation = useMutation({
@@ -139,5 +170,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession, resume, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

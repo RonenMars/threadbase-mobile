@@ -4,6 +4,7 @@ import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
 import { getServerWarmupState } from './server-warmup'
 import { mark as traceMark, isTracing } from '@/lib/openTrace'
+import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
 import type {
   CacheAlert,
   CacheAlertResolveAction,
@@ -44,25 +45,52 @@ export class SessionNotFoundError extends Error {
   }
 }
 
-/** Which signals the server used to decide a conversation is busy. */
-export type ConversationBusyDetectedBy = 'jsonl_mtime' | 'process_argv' | 'process_cwd'
+/**
+ * Which signals the server used to decide a conversation is busy. `file_handle`
+ * is the Codex exact-rollout probe: another process holds the session's JSONL
+ * open right now.
+ */
+export type ConversationBusyDetectedBy =
+  | 'jsonl_mtime'
+  | 'process_argv'
+  | 'process_cwd'
+  | 'file_handle'
+
+/** Provider-specific cause of the collision, when the server names one. */
+export type ConversationBusyReasonCode = 'CODEX_SESSION_ACTIVE'
 
 /**
  * Soft 409 from `POST /api/sessions/resume`: the conversation looks like it may
  * still be open elsewhere (e.g. an external CLI writing its JSONL). Carries the
- * structured payload so callers can name what was detected and offer a
- * force-override retry instead of failing with a generic error.
+ * structured payload so callers can name what was detected and offer only the
+ * recovery actions the server actually allows.
+ *
+ * `canForce` / `canTakeOver` / `canFork` are authoritative when the server sends
+ * them. Older streamers omit them, so the defaults reproduce the Claude Code
+ * flow that shipped before they existed: force allowed, take-over only when a
+ * real process was matched, no fork. A malformed (non-boolean) field falls back
+ * to the same default rather than being read as permission.
  */
 export class ConversationBusyError extends Error {
   detectedBy: ConversationBusyDetectedBy[]
   lastActivityMs: number | null
   likelyOwner: 'external' | 'unknown'
+  reasonCode: ConversationBusyReasonCode | null
+  provider: ProviderName | null
+  canForce: boolean
+  canTakeOver: boolean
+  canFork: boolean
   constructor(
     message: string,
     payload: {
       detectedBy?: unknown
       lastActivityMs?: unknown
       likelyOwner?: unknown
+      reasonCode?: unknown
+      provider?: unknown
+      canForce?: unknown
+      canTakeOver?: unknown
+      canFork?: unknown
     } = {},
   ) {
     super(message)
@@ -72,6 +100,17 @@ export class ConversationBusyError extends Error {
       : []
     this.lastActivityMs = typeof payload.lastActivityMs === 'number' ? payload.lastActivityMs : null
     this.likelyOwner = payload.likelyOwner === 'external' ? 'external' : 'unknown'
+    this.reasonCode = payload.reasonCode === 'CODEX_SESSION_ACTIVE' ? 'CODEX_SESSION_ACTIVE' : null
+    this.provider =
+      payload.provider === CODEX_CLI_PROVIDER || payload.provider === CLAUDE_CODE_PROVIDER
+        ? payload.provider
+        : null
+    this.canForce = typeof payload.canForce === 'boolean' ? payload.canForce : true
+    this.canTakeOver =
+      typeof payload.canTakeOver === 'boolean'
+        ? payload.canTakeOver
+        : this.likelyOwner === 'external'
+    this.canFork = typeof payload.canFork === 'boolean' ? payload.canFork : false
   }
 }
 

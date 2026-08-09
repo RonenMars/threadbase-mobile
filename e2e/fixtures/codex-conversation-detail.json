@@ -6,7 +6,7 @@
     "message_count": 2,
     "last_updated_at": "2026-06-18T20:22:04.000Z",
     "provider": "codex-cli",
-    "resumable": false
+    "resumable": true
   },
   "messages": [
     {
