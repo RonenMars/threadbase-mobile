@@ -1008,6 +1008,7 @@ export default function SessionDetailScreen() {
                 disabled={isWakingUp}
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
+                resumedConversationId={session.resumedFromConversationId}
               />
             ) : (
               <LiveConversationView

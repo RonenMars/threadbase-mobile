@@ -18,7 +18,7 @@
   },
   "session": {
     "chatView": "Chat view",
-    "chatViewNote": "Show live sessions as chat bubbles instead of raw terminal output. Beta — may be buggy and not always work.",
+    "chatViewNote": "Show live sessions as chat bubbles instead of RAW terminal output. Beta — may be buggy and not always work.",
     "betaBadge": "Beta"
   },
   "permissions": {

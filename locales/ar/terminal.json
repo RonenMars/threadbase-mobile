@@ -57,7 +57,9 @@
     "viewModeTerminal": "طرفية",
     "viewModeChat": "محادثة",
     "ptyActiveFallbackBanner": "مخرجات الطرفية المباشرة نشطة قبل توفر رسائل المحادثة.",
-    "rawModeNote": "وضع الطرفية الخام — تم اكتشاف تسلسلات غير مدعومة؛ المخرجات غير مفلترة."
+    "rawModeNote": "وضع RAW — تم اكتشاف تسلسلات غير مدعومة؛ المخرجات غير مفلترة.",
+    "resumedEmptyScrollback": "المخرجات السابقة غير متاحة لسيشن مُستأنف.",
+    "resumedEmptyScrollbackLink": "عرض سجل المحادثة ←"
   },
   "a11y": {
     "line": "السطر {{n}}: {{text}}"
