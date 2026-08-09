@@ -90,6 +90,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
       - name: Install dependencies
         run: npm ci
 
@@ -121,11 +126,27 @@ jobs:
           xcrun simctl boot "$DEVICE" || true
           xcrun simctl bootstatus "$DEVICE" -b
 
+      # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
+      # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
+      # and an xcodebuild that dies on a missing `Pods-Threadbase.release
+      # .xcconfig`. That is why every scheduled run since at least June 2026
+      # failed at the build step; a local machine never sees it because its
+      # `ios/Pods/` already exists. Prebuild first (it can rewrite the pbxproj),
+      # then install pods against the result.
+      #
+      # Mirrors deploy.yml: no `--deployment`, because prebuilt-artifact pods
+      # regenerate fresh checksums on CI and `--deployment` treats that as a
+      # fatal lockfile change. `bundle exec` keeps the Gemfile's CocoaPods 1.16.2
+      # pin, and reset-podfile-lock-path-noise.sh drops the four path-dependent
+      # checksums the runner's checkout path produces.
+      - name: Install CocoaPods
+        run: |
+          npx expo prebuild --platform ios --no-clean
+          (cd ios && bundle exec pod install)
+          ./scripts/reset-podfile-lock-path-noise.sh
+
       - name: Build and install iOS app (Release)
         run: |
-          # SDK 57 defaults prebuild to --clean, which would wipe the committed
-          # ios/Podfile (SwiftUICore/Xcode-26 hook) and regenerate it from scratch.
-          npx expo prebuild --platform ios --no-clean
           xcodebuild \
             -workspace ios/Threadbase.xcworkspace \
             -scheme Threadbase \
