@@ -2,6 +2,7 @@
   "id": "session-abc123",
   "status": "running",
   "ptyAttached": true,
+  "lifecycle": "attached",
   "projectPath": "/home/user/my-project",
   "projectName": "my-project",
   "branch": "main",

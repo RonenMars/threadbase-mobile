@@ -40,8 +40,17 @@ function makeState(overrides: Partial<LiveSessionState> = {}): LiveSessionState 
 describe('isTerminal', () => {
   it('treats each end-of-life signal independently', () => {
     expect(isTerminal(makeSession({ processLiveness: 'gone' }))).toBe(true)
-    expect(isTerminal(makeSession({ completedAt: '2026-07-25T11:00:00.000Z' }))).toBe(true)
+    expect(isTerminal(makeSession({ status: 'idle', ptyAttached: false, lifecycle: 'completed' }))).toBe(
+      true,
+    )
+    expect(isTerminal(makeSession({ status: 'idle', ptyAttached: false, lifecycle: 'resumable' }))).toBe(
+      true,
+    )
     expect(isTerminal(makeSession({ status: 'idle', ptyAttached: false }))).toBe(true)
+  })
+
+  it('does not treat completedAt alone as terminal (holds stamp it too)', () => {
+    expect(isTerminal(makeSession({ completedAt: '2026-07-25T11:00:00.000Z' }))).toBe(false)
   })
 
   it('does not treat a live session as terminal', () => {
@@ -50,6 +59,7 @@ describe('isTerminal', () => {
     // idle but still attached is a lull, not an ending
     expect(isTerminal(makeSession({ status: 'idle', ptyAttached: true }))).toBe(false)
     expect(isTerminal(makeSession({ processLiveness: 'unknown' }))).toBe(false)
+    expect(isTerminal(makeSession({ lifecycle: 'attached' }))).toBe(false)
   })
 })
 
@@ -63,7 +73,12 @@ describe('toLiveState', () => {
 
   it('returns null for every terminal signal', () => {
     expect(toLiveState(makeSession({ processLiveness: 'gone' }), 'srv-1')).toBeNull()
-    expect(toLiveState(makeSession({ completedAt: STARTED_AT }), 'srv-1')).toBeNull()
+    expect(
+      toLiveState(
+        makeSession({ status: 'idle', ptyAttached: false, lifecycle: 'completed' }),
+        'srv-1',
+      ),
+    ).toBeNull()
     expect(toLiveState(makeSession({ status: 'idle', ptyAttached: false }), 'srv-1')).toBeNull()
   })
 
