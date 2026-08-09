@@ -45,9 +45,7 @@ appId: com.ronenmars.threadbase
       id: "conversation-bottom-bar"
     timeout: 8000
 
-# The primary action renders its label. Asserted positively here because the
-# only other coverage of this string is codex_parity.yaml's assertNotVisible,
-# which would also pass if the label rendered empty (a missing i18n key).
+# The primary action renders its label.
 - assertVisible: "Resume Session"
 
 # Export must NOT be a bottom-bar sibling of Resume Session anymore.
