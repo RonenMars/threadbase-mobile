@@ -55,8 +55,22 @@ export function TerminalView({
 
   const onViewResumedConversation = useCallback(() => {
     if (!resumedConversationId) return
-    router.push(conversationHref(resumedConversationId, serverId) as never)
-  }, [resumedConversationId, router, serverId])
+    router.push(
+      conversationHref(resumedConversationId, serverId, undefined, {
+        fromSession: sessionId,
+      }) as never,
+    )
+  }, [resumedConversationId, router, serverId, sessionId])
+
+  const onSearchResumedConversation = useCallback(() => {
+    if (!resumedConversationId) return
+    router.push(
+      conversationHref(resumedConversationId, serverId, undefined, {
+        fromSession: sessionId,
+        openSearch: true,
+      }) as never,
+    )
+  }, [resumedConversationId, router, serverId, sessionId])
 
   const onSend = (payload: string) => {
     markSessionUsed(sessionId)
@@ -103,6 +117,7 @@ export function TerminalView({
         activeQuestion={activeQuestion}
         onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
         onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
+        onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
       />
       <ChatComposer
         value={inputText}

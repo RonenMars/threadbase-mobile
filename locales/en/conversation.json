@@ -19,6 +19,7 @@
   },
   "resume": {
     "start": "Resume Session",
+    "backToLive": "Back to Live Session",
     "resuming": "Resuming…",
     "collisionTitle": "Resume this conversation?",
     "collisionMessage": "This conversation may still be open in a terminal on your computer — {{reasons}}. Resuming it here could interfere with that session.",
