@@ -269,3 +269,248 @@ still reaches `main` only when its PRs merge.
   `scripts/reset-podfile-lock-path-noise.sh` before shipping.
 - #572 and #576 duplicate commits that are now also on INT. If INT lands to `main` first, both PRs
   become empty and should be closed rather than merged.
+
+---
+
+# Part II — fresh integration branch, cut from today's `main`
+
+The rebased INT above (`0a4dd2d5`) is superseded. Rather than keep repairing a branch that has
+drifted from `main` and been rewritten twice, a new branch was cut from today's `main` and every open
+PR's *current head* merged into it. The old INT is kept untouched as the reference to validate
+against.
+
+## Backup of the old INT
+
+| Ref | SHA |
+| --- | --- |
+| `origin/integration/open-prs-291-544-…-569` (unchanged, still on origin) | `0a4dd2d5` |
+| `backup/int-mobile-2026-08-09-fresh` (new, pushed to origin) | `0a4dd2d5` |
+
+The pre-existing `backup/integration-open-prs-2026-08-09` (`60aef087`) is also still on origin.
+Nothing was deleted.
+
+## Cut point
+
+```
+$ git fetch origin && git rev-parse --short origin/main
+7b7d9250
+```
+
+`7b7d9250` = `chore(android): bump version code to 49 [skip-ci] (#584)`, 2026-08-09 14:00 +0300.
+Matches the snapshot in `docs/fresh-integration-branch-prompt.md`, so `main` had not moved since it
+was written.
+
+Worktree: `../tb-mobile-worktrees/int-fresh`, branch **`integration/fresh-2026-08-09`**, `npm ci`
+run in it (exit 0 — not a borrowed `node_modules`).
+
+## #568 rebased before merging (it was `CONFLICTING` against `main`)
+
+`gh pr view 568` reported `CONFLICTING/DIRTY`. Rebased onto `origin/main` in its own worktree rather
+than resolving inside the integration branch:
+
+- **Conflict:** `docs/adr/0001-hub-data-layer-lazy-pagination.md`, add/add. `main`'s copy is 73 lines,
+  #568's is 52. Diffed both blobs directly: the *only* difference is the 21-line section
+  "Why step 2 needed a new server endpoint" that `main` has and #568 lacks. `main`'s version is a
+  strict superset, so it was kept (`--ours`).
+- Git dropped `0720aae6` (`docs(adr): add implementation kick-off…`) as "patch contents already
+  upstream" — correct, it landed via #579.
+
+Result: `0720aae6` → **`0e7797d9`**, one commit, 2 files (`app/index.tsx`, `hooks/useConversations.ts`),
+force-pushed with `--force-with-lease`. The PR is now `MERGEABLE/CLEAN`.
+
+## Merges — 17 PRs, zero conflicts
+
+Merged in the prescribed order, each at its **current** head SHA:
+
+| # | Head | Branch | Result |
+| --- | --- | --- | --- |
+| 544 | `c48d20f9` | `fix/resumed-terminal-scrollback-disclosure` | merge `606fae1a` — 17 files |
+| 551 | `b26bbece` | `fix/back-to-live-session` (stacked on #544) | merge `4944e953` — 16 files |
+| 553 | `4b5cc9e3` | `docs/cloud-dev-environment-18a1` | merge `11f6962e` — 1 file |
+| 554 | `a574ae99` | `dependabot/npm_and_yarn/…daaefa5395` | merge `841ba7ea` — lockfile only |
+| 556 | `9c04478b` | `refactor/session-lifecycle-phase` | merge `b2feab3b` — 14 files |
+| 558 | `639afe0a` | `dependabot/…/expo-updates-57.0.11` | merge `656e8695` — 3 files |
+| 559 | `fc6f6c2d` | `dependabot/…/eslint-config-expo-57.0.1` | merge `b9202366` — 2 files |
+| 560 | `2321a450` | `feat/persist-accordion-collapse-state` | merge `f19714cd` — 8 files |
+| 563 | `7a89e3be` | `perf/coalesce-eager-progress` | merge `dac61e96` — 6 files |
+| 566 | `e2c96efe` | `fix/hub-render-loop` | merge `e12a2b9d` — 6 files |
+| 567 | `0fda9d9a` | `chore/local-signing-op-android` | merge `26cdcc41` — 5 files |
+| 568 | `0e7797d9` | `feat/conversations-infinite-query` (rebased above) | merge `f698f1fa` — 2 files |
+| 569 | `7127e13c` | `fix/favorite-conversation-navigation` | merge `dccf3c45` — 3 files |
+| 574 | `92c4e21e` | `ci/e2e-flow-subset` | merge `637be971` — 1 file |
+| 576 | `34667999` | `feat/lazy-project-summary-groups` | **cherry-pick `2b01ee8c`** — 29 files |
+| 572 | `e26b2d1d` | `fix/codex-active-writer-mobile` | **cherry-pick `7b04eb6e`** — 12 files |
+| 585 | `1b2af601` | `docs/repo-health-followups` | merge `e4f6056c` — 16 files |
+
+Head: **`e4f6056c`**, pushed to `origin/integration/fresh-2026-08-09`.
+
+**Obstacle — #576 and #572 could not be merged.** Both heads sit on the *old* INT (`ac1eaf02`), so
+each carries 51 commits relative to `main` and 38 relative to the fresh branch. Merging either would
+have re-imported the entire old INT ancestry, including `153d248f Merge remote-tracking branch
+'origin/pr/291'` and the #557 jest bump — the two PRs this whole exercise exists to keep out. Their
+own single commit was cherry-picked instead:
+
+- #576: `git show 34667999` vs `git show 2b01ee8c` → **identical patch**, byte for byte.
+- #572: identical except one `index <blob>..<blob>` line on `types/api.ts`, which auto-merged because
+  #556 and #576 had already touched that file. Every hunk is identical; the pre-image hash differs
+  only because the base file is further along.
+
+Their PR branches still need rebasing onto `main` before they can merge there — deferred to Part 5,
+where `main` will already carry their dependencies.
+
+### Not merged, by instruction
+
+| PR | Reason | Verified how |
+| --- | --- | --- |
+| **#291** (TypeScript 7) | Outside `@typescript-eslint`'s peer range; crashes the parser | standing exclusion |
+| **#557** (jest 30) | `jest-expo@57` pins the jest 29 family | standing exclusion |
+| **#575** | content already on `main` via #578 | its two own commits (`0fec4c34`, `83b3bf4e`) touch `e2e/setup.yaml` and `docs/adr/0001-followup-05-chat-flow-hidekeyboard.md` — both byte-identical on `main` |
+| **#580** | content already on `main` via #579 | its four own commits (`4bccf093`, `796a1c75`, `b3c8efae`, `9a593846`) touch 16 docs files — all 16 byte-identical on `main` |
+
+**Trap worth recording:** `gh pr diff <n> --name-only` and `gh pr view <n> --json commits` are both
+useless for #575/#580/#572/#576. Their base ref is the old INT, so GitHub replays the whole stack —
+#575 reports 67 files and 25 commits when it owns 2 files and 2 commits. Reading those lists at face
+value produces a confident wrong answer in both directions. Isolate the PR's genuinely-own commits
+first, then compare only the files those commits touch.
+
+---
+
+## Part 3 — validation gate
+
+### 3.1 Content diff against the old INT
+
+```
+$ git diff origin/integration/open-prs-291-544-…-569 HEAD --stat
+ 19 files changed, 1209 insertions(+), 9 deletions(-)
+
+$ git diff --diff-filter=D --name-only origin/integration/open-prs-291-544-…-569 HEAD
+(no output)
+```
+
+**Nothing the old branch had is missing from the fresh one** — zero deleted files. Every delta
+accounted for:
+
+| Delta | Category | Explanation |
+| --- | --- | --- |
+| `app.json` 196→197, `android/app/build.gradle` 48→49 | (a) on `main`, post-dates old INT | the #583/#584 version bumps the 2026-08-09 ship produced |
+| `docs/followups/**` — 16 files, +1140 | new PR | #585, which the old INT never carried |
+| `package-lock.json` — nested `semver` 7.8.5 → 7.8.4, twice | (b) churn shed | traced with `git log -- package-lock.json`: the 7.8.5 entry was introduced by `59d6e68d`, the #577 jest/TS **revert**, which re-resolved the lock. `origin/main` and the fresh branch both hold 7.8.4. This is the old branch's merge-then-revert residue, and losing it is the point |
+
+### 3.2 Coverage audit
+
+```
+$ python3 ~/.claude/skills/integration-branch-pr-audit/scripts/audit_integration_branch.py \
+    --branch integration/fresh-2026-08-09 --exclude-pr 291 --exclude-pr 557
+```
+
+- `branch.common_base` = `7b7d9250` — the audit confirms the branch forks from today's `main`, not
+  from an older base.
+- `included_head` (15): `544, 551, 553, 554, 556, 558, 559, 560, 563, 566, 567, 568, 569, 574, 585` —
+  every one by head ancestry, no equivalence guessing required.
+- `missing` (4): `572, 575, 576, 580`.
+- `branch_only_vs_all_prs.unique_non_doc_commits` (2): `2b01ee8c` and `7b04eb6e` — the #576 and #572
+  cherry-picks. No orphan content: there is nothing on this branch belonging to no PR.
+
+Every reported miss hand-verified, none of them real:
+
+| PR | Audit says | Reality |
+| --- | --- | --- |
+| 576 | missing | present as `2b01ee8c`, patch byte-identical to `34667999`. Cannot be an ancestor because it was cherry-picked |
+| 572 | missing | present as `7b04eb6e`, hunks identical to `e26b2d1d`; only the `types/api.ts` pre-image hash differs |
+| 575 | missing | deliberately excluded — content on `main` (see table above) |
+| 580 | missing | deliberately excluded — content on `main` (see table above) |
+
+The false negatives the prompt warned about for **#560 and #568** did not reproduce: both land in
+`included_head` here. On the old INT they read as missing because the rebase rewrote their SHAs and
+later PRs edited the same files; on a branch built by merging unrewritten heads, ancestry answers
+directly.
+
+### 3.3 Build and test
+
+| Check | Result |
+| --- | --- |
+| `npx tsc --noEmit --pretty false` | exit 0, `grep -c 'error TS'` = **0** |
+| `npm run lint` | **0 errors**, 5 warnings (all pre-existing: 1 unused var, 3 `import/first`, 1 `exhaustive-deps`) |
+
+`--pretty false` is deliberate: tsc's default ANSI output makes `grep -c 'error TS'` report 0 even
+when there are errors.
+
+```
+$ npx jest --ci --runInBand --watchman=false
+Test Suites: 156 passed, 156 total
+Tests:       1 skipped, 1394 passed, 1395 total
+Time:        61.36 s
+```
+
+Identical to the old INT's final result (156 suites, 1394 passed / 1 skipped), so the fresh branch
+is behaviourally the same tree. Jest then hangs on open handles and has to be killed — pre-existing,
+the old INT run did the same. The `144` exit is that `pkill`, not a test failure.
+
+**Obstacle:** the first jest run was lost when the session process restarted. It had been launched as
+`npx jest … | tail -40`, so nothing reached disk until the pipeline finished and there were no partial
+results to salvage. Re-run with `> file 2>&1` instead — a background run whose output is behind a
+`tail` is unobservable while it runs and unrecoverable if it dies.
+
+### Podfile.lock — a real defect found in #558
+
+`package.json` moved, so the prompt calls for `bundle exec pod install`. Reading the existing delta
+first showed it should not be re-run — and that #558 carries a lockfile change it should not:
+
+```
+$ git diff origin/main HEAD -- ios/Podfile.lock
+-  ExpoModulesCore: 6abb896a…      +  ExpoModulesCore: e6e3f223…
+-  ExpoWidgets:     683ecb15…      +  ExpoWidgets:     86218eca…
+-  hermes-engine:   82b14fe6…      +  hermes-engine:   37d12a36…
+-  RNSentry:        1379dbcb…      +  RNSentry:        7bb2dcf9…
+-COCOAPODS: 1.16.2                 +COCOAPODS: 1.17.0
+```
+
+Those are exactly the four path-dependent SPEC CHECKSUMs `CLAUDE.md` says are not ours to commit,
+plus a `COCOAPODS:` line flipped off the `Gemfile`'s 1.16.2 pin — the signature of a bare
+`pod install` run against a Homebrew CocoaPods. **No pod actually moved:** `EXUpdates` is unchanged
+at `35b9e901…` and no version line in the `PODS:` section differs, so the expo-updates 57.0.9→57.0.11
+bump has no native effect at all. The whole hunk is machine noise.
+
+`scripts/reset-podfile-lock-path-noise.sh` does not catch it: it only inspects *uncommitted* drift
+against `HEAD`, and it bails out entirely when anything outside its four-checksum pattern changed —
+which the `COCOAPODS:` line does.
+
+Running `pod install` here would have overwritten the noise with *this* machine's noise and hidden
+the problem. Instead: `ios/Podfile.lock` is reverted to `origin/main`'s copy on #558's branch during
+its Part 5 rebase, and the integration branch is left as-is (it is validation-only and retires once
+the PRs land).
+
+**Gate verdict: PASSED.** Nothing lost, no orphan content, every audit miss explained, tree green.
+
+---
+
+# Part 4 — re-point the work at `main`
+
+Almost a no-op: every PR that is landing already targets `main`. The two that did not are closed.
+
+| PR | Base | Action |
+| --- | --- | --- |
+| 544, 553, 554, 556, 558, 559, 560, 563, 566, 567, 568, 569, 574, 585 | `main` | none — already correct |
+| 551 | `fix/resumed-terminal-scrollback-disclosure` | correct while #544 is open; retarget to `main` after #544 merges and its branch is deleted |
+| 572, 576 | `main` | base is right, **head is wrong** — sits on the old INT. Rebase onto `main` last (see below) |
+| 575, 580 | old INT | **closed** — `gh pr close 575 580`, no comment |
+
+## #572 and #576 — must not be merged as they stand
+
+`gh pr view` reports 51 commits and 72/90 files for these two, because their heads sit on the old
+INT rather than on `main`. Squash-merging either would land the entire old-INT stack on `main` as a
+single commit under an unrelated title, swallowing fifteen other PRs' history. The damage is
+structural, not dependency-level — `package.json` on those heads still reads `typescript ~6.0.3`, so
+#291 would not actually land, but the history would be unreadable and the other PRs would go from
+"open" to "silently already merged under someone else's title".
+
+They are therefore rebased onto `main` **last**, after the other fifteen have landed, so the rebase
+target already contains everything they would otherwise drag in. Each must collapse to exactly one
+commit (`e26b2d1d` / `34667999`). **Gate: after each rebase, `gh pr view <n> --json commits` must
+report 1. If it does not, stop.**
+
+---
+
+# Part 5 — merges to `main`
+
+Rebase onto latest `main` → wait for CI green → squash-merge → next. Logged per PR as it happens.
