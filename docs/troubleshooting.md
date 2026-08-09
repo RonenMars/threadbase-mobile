@@ -458,6 +458,88 @@ If it did not, re-fetch, rebase onto the new `origin/main`, wait for the CI re-r
 
 **Why this entry is a law rather than a caution.** With one instance it reads as "this command sometimes lies in a known direction", which is still actionable by adjusting your reading of it. With two instances pointing opposite ways, the exit status is not biased — it is **uninformative**. That is worse than having no signal, because a status that is right about half the time still looks like evidence, and will be read as evidence under time pressure. The general rule: when a command does two things and returns one status, that status is a summary you cannot invert. Ask the system what state it is in.
 
+### `gh pr checks` reports `pending` long after the run finished
+
+**When:** You are gating a merge on CI and `gh pr checks <N>` still lists a job as `pending`. You wait, re-poll, and eventually start looking for a stuck runner — while the job has in fact been green for several minutes.
+
+**Cause:** `gh pr checks` reads a *cached projection* of the PR's check state, and that cache lags the underlying check-runs. On 2026-08-09, merging #551, it reported `Integration tests: pending` for roughly eight minutes after the run had completed. The two sources disagreed outright at the same moment:
+
+```
+$ gh pr checks 551
+Integration tests: pending          ← cached projection
+
+$ gh run view 31328545660 --json status,jobs
+run: completed
+Integration tests: completed/success  ← the run itself
+```
+
+**Fix:** Ask for the check-runs on the head SHA. That endpoint is the authority; `gh pr checks` is a convenience view over it:
+
+```bash
+SHA=$(gh pr view <N> --json headRefOid -q .headRefOid)
+gh api "repos/RonenMars/threadbase-mobile/commits/$SHA/check-runs" \
+  -q '.check_runs[] | "\(.name)\t\(.status)/\(.conclusion // "-")"'
+gh api "repos/RonenMars/threadbase-mobile/commits/$SHA/status" -q .state   # Snyk et al. are commit statuses, not check-runs
+```
+
+Note that a PR's *commit statuses* (Snyk) and its *check-runs* (Actions jobs) are separate APIs — `check-runs` alone will not show Snyk, which is why both calls are listed. Poll loops that gate a merge should use these, not `gh pr checks`.
+
+**Two further variants, found in tb-streamer after the above was written.** Both are worse than the lag, because neither has a waiting period that clears them:
+
+**Variant 1 — immediately after a force-push, `gh pr checks` returns the *previous* head's results.** Not stale-as-in-pending: confident, well-formed, complete output describing a commit that no longer exists. A rebase-and-push loop that checks straight after pushing can therefore read a full green from the run before the one it just triggered, and merge on it. This never bit the 2026-08-09 mobile merges only because every poll there slept 20–30s first, which happens to outlast the window — luck, not design.
+
+**Variant 2 — `commits/<sha>/check-runs` omits commit statuses.** Hardening a poll loop against variant 1 by pinning it to the head SHA opens this one: Snyk is a *commit status*, so a SHA-pinned check-runs monitor sees 11 of 12 and never mentions the twelfth. It does not report the twelfth as missing or pending — it reports success over a set that silently excludes it. Fixing the first false signal introduced the second.
+
+**The rule both point at: resolve the head SHA first, then poll *both* endpoints against it.** Name the object you are asking about instead of letting the tool infer it from the PR — inference is what goes stale on a force-push, and endpoint choice is what silently narrows the set:
+
+```bash
+SHA=$(gh pr view <N> --json headRefOid -q .headRefOid)   # resolve once, after the push
+gh api "repos/<owner>/<repo>/commits/$SHA/check-runs" -q '.check_runs[] | "\(.name)\t\(.conclusion // .status)"'
+gh api "repos/<owner>/<repo>/commits/$SHA/status"     -q '.state'   # statuses live here, not above
+```
+
+**Why this sits beside the entry above it.** Both are `gh` summarising a system it does not own, and both fail the same way: they return something plausible instead of erroring. `pending` is indistinguishable from a job that really is queued; the previous head's green is indistinguishable from this head's.
+
+This family is now large enough to state as a law rather than a list. Within a single day's integration work, in this repo and in tb-streamer:
+
+| Signal | Plausible wrong answer it gave |
+|--------|-------------------------------|
+| a borrowed `node_modules` (see "Measuring the wrong thing") | a green 155-suite run against the wrong dependency versions |
+| zsh's `:e` / `:s` modifiers in `git show "$B:path"` | every commit reports "no such file", which reads as a finding |
+| `gh pr diff --name-only` on a PR based on another PR | 67 files for a PR that owns 2 |
+| `gh pr checks` while a run is finishing | `pending` for ~8 minutes after all jobs succeeded |
+| `gh pr checks` right after a force-push | the previous head's complete, confident results |
+| `commits/<sha>/check-runs` alone | 11 of 12, with the twelfth never mentioned |
+| a Dependabot group PR title | one package named, three moved |
+| an `ignore` entry whose `dependency-name` does not match | silently no rule at all |
+
+**Not one of these errored.** Every one returned a well-formed answer to a question slightly different from the one asked — and two of them were introduced *by hardening against another one*, which is the part that makes the family self-sustaining. The law: **name the object you are asking about, and ask the system that owns it.** Where a tool infers the object (which head? which endpoint? which member of the group?), that inference is the bug surface, not the value it returns.
+
+### A Dependabot group PR does what its title says *plus* whatever else the group resolved
+
+**When:** You review a grouped dependency PR by its title, conclude the bump is contained, and merge. The title named one package; the lockfile moved several.
+
+**Cause:** GitHub titles a grouped update after the update it considers primary, not after the group's full resolution. #586 was titled `bump undici from 6.27.0 to 6.28.0 in the npm_and_yarn group` and its body documented only undici's three GHSAs — but the lockfile carried three packages:
+
+| Package | Move | Reaches |
+|---------|------|---------|
+| `undici` | 6.27.0 → 6.28.0 | `@sentry/cli` — build machine only |
+| `nanoid` | 3.3.17 → 3.3.18 | `expo-router`, `@gorhom/portal` — **runtime, in the shipped bundle** |
+| `postcss` | 8.5.25 → 8.5.26 | `@expo/metro-config`, `tailwindcss` — build time |
+
+Tracing only the named package gave "build-machine hygiene, no runtime exposure", which was true of undici and wrong about the PR: `nanoid` ships to devices. The conclusion was not too optimistic, it was **scoped to the wrong object**.
+
+**Fix:** read the diff, never the title. Every version transition, and where each package enters:
+
+```bash
+git diff origin/main HEAD -- package-lock.json | grep -E '^[+-] +"version":'
+node -e "const l=require('./package-lock.json');for(const[p,v]of Object.entries(l.packages||{})){const d={...v.dependencies,...v.devDependencies,...v.optionalDependencies};if(d['<pkg>'])console.log(p+' -> '+d['<pkg>'])}"
+```
+
+Then give the squash commit a title naming every member, so the record does not inherit the omission.
+
+**Also check direction.** A group can move a package *backwards*: tb-streamer's #441 re-bumped `nanoid`/`postcss` that were already present while regressing `@types/node` 26.1.2 → 26.1.1, `@types/semver` 7.8.0 → 7.7.1 and `tar` 7.5.22 → 7.5.21. A grouped title reads identically whether the members advance or retreat.
+
 ---
 
 ## iOS Simulator console noise
