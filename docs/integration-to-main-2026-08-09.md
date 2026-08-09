@@ -514,3 +514,154 @@ report 1. If it does not, stop.**
 # Part 5 — merges to `main`
 
 Rebase onto latest `main` → wait for CI green → squash-merge → next. Logged per PR as it happens.
+
+Starting `main`: `7b7d9250`.
+
+## #544 — `fix(terminal): disclose missing scrollback after resume`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`2afa1201`** |
+| CI | 10/10 pass (Gate, Setup, Type check, Unit, Integration, Lint, i18n, Native deps, E2E jest, Snyk) |
+| Rebased | yes — `c48d20f9` → `b76c99af` |
+
+Head was behind `main`, so it was rebased. Its `c48d20f9 Merge branch 'main' into …` merge commit was
+dropped by the rebase, collapsing it to its three real commits. Sanity-checked the rebase by diffing
+old head against new: the delta is exactly `main`'s newer content (#573's `e2e.yml`, #578's
+`e2e/setup.yaml`, #579's docs, the two version bumps) and nothing of #544's own.
+
+**Obstacle — `gh pr merge` cannot merge a stack base.** #551 is stacked on #544, and both
+
+```
+$ gh pr merge 544 --squash --delete-branch
+GraphQL: This pull request is part of a stack and must be merged using the asynchronous merge REST API.
+
+$ gh api -X PUT .../pulls/544/merge
+{"message":"Merging stacked PRs via this endpoint is not supported…","status":"403"}
+```
+
+fail. Retargeting #551 away to break the stack is also refused
+(`Cannot change the base branch because the pull request is part of a stack`). The endpoint that
+works is a different path — `merge-async`, not `merge`:
+
+```
+$ gh api -X PUT repos/RonenMars/threadbase-mobile/pulls/544/merge-async \
+    -f merge_method=squash -f commit_title='…' -f commit_message='…'
+{"status":"pending","details":{"message":"Merge request enqueued.","uuid":"dd135c81-…",
+ "merge_method":"squash","expected_head_sha":"b76c99af…"}}
+```
+
+It enqueues and returns immediately, so poll `gh pr view <n> --json state,mergeCommit` afterwards
+rather than trusting the 200.
+
+**Second obstacle — force-pushing #544 broke #551.** Rebasing the stack *base* left #551
+`CONFLICTING/DIRTY`, because its recorded base commit no longer existed. Repaired with
+`git rebase --onto b76c99af c48d20f9`, which replays only #551's own commit and drops the
+`Merge branch 'fix/resumed-terminal-scrollback-disclosure'` sync commit it carried.
+
+**Trap:** the landing worktree's local `fix/back-to-live-session` was seven commits behind `origin`,
+so the first rebase there operated on a stale tip. `git rebase` reported success either way. Always
+`git fetch` and rebase from the *origin* ref in a worktree that has been sitting.
+
+## #551 — `fix(conversation): back to live session from resumed history`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`59823f14`** |
+| CI | 9/9 check-runs `completed/success` on head `ad8bc6cb`, plus Snyk |
+| Rebased | by GitHub, automatically — `b26bbece` → `ad8bc6cb` |
+
+**GitHub restacks a stacked PR by itself.** The moment #544 merged, #551's base auto-retargeted to
+`main` and its head was auto-rebased `b28ce0d1` → `ad8bc6cb`. Diffing GitHub's restack against the
+one done locally: **identical trees, zero delta**. So the local rebase was discarded rather than
+force-pushed — pushing it would have been a no-op on content while cancelling the CI run already in
+flight. For stacked PRs, merge the base and let GitHub restack; only verify the result.
+
+**Obstacle — `gh pr checks` served a stale answer for eight minutes.** It kept reporting
+`Integration tests: pending` after `gh run view 31328545660` showed the run `completed` with all nine
+jobs `success`. Querying the check-runs API directly settled it:
+
+```
+$ gh api repos/RonenMars/threadbase-mobile/commits/ad8bc6cb…/check-runs
+Integration tests  completed/success
+… all 9 completed/success
+```
+
+`gh pr checks` is a cached projection and lags; the per-SHA check-runs endpoint is the truth. Waiting
+on the former is how a green PR looks stuck. Subsequent PRs are watched via the check-runs API.
+
+**Obstacle — #551 was a draft.** `merge-async` returned `{"status":"failed","details":{"message":
+"Pull request is in draft."}}`, a 400 that `gh pr merge` had masked behind the stack error. There is
+no `convert_to_draft` event in its timeline, so it was opened that way rather than demoted by the
+restack. `gh pr ready 551`, then merge. Checked the rest up front to avoid a repeat: **#556 is the
+only other draft**; every other PR in the queue is `draft=false`.
+
+## #553 — `docs: add cloud dev environment instructions`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`9525d8ea`** |
+| CI | 9/9 + Snyk |
+| Rebased | `4b5cc9e3` → `0299bac0` |
+
+The rebase reported `warning: skipped previously applied commit 4b5cc9e3` — that commit is
+`fix(ci): raise the e2e jest timeout for cold CI runners (#549)`, already on `main`. Dropping it took
+the PR from two files (`AGENTS.md`, `package.json`) to the one it actually owns.
+
+## #554 — `chore(deps): bump the npm_and_yarn group across 1 directory with 2 updates`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`06b9a434`** |
+| CI | 9/9 + Snyk |
+| Rebased | `a574ae99` → `6c9109fd` |
+
+From here on the landing worktree operates **detached** (`git checkout --detach origin/<branch>`,
+push with `HEAD:refs/heads/<branch>`). Several of these branches are checked out in other worktrees,
+and `git checkout <branch>` refuses in that situation. `--force-with-lease` still gets its safety
+because the expected SHA is passed explicitly: `--force-with-lease=<branch>:<old-sha>`.
+
+## #556 — `refactor(session): adopt streamer lifecycle for ended vs hold`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`fd1398b8`** |
+| CI | 9/9 + Snyk |
+| Rebased | `9c04478b` → `a78b950c`; `gh pr ready 556` (it was the second draft) |
+
+## #558 — `chore(deps): bump expo-updates from 57.0.10 to 57.0.11`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`08f0e0e8`** |
+| CI | 9/9 + Snyk — including `Native deps` |
+| Rebased | `639afe0a` → `f2fc7f18`, **one commit deliberately dropped** |
+
+The Podfile.lock defect recorded in Part 3.3 turned out to be cleanly separable: the branch's two
+commits split exactly along the fault line.
+
+| Commit | Files |
+| --- | --- |
+| `9b8b1346` `chore(deps): bump expo-updates…` | `package.json`, `package-lock.json` |
+| `639afe0a` `chore(ios): sync pods for integrated dependency updates` | `ios/Podfile.lock` **only** |
+
+So rather than rebase and revert a file, `639afe0a` was dropped outright and `9b8b1346` cherry-picked
+onto `main`. `ios/Podfile.lock` on the result is byte-identical to `main`, and **`Native deps` still
+passes** — which is the confirmation that the pod-sync commit carried nothing. #558 landed as the
+pure dependency bump it always was.
+
+## #559 — `chore(deps-dev): bump eslint-config-expo from 57.0.0 to 57.0.1`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`5a6e73bf`** |
+| CI | 9/9 + Snyk |
+| Rebased | `fc6f6c2d` → `b030f436` |
+
+## #560 — `feat(session): persist accordion collapse state across session views`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`6e9e9faf`** |
+| CI | 9/9 + Snyk |
+| Rebased | `2321a450` → `a23975a2`, 4 commits replayed, no conflicts |

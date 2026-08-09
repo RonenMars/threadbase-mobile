@@ -458,6 +458,34 @@ If it did not, re-fetch, rebase onto the new `origin/main`, wait for the CI re-r
 
 **Why this entry is a law rather than a caution.** With one instance it reads as "this command sometimes lies in a known direction", which is still actionable by adjusting your reading of it. With two instances pointing opposite ways, the exit status is not biased — it is **uninformative**. That is worse than having no signal, because a status that is right about half the time still looks like evidence, and will be read as evidence under time pressure. The general rule: when a command does two things and returns one status, that status is a summary you cannot invert. Ask the system what state it is in.
 
+### `gh pr checks` reports `pending` long after the run finished
+
+**When:** You are gating a merge on CI and `gh pr checks <N>` still lists a job as `pending`. You wait, re-poll, and eventually start looking for a stuck runner — while the job has in fact been green for several minutes.
+
+**Cause:** `gh pr checks` reads a *cached projection* of the PR's check state, and that cache lags the underlying check-runs. On 2026-08-09, merging #551, it reported `Integration tests: pending` for roughly eight minutes after the run had completed. The two sources disagreed outright at the same moment:
+
+```
+$ gh pr checks 551
+Integration tests: pending          ← cached projection
+
+$ gh run view 31328545660 --json status,jobs
+run: completed
+Integration tests: completed/success  ← the run itself
+```
+
+**Fix:** Ask for the check-runs on the head SHA. That endpoint is the authority; `gh pr checks` is a convenience view over it:
+
+```bash
+SHA=$(gh pr view <N> --json headRefOid -q .headRefOid)
+gh api "repos/RonenMars/threadbase-mobile/commits/$SHA/check-runs" \
+  -q '.check_runs[] | "\(.name)\t\(.status)/\(.conclusion // "-")"'
+gh api "repos/RonenMars/threadbase-mobile/commits/$SHA/status" -q .state   # Snyk et al. are commit statuses, not check-runs
+```
+
+Note that a PR's *commit statuses* (Snyk) and its *check-runs* (Actions jobs) are separate APIs — `check-runs` alone will not show Snyk, which is why both calls are listed. Poll loops that gate a merge should use these, not `gh pr checks`.
+
+**Why it belongs beside the entry above.** Both are `gh` summarising a system it does not own, and both fail the same way: they return something plausible instead of erroring. `gh pr checks` reporting `pending` is indistinguishable from a job that really is queued, so the wrong reading costs you time rather than announcing itself. It was the fourth such false signal in one day's work, alongside a borrowed `node_modules` verifying the wrong dependency versions (see "Measuring the wrong thing"), zsh's `:e` modifier silently emptying a `git show` path, and `gh pr diff --name-only` replaying an entire stack for a PR whose base is another PR's branch — reporting 67 files for a PR that owns 2. **None of the four errored.** When a tool summarises another system's state, prefer the endpoint that owns that state.
+
 ---
 
 ## iOS Simulator console noise
