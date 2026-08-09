@@ -192,7 +192,12 @@ export interface ConversationDetail extends Conversation {
   resumable?: boolean
   /** Set only when `resumable` is false; explains why. */
   unavailableReason?: UnavailableReason
-  /** Source provider. 'codex-cli' conversations are never resumable. */
+  /**
+   * Source provider. Resumability is not implied by it — `resumable` above is
+   * authoritative for both providers. A resumable 'codex-cli' conversation can
+   * still collide with the client that holds its writer lock, which the server
+   * reports as a 409 carrying `reasonCode: 'CODEX_SESSION_ACTIVE'`.
+   */
   provider?: ProviderName
 }
 

@@ -32,6 +32,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { createApiForServer, ConversationBusyError, NotFoundError } from '@/services/api-client'
+import { CODEX_CLI_PROVIDER } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
@@ -430,7 +431,7 @@ export default function ConversationDetailScreen() {
   }, [conversation])
 
   const qc = useQueryClient()
-  const { resume, adoptSession } = useSessionActions(serverId, id)
+  const { resume, adoptSession, forkSession } = useSessionActions(serverId, id)
 
   // Seed the session cache from the resume snapshot (so /session/:id renders
   // without a round-trip) then hand off to the live session, carrying the
@@ -498,6 +499,45 @@ export default function ConversationDetailScreen() {
     })
   }, [adoptSession, router, serverId, t])
 
+  // Fork into Threadbase: start a separate managed continuation instead of
+  // fighting the client that already holds the Codex writer lock. The original
+  // session keeps running and keeps its rollout; the fork gets its own.
+  //
+  // No Retry button on failure — the request is non-idempotent and the server
+  // contract carries no idempotency key, so a retry of a fork that actually
+  // succeeded server-side would leave two forks. The user can re-open the
+  // collision dialog from Resume instead.
+  const forkIntoThreadbase = useCallback(() => {
+    Alert.alert(t('resume.forkTitle'), t('resume.forkMessage'), [
+      { text: t('common:button.cancel'), style: 'cancel' },
+      {
+        text: t('resume.fork'),
+        onPress: () =>
+          forkSession.mutate(undefined, {
+            onSuccess: (result) => {
+              if (result.sessionSnapshot) {
+                qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
+              }
+              const startParams = new URLSearchParams({ server: serverId })
+              if (result.projectId) startParams.set('projectId', result.projectId)
+              const projectPath = result.projectPath ?? conversation?.projectPath
+              if (projectPath) startParams.set('projectPath', projectPath)
+              // Both identities travel: the source we forked from, and the new
+              // rollout the server bound to the managed session.
+              startParams.set('forkedFromConversationId', id)
+              startParams.set('conversationId', result.conversationId)
+              startParams.set('starting', '1')
+              markNavigatedToSession(result.sessionId)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              router.replace(`/session/${result.sessionId}?${startParams.toString()}` as any)
+            },
+            onError: (err) =>
+              Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err)),
+          }),
+      },
+    ])
+  }, [forkSession, qc, serverId, conversation?.projectPath, id, router, t])
+
   // Resume this conversation into a live session. The server soft-blocks with a
   // 409 CONVERSATION_BUSY when the conversation may still be open elsewhere; on
   // that we confirm with the user — naming what was detected, honestly (it *may*
@@ -521,13 +561,20 @@ export default function ConversationDetailScreen() {
                   ),
                 ),
               ).join('; ')
-              // Taking over needs a process we can actually signal. The server only
-              // reports likelyOwner 'external' when it matched a real PID (argv/cwd);
-              // a bare mtime hit ('unknown') has nothing to adopt, so we don't offer it.
-              const canTakeOver = err.likelyOwner === 'external'
-              Alert.alert(t('resume.collisionTitle'), t('resume.collisionMessage', { reasons }), [
+              // Codex enforces its own single-writer lock, so a confirmed Codex
+              // owner is a hard "no", not a "may still be open" hedge. The copy
+              // differs accordingly; the actions come from the server's explicit
+              // capabilities either way (see ConversationBusyError for the
+              // defaults that keep older streamers on the Claude flow).
+              const isCodexLock =
+                err.reasonCode === 'CODEX_SESSION_ACTIVE' || err.provider === CODEX_CLI_PROVIDER
+              const title = isCodexLock ? t('resume.codexBusyTitle') : t('resume.collisionTitle')
+              const message = isCodexLock
+                ? t('resume.codexBusyMessage', { reasons })
+                : t('resume.collisionMessage', { reasons })
+              Alert.alert(title, message, [
                 { text: t('common:button.cancel'), style: 'cancel' },
-                ...(canTakeOver
+                ...(err.canTakeOver
                   ? [
                       {
                         text: t('resume.takeOver'),
@@ -536,7 +583,8 @@ export default function ConversationDetailScreen() {
                       },
                     ]
                   : []),
-                { text: t('resume.confirm'), onPress: forceResume },
+                ...(err.canFork ? [{ text: t('resume.fork'), onPress: forkIntoThreadbase }] : []),
+                ...(err.canForce ? [{ text: t('resume.confirm'), onPress: forceResume }] : []),
               ])
             } else {
               Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err), [
@@ -549,7 +597,7 @@ export default function ConversationDetailScreen() {
       )
     }
     attempt()
-  }, [resume, navigateToResumedSession, forceResume, takeOverSession, t])
+  }, [resume, navigateToResumedSession, forceResume, takeOverSession, forkIntoThreadbase, t])
 
   const handleBackToLiveSession = useCallback(() => {
     if (!fromSession) return

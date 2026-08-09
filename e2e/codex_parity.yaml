@@ -3,7 +3,12 @@
 # Verifies that on the conversation detail screen for a codex-cli conversation:
 #  1. The Codex badge is shown on the conversation row (testID="codex-provider-badge").
 #  2. The Provider field in the info modal shows "codex-cli".
-#  3. The Resume Session button is disabled (codex-cli conversations are not resumable).
+#  3. Resume Session is offered, because the server's `resumable` field is
+#     authoritative for codex-cli exactly as it is for claude-code. A resumable
+#     Codex conversation resumes normally; if another Codex client holds its
+#     writer lock the server answers 409 CODEX_SESSION_ACTIVE and the app offers
+#     Fork into Threadbase instead (that path is covered by the unit/integration
+#     suite, not here — the mock server has no fork endpoint).
 #
 # Uses deep linking to bypass hub navigation (same pattern as feat2_export_in_info_shelf.yaml).
 # Requires: mock server running on localhost:7071 (serves codex-conversation-detail.json for
@@ -31,9 +36,9 @@ appId: com.ronenmars.threadbase
       id: "conversation-bottom-bar"
     timeout: 8000
 
-# Resume Session is replaced with "Can't resume" for codex-cli conversations.
-- assertNotVisible: "Resume Session"
-- assertVisible: "Can't resume"
+# Resumability follows the server's `resumable` field, not the provider.
+- assertVisible: "Resume Session"
+- assertNotVisible: "Can't resume"
 
 # Open the info modal to verify the Provider field.
 - tapOn: "Conversation info"
