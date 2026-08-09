@@ -20,7 +20,9 @@
     "serverOffline": "השרת לא זמין",
     "serverOfflineSubtitle": "מוצגים שרתים אחרים. נסה שוב כשהמארח יחזור.",
     "serverWarming": "השרת מתחמם",
-    "serverWarmingSubtitle": "ההיסטוריה תופיע כשהאינדוקס יסתיים."
+    "serverWarmingSubtitle": "ההיסטוריה תופיע כשהאינדוקס יסתיים.",
+    "serverNeedsUpgrade": "השרת דורש עדכון",
+    "serverNeedsUpgradeSubtitle": "‏{{server}} מריץ גרסה שאינה תומכת ברשימת פרויקטים. עדכנו את שרת Threadbase כדי לעיין בהיסטוריה שלו כאן."
   },
   "card": {
     "copyId": "העתק מזהה סשן",

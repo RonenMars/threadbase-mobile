@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import type { MultiSession, MultiConversation } from '../../../types/api'
+import type { MultiSession } from '../../../types/api'
+import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { SortBy, SortOrder } from '../../../types/ui'
 
 export interface ProjectGroup {
@@ -8,8 +9,13 @@ export interface ProjectGroup {
   projectId: string
   projectPath: string
   projectName: string
+  /** Groups are per (serverId, projectPath) — the key the per-group
+   *  conversation query is issued under. */
+  serverId: string
   sessions: MultiSession[]
-  conversations: MultiConversation[]
+  /** Conversation count from /api/projects/summary. The rows themselves are
+   *  fetched by the card when it opens, so a collapsed group costs nothing. */
+  conversationCount: number
   latestActivityMs: number
   earliestStartMs: number
 }
@@ -30,24 +36,28 @@ function toMs(isoString: string | undefined): number {
 
 export function useProjectGroups(
   sessions: MultiSession[],
-  conversations: MultiConversation[],
+  summaries: MultiProjectSummary[],
   sortBy: SortBy,
   sortOrder: SortOrder,
 ): ProjectGroup[] {
   return useMemo(() => {
     const map = new Map<string, ProjectGroup>()
+    // A project path can exist on more than one server and they are distinct
+    // groups, so the map key carries the server too.
+    const keyOf = (serverId: string, projectKey: string) => `${serverId}::${projectKey}`
 
     for (const session of sessions) {
       // Prefer projectId for grouping; fall back to projectPath while
       // backend migration is in progress.
-      const key = session.projectId ?? session.projectPath
+      const key = keyOf(session.serverId, session.projectId ?? session.projectPath)
       if (!map.has(key)) {
         map.set(key, {
           projectId: session.projectId ?? session.projectPath,
           projectPath: session.projectPath,
           projectName: session.projectName,
+          serverId: session.serverId,
           sessions: [],
-          conversations: [],
+          conversationCount: 0,
           latestActivityMs: 0,
           earliestStartMs: Infinity,
         })
@@ -68,23 +78,36 @@ export function useProjectGroups(
       }
     }
 
-    for (const conversation of conversations) {
-      const key = conversation.projectId ?? conversation.projectPath
-      if (!map.has(key)) {
-        map.set(key, {
-          projectId: conversation.projectId ?? conversation.projectPath,
-          projectPath: conversation.projectPath,
-          projectName: conversation.projectPath,
-          sessions: [],
-          conversations: [],
-          latestActivityMs: 0,
-          earliestStartMs: Infinity,
-        })
-      }
-      const group = map.get(key)!
-      group.conversations.push(conversation)
+    // Sessions key on projectId when they have one, so a summary (which only
+    // knows the path) has to be matched by path, or a project with a live
+    // session would render as two cards.
+    const byPath = new Map<string, ProjectGroup>()
+    for (const group of map.values()) {
+      byPath.set(keyOf(group.serverId, group.projectPath), group)
+    }
 
-      const lastActivityMs = toMs(conversation.lastActivity)
+    for (const summary of summaries) {
+      const pathKey = keyOf(summary.serverId, summary.path)
+      const group =
+        byPath.get(pathKey) ??
+        (() => {
+          const created: ProjectGroup = {
+            projectId: summary.path,
+            projectPath: summary.path,
+            projectName: summary.name,
+            serverId: summary.serverId,
+            sessions: [],
+            conversationCount: 0,
+            latestActivityMs: 0,
+            earliestStartMs: Infinity,
+          }
+          map.set(pathKey, created)
+          byPath.set(pathKey, created)
+          return created
+        })()
+
+      group.conversationCount += summary.conversationCount
+      const lastActivityMs = toMs(summary.lastActivity)
       if (lastActivityMs > group.latestActivityMs) {
         group.latestActivityMs = lastActivityMs
       }
@@ -97,13 +120,6 @@ export function useProjectGroups(
       if (group.earliestStartMs === Infinity) {
         group.earliestStartMs = 0
       }
-    }
-
-    // Sort conversations within each group by lastActivity desc
-    for (const group of groups) {
-      group.conversations.sort(
-        (a, b) => toMs(b.lastActivity) - toMs(a.lastActivity),
-      )
     }
 
     // Sort groups
@@ -136,5 +152,5 @@ export function useProjectGroups(
     })
 
     return groups
-  }, [sessions, conversations, sortBy, sortOrder])
+  }, [sessions, summaries, sortBy, sortOrder])
 }

@@ -1,5 +1,6 @@
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
-import type { MultiSession, MultiConversation } from '@/types/api'
+import type { MultiSession } from '@/types/api'
+import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { TreeNode, FlatNode } from './types'
 
 // Brand palette for the tree leaf indicator. Live (running / waiting_input)
@@ -23,14 +24,15 @@ function splitPath(p: string | null | undefined): string[] {
 
 export function buildTree(
   sessions: MultiSession[],
-  conversations: MultiConversation[],
+  summaries: MultiProjectSummary[],
 ): TreeNode {
   const root: TreeNode = {
     name: '',
     fullPath: '',
     children: new Map(),
     sessions: [],
-    conversations: [],
+    conversationCount: 0,
+    conversationActivityMs: 0,
     totalCount: 0,
     directCount: 0,
   }
@@ -46,7 +48,8 @@ export function buildTree(
           fullPath: pathSoFar,
           children: new Map(),
           sessions: [],
-          conversations: [],
+          conversationCount: 0,
+          conversationActivityMs: 0,
           totalCount: 0,
           directCount: 0,
         })
@@ -61,13 +64,21 @@ export function buildTree(
     ensurePath(parts).sessions.push(s)
   }
 
-  for (const c of conversations) {
-    const parts = splitPath(c.projectPath)
-    ensurePath(parts).conversations.push(c)
+  // A summary is one project path with a count, so it lands on exactly one
+  // node. Two summaries can share a node only across servers, and the tree is
+  // already partitioned per server before this runs — hence += rather than =.
+  for (const summary of summaries) {
+    const node = ensurePath(splitPath(summary.path))
+    node.projectPath = summary.path
+    node.conversationCount += summary.conversationCount
+    node.conversationActivityMs = Math.max(
+      node.conversationActivityMs,
+      toMs(summary.lastActivity),
+    )
   }
 
   function calcTotals(node: TreeNode): number {
-    const direct = node.sessions.length + node.conversations.length
+    const direct = node.sessions.length + node.conversationCount
     let count = direct
     for (const child of node.children.values()) {
       count += calcTotals(child)
@@ -88,7 +99,7 @@ export function compactTree(node: TreeNode): TreeNode {
     if (
       compacted.children.size === 1 &&
       compacted.sessions.length === 0 &&
-      compacted.conversations.length === 0
+      compacted.conversationCount === 0
     ) {
       const [grandchild] = compacted.children.values()
       const merged: TreeNode = {
@@ -135,10 +146,7 @@ export function latestActivityMs(node: TreeNode): number {
       : toMs(s.startedAt) + (s.elapsedMs ?? 0)
     if (ms > latest) latest = ms
   }
-  for (const c of node.conversations) {
-    const ms = toMs(c.lastActivity)
-    if (ms > latest) latest = ms
-  }
+  if (node.conversationActivityMs > latest) latest = node.conversationActivityMs
   return latest
 }
 

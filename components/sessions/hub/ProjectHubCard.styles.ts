@@ -83,6 +83,10 @@ export function makeStyles(theme: Theme) {
   seeAllRow: {
     paddingVertical: spacing.xs,
   },
+  bodySpinner: {
+    paddingVertical: spacing.sm,
+    alignSelf: 'flex-start',
+  },
   seeAllText: {
     color: theme.text.accent,
     fontSize: font.sm,

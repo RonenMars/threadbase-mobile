@@ -20,7 +20,9 @@
     "serverOffline": "الخادم غير متاح",
     "serverOfflineSubtitle": "يُعرض الخوادم الأخرى. أعد المحاولة عندما يعود المضيف.",
     "serverWarming": "الخادم قيد التجهيز",
-    "serverWarmingSubtitle": "سيظهر السجل عند انتهاء الفهرسة."
+    "serverWarmingSubtitle": "سيظهر السجل عند انتهاء الفهرسة.",
+    "serverNeedsUpgrade": "الخادم بحاجة إلى تحديث",
+    "serverNeedsUpgradeSubtitle": "يعمل {{server}} بإصدار لا يدعم سرد المشاريع. حدّث خادم Threadbase لتصفح سجله هنا."
   },
   "card": {
     "copyId": "نسخ معرّف السيشن",

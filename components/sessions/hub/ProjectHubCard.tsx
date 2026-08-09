@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, Text, TouchableOpacity, Platform, UIManager, LayoutAnimation } from 'react-native'
+import { ActivityIndicator, View, Text, TouchableOpacity, Platform, UIManager, LayoutAnimation } from 'react-native'
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +10,7 @@ import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
 import { ConvRow } from './ConvRow'
 import { Card } from '@/components/ui/Card'
+import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { makeStyles } from './ProjectHubCard.styles'
@@ -46,18 +47,28 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
     transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 180])}deg` }],
   }))
 
+  // Expand-to-load: a closed card knows its conversation count from the
+  // project summary and fetches nothing. Opening it issues the first page.
+  // The card only ever shows a preview — the first page is enough for both the
+  // 5-row list and the merged view, with "see all" routing to the full screen.
+  const { conversations, isLoading } = useProjectConversations(
+    group.projectPath,
+    group.serverId,
+    undefined,
+    { enabled: isOpen && group.conversationCount > 0 },
+  )
+
   const sessionCount = group.sessions.length
-  const convCount = group.conversations.length
+  const convCount = group.conversationCount
   const encodedPath = encodeURIComponent(group.projectPath)
   // Prefer projectId for navigation identity (Step 5). Falls back to the
   // path-encoded value during migration when backend hasn't filled it yet.
-  const projectId =
-    group.sessions.find((s) => s.projectId)?.projectId ??
-    group.conversations.find((c) => c.projectId)?.projectId ??
-    encodedPath
+  const projectId = group.sessions.find((s) => s.projectId)?.projectId ?? encodedPath
 
   const todaySessionCount = group.sessions.filter((s) => isToday(s.startedAt)).length
-  const todayConvCount = group.conversations.filter((c) => isToday(c.lastActivity)).length
+  // Only the loaded rows can be counted, so this is 0 while the card is closed
+  // — the closed header shows "N live · last <time>" without a today count.
+  const todayConvCount = conversations.filter((c) => isToday(c.lastActivity)).length
 
   // Derive the project's lifecycle colour the same way SessionCard does.
   // Amber spine when any session is live; blue spine when sessions exist
@@ -144,7 +155,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
                   ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
                   node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
                 })),
-                ...group.conversations.map((c) => ({
+                ...conversations.map((c) => ({
                   key: `c-${c.serverId}::${c.id}`,
                   ms: Date.parse(c.lastActivity) || 0,
                   node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
@@ -152,6 +163,24 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
               ]
                 .sort((a, b) => b.ms - a.ms)
                 .map((item) => item.node)}
+              {isLoading ? (
+                <ActivityIndicator
+                  style={styles.bodySpinner}
+                  size="small"
+                  color={theme.text.secondary}
+                  testID={`hub-conversations-loading-${group.projectPath}`}
+                />
+              ) : null}
+              {convCount > conversations.length ? (
+                <TouchableOpacity
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onPress={() => router.push(`/project/${projectId}?path=${encodedPath}` as any)}
+                  activeOpacity={0.75}
+                  style={styles.seeAllRow}
+                >
+                  <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : (
             <>
@@ -171,7 +200,15 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
               {convCount > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionLabel}>CONVERSATIONS</Text>
-                  {group.conversations.slice(0, 5).map((conv) => (
+                  {isLoading ? (
+                    <ActivityIndicator
+                      style={styles.bodySpinner}
+                      size="small"
+                      color={theme.text.secondary}
+                      testID={`hub-conversations-loading-${group.projectPath}`}
+                    />
+                  ) : null}
+                  {conversations.slice(0, 5).map((conv) => (
                     <ConvRow
                       key={`${conv.serverId}::${conv.id}`}
                       conv={conv}

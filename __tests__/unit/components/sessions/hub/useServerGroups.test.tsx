@@ -1,15 +1,14 @@
 import { useServerGroups } from '@/components/sessions/hub/useServerGroups'
 import type { ProjectGroup } from '@/components/sessions/hub/useProjectGroups'
-import type { MultiConversation } from '@/types/api'
 import { renderHook } from '@testing-library/react-native'
 
 function makeGroup(
-  overrides: Partial<ProjectGroup> & Pick<ProjectGroup, 'projectId' | 'projectPath'>,
+  overrides: Partial<ProjectGroup> & Pick<ProjectGroup, 'projectId' | 'projectPath' | 'serverId'>,
 ): ProjectGroup {
   return {
     projectName: 'proj',
     sessions: [],
-    conversations: [],
+    conversationCount: 0,
     latestActivityMs: 0,
     earliestStartMs: 0,
     ...overrides,
@@ -18,21 +17,12 @@ function makeGroup(
 
 describe('useServerGroups', () => {
   it('keeps empty/offline servers visible as zero-count sections', async () => {
-    const conversation = {
-      id: 'c1',
-      serverId: 'srv-A',
-      projectPath: '/tmp/a',
-      projectName: 'a',
-      title: 'c1',
-      messageCount: 1,
-      lastActivity: '2026-07-01T00:00:00.000Z',
-    } as MultiConversation
-
     const groups = [
       makeGroup({
         projectId: '/tmp/a',
         projectPath: '/tmp/a',
-        conversations: [conversation],
+        serverId: 'srv-A',
+        conversationCount: 1,
       }),
     ]
 
