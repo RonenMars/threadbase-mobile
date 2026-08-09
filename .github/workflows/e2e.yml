@@ -1,0 +1,156 @@
+name: E2E
+
+# Maestro E2E (iOS sim). Two ways in:
+#
+#   * Monthly schedule — 00:00 UTC on the 1st, the low-frequency regression gate
+#     this suite has always been. It lived in `test.yml` until this workflow
+#     existed; it moved here so E2E has one home rather than two.
+#   * Manual dispatch — run it against any branch, tag, commit SHA, or open PR
+#     number. Defaults to `main`.
+#
+# The macOS runner + iOS Release build is ~15 minutes and ~$3/run, which is why
+# this is never wired to `pull_request`: per-commit E2E would cost more than it
+# catches. Dispatch it by hand when a change actually touches a flow.
+#
+#   gh workflow run E2E                       # main
+#   gh workflow run E2E -f ref=572            # PR #572's head
+#   gh workflow run E2E -f ref=my/branch      # a branch
+#   gh workflow run E2E -f ref=v1.2.3         # a tag
+#
+# Always dispatched from `main`: GitHub reads a workflow_dispatch definition
+# from the default branch, so `ref` selects the *code under test*, never which
+# version of this file runs. That also means a change to this workflow is only
+# live once it lands on `main`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag, commit SHA, or PR number to test (default: main)'
+        required: false
+        default: 'main'
+        type: string
+  schedule:
+    # Monthly E2E run: 00:00 UTC on the 1st of each month
+    - cron: '0 0 1 * *'
+
+concurrency:
+  # One E2E at a time per target — two runs would fight over the same simulator
+  # cache key for no benefit, and each one costs a macOS runner.
+  group: e2e-${{ inputs.ref || 'schedule' }}
+  cancel-in-progress: false
+
+jobs:
+  e2e-maestro:
+    name: E2E maestro (iOS)
+    runs-on: macos-15
+    timeout-minutes: 75
+    steps:
+      # `ref` is the one piece of attacker-controllable input in this workflow,
+      # so it is validated here and never interpolated into a `run:` script —
+      # it reaches the shell through the environment and leaves as a step
+      # output, which `actions/checkout` takes as a parameter rather than as
+      # code. A bare digit string means a PR: `refs/pull/N/head` is the PR's own
+      # commit, which is what you want to smoke-test (unlike `/merge`, it exists
+      # even when the PR has conflicts with its base).
+      - name: Resolve ref
+        id: resolve
+        env:
+          INPUT_REF: ${{ inputs.ref || 'main' }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$INPUT_REF" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
+            echo "::error::Refusing ref '$INPUT_REF' — expected a branch, tag, SHA, or PR number."
+            exit 1
+          fi
+          if printf '%s' "$INPUT_REF" | grep -Eq '^[0-9]+$'; then
+            RESOLVED="refs/pull/$INPUT_REF/head"
+          else
+            RESOLVED="$INPUT_REF"
+          fi
+          echo "ref=$RESOLVED" >> "$GITHUB_OUTPUT"
+          echo "Testing $RESOLVED" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.resolve.outputs.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore iOS DerivedData cache
+        uses: actions/cache@v5
+        with:
+          path: build/ios-ci
+          key: ios-derived-v1-${{ runner.os }}-xcode26.3-${{ hashFiles('package-lock.json', 'app.json') }}
+          restore-keys: |
+            ios-derived-v1-${{ runner.os }}-xcode26.3-${{ hashFiles('package-lock.json') }}-
+            ios-derived-v1-${{ runner.os }}-xcode26.3-
+
+      - name: Select Xcode 26
+        # Expo SDK 56's expo-modules-jsi Package.swift requires swift-tools 6.2,
+        # which ships with Xcode 26. The macos-15 runner defaults to Xcode 16.4
+        # (Swift 6.1) and rejects the package with "Could not resolve package
+        # dependencies: package 'apple' is using Swift tools version 6.2.0".
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Boot iOS simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
+          echo "Booting simulator: $DEVICE"
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+
+      - name: Build and install iOS app (Release)
+        run: |
+          # SDK 57 defaults prebuild to --clean, which would wipe the committed
+          # ios/Podfile (SwiftUICore/Xcode-26 hook) and regenerate it from scratch.
+          npx expo prebuild --platform ios --no-clean
+          xcodebuild \
+            -workspace ios/Threadbase.xcworkspace \
+            -scheme Threadbase \
+            -configuration Release \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -derivedDataPath build/ios-ci \
+            build
+          APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
+          xcrun simctl install booted "$APP_PATH"
+
+      - name: Run Maestro E2E suite
+        run: |
+          mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
+          npm run test:e2e:mock
+
+      - name: Capture sim screenshot + Maestro session dir on failure
+        if: failure()
+        run: |
+          # Snapshot the booted sim so we have at least one image even if
+          # Maestro wrote no per-flow debug output to e2e/_artifacts/debug.
+          xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
+          # Maestro defaults to writing test session output under
+          # ~/.maestro/tests/<timestamp>/. Copy the most recent session into
+          # the artifact dir so commands JSON + hierarchy snapshots survive.
+          LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
+          if [ -n "$LATEST" ]; then
+            mkdir -p e2e/_artifacts/maestro-session
+            cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
+          fi
+
+      - name: Upload Maestro artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: maestro-artifacts
+          path: e2e/_artifacts/
+          retention-days: 7
+          if-no-files-found: warn
