@@ -9,3 +9,25 @@ updates:
       directory: "/" # Location of package manifests
       schedule:
           interval: "weekly"
+      # Majors the toolchain cannot accept yet. Each entry lifts when the constraint
+      # below lifts — check that condition before deleting the pin, because both of
+      # these bumps look safe from the outside.
+      ignore:
+          # jest-expo@57 depends on the jest 29 family (babel-jest, jest-environment-jsdom,
+          # jest-snapshot, all ^29.2.1). npm hoists jest-mock@29 under jest-runtime@30 and
+          # every suite dies at resetModules with
+          # "this._moduleMocker.clearMocksOnScope is not a function" — zero tests run.
+          # The visible error is the --testPathPattern -> --testPathPatterns rename, which
+          # fails at argument parsing first; fixing the flag only moves the failure later.
+          # LIFTS WHEN: Expo ships a jest-30 preset — an SDK upgrade, not a package bump.
+          - dependency-name: "jest"
+            versions: ["30.x"]
+          - dependency-name: "@types/jest"
+            versions: ["30.x"]
+          # @typescript-eslint/typescript-estree@8.61.0 declares typescript >=4.8.4 <6.1.0.
+          # TS 7 crashes it at load on ts.Extension.Cjs. Note that `tsc --noEmit` stays
+          # GREEN under TS 7 — the break is in the lint toolchain, so "type check passes"
+          # is not evidence this is safe.
+          # LIFTS WHEN: eslint-config-expo moves to a typescript-eslint that parses TS 7.
+          - dependency-name: "typescript"
+            versions: ["7.x"]
