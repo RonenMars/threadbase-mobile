@@ -12,10 +12,15 @@ name: E2E
 # this is never wired to `pull_request`: per-commit E2E would cost more than it
 # catches. Dispatch it by hand when a change actually touches a flow.
 #
-#   gh workflow run E2E                       # main
+#   gh workflow run E2E                       # main, whole mock suite
 #   gh workflow run E2E -f ref=572            # PR #572's head
 #   gh workflow run E2E -f ref=my/branch      # a branch
 #   gh workflow run E2E -f ref=v1.2.3         # a tag
+#   gh workflow run E2E -f flows=e2e/codex_parity.yaml            # one flow
+#   gh workflow run E2E -f ref=572 -f flows="e2e/a.yaml e2e/b.yaml"
+#
+# Narrowing `flows` skips no setup — the Release build is the expensive part and
+# happens either way — so it saves minutes, not the bulk of the run.
 #
 # Always dispatched from `main`: GitHub reads a workflow_dispatch definition
 # from the default branch, so `ref` selects the *code under test*, never which
@@ -29,6 +34,11 @@ on:
         description: 'Branch, tag, commit SHA, or PR number to test (default: main)'
         required: false
         default: 'main'
+        type: string
+      flows:
+        description: 'Space-separated flow files, e.g. "e2e/codex_parity.yaml" (default: the whole mock suite)'
+        required: false
+        default: ''
         type: string
   schedule:
     # Monthly E2E run: 00:00 UTC on the 1st of each month
@@ -80,6 +90,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
       - name: Install dependencies
         run: npm ci
 
@@ -111,11 +126,27 @@ jobs:
           xcrun simctl boot "$DEVICE" || true
           xcrun simctl bootstatus "$DEVICE" -b
 
+      # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
+      # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
+      # and an xcodebuild that dies on a missing `Pods-Threadbase.release
+      # .xcconfig`. That is why every scheduled run since at least June 2026
+      # failed at the build step; a local machine never sees it because its
+      # `ios/Pods/` already exists. Prebuild first (it can rewrite the pbxproj),
+      # then install pods against the result.
+      #
+      # Mirrors deploy.yml: no `--deployment`, because prebuilt-artifact pods
+      # regenerate fresh checksums on CI and `--deployment` treats that as a
+      # fatal lockfile change. `bundle exec` keeps the Gemfile's CocoaPods 1.16.2
+      # pin, and reset-podfile-lock-path-noise.sh drops the four path-dependent
+      # checksums the runner's checkout path produces.
+      - name: Install CocoaPods
+        run: |
+          npx expo prebuild --platform ios --no-clean
+          (cd ios && bundle exec pod install)
+          ./scripts/reset-podfile-lock-path-noise.sh
+
       - name: Build and install iOS app (Release)
         run: |
-          # SDK 57 defaults prebuild to --clean, which would wipe the committed
-          # ios/Podfile (SwiftUICore/Xcode-26 hook) and regenerate it from scratch.
-          npx expo prebuild --platform ios --no-clean
           xcodebuild \
             -workspace ios/Threadbase.xcworkspace \
             -scheme Threadbase \
@@ -126,10 +157,49 @@ jobs:
           APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
           xcrun simctl install booted "$APP_PATH"
 
+      # `flows` empty runs the whole mock suite through its npm script, which
+      # stays the single source of truth for the flow list. A non-empty value
+      # reproduces that script's setup around a narrower `maestro test` — worth
+      # the duplicated three lines to keep the full-suite path untouched.
+      #
+      # Every entry is checked to look like `e2e/<name>.yaml` and to exist
+      # before it reaches the command. Word-splitting `$FLOWS` unquoted is the
+      # point (it is a list), and is safe here: expansion splits on whitespace
+      # without re-parsing shell metacharacters, so a `;` inside an entry is a
+      # filename character, not a separator — and the existence check rejects it
+      # regardless.
       - name: Run Maestro E2E suite
+        env:
+          FLOWS: ${{ inputs.flows }}
         run: |
+          set -euo pipefail
           mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
-          npm run test:e2e:mock
+          if [ -z "$FLOWS" ]; then
+            npm run test:e2e:mock
+            exit 0
+          fi
+          for f in $FLOWS; do
+            case "$f" in
+              e2e/*.yaml) ;;
+              *) echo "::error::Refusing flow '$f' — expected a path like e2e/<name>.yaml."; exit 1 ;;
+            esac
+            if [ ! -f "$f" ]; then
+              echo "::error::No such flow: $f"
+              exit 1
+            fi
+          done
+          echo "Running flows: $FLOWS" >> "$GITHUB_STEP_SUMMARY"
+          node e2e/check-sim.js
+          node e2e/ensure-release-build.js
+          MOCK_PORTS=7071,7072 node e2e/mock-server.js &
+          MOCK_PID=$!
+          sleep 1
+          set +e
+          maestro test --debug-output e2e/_artifacts/debug $FLOWS
+          STATUS=$?
+          set -e
+          kill "$MOCK_PID" 2>/dev/null || true
+          exit $STATUS
 
       - name: Capture sim screenshot + Maestro session dir on failure
         if: failure()
