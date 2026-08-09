@@ -41,6 +41,18 @@ export function applySessionUpdateToEagerCache(
  * conversations list so the row's message count / last activity update without
  * a manual pull-to-refresh.
  */
+// conversation_updated frames arrive per-liveness-ping and can burst, and each
+// invalidation re-drains every page of every server. Coalesce a burst into one
+// re-drain on the trailing edge so a chatty server doesn't refetch the whole
+// eager list on every ping. ponytail: module-level single timer, fine because
+// there is one eager conversations list app-wide.
+let convRefreshTimer: ReturnType<typeof setTimeout> | null = null
+const CONV_REFRESH_DEBOUNCE_MS = 1000
+
 export function refreshEagerConversations(queryClient: QueryClient): void {
-  void queryClient.invalidateQueries({ queryKey: ['conversations-eager'] })
+  if (convRefreshTimer) clearTimeout(convRefreshTimer)
+  convRefreshTimer = setTimeout(() => {
+    convRefreshTimer = null
+    void queryClient.invalidateQueries({ queryKey: ['conversations-eager'] })
+  }, CONV_REFRESH_DEBOUNCE_MS)
 }
