@@ -21,6 +21,7 @@ import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './ty
 import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 
 export function TreeSessionsList({ sessions, conversations, refreshing, onRefresh, searchOpen, isBackgroundRefreshing }: TreeSessionsListProps) {
@@ -134,11 +135,14 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     [router, servers, activeServerCount, debouncedQuery],
   )
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
-  const [collapsedServers, setCollapsedServers] = useState<Set<string>>(new Set())
+  const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
+  const toggleServerCollapsed = useViewPrefsStore((s) => s.toggleServerCollapsed)
   const SESSIONS_COLLAPSE_THRESHOLD = 3
-  const [sessionsCollapsed, setSessionsCollapsed] = useState(
-    () => sessions.length > SESSIONS_COLLAPSE_THRESHOLD
-  )
+  // Shared with the Classic view so the live-sessions header stays in the same
+  // state across layouts. `null` = follow the count-based default.
+  const storedSessionsCollapsed = useViewPrefsStore((s) => s.sessionsHeaderCollapsed)
+  const setSessionsCollapsed = useViewPrefsStore((s) => s.setSessionsHeaderCollapsed)
+  const sessionsCollapsed = storedSessionsCollapsed ?? sessions.length > SESSIONS_COLLAPSE_THRESHOLD
   const [selectedDrill, setSelectedDrill] = useState<{ node: TreeNode; serverId: string } | null>(null)
 
   const serverTrees = useMemo((): ServerTree[] => {
@@ -203,7 +207,7 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
     const multiServer = visibleServerCount > 1
     for (const { serverId, serverLabel, tree, singleRootPath, singleRootNode } of serverTrees) {
       if (tree.totalCount === 0) continue
-      const serverExpanded = !collapsedServers.has(serverId)
+      const serverExpanded = !collapsedServers.includes(serverId)
       if (singleRootNode && singleRootPath) {
         items.push({ kind: 'server-root', serverId, serverLabel, node: singleRootNode, collapsible: multiServer, isExpanded: serverExpanded })
         if (!multiServer || serverExpanded) {
@@ -235,13 +239,8 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
   }, [serverTrees])
 
   const handleToggleServer = useCallback((serverId: string) => {
-    setCollapsedServers((prev) => {
-      const next = new Set(prev)
-      if (next.has(serverId)) next.delete(serverId)
-      else next.add(serverId)
-      return next
-    })
-  }, [])
+    toggleServerCollapsed(serverId)
+  }, [toggleServerCollapsed])
 
   const handleSelectLeaf = useCallback((node: TreeNode, serverId: string) => {
     setSelectedDrill({ node, serverId })
@@ -264,14 +263,14 @@ export function TreeSessionsList({ sessions, conversations, refreshing, onRefres
           count={sessions.length}
           hasLive={hasLive}
           collapsed={sessionsCollapsed}
-          onToggle={collapsible ? () => setSessionsCollapsed((v) => !v) : undefined}
+          onToggle={collapsible ? () => setSessionsCollapsed(!sessionsCollapsed) : undefined}
         />
         {(!collapsible || !sessionsCollapsed) && sessions.map((s) => (
           <SessionCard key={`${s.serverId}::${s.id}`} session={s} />
         ))}
       </View>
     )
-  }, [sessions, sessionsCollapsed, SESSIONS_COLLAPSE_THRESHOLD])
+  }, [sessions, sessionsCollapsed, setSessionsCollapsed, SESSIONS_COLLAPSE_THRESHOLD])
 
   if (selectedDrill && !searchOpen) {
     return (
