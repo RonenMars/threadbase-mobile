@@ -665,3 +665,139 @@ pure dependency bump it always was.
 | Squash SHA on `main` | **`6e9e9faf`** |
 | CI | 9/9 + Snyk |
 | Rebased | `2321a450` → `a23975a2`, 4 commits replayed, no conflicts |
+
+## #563 — `perf(sessions): coalesce eager-fetch progress and memoize list roots`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`8b7c73b7`** |
+| CI | 9/9 + Snyk |
+| Rebased | `7a89e3be` → `c23e4045` |
+
+Rebased cleanly onto a `main` that already carried #560's edits to the same three list components.
+
+## #566 — `fix(sessions): stop the Hub background-refresh re-render loop`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`50472842`** |
+| CI | 9/9 + Snyk |
+| Rebased | `e2c96efe` → `ea3c9289`, 2 commits |
+
+## #567 — `chore(signing): bootstrap android keystore and play credentials from 1password`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`6be9b04f`** |
+| CI | 9/9 + Snyk |
+| Rebased | `0fda9d9a` → `6c5fc8a8`, 2 commits |
+
+## #568 — `feat(conversation): prototype infinite-query pagination for classic history`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`6f6b5a6f`** |
+| CI | 9/9 + Snyk |
+| Rebased | twice — `0720aae6` → `0e7797d9` (Part II, ADR conflict) → `9cfff144` (onto current `main`) |
+
+The second rebase was the one expected to conflict: both its files had since been rewritten by #560,
+#563 and #566. It replayed clean.
+
+## #569 — `fix(favorites): open conversations with stored id`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`18344b6a`** |
+| CI | 9/9 + Snyk |
+| Rebased | `7127e13c` → `d8466b03` |
+
+## #574 — `ci: dispatch a subset of Maestro flows, and fix the E2E iOS build`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`659b31f2`** |
+| CI | 9/9 + Snyk |
+| Rebased | `92c4e21e` → `2645f0b4`, 2 commits |
+
+## #585 — `docs(followups): add the repo-health follow-up set and mirror the PR-tracking notes`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`fdf439a7`** |
+| CI | 9/9 + Snyk |
+| Rebased | `1b2af601` → `ccc1be37`, 3 commits, 16 files |
+
+## #576 — `feat(hub): load grouped views from project summaries`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`a0a85e28`** |
+| CI | 9/9 + Snyk |
+| Rebased | `34667999` → `aa5a8c21` — **51 commits → 1** |
+
+Held back until every other PR had landed, so the rebase target already contained everything its old
+INT base carried. `git rebase --onto origin/main ac1eaf02` replayed its single commit onto `main`
+with no conflicts.
+
+**Gate applied before merging**, since a squash of the unrebased head would have put the whole old
+INT stack on `main` as one commit under this title:
+
+```
+$ gh pr view 576 --json commits -q '.commits | length'
+1
+$ gh pr view 576 --json files -q '.files | length'
+29        # was 90
+```
+
+## #572 — `feat(conversation): handle Codex active-writer collisions with fork recovery`
+
+| | |
+| --- | --- |
+| Squash SHA on `main` | **`419c8087`** |
+| CI | 9/9 + Snyk |
+| Rebased | `e26b2d1d` → `44ace43d` — **51 commits → 1** |
+
+Same treatment, same gate: `commits` = 1, `files` = 12 (was 72). No conflicts.
+
+---
+
+## Closing verification
+
+Every one of the seventeen merged, none on red, no CI job re-run, and no merge conflict at any point.
+
+```
+$ git diff origin/main integration/fresh-2026-08-09 --stat
+ ios/Podfile.lock | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+$ git diff --diff-filter=A --name-only origin/main integration/fresh-2026-08-09
+(no output)
+```
+
+**The integration branch's entire content is on `main`.** Nothing is present on the branch and absent
+from `main`, and the single remaining delta is precisely the #558 noise commit that was deliberately
+dropped:
+
+```
+-  ExpoModulesCore: 6abb896a…      +  ExpoModulesCore: e6e3f223…
+-  ExpoWidgets: 683ecb15…          +  ExpoWidgets: 86218eca…
+-  hermes-engine: 82b14fe6…        +  hermes-engine: 37d12a36…
+-  RNSentry: 1379dbcb…             +  RNSentry: 7bb2dcf9…
+-COCOAPODS: 1.16.2                 +COCOAPODS: 1.17.0
+```
+
+`main`: `7b7d9250` → **`419c8087`**, 17 squash commits, linear.
+
+`integration/fresh-2026-08-09` has served its purpose and should now be **retired, not maintained** —
+it is left pushed at `e4f6056c` pending that call. The old INT and its backups are untouched.
+
+## Left open deliberately
+
+| PR | Why |
+| --- | --- |
+| **#291** (TypeScript 7) | standing exclusion — outside `@typescript-eslint`'s peer range |
+| **#557** (jest 30) | standing exclusion — `jest-expo@57` pins the jest 29 family |
+| **#586** `chore(deps): bump undici 6.27.0 → 6.28.0` | **opened by Dependabot during this run**, so it was never in the merge set. Not evaluated |
+
+**Closed, not merged:** #575 and #580 — content already on `main` via #578/#579, verified
+byte-identical. Closed on the repo owner's instruction, without a comment.
