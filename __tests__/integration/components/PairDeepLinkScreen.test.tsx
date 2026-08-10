@@ -141,6 +141,10 @@ describe('PairDeepLinkScreen', () => {
       await findByText('Pair token rejected — generate a fresh QR on your server.'),
     ).toBeTruthy()
     expect(exchangeToken).toHaveBeenCalledTimes(1)
+    // The error surface must stay put — this is the deep-link entry point,
+    // so a navigation away here would render the error unseen (issue #597's
+    // failure mode one layer down).
+    expect(mockReplace).not.toHaveBeenCalled()
 
     exchangeToken.mockResolvedValueOnce({
       url: 'https://example.test',
