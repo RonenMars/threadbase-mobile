@@ -13,10 +13,10 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | ID | Title | Status |
 |---|---|---|
 | Bug 1 | Conversation open: add loader (min 1.2s) to prevent flicker | ✅ DONE 2026-05-21 (7e197ab) |
-| Bug 2 | Hub tree node open: loader + long-list render stall | Open (split — see Issue 1 + Issue 2) |
+| Bug 2 | Hub tree node open: loader + long-list render stall | 🟡 Split — Issue 1 done; Issue 2 mitigated by #576 (see below) |
 | Bug 3 | Quick Access strip never loads items | ✅ DONE 2026-05-16 (eea502d) |
 | Bug 4 | Long conversation: scroll-to-end flickery / jumpy | ✅ DONE 2026-05-22 (78218fb) |
-| Bug 5 | Multi-attachment send produces no output | 🔄 In flight — [PR #345](https://github.com/RonenMars/threadbase-mobile/pull/345) (spaces in `@path`; pairs with streamer #241) |
+| Bug 5 | Multi-attachment send produces no output | ✅ DONE — `escapePath` at `hooks/useComposerState.ts:94`. PR #345 was closed; the fix landed by another route |
 | Bug 6 | Conversation list content hidden under bottom action bar | ✅ DONE 2026-05-24 (PR #11, commit 9835ecf) |
 | Bug 7 | Quick Access strip: default-collapsed + tab reorder + hide when empty | ✅ DONE — Favorites-only strip (`c43e9a1`); remaining Recents routing superseded |
 | Bug 8 | Manage Favorites: duplicate top bar (8b CTA moved to Feature 24) | ✅ DONE — single native Stack header |
@@ -27,29 +27,29 @@ Once a bug is fixed, leave its entry in place and move the status marker to ✅ 
 | Bug 13 | New session: name modal flashes open then auto-closes before user can type | ♻️ Replaced — create/exit name modals removed (`6c138c8`); rename remains |
 | Bug 14 | After starting new session, file browser stays in stack and re-shows on exit | ✅ DONE — dismiss-then-push `/session/new` (`0909404`) |
 | Bug 15 | After new-session back, file browser is interaction-locked (only close works) | ✅ DONE — eliminated with Bug 14 navigation |
-| Bug 16 | Back from never-typed-in new session leaves an empty session alive | ✅ DONE on integration — stop unused fresh PTY on `beforeRemove` (`a17a2f2`); public PR #346 |
-| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | 🟡 Partial — live list uses native MVCP (`da5638c` / #382); reconnect also rehydrates bound conversation (U1) |
+| Bug 16 | Back from never-typed-in new session leaves an empty session alive | ✅ DONE — `beforeRemove` gated on `promptCount === 0`, `app/session/[id].tsx:537-542`. PR #346 was closed; the fix is on `main` |
+| Bug 17 | Chat output + on-reconnect: scroll-to-bottom is jumpy, not smooth | ✅ DONE (mechanism) — MVCP at `LiveConversationView.tsx:276` and `ConversationHistoryList.tsx:254`. One on-device confirmation still worth doing |
 | Bug 18 | Maestro flow `server_drag_reorder` — swipe crash / suite wiring | ✅ DONE — wired into `test:e2e:mock`; swipe removed (reorder covered by integration tests) |
 | Bug 19 | Maestro flow `tree_server_headers.yaml.skip` can't return to hub after second pair | Closed — flow deleted as unrun (issue #519) |
-| Bug 20 | New session from tree-view (with path completion): "Path" error | Open — not diagnosed |
+| Bug 20 | New session from tree-view (with path completion): "Path" error | Open — [#608](https://github.com/RonenMars/threadbase-mobile/issues/608). Re-confirm it still reproduces: streamer #461 fixed the path decode |
 | Bug 21 | "Open Session" from Recents lands on "Session not found" | ✅ DONE — Recents removed; U1 evicts stale session/conversation favorites on 404 + recovery CTA |
-| Bug 22 | Settings QR-scanner button is a no-op on the UI layer | Open — not diagnosed |
-| Bug 23 | Popular → "New Session here" errors "Unable to load directories" | Open — not diagnosed |
-| Bug 24 | Popular error text is black on black (almost invisible) | Open (visual — consult /impeccable) |
+| Bug 22 | Settings QR-scanner button is a no-op on the UI layer | ✅ DONE — `settings-scan-qr-btn` + scanner modal (`app/settings.tsx:474`); `e2e/settings_qr_scanner.yaml` guards it |
+| Bug 23 | Popular → "New Session here" errors "Unable to load directories" | ⛔ Obsolete — the Popular tab was removed; the surface no longer exists |
+| Bug 24 | Popular error text is black on black (almost invisible) | ⛔ Obsolete — the Popular tab was removed |
 | Bug 25 | ➜ Moved to ROADMAP as [Feature 22](./ROADMAP.md#feature-22--settings-button-on-the-filter--sort-bar-parity-with-sidebar) | Moved 2026-05-25 |
-| Bug 26 | Hide Quick Access Edit pencil when the active tab is empty | Open |
+| Bug 26 | Hide Quick Access Edit pencil when the active tab is empty | ✅ DONE — gated on `!stripCollapsed && allItems.length > 0` (`QuickAccessStrip.tsx:148`) |
 | Bug 27 | ➜ Moved to ROADMAP as [Feature 23](./ROADMAP.md#feature-23--onboarding-optional-server-name-slide-before-the-qr-scan) | Moved 2026-05-25 |
-| Bug 28 | Pull-to-refresh modal: show IP+port when server has no name | Open |
-| Bug 29 | Quick Access: open only on tab click; remove the right-side chevron | Open |
-| Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | Open — needs spec |
-| Bug 31 | Settings theme change doesn't apply colors across the whole app | Open — not diagnosed |
+| Bug 28 | Pull-to-refresh modal: show IP+port when server has no name | ✅ DONE — `components/sessions/shared/serverDisplayName.ts` |
+| Bug 29 | Quick Access: open only on tab click; remove the right-side chevron | ✅ DONE — Favorites-only strip; no chevron remains |
+| Bug 30 | Add-to-favorites is non-functional — needs spec from Claude Code | ✅ DONE — add / remove / reorder wired in `stores/quickAccess.ts` with persistence |
+| Bug 31 | Settings theme change doesn't apply colors across the whole app | 🟡 Near-done — `dark.*` refs 605 → 6 (all in `DiffViewer.tsx`), `useTheme()` 8 → 118. Residual: [#609](https://github.com/RonenMars/threadbase-mobile/issues/609) |
 | Bug 32 | One unavailable server hides conversations from all servers (Hub + search) | ✅ DONE 2026-05-27 (1ec1686) |
-| Bug 33 | Browse→session navigation: simplify the transitionEnd dismiss-then-push dance | Open — investigation |
+| Bug 33 | Browse→session navigation: simplify the transitionEnd dismiss-then-push dance | ✅ DONE — simplified to `router.back()` + one rAF (`app/browse.tsx:208-235`) |
 | Issue 1 | Post-intro: cached Hub list flashes, then re-paints with server data | ✅ DONE — cached-data refresh indicator (`2a3e6d8` / #326) |
-| Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | Open |
-| E2E | Mock Maestro suite — remaining flow failures + env gotchas | Open — see [e2e-remaining-work.md](./e2e-remaining-work.md) |
+| Issue 2 | Hub accordion expand stalls on long projects (1,266 items → ~9 s) | 🟡 Mitigated by #576 — `ProjectHubCard` renders only the loaded page + "See more". Unmeasured: [#607](https://github.com/RonenMars/threadbase-mobile/issues/607) |
+| E2E | Mock Maestro suite — remaining flow failures + env gotchas | Open — 11/15 passing. [#598](https://github.com/RonenMars/threadbase-mobile/issues/598) (stale build), [#600](https://github.com/RonenMars/threadbase-mobile/issues/600) (suite cannot gate). See [e2e-remaining-work.md](./e2e-remaining-work.md) |
 
-**Suggested next-up order (2026-07-22):** Merge in-flight pre-release PRs first (**Bug 5** #345, **Bug 16** #346, plus privacy Features 35/36 via #343). Then open new work in this order: **(1) Expo Router typed-route / `npm run typecheck` red** (required CI) → **(2) Maestro release suite green** (Feature 17 + [e2e-remaining-work.md](./e2e-remaining-work.md) + Bugs 18/19) → **(3) Feature 5 — onboarding polish** (OSS first-impression). After those: Issue 2 (hub accordion), Bug 17 (jumpy scroll). Historical sequencing notes remain under [Sequencing](#sequencing).
+**Status re-verified 2026-08-10 — see [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md).** Sixteen rows above changed. Bugs 5, 16, 17, 22, 26, 28, 29, 30 and 33 are done; Bugs 23 and 24 are obsolete because the Popular tab was removed; Bug 31 is all but finished; and Bug 2, Bug 20, Issue 2 and the E2E row were re-scoped against what the code now does. The PRs this note used to wait on (#343, #345, #346) are all **closed, not merged** — their fixes landed by another route, so check the code rather than the PR. What actually remains for a public release is tracked as GitHub issues #597–#621, ranked there with an execution plan.
 
 ---
 
