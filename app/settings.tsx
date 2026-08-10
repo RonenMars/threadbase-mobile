@@ -830,7 +830,7 @@ await refreshServerInfo(serverId)
           <Text style={s.rowNote}>{t('crashReporting.description')}</Text>
           <TouchableOpacity
             style={s.row}
-            onPress={() => Linking.openURL('https://threadbase.sh/privacy')}
+            onPress={() => Linking.openURL('https://threadbase.sh/privacy-policy')}
             accessibilityRole="button"
             accessibilityLabel={t('crashReporting.privacyPolicy')}
           >

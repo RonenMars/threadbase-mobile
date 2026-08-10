@@ -261,15 +261,25 @@ Match the title’s type. Examples: `feat/in-chat-search`,
 Open PRs against `main`. Rebase onto the latest `origin/main` before merge; squash
 title must follow `type(scope): summary`.
 
-> **Temporary — delete this note once [`LANDING-integration-to-main.md`](./LANDING-integration-to-main.md)
-> is done.** One wave of work has not reached `main` yet: `land/integration-prep`
-> is being landed in reviewable slices by that runbook. Until it finishes, prefer
-> basing new work on `main` anyway — a slice that has already landed is on `main`,
-> and one that has not will be rebased regardless.
->
-> An earlier version of this section told you to base PRs on
-> `integration-merge-354-355-376`. That branch does not exist (only a `-v2`), and
-> every open PR targets `main`.
+---
+
+## GitHub Issues — Format & Labels
+
+**Format and labels: [`threadbase/docs/issue-tracker.md`](https://github.com/RonenMars/threadbase/blob/main/docs/issue-tracker.md).** That file lives in the `threadbase` umbrella repo and is canonical for **every** component repo — never keep a local copy of these rules, invent a variant, or add a label to only one side.
+
+Read it before filing, re-labelling, or re-prioritising. The shape:
+
+```
+Title:   P<N>: <what is wrong or what should exist>
+Labels:  <one priority> + <one type> + <zero or more areas>
+```
+
+- **Exactly one priority** (`P0`–`P3`), repeated as the title prefix, because GitHub wraps labels out of view on narrow screens.
+- **Exactly one type** (`bug`, `enhancement`, `documentation`, `question`, `tech-debt`). Areas are free — zero or more.
+- **Re-prioritising means editing the title too.** They are two representations of one fact.
+- **`## Verified state` is the section that earns the format** — cite a `path/to/file.ts:123`, a PR number, or a quoted log line, and say when it was checked. The convention exists because an audit found trackers listing eight already-merged PRs as open work.
+- Cross-repo work is filed in **both** repos, each describing its own half, linked by URL.
+- One sentence per line, no AI attribution — same as commits and PR bodies.
 
 ---
 

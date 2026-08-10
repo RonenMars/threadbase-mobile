@@ -1,6 +1,6 @@
 # Proposed Privacy Policy — Threadbase Mobile
 
-> **Status:** Proposed replacement text for <https://threadbase.sh/privacy>.
+> **Status:** Proposed replacement text for <https://threadbase.sh/privacy-policy>.
 > The website source is not present in this workspace, so this file contains the
 > complete proposed policy for review. It must be published to the live URL
 > before the crash-reporting or feedback features ship to users.

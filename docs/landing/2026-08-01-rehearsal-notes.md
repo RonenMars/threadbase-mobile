@@ -4,7 +4,7 @@ Local rehearsal of the `land/integration-prep` → `main` landing, run 2026-08-0
 three-slice plan approved after Phase A. Nothing was pushed; `origin` stayed read-only
 throughout.
 
-Companion to [`PHASE-A-REPORT.md`](./PHASE-A-REPORT.md) and to
+Companion to `PHASE-A-REPORT.md` — a local rehearsal artifact that was never committed to this repo, so there is nothing to link — and to
 `LANDING-integration-to-main.md` on `land/integration-prep`. This file records what the replay
 actually did — it does not restate the runbook.
 

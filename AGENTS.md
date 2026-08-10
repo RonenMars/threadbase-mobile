@@ -122,6 +122,26 @@ branch before merge. Squash title must still follow `type(scope): summary`.
 
 ---
 
+## GitHub Issues — Format & Labels
+
+**Format and labels: [`threadbase/docs/issue-tracker.md`](https://github.com/RonenMars/threadbase/blob/main/docs/issue-tracker.md).** That file lives in the `threadbase` umbrella repo and is canonical for **every** component repo — never keep a local copy of these rules, invent a variant, or add a label to only one side.
+
+Read it before filing, re-labelling, or re-prioritising. The shape:
+
+```
+Title:   P<N>: <what is wrong or what should exist>
+Labels:  <one priority> + <one type> + <zero or more areas>
+```
+
+- **Exactly one priority** (`P0`–`P3`), repeated as the title prefix, because GitHub wraps labels out of view on narrow screens.
+- **Exactly one type** (`bug`, `enhancement`, `documentation`, `question`, `tech-debt`). Areas are free — zero or more.
+- **Re-prioritising means editing the title too.** They are two representations of one fact.
+- **`## Verified state` is the section that earns the format** — cite a `path/to/file.ts:123`, a PR number, or a quoted log line, and say when it was checked. The convention exists because an audit found trackers listing eight already-merged PRs as open work.
+- Cross-repo work is filed in **both** repos, each describing its own half, linked by URL.
+- One sentence per line, no AI attribution — same as commits and PR bodies.
+
+---
+
 ## Merging PRs — Rebase + Squash, Linear History
 
 Keep `main` a straight line — one commit per PR, no merge commits. Every PR follows the same two operations, in this order:

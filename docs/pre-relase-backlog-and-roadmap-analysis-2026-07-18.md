@@ -1,5 +1,7 @@
 # 🚦 Pre-release Backlog & Roadmap Analysis — 2026-07-18
 
+> **Superseded** by [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md), which re-verified every item against the tree.
+
 > **Snapshot:** `origin/main` at `94145f1b82bd8d97754b595c005f1df7161d221f` (fetched 2026-07-18)<br>
 > **Status update:** 2026-07-19 — live open-items: [`pre-relase-backlog-and-roadmap-analysis-2026-07-18-open-items.md`](./pre-relase-backlog-and-roadmap-analysis-2026-07-18-open-items.md)<br>
 > **Sources:** [`BACKLOG.md`](./BACKLOG.md), [`ROADMAP.md`](./ROADMAP.md), current code, current Git history, and focused verification commands<br>

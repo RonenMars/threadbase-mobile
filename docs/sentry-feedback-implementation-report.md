@@ -203,7 +203,7 @@ output.
 ### Privacy-policy & disclosure updates
 
 - `docs/proposed-privacy-policy.md` — the complete proposed replacement for
-  <https://threadbase.sh/privacy> (the website source is not in this workspace).
+  <https://threadbase.sh/privacy-policy> (the website source is not in this workspace).
   It distinguishes the five traffic categories, states that crash reporting is
   opt-in and off by default, names Sentry, lists the categories sent and excluded,
   covers retention/deletion/processing-region placeholders, and uses plain,
@@ -269,7 +269,7 @@ device names.
 
 ## Manual follow-ups before release
 
-- Publish `docs/proposed-privacy-policy.md` to <https://threadbase.sh/privacy>,
+- Publish `docs/proposed-privacy-policy.md` to <https://threadbase.sh/privacy-policy>,
   and set its effective date + Sentry processing region.
 - Create the Sentry project and set the real org/project slugs; configure
   `EXPO_PUBLIC_SENTRY_DSN` (runtime) and `SENTRY_AUTH_TOKEN` (EAS, sensitive).

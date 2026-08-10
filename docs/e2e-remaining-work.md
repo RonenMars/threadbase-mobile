@@ -1,9 +1,16 @@
 # E2E (Maestro) Mock Suite — Remaining Work
 
 Status of the `npm run test:e2e:mock` flow suite after the fixes in this branch.
-The suite runs 12 flows against `e2e/mock-server.js` on an **iOS 17 simulator**
-(Maestro 2.0.10 cannot drive iOS 26 reliably — the preflight in `e2e/check-sim.js`
-rejects it).
+The suite runs **15 flows** against `e2e/mock-server.js`, of which 11 pass — see
+[#600](https://github.com/RonenMars/threadbase-mobile/issues/600) for why a suite
+that is red by default cannot gate anything.
+
+**Environment (corrected 2026-08-10 — the original text below was written against
+Maestro 2.0.10 and is no longer true).** Maestro is pinned at **2.6.1**, and
+`e2e/check-sim.js:17` sets `MAX_SUPPORTED_IOS_MAJOR = 26`, so **iOS 26 is allowed**
+— `launchApp: clearState: true` was verified working on an iPhone 17 / iOS 26.4
+sim. The earlier "use iOS 17.2, iOS 26 is rejected" guidance is inverted; follow
+`check-sim.js`, not this document, when they disagree.
 
 ## Passing
 
@@ -106,7 +113,7 @@ XCUITest-driver infrastructure (see Environment gotchas), not a sheet open bug.
 
 ## Environment gotchas discovered
 
-- **iOS 26 sims are rejected** by `check-sim.js`; use iPhone 15 / iOS 17.2.
+- ~~**iOS 26 sims are rejected** by `check-sim.js`; use iPhone 15 / iOS 17.2.~~ **No longer true** — `check-sim.js` allows iOS 26 since Maestro was pinned to 2.6.1. Set `E2E_ALLOW_UNSUPPORTED_IOS=1` only to go beyond 26.
 - **Only one simulator may be booted** — a second booted sim makes Maestro's
   XCUITest driver time out ("iOS driver not ready in time"). Shut down extras.
 - **`simctl erase` boots to a locked lock screen**; install+launch the app to

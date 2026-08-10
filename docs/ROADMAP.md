@@ -16,40 +16,40 @@ New discrete tasks also land under [`roadmap/`](./roadmap/index.md) (one file pe
 |---|---|
 | Feature 1 — Tree directory view: pre-fill new-session path with current directory | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
 | Feature 2 — Move Export button from Historical session bottom bar into the info shelf | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
-| Feature 3 — Attach multiple files to a single message | 🟡 Partial — multi-select/upload shipped; Bug 5 `@path` fix in flight (#345 / streamer #241) |
-| Feature 4 — Auto-deploy to App Store + Google Play | Planned (CI/release infra) |
-| Feature 5 — Polish the onboarding flow | Planned (scope to be defined) — **next action** for OSS invite polish |
-| Feature 6 — Cross-session search with hit context + "open in session" | Planned (orchestration) |
-| Feature 7 — Workspace tagging across sessions / conversations / projects | Planned (orchestration) |
-| Feature 8 — Saved views: persisted filter + sort + tag combos as named tabs | Planned (orchestration) |
-| Feature 9 — Side-by-side session split view | Planned (orchestration) |
-| Feature 10 — Cross-server prompt templates / snippets library | Planned (orchestration) |
-| Feature 11 — Workspace sync across devices via streamer | Planned (orchestration, depends on 7/8/10) |
-| Feature 12 — Live Activities + Dynamic Island for in-progress sessions | Planned (mobile-native) |
-| Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) |
-| Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) |
-| Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) |
-| Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) |
-| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned (CI/quality) — **next action**; release suite still ungreen |
+| Feature 3 — Attach multiple files to a single message | ✅ Shipped — `attachments` is an array and all refs join into one payload (`hooks/useComposerState.ts:34,48,95`), with Bug 5's escaping |
+| Feature 4 — Auto-deploy to App Store + Google Play | Planned — [#602](https://github.com/RonenMars/threadbase-mobile/issues/602). Store listings are the gating half, not the CI half |
+| Feature 5 — Polish the onboarding flow | 🟡 Partial — top XS/S wins shipped; manual `tb pair` exchange + NotificationsStep remain. [#605](https://github.com/RonenMars/threadbase-mobile/issues/605) |
+| Feature 6 — Cross-session search with hit context + "open in session" | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 7 — Workspace tagging across sessions / conversations / projects | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 8 — Saved views: persisted filter + sort + tag combos as named tabs | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 9 — Side-by-side session split view | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 10 — Cross-server prompt templates / snippets library | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 11 — Workspace sync across devices via streamer | Planned (orchestration, depends on 7/8/10) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 12 — Live Activities + Dynamic Island for in-progress sessions | Planned (mobile-native) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
+| Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) — [#623](https://github.com/RonenMars/threadbase-mobile/issues/623). |
+| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned — [#610](https://github.com/RonenMars/threadbase-mobile/issues/610). Blocked behind [#598](https://github.com/RonenMars/threadbase-mobile/issues/598) / [#600](https://github.com/RonenMars/threadbase-mobile/issues/600): no value widening a suite that cannot signal |
 | Feature 18 — Upgrade to Expo SDK 56 | ✅ Shipped 2026-05-25 (TestFlight build 104; React Compiler re-enabled in 106) |
-| Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned (composer UX) |
-| Feature 20 — Visual regression gate on Maestro screenshots | Planned (CI/quality, follow-on to Feature 17) |
-| Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows | Planned (UX consistency) |
-| Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar) | Planned (small UX) |
-| Feature 23 — Onboarding: optional server-name slide before the QR scan | Planned (onboarding UX) |
-| Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA | Planned (depends on Bug 30 spec) |
-| Feature 25 — Clear react-hooks v5 lint warnings (React Compiler prereq) | Planned (platform/quality, RC prereq) |
-| Feature 26 — Verify SDK 56 precompiled XCFrameworks are active in Maestro CI | Planned (CI/perf, quick win) |
-| Feature 27 — Adopt EAS precompiled community libs for iOS build time | Planned (platform/perf, EAS-only) |
-| Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion | Planned (platform/perf, depends on Feature 25) |
-| Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned (platform/deps, low-priority) |
-| Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned (platform/noise, low-priority) |
-| Feature 32 — Handle batched `conversation_events` WS event | Planned (perf, low-priority) |
-| Feature 34 — Structured prompt cards for Codex sessions | Planned (cross-repo, streamer-side) |
-| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | 🔄 In flight — option (a) in [PR #343](https://github.com/RonenMars/threadbase-mobile/pull/343) |
-| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | 🟡 Partial — code path in #343; store/legal/on-device evidence still human-only |
+| Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned — [#615](https://github.com/RonenMars/threadbase-mobile/issues/615). The queue exists (`components/queue/`); the composer affordance does not |
+| Feature 20 — Visual regression gate on Maestro screenshots | Planned — [#610](https://github.com/RonenMars/threadbase-mobile/issues/610), with Feature 17 |
+| Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows | ✅ Shipped — `DrillItem`s carry status, branch, lastOutput and counts (`components/sessions/tree/DrillView.tsx:55-80`) |
+| Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar) | Planned — [#614](https://github.com/RonenMars/threadbase-mobile/issues/614) |
+| Feature 23 — Onboarding: optional server-name slide before the QR scan | Planned — [#614](https://github.com/RonenMars/threadbase-mobile/issues/614) |
+| Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA | Planned — [#614](https://github.com/RonenMars/threadbase-mobile/issues/614). Bug 30 is done, so this is no longer spec-gated |
+| Feature 25 — Clear react-hooks v5 lint warnings (React Compiler prereq) | 🟡 Near-done — **1** warning left across `app/`, `components/`, `hooks/`. [#621](https://github.com/RonenMars/threadbase-mobile/issues/621) |
+| Feature 26 — Verify SDK 56 precompiled XCFrameworks are active in Maestro CI | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616) |
+| Feature 27 — Adopt EAS precompiled community libs for iOS build time | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616) |
+| Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion | Planned — [#621](https://github.com/RonenMars/threadbase-mobile/issues/621). Sequence after [#607](https://github.com/RonenMars/threadbase-mobile/issues/607) so there is a number to regress against |
+| Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616). Still on `^5.2.13` |
+| Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616) |
+| Feature 32 — Handle batched `conversation_events` WS event | ✅ Shipped — `hooks/useConversationStream.ts:160` subscribes to the batched frame |
+| Feature 34 — Structured prompt cards for Codex sessions | Planned — [#620](https://github.com/RonenMars/threadbase-mobile/issues/620) |
+| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | ✅ Shipped — `reportOneShot` / `submitFeedbackViaSentry` self-init and tear down (`services/sentry.ts:359,477`). PR #343 was closed; the code landed |
+| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | 🟡 Partial — code path in #343; store/legal/on-device evidence still human-only — [#601](https://github.com/RonenMars/threadbase-mobile/issues/601). Code path shipped; store, legal and dashboard evidence stay human-only. |
 
-**Suggested order for the remaining originals (2026-07-22):** Merge **Feature 35/36** (#343) + **Bug 5** (#345). Then **typecheck green** → **Feature 17 / Maestro suite** → **Feature 5** (onboarding polish — needs a scoping pass). **Feature 4** (auto-deploy) after releases are regular. Feature 3 multi-select largely shipped; finish via Bug 5 PRs. Features 1 and 2 shipped in PR #11 (2026-05-24); both have full entries preserved in [Shipped](#shipped) for traceability.
+**Status re-verified 2026-08-10 — see [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md).** Features 3, 21, 32 and 35 have shipped; 5 and 25 are nearly done. PRs #343 and #345, which the old ordering note waited on, are **closed, not merged** — their code landed by another route, so verify at the source rather than by PR state. Remaining work is tracked as GitHub issues #597–#621 with severity, priority and an execution plan.
 
 **Suggested order for the orchestration cluster (6–15):** **Feature 13 Mission Control** (biggest daily-orchestration unlock, no native modules, reuses existing infra) → **Feature 6 Cross-session search** (already half-shipped at `hooks/useConversations.ts:431`; finishing it changes what the app is for) → **Feature 12 Live Activities** (highest mobile-native ceiling) → **Feature 15 Scheduled prompts** (strong async-teammate unlock if streamer cron is cheap) → **Feature 7 Tagging** → **Feature 8 Saved views** (builds on 7) → **Feature 10 Snippets** → **Feature 11 Workspace sync** (only after 7/8/10 exist and are worth syncing) → **Feature 14 Voice** (great but possibly overkill before #6 and #13 settle the workflow) → **Feature 9 Split view** (fun but iPad-coded; deprioritize if primary device is iPhone).
 
@@ -1141,7 +1141,7 @@ Today there are three ways data can reach Sentry, and they don't agree on what "
 
 **Considerations for the decision:**
 
-- **Privacy-policy honesty.** Whichever model is chosen must match what `docs/privacy-policy/proposed-privacy-policy.md` / the live policy at `threadbase.sh/privacy` actually says. Option (a) requires clear policy language that manual, explicit actions (crash report button, feedback submission) can send data regardless of the standing toggle — this is already partially true today (path 2) and the policy draft already accounts for it.
+- **Privacy-policy honesty.** Whichever model is chosen must match what `docs/privacy-policy/proposed-privacy-policy.md` / the live policy at `threadbase.sh/privacy-policy` actually says. Option (a) requires clear policy language that manual, explicit actions (crash report button, feedback submission) can send data regardless of the standing toggle — this is already partially true today (path 2) and the policy draft already accounts for it.
 - **User expectation mismatch.** A toggle labeled "Share anonymous reports" that's off, followed by a feedback submission that silently uses Sentry anyway, could reasonably feel like a violation even if technically scoped to one explicit action. Any move toward (a) should make this visible in the UI (e.g. a one-line note near the send button: "sent via Sentry" vs. "sent via email"), not just correct in code.
 - **Consistency reduces support/debug burden.** Right now, "does this feature work?" has a different answer depending on which Sentry entry point is asked — as seen in this session's own back-and-forth diagnosing why feedback attachments/diagnostics weren't appearing. A single consistent rule (whichever direction) removes an entire class of "why didn't this work" investigation.
 - **Silent fallback vs. explicit failure.** Path 3's current silent fallback to email is defensible (the user still gets their feedback delivered), but it means the "Include technical diagnostics" and screenshot-attachment work only reliably reaches Sentry when the toggle happens to already be on — which may be rare for typical users who never visit Settings.

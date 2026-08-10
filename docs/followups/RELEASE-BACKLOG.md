@@ -1,5 +1,7 @@
 # Release backlog — ranked for a public release, 2026-08-09 (rev. 17:45)
 
+> **Superseded by [RELEASE-READINESS-2026-08-10.md](./RELEASE-READINESS-2026-08-10.md).** Items 1, 13 and 14 have since merged, and several `BACKLOG.md` bugs listed elsewhere are obsolete. The ranking reasoning below is still the best write-up of *why* each item sits where it does — the states are what moved.
+
 Every follow-up brief in this directory, in one list, ranked by what it costs at a **public release** rather than by engineering tidiness. That lens reorders things: a silent wrong answer in a path decode outranks an unmeasured render target, and a test harness that can lie outranks both.
 
 Sources: `mobile/` (7 briefs, ADR 0001), `streamer/` (3 briefs), `repo-health/` (6 briefs). Live PR states were re-checked rather than taken from the briefs — several had moved.

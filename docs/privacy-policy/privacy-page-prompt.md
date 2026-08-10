@@ -8,7 +8,7 @@ Use this prompt in a fresh Claude Code session opened in `~/Desktop/dev/ai-tools
 
 The Threadbase iOS app needs a Privacy Policy URL to submit to the App Store. The canonical source of truth is the **Privacy** section of `~/Desktop/dev/ai-tools/tb-mobile/README.md` — that text is derived from a code audit of what the app actually does, so do not invent new claims.
 
-The chosen URL is `https://threadbase.sh/privacy`. App Store Connect will be set to point at that URL once the page is live.
+The chosen URL is `https://threadbase.sh/privacy-policy`. App Store Connect will be set to point at that URL once the page is live.
 
 ---
 

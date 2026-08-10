@@ -1,5 +1,7 @@
 # Prompt: upgrade Threadbase Mobile to Expo SDK 56
 
+> **Historical.** The repo is on Expo SDK 57 (`expo ^57.0.8`). Kept as the record of the SDK 56 upgrade; do not follow it as current guidance.
+
 Paste this prompt to Claude Code (or use as a task brief). It is designed to be self-contained.
 
 ---

@@ -89,7 +89,7 @@ describe('Help & Feedback — landing', () => {
     const spy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never)
     const screen = await renderScreen()
     await press(screen, 'feedback-landing-privacy')
-    expect(spy).toHaveBeenCalledWith('https://threadbase.sh/privacy')
+    expect(spy).toHaveBeenCalledWith('https://threadbase.sh/privacy-policy')
     spy.mockRestore()
   })
 })
