@@ -1,5 +1,7 @@
 # Parallel sets — merge order to main
 
+> **Historical.** A merge-order plan from July 2026. It references Quick Access Recents and Popular tabs, both since removed. Superseded by [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md).
+
 Companion to the parallel-set grouping derived from `docs/BACKLOG.md` + `docs/ROADMAP.md` on 2026-05-27. Each set is a worktree-bound branch worked by one agent. This doc covers **which set to merge first** and **why**, so two parallel branches don't fight over the same file.
 
 Status of the underlying items reflects the 2026-05-27 audit (Feature 1, Feature 2, Bug 6 already shipped via PR #11; Bug 32 already shipped via commit `1ec1686`; Bug 18 partial). The sets below are post-audit.

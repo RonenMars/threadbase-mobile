@@ -1,5 +1,7 @@
 # PR Merge Plan — 2026-05-24
 
+> **Historical.** A merge plan for a wave of PRs that landed in May 2026. Kept for archaeology.
+
 Strategy for landing the 7 open PRs from the Combo A + Combo B parallel-worktree session. Strategy chosen: **Option A — Wave merge** (smallest rebase per PR; independent reviewer stories; surfaces conflicts early).
 
 ---

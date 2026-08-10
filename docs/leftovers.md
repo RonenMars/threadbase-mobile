@@ -1,5 +1,7 @@
 # Leftovers — Uncommitted Work in This Worktree
 
+> **Stale — do not act on this.** It inventories uncommitted work in a `feat/sentry-crash-reporting` worktree for PR #303, which merged. Every item is done or moot. Deletion is tracked in [#618](https://github.com/RonenMars/threadbase-mobile/issues/618).
+
 Snapshot of everything sitting uncommitted in
 `~/Desktop/dev/ai-tools/tb-mobile-sentry` (branch `feat/sentry-crash-reporting`,
 on top of already-pushed PR #303 at commit `3b6319b`). Nothing here has been

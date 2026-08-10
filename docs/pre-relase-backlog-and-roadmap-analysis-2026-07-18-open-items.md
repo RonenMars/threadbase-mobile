@@ -1,5 +1,7 @@
 # Pre-release Open Items by Severity — status update
 
+> **Superseded** by [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md). Several items listed open here have since shipped.
+
 > **Derived from:** [`pre-relase-backlog-and-roadmap-analysis-2026-07-18.md`](./pre-relase-backlog-and-roadmap-analysis-2026-07-18.md)  
 > **Original snapshot:** 2026-07-18 · **Status update:** 2026-07-19  
 > **Scope:** Unfinished work only. Items closed by open PRs since the snapshot are listed under Resolved, not in the open tables.

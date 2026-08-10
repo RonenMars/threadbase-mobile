@@ -261,16 +261,6 @@ Match the title’s type. Examples: `feat/in-chat-search`,
 Open PRs against `main`. Rebase onto the latest `origin/main` before merge; squash
 title must follow `type(scope): summary`.
 
-> **Temporary — delete this note once [`LANDING-integration-to-main.md`](./LANDING-integration-to-main.md)
-> is done.** One wave of work has not reached `main` yet: `land/integration-prep`
-> is being landed in reviewable slices by that runbook. Until it finishes, prefer
-> basing new work on `main` anyway — a slice that has already landed is on `main`,
-> and one that has not will be rebased regardless.
->
-> An earlier version of this section told you to base PRs on
-> `integration-merge-354-355-376`. That branch does not exist (only a `-v2`), and
-> every open PR targets `main`.
-
 ---
 
 ## Merging PRs — Rebase + Squash, Linear History

@@ -1,5 +1,7 @@
 # Integration merge report — `integration-dev/v1.0.0-2026-07-22`
 
+> **Historical.** A report on the 2026-07-22 integration run. The integration branch was later bypassed — see [`followups/repo-health/06-integration-branch-decision.md`](./followups/repo-health/06-integration-branch-decision.md).
+
 **This document is the authoritative merge flow for the currently-open PRs.**
 When these branches are merged individually, follow the order and the per-conflict resolutions recorded here rather than re-deriving them.
 
