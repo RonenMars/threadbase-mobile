@@ -91,6 +91,11 @@ function installAndLaunch(appPath) {
   execFileSync('xcrun', ['simctl', 'launch', 'booted', BUNDLE_ID], { stdio: 'inherit' })
 }
 
+// Only called for the true first-run case (no build found anywhere) — `npx expo
+// run:ios --configuration Release` is documented (docs/e2e-remaining-work.md,
+// "Environment gotchas") to hold Metro open and never return once it finishes
+// building, so it must not be reachable from the "stale" path, where a dirty
+// working tree makes it the common case rather than a rare first-run one.
 function buildFresh() {
   console.log('Building Release build now (this may take a few minutes)...')
   execFileSync('npx', ['expo', 'run:ios', '--configuration', 'Release'], { stdio: 'inherit' })
@@ -140,8 +145,23 @@ function main() {
     )
     installAndLaunch(localAppPath)
   } else {
-    console.log(`Existing Release build is stale (${freshness.reason}). Rebuilding...`)
-    installAndLaunch(buildFresh())
+    // Issue #598 asks that a stale build fail loudly, not that this script fix
+    // it for you: auto-rebuilding here would run the blocking `expo run:ios`
+    // build on every dirty working tree (the normal state during development),
+    // and that build is known to hang holding Metro open (see buildFresh()) —
+    // trading a silent wrong pass for a silent hang. Fail and let the caller
+    // choose to rebuild or explicitly opt into reusing the stale build.
+    console.error(
+      [
+        '',
+        `Error: existing Release build is stale (${freshness.reason}).`,
+        'Refusing to reuse it silently.',
+        '',
+        'Fix: rebuild it — `npm run ios -- --configuration Release` — then re-run this script.',
+        'Escape hatch: set E2E_ALLOW_STALE_BUILD=1 to reuse the existing build anyway.',
+      ].join('\n'),
+    )
+    process.exit(1)
   }
 
   grantSpeechRecognition()

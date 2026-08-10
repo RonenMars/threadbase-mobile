@@ -133,20 +133,27 @@ test('a build stamped for the current HEAD is reused without rebuilding', () => 
   expect(result.stdout).toMatch(/current/i);
 });
 
-test('an existing build with no stamp is treated as stale and rebuilt', () => {
+// A stale build must fail loudly rather than trigger an automatic rebuild:
+// `expo run:ios --configuration Release` is documented to hang holding Metro
+// open once the build finishes, and a dirty tree — the common case here —
+// would otherwise hit that blocking rebuild on every routine run.
+
+test('an existing build with no stamp is treated as stale and fails loudly, without rebuilding', () => {
   const made = makeRepo();
   repo = made.repo;
   fs.mkdirSync(appDirFor(repo), { recursive: true }); // build present, but never stamped — the pre-fix bug shape
 
   const result = runScript(repo);
 
-  expect(result.status).toBe(0);
-  expect(result.npxLog).toContain('expo run:ios --configuration Release'); // rebuild fired
-  expect(result.stdout).toMatch(/stale/i);
-  expect(result.stdout).toMatch(/no freshness stamp/i);
+  expect(result.status).not.toBe(0);
+  expect(result.npxLog).toBe(''); // never attempts the blocking rebuild
+  expect(result.xcrunLog).toBe(''); // never installs the unverified build either
+  expect(result.stderr).toMatch(/stale/i);
+  expect(result.stderr).toMatch(/no freshness stamp/i);
+  expect(result.stderr).toMatch(/E2E_ALLOW_STALE_BUILD=1/);
 });
 
-test('a build stamped for an old commit is treated as stale and rebuilt', () => {
+test('a build stamped for an old commit is treated as stale and fails loudly, without rebuilding', () => {
   const made = makeRepo();
   repo = made.repo;
   fs.mkdirSync(appDirFor(repo), { recursive: true });
@@ -154,13 +161,13 @@ test('a build stamped for an old commit is treated as stale and rebuilt', () => 
 
   const result = runScript(repo);
 
-  expect(result.status).toBe(0);
-  expect(result.npxLog).toContain('expo run:ios --configuration Release');
-  expect(result.stdout).toMatch(/stale/i);
-  expect(result.stdout).toContain('0000000');
+  expect(result.status).not.toBe(0);
+  expect(result.npxLog).toBe('');
+  expect(result.stderr).toMatch(/stale/i);
+  expect(result.stderr).toContain('0000000');
 });
 
-test('a dirty working tree is always stale, even if the stamp matches HEAD', () => {
+test('a dirty working tree is always stale, even if the stamp matches HEAD, and fails loudly', () => {
   const made = makeRepo();
   repo = made.repo;
   fs.mkdirSync(appDirFor(repo), { recursive: true });
@@ -169,12 +176,12 @@ test('a dirty working tree is always stale, even if the stamp matches HEAD', () 
 
   const result = runScript(repo);
 
-  expect(result.status).toBe(0);
-  expect(result.npxLog).toContain('expo run:ios --configuration Release');
-  expect(result.stdout).toMatch(/uncommitted changes/i);
+  expect(result.status).not.toBe(0);
+  expect(result.npxLog).toBe('');
+  expect(result.stderr).toMatch(/uncommitted changes/i);
 });
 
-test('a build is rebuilt when git state cannot be determined at all', () => {
+test('a build fails loudly, without rebuilding, when git state cannot be determined at all', () => {
   // No `git init` — the copied script + app dir live outside any git repo.
   repo = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-build-nogit-')));
   fs.mkdirSync(path.join(repo, 'e2e'));
@@ -184,9 +191,9 @@ test('a build is rebuilt when git state cannot be determined at all', () => {
 
   const result = runScript(repo);
 
-  expect(result.status).toBe(0);
-  expect(result.npxLog).toContain('expo run:ios --configuration Release');
-  expect(result.stdout).toMatch(/could not determine git state/i);
+  expect(result.status).not.toBe(0);
+  expect(result.npxLog).toBe('');
+  expect(result.stderr).toMatch(/could not determine git state/i);
 });
 
 test('E2E_ALLOW_STALE_BUILD=1 reuses a stale build but warns loudly instead of silently passing', () => {
