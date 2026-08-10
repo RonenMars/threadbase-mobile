@@ -7,7 +7,7 @@
 
 ## Symptom
 
-Two related symptoms surfaced during the investigation of the PTY `@<path>` hang in `tb-streamer` (see [tb-streamer/docs/2026-05-20-pty-bracketed-paste-fix.md](../../tb-streamer/docs/2026-05-20-pty-bracketed-paste-fix.md)):
+Two related symptoms surfaced during the investigation of the PTY `@<path>` hang in `tb-streamer` (see [tb-streamer postmortem](https://github.com/RonenMars/threadbase-streamer/blob/main/docs/postmortems/2026-05-20-pty-bracketed-paste-fix.md)):
 
 1. **Stuck "Running" indicator.** After backgrounding the iOS app and returning, the session detail screen continued to render the last cached state (`status: Running`, `ptyAttached: true`, "11m 38s" elapsed) even though the streamer-side session had been killed by a deploy several minutes earlier. Pulling state from server confirmed the session was no longer in the live list at all.
 
@@ -91,5 +91,5 @@ All 341 mobile unit tests pass.
 
 ## References
 
-- Streamer-side root cause for the same incident: [tb-streamer/docs/2026-05-20-pty-bracketed-paste-fix.md](../../tb-streamer/docs/2026-05-20-pty-bracketed-paste-fix.md).
+- Streamer-side root cause for the same incident: [tb-streamer postmortem](https://github.com/RonenMars/threadbase-streamer/blob/main/docs/postmortems/2026-05-20-pty-bracketed-paste-fix.md).
 - Mobile API surface that triggered the bug discovery: `app/session/[id].tsx`, called from the home screen's session list.

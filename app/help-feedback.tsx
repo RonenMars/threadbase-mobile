@@ -44,7 +44,7 @@ import { addSafeBreadcrumb } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import type { FeedbackCategory, FeedbackReport, FeedbackAttachment, FeedbackTransportKind } from '@/types/feedback'
 
-const PRIVACY_URL = 'https://threadbase.sh/privacy'
+const PRIVACY_URL = 'https://threadbase.sh/privacy-policy'
 const MIN_DESCRIPTION = 10
 
 type View3 = 'landing' | 'form' | 'success' | 'copyFallback'

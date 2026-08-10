@@ -1,7 +1,7 @@
 # Store Console Wording — Draft Text for App Store Connect & Google Play
 
 Draft answers for the actual console questionnaire fields, built on the voice
-and structure of the current live policy at <https://threadbase.sh/privacy>
+and structure of the current live policy at <https://threadbase.sh/privacy-policy>
 (the "thin client for self-hosted streamers, local-first" framing) plus the
 accurate crash-reporting disclosure this branch requires. Paste into the
 consoles once the corrected privacy policy is live — the Privacy Policy URL
@@ -88,7 +88,7 @@ request when provided.
 cross-app or cross-site tracking, advertising, or data broker sharing.
 
 ### Privacy Policy URL field
-`https://threadbase.sh/privacy` — update only after the corrected policy
+`https://threadbase.sh/privacy-policy` — update only after the corrected policy
 (covering Sentry, both crash-reporting paths, and feedback) is published.
 
 ---
@@ -168,14 +168,14 @@ configured streamer is user-directed pass-through, not Threadbase data
 collection, and is not declared here.
 
 ### Privacy Policy URL field
-`https://threadbase.sh/privacy` — same requirement as App Store Connect: must
+`https://threadbase.sh/privacy-policy` — same requirement as App Store Connect: must
 point to the corrected, published policy before submitting.
 
 ---
 
 ## Before you paste any of this in
 
-1. Publish the corrected policy at `threadbase.sh/privacy` first — both
+1. Publish the corrected policy at `threadbase.sh/privacy-policy` first — both
    console forms should link to text that already says what these answers say.
 2. Confirm the actual Sentry project data region (US or EU) and reflect it in
    the published policy; it doesn't need to appear in the console fields

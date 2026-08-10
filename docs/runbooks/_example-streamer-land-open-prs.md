@@ -1,6 +1,6 @@
 # Landing runbook — getting these PRs onto `main`
 
-**Source:** [docs/postmortems/2026-07-22-merge-all-open-prs-report.md](../postmortems/2026-07-22-merge-all-open-prs-report.md). References below to "Part 1", "C1–C6" and "S1" are sections of that report.
+**Source:** [tb-streamer `docs/postmortems/2026-07-22-merge-all-open-prs-report.md`](https://github.com/RonenMars/threadbase-streamer/blob/main/docs/postmortems/2026-07-22-merge-all-open-prs-report.md). References below to "Part 1", "C1–C6" and "S1" are sections of that report.
 **Status:** live procedure — edit it as PRs land.
 
 The integration branch proves the PRs *can* coexist. It does not land them. Each still goes onto `main` one at a time under the repo's rebase + squash rule, and **the conflicts documented in Part 1 will recur** — this document maps them to the order so nobody meets them cold.

@@ -122,6 +122,23 @@ branch before merge. Squash title must still follow `type(scope): summary`.
 
 ---
 
+## GitHub Issues — Format & Labels
+
+Every issue follows the shared tracker convention in [`docs/conventions/issue-tracker.md`](./docs/conventions/issue-tracker.md), which `threadbase-mobile` and `threadbase-streamer` both use so an item reads the same from either side.
+
+Read that file before filing, re-labelling, or re-prioritising an issue. In short:
+
+- **Title:** `P<N>: <what is wrong or what should exist>` — the priority prefix is repeated in the title on purpose, because GitHub wraps labels out of view on narrow screens.
+- **Exactly one priority label** (`P0`–`P3`) and **exactly one type label** (`bug`, `enhancement`, `documentation`, `question`, `tech-debt`). Areas (`ci`, `e2e`, `performance`, `security`, `observability`, `platform`, `native`, `provider`, `ux`) are free-form — zero or more.
+- **Re-prioritising means editing the title too.** They are two representations of one fact.
+- **`## Verified state` is the section that earns the format** — assert a defect with a `path/to/file.ts:123`, a PR number, or a quoted log line, and say when it was checked. The convention was adopted after an audit found trackers listing eight already-merged PRs as open work.
+- Cross-repo work is filed in **both** repos, each describing its own half, linked by URL. Never one issue spanning both.
+- One sentence per line, and no AI attribution — same as commits and PR bodies.
+
+The canonical copy of that doc lives in `threadbase-streamer`; the mobile copy is a sync. Change the streamer copy and re-sync, never edit the mobile one alone.
+
+---
+
 ## Merging PRs — Rebase + Squash, Linear History
 
 Keep `main` a straight line — one commit per PR, no merge commits. Every PR follows the same two operations, in this order:

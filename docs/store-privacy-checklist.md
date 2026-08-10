@@ -45,7 +45,7 @@ Collection" answers. The features add these data types (all optional / opt-in):
 - [ ] Confirm **"Data Not Used to Track You"** across all of the above (no
       cross-app/website tracking, no data brokers).
 - [ ] Update the **Privacy Policy URL** to the published policy
-      (<https://threadbase.sh/privacy>) once the proposed policy in
+      (<https://threadbase.sh/privacy-policy>) once the proposed policy in
       `docs/privacy-policy/proposed-privacy-policy.md` is live.
 - [ ] `ITSAppUsesNonExemptEncryption` remains `false` (unchanged; HTTPS/standard
       crypto only).
@@ -98,7 +98,7 @@ update the form:
       does not itself send any data — only the user's Yes/No answer changes the
       standing setting.
 - [ ] Publish `docs/privacy-policy/proposed-privacy-policy.md` (updated to also describe the
-      manual "Report this crash" path) to <https://threadbase.sh/privacy>
+      manual "Report this crash" path) to <https://threadbase.sh/privacy-policy>
       **before** submitting a build with these features, and set the effective
       date + Sentry processing region in that document first. The current live
       policy states the app runs no crash-reporting service of any kind — that
