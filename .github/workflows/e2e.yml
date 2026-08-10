@@ -224,3 +224,38 @@ jobs:
           path: e2e/_artifacts/
           retention-days: 7
           if-no-files-found: warn
+
+  notify-schedule-failure:
+    name: Notify on scheduled E2E failure
+    needs: e2e-maestro
+    # `failure()` is true only when a needed job (e2e-maestro) actually failed —
+    # not when it's cancelled, and not when it's skipped. Combined with the
+    # event_name check, this only fires for the monthly cron: a workflow_dispatch
+    # run has someone watching it live, so it doesn't need a push alert. A
+    # scheduled run has no PR to report into, which is the blind spot this job
+    # closes — see docs/followups/repo-health/01-scheduled-run-notifications.md.
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      # CI_ALERT_WEBHOOK is unset until a channel (Slack/Discord/ntfy/etc.) is
+      # chosen — see docs/deploy-failure-notifications-plan.md. Until then this
+      # step is a clean no-op so a missing secret never fails the run.
+      - name: Send alert
+        env:
+          WEBHOOK_URL: ${{ secrets.CI_ALERT_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK_URL:-}" ]; then
+            echo "::notice::CI_ALERT_WEBHOOK secret not set — skipping notification. See docs/deploy-failure-notifications-plan.md to configure a channel."
+            exit 0
+          fi
+          # GitHub context values are passed through env: above and referenced
+          # here as shell variables, then handed to jq -n --arg — never
+          # string-interpolated straight into a shell-quoted JSON body, which is
+          # a workflow-injection vector the repo's PostToolUse hook flags.
+          PAYLOAD=$(jq -n --arg t "E2E scheduled run failed: $WORKFLOW_NAME — $RUN_URL" '{text: $t}')
+          curl -sf -X POST "$WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD"
