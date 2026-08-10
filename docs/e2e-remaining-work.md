@@ -122,8 +122,12 @@ XCUITest-driver infrastructure (see Environment gotchas), not a sheet open bug.
   the driver slot — `pkill -9 -f test-without-building` before retrying.
 - **`ensure-release-build.js` hangs if it has to build**: a bare
   `npx expo run:ios --configuration Release` builds *and then holds Metro open*, so
-  the script never returns and Maestro never starts. Pre-build the Release `.app`
-  (so the fast install path fires) or make the build step non-blocking.
+  the script never returns and Maestro never starts. Still true for a genuine
+  first build (no `.app` found anywhere) — pre-build the Release `.app` once
+  (`npm run ios -- --configuration Release`) so the fast install path fires, or
+  make that build step non-blocking. As of #598's staleness guard, a build that
+  merely went *stale* no longer risks this: the script fails fast with a
+  "stale, rebuild it yourself" error instead of triggering the blocking rebuild.
 - **Onboarding pairing survives `clearState`** (SecureStore/Keychain persists), so a
   sim previously paired to a real streamer skips onboarding and never points at the
   mock. `simctl erase` (or uninstall) clears it.
