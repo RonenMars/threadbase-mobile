@@ -1,4 +1,5 @@
 {
+  "screenTitle": "זיווג",
   "scanner": {
     "permissionTitle": "גישה למצלמה",
     "permissionBody": "Threadbase זקוק לגישה למצלמה כדי לסרוק קוד QR לזיווג המוצג על ידי השרת שלך.",

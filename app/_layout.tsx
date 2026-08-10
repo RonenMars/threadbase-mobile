@@ -354,6 +354,10 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="pair"
+        options={{ title: i18n.t('pair:screenTitle'), headerShown: true }}
+      />
       <Stack.Screen name="session" options={{ headerShown: false }} />
       <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
       <Stack.Screen

@@ -1,0 +1,159 @@
+import React from 'react'
+import { fireEvent, waitFor } from '@testing-library/react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import * as pairExchange from '@/services/pair-exchange'
+import { useServersStore } from '@/stores/servers'
+import { renderWithI18n } from '@/test-utils/render'
+import PairDeepLinkScreen from '@/app/pair'
+
+jest.mock('@/services/pair-exchange', () => {
+  const actual = jest.requireActual<typeof import('@/services/pair-exchange')>(
+    '@/services/pair-exchange',
+  )
+  return {
+    ...actual,
+    exchangeToken: jest.fn(),
+  }
+})
+
+jest.mock('@/services/pair-device-name', () => ({
+  defaultPairDeviceName: () => 'Test Phone',
+}))
+
+const exchangeToken = pairExchange.exchangeToken as jest.MockedFunction<
+  typeof pairExchange.exchangeToken
+>
+
+const mockReplace = jest.fn()
+const FUTURE_EXP = String(Math.floor(Date.now() / 1000) + 180)
+
+function setParams(params: { url?: string; token?: string; exp?: string }) {
+  ;(useLocalSearchParams as jest.Mock).mockReturnValue(params)
+}
+
+beforeEach(() => {
+  exchangeToken.mockReset()
+  mockReplace.mockReset()
+  ;(useRouter as jest.Mock).mockReturnValue({
+    push: jest.fn(),
+    replace: mockReplace,
+    back: jest.fn(),
+    navigate: jest.fn(),
+    setParams: jest.fn(),
+    canGoBack: jest.fn(() => true),
+  })
+  useServersStore.setState({
+    servers: {},
+    activeServerIds: [],
+    displayedServerIds: [],
+    scanProgress: {},
+  })
+})
+
+describe('PairDeepLinkScreen', () => {
+  it('exchanges the token, adds the server, and lands on the hub', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP })
+    exchangeToken.mockResolvedValue({
+      url: 'https://example.test',
+      apiKey: 'tb_sealed',
+      publicUrl: 'https://example.test',
+      machineName: 'ronen-mac.local',
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: null,
+    })
+
+    await renderWithI18n(<PairDeepLinkScreen />)
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+
+    expect(exchangeToken).toHaveBeenCalledWith({
+      url: 'https://example.test',
+      token: 'pt_abc',
+      deviceName: 'Test Phone',
+    })
+    const added = Object.values(useServersStore.getState().servers)
+    expect(added).toHaveLength(1)
+    expect(added[0].url).toBe('https://example.test')
+    expect(added[0].apiKey).toBe('tb_sealed')
+    expect(added[0].label).toBe('ronen-mac.local')
+  })
+
+  it('shows a real error for an expired link, without exchanging', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_x', exp: '1' })
+
+    const { findByText } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText('This pair QR has expired. Run tb pair on your server again.'),
+    ).toBeTruthy()
+    expect(exchangeToken).not.toHaveBeenCalled()
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('shows an invalid-link error when the url or token is missing', async () => {
+    setParams({ token: 'pt_x' })
+
+    const { findByText } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText("That QR doesn't look like a Threadbase pair code."),
+    ).toBeTruthy()
+    expect(exchangeToken).not.toHaveBeenCalled()
+  })
+
+  it('is idempotent when the server is already paired, without re-exchanging', async () => {
+    useServersStore.setState({
+      servers: {
+        'srv-1': {
+          id: 'srv-1',
+          url: 'https://example.test',
+          apiKey: 'existing-key',
+          isConnected: false,
+          serverInfo: null,
+          connectionError: null,
+        },
+      },
+      activeServerIds: ['srv-1'],
+      displayedServerIds: ['srv-1'],
+      scanProgress: {},
+    })
+    // Trailing slash on the incoming link; addServer's own normalisation
+    // strips it, so this must still match the already-paired server.
+    setParams({ url: 'https://example.test/', token: 'pt_abc', exp: FUTURE_EXP })
+
+    await renderWithI18n(<PairDeepLinkScreen />)
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    expect(exchangeToken).not.toHaveBeenCalled()
+    expect(Object.keys(useServersStore.getState().servers)).toEqual(['srv-1'])
+  })
+
+  it('shows a token-rejected error and lets the user retry', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_used', exp: FUTURE_EXP })
+    exchangeToken.mockRejectedValueOnce(
+      new pairExchange.PairExchangeError('token', 'Pair token rejected'),
+    )
+
+    const { findByText } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText('Pair token rejected — generate a fresh QR on your server.'),
+    ).toBeTruthy()
+    expect(exchangeToken).toHaveBeenCalledTimes(1)
+
+    exchangeToken.mockResolvedValueOnce({
+      url: 'https://example.test',
+      apiKey: 'tb_sealed_2',
+      publicUrl: null,
+      machineName: null,
+      deviceId: null,
+      deviceToken: null,
+      capabilities: null,
+    })
+    fireEvent.press(await findByText('Try again'))
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    expect(exchangeToken).toHaveBeenCalledTimes(2)
+  })
+})
