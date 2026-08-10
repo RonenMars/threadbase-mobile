@@ -1,4 +1,5 @@
 {
+  "screenTitle": "Pairing",
   "scanner": {
     "permissionTitle": "Camera access",
     "permissionBody": "Threadbase needs camera access to scan a pairing QR code shown by your server.",

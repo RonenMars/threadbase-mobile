@@ -1,4 +1,5 @@
 {
+  "screenTitle": "الإقران",
   "scanner": {
     "permissionTitle": "الوصول إلى الكاميرا",
     "permissionBody": "يحتاج Threadbase إلى الوصول للكاميرا لمسح رمز QR للإقران الذي يعرضه خادمك.",

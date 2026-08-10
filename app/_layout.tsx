@@ -63,6 +63,23 @@ SplashScreen.preventAutoHideAsync()
 // global persists across Expo fast-refresh reloads; resets on native restart.
 const g = global as typeof global & { __splashShown?: boolean }
 
+/**
+ * Whether a route with no paired servers should be bounced to onboarding.
+ *
+ * `pair` is exempt alongside `onboarding`: a `threadbase://pair` deep link runs
+ * an async token exchange that adds the server itself. Redirecting mid-flight
+ * races that, and on a failed exchange it unmounts the error screen before it
+ * renders — so an expired link would look like the app ignoring the tap, which
+ * is the silent first-run failure the pair route exists to fix.
+ */
+export function shouldRedirectToOnboarding(
+  firstSegment: string | undefined,
+  hasServers: boolean,
+): boolean {
+  if (hasServers) return false
+  return firstSegment !== 'onboarding' && firstSegment !== 'pair'
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
@@ -101,7 +118,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const addingServer = inOnboarding && mode === 'add'
     const hasServers = activeServerIds.length > 0
     const handle = requestAnimationFrame(() => {
-      if (!hasServers && !inOnboarding) {
+      if (shouldRedirectToOnboarding(segments[0], hasServers)) {
         router.replace('/onboarding')
       } else if (hasServers && inOnboarding && !addingServer) {
         router.replace('/')
@@ -354,6 +371,10 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="pair"
+        options={{ title: i18n.t('pair:screenTitle'), headerShown: true }}
+      />
       <Stack.Screen name="session" options={{ headerShown: false }} />
       <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
       <Stack.Screen
