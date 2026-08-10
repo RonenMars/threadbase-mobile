@@ -1,6 +1,6 @@
 # Deploy Failure Notifications — Plan
 
-**Status:** Proposed (not implemented). Plan only.
+**Status:** Partially implemented. The scheduled-E2E half shipped in `.github/workflows/e2e.yml` (`notify-schedule-failure` job, gated on a `CI_ALERT_WEBHOOK` repo secret) to close the blind spot described in `docs/followups/repo-health/01-scheduled-run-notifications.md`. The `deploy.yml` half below (`notify-failure`) is still not implemented — when it is, reuse the same `CI_ALERT_WEBHOOK` secret rather than minting a second one.
 
 ## Motivation
 
@@ -67,10 +67,11 @@ Start failure-only.
 
 ## Implementation checklist (when approved)
 
+- [x] `e2e.yml`: scheduled-run failure alert shipped (`notify-schedule-failure` job). Fires only when `github.event_name == 'schedule'` and the `e2e-maestro` job fails; no-ops cleanly (exits 0, doesn't fail the run) when `CI_ALERT_WEBHOOK` is unset.
 - [ ] Create the channel endpoint:
   - Slack: create an Incoming Webhook, copy the URL.
   - Telegram: create/identify the bot, get its token + the target chat_id.
-- [ ] Add the secret(s) to the repo: `DEPLOY_ALERT_WEBHOOK` (Slack) or `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`.
+- [ ] Add the secret to the repo: `CI_ALERT_WEBHOOK` (already read by `e2e.yml`; a generic name so `deploy.yml` can share it instead of minting a second secret) pointing at a Slack Incoming Webhook, Discord webhook, ntfy topic, or similar — anything that accepts a plain `{"text": "..."}` POST body.
 - [ ] Append the `notify-failure` job to `.github/workflows/deploy.yml`.
 - [ ] Build the JSON payload with `jq -n` (no raw `${{ }}` interpolation into the body).
 - [ ] Include a deep link: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`.
