@@ -15,21 +15,25 @@ import {
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { useServersStore } from '@/stores/servers'
+import { clientLog } from '@/lib/clientLog'
 
 type Phase = 'exchanging' | 'error'
 
 // Mirrors PairScannerModal's error mapping so a tapped link and a scanned QR
-// produce the same messages for the same failure.
+// produce the same messages for the same failure. The translated copy never
+// repeats err.message — it stays a developer detail, routed to clientLog for
+// whoever debugs the next pairing failure.
 function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
   if (err instanceof PairUriError) {
     return t(`scanner.errors.uri.${err.code}`)
   }
   if (err instanceof PairExchangeError) {
-    if (err.kind === 'network' || err.kind === 'server') {
-      return t(`scanner.errors.exchange.${err.kind}`, { message: err.message })
-    }
+    clientLog.info('pair.exchange', err.kind, { message: err.message })
     return t(`scanner.errors.exchange.${err.kind}`)
   }
+  clientLog.info('pair.exchange', 'unrecognized', {
+    message: err instanceof Error ? err.message : String(err),
+  })
   return t('scanner.errors.generic')
 }
 

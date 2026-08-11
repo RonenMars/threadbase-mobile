@@ -160,4 +160,50 @@ describe('PairDeepLinkScreen', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
     expect(exchangeToken).toHaveBeenCalledTimes(2)
   })
+
+  it('shows a translated, actionable message for an unreachable host — never the raw exception', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_net', exp: FUTURE_EXP })
+    exchangeToken.mockRejectedValueOnce(
+      new pairExchange.PairExchangeError(
+        'network',
+        'fetch failed: UnexpectedException: Could not connect to the server. (at ExpoModulesCore/Promise.swift:56)',
+      ),
+    )
+
+    const { findByText, queryByText } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText(
+        'Could not reach that server. Check that the streamer is running and your phone is on the same network.',
+      ),
+    ).toBeTruthy()
+    expect(queryByText(/Promise\.swift/)).toBeNull()
+    expect(queryByText(/UnexpectedException/)).toBeNull()
+  })
+
+  it('shows a translated message for an unexpected server response — never the raw status text', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_srv', exp: FUTURE_EXP })
+    exchangeToken.mockRejectedValueOnce(
+      new pairExchange.PairExchangeError('server', 'Server returned 500'),
+    )
+
+    const { findByText, queryByText } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText(
+        "The server responded unexpectedly. Update the streamer to the latest version and try again.",
+      ),
+    ).toBeTruthy()
+    expect(queryByText(/Server returned 500/)).toBeNull()
+  })
+
+  it('falls back to the generic translated message for an unrecognised error shape', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_x', exp: FUTURE_EXP })
+    exchangeToken.mockRejectedValueOnce(new TypeError('Network request failed'))
+
+    const { findByText, queryByText } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(await findByText('Pairing failed.')).toBeTruthy()
+    expect(queryByText(/Network request failed/)).toBeNull()
+  })
 })

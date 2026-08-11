@@ -22,9 +22,9 @@
       "exchange": {
         "token": "Pair token rejected — generate a fresh QR on your server.",
         "rate-limited": "Too many attempts. Wait a minute and try again.",
-        "network": "Could not reach the server: {{message}}",
+        "network": "Could not reach that server. Check that the streamer is running and your phone is on the same network.",
         "decrypt": "Server response could not be decrypted.",
-        "server": "{{message}}"
+        "server": "The server responded unexpectedly. Update the streamer to the latest version and try again."
       }
     }
   }
