@@ -7,7 +7,7 @@
 # button exists, is tappable, and the scanner UI appears.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/settings_qr_scanner.yaml (or via npm run test:e2e:mock)
+# Usage: node e2e/run-maestro.js test e2e/settings_qr_scanner.yaml (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase
 ---

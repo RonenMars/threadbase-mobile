@@ -192,7 +192,7 @@ The environment traps that go with these (a symlinked `node_modules`, a second b
 ```bash
 cp -Rc ../../tb-mobile/node_modules ./node_modules   # Metro follows a symlink to the wrong root
 EXPO_PUBLIC_OPEN_TRACE=1 npx expo start --port 8082 --clear   # check 8081 isn't another session's
-maestro test -e CONVERSATION_ID=<id> -e SERVER_ID=<serverId> e2e/perf/conversation-open-loop.yaml
+node e2e/run-maestro.js test -e CONVERSATION_ID=<id> -e SERVER_ID=<serverId> e2e/perf/conversation-open-loop.yaml
 ```
 
 The trace prints to the Metro console.

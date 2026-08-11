@@ -83,7 +83,7 @@ run_flow() {
   local flow="$1"
   local label="$2"
   echo "▶ running $label flow: $flow"
-  if ! maestro --platform ios --device "$IOS_UDID" test "$flow"; then
+  if ! node e2e/run-maestro.js --platform ios --device "$IOS_UDID" test "$flow"; then
     echo "✗ $label maestro flow FAILED"
     return 1
   fi

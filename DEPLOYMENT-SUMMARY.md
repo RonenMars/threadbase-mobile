@@ -82,7 +82,7 @@ npm run test:e2e:prod  # Loads credentials from .env.prod automatically
 **Manual Run (without npm script):**
 ```bash
 source .env.prod
-maestro test -e PROD_SERVER_URL=$PROD_SERVER_URL -e PROD_API_KEY=$PROD_API_KEY \
+node e2e/run-maestro.js test -e PROD_SERVER_URL=$PROD_SERVER_URL -e PROD_API_KEY=$PROD_API_KEY \
   e2e/prod-server-connect-only.yaml
 ```
 

@@ -13,7 +13,7 @@
 # Uses deep linking to bypass hub navigation (same pattern as feat2_export_in_info_shelf.yaml).
 # Requires: mock server running on localhost:7071 (serves codex-conversation-detail.json for
 #           /api/conversations/conv-codex-1)
-# Usage: maestro test e2e/codex_parity.yaml
+# Usage: node e2e/run-maestro.js test e2e/codex_parity.yaml
 #        (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase

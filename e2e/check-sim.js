@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 'use strict'
 // Pre-flight for the Maestro E2E scripts: confirm a booted iOS simulator and
-// that its runtime is one the pinned Maestro can actually drive.
+// that its runtime is one the locally supported Maestro setup can drive.
 //
 // Maestro 2.0.10's bundled XCUITest driver raced/died during the
 // `simctl uninstall/install` that `launchApp: clearState: true` performs on
 // iOS 26.x simulators (Xcode 26), failing flows with
 // `Unable to clear state … Failed to connect to /127.0.0.1:7001`. Maestro 2.6.1
-// fixes this — `launchApp: clearState: true` verified COMPLETED on an iPhone 17
-// / iOS 26.4 sim — so the gate now allows iOS 26. Set E2E_ALLOW_UNSUPPORTED_IOS=1
-// to bypass for any runtime above the ceiling below.
+// fixes that operation — `launchApp: clearState: true` verified COMPLETED on an
+// iPhone 17 / iOS 26.4 sim — so the gate allows iOS 26. That result does not
+// prove XCTest teardown stayed healthy; e2e/run-maestro.js separately detects
+// the known XCTAutomationSupport teardown crash. Set E2E_ALLOW_UNSUPPORTED_IOS=1
+// to bypass for any runtime above the compatibility ceiling below.
 const { execFileSync } = require('child_process')
 
-// Highest iOS major the pinned Maestro (2.6.1) drives reliably here. Bump when
-// the pinned Maestro version gains support for a newer iOS.
+// Highest iOS major exercised here with Maestro 2.6.1 or newer. Bump only after
+// a newer iOS runtime is verified; this ceiling is not a teardown-health claim.
 const MAX_SUPPORTED_IOS_MAJOR = 26
 
 function runtimeMajor(runtimeId) {
@@ -54,7 +56,7 @@ if (supported.length === 0 && !allowUnsupported) {
   console.error(
     [
       '',
-      `Error: the booted simulator runs iOS ${major}, which the pinned Maestro (2.6.1)`,
+      `Error: the booted simulator runs iOS ${major}, which this project's Maestro setup`,
       'has not been verified to drive here.',
       `Booted: ${offending}`,
       '',
@@ -72,7 +74,7 @@ if (supported.length === 0 && !allowUnsupported) {
 if (unsupported.length > 0 && allowUnsupported) {
   console.warn(
     `Warning: running on iOS ${unsupported[0].major ?? '?'} with E2E_ALLOW_UNSUPPORTED_IOS=1 — ` +
-      'above the verified ceiling; flows may fail if the pinned Maestro cannot drive this runtime.',
+      'above the verified ceiling; flows may fail if Maestro cannot drive this runtime.',
   )
 }
 

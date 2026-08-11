@@ -16,7 +16,7 @@
 # Run with:
 #   npm run test:e2e:mock
 # or directly:
-#   maestro test --debug-output e2e/_artifacts/debug e2e/06_search_anchor.yaml
+#   node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug e2e/06_search_anchor.yaml
 
 appId: com.ronenmars.threadbase
 ---

@@ -17,7 +17,7 @@
 appId: com.ronenmars.threadbase
 env:
   # Metro dev-server URL as it appears in the Expo dev-client picker. Override
-  # to match this machine's IP: `maestro test -e METRO_URL=http://<ip>:8081 …`
+  # to match this machine's IP: `node e2e/run-maestro.js test -e METRO_URL=http://<ip>:8081 …`
   # (the npm script passes it for you).
   METRO_URL: http://localhost:8081
 ---

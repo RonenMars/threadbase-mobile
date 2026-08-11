@@ -10,7 +10,7 @@
 #
 # Requires: mock server running on localhost:7071 with the bug6 fixture
 #           wired into /api/conversations/:id (see mock-server.js).
-# Usage: maestro test e2e/bug6_bottom_bar_inset.yaml
+# Usage: node e2e/run-maestro.js test e2e/bug6_bottom_bar_inset.yaml
 
 appId: com.ronenmars.threadbase
 ---

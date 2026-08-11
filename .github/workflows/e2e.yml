@@ -159,7 +159,7 @@ jobs:
 
       # `flows` empty runs the whole mock suite through its npm script, which
       # stays the single source of truth for the flow list. A non-empty value
-      # reproduces that script's setup around a narrower `maestro test` — worth
+      # reproduces that script's setup around a narrower guarded Maestro run — worth
       # the duplicated three lines to keep the full-suite path untouched.
       #
       # Every entry is checked to look like `e2e/<name>.yaml` and to exist
@@ -195,7 +195,7 @@ jobs:
           MOCK_PID=$!
           sleep 1
           set +e
-          maestro test --debug-output e2e/_artifacts/debug $FLOWS
+          node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug $FLOWS
           STATUS=$?
           set -e
           kill "$MOCK_PID" 2>/dev/null || true

@@ -17,7 +17,7 @@
 #
 # Requires: mock server on localhost:7071
 # Usage: node scripts/record-simulator-flow.js e2e/promo_02_pairing.yaml
-#        (or: maestro test e2e/promo_02_pairing.yaml)
+#        (or: node e2e/run-maestro.js test e2e/promo_02_pairing.yaml)
 
 appId: com.ronenmars.threadbase
 ---

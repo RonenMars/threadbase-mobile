@@ -12,7 +12,7 @@
 # Run with:
 #   npm run test:e2e:mock
 # or directly:
-#   maestro test --debug-output e2e/_artifacts/debug e2e/05_chat_flow.yaml
+#   node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug e2e/05_chat_flow.yaml
 
 appId: com.ronenmars.threadbase
 ---

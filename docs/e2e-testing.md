@@ -305,7 +305,7 @@ npm run test:e2e:demo:watch
 
 Or run maestro directly:
 ```bash
-maestro test e2e/demo-server-connect-only.yaml
+node e2e/run-maestro.js test e2e/demo-server-connect-only.yaml
 ```
 
 ## Debug Output
