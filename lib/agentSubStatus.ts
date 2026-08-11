@@ -1,3 +1,5 @@
+import { CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
+
 /**
  * What a `running` session is actually doing, scraped from the rendered
  * terminal screen we already paint.
@@ -10,8 +12,13 @@
  * the damage is a stale label in one release rather than a wrong field
  * broadcast to every client.
  *
- * Derived against two captured live turns (2026-08-12, Claude Code v2.1.x);
- * every rule below is there because a naive version of it failed on that data:
+ * Each provider is read with its own rules — see the Codex section below, which
+ * has a named state on screen and needs none of the inference this comment
+ * describes.
+ *
+ * The Claude rules were derived against two captured live turns (2026-08-12,
+ * Claude Code v2.1.x); each one is there because a naive version of it failed
+ * on that data:
  *
  *  - Chunks are differential repaints (48-70 bytes carrying one spinner glyph
  *    and a digit or two of the token counter), so per-chunk text is useless.
@@ -55,15 +62,80 @@ const HOOKS = /hooks…/i
 /** How many trailing rendered rows carry the status line. */
 export const SUB_STATUS_TAIL_ROWS = 6
 
+// ── Codex ───────────────────────────────────────────────────────────────────
+// Codex is easier than Claude and must not go through Claude's rules: its
+// status bar carries a NAMED state, so there is nothing to infer.
+//
+//   gpt-5.6-sol high · ~/dev/proj · gpt-5.6-sol · high · Working · Workspace · …
+//
+// Captured 2026-08-12 against codex-cli 0.147.0: a turn walks Ready → Working
+// → Ready, and no other state appeared. So Codex reports `working` / `idle`
+// only — it never distinguishes thinking from streaming, and claiming
+// otherwise would be invention.
+//
+// Running Codex through Claude's rules is not merely imprecise, it latches:
+// `• Working (5s • esc to interrupt)` satisfies Claude's WORKING marker, while
+// Codex paints no `<verb> for <N>s` line, so DONE never fires and the label
+// sticks on `working` for the rest of the session.
+
+/** The bar's ` · ` separator identifies it among the tail rows. */
+const CODEX_BAR_SEPARATOR = ' · '
+
+/**
+ * The state is a whole FIELD of the bar, so compare fields exactly rather than
+ * searching the line. The project path is a field of that same bar, and a
+ * substring or even word-boundary search would let a directory named
+ * `Working-copy` drive the label; `~/dev/Working-copy` can never be *equal* to
+ * `Working`.
+ *
+ * A bar too narrow to fit the state truncates it ("Read…"), which matches
+ * nothing and holds the previous value — the safe direction.
+ */
+const CODEX_WORKING_FIELD = 'Working'
+const CODEX_READY_FIELD = 'Ready'
+/** MCP servers still loading. A boot, not a turn — so it claims nothing. */
+const CODEX_STARTING_FIELD = 'Starting'
+
+function codexStatusFields(tailLines: readonly string[]): string[] | null {
+  // Last row carrying the separator, not simply the last non-empty row: mid
+  // turn the composer (`› Reply with exactly: hello`) is repainted after the
+  // bar and is transiently the last row, which would read as "no bar".
+  for (let i = tailLines.length - 1; i >= 0; i--) {
+    const line = tailLines[i]
+    if (line.includes(CODEX_BAR_SEPARATOR)) {
+      return line.split(CODEX_BAR_SEPARATOR).map((f) => f.trim())
+    }
+  }
+  return null
+}
+
+function deriveCodexSubStatus(
+  tailLines: readonly string[],
+  prev: AgentSubStatus,
+): AgentSubStatus {
+  const fields = codexStatusFields(tailLines)
+  // No bar on screen — a gate dialog replaced it, or the frame is torn.
+  if (fields === null) return prev
+  if (fields.includes(CODEX_WORKING_FIELD)) return 'working'
+  if (fields.includes(CODEX_READY_FIELD)) return 'idle'
+  if (fields.includes(CODEX_STARTING_FIELD)) return 'unknown'
+  return prev
+}
+
 /**
  * @param tailLines the last few *rendered* rows, unfiltered — the status line
  *   is exactly the chrome `VirtualTerminal.getLines()` strips, so pass raw rows.
  * @param prev the previous result, held through torn repaints.
+ * @param provider which agent painted the screen. Anything that is not Codex
+ *   is read with Claude's rules, which is also the safe default for an unknown
+ *   provider: they key off Claude-specific glyphs and degrade to `unknown`.
  */
 export function deriveAgentSubStatus(
   tailLines: readonly string[],
   prev: AgentSubStatus = 'unknown',
+  provider?: ProviderName | string | null,
 ): AgentSubStatus {
+  if (provider === CODEX_CLI_PROVIDER) return deriveCodexSubStatus(tailLines, prev)
   const tail = tailLines.join('\n')
   const working = tail.match(WORKING)
   if (!working) {

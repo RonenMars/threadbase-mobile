@@ -62,6 +62,66 @@ describe('deriveAgentSubStatus', () => {
   })
 })
 
+describe('deriveAgentSubStatus for Codex', () => {
+  // Bars copied verbatim from a captured codex-cli 0.147.0 session.
+  const READY_BAR =
+    '  gpt-5.6-sol high · ~/dev/tb-codex-probe · gpt-5.6-sol · high · Ready · Workspace · Ask for approval · Context 10'
+  const WORKING_BAR =
+    '  gpt-5.6-sol high · ~/dev/tb-codex-probe · gpt-5.6-sol · high · Working · Workspace · Ask for approval · Context 10'
+
+  it('reads the named state straight off the status bar', () => {
+    expect(deriveAgentSubStatus([WORKING_BAR], 'unknown', 'codex-cli')).toBe('working')
+    expect(deriveAgentSubStatus([READY_BAR], 'working', 'codex-cli')).toBe('idle')
+  })
+
+  it('does not latch the way Claude’s rules do on a Codex screen', () => {
+    // `• Working (5s • esc to interrupt)` satisfies Claude's in-progress
+    // marker, and Codex paints no `<verb> for <N>s` line — so under Claude's
+    // rules the label sticks on `working` for the rest of the session.
+    const codexWorkingLine = '• Working (5s • esc to interrupt)'
+    expect(deriveAgentSubStatus([codexWorkingLine], 'unknown')).toBe('working')
+    expect(deriveAgentSubStatus([READY_BAR], 'working')).toBe('working') // latched
+
+    // Under Codex's own rules the same screens resolve.
+    expect(deriveAgentSubStatus([codexWorkingLine, WORKING_BAR], 'unknown', 'codex-cli')).toBe(
+      'working',
+    )
+    expect(deriveAgentSubStatus([READY_BAR], 'working', 'codex-cli')).toBe('idle')
+  })
+
+  it('finds the bar when the composer is repainted below it', () => {
+    // Mid-turn the composer lands after the bar and is transiently the last
+    // row; taking "last non-empty row" as the bar would read as no bar at all.
+    expect(
+      deriveAgentSubStatus([WORKING_BAR, '› Reply with exactly: hello'], 'idle', 'codex-cli'),
+    ).toBe('working')
+  })
+
+  it('cannot be driven by a project path that contains a state word', () => {
+    const bar = READY_BAR.replace('~/dev/tb-codex-probe', '~/dev/Working-copy')
+    expect(deriveAgentSubStatus([bar], 'unknown', 'codex-cli')).toBe('idle')
+  })
+
+  it('holds the previous value when a gate replaces the bar', () => {
+    expect(
+      deriveAgentSubStatus(
+        [
+          '  Approaching rate limits',
+          '› 1. Switch to gpt-5.6-luna                 Fast and affordable agentic coding model.',
+          '  Press enter to confirm or esc to go back',
+        ],
+        'working',
+        'codex-cli',
+      ),
+    ).toBe('working')
+  })
+
+  it('claims nothing while MCP servers are still loading', () => {
+    const bar = READY_BAR.replace(' Ready ', ' Starting ')
+    expect(deriveAgentSubStatus([bar], 'unknown', 'codex-cli')).toBe('unknown')
+  })
+})
+
 describe('agentSubStatusLabelKey', () => {
   it('maps the working states to sessions labels', () => {
     expect(agentSubStatusLabelKey('thinking')).toBe('status.thinking')

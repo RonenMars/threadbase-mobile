@@ -88,7 +88,11 @@ export function useTerminalStream(
     setLines(visible)
     // Raw rows on purpose: the status line this reads is exactly the chrome
     // getLines() filters out.
-    const next = deriveAgentSubStatus(vt.getTailLines(SUB_STATUS_TAIL_ROWS), subStatusRef.current)
+    const next = deriveAgentSubStatus(
+      vt.getTailLines(SUB_STATUS_TAIL_ROWS),
+      subStatusRef.current,
+      provider,
+    )
     if (next !== subStatusRef.current) {
       subStatusRef.current = next
       setSubStatus(next)
@@ -163,6 +167,11 @@ export function useTerminalStream(
 
   useEffect(() => {
     vtRef.current?.setProvider(provider)
+    // Drop the held sub-status too: until `provider` arrives the screen is read
+    // with Claude's rules, and on a Codex session those can leave a `working`
+    // that Codex's own rules would never have produced. Re-deriving from
+    // `unknown` re-reads the same screen under the right rules.
+    subStatusRef.current = 'unknown'
     if (historyFedRef.current || lines.length > 0) {
       publishLines()
     }
