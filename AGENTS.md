@@ -39,6 +39,12 @@ Whenever `package.json` or `package-lock.json` changes:
 1. Run `pod install` from the `ios/` directory.
 2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
 
+`pod install` writes the same bytes to `ios/Podfile.lock` (committed) and `ios/Pods/Manifest.lock` (gitignored), and Xcode's `[CP] Check Pods Manifest.lock` phase diffs the two on every build — a mismatch fails the archive with "The sandbox is not in sync with the Podfile.lock". Anything that rewrites one must rewrite the other.
+
+Four `SPEC CHECKSUM` entries — `ExpoModulesCore`, `ExpoWidgets`, `hermes-engine`, `RNSentry` — hash a podspec generated at install time that bakes in the checkout's absolute path, so they differ per machine, per worktree and per CI runner for the same pod at the same version. `scripts/reset-podfile-lock-path-noise.sh` reverts `ios/Podfile.lock` when the drift is limited to those four lines and resyncs `Manifest.lock` to match; a genuine pod change also moves that pod's version line and is left alone.
+
+The `pre-commit` hook runs that script whenever `ios/Podfile.lock` is staged, so the noise never reaches a commit. The ship and deploy pipelines run it right after `pod install`.
+
 ---
 
 ## Icons
