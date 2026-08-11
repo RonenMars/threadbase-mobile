@@ -1,0 +1,180 @@
+# Maestro promo — Flow 2: "Sixty seconds from zero to paired"
+# Storyboard: docs/marketing/linkedin-video-flows.md → Flow 2
+#
+# Not a test. This drives the onboarding carousel at a human pace so the
+# simulator recording reads like someone setting the app up for the first
+# time: Welcome → Connect (QR instructions, then manual pair) → Notifications
+# → Done → Hub. Assertions exist only to keep the recording from silently
+# capturing the wrong screen.
+#
+# The QR *scan* itself is not driven here — Maestro cannot hand `expo-camera`
+# a real frame (same limitation noted in ts1_onboarding_pairing.yaml). What
+# this flow does capture is the "Scan to pair." instructions screen, which is
+# the better shot anyway: it shows `tb pair` on the server alongside the app.
+# Film the actual scan separately and cut to the paired state at 12s.
+# Deliberately does NOT tap "Open camera" — that raises the iOS camera
+# permission dialog, which Maestro cannot dismiss and which would end the take.
+#
+# Requires: mock server on localhost:7071
+# Usage: node scripts/record-simulator-flow.js e2e/promo_02_pairing.yaml
+#        (or: maestro test e2e/promo_02_pairing.yaml)
+
+appId: com.ronenmars.threadbase
+---
+# clearKeychain too — expo-secure-store survives clearState, and a promo take
+# must always start from a genuinely fresh install.
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- waitForAnimationToEnd
+
+# --- 3–6s · Onboarding — Welcome -------------------------------------------
+# "// AMBIENT CODING" / "Pull a thread. Watch it weave."
+- assertVisible:
+    id: "onboarding-welcome-cta"
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-01-welcome
+
+- tapOn:
+    id: "onboarding-welcome-cta"
+
+- waitForAnimationToEnd
+
+# --- 6–8s · Onboarding — Connect (chooser) ---------------------------------
+# Both pairing cards on screen, "Scan QR" marked Recommended.
+- assertVisible:
+    id: "onboarding-connect-qr-card"
+
+- assertVisible:
+    id: "onboarding-connect-paste-card"
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-02-connect-chooser
+
+# --- 8–12s · Onboarding — Connect · QR instructions ------------------------
+# The hero shot: "Scan to pair." with the `tb pair` command to run on the
+# server. Stop here — do not tap "Open camera".
+- tapOn:
+    id: "onboarding-connect-qr-card"
+
+- waitForAnimationToEnd
+
+# `connect.qrHeadline`. The qr-explain pane has no testID of its own — the
+# `$ tb pair` copy block (copy-command-btn) lives in the *manual* pane, not
+# this one.
+- assertVisible: "Scan to pair."
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-03-scan-to-pair
+
+- tapOn:
+    id: "onboarding-connect-back-to-choose"
+
+- waitForAnimationToEnd
+
+# --- Pair for real, via the manual path ------------------------------------
+# One field at a time, with animation waits — a script hammering testIDs looks
+# wrong on camera.
+- tapOn:
+    id: "onboarding-connect-paste-card"
+
+- waitForAnimationToEnd
+
+# The manual pane carries the `$ tb pair` command block — the "run this on
+# your server" shot the QR pane only describes in prose.
+- assertVisible:
+    id: "copy-command-btn"
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-03b-tb-pair-command
+
+- tapOn:
+    id: "onboarding-connect-url-input"
+
+- inputText: "http://localhost:7071"
+
+- waitForAnimationToEnd
+
+# URL field is returnKeyType="next" — Enter just advances, no submit.
+# (hideKeyboard is not usable here: it fails on iOS 26.4.)
+- pressKey: Enter
+
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "onboarding-connect-token-input"
+
+- inputText: "mock-key-123"
+
+- waitForAnimationToEnd
+
+# This Enter IS the handshake. The token field is returnKeyType="done" with
+# onSubmitEditing={handleConnect} (ServerFormFields:188), so pairing starts
+# here and ConnectStep unmounts on success — do NOT also tap
+# `onboarding-connect-handshake-cta` afterwards, it will already be gone.
+# Dismissing the keyboard first by tapping inert text doesn't work either:
+# Maestro scrolls to reach the text and the token input loses the entry.
+- pressKey: Enter
+
+# iOS may offer to save the token typed into a secureTextEntry field. It can
+# land either here or a beat later, once the Notifications step has already
+# mounted — hence the second guard below. Cut these frames in the edit.
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+
+# --- Onboarding — Notifications --------------------------------------------
+# `onboarding-notifications-cta` calls onNext only; the OS permission prompt
+# is behind a separate tap-to-allow control we never touch.
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-cta"
+    timeout: 8000
+
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-04-notifications
+
+- tapOn:
+    id: "onboarding-notifications-cta"
+
+- waitForAnimationToEnd
+
+# --- 12–15s · Onboarding — Done --------------------------------------------
+# "HANDSHAKE COMPLETE" / "Thread is live." + the paired host · port pill.
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+
+- assertVisible: "Thread is live."
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-05-thread-is-live
+
+# Hold on the paired state — this is the beat the edit lands on.
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- tapOn:
+    id: "onboarding-done-cta"
+
+# --- 15–20s · Sessions Hub -------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-02-06-hub-populated
+
+# Let the live rows settle before the recorder stops, so the final frames
+# show a populated hub rather than a mid-fetch skeleton.
+- waitForAnimationToEnd:
+    timeout: 3000
