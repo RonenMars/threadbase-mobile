@@ -18,10 +18,21 @@ appId: com.ronenmars.threadbase
     id: "hub-settings-btn"
 
 # Open Help & Feedback from the Help section.
-- extendedWaitUntil:
-    visible:
-      id: "settings-help-feedback-row"
-    timeout: 4000
+# The Help section sits below Appearance, whose theme grid grew past a screen
+# height, so the row is mounted but off-screen and `visible` alone never matches.
+#
+# `scrollUntilVisible` does NOT work here — it fails to detect the row even at
+# timeout 20000 / speed 80 / visibilityPercentage 60. Two explicit swipes do
+# reach it, and `assertVisible` then matches immediately, so the ScrollView and
+# the testID are both fine; only Maestro's scroll-and-detect loop is not.
+- swipe:
+    start: 50%, 90%
+    end: 50%, 20%
+- swipe:
+    start: 50%, 90%
+    end: 50%, 20%
+- assertVisible:
+    id: "settings-help-feedback-row"
 
 - tapOn:
     id: "settings-help-feedback-row"
@@ -47,6 +58,15 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "feedback-description-input"
 - inputText: "The tree view flickers on cold launch."
+
+# Dismiss the keyboard before touching anything below the fold. It covers the
+# diagnostics section, and Maestro will still report a tap there as COMPLETED
+# while the touch actually lands on a key — the run that exposed this appended
+# a stray "V" to the description instead of expanding the preview.
+#
+# `hideKeyboard` is deliberately not used: it is broken on Maestro 2.6.1 /
+# iOS 26.x (see issue #611). Tapping an inert heading blurs the field instead.
+- tapOn: "Help us squash a bug"
 
 # The diagnostics opt-in is on by default; its preview toggle is present.
 - assertVisible:
