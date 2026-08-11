@@ -1,0 +1,42 @@
+# Manual smoke test for the CI_ALERT_WEBHOOK secret.
+#
+# The real alert lives in e2e.yml's `notify-schedule-failure` job, which is
+# gated on `github.event_name == 'schedule'` — deliberately, so a dispatched
+# run that someone is already watching does not page anyone. The side effect is
+# that the alert cannot fire until the monthly cron, so a misconfigured secret
+# would stay invisible for up to a month on a path that has already failed
+# silently three times (2026-06-01, 07-01, 08-01).
+#
+# This job exists purely so the secret can be proven end to end on demand, in
+# seconds, on a free runner — rather than by burning a ~15-minute macOS E2E run
+# or waiting for the 1st.
+#
+# It intentionally mirrors the payload in e2e.yml. If that payload changes,
+# change it here too.
+name: Alert webhook smoke test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-test-alert:
+    name: Send a test alert
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send alert
+        env:
+          WEBHOOK_URL: ${{ secrets.CI_ALERT_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK_URL:-}" ]; then
+            echo "::error::CI_ALERT_WEBHOOK is not set — the real alert in e2e.yml would silently no-op."
+            exit 1
+          fi
+          # Same construction as e2e.yml: context values arrive via env: and are
+          # handed to jq -n --arg, never interpolated into a shell-quoted body.
+          PAYLOAD=$(jq -n --arg t "Threadbase CI alert test — if you can read this, CI_ALERT_WEBHOOK works. $RUN_URL" '{text: $t}')
+          curl -sf -X POST "$WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD"
+          echo "Alert POSTed successfully. If nothing arrived, the URL is well-formed but points somewhere unexpected."
