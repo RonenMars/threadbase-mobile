@@ -6,7 +6,10 @@ const reactNative = require("eslint-plugin-react-native");
 
 module.exports = defineConfig([
   {
-    ignores: [".expo/**", ".remember/**"],
+    // .worktrees/** — a worktree checked out under the repo root is a second
+    // copy of the tree; linting it reports findings from another branch and
+    // crashes import/namespace when its node_modules differs from ours.
+    ignores: [".expo/**", ".remember/**", ".worktrees/**"],
   },
   ...expoConfig,
   {
@@ -116,6 +119,15 @@ module.exports = defineConfig([
       "react-native/no-raw-text": "off",
       "@typescript-eslint/no-require-imports": "off",
       "react/display-name": "off",
+    },
+  },
+  // Script tests drive real git repos under Node — allow Node built-ins.
+  {
+    files: ["__tests__/unit/scripts/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
     },
   },
   // e2e mock servers run under Node — allow Node built-ins.

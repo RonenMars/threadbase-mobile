@@ -9,8 +9,6 @@
 
 'use strict';
 
-/* global __dirname */
-
 const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
