@@ -81,6 +81,10 @@
   },
   "status": {
     "running": "רץ",
+    "thinking": "חושב",
+    "writing": "כותב",
+    "hooks": "מריץ hooks",
+    "working": "עובד",
     "waiting": "ממתין",
     "idle": "לא פעיל",
     "externalLive": "חיצוני",

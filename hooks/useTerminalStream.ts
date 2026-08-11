@@ -5,6 +5,11 @@ import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { QUERY_GC_TIME } from '@/services/query-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
+import {
+  deriveAgentSubStatus,
+  SUB_STATUS_TAIL_ROWS,
+  type AgentSubStatus,
+} from '@/lib/agentSubStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { ParseConfidence } from '@/lib/renderConfidence'
 
@@ -33,6 +38,11 @@ export function useTerminalStream(
   const [lines, setLines] = useState<TerminalLine[]>([])
   const [parseConfidence, setParseConfidence] = useState<ParseConfidence>('high')
   const [isStreaming, setIsStreaming] = useState(false)
+  // What the agent is doing inside a `running` status, scraped from the screen.
+  // Held in a ref as well so the derivation can see its own previous value
+  // through a torn mid-repaint frame without re-running this effect.
+  const [subStatus, setSubStatus] = useState<AgentSubStatus>('unknown')
+  const subStatusRef = useRef<AgentSubStatus>('unknown')
   // Ground-truth set of texts the streamer wrote to the PTY, normalized (trim).
   // Lets the renderer positively identify user-owned lines instead of guessing.
   // Empty when the streamer is old (no user_message / replay.userMessages) →
@@ -76,6 +86,13 @@ export function useTerminalStream(
     // output as if normalization were authoritative.
     const visible = confidence === 'low' ? vt.getRawLines() : vt.getLines()
     setLines(visible)
+    // Raw rows on purpose: the status line this reads is exactly the chrome
+    // getLines() filters out.
+    const next = deriveAgentSubStatus(vt.getTailLines(SUB_STATUS_TAIL_ROWS), subStatusRef.current)
+    if (next !== subStatusRef.current) {
+      subStatusRef.current = next
+      setSubStatus(next)
+    }
   }
 
   const historyQuery = useQuery({
@@ -134,11 +151,13 @@ export function useTerminalStream(
     replayReceivedRef.current = false
     historyFedRef.current = false
     lastSeqRef.current = 0
+    subStatusRef.current = 'unknown'
     queueMicrotask(() => {
       setLines([])
       setParseConfidence('high')
       setHttpFallbackEnabled(false)
       setUserMessageTexts(new Set())
+      setSubStatus('unknown')
     })
   }, [serverId, sessionId])
 
@@ -294,11 +313,14 @@ export function useTerminalStream(
     vtRef.current!.reset()
     setLines([])
     setParseConfidence('high')
+    subStatusRef.current = 'unknown'
+    setSubStatus('unknown')
   }, [])
 
   return {
     lines,
     isStreaming,
+    subStatus,
     userMessageTexts,
     parseConfidence,
     isLoadingHistory: historyQuery.isPending && httpFallbackEnabled,

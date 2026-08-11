@@ -157,7 +157,7 @@ export function LiveConversationView({
   }, [serverId, sessionId, qc])
 
   // PTY lines shown inside the thinking bubble while agent is running
-  const { lines: ptyLines, isStreaming, parseConfidence } = useTerminalStream(
+  const { lines: ptyLines, isStreaming, subStatus, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
     false,
@@ -295,6 +295,7 @@ export function LiveConversationView({
           <ThinkingBubble
             lines={ptyLines}
             isStreaming={isStreaming}
+            subStatus={subStatus}
             fadingOut={thinkingState === 'fading'}
             onFadeOutComplete={handleFadeOutComplete}
             onSendKeys={(keys) => sendKeys.mutate(keys)}

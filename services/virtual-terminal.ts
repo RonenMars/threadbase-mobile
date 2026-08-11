@@ -110,6 +110,22 @@ export class VirtualTerminal {
   }
 
   /**
+   * The last `count` unfiltered visible rows, newest last. Same rows
+   * `getRawLines()` would end with, but it walks the grid backwards and stops,
+   * so a caller that only needs the status line does not pay an O(MAX_ROWS)
+   * join on every frame.
+   */
+  getTailLines(count: number): string[] {
+    const out: string[] = []
+    for (let i = this.grid.length - 1; i >= 0 && out.length < count; i--) {
+      const line = this.grid[i].join('').trimEnd()
+      if (line.length === 0 || BOX_BORDER_RE.test(line)) continue
+      out.push(line)
+    }
+    return out.reverse()
+  }
+
+  /**
    * Extract visible lines, applying the active provider chrome filter unless
    * raw mode is on.
    */

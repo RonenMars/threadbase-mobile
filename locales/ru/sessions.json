@@ -91,6 +91,10 @@
   },
   "status": {
     "running": "Работает",
+    "thinking": "Думает",
+    "writing": "Пишет",
+    "hooks": "Хуки",
+    "working": "Работает",
     "waiting": "Ожидание",
     "idle": "Простой",
     "externalLive": "Внешняя",

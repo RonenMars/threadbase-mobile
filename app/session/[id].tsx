@@ -571,7 +571,7 @@ export default function SessionDetailScreen() {
     session?.ptyAttached === true &&
     (session?.status === 'waiting_input' || session?.status === 'running') &&
     !(session != null && isTerminalSession(session))
-  const { isStreaming, parseConfidence, lines: streamPreviewLines, userMessageTexts } = useTerminalStream(
+  const { isStreaming, subStatus, parseConfidence, lines: streamPreviewLines, userMessageTexts } = useTerminalStream(
     serverId,
     id ?? '',
     !isLiveForStream,
@@ -959,7 +959,7 @@ export default function SessionDetailScreen() {
         <ScreenHeader title={sessionName} titleRight={pencilButton} right={sessionHeaderActions} onBack={handleBack} />
         {session ? (
           <View style={styles.statusBar}>
-            <SessionStatusBadge session={session} isRefetching={false} />
+            <SessionStatusBadge session={session} isRefetching={false} subStatus={subStatus} />
             {session.provider ? (
               <Text style={styles.metaChip} testID="session-provider-chip">
                 {session.provider === 'codex-cli' ? 'Codex' : 'Claude'}

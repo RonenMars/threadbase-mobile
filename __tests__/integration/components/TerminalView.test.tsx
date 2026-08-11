@@ -39,10 +39,12 @@ jest.mock('expo-router', () => ({
 const mockSendInputMutate = jest.fn()
 const mockSendKeysMutate = jest.fn()
 
+let mockSubStatus: string = 'unknown'
 jest.mock('@/hooks/useTerminalStream', () => ({
   useTerminalStream: () => ({
     lines: ['line one', 'line two'],
     isStreaming: false,
+    subStatus: mockSubStatus,
   }),
 }))
 
@@ -78,6 +80,11 @@ jest.mock('@/hooks/useComposerState', () => ({
   }),
 }))
 
+let mockActiveQuestion: unknown = null
+jest.mock('@/hooks/useActiveQuestion', () => ({
+  useActiveQuestion: () => ({ question: mockActiveQuestion }),
+}))
+
 jest.mock('@/services/ws-client', () => ({
   // on() is needed now that TerminalView subscribes via useActiveQuestion.
   wsManager: { getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }) },
@@ -111,6 +118,8 @@ describe('TerminalView', () => {
     mockSendInputMutate.mockClear()
     mockSendKeysMutate.mockClear()
     mockPush.mockClear()
+    mockSubStatus = 'unknown'
+    mockActiveQuestion = null
   })
 
   it('renders terminal-line-row elements when lines are provided', async () => {
@@ -151,6 +160,46 @@ describe('TerminalView', () => {
     expect(mockPush).toHaveBeenCalledWith(
       '/conversation/conv-42?server=srv1&fromSession=sess1&openSearch=1',
     )
+  })
+
+  it('overlays the agent sub-status while a turn is in flight', async () => {
+    mockSubStatus = 'thinking'
+    await renderView()
+    expect(screen.getByTestId('terminal-sub-status')).toBeTruthy()
+  })
+
+  it('shows no sub-status pill when the screen says nothing about the turn', async () => {
+    // `unknown` (no status line parsed) and `idle` (turn over) both refine
+    // nothing — an empty pill would be worse than no pill.
+    await renderView()
+    expect(screen.queryByTestId('terminal-sub-status')).toBeNull()
+
+    mockSubStatus = 'idle'
+    await renderView()
+    expect(screen.queryByTestId('terminal-sub-status')).toBeNull()
+  })
+
+  it('hides the sub-status pill while a gate is waiting on the user', async () => {
+    // A gate screen paints no status line, so the derivation holds its last
+    // value — the pill would claim "Writing" while the agent is blocked.
+    mockSubStatus = 'streaming'
+    await renderView()
+    expect(screen.getByTestId('terminal-sub-status')).toBeTruthy()
+
+    mockActiveQuestion = {
+      source: 'permission',
+      questions: [
+        {
+          question: 'Run this command?',
+          header: 'Bash',
+          multiSelect: false,
+          options: [{ label: 'Yes', description: '' }, { label: 'No', description: '' }],
+        },
+      ],
+      permissionIndices: [1, 2],
+    }
+    await renderView()
+    expect(screen.queryByTestId('terminal-sub-status')).toBeNull()
   })
 
   it('navigates to the conversation when the history tail link is pressed', async () => {

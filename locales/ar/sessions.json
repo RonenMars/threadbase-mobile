@@ -101,6 +101,10 @@
   },
   "status": {
     "running": "قيد التشغيل",
+    "thinking": "يفكر",
+    "writing": "يكتب",
+    "hooks": "تشغيل hooks",
+    "working": "يعمل",
     "waiting": "في الانتظار",
     "idle": "خامل",
     "externalLive": "خارجي",

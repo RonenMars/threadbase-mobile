@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { agentSubStatusLabelKey, type AgentSubStatus } from '@/lib/agentSubStatus'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
@@ -43,6 +45,12 @@ function DotsAnimation({ style, color }: { style?: object; color: string }) {
 interface Props {
   lines: string[]
   isStreaming: boolean
+  /**
+   * Screen-derived refinement of the turn ("Thinking" / "Writing" …). Purely a
+   * caption: `isStreaming` still drives dots-vs-skeleton, so an unrecognised
+   * TUI costs the caption and nothing else.
+   */
+  subStatus?: AgentSubStatus
   fadingOut?: boolean
   onFadeOutComplete?: () => void
   onSendKeys?: (keys: string) => void
@@ -50,8 +58,9 @@ interface Props {
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer }: Props) {
+export function ThinkingBubble({ lines, isStreaming, subStatus, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer }: Props) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
@@ -103,6 +112,8 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     .map(l => stripBoxDrawing(stripAnsi(l)))
     .filter(l => l.length > 0)
 
+  const subStatusKey = subStatus ? agentSubStatusLabelKey(subStatus) : null
+
   // Which card (if any) will render — structured WS question / permission gate
   // takes precedence over the PTY-scraped block.
   const card = activeQuestion
@@ -147,6 +158,9 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
               <Text key={i} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
             ))}
           </ScrollView>
+        ) : null}
+        {subStatusKey ? (
+          <Text style={styles.subStatus} testID="thinking-sub-status">{t(subStatusKey)}</Text>
         ) : null}
         {(isStreaming || !hasLines) ? (
           <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} color={theme.text.accent} />
@@ -199,6 +213,10 @@ function makeStyles(theme: Theme) {
     },
     dotsWithLines: {
       marginTop: spacing.xs,
+    },
+    subStatus: {
+      fontSize: font.xs,
+      color: theme.text.secondary,
     },
     skeleton: {
       marginTop: spacing.xs,

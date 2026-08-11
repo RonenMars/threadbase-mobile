@@ -8,11 +8,19 @@ import {
   type SessionColorToken,
   type SessionPresentationInput,
 } from '@/lib/sessionPresentation'
+import { agentSubStatusLabelKey, type AgentSubStatus } from '@/lib/agentSubStatus'
 
 interface Props {
   /** Kind, label and colour all come from the shared presentation helper. */
   session: SessionPresentationInput
   isRefetching?: boolean
+  /**
+   * Screen-derived refinement of a `running` status ("Thinking" / "Writing"
+   * rather than the undifferentiated "Running"). Label only — kind, colour and
+   * the `session-status-*` testID stay put, so nothing keyed off this badge
+   * changes behaviour when the scrape misses.
+   */
+  subStatus?: AgentSubStatus
 }
 
 function colorForToken(theme: Theme, token: SessionColorToken): string {
@@ -31,14 +39,20 @@ function colorForToken(theme: Theme, token: SessionColorToken): string {
   }
 }
 
-export function SessionStatusBadge({ session, isRefetching }: Props) {
+export function SessionStatusBadge({ session, isRefetching, subStatus }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
 
   const presentation = deriveSessionPresentation(session)
   const color = colorForToken(theme, presentation.colorToken)
-  const label = t(presentation.labelKey)
+  // Only ever refines "Running": the other kinds describe process ownership,
+  // which a screen scrape has nothing to say about.
+  const refinedKey =
+    presentation.labelKey === 'status.running' && subStatus
+      ? agentSubStatusLabelKey(subStatus)
+      : null
+  const label = t(refinedKey ?? presentation.labelKey)
 
   return (
     <View style={styles.row} testID={`session-status-${presentation.kind}`}>

@@ -9,6 +9,7 @@ import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
+import { LiveDot } from '@/components/sessions/LiveDot'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -16,6 +17,7 @@ import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { conversationHref } from '@/lib/conversationHref'
 import { markSessionUsed } from '@/lib/sessionUsage'
+import { agentSubStatusLabelKey } from '@/lib/agentSubStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { ParseConfidence } from '@/lib/renderConfidence'
 
@@ -42,14 +44,16 @@ export function TerminalView({
   resumedConversationId = null,
 }: Props) {
   const { t } = useTranslation('terminal')
+  const { t: tSessions } = useTranslation('sessions')
   const router = useRouter()
-  const { lines, isStreaming, userMessageTexts, parseConfidence } = useTerminalStream(
+  const { lines, isStreaming, subStatus, userMessageTexts, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
     false,
     provider,
   )
   const confidence = parseConfidenceProp ?? parseConfidence
+  const subStatusKey = agentSubStatusLabelKey(subStatus)
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
@@ -108,17 +112,39 @@ export function TerminalView({
           <Text style={styles.rawNoteText}>{t('session.rawModeNote')}</Text>
         </View>
       ) : null}
-      <TerminalOutput
-        lines={lines}
-        isStreaming={isStreaming}
-        userMessageTexts={userMessageTexts}
-        onSendInput={(text) => sendInput.mutate(text)}
-        onSendKeys={(keys) => sendKeys.mutate(keys)}
-        activeQuestion={activeQuestion}
-        onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
-        onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
-        onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
-      />
+      {/* Overlay, not a sibling row: the indicator appears and disappears every
+          turn, and in normal flow that resizes the output and makes the
+          transcript jump under the reader's eyes. */}
+      <View style={styles.outputArea}>
+        <TerminalOutput
+          lines={lines}
+          isStreaming={isStreaming}
+          userMessageTexts={userMessageTexts}
+          onSendInput={(text) => sendInput.mutate(text)}
+          onSendKeys={(keys) => sendKeys.mutate(keys)}
+          activeQuestion={activeQuestion}
+          onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+          onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
+          onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
+        />
+        {subStatusKey && !activeQuestion ? (
+          // Hidden while a gate is open. The gate screen paints no status line,
+          // so the derivation holds its last value and the pill would keep
+          // claiming "Writing" while the agent is in fact blocked on the user —
+          // the one moment the label must not be stale. (The chat view gets
+          // this for free: ThinkingBubble early-returns the QuestionCard.)
+          // Bottom-LEFT on purpose: TerminalOutput's jump-to-bottom pill is
+          // centred at the same offset, and they would sit on top of each other.
+          // pointerEvents none so it never swallows a tap meant for the output.
+          <View style={styles.subStatusPill} pointerEvents="none" testID="terminal-sub-status">
+            {/* The pulse lives on the dot, not the pill: DESIGN.md's live signal
+                is a filled circle, and cycling a label to 0.4 opacity makes the
+                one thing you want to read the hardest thing to read. */}
+            <LiveDot live color={SUB_STATUS_COLOR} size={7} />
+            <Text style={styles.subStatusText}>{tSessions(subStatusKey)}</Text>
+          </View>
+        ) : null}
+      </View>
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
@@ -168,7 +194,36 @@ export function TerminalView({
   )
 }
 
+// theme.status.running, hardcoded to match this file's existing palette
+// convention (rawNoteText already inlines theme.status.waiting the same way).
+// The header badge pulses a LiveDot in this exact colour for the same session,
+// so the pill agreeing with it is what makes them read as one signal — blue
+// here would borrow the "navigate / past" accent the jump pill owns.
+const SUB_STATUS_COLOR = '#3fb950'
+
 const styles = StyleSheet.create({
+  outputArea: {
+    flex: 1,
+  },
+  subStatusPill: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(63, 185, 80, 0.14)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(63, 185, 80, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  subStatusText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
   rawNote: {
     flexDirection: 'row',
     alignItems: 'center',
