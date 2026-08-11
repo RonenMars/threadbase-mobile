@@ -12,6 +12,37 @@ Re-verify before acting; this is a snapshot.
 
 ---
 
+## Update — 2026-08-11
+
+This snapshot was itself overtaken within a day. Items 1, 3 and 4 in the "Still open — P0" table below have shipped and their issues are closed; two new issues were filed while confirming item 1 on a real device; and Feature 12 (Live Activities) — not in this snapshot's open-items tables at all, because it was believed still planned — turned out to already be shipped, with a limitation no amount of further engineering fixes.
+
+### Solved since this snapshot
+
+| Doc item | Verified state |
+|---|---|
+| Item 1 — `threadbase://pair` hits "Unmatched Route" | [#597](https://github.com/RonenMars/threadbase-mobile/issues/597) **CLOSED**. [PR #627](https://github.com/RonenMars/threadbase-mobile/pull/627) (`24627baa`) added the route. Confirmed on a real device (iPhone 17 Pro Max, iOS 26.1, Release build of `97f2869c`) on 2026-08-11 — not just CI. `simctl erase`, not `simctl uninstall`, was required to reproduce the zero-server cold start; pairing survives a plain uninstall because it lives in the Keychain |
+| Item 3 — `ensure-release-build.js` reuses a stale `.app` | [#598](https://github.com/RonenMars/threadbase-mobile/issues/598) **CLOSED**. [PR #626](https://github.com/RonenMars/threadbase-mobile/pull/626) (`2de1c1ae`) stamps the build with the git `HEAD` SHA it was built from and fails non-zero when it no longer matches. On-device verification is still outstanding per the PR's own checklist |
+| Item 4 — no working regression gate (the notify half) | [#599](https://github.com/RonenMars/threadbase-mobile/issues/599) **CLOSED**. [PR #625](https://github.com/RonenMars/threadbase-mobile/pull/625) (`4eb1ae54`) added the scheduled-failure webhook job; [PR #632](https://github.com/RonenMars/threadbase-mobile/pull/632) (`e935a6c8`) corrected the channel-compatibility docs and settled on Telegram; [PR #634](https://github.com/RonenMars/threadbase-mobile/pull/634) (`b512d83d`) added a `workflow_dispatch` smoke test for the secret. **[#600](https://github.com/RonenMars/threadbase-mobile/issues/600) — the suite itself cannot gate at 11/15 — is a separate issue (item 4's own second issue number) and remains open** |
+
+### New since this snapshot
+
+Both filed while verifying item 1 on-device, 2026-08-11:
+
+- [#636](https://github.com/RonenMars/threadbase-mobile/issues/636) — **P0.** The Live Activity push payload carries real terminal output (`lastOutput`), a prompt-derived title, and the project name, while `docs/privacy-policy/proposed-privacy-policy.md:51` states payloads exclude exactly those — and separately describes an "Expo notification relay" that Live Activity pushes never use (they go direct to `api.push.apple.com`, `apnsClient.ts`). Cross-repo: RonenMars/threadbase-streamer#528.
+- [#638](https://github.com/RonenMars/threadbase-mobile/issues/638) — **P2.** The pair deep-link failure screen shows a raw exception (`... at ExpoModulesCore/Promise.swift:56`) instead of the translated `pair:scanner.errors.*` copy the rest of the screen already uses.
+
+### The correction this snapshot's tables missed entirely
+
+Feature 12 (Live Activities / Dynamic Island) was not in this snapshot's open-items tables because it was believed still planned. It has actually shipped — on iOS via ActivityKit and on Android via an ongoing-notification fallback (there is no Android Live Activity equivalent) — landed via tb-mobile PRs #419–#423 and tb-streamer #292–#294.
+
+**It cannot work for self-hosters, ever, and this is a platform boundary, not a bug to fix.** The streamer signs its own APNs pushes targeting the topic `${bundleId}.push-type.liveactivity` (`apnsClient.ts`), which requires a Team-Scoped-All-Topics signing key. Apple issues APNs keys per developer team, and a key only signs topics for bundle IDs that team owns — so a self-hosted streamer's key can never sign for the published app's bundle ID (`com.ronenmars.threadbase`). Cross-repo: RonenMars/threadbase-streamer#519 (P0 — the server never reports whether push will actually work, so the feature silently no-ops for every non-maintainer user instead of being hidden) and RonenMars/threadbase-streamer#480 / RonenMars/threadbase-streamer#481.
+
+Separately — **ordinary push notifications, the one delivery path that would actually work for self-hosters since Expo centrally holds the app's own APNs/FCM credentials, are not implemented at all.** Mobile registers an Expo push token and POSTs it to `/api/push/register` (`services/push.ts:40`); the streamer stores it (`src/db/repositories/push.repository.ts`) and nothing ever sends through it — `PushRepository.listDeliverable()` is defined and never called anywhere. Cross-repo: RonenMars/threadbase-streamer#528 (P1).
+
+See [`../ROADMAP.md`](../ROADMAP.md) Feature 12 for the corrected roadmap entry.
+
+---
+
 ## Solved since the last snapshot — do not re-open
 
 Each row was checked directly. Do not re-fix these by grepping for the original symptom.
