@@ -182,6 +182,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 onUrlHostChange={(v) => { setUrlHost(v); markDirty() }}
                 apiKey={apiKey}
                 onApiKeyChange={(v) => { setApiKey(v); markDirty() }}
+                urlInputTestID="server-edit-url-input"
+                keyInputTestID="server-edit-key-input"
                 onSubmitEditing={handleSave}
               />
 

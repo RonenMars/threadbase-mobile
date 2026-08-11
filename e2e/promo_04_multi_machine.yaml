@@ -1,0 +1,205 @@
+# Maestro promo — Flow 4: "Four machines, two agents, one screen"
+# Storyboard: docs/marketing/linkedin-video-flows.md → Flow 4
+#
+# Not a test. Drives the multi-machine / multi-provider story for a simulator
+# recording: two paired servers in the Tree layout → Filter & Sort (provider
+# and server filters) → cross-machine search → a Codex conversation → Resume.
+# Assertions exist only so the recording can't silently capture the wrong
+# screen.
+#
+# Second server: setup.yaml pairs localhost:7071 only, so this flow pairs
+# localhost:7072 itself (the mock server already listens on both ports), through
+# Settings → "+ Add Server" → ServerEditModal — the same UI a user would use.
+#
+# Do NOT try to add it through the hub's Servers Status modal instead. iOS
+# collapses that whole modal into a single merged accessibility element
+# ("Server Status, ✕, localhost, …, Add Server, …"), so Maestro cannot address
+# anything inside it — `tapOn: "Add Server"` fails even though the button is
+# plainly on screen.
+#
+# Idempotency guard: the add block is skipped when Settings already lists
+# http://localhost:7072, so re-running never creates a duplicate.
+#
+# Note: Maestro text matchers are FULL-STRING regexes. Settings' button reads
+# "+ Add Server", so it is matched as ".*Add Server" — plain "Add Server" does
+# not match it.
+#
+# Provider parity is shown on conversations, not on the live sessions list —
+# in the mock fixtures only `conv-codex-1` carries a provider (codex-cli);
+# e2e/fixtures/sessions.json has no provider field on any session.
+#
+# Requires: mock server on BOTH ports — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node scripts/record-simulator-flow.js e2e/promo_04_multi_machine.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# --- Pair the second machine (skipped if already paired) --------------------
+# Settings is where the guard is checked: it lists each server's URL as plain
+# text, so "already paired?" is answerable without opening the merged-a11y
+# status modal.
+- tapOn:
+    id: "hub-settings-btn"
+
+- extendedWaitUntil:
+    visible: ".*Add Server"
+    timeout: 8000
+
+- runFlow:
+    when:
+      notVisible: "http://localhost:7072"
+    commands:
+      - tapOn: ".*Add Server"
+
+      - extendedWaitUntil:
+          visible:
+            id: "server-edit-url-input"
+          timeout: 8000
+
+      # Host only — the form has its own http:// protocol picker.
+      - tapOn:
+          id: "server-edit-url-input"
+
+      - inputText: "localhost:7072"
+
+      - waitForAnimationToEnd
+
+      # The key field can sit behind the keyboard. Without this scroll the tap
+      # misses, focus stays in the URL field, and the key is appended to the
+      # URL ("localhost:7072mock-key-123") — a silent failure: every step still
+      # reports COMPLETED and only a screenshot shows the damage.
+      - scrollUntilVisible:
+          element:
+            id: "server-edit-key-input"
+          direction: DOWN
+
+      - tapOn:
+          id: "server-edit-key-input"
+
+      - inputText: "mock-key-123"
+
+      - waitForAnimationToEnd
+
+      # returnKeyType="done" + onSubmitEditing={handleSave} — Enter saves.
+      - pressKey: Enter
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Proof the pair actually landed — the add block above can "succeed" with the
+# key typed into the URL field, and only this catches it.
+- extendedWaitUntil:
+    visible: "http://localhost:7072"
+    timeout: 8000
+
+# --- Switch to the Tree layout ---------------------------------------------
+# Tree is the only layout that shows the machine hierarchy (server root rows).
+# The layout buttons carry no testID — matched by their visible label.
+- tapOn: "Tree"
+
+- waitForAnimationToEnd
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-01-layout-tree
+
+# The stack header's own back control (app/_layout.tsx). Maestro's `back` does
+# not pop this screen on iOS.
+- tapOn:
+    id: "header-back"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+# --- 0–7s · Sessions Hub, Tree layout, two machines ------------------------
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-02-hub-two-machines
+
+# --- 7–10s · Filter & Sort sheet -------------------------------------------
+# Shows the Provider and Servers filters, plus the server-order lock that only
+# appears once 2+ servers are paired.
+- tapOn:
+    id: "filter-sort-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "filter-sort-sheet"
+    timeout: 5000
+
+- assertVisible: "Provider"
+
+- assertVisible: "Servers"
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-03-filter-sheet
+
+- tapOn:
+    id: "filter-sort-close-btn"
+
+- waitForAnimationToEnd
+
+# --- 10–14s · Search across every paired machine ---------------------------
+# Header search, not the Sessions/History segmented control: `hub-history-tab`
+# only renders in the Classic layout (app/index.tsx `classicTab`), and this
+# flow is deliberately in Tree. `header-search-btn` is layout-independent.
+- tapOn:
+    id: "header-search-btn"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# No tap first: the Tree layout renders its own search TextInput
+# (TreeSessionsList.tsx:302) which carries no testID — but it is autoFocus, so
+# it already holds focus by the time it animates in. `hub-search-input` is the
+# Classic list's field and does not exist here.
+- inputText: "refactor"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-04-search-all-machines
+
+- pressKey: Enter
+
+- waitForAnimationToEnd
+
+# --- 14–19s · A Codex conversation, and resuming it -------------------------
+# Deep-linked rather than navigated: which row holds the Codex conversation
+# depends on ordering, and a promo take can't afford a wrong tap.
+- openLink: "threadbase://conversation/conv-codex-1"
+
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 8000
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-05-codex-conversation
+
+# The proof shot: a Codex session, resumable from the phone.
+- assertVisible: "Resume Session"
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-06-resume-offered
+
+# Hold before the recorder stops so the take doesn't end on a cut frame.
+- waitForAnimationToEnd:
+    timeout: 3000
