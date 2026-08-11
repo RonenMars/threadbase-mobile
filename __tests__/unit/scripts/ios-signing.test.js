@@ -6,8 +6,6 @@
 
 'use strict';
 
-/* global Buffer, __dirname */
-
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');

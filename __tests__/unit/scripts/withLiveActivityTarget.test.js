@@ -7,8 +7,6 @@
  * as an opaque "Cycle inside Threadbase" on someone's next build.
  */
 
-/* global __dirname */
-
 'use strict';
 
 const path = require('path');
