@@ -1,5 +1,11 @@
 name: Deploy
 
+# Surfaces the dashboard's correlation id in the run title. The GitHub dispatch
+# API returns 204 with no run id, so this is what lets the dashboard find the
+# run it just triggered and link straight to it. Empty for non-dispatch runs.
+run-name: >-
+  Deploy ${{ inputs.deploy_ref || github.ref_name }}${{ inputs.correlation_id && format(' [{0}]', inputs.correlation_id) || '' }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -38,6 +44,10 @@ on:
         description: 'Branch, tag, or commit SHA to build (default: main)'
         required: false
         default: main
+        type: string
+      correlation_id:
+        description: 'Opaque id echoed into run-name so the deploy dashboard can link to this run. Leave blank when running manually.'
+        required: false
         type: string
 
 jobs:
