@@ -48,6 +48,12 @@ function makeHandler() {
   }
 }
 
+// Live sockets, so POST /api/sessions/:id/input can echo the prompt back the way
+// a real streamer does — the PTY receives the input and the output returns on the
+// socket, not in the HTTP reply. Module scope because both handleRequest and the
+// upgrade handler below need it.
+const liveSockets = new Set()
+
 async function handleRequest(req, res) {
   const method = req.method
   const host = req.headers.host ?? 'localhost'
@@ -299,6 +305,38 @@ async function handleRequest(req, res) {
     return json(res, 200, { directories: [] })
   }
 
+  // Prompt submission. The app POSTs here from the composer; a real streamer
+  // writes the prompt into the PTY and the output comes back over the socket,
+  // so the mock echoes it as terminal_output rather than in the HTTP reply.
+  const inputMatch = p.match(/^\/api\/sessions\/([^/]+)\/input$/)
+  if (method === 'POST' && inputMatch) {
+    const sessionId = inputMatch[1]
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const text = typeof body?.input === 'string' ? body.input : (body?.text ?? '')
+    json(res, 200, { ok: true })
+
+    // Echo on a later tick: the app is still processing the 200 when this runs,
+    // and a real PTY never answers inside the request either.
+    //
+    // Leading CRLF matters: the last replay line has no trailing newline, so
+    // without it the echo concatenates onto it as "Waiting for input> hello...".
+    // That is a rendering fidelity issue, not an assertion one — the flow's
+    // regex tolerates a prefix. A real PTY echoes the input on its own line.
+    setTimeout(() => {
+      for (const ws of liveSockets) {
+        try {
+          ws.send(JSON.stringify({ type: 'terminal_output', sessionId, data: `\r\n${text}\r\n`, seq: Date.now() }))
+        } catch { /* socket closed mid-flight */ }
+      }
+    }, 100)
+    return
+  }
+
   json(res, 404, { error: 'Not found' })
 }
 
@@ -320,6 +358,8 @@ for (const port of PORTS) {
       const sessions = JSON.parse(readFixture('sessions.json'))
       ws.send(JSON.stringify({ type: 'session_list', sessions }))
       ws.send(JSON.stringify({ type: 'cache_ready' }))
+      liveSockets.add(ws)
+      ws.on('close', () => liveSockets.delete(ws))
       // Swallow client messages (auth/register); the flows don't need replies.
       ws.on('message', () => {})
     })
