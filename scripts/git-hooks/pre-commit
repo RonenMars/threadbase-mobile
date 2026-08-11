@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# pre-commit: keep path-dependent SPEC CHECKSUM noise out of ios/Podfile.lock.
+#
+# ExpoModulesCore, ExpoWidgets, hermes-engine and RNSentry hash a generated
+# podspec that carries the checkout's absolute path, so every machine, worktree
+# and CI runner produces a different checksum for the same pod at the same
+# version. Committing those makes ios/Podfile.lock ping-pong between whoever ran
+# `pod install` last and is the usual source of rebase conflicts on that file.
+#
+# reset-podfile-lock-path-noise.sh reverts the lockfile (index included) only
+# when the drift is limited to those four lines; a genuine pod change also moves
+# that pod's version line and is left alone. It resyncs ios/Pods/Manifest.lock to
+# match, so the reverted lockfile still passes Xcode's "[CP] Check Pods
+# Manifest.lock" phase on the next build.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+RESET="$REPO_ROOT/scripts/reset-podfile-lock-path-noise.sh"
+
+git diff --cached --name-only --diff-filter=ACMR | grep -qxF 'ios/Podfile.lock' || exit 0
+[ -x "$RESET" ] || exit 0
+
+"$RESET"
