@@ -37,4 +37,14 @@ if grep -qvE "$NOISE" <<<"$DRIFT"; then
 fi
 
 git checkout HEAD -- "$LOCK"
+
+# `pod install` writes the same bytes to Pods/Manifest.lock, and Xcode's
+# "[CP] Check Pods Manifest.lock" phase diffs the two. Reverting only the
+# lockfile fails the archive with "The sandbox is not in sync with the
+# Podfile.lock" — the checksums differ but the installed pods do not.
+MANIFEST="ios/Pods/Manifest.lock"
+if [[ -f "$MANIFEST" ]]; then
+  cp "$LOCK" "$MANIFEST"
+fi
+
 echo "▸ reverted path-dependent SPEC CHECKSUM drift in $LOCK"

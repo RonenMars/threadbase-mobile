@@ -121,6 +121,17 @@ test('reverts staged noise too', () => {
   expect(git(repo, ['status', '--short', 'ios/Podfile.lock'])).toBe('');
 });
 
+test('resyncs Pods/Manifest.lock so the sandbox check still passes', () => {
+  const drifted = lock({ expoModulesCore: sha('1'), hermes: sha('2') });
+  fs.mkdirSync(path.join(repo, 'ios/Pods'));
+  fs.writeFileSync(path.join(repo, 'ios/Pods/Manifest.lock'), drifted);
+  writeLock(drifted);
+  run();
+  expect(fs.readFileSync(path.join(repo, 'ios/Pods/Manifest.lock'), 'utf8')).toBe(
+    readLock(),
+  );
+});
+
 test('is a no-op on a clean lockfile', () => {
   expect(run()).toBe('');
   expect(git(repo, ['status', '--short', 'ios/Podfile.lock'])).toBe('');
