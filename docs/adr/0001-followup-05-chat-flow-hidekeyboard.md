@@ -48,7 +48,7 @@ The suite installs a **Release** build and `e2e/ensure-release-build.js` will ha
 ```bash
 # one flow, with the mock server up
 MOCK_PORTS=7071,7072 node e2e/mock-server.js &
-maestro test e2e/05_chat_flow.yaml
+node e2e/run-maestro.js test e2e/05_chat_flow.yaml
 ```
 
 If the app needs rebuilding: `npx expo run:ios --configuration Release --device <sim-udid>`.

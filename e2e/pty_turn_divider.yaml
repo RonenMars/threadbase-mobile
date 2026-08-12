@@ -9,7 +9,7 @@
 # (which is undrivable on iOS — see e2e/README.md "Known limits").
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/pty_turn_divider.yaml (or via npm run test:e2e:mock)
+# Usage: node e2e/run-maestro.js test e2e/pty_turn_divider.yaml (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase
 ---

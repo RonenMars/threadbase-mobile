@@ -5,7 +5,7 @@ appId: com.ronenmars.threadbase
 # API Key: Injected via ${PROD_API_KEY} environment variable
 #
 # Run with:
-#   maestro test -e PROD_SERVER_URL=<url> -e PROD_API_KEY=<key> e2e/prod-server-connect-only.yaml
+#   node e2e/run-maestro.js test -e PROD_SERVER_URL=<url> -e PROD_API_KEY=<key> e2e/prod-server-connect-only.yaml
 
 - launchApp:
     clearState: true

@@ -15,7 +15,7 @@
 #
 # Fixture: e2e/fixtures/conv-scroll-gaps.json (heights mirror the real
 # session that reproduced the bug). Requires the mock server on :7071.
-# Usage: maestro test e2e/07_conversation_scroll_gaps.yaml
+# Usage: node e2e/run-maestro.js test e2e/07_conversation_scroll_gaps.yaml
 
 appId: com.ronenmars.threadbase
 ---

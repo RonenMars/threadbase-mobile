@@ -15,7 +15,7 @@
 # Settings → Manage servers before running this flow.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/server_drag_reorder.yaml
+# Usage: node e2e/run-maestro.js test e2e/server_drag_reorder.yaml
 
 appId: com.ronenmars.threadbase
 ---

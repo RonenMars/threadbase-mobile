@@ -4,7 +4,7 @@
 # Jest (sessionLifecycle + SessionScreen.holdOnBackground).
 #
 # Requires: mock server on localhost:7071
-# Usage: maestro test e2e/session_lifecycle.yaml
+# Usage: node e2e/run-maestro.js test e2e/session_lifecycle.yaml
 
 appId: com.ronenmars.threadbase
 ---

@@ -22,6 +22,7 @@ const recordProc = spawn('xcrun', ['simctl', 'io', 'booted', 'recordVideo', '--c
 
 let cleanedUp = false
 let stopRecordingPromise = null
+let maestroProc = null
 function cleanup() {
   if (cleanedUp) return
   cleanedUp = true
@@ -67,18 +68,22 @@ function waitForRecordingStart() {
 }
 
 process.on('SIGINT', () => {
+  if (maestroProc && !maestroProc.killed) maestroProc.kill('SIGINT')
   stopRecording().finally(() => process.exit(130))
 })
 
 process.on('SIGTERM', () => {
+  if (maestroProc && !maestroProc.killed) maestroProc.kill('SIGTERM')
   stopRecording().finally(() => process.exit(143))
 });
 
 (async () => {
   await waitForRecordingStart()
-  const maestroProc = spawn('maestro', ['test', '--debug-output', 'e2e/_artifacts/debug', flowPath], {
-    stdio: 'inherit',
-  })
+  maestroProc = spawn(
+    process.execPath,
+    [path.join(repoRoot, 'e2e/run-maestro.js'), 'test', '--debug-output', 'e2e/_artifacts/debug', flowPath],
+    { stdio: 'inherit' },
+  )
 
   maestroProc.on('exit', (code) => {
     stopRecording()

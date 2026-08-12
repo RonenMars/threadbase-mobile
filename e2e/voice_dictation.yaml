@@ -7,7 +7,7 @@
 # so the message-input row is rendered before tapping the mic.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/voice_dictation.yaml (or via npm run test:e2e:mock)
+# Usage: node e2e/run-maestro.js test e2e/voice_dictation.yaml (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase
 ---

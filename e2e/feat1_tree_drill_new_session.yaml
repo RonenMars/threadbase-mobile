@@ -11,7 +11,7 @@
 # container testID becomes `browse-cwd-/home/user/my-project`.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/feat1_tree_drill_new_session.yaml (or via npm run test:e2e:mock)
+# Usage: node e2e/run-maestro.js test e2e/feat1_tree_drill_new_session.yaml (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase
 ---

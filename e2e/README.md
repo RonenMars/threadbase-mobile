@@ -25,7 +25,7 @@ The full suite runs in **30–60 seconds** locally.
 brew install maestro
 ```
 
-Verify (the suite is written for **Maestro 2.x**):
+Verify (the suite is written for **Maestro 2.x** and uses a project-side crash guard):
 
 ```bash
 maestro --version
@@ -38,13 +38,23 @@ Maestro drives the actual iOS binary, so it must be installed on a booted simula
 
 The default Debug build boots into the Expo Dev Launcher (a SwiftUI screen that asks which JS bundle to load) and there's no clean way for Maestro to get past it — see [`docs/expo-dev-launcher.md`](../docs/expo-dev-launcher.md) for the full explanation. `npm run ios` skips it: `app.json` sets `"launchMode": "most-recent"` on the `expo-dev-client` plugin, so the app loads the last-opened bundle directly instead of showing the launcher.
 
-> **Use an iOS ≤ 26 simulator.** Maestro 2.0.10's XCUITest driver raced/died during
+> **Use an iOS ≤ 26 simulator.** This is a compatibility ceiling, not a guarantee
+> that XCTest teardown is healthy. Maestro 2.0.10's XCUITest driver raced/died during
 > the `simctl uninstall/install` that `clearState: true` performs on **iOS 26.x**
 > (Xcode 26), failing every flow with `Unable to clear state … Failed to connect to
 > /127.0.0.1:7001`. Maestro 2.6.1 fixes this — `launchApp: clearState: true` was
-> verified COMPLETED on an iPhone 17 / iOS 26.4 sim — so `e2e/check-sim.js` now allows
-> iOS 26 and refuses only runtimes above it (override with `E2E_ALLOW_UNSUPPORTED_IOS=1`).
-> When a newer Maestro gains support for a newer iOS, bump `MAX_SUPPORTED_IOS_MAJOR` in `check-sim.js`.
+> verified COMPLETED on an iPhone 17 / iOS 26.4 sim — but successful `clearState`
+> support does not prove that the later automation-session teardown remained healthy.
+> `e2e/check-sim.js` therefore allows iOS 26 and refuses only runtimes above it
+> (override with `E2E_ALLOW_UNSUPPORTED_IOS=1`). When a newer iOS runtime is verified,
+> bump `MAX_SUPPORTED_IOS_MAJOR` in `check-sim.js`.
+>
+> Maestro 2.8.0 is the latest official release as of 2026-08-11. The 2.7.0 notes add
+> waiting for iOS crash reports and improved crash artifacts, but neither the
+> [2.7.0/2.8.0 changelog](https://github.com/mobile-dev-inc/Maestro/blob/main/CHANGELOG.md)
+> nor the still-open [Maestro #3494](https://github.com/mobile-dev-inc/Maestro/issues/3494)
+> claims this XCTest crash is fixed. Upgrading is not treated as a substitute for the guard,
+> and repository scripts never install, upgrade, or remove a developer's global Maestro.
 
 ```bash
 # Boot a simulator on iOS 26 or older (iOS 17.x and iOS 26.x both work — see above).
@@ -69,8 +79,39 @@ This:
 
 1. Verifies a sim is booted (`e2e/check-sim.js`)
 2. Starts `e2e/mock-server.js` on `:7071` in the background
-3. Runs `maestro test e2e/launch.yaml && maestro test e2e/browse.yaml`
+3. Runs the configured flows through `node e2e/run-maestro.js test ...`
 4. Kills the mock server on exit
+
+## XCTest teardown crash guard
+
+iOS 26 simulator runs can crash SpringBoard, SafariViewService, Threadbase, or another
+automation-injected process inside Apple's `com.apple.dt.XCTAutomationSupport` after the
+Maestro XCTest runner disconnects. The confirmed boundary is Apple XCTest automation
+teardown; a stale/null accessibility-session state or teardown race is an inference, not a
+confirmed root cause. Threadbase runtime/UI code is not implicated by this signature, and
+the project guard does not prevent or repair the Apple framework defect.
+
+A successful Maestro exit can still be invalid because macOS may write the `.ips` only
+after the flow and XCTest runner have exited. Every repository-owned Maestro test and
+recording path therefore goes through `e2e/run-maestro.js`, which:
+
+1. snapshots existing `.ips` identities in readable user and system DiagnosticReports
+   directories, including `~/Library/Logs/DiagnosticReports/Retired`;
+2. runs Maestro with unchanged arguments and inherited stdio, forwarding termination signals;
+3. polls for five seconds after Maestro exits and parses only newly observed reports;
+4. matches the exact `EXC_BAD_ACCESS` / invalid `0x20` /
+   `XCTAutomationSession initWithAccessibilityFramework:dataSource:` /
+   `com.apple.dt.XCTAutomationSupport` signature for any simulator process;
+5. preserves Maestro's own nonzero exit status, but exits nonzero when the signature appears
+   after an otherwise successful run; and
+6. copies matching reports to `e2e/_artifacts/xctest-crashes/`, which is git-ignored and is
+   included in the CI failure artifact upload.
+
+When the guard reports this crash, stop further hierarchy-based acceptance testing: the
+current Maestro result and later evidence from that simulator session are not trustworthy.
+Keep the copied report, then manually shut down and reboot the affected simulator before a
+bounded retry. Do not erase or recreate the simulator as routine recovery. Track prevention
+of the underlying crash in [Maestro #3494](https://github.com/mobile-dev-inc/Maestro/issues/3494).
 
 ## How it works
 
@@ -144,7 +185,7 @@ To run a single flow with verbose output:
 
 ```bash
 node e2e/mock-server.js &
-maestro test e2e/launch.yaml
+node e2e/run-maestro.js test e2e/launch.yaml
 kill %1
 ```
 

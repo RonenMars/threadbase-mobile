@@ -14,7 +14,7 @@
 # mock server returns conversation-detail.json for /api/conversations/:id.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/feat2_export_in_info_shelf.yaml
+# Usage: node e2e/run-maestro.js test e2e/feat2_export_in_info_shelf.yaml
 #        (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase

@@ -4,7 +4,7 @@
 # submit, so no real feedback report is ever sent.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/feedback_flow.yaml (or via npm run test:e2e:mock)
+# Usage: node e2e/run-maestro.js test e2e/feedback_flow.yaml (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase
 ---

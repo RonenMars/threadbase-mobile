@@ -5,7 +5,7 @@
 # Keychain) and lands on the hub directly. Both paths are handled by setup.
 #
 # Requires: mock server running on localhost:7071
-# Usage: maestro test e2e/launch.yaml (or via npm run test:e2e:mock)
+# Usage: node e2e/run-maestro.js test e2e/launch.yaml (or via npm run test:e2e:mock)
 
 appId: com.ronenmars.threadbase
 ---
