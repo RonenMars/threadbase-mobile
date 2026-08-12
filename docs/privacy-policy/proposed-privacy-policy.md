@@ -21,7 +21,8 @@ Threadbase separates its traffic into five distinct categories. Each is
 described in its own section below.
 
 1. **Core traffic to your streamers** — the app's normal function.
-2. **Expo push-notification delivery** — optional notifications.
+2. **Push-notification delivery** — optional notifications, including iOS Live
+   Activities.
 3. **Crash reporting (Sentry)** — automatic reporting is off by default and
    opt-in; a single crash can also be reported manually at any time.
 4. **User-initiated feedback submissions** — only when you send feedback.
@@ -39,16 +40,27 @@ Threadbase-operated server, and it does not copy it anywhere else. Your API
 keys and server credentials are stored on your device (in the iOS Keychain /
 Android Keystore) and are used only to authenticate to your own streamers.
 
-## 2. Expo push-notification delivery
+## 2. Push-notification delivery
 
-If you enable notifications, Threadbase obtains a push token from Expo's push
-service and shares that token with each streamer you have paired, so the
-streamer can notify you when a session needs attention. The token is delivered
-through Expo's notification relay. Removing a server in Settings revokes its
-push token. The token is an opaque delivery address; it does not contain your
-session content.
+If you enable notifications, Threadbase registers a push token with each
+streamer you have paired, so that streamer can notify you when a session needs
+attention. The token itself is an opaque delivery address and does not contain
+your session content. Removing a server in Settings revokes its token.
 
-To deliver notifications, your streamer also sends a notification payload through Expo's push service. Threadbase is designed so these payloads do not include prompts, terminal output, credentials, or conversation content.
+Threadbase uses two delivery paths.
+
+**Ordinary notifications** — for example, a session waiting for your input —
+are delivered through Expo's push relay. That payload carries only the project
+name, a fixed message, and the session and server identifiers the app needs to
+open the right screen; it does not include prompts, terminal output,
+credentials, or conversation content.
+
+**Live Activities** — the iOS lock-screen and Dynamic Island session status —
+are sent directly to Apple's push service (api.push.apple.com) by a streamer
+configured with Apple push credentials, which Apple issues per developer team.
+The Live Activity payload carries the session status, the project name, a title
+derived from your first message in that session, and a short, truncated excerpt
+of recent terminal output — so it can contain whatever that session printed.
 
 ## 3. Optional crash reporting (Sentry)
 
@@ -159,7 +171,8 @@ include. Please review anything you attach before submitting.
 
 - Your prompts and draft prompts.
 - Claude Code, Codex, and other agent conversation content.
-- Terminal output and session content.
+- Terminal output and session content, apart from the truncated excerpt an iOS
+  Live Activity carries, described in section 2.
 - Your streamer URLs, API keys, and pairing credentials (in the iOS Keychain /
   Android Keystore).
 - Your session names, favorites, and app settings.
@@ -173,7 +186,21 @@ are governed by the retention terms above.
 Threadbase does not use advertising, tracking, fingerprinting, or behavioral
 telemetry. It does not include a product-analytics SDK. It does not
 automatically capture your screen, console output, or network requests. The only
-data that leaves your device is the core streamer traffic you direct, the optional push-notification token and notification payload, manual feedback submissions that you choose to send, and—only with your explicit action or opt-in consent—the crash reports, screenshots, and diagnostics described above.
+data that leaves your device is the core streamer traffic you direct, the optional push-notification token and notification payload, manual feedback submissions that you choose to send, and—only with your explicit action or opt-in consent—the crash reports, screenshots, and diagnostics described above. Separately, when Live Activities are enabled, the streamer sends the session excerpt described in section 2 to Apple's push service; that data travels from your streamer, not from your device.
+
+## Service providers we use
+
+Threadbase relies on the following third parties. Each one processes only the
+data described in its section above, under its own terms and data-processing
+agreements.
+
+- **Expo.** Delivers ordinary push notifications. Expo receives your push token
+  and the notification payload described in section 2, which carries no session
+  content.
+- **Apple.** Delivers Live Activities through the Apple Push Notification
+  service. Apple receives your device's Live Activity token and the payload
+  described in section 2, which includes a truncated excerpt of session output.
+- **Sentry.** Processes optional crash reports, as described in section 3.
 
 ## Permissions the app uses
 
@@ -184,7 +211,7 @@ data that leaves your device is the core streamer traffic you direct, the option
 | Microphone | Dictating prompts by voice. |
 | Speech recognition | Converting your speech to text on-device. |
 | Face ID / biometrics | Optionally locking access to your conversations. |
-| Notifications | Delivering session notifications, if you enable them. |
+| Notifications | Delivering session notifications and iOS Live Activities, if you enable them. Section 2 describes what those messages carry. |
 
 ## Your control
 
@@ -196,4 +223,4 @@ data that leaves your device is the core streamer traffic you direct, the option
 
 ---
 
-_Last updated: 2026-07-12 (proposed). Contact: ronenmars@gmail.com._
+_Last updated: 2026-08-11 (proposed). Contact: ronenmars@gmail.com._
