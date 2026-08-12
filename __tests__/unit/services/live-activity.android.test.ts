@@ -5,8 +5,18 @@ import {
   reconcile,
   resetLiveActivities,
 } from '@/services/live-activity.android'
+import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import type { Session } from '@/types/api'
 
+// These cases are about the reconciler's decisions, not about whether the
+// server opted in. The flag has its own suite (live-activity-enabled.test.ts);
+// left unmocked it answers false for an unknown server and every case below
+// would assert against a reconciler that returned before doing anything.
+jest.mock('@/services/live-activity-enabled', () => ({
+  isLiveActivityEnabled: jest.fn(() => true),
+}))
+
+const flagEnabled = jest.mocked(isLiveActivityEnabled)
 const schedule = jest.mocked(Notifications.scheduleNotificationAsync)
 const dismiss = jest.mocked(Notifications.dismissNotificationAsync)
 const presented = jest.mocked(Notifications.getPresentedNotificationsAsync)
@@ -41,6 +51,7 @@ describe('android live session notifications', () => {
     resetLiveActivities()
     schedule.mockClear()
     dismiss.mockClear()
+    flagEnabled.mockReturnValue(true)
     let n = 0
     schedule.mockImplementation(async () => `notif-${++n}`)
   })
@@ -111,5 +122,11 @@ describe('android live session notifications', () => {
     await adoptRunningActivities()
     expect(dismiss).toHaveBeenCalledWith('ours')
     expect(dismiss).not.toHaveBeenCalledWith('push')
+  })
+
+  it('posts nothing at all when the server has the flag off', async () => {
+    flagEnabled.mockReturnValue(false)
+    await openTurn('srv-1')
+    expect(schedule).not.toHaveBeenCalled()
   })
 })

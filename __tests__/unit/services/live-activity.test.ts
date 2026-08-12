@@ -1,12 +1,23 @@
+import SessionLiveActivity from '@/widgets/SessionLiveActivity'
 import {
   decideActions,
   isTerminal,
   liveActivityKey,
+  reconcile,
+  resetLiveActivities,
   toLiveState,
   type TrackedActivity,
 } from '@/services/live-activity'
+import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import type { Session } from '@/types/api'
 import { LAST_OUTPUT_MAX_CHARS, type LiveSessionState } from '@/types/live-activity'
+
+jest.mock('@/services/live-activity-enabled', () => ({
+  isLiveActivityEnabled: jest.fn(() => true),
+}))
+
+const flagEnabled = jest.mocked(isLiveActivityEnabled)
+const start = jest.mocked(SessionLiveActivity.start)
 
 const STARTED_AT = '2026-07-25T10:00:00.000Z'
 
@@ -187,5 +198,32 @@ describe('decideActions', () => {
     expect(decideActions(afterEviction, 'waiting_input', state, key)).toEqual([
       { type: 'start', key, state },
     ])
+  })
+})
+
+// The rest of this file tests decideActions in isolation; these two go through
+// reconcile because the flag gate lives there, ahead of any decision.
+describe('reconcile honours the server feature flag', () => {
+  /** Opens a turn the way the streamer does: waiting_input, then running. */
+  async function openTurn(): Promise<void> {
+    await reconcile('srv-1', makeSession({ status: 'waiting_input' }))
+    await reconcile('srv-1', makeSession({ status: 'running' }))
+  }
+
+  beforeEach(() => {
+    resetLiveActivities()
+    start.mockClear()
+    flagEnabled.mockReturnValue(true)
+  })
+
+  it('starts an activity when the server has the flag on', async () => {
+    await openTurn()
+    expect(start).toHaveBeenCalledTimes(1)
+  })
+
+  it('starts nothing when the server has the flag off', async () => {
+    flagEnabled.mockReturnValue(false)
+    await openTurn()
+    expect(start).not.toHaveBeenCalled()
   })
 })

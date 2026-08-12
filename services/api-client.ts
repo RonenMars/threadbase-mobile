@@ -10,6 +10,7 @@ import type {
   CacheAlertResolveAction,
   ClaudeFlagsConfig,
   ClaudeFlagValues,
+  FeatureFlagsConfig,
   ServerWarmupState,
 } from '@/types/api'
 import { authToken } from '@/types/api'
@@ -483,6 +484,19 @@ export async function getClaudeFlags(serverId: string): Promise<ClaudeFlagsConfi
   try {
     const api = createApiForServer(serverId)
     return await api.get<ClaudeFlagsConfig>('/api/config/claude-flags')
+  } catch (e) {
+    if (e instanceof NotFoundError) return null
+    throw e
+  }
+}
+
+// GET /api/config/feature-flags. Read-only — the streamer resolves these at
+// boot and ships no PUT. A 404 means the server predates feature flags; null
+// lets the caller decide what a silent server implies rather than guessing here.
+export async function getFeatureFlags(serverId: string): Promise<FeatureFlagsConfig | null> {
+  try {
+    const api = createApiForServer(serverId)
+    return await api.get<FeatureFlagsConfig>('/api/config/feature-flags')
   } catch (e) {
     if (e instanceof NotFoundError) return null
     throw e

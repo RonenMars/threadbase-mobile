@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications'
 
 import { decideActions, liveActivityKey, toLiveState, type TrackedActivity } from './live-activity'
+import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import type { Session } from '@/types/api'
 import type { LiveSessionState } from '@/types/live-activity'
 
@@ -93,6 +94,9 @@ async function dismiss(key: string): Promise<void> {
 }
 
 export async function reconcile(serverId: string, session: Session): Promise<void> {
+  // Same gate as the iOS reconciler: the ongoing notification is this platform's
+  // rendering of the same feature, so one flag has to govern both.
+  if (!isLiveActivityEnabled(serverId)) return
   const key = liveActivityKey(serverId, session.id)
   const tracked: TrackedActivity[] = [...handles.values()].map(
     ({ key: k, lastUpdatedAt, turnOpen }) => ({ key: k, lastUpdatedAt, turnOpen }),
