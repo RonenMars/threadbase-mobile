@@ -142,7 +142,10 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
+          # android-emulator-runner runs `script` under /usr/bin/sh (dash on
+          # ubuntu), which rejects `set -o pipefail`. Hand the body to bash.
           script: |
+            bash <<'EOF'
             set -euo pipefail
             capture_failure() {
               STATUS=$?
@@ -189,6 +192,7 @@ jobs:
             set -e
             kill "$MOCK_PID" 2>/dev/null || true
             exit $STATUS
+            EOF
 
       - uses: ruby/setup-ruby@v1
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
