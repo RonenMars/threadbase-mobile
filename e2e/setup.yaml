@@ -2,7 +2,8 @@
 # 7-step onboarding carousel; on subsequent runs the app lands on the hub
 # directly because `expo-secure-store` survives `launchApp: clearState`.
 # Either way, the flow ends with hub-screen visible.
-# Requires: mock server running on localhost:7071
+# Requires: mock server running at E2E_MOCK_SERVER_URL (localhost:7071 by default;
+# Android CI uses 10.0.2.2:7071 to reach the GitHub runner host).
 
 appId: com.ronenmars.threadbase
 ---
@@ -27,7 +28,7 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-connect-url-input"
 
-      - inputText: "http://localhost:7071"
+      - inputText: "${E2E_MOCK_SERVER_URL}"
 
       - pressKey: Enter
 

@@ -6,6 +6,21 @@ This document describes the E2E (end-to-end) testing setup for tb-mobile using M
 
 We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS and Android. Tests are written in YAML and interact with the app through testIDs and UI elements.
 
+## Android CI
+
+The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with one Android API 35
+Google APIs `x86_64` `pixel_6` emulator and Maestro CLI 2.8.0. It uses the
+existing Gradle Release task, installs the APK with `adb`, and runs the suite
+through `e2e/run-maestro.js`. The workflow disables Sentry source-map upload
+and uses the committed debug keystore only for this simulator APK, so it does
+not need production Sentry or signing credentials.
+
+The Android emulator reaches the runner-hosted mock server at `10.0.2.2`, while
+local iOS runs use `localhost`. The Android preflight checks emulator readiness
+and API level; iOS runs additionally retain the separate XCTest teardown-crash
+guard in `e2e/run-maestro.js`. Manual dispatch also provides `platform=ios` to
+run the retained macOS/iOS workflow.
+
 ## Prerequisites
 
 1. **Install Maestro:**

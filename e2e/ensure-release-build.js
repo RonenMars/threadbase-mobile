@@ -9,6 +9,13 @@ const BUNDLE_ID = 'com.ronenmars.threadbase'
 const APP_NAME = 'Threadbase.app'
 const REPO_ROOT = path.join(__dirname, '..')
 
+if (process.env.E2E_PLATFORM === 'android') {
+  // Android CI builds and installs its Release APK before this shared suite
+  // starts. Keep the iOS freshness/install guard below for every local iOS path.
+  console.log('Android Release APK was installed by the E2E runner.')
+  process.exit(0)
+}
+
 // Set to reuse a build we know is stale (or can't prove is fresh) rather than
 // rebuilding — mirrors e2e/check-sim.js's E2E_ALLOW_UNSUPPORTED_IOS escape hatch.
 const ALLOW_STALE = process.env.E2E_ALLOW_STALE_BUILD === '1'

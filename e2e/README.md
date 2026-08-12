@@ -1,6 +1,31 @@
 # E2E tests (Maestro)
 
-A minimal smoke-test suite for the Threadbase iOS app, driven by [Maestro](https://maestro.dev) against a local mock server.
+A minimal smoke-test suite for the Threadbase app, driven by [Maestro](https://maestro.dev) against a local mock server.
+
+## Android CI
+
+The scheduled `E2E` GitHub Actions workflow, and manual runs with the default
+`platform=android`, run the mock suite on Ubuntu using one Android **API 35** Google APIs `x86_64` emulator
+(`pixel_6`) and Maestro CLI **2.8.0**. It builds `:app:assembleRelease`, signs
+that simulator-only APK with the repository debug key, installs it with `adb`,
+and sets `E2E_MOCK_SERVER_URL=http://10.0.2.2:7071` so the emulator can reach
+the runner-hosted mock server. Sentry source-map upload is disabled for this
+build; production deploy workflows and their signing/Sentry configuration are
+separate and unchanged.
+
+Use the normal dispatch inputs to select the code and, optionally, a subset of
+flows. The full mock-suite flow list remains `test:e2e:mock` in `package.json`.
+
+```bash
+gh workflow run E2E -f ref=my/branch                         # Android (default)
+gh workflow run E2E -f ref=my/branch -f flows="e2e/codex_parity.yaml"
+gh workflow run E2E -f platform=ios -f ref=my/branch          # retained iOS path
+```
+
+Android validation does not replace the separate local iOS XCTest check. The
+iOS paths still use `e2e/check-sim.js` and `e2e/run-maestro.js`; the latter
+keeps its Apple XCTest teardown-crash detection and artifacts. Android has an
+API/device readiness check but no XCTest path.
 
 ## What it covers
 

@@ -1,6 +1,6 @@
 name: E2E
 
-# Maestro E2E (iOS sim). Two ways in:
+# Maestro E2E (Android by default, with an iOS option). Two ways in:
 #
 #   * Monthly schedule — 00:00 UTC on the 1st, the low-frequency regression gate
 #     this suite has always been. It lived in `test.yml` until this workflow
@@ -8,14 +8,15 @@ name: E2E
 #   * Manual dispatch — run it against any branch, tag, commit SHA, or open PR
 #     number. Defaults to `main`.
 #
-# The macOS runner + iOS Release build is ~15 minutes and ~$3/run, which is why
-# this is never wired to `pull_request`: per-commit E2E would cost more than it
-# catches. Dispatch it by hand when a change actually touches a flow.
+# The Android Release build is still expensive enough that this is never wired
+# to `pull_request`: per-commit E2E would cost more than it catches. Dispatch it
+# by hand when a change actually touches a flow.
 #
 #   gh workflow run E2E                       # main, whole mock suite
 #   gh workflow run E2E -f ref=572            # PR #572's head
 #   gh workflow run E2E -f ref=my/branch      # a branch
 #   gh workflow run E2E -f ref=v1.2.3         # a tag
+#   gh workflow run E2E -f platform=ios        # iOS instead of the default Android
 #   gh workflow run E2E -f flows=e2e/codex_parity.yaml            # one flow
 #   gh workflow run E2E -f ref=572 -f flows="e2e/a.yaml e2e/b.yaml"
 #
@@ -30,6 +31,14 @@ name: E2E
 on:
   workflow_dispatch:
     inputs:
+      platform:
+        description: 'Platform to test'
+        required: false
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - ios
       ref:
         description: 'Branch, tag, commit SHA, or PR number to test (default: main)'
         required: false
@@ -45,15 +54,14 @@ on:
     - cron: '0 0 1 * *'
 
 concurrency:
-  # One E2E at a time per target — two runs would fight over the same simulator
-  # cache key for no benefit, and each one costs a macOS runner.
+  # One E2E at a time per target — two runs would fight over the same emulator.
   group: e2e-${{ inputs.ref || 'schedule' }}
   cancel-in-progress: false
 
 jobs:
   e2e-maestro:
-    name: E2E maestro (iOS)
-    runs-on: macos-15
+    name: E2E maestro
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && 'macos-15' || 'ubuntu-24.04' }}
     timeout-minutes: 75
     steps:
       # `ref` is the one piece of attacker-controllable input in this workflow,
@@ -87,18 +95,109 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && '22' || '24.15.0' }}
           cache: npm
-
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
 
       - name: Install dependencies
         run: npm ci
 
+      - uses: actions/setup-java@v5
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+
+      - name: Install Maestro CLI
+        run: |
+          MAESTRO_VERSION=2.8.0 curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          "$HOME/.maestro/bin/maestro" --version
+
+      # This action installs the Android emulator, platform tools, API 35 SDK,
+      # and Google APIs x86_64 image, then waits for the one requested emulator
+      # to finish booting before it runs the script below.
+      - name: Build, install, and run on Android API 35
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          FLOWS: ${{ inputs.flows }}
+          E2E_PLATFORM: android
+          E2E_ANDROID_API_LEVEL: '35'
+          E2E_MOCK_SERVER_URL: http://10.0.2.2:7071
+          # Simulator-only release signing: use the repository's debug key, not
+          # production signing material. Production deploys keep their own path.
+          TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
+          TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD: android
+          TB_MOBILE_UPLOAD_KEY_ALIAS: androiddebugkey
+          TB_MOBILE_UPLOAD_KEY_PASSWORD: android
+          # The app bundles Sentry, but E2E must never require upload credentials.
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            capture_failure() {
+              STATUS=$?
+              if [ "$STATUS" -ne 0 ]; then
+                adb exec-out screencap -p > e2e/_artifacts/fallback/emulator-at-failure.png || true
+                LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
+                if [ -n "$LATEST" ]; then
+                  mkdir -p e2e/_artifacts/maestro-session
+                  cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
+                fi
+              fi
+              exit "$STATUS"
+            }
+            trap capture_failure EXIT
+            adb wait-for-device
+            until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 1; done
+            adb shell input keyevent 82
+            (cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64)
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
+            mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
+            if [ -z "$FLOWS" ]; then
+              npm run test:e2e:mock
+              exit 0
+            fi
+            for f in $FLOWS; do
+              case "$f" in
+                e2e/*.yaml) ;;
+                *) echo "::error::Refusing flow '$f' — expected a path like e2e/<name>.yaml."; exit 1 ;;
+              esac
+              if [ ! -f "$f" ]; then
+                echo "::error::No such flow: $f"
+                exit 1
+              fi
+            done
+            echo "Running flows: $FLOWS" >> "$GITHUB_STEP_SUMMARY"
+            node e2e/check-sim.js
+            node e2e/ensure-release-build.js
+            MOCK_PORTS=7071,7072 node e2e/mock-server.js &
+            MOCK_PID=$!
+            sleep 1
+            set +e
+            node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug $FLOWS
+            STATUS=$?
+            set -e
+            kill "$MOCK_PID" 2>/dev/null || true
+            exit $STATUS
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
       - name: Restore iOS DerivedData cache
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         uses: actions/cache@v5
         with:
           path: build/ios-ci
@@ -108,44 +207,38 @@ jobs:
             ios-derived-v1-${{ runner.os }}-xcode26.3-
 
       - name: Select Xcode 26
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         # Expo SDK 56's expo-modules-jsi Package.swift requires swift-tools 6.2,
         # which ships with Xcode 26. The macos-15 runner defaults to Xcode 16.4
         # (Swift 6.1) and rejects the package with "Could not resolve package
         # dependencies: package 'apple' is using Swift tools version 6.2.0".
         run: sudo xcode-select -s /Applications/Xcode_26.3.app
 
-      - name: Install Maestro CLI
-        run: |
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-
       - name: Boot iOS simulator
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         run: |
           DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
           echo "Booting simulator: $DEVICE"
           xcrun simctl boot "$DEVICE" || true
           xcrun simctl bootstatus "$DEVICE" -b
 
-      # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
-      # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
-      # and an xcodebuild that dies on a missing `Pods-Threadbase.release
-      # .xcconfig`. That is why every scheduled run since at least June 2026
-      # failed at the build step; a local machine never sees it because its
-      # `ios/Pods/` already exists. Prebuild first (it can rewrite the pbxproj),
-      # then install pods against the result.
-      #
-      # Mirrors deploy.yml: no `--deployment`, because prebuilt-artifact pods
-      # regenerate fresh checksums on CI and `--deployment` treats that as a
-      # fatal lockfile change. `bundle exec` keeps the Gemfile's CocoaPods 1.16.2
-      # pin, and reset-podfile-lock-path-noise.sh drops the four path-dependent
-      # checksums the runner's checkout path produces.
       - name: Install CocoaPods
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
+        # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
+        # and an xcodebuild that dies on a missing `Pods-Threadbase.release
+        # .xcconfig`. Prebuild first (it can rewrite the pbxproj), then install
+        # pods against the result. No `--deployment`: prebuilt-artifact pods
+        # regenerate fresh checksums on CI, which `--deployment` rejects.
         run: |
           npx expo prebuild --platform ios --no-clean
           (cd ios && bundle exec pod install)
           ./scripts/reset-podfile-lock-path-noise.sh
 
       - name: Build and install iOS app (Release)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: true
         run: |
           xcodebuild \
             -workspace ios/Threadbase.xcworkspace \
@@ -157,18 +250,8 @@ jobs:
           APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
           xcrun simctl install booted "$APP_PATH"
 
-      # `flows` empty runs the whole mock suite through its npm script, which
-      # stays the single source of truth for the flow list. A non-empty value
-      # reproduces that script's setup around a narrower guarded Maestro run — worth
-      # the duplicated three lines to keep the full-suite path untouched.
-      #
-      # Every entry is checked to look like `e2e/<name>.yaml` and to exist
-      # before it reaches the command. Word-splitting `$FLOWS` unquoted is the
-      # point (it is a list), and is safe here: expansion splits on whitespace
-      # without re-parsing shell metacharacters, so a `;` inside an entry is a
-      # filename character, not a separator — and the existence check rejects it
-      # regardless.
-      - name: Run Maestro E2E suite
+      - name: Run Maestro E2E suite on iOS
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         env:
           FLOWS: ${{ inputs.flows }}
         run: |
@@ -201,15 +284,28 @@ jobs:
           kill "$MOCK_PID" 2>/dev/null || true
           exit $STATUS
 
-      - name: Capture sim screenshot + Maestro session dir on failure
-        if: failure()
+      - name: Capture emulator screenshot + Maestro session dir on failure
+        if: ${{ failure() && (github.event_name != 'workflow_dispatch' || inputs.platform == 'android') }}
         run: |
-          # Snapshot the booted sim so we have at least one image even if
+          # Snapshot the booted emulator so we have at least one image even if
           # Maestro wrote no per-flow debug output to e2e/_artifacts/debug.
-          xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
+          adb exec-out screencap -p > e2e/_artifacts/fallback/emulator-at-failure.png || true
           # Maestro defaults to writing test session output under
           # ~/.maestro/tests/<timestamp>/. Copy the most recent session into
           # the artifact dir so commands JSON + hierarchy snapshots survive.
+          LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
+          if [ -n "$LATEST" ]; then
+            mkdir -p e2e/_artifacts/maestro-session
+            cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
+          fi
+
+      - name: Capture iOS simulator screenshot on failure
+        if: ${{ failure() && github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        run: xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
+
+      - name: Copy Maestro session dir on failure
+        if: failure()
+        run: |
           LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
           if [ -n "$LATEST" ]; then
             mkdir -p e2e/_artifacts/maestro-session
