@@ -46,7 +46,9 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 # The primary action renders its label.
-- assertVisible: "Resume Session"
+# "▶ Resume Session" once iOS flattens the Phosphor Play icon into the button's
+# accessibility text; Maestro matches the whole element, so `.*` is required.
+- assertVisible: ".*Resume Session"
 
 # Export must NOT be a bottom-bar sibling of Resume Session anymore.
 - assertNotVisible:
