@@ -3,12 +3,22 @@ import {
   reconcile,
   resetLiveActivities,
 } from '@/services/live-activity'
+import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import type { Session } from '@/types/api'
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
+
+// These cases are about the reconciler's behaviour, not about whether the
+// server opted in. The flag has its own suite (unit/services/
+// live-activity-enabled.test.ts); left unmocked it answers false for an
+// unknown server and every reconcile below would return before doing anything.
+jest.mock('@/services/live-activity-enabled', () => ({
+  isLiveActivityEnabled: jest.fn(() => true),
+}))
 
 // jest.setup.js replaces this module with plain jest.fn()s; the cast reaches
 // the mock's assertion surface, which the real LiveActivityFactory type hides.
 const factory = jest.mocked(SessionLiveActivity)
+const flagEnabled = jest.mocked(isLiveActivityEnabled)
 
 function session(overrides: Partial<Session> = {}): Session {
   return {
@@ -38,6 +48,13 @@ describe('live activity reconciler', () => {
   beforeEach(() => {
     resetLiveActivities()
     factory.start.mockClear()
+    flagEnabled.mockReturnValue(true)
+  })
+
+  it('does nothing at all when the server has the flag off', async () => {
+    flagEnabled.mockReturnValue(false)
+    await openTurn('srv-1', session())
+    expect(factory.start).not.toHaveBeenCalled()
   })
 
   it('opens nothing for a session’s first running — no turn has been asked for', async () => {
