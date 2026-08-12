@@ -424,6 +424,9 @@ export interface PushRegisterPayload {
 export interface BrowseResponse {
   path: string
   directories: { name: string }[]
+  // Optional so older servers (directories-only) still typecheck; the browse
+  // UI renders these read-only, they are not selectable.
+  files?: { name: string }[]
 }
 
 export interface MkdirResponse {

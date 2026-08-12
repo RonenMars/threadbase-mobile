@@ -15,7 +15,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { CaretDown, CaretRight, ClockCounterClockwise } from 'phosphor-react-native'
+import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder } from 'phosphor-react-native'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
@@ -35,6 +35,8 @@ import { findProviderHealth } from '@/types/provider-health'
 
 const MAX_RECENT_DIRS = 8
 const PREVIEW_RECENT_DIRS = 3
+
+type BrowseRow = { kind: 'dir' | 'file'; name: string }
 
 export default function BrowseScreen() {
   const theme = useTheme()
@@ -255,7 +257,18 @@ export default function BrowseScreen() {
   )
 
   const renderItem = useCallback(
-    ({ item, index }: { item: { name: string }; index: number }) => {
+    ({ item, index }: { item: BrowseRow; index: number }) => {
+      // Files are view-only: a plain row with no press handler and no chevron.
+      if (item.kind === 'file') {
+        return (
+          <View style={styles.row} testID={`browse-file-${item.name}`}>
+            <File size={20} color={theme.text.secondary} style={styles.rowIcon} />
+            <Text style={[styles.dirName, styles.fileName]} numberOfLines={1}>
+              {item.name}
+            </Text>
+          </View>
+        )
+      }
       const childPath = currentPath ? `${currentPath}/${item.name}` : item.name
       return (
         <TouchableOpacity
@@ -265,7 +278,7 @@ export default function BrowseScreen() {
           }}
           testID={index === 0 ? "browse-first-directory" : undefined}
         >
-          <Text style={styles.folderIcon}>📁</Text>
+          <Folder size={20} color={theme.text.accent} weight="fill" style={styles.rowIcon} />
           <Text style={styles.dirName} numberOfLines={1}>
             {item.name}
           </Text>
@@ -273,8 +286,16 @@ export default function BrowseScreen() {
         </TouchableOpacity>
       )
     },
-    [currentPath, navigateTo, styles],
+    [currentPath, navigateTo, styles, theme],
   )
+
+  // Directories first (navigable), then files (view-only). Both arrive
+  // server-sorted; older servers omit `files`, so it coalesces to empty.
+  const rows = useMemo<BrowseRow[]>(() => {
+    const dirs = (data?.directories ?? []).map((d) => ({ kind: 'dir' as const, name: d.name }))
+    const files = (data?.files ?? []).map((f) => ({ kind: 'file' as const, name: f.name }))
+    return [...dirs, ...files]
+  }, [data])
 
   const isBrowseNotConfigured = isError && (
     (error instanceof NetworkError && error.code === 'BROWSE_ROOT_NOT_SET') ||
@@ -389,13 +410,13 @@ export default function BrowseScreen() {
             title="Unable to load directories"
             subtitle={error instanceof Error && error.message ? error.message : 'Unknown error'}
           />
-        ) : data?.directories.length === 0 ? (
-          <EmptyState title="Empty directory" subtitle="No subdirectories here." />
+        ) : rows.length === 0 ? (
+          <EmptyState title="Empty directory" subtitle="No files or folders here." />
         ) : (
           <FlashList
-            data={data?.directories ?? []}
+            data={rows}
             renderItem={renderItem}
-            keyExtractor={(item) => item.name}
+            keyExtractor={(item) => `${item.kind}:${item.name}`}
           />
         )}
       </View>
@@ -677,14 +698,16 @@ function makeStyles(theme: Theme) {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.border,
   },
-  folderIcon: {
-    fontSize: 20,
+  rowIcon: {
     marginRight: spacing.md,
   },
   dirName: {
     flex: 1,
     color: theme.text.primary,
     fontSize: font.base,
+  },
+  fileName: {
+    color: theme.text.secondary,
   },
   chevron: {
     color: theme.text.secondary,
