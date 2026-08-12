@@ -585,3 +585,138 @@ describe('VirtualTerminal – scrollback cap', () => {
     expect(lines).not.toContain('line 0')
   })
 })
+
+// ── Viewport-relative cursor positioning ─────────────────────────────────────
+// A TUI paints absolute cursor moves against a fixed 40-row screen, not against
+// the whole append-only grid. Every test here needs a grid TALLER than that
+// screen — the pre-existing cursor tests all run on 1-3 rows, where the viewport
+// origin is 0 and the distinction cannot be observed. That was the coverage hole.
+describe('VirtualTerminal – viewport-relative cursor positioning', () => {
+  const SEED_ROWS = 200
+  // The real footer from a capture. Matters that it is this exact shape:
+  // lib/terminalChrome.ts filters a correctly-placed footer out of getLines(),
+  // so a "footer landed at the bottom" assertion written against getLines()
+  // fails AFTER the fix, for the wrong reason. Assert on getRawLines() instead.
+  const FOOTER = '✻ Brewing… (12s · ↑ 3.4k tokens)'
+
+  /**
+   * The production trigger: `terminal_replay` carries up to 200 already-rendered,
+   * escape-free rows which `feedHistory` joins with `\n`
+   * (hooks/useTerminalStream.ts:202) before the first live frame arrives.
+   * The trailing newline leaves the cursor on a fresh bottom row, which is where
+   * a 40-row screen's last line actually is.
+   */
+  function seededFromReplay(): VirtualTerminal {
+    const vt = new VirtualTerminal()
+    const rows = Array.from({ length: SEED_ROWS }, (_, i) => `transcript line ${i}`)
+    vt.feed(`${rows.join('\n')}\n`)
+    return vt
+  }
+
+  it('lands a footer repaint at the bottom of the screen, not mid-transcript', () => {
+    const vt = seededFromReplay()
+    const before = vt.getRawLines().length
+
+    // Assert the invariant on the MOVE alone. Once text is painted the count
+    // legitimately rises, because the move targets the blank bottom row and
+    // getRawLines() only starts reporting that row once it has content.
+    vt.feed(`${CSI}40;1H`)
+    expect(vt.getRawLines().length).toBe(before)
+
+    vt.feed(FOOTER)
+
+    const lines = vt.getLines()
+    // Carries the test. On the pre-fix emulator `CSI 40;1H` resolves to grid row
+    // 39, so `transcript line 39` is overwritten and this fails.
+    for (let i = 0; i < SEED_ROWS; i++) {
+      expect(lines).toContain(`transcript line ${i}`)
+    }
+    // A correctly-placed footer is provider chrome and must not reach the
+    // transcript. The mid-transcript hybrid the bug produces
+    // ("tr✻ Brewing… (12s …)") fails the filter's `^` anchor and would survive.
+    expect(lines.every((l) => !l.includes('Brewing'))).toBe(true)
+    // It is still on screen, just filtered from the transcript view.
+    expect(vt.getRawLines()[vt.getRawLines().length - 1]).toContain('Brewing')
+  })
+
+  it('clamps an out-of-range row so garbage escapes cannot evict transcript', () => {
+    const vt = seededFromReplay()
+
+    // A garbled row number is reachable: the HTTP fallback serves a byte-level
+    // tail slice of the PTY ring buffer, which can begin mid-escape.
+    //
+    // Unclamped, each one resolves past the end and appends ~160 blank rows;
+    // once the grid passes MAX_ROWS the trim evicts real transcript from the
+    // top. A SINGLE stray proves nothing — getRawLines() drops blank rows, so
+    // the growth is invisible to it and the obvious length assertion holds even
+    // with the clamp removed. The count below is past the eviction cliff
+    // (measured at 62 for this fixture), which is where the harm becomes
+    // observable at all.
+    //
+    // This guards the clamp rather than reproducing the original bug: it also
+    // passes on pre-fix code, where an out-of-range row simply saturates.
+    for (let i = 0; i < 70; i++) vt.feed(`${CSI}200;1H`)
+
+    const lines = vt.getLines()
+    for (let i = 0; i < SEED_ROWS; i++) {
+      expect(lines).toContain(`transcript line ${i}`)
+    }
+  })
+
+  it('clamps cursor-up (CSI A) at the top of the screen, not the top of scrollback', () => {
+    const vt = seededFromReplay()
+    // Grid is the seeded rows plus the blank row the trailing newline opened;
+    // the screen is its last VIEWPORT_ROWS, so everything below is scrollback.
+    const VIEWPORT_ROWS = 40
+    const viewportTop = SEED_ROWS + 1 - VIEWPORT_ROWS
+
+    // Bottom of the screen, then further up than the screen is tall.
+    vt.feed(`${CSI}40;1H`)
+    vt.feed(`${CSI}45A`)
+    vt.feed('XX')
+
+    // Pre-fix this clamps at grid row 0 rather than the viewport top, so the
+    // write lands five rows into scrollback and destroys `transcript line 155`.
+    // The viewport's own top row IS overwritten, and that is correct — a real
+    // screen row is being painted. Only scrollback is off-limits.
+    const lines = vt.getLines()
+    for (let i = 0; i < viewportTop; i++) {
+      expect(lines).toContain(`transcript line ${i}`)
+    }
+    expect(vt.getRawLines().some((l) => l.includes('XX'))).toBe(true)
+  })
+
+  it('clamps cursor-down (CSI B) at the bottom of the screen so a frame cannot tear', () => {
+    const vt = seededFromReplay()
+
+    // The same absolute row, painted twice, with a cursor-down in between.
+    vt.feed(`${CSI}38;1HAAA`)
+    vt.feed(`${CSI}10B`)
+    vt.feed(`${CSI}38;1HBBB`)
+
+    // Pre-fix, `CSI 10B` grows the grid, which moves the derived viewport origin
+    // mid-frame, so the second `CSI 38;1H` resolves somewhere else and both
+    // survive — the frame tears. Clamped, the repaint overwrites itself.
+    const lines = vt.getRawLines()
+    expect(lines.some((l) => l.includes('BBB'))).toBe(true)
+    expect(lines.every((l) => !l.includes('AAA'))).toBe(true)
+  })
+
+  it('survives a chunk that begins inside an escape sequence (HTTP fallback)', () => {
+    const vt = seededFromReplay()
+
+    // The fallback body is `session.outputBuffer` cut with a byte-level
+    // `subarray` (tb-streamer src/pty-manager.ts:820-825), so a chunk can start
+    // mid-escape. The parser drops the truncated sequence; the contract is only
+    // that it does not throw and does not destroy transcript.
+    expect(() => {
+      vt.feed(`${CSI}4`)
+      vt.feed(`0;1H${FOOTER}`)
+    }).not.toThrow()
+
+    const lines = vt.getLines()
+    for (let i = 0; i < SEED_ROWS; i++) {
+      expect(lines).toContain(`transcript line ${i}`)
+    }
+  })
+})

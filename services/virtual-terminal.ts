@@ -15,9 +15,21 @@ import { parseConfidenceFromCounters, type ParseConfidence } from '@/lib/renderC
 // Hard cap on retained rows. The rendered view only ever shows the last
 // `terminalMaxLines` (default 5000), so anything older is dead weight — a
 // long append-only session would otherwise grow the grid forever and make
-// getLines() an O(total-lines) scan on every frame. Kept well above any TUI
-// screen height so absolute cursor positioning (H/f) never hits the trim.
+// getLines() an O(total-lines) scan on every frame.
 const MAX_ROWS = 10_000
+
+// The TUI paints against a fixed-geometry screen — the streamer spawns every
+// PTY at 120x40 (tb-streamer src/pty-manager.ts:42-43 and
+// src/codex-pty-runner.ts:36-37, whose own comment notes the render terminal
+// MUST match so absolute cursor moves resolve to the same coordinates). So
+// absolute row addressing targets that VIEWPORT, not the whole scrollback grid.
+//
+// The viewport origin is DERIVED, never stored — `grid.length` is the single
+// source of truth. Do not introduce a `viewTop` field: a stored origin has to
+// be maintained correctly through every splice, and each grid mutation becomes
+// a way to desynchronise it. Derived state is self-correcting, and reset()
+// already restores `grid = [[]]`, which is the origin.
+const VIEWPORT_ROWS = 40
 
 // CSI finals we intentionally ignore (SGR, modes, reports) without counting
 // as unsupported — they are expected noise in agent TUIs.
@@ -33,6 +45,12 @@ export class VirtualTerminal {
   private grid: string[][] = [[]]
   private row = 0
   private col = 0
+
+  /** Top of the TUI's viewport within the scrollback grid. Derived, never stored. */
+  private viewportTop(): number {
+    return Math.max(0, this.grid.length - VIEWPORT_ROWS)
+  }
+
   /** Holds a trailing ESC that was at the end of a feed() chunk. */
   private pendingEsc = false
   private chromeFilter: TerminalChromeFilter = getTerminalChromeFilter('claude-code')
@@ -225,10 +243,20 @@ export class VirtualTerminal {
 
     switch (cmd) {
       case 'A':
-        this.row = Math.max(0, this.row - n)
+        // Clamped to the top of the viewport, not row 0: cursor-up from the
+        // footer region would otherwise walk into scrollback and the next
+        // putChar would overwrite transcript. Note this can move the cursor
+        // *forward* when row is already above viewportTop (reachable via CSI L,
+        // which grows the grid at an interior row) — that lands writes on the
+        // screen instead of in scrollback, which is the intent, not an
+        // off-by-one.
+        this.row = Math.max(this.viewportTop(), this.row - n)
         break
       case 'B':
-        this.row += n
+        // Clamped to the viewport bottom so a cursor move can never grow the
+        // grid — growth mid-frame shifts the derived origin, and a later
+        // absolute move in the same frame then lands somewhere else.
+        this.row = Math.min(this.row + n, this.viewportTop() + VIEWPORT_ROWS - 1)
         this.ensureRow(this.row)
         break
       case 'C':
@@ -242,7 +270,15 @@ export class VirtualTerminal {
         break
       case 'H':
       case 'f':
-        this.row = Math.max(0, (args[0] || 1) - 1)
+        // Clamped to the screen, as a real terminal does. This is what keeps
+        // viewportTop() safe to read before ensureRow(): the target is at most
+        // (grid.length - 40) + 39 = grid.length - 1 whenever the grid is at
+        // least a screen tall, so CUP can never extend the grid and invalidate
+        // the origin it just read. Unclamped, a stray out-of-range row (the
+        // HTTP fallback can start mid-escape) appends a screenful of blanks
+        // each time and eventually evicts real transcript through MAX_ROWS.
+        this.row =
+          this.viewportTop() + Math.min(Math.max(0, (args[0] || 1) - 1), VIEWPORT_ROWS - 1)
         this.col = Math.max(0, (args[1] || 1) - 1)
         this.ensureRow(this.row)
         break
@@ -283,6 +319,9 @@ export class VirtualTerminal {
         this.ensureRow(this.row)
         break
       case 'S':
+        // Destroys the n oldest scrollback rows instead of appending blanks at
+        // the viewport bottom. Not a cursor bug — the splice's implicit shift
+        // compensates exactly — so it is left alone here; see the follow-up.
         this.grid.splice(0, Math.min(n, this.grid.length))
         this.ensureRow(this.row)
         break
