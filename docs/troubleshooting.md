@@ -373,7 +373,11 @@ Jest did not exit one second after the test run has completed.
 
 **Cause:** an open handle — a timer, socket or subscription a test left running. The run is complete and its results are valid; only teardown is stuck. This is not one bad suite: on 2026-08-02, `conversation-detail-gating`, `SessionCard` and `conversation-resume-collision` all did it on an unmodified `main`, while the pure-unit `resumeSession-cache` exited immediately. Assume any integration suite that renders a component can do this.
 
-**Fix:** `--forceExit`. Everything printed above the hang is real, so the run can be trusted:
+One handle has since been identified concretely, which is useful because it shows the delay is finite rather than a true hang. A `QueryClient` a test constructs itself is never cleared, so React Query schedules `setTimeout(gcTime)` for each cached query once it goes unused, and node will not exit while that timer is pending. Measured on 2026-08-12: `useConversations.test.tsx -t "partial failure"` finishes its tests in 1.4s and the process then exits on its own at 305s — the 5-minute default `gcTime`, to the second. The same file's `retention gcTime` tests were still alive at 400s, because `useConversation` sets a 7-day `gcTime` (`hooks/useConversations.ts:423`) and that becomes the timer the whole file waits on.
+
+The correlation is with suites that build their own client, not with `test-utils/createWrapper` — `conversation-search-anchor` calls `createWrapper` twelve times and exits in 19s, while `useSessionActions.resume` builds one client and never exits. Clearing the wrapper's client would therefore fix nothing; the 16 suites that construct their own are the ones to change if anyone wants the leak gone rather than worked around.
+
+**Fix:** `--forceExit`. Everything printed above the hang is real, so the run can be trusted. Every `test:*` script already passes it, so this only comes up on a hand-rolled `npx jest`:
 
 ```bash
 npx jest --ci --runInBand --forceExit <suite>
