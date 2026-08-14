@@ -4,7 +4,7 @@ This is a request from the Threadbase **mobile** app to the **streamer**.
 It describes a need, the evidence behind it, and the constraints a solution has to satisfy.
 It deliberately does **not** dictate an implementation — please investigate the codebase and choose the best design; the shape sketched at the end is a starting proposal, not a spec, and pushback on it is welcome.
 
-Related mobile documents: [ADR 0001](./0001-hub-data-layer-lazy-pagination.md) (the decision), [the kick-off brief](./0001-kickoff.md) (the implementation plan).
+Related mobile documents: [ADR 0001](../../adr/0001-hub-data-layer-lazy-pagination.md) (the decision), [the kick-off brief](../mobile/ADR-0001-KICKOFF.md) (the implementation plan).
 
 ## The need in one paragraph
 

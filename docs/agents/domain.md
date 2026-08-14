@@ -19,23 +19,22 @@ The producer skill (`/grill-with-docs`) creates them lazily when terms or decisi
 /
 ├── CONTEXT.md          ← not created yet
 ├── docs/adr/
-│   ├── 0001-hub-data-layer-lazy-pagination.md          ← the ADR
-│   ├── 0001-kickoff.md                                 ← implementation brief for it
-│   ├── 0001-streamer-project-summary-request.md        ← cross-repo request to tb-streamer
-│   └── 0001-followup-05-chat-flow-hidekeyboard.md      ← task prompt, not a decision
+│   └── 0001-hub-data-layer-lazy-pagination.md      ← the only ADR
+├── docs/followups/                                 ← plans, briefs, cross-repo requests
+│   ├── mobile/ADR-0001-KICKOFF.md
+│   ├── mobile/05-chat-flow-hidekeyboard-brief.md
+│   └── streamer/ADR-0001-project-summary-request.md
 └── app/ components/ services/ hooks/ …
 ```
 
-**`docs/adr/` currently holds exactly one ADR.**
-`0001-hub-data-layer-lazy-pagination.md` is the only file carrying ADR metadata (`Status: Proposed`, `Date: 2026-08-08`), so "ADR 0001" resolves unambiguously to it.
-The other three share the `0001-` prefix because they are satellites of that same workstream, not because the sequence is broken — two of them link to the ADR by that number in their opening lines.
+**`docs/adr/` holds decisions and nothing else.**
+`0001-hub-data-layer-lazy-pagination.md` is currently the only one, so "ADR 0001" resolves unambiguously to it.
+Its implementation brief, the cross-repo request derived from it, and an unrelated task prompt used to sit here too; they moved to `docs/followups/` so the directory answers one question — what was decided.
 
 Numbering is sequential, one number per decision: scan `docs/adr/` for the highest number and increment, so the next real ADR is `0002`.
-A file only belongs here if the decision it records is hard to reverse, surprising without context, and the result of a genuine trade-off — a plan, a request, or a task prompt is none of those.
 
-`0001-followup-05-chat-flow-hidekeyboard.md` is the one misfiled file: a Maestro/iOS keyboard task prompt with no relation to the Hub data layer.
-`docs/followups/repo-health/EVIDENCE.md` already records that it should move out of this directory, and `docs/followups/mobile/05-chat-flow-hidekeyboard.md` points at it as the full brief.
-Don't treat it as a decision.
+A file belongs in `docs/adr/` only if the decision it records is hard to reverse, surprising without context, and the result of a genuine trade-off.
+A plan, a request, a task prompt, or a status report is none of those — those go in `docs/followups/`.
 
 ## Use the glossary's vocabulary
 
