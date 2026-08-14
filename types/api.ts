@@ -352,6 +352,24 @@ export interface ClaudeFlagsConfig {
 }
 
 /**
+ * Server feature flags — booleans gating streamer behaviour, resolved at the
+ * streamer's boot and read-only from here (there is no PUT counterpart, so a
+ * change means restarting that server). Distinct from ClaudeFlags above, which
+ * are CLI arguments handed to a spawned `claude` process.
+ */
+export interface FeatureFlagDefinition {
+  id: string
+  description: string
+  default: boolean
+  env: string
+}
+
+export interface FeatureFlagsConfig {
+  registry: FeatureFlagDefinition[]
+  values: Record<string, boolean>
+}
+
+/**
  * Permission modes that disable the human-in-the-loop confirmation entirely.
  * Mirrors DANGEROUS_PERMISSION_MODES in the streamer's src/claude-flags.ts.
  */

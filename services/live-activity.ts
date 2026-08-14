@@ -1,6 +1,7 @@
 import type { LiveActivity } from 'expo-widgets'
 
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
+import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import { sessionOpensAsHistory, sessionPhase } from '@/lib/sessionPresentation'
 import type { Session } from '@/types/api'
 import {
@@ -208,6 +209,10 @@ async function apply(action: LiveActivityAction): Promise<void> {
  * frame — `decideActions` collapses the no-op cases to an empty list.
  */
 export async function reconcile(serverId: string, session: Session): Promise<void> {
+  // Checked before `handles` is touched: a server that flips the flag off mid
+  // run stops getting new surfaces, and the ones already up are ended by
+  // adoptRunningActivities() on the next app start rather than stranded here.
+  if (!isLiveActivityEnabled(serverId)) return
   const key = liveActivityKey(serverId, session.id)
   const incoming = toLiveState(session, serverId)
   const previousStatus = lastStatus.get(key)
