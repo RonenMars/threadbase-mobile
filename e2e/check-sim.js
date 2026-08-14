@@ -14,6 +14,54 @@
 // to bypass for any runtime above the compatibility ceiling below.
 const { execFileSync } = require('child_process')
 
+const E2E_PLATFORM = process.env.E2E_PLATFORM || 'ios'
+const ANDROID_API_LEVEL = process.env.E2E_ANDROID_API_LEVEL || '35'
+
+function checkAndroidEmulator() {
+  const devices = execFileSync('adb', ['devices'], { encoding: 'utf8' })
+    .split('\n')
+    .slice(1)
+    .map((line) => line.trim().split(/\s+/))
+    .filter(([serial, state]) => serial && state === 'device')
+
+  if (devices.length !== 1) {
+    console.error(
+      `Error: expected exactly one ready Android emulator, found ${devices.length}.\n` +
+        'Fix: boot one emulator, wait for it to finish starting, then re-run.',
+    )
+    process.exit(1)
+  }
+
+  const [serial] = devices[0]
+  const bootCompleted = execFileSync('adb', ['-s', serial, 'shell', 'getprop', 'sys.boot_completed'], {
+    encoding: 'utf8',
+  }).trim()
+  const apiLevel = execFileSync('adb', ['-s', serial, 'shell', 'getprop', 'ro.build.version.sdk'], {
+    encoding: 'utf8',
+  }).trim()
+
+  if (bootCompleted !== '1') {
+    console.error(`Error: Android emulator ${serial} is connected but has not finished booting.`)
+    process.exit(1)
+  }
+  if (apiLevel !== ANDROID_API_LEVEL) {
+    console.error(`Error: Android emulator ${serial} runs API ${apiLevel || '?'}, expected API ${ANDROID_API_LEVEL}.`)
+    process.exit(1)
+  }
+
+  console.log(`Android emulator is running: ${serial} (API ${apiLevel}).`)
+}
+
+if (E2E_PLATFORM === 'android') {
+  checkAndroidEmulator()
+  process.exit(0)
+}
+
+if (E2E_PLATFORM !== 'ios') {
+  console.error(`Error: unsupported E2E_PLATFORM '${E2E_PLATFORM}'. Expected 'ios' or 'android'.`)
+  process.exit(1)
+}
+
 // Highest iOS major exercised here with Maestro 2.6.1 or newer. Bump only after
 // a newer iOS runtime is verified; this ceiling is not a teardown-health claim.
 const MAX_SUPPORTED_IOS_MAJOR = 26

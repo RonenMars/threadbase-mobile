@@ -63,7 +63,7 @@ function writeStub(binDir, name, body) {
 const tmpDirs = [];
 
 /** Runs the copied script as a real subprocess with xcrun/npx stubbed and git real. */
-function runScript(repo, { allowStale = false } = {}) {
+function runScript(repo, { allowStale = false, platform } = {}) {
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-bin-'));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-home-'));
   tmpDirs.push(bin, home);
@@ -92,6 +92,7 @@ function runScript(repo, { allowStale = false } = {}) {
     APP_DIR: appDirFor(repo),
   };
   if (allowStale) env.E2E_ALLOW_STALE_BUILD = '1';
+  if (platform) env.E2E_PLATFORM = platform;
 
   const result = spawnSync(process.execPath, [path.join(repo, 'e2e/ensure-release-build.js')], {
     cwd: repo,
@@ -221,4 +222,16 @@ test('no existing build at all still builds fresh, same as before the staleness 
   const second = runScript(repo);
   expect(second.npxLog).toBe('');
   expect(second.stdout).toMatch(/current/i);
+});
+
+test('Android CI leaves build and installation to the workflow', () => {
+  const made = makeRepo();
+  repo = made.repo;
+
+  const result = runScript(repo, { platform: 'android' });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain('Android Release APK was installed by the E2E runner');
+  expect(result.npxLog).toBe('');
+  expect(result.xcrunLog).toBe('');
 });
