@@ -3,6 +3,7 @@ import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import { useServersStore } from '@/stores/servers'
 import { NetworkError, AuthError, NotFoundError } from '@/services/api-client'
+import { authToken } from '@/types/api'
 
 export interface PickedImage {
   uri: string
@@ -113,7 +114,7 @@ export async function uploadAttachment(
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${server.apiKey}`,
+      'Authorization': `Bearer ${authToken(server)}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },

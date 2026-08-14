@@ -1,4 +1,5 @@
 import { useServersStore } from '@/stores/servers'
+import { authToken } from '@/types/api'
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -35,7 +36,7 @@ function scheduleFlush() {
 function resolveFlushTarget(): { url: string; apiKey: string } | null {
   const anyServer = Object.values(useServersStore.getState().servers)[0]
   if (anyServer && anyServer.apiKey && anyServer.url) {
-    return { url: anyServer.url, apiKey: anyServer.apiKey }
+    return { url: anyServer.url, apiKey: authToken(anyServer) }
   }
   const devUrl = process.env.EXPO_PUBLIC_DEV_STREAMER_URL
   const devKey = process.env.EXPO_PUBLIC_DEV_STREAMER_KEY

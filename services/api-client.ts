@@ -12,6 +12,7 @@ import type {
   ClaudeFlagValues,
   ServerWarmupState,
 } from '@/types/api'
+import { authToken } from '@/types/api'
 
 export class NetworkError extends Error {
   code?: string
@@ -197,7 +198,7 @@ async function request<T>(
     response = await fetch(url, {
       method,
       headers: {
-        'Authorization': `Bearer ${server.apiKey}`,
+        'Authorization': `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Client-Id': clientId,
@@ -321,7 +322,7 @@ export async function stopSession(
     response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${server.apiKey}`,
+        'Authorization': `Bearer ${authToken(server)}`,
       },
     })
   } catch (err) {
@@ -378,7 +379,7 @@ async function requestWithMeta<T>(
     response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${server.apiKey}`,
+        'Authorization': `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         ...options.headers,
@@ -518,7 +519,7 @@ export async function resolveCacheAlert(
     response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${server.apiKey}`,
+        'Authorization': `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

@@ -107,7 +107,6 @@ export function getConnectionLog(): readonly ConnectionLogEntry[] {
 class WSClient {
   private socket: WebSocket | null = null
   private url = ''
-  private apiKey = ''
   private handlers: Map<string, Set<MessageHandler>> = new Map()
   private reconnectAttempt = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -120,7 +119,6 @@ class WSClient {
 
   connect(url: string, apiKey: string) {
     this.url = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
-    this.apiKey = apiKey
     this.reconnectAttempt = 0
     this._doConnect()
   }
@@ -174,9 +172,15 @@ class WSClient {
       logConnection(this.serverId, 'open')
       this.reconnectAttempt = 0
       this._setStatus('connected')
-      // Send auth as first message, then register this device so the server
-      // can unicast session_list back only to the initiating client.
-      this.send({ type: 'auth', token: this.apiKey })
+      // Register this device so the server can unicast session_list back only
+      // to the initiating client.
+      //
+      // There used to be a `{ type: 'auth', token }` frame here, sent first on
+      // every connection. No streamer has ever had a handler for it — the WS
+      // message handler only knows `register`, `subscribe_session` and
+      // `hold_session`, and unknown types are swallowed — so it re-transmitted
+      // the long-term credential over the wire for nothing. The socket is
+      // already authenticated by `?key=` on the upgrade.
       getDeviceClientId().then((clientId) => {
         if (isCurrent()) this.send({ type: 'register', clientId })
       })

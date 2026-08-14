@@ -1,6 +1,7 @@
 import { createApiForServer, NetworkError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { getDeviceClientId } from '@/services/device-id'
+import { authToken } from '@/types/api'
 import {
   archiveToShareText,
   parseBackupArchive,
@@ -72,7 +73,7 @@ export async function restoreBackup(
     response = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${server.apiKey}`,
+        Authorization: `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
         'X-Client-Id': clientId,
