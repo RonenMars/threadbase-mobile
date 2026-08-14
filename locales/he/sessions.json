@@ -83,6 +83,7 @@
     "running": "רץ",
     "waiting": "ממתין",
     "idle": "לא פעיל",
+    "starting": "עולה",
     "externalLive": "חיצוני",
     "historical": "היסטוריה",
     "interrupted": "הופסק",

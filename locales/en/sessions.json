@@ -83,6 +83,7 @@
     "running": "Running",
     "waiting": "Waiting",
     "idle": "Idle",
+    "starting": "Starting up",
     "externalLive": "External",
     "historical": "History",
     "interrupted": "Interrupted",
