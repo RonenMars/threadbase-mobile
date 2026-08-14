@@ -30,7 +30,16 @@ appId: com.ronenmars.threadbase
 - takeScreenshot: e2e/_artifacts/screenshots/session-lifecycle-01-browse
 
 # Leave browse without starting — modal dismiss must return a usable hub.
-- back
+#
+# `- back` does NOT work here. Browse is a `presentation: 'modal'` Stack.Screen
+# (app/_layout.tsx), and iOS modals dismiss by dragging the sheet down, not by a
+# back navigation. Maestro reports `- back` as COMPLETED while the modal stays
+# put, so the failure surfaced as "hub-screen not visible" when the real state
+# was "browse never closed" — see BACKLOG Bug 15, which records drag-down as the
+# only gesture that exits this sheet.
+- swipe:
+    start: 50%, 12%
+    end: 50%, 85%
 
 - extendedWaitUntil:
     visible:
