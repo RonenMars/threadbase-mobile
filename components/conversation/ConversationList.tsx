@@ -212,9 +212,10 @@ export function ConversationList({
 
       <LoadingOverlay
         visible={!!loadingProgress}
-        convLoaded={loadingProgress?.loaded ?? 0}
-        convTotal={loadingProgress?.total ?? 0}
-        convDone={!loadingProgress}
+        loaded={loadingProgress?.loaded ?? 0}
+        total={loadingProgress?.total ?? 0}
+        done={!loadingProgress}
+        labelKey="loading.conversationsLabel"
       />
 
       <Animated.FlatList

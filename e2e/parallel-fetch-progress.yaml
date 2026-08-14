@@ -1,16 +1,24 @@
-# Parallel-fetch progress overlay — e2e validation.
+# Merged-list lazy pagination — e2e validation.
 #
 # Verifies that:
 #   1. The sessions loading overlay appears on hub load and then disappears.
-#   2. The conversation progress bar is visible while pages are still loading
-#      (mergeChats is enabled by default — conversations appear inline in the
-#      merged hub list, no separate History tab needed).
-#   3. Conversations are visible once loading is complete.
+#   2. The first page of conversations is visible in the merged hub list
+#      (mergeChats is enabled by default — no separate History tab needed).
+#   3. Scrolling the merged list fetches the NEXT page, i.e. lazy pagination is
+#      actually wired to onEndReached.
 #
-# Requires: pagination mock running on http://localhost:7073 with a short
-# per-page delay so the progress states are observable.
+# (3) replaces this flow's original assertion, which watched a conversation
+# progress bar fill as the eager drain walked every page up front. ADR 0001
+# step 2 deleted that drain and that progress bar: conversations now arrive one
+# page at a time as the user scrolls, so "did page 2 ever load" is the property
+# worth testing and "did the bar reach 100%" no longer exists.
+#
+# MOCK_TOTAL_CONVERSATIONS must exceed the query's page size (50) or there is no
+# second page to fetch and this flow cannot fail. 120 gives three pages.
+#
+# Requires: pagination mock running on http://localhost:7073.
 # Start with:
-#   MOCK_PORT=7073 MOCK_TOTAL_CONVERSATIONS=30 MOCK_PAGE_DELAY_MS=3000 \
+#   MOCK_PORT=7073 MOCK_TOTAL_CONVERSATIONS=120 MOCK_PAGE_DELAY_MS=3000 \
 #     node e2e/pagination-mock-server.js
 #
 # Run: npm run test:e2e:parallel-fetch
@@ -129,10 +137,30 @@ env:
 
 - takeScreenshot: e2e/_artifacts/progress-02-both-done
 
-# ── Step 3: conversations appear after loading ────────────────────────────────
+# ── Step 3: the FIRST page of conversations appears ──────────────────────────
+# Only page 1 (conv-0000 … conv-0049) is fetched on load now; the rest wait for
+# the user to scroll.
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-0000"
     timeout: 120000
 
 - takeScreenshot: e2e/_artifacts/progress-03-conversations-loaded
+
+# ── Step 4: scrolling drives the next page ───────────────────────────────────
+# conv-0050 is the first row of page 2, so it can only be on screen if
+# onEndReached fired and fetchNextPage resolved. If lazy pagination regresses to
+# fetching page 1 only, this is the assertion that fails.
+- repeat:
+    times: 8
+    commands:
+      - scroll:
+          direction: DOWN
+          speed: 60
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-0050"
+    timeout: 60000
+
+- takeScreenshot: e2e/_artifacts/progress-04-second-page-loaded
