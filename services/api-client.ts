@@ -404,7 +404,9 @@ async function requestWithMeta<T>(
     return { status: 304, etag, body: null }
   }
 
-  if (response.status === 401) throw new AuthError()
+  // No 401 branch: authedFetch throws AuthError before returning, so a 401
+  // never reaches here. The check that used to sit here was unreachable from
+  // the moment every request started going through authedFetch (#701).
   if (response.status === 404) throw new NotFoundError(path)
   if (!response.ok) {
     let detail = ''

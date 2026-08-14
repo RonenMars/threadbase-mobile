@@ -59,7 +59,7 @@ describe('Error classes', () => {
   })
 
   it('AuthError has correct name and message', () => {
-    const err = new AuthError()
+    const err = new AuthError('shared')
     expect(err.name).toBe('AuthError')
     expect(err.message).toMatch(/Unauthorized/i)
   })

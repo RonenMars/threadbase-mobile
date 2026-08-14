@@ -1,9 +1,35 @@
 import type { ServerConfig, ServerInfo } from '@/types/api'
 
+/** Which credential a request presented. See `selectCredential`. */
+export type CredentialKind = 'device' | 'shared'
+
+/**
+ * The server refused the credential this request presented.
+ *
+ * `credential` is on the error because the remedy differs by kind and nothing
+ * downstream can work it out: by the time this reaches a screen, the choice
+ * `selectCredential` made is gone. A refused device token means this device was
+ * revoked or the registry lost it, and the fix is to pair again — editing the
+ * API key field changes nothing, because a `devicesDurable` server will keep
+ * being sent the device token whatever is typed there. A refused shared key
+ * means the key changed, and editing it is exactly the fix.
+ *
+ * The message is an English diagnostic for logs. User-facing wording is the
+ * render site's job, keyed off the class and this field — `services/` imports
+ * no i18n, and translating one of its ten error classes would leave a reader
+ * unable to tell which service messages are safe to show.
+ */
 export class AuthError extends Error {
-  constructor() {
-    super('Unauthorized — check your API key')
+  readonly credential: CredentialKind
+
+  constructor(credential: CredentialKind) {
+    super(
+      credential === 'device'
+        ? 'Unauthorized — the server rejected this device. Pair the device again.'
+        : 'Unauthorized — the server rejected the API key.',
+    )
     this.name = 'AuthError'
+    this.credential = credential
   }
 }
 
@@ -58,10 +84,22 @@ export function serverUrl(target: Pick<AuthedTarget, 'url'>, path: string): stri
  * The WebSocket is the one other credential-presenting path and imports it from
  * here; nothing else should call it directly.
  */
+export function selectCredential(
+  target: Pick<ServerConfig, 'apiKey' | 'deviceToken' | 'serverInfo'> | AuthedTarget,
+): { token: string; kind: CredentialKind } {
+  return target.serverInfo?.devicesDurable && target.deviceToken
+    ? { token: target.deviceToken, kind: 'device' }
+    : { token: target.apiKey, kind: 'shared' }
+}
+
+/**
+ * The token alone, for the WebSocket — it puts the credential in the URL rather
+ * than a header and has no 401 to attribute, so it needs no kind.
+ */
 export function authToken(
   target: Pick<ServerConfig, 'apiKey' | 'deviceToken' | 'serverInfo'> | AuthedTarget,
 ): string {
-  return target.serverInfo?.devicesDurable && target.deviceToken ? target.deviceToken : target.apiKey
+  return selectCredential(target).token
 }
 
 /**
@@ -78,6 +116,7 @@ export async function authedFetch(
   path: string,
   init: AuthedFetchInit = {},
 ): Promise<Response> {
+  const credential = selectCredential(target)
   const response = await fetch(serverUrl(target, path), {
     ...init,
     headers: {
@@ -85,9 +124,11 @@ export async function authedFetch(
       // chosen here. A module that owns credential selection cannot let a
       // caller quietly opt out of it — the request would still succeed.
       ...init.headers,
-      Authorization: `Bearer ${authToken(target)}`,
+      Authorization: `Bearer ${credential.token}`,
     },
   })
-  if (response.status === 401) throw new AuthError()
+  // Attributed to the credential actually presented, which is knowable only
+  // here — the choice is gone by the time this reaches a screen.
+  if (response.status === 401) throw new AuthError(credential.kind)
   return response
 }
