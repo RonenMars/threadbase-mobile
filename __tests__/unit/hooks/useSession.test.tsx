@@ -1,5 +1,6 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native'
 import { useEagerSessions } from '@/hooks/useSession'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
 import type { Session, SessionListPage } from '@/types/api'
@@ -163,6 +164,41 @@ describe('useEagerSessions', () => {
     expect(result.current.error).toBeNull()
     // Only sessions from the healthy server are present.
     expect(result.current.sessions.map((s) => s.id)).toEqual(['b1'])
+  })
+
+  // The streamer ships wire changes without gating on this build (CLAUDE.md →
+  // "Server contract — degrade, don't break"), so a status this build has never
+  // heard of has to land as a renderable row, not as a crash or a blank screen.
+  it('degrades a session carrying an unknown status, missing optionals and no capability fields', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+
+    const aheadOfBuild = {
+      id: 'a1',
+      // Unknown to this build's SessionStatus union.
+      status: 'archiving',
+      ptyAttached: false,
+      projectPath: '/tmp/p',
+      projectName: 'proj-a1',
+      lastOutput: '',
+      elapsedMs: 0,
+      promptCount: 0,
+      startedAt: '2026-08-14T10:00:00.000Z',
+      // No branch/provider (missing optionals) and no lifecycle/ownership/
+      // processLiveness (capabilities this server does not report).
+    }
+    mockGet.mockResolvedValueOnce({ sessions: [aheadOfBuild], nextCursor: null, total: 1 })
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(result.current.error).toBeNull()
+    const [session] = result.current.sessions
+    expect(session?.id).toBe('a1')
+    // Narrowed to the safe fallback rather than passed through as-is.
+    expect(session?.status).toBe('idle')
+    // And the row still derives a renderable presentation.
+    expect(() => deriveSessionPresentation(session)).not.toThrow()
   })
 
   it('changing sort triggers a fresh parallel fetch', async () => {

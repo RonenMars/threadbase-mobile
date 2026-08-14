@@ -1,4 +1,29 @@
-import type { SessionLifecycle, UnavailableReason } from '@/types/api'
+import type { SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
+
+/**
+ * Wire statuses this build knows how to render. Wider than `SessionStatus`:
+ * the streamer also emits the terminal/hold values below, which
+ * `deriveSessionPresentation` handles explicitly.
+ */
+const UNDERSTOOD_STATUSES: readonly string[] = [
+  'running',
+  'waiting_input',
+  'idle',
+  'on_hold',
+  'completed',
+  'failed',
+]
+
+/**
+ * A server can emit a status this build has never heard of (CLAUDE.md →
+ * "Server contract — degrade, don't break"). Flatten anything unrecognised to
+ * `idle` at the parsing boundary so it never reaches code that assumes the
+ * union is exhaustive. The cast covers the values above that the declared
+ * three-value union does not yet name.
+ */
+export function narrowSessionStatus(status: string): SessionStatus {
+  return (UNDERSTOOD_STATUSES.includes(status) ? status : 'idle') as SessionStatus
+}
 
 /**
  * Canonical session/conversation presentation kinds for hub rows, badges, and

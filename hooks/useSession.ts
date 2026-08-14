@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useThrottledCallback } from 'use-debounce'
+import { narrowSessionStatus } from '@/lib/sessionPresentation'
 import { createApiForServer } from '@/services/api-client'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { useServersStore } from '@/stores/servers'
@@ -80,7 +81,7 @@ async function fetchAllPagesForServer(
     // page a generous 60 s timeout instead of the default 8/15 s.
     const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, { signal, timeoutMs: SESSIONS_FETCH_TIMEOUT_MS })
     for (const s of page.sessions) {
-      collected.push({ ...s, serverId, serverLabel })
+      collected.push({ ...s, status: narrowSessionStatus(s.status), serverId, serverLabel })
     }
     onProgress(collected.length, page.total)
     if (!page.nextCursor) break
@@ -292,7 +293,10 @@ export function useSessionDetail(serverId: string, sessionId: string) {
   const api = createApiForServer(serverId)
   return useQuery({
     queryKey: ['session', serverId, sessionId],
-    queryFn: () => api.get<Session>(`/api/sessions/${sessionId}`),
+    queryFn: async () => {
+      const session = await api.get<Session>(`/api/sessions/${sessionId}`)
+      return { ...session, status: narrowSessionStatus(session.status) }
+    },
     // Don't persist session detail across app restarts — each session is
     // ephemeral and stale persisted state causes false status flickers.
     meta: { persist: false },
