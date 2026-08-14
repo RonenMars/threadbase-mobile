@@ -27,7 +27,7 @@ import {
   type RestoreDryRunResponse,
   type RestorePlan,
 } from '@/types/backup'
-import { NetworkError } from '@/services/api-client'
+import { AuthError, NetworkError } from '@/services/api-client'
 
 export default function BackupRestoreScreen() {
   const { t } = useTranslation(['settings', 'common'])
@@ -64,6 +64,22 @@ export default function BackupRestoreScreen() {
     return [{ from, to }]
   }, [pathFrom, pathTo])
 
+  // A refused credential is the one failure whose remedy the user can act on,
+  // and the two remedies are not interchangeable: a revoked device has to pair
+  // again, and pointing it at the API key field sends it somewhere that cannot
+  // help — a `devicesDurable` server keeps being sent the device token whatever
+  // is typed there. Returns null for everything else so `err.message` stays the
+  // last resort it always was.
+  const authRemedy = useCallback(
+    (err: unknown): string | null => {
+      if (!(err instanceof AuthError)) return null
+      return err.credential === 'device'
+        ? t('common:error.authDeviceRevoked')
+        : t('common:error.authKeyRejected')
+    },
+    [t],
+  )
+
   const handleExport = useCallback(async () => {
     if (!selectedId) return
     setExporting(true)
@@ -74,11 +90,13 @@ export default function BackupRestoreScreen() {
       setExported(archive)
       setActionMsg(t('backup.exported', { count: archive.manifest.counts.projects }))
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : t('backup.exportFailed'))
+      setActionError(
+        authRemedy(err) ?? (err instanceof Error ? err.message : t('backup.exportFailed')),
+      )
     } finally {
       setExporting(false)
     }
-  }, [selectedId, t])
+  }, [authRemedy, selectedId, t])
 
   const handleShareExport = useCallback(async () => {
     if (!exported) return
@@ -136,9 +154,11 @@ export default function BackupRestoreScreen() {
       setDryRun(result)
       setActionMsg(t('backup.dryRunReady'))
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : t('backup.dryRunFailed'))
+      setActionError(
+        authRemedy(err) ?? (err instanceof Error ? err.message : t('backup.dryRunFailed')),
+      )
     }
-  }, [pathMap, resolveArchiveFromPaste, restore, selectedId, t])
+  }, [authRemedy, pathMap, resolveArchiveFromPaste, restore, selectedId, t])
 
   const handleApply = useCallback(() => {
     if (!selectedId || !dryRun) return
@@ -172,13 +192,15 @@ export default function BackupRestoreScreen() {
                 setActionError(t('backup.conflict'))
                 return
               }
-              setActionError(err instanceof Error ? err.message : t('backup.applyFailed'))
+              setActionError(
+                authRemedy(err) ?? (err instanceof Error ? err.message : t('backup.applyFailed')),
+              )
             }
           })()
         },
       },
     ])
-  }, [dryRun, pathMap, resolveArchiveFromPaste, restore, selectedId, t])
+  }, [authRemedy, dryRun, pathMap, resolveArchiveFromPaste, restore, selectedId, t])
 
   if (serverIds.length === 0) {
     return (

@@ -47,6 +47,15 @@ describe('serverUrl', () => {
       'https://box.example.com/api/info',
     )
   })
+
+  // Every caller today passes a leading slash, so nothing was broken — but the
+  // one that forgets would silently address `…example.comapi/info`, which fails
+  // as a DNS error rather than as an obviously malformed URL.
+  it('inserts the separator when the path has no leading slash', () => {
+    expect(serverUrl({ url: 'https://box.example.com' }, 'api/info')).toBe(
+      'https://box.example.com/api/info',
+    )
+  })
 })
 
 describe('authedFetch', () => {
@@ -134,6 +143,30 @@ describe('authedFetch', () => {
     )
     expect(err.message).toMatch(/pair/i)
     expect(err.message).not.toMatch(/API key/i)
+  })
+
+  // A 401 in a log says nothing without the route that produced it.
+  it('records the route that was refused', async () => {
+    mockFetch({ status: 401, ok: false })
+    await expect(authedFetch(target(), '/api/sessions')).rejects.toMatchObject({
+      path: '/api/sessions',
+      message: expect.stringContaining('/api/sessions'),
+    })
+  })
+
+  // The credential travels in the Authorization header, which AuthError never
+  // sees — and the query string is dropped because it carries search terms and
+  // ids that services/sanitize.ts keeps out of every outbound payload.
+  it('keeps the credential and the query string out of the error', async () => {
+    mockFetch({ status: 401, ok: false })
+    const err = await authedFetch(target(), '/api/sessions?search=secret-project').then(
+      () => {
+        throw new Error('expected authedFetch to reject')
+      },
+      (e: AuthError) => e,
+    )
+    expect(err.path).toBe('/api/sessions')
+    expect(err.message).not.toMatch(/tb_shared|Bearer|secret-project/)
   })
 
   // There must be exactly ONE AuthError class object. A second one with an

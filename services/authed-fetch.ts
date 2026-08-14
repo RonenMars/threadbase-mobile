@@ -18,18 +18,27 @@ export type CredentialKind = 'device' | 'shared'
  * render site's job, keyed off the class and this field — `services/` imports
  * no i18n, and translating one of its ten error classes would leave a reader
  * unable to tell which service messages are safe to show.
+ *
+ * `path` names the route that was refused, which is what makes a 401 in a log
+ * actionable. It is the route only: the query string is dropped because it
+ * carries search terms and ids that `services/sanitize.ts` keeps out of every
+ * outbound payload, and the credential never appears here at all — it travels
+ * in the `Authorization` header, which this class never sees.
  */
 export class AuthError extends Error {
   readonly credential: CredentialKind
+  readonly path: string
 
-  constructor(credential: CredentialKind) {
+  constructor(credential: CredentialKind, path: string) {
+    const route = path.replace(/\?.*$/, '')
     super(
       credential === 'device'
-        ? 'Unauthorized — the server rejected this device. Pair the device again.'
-        : 'Unauthorized — the server rejected the API key.',
+        ? `Unauthorized — the server rejected this device for ${route}. Pair the device again.`
+        : `Unauthorized — the server rejected the API key for ${route}.`,
     )
     this.name = 'AuthError'
     this.credential = credential
+    this.path = route
   }
 }
 
@@ -58,7 +67,7 @@ export interface AuthedFetchInit extends Omit<RequestInit, 'headers'> {
 
 /** The absolute URL a request to `path` will hit. Exported for error messages. */
 export function serverUrl(target: Pick<AuthedTarget, 'url'>, path: string): string {
-  return `${target.url.replace(/\/$/, '')}${path}`
+  return `${target.url.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`
 }
 
 /**
@@ -129,6 +138,6 @@ export async function authedFetch(
   })
   // Attributed to the credential actually presented, which is knowable only
   // here — the choice is gone by the time this reaches a screen.
-  if (response.status === 401) throw new AuthError(credential.kind)
+  if (response.status === 401) throw new AuthError(credential.kind, path)
   return response
 }

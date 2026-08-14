@@ -9,7 +9,9 @@
     "apply": "Apply"
   },
   "error": {
-    "loadFailed": "Unable to load"
+    "loadFailed": "Unable to load",
+    "authDeviceRevoked": "This device is no longer authorized. Pair it with the server again.",
+    "authKeyRejected": "The server rejected the API key. Update the API key and try again."
   },
   "search": {
     "placeholder": "Search…"

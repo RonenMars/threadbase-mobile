@@ -9,7 +9,9 @@
     "apply": "החל"
   },
   "error": {
-    "loadFailed": "נכשל בטעינה"
+    "loadFailed": "נכשל בטעינה",
+    "authDeviceRevoked": "המכשיר הזה כבר אינו מורשה. בצע זיווג מחדש מול השרת.",
+    "authKeyRejected": "השרת דחה את מפתח ה-API. עדכן את מפתח ה-API ונסה שוב."
   },
   "search": {
     "placeholder": "חיפוש…"

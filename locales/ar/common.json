@@ -9,7 +9,9 @@
     "apply": "تطبيق"
   },
   "error": {
-    "loadFailed": "تعذّر التحميل"
+    "loadFailed": "تعذّر التحميل",
+    "authDeviceRevoked": "لم يعُد هذا الجهاز مُصرّحًا له. أعد إقرانه بالخادم.",
+    "authKeyRejected": "رفض الخادم مفتاح API. حدِّث مفتاح API وأعد المحاولة."
   },
   "search": {
     "placeholder": "بحث…"

@@ -28,7 +28,7 @@ interface Props {
 export function AddServerScreen({ isAddingServer }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const { t } = useTranslation(['servers', 'shared', 'settings'])
+  const { t } = useTranslation(['servers', 'shared', 'settings', 'common'])
   const router = useRouter()
   const navigation = useNavigation()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
@@ -132,7 +132,9 @@ export function AddServerScreen({ isAddingServer }: Props) {
         }
       } catch (err) {
         if (err instanceof AuthError) {
-          setError('Invalid API key. Check THREADBASE_API_KEY on your server.')
+          // Only ever 'shared' here: this screen has no device token to present
+          // yet, so the remedy is always the key the user just typed above.
+          setError(t('common:error.authKeyRejected'))
         } else if (err instanceof NetworkError || err instanceof TypeError) {
           const usesLocalhost = /localhost|127\.0\.0\.1/.test(url)
           if (usesLocalhost) {
@@ -149,7 +151,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
         setLoading(false)
       }
     },
-    [addServer, addServerAction, applyAddAction, displayedServerIds.length, router],
+    [addServer, addServerAction, applyAddAction, displayedServerIds.length, router, t],
   )
 
   const handleConnect = async () => {
