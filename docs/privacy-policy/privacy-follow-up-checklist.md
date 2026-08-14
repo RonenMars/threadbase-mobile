@@ -66,3 +66,24 @@
 **Code-verified items:** 12 items verified from static code analysis.
 
 **Human-only items remaining:** 15 items require store console access, legal review, on-device testing, or Sentry dashboard inspection. These cannot be automated.
+
+---
+
+## Uninstall claim corrected (2026-08-14)
+
+Found while checking the E2EE security-review fixes against the published policy.
+
+**The claim.** The deployed page stated, in two places, that uninstalling the app deletes everything stored locally — with no qualification. That is false on iOS: `expo-secure-store` is called with no options anywhere in this repo (no `keychainAccessible`, no first-run clear), so Keychain entries survive an uninstall. `stores/servers.ts:108` says so in a code comment, and the store holds the server list, the API keys and — since 2026-08-14 — the device token that is now read back and used as the request credential. A reinstall therefore restores a working credential set.
+
+**Resolved by changing the words, not the behaviour.** Clearing the Keychain on a detected fresh install was considered and rejected: it would force re-pairing every server after any reinstall, and it puts new logic in the credential path keyed off a marker in a store that must *not* survive uninstall. The disclosure is the proportionate fix.
+
+**Published** in all four locales (`en`, `he`, `ar`, `ru`) in **tb-landing**, `pages.privacy.uninstallBody` and the `pages.privacy.yourControl` bullet. Both now say the uninstall removes the app's own container, that credentials in the OS secure store (such as the iOS Keychain) can survive it, and — the actionable part — that removing a server inside the app deletes that server's credentials. That last claim is true: `removeServer` deletes both `secureKeyForServer` and `secureKeyForDeviceToken` (`stores/servers.ts`).
+
+**Wording is deliberately hedged to iOS.** Android generally clears app credential storage on uninstall, so "such as the iOS Keychain" and "can survive" are accurate where a flat "iOS Keychain / Android Keystore … will survive" would not be. Verifying Android's actual behaviour on device remains a human-only item.
+
+**Translations are machine-produced and need a native review** before this is considered closed — he, ar and ru were written by the same pass that wrote the English. English is the authoritative text.
+
+- [ ] Native-speaker review of the he / ar / ru uninstall wording. _(Human-only.)_
+- [ ] Confirm on-device that Android clears credential storage on uninstall, and tighten the wording if it does not. _(Requires a device — human-only.)_
+
+**`proposed-privacy-policy.md` is not the source of truth and has been marked superseded.** A line-by-line comparison on 2026-08-14 showed the *deployed* page is ahead of that draft, not behind it: the live text carries the Sentry EU processing location (still an unresolved "set this before publishing" note in the draft), the Android speech-recognition caveat, the MailerLite newsletter section, and `support@threadbase.sh` instead of the personal contact address. Reconciling the live page toward the draft would have deleted accurate disclosures. Exactly one draft sentence was better than the deployed text — the Keychain caveat — and that is what was published. Edit the tb-landing locales for any future change.
