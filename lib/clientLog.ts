@@ -1,5 +1,5 @@
 import { useServersStore } from '@/stores/servers'
-import { authToken } from '@/types/api'
+import { authedFetch, AuthError, type AuthedTarget } from '@/services/authed-fetch'
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -33,11 +33,9 @@ function scheduleFlush() {
   }, FLUSH_INTERVAL_MS)
 }
 
-function resolveFlushTarget(): { url: string; apiKey: string } | null {
+function resolveFlushTarget(): AuthedTarget | null {
   const anyServer = Object.values(useServersStore.getState().servers)[0]
-  if (anyServer && anyServer.apiKey && anyServer.url) {
-    return { url: anyServer.url, apiKey: authToken(anyServer) }
-  }
+  if (anyServer && anyServer.apiKey && anyServer.url) return anyServer
   const devUrl = process.env.EXPO_PUBLIC_DEV_STREAMER_URL
   const devKey = process.env.EXPO_PUBLIC_DEV_STREAMER_KEY
   if (devUrl && devKey) return { url: devUrl, apiKey: devKey }
@@ -54,17 +52,20 @@ async function flush() {
   }
   const batch = BUFFER.splice(0, MAX_BATCH)
   try {
-    await fetch(`${target.url.replace(/\/$/, '')}/api/__client-log`, {
+    await authedFetch(target, '/api/__client-log', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${target.apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entries: batch }),
     })
-  } catch {
-    BUFFER.unshift(...batch)
-    if (BUFFER.length > 500) BUFFER.length = 500
+  } catch (err) {
+    // A refused credential won't accept the batch on any later attempt either —
+    // requeueing it would pin the buffer at its cap and drop live logs instead.
+    if (err instanceof AuthError) {
+      _origWarn(`[clientLog] dropping batch of ${batch.length}: server rejected the credential`)
+    } else {
+      BUFFER.unshift(...batch)
+      if (BUFFER.length > 500) BUFFER.length = 500
+    }
   }
   if (BUFFER.length > 0) scheduleFlush()
 }

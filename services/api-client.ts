@@ -13,7 +13,9 @@ import type {
   FeatureFlagsConfig,
   ServerWarmupState,
 } from '@/types/api'
-import { authToken } from '@/types/api'
+import { authedFetch, AuthError, serverUrl } from './authed-fetch'
+
+export { AuthError }
 
 export class NetworkError extends Error {
   code?: string
@@ -23,13 +25,6 @@ export class NetworkError extends Error {
     this.name = 'NetworkError'
     this.code = code
     this.warmupState = warmupState
-  }
-}
-
-export class AuthError extends Error {
-  constructor() {
-    super('Unauthorized — check your API key')
-    this.name = 'AuthError'
   }
 }
 
@@ -159,7 +154,7 @@ async function request<T>(
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${server.url.replace(/\/$/, '')}${path}`
+  const url = serverUrl(server, path)
   const isStartSession =
     path === '/api/sessions/start' ||
     path.startsWith('/api/sessions/start?') ||
@@ -196,10 +191,9 @@ async function request<T>(
   const traced = isConversationDetail(path)
   if (traced) traceMark('request', `${path.split('?')[1] ?? 'no query params'}`)
   try {
-    response = await fetch(url, {
+    response = await authedFetch(server, path, {
       method,
       headers: {
-        'Authorization': `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Client-Id': clientId,
@@ -209,6 +203,9 @@ async function request<T>(
       signal: timeoutController.signal,
     })
   } catch (err) {
+    // A rejected credential is not a network failure: retrying presents the
+    // same key, and the retry would mask the AuthError as a NetworkError.
+    if (err instanceof AuthError) throw err
     if (isStartSession) {
       clientLog.info('startSession', 'start request failed (network)', {
         method,
@@ -252,7 +249,6 @@ async function request<T>(
     })
   }
 
-  if (response.status === 401) throw new AuthError()
   if (response.status === 404) throw new NotFoundError(path)
   if (!response.ok) {
     let detail = ''
@@ -317,21 +313,16 @@ export async function stopSession(
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${server.url.replace(/\/$/, '')}/api/sessions/${encodeURIComponent(sessionId)}/stop`
+  const path = `/api/sessions/${encodeURIComponent(sessionId)}/stop`
   let response: Response
   try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken(server)}`,
-      },
-    })
+    response = await authedFetch(server, path, { method: 'POST' })
   } catch (err) {
-    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+    if (err instanceof AuthError) throw err
+    throw new NetworkError(`Failed to reach ${serverUrl(server, path)}: ${String(err)}`)
   }
 
   if (response.status === 404) throw new SessionNotFoundError(sessionId)
-  if (response.status === 401) throw new AuthError()
   if (!response.ok) throw new NetworkError(`stop failed: ${response.status}`)
 
   const text = await response.text()
@@ -362,7 +353,7 @@ async function requestWithMeta<T>(
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${server.url.replace(/\/$/, '')}${path}`
+  const url = serverUrl(server, path)
 
   const timeoutController = new AbortController()
   const timeoutMs = retried ? REQUEST_TIMEOUT_MS : FIRST_ATTEMPT_TIMEOUT_MS
@@ -377,10 +368,9 @@ async function requestWithMeta<T>(
   const traced = isConversationDetail(path)
   if (traced) traceMark('request', `${path.split('?')[1] ?? 'no query params'}`)
   try {
-    response = await fetch(url, {
+    response = await authedFetch(server, path, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         ...options.headers,
@@ -388,6 +378,7 @@ async function requestWithMeta<T>(
       signal: timeoutController.signal,
     })
   } catch (err) {
+    if (err instanceof AuthError) throw err
     if (options.signal?.aborted) {
       throw new NetworkError('Request cancelled')
     }
@@ -527,22 +518,19 @@ export async function resolveCacheAlert(
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${server.url.replace(/\/$/, '')}/api/cache/alert/resolve`
+  const path = '/api/cache/alert/resolve'
   let response: Response
   try {
-    response = await fetch(url, {
+    response = await authedFetch(server, path, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken(server)}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
   } catch (err) {
-    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+    if (err instanceof AuthError) throw err
+    throw new NetworkError(`Failed to reach ${serverUrl(server, path)}: ${String(err)}`)
   }
 
-  if (response.status === 401) throw new AuthError()
   if (response.status === 409) {
     const { currentFingerprint } = await response.json() as { currentFingerprint: string }
     return { ok: false, conflict: true, currentFingerprint }

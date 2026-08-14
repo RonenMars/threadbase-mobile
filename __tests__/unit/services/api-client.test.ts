@@ -88,6 +88,16 @@ describe('api.get', () => {
     await expect(api.get('/api/protected')).rejects.toThrow(AuthError)
   })
 
+  // authedFetch rejects on 401, which puts the rejection inside the same
+  // try/catch that retries network failures. Without the rethrow guard the
+  // request is sent twice with the same refused credential and the caller sees
+  // a NetworkError instead of an AuthError.
+  it('does not retry a 401, and does not report it as a network failure', async () => {
+    mockFetch.mockResolvedValue(mockErrorResponse(401))
+    await expect(api.get('/api/protected')).rejects.not.toBeInstanceOf(NetworkError)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
   it('throws NotFoundError on 404', async () => {
     mockFetch.mockResolvedValue(mockErrorResponse(404))
     await expect(api.get('/api/missing')).rejects.toThrow(NotFoundError)

@@ -15,7 +15,8 @@ import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
-import { AuthError, NetworkError } from '@/services/api-client'
+import { NetworkError } from '@/services/api-client'
+import { authedFetch, AuthError } from '@/services/authed-fetch'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -105,10 +106,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
       setLoading(true)
 
       try {
-        const res = await fetch(`${url}/api/profiles`, {
-          headers: { Authorization: `Bearer ${keyArg}` },
-        })
-        if (res.status === 401) throw new AuthError()
+        const res = await authedFetch({ url, apiKey: keyArg }, '/api/profiles')
         if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
 
         await res.json()

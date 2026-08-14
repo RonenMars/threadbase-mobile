@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
-import { AuthError, NetworkError } from '@/services/api-client'
+import { NetworkError } from '@/services/api-client'
+import { authedFetch, AuthError } from '@/services/authed-fetch'
 import {
   classifyPairCredential,
   exchangeToken,
@@ -96,10 +97,7 @@ async function resolveCredentials(
   }
 
   // Long-lived API key (`tb_…`): Bearer-check /api/profiles.
-  const res = await fetch(`${trimmedUrl}/api/profiles`, {
-    headers: { Authorization: `Bearer ${trimmedToken}` },
-  })
-  if (res.status === 401) throw new AuthError()
+  const res = await authedFetch({ url: trimmedUrl, apiKey: trimmedToken }, '/api/profiles')
   if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
   await res.json()
   return { url: trimmedUrl, apiKey: trimmedToken }
