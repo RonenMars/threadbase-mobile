@@ -11,7 +11,8 @@
   "error": {
     "loadFailed": "تعذّر التحميل",
     "authDeviceRevoked": "لم يعُد هذا الجهاز مُصرّحًا له. أعد إقرانه بالخادم.",
-    "authKeyRejected": "رفض الخادم مفتاح API. حدِّث مفتاح API وأعد المحاولة."
+    "authKeyRejected": "رفض الخادم مفتاح API. حدِّث مفتاح API وأعد المحاولة.",
+    "authKeyRejectedOnConnect": "رفض الخادم مفتاح API هذا. تحقّق من THREADBASE_API_KEY على خادمك والصقه مجددًا."
   },
   "search": {
     "placeholder": "بحث…"

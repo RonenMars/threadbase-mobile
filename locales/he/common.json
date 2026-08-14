@@ -11,7 +11,8 @@
   "error": {
     "loadFailed": "נכשל בטעינה",
     "authDeviceRevoked": "המכשיר הזה כבר אינו מורשה. בצע זיווג מחדש מול השרת.",
-    "authKeyRejected": "השרת דחה את מפתח ה-API. עדכן את מפתח ה-API ונסה שוב."
+    "authKeyRejected": "השרת דחה את מפתח ה-API. עדכן את מפתח ה-API ונסה שוב.",
+    "authKeyRejectedOnConnect": "השרת דחה את מפתח ה-API הזה. בדוק את THREADBASE_API_KEY בשרת שלך והדבק אותו שוב."
   },
   "search": {
     "placeholder": "חיפוש…"
