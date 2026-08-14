@@ -97,6 +97,13 @@
     "livePill": "LIVE",
     "externalPill": "EXTERNAL"
   },
+  "phase": {
+    "thinking": "Thinking",
+    "streaming": "Replying",
+    "hooks": "Running hooks",
+    "acting": "Acting",
+    "working": "Working"
+  },
   "capability": {
     "observeOnly": "Observe only",
     "liveControl": "Live control"

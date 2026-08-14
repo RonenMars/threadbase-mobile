@@ -25,6 +25,7 @@ function session(overrides: Partial<Session> = {}): Session {
     id: 'sess-1',
     status: 'running',
     ptyAttached: true,
+    subStatus: null,
     projectPath: '/home/dev/threadbase',
     projectName: 'threadbase',
     lastOutput: 'compiling',

@@ -7,6 +7,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     id: 'sess-1',
     status: 'idle',
     ptyAttached: false,
+    subStatus: null,
     projectPath: '/tmp/p',
     projectName: 'p',
     lastOutput: '',

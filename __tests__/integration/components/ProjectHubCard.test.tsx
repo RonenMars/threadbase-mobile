@@ -40,6 +40,7 @@ const session: MultiSession = {
   serverLabel: 'Server 1',
   status: 'running',
   ptyAttached: true,
+  subStatus: null,
   projectId: 'project-1',
   projectPath: '/tmp/project',
   projectName: 'project',

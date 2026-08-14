@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
@@ -48,10 +50,13 @@ interface Props {
   onSendKeys?: (keys: string) => void
   activeQuestion?: QuestionBlock | null
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Server-derived agent phase, already gated on `presentation.live`. */
+  subStatus?: AgentPhase | null
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, subStatus }: Props) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
@@ -133,6 +138,16 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     )
   }
 
+  // The server-derived phase is the whole reason to show a bubble: no phase, no
+  // claim about what the agent is doing, so nothing renders. Gated on
+  // `presentation.live` upstream, so this is never a phase on a dead session.
+  if (!subStatus) return null
+
+  // The PTY has gone quiet mid-turn (Claude only repaints when it has something
+  // to draw, and 30s+ of silence is routine). The dots would stop meaning
+  // anything, so swap them for the skeleton — the phase label carries the claim.
+  const quiet = hasLines && !isStreaming
+
   return (
     <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
@@ -148,18 +163,16 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
             ))}
           </ScrollView>
         ) : null}
-        {(isStreaming || !hasLines) ? (
-          <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} color={theme.text.accent} />
-        ) : (
-          // Agent is still working but the PTY has gone quiet. Claude only
-          // repaints when it has something to draw, so a silent think (30s+ is
-          // routine) leaves the lines above frozen and nothing moving — which
-          // reads as a dead session. A skeleton keeps the turn visibly alive.
+        <View style={styles.phaseRow} testID="thinking-phase">
+          <Text style={styles.phase}>{t(`phase.${subStatus}`)}</Text>
+          {quiet ? null : <DotsAnimation color={theme.text.accent} />}
+        </View>
+        {quiet ? (
           <View style={styles.skeleton} testID="thinking-skeleton">
             <SkeletonBox height={11} width="72%" />
             <SkeletonBox height={11} width="54%" style={styles.skeletonLineGap} />
           </View>
-        )}
+        ) : null}
       </View>
     </Animated.View>
   )
@@ -197,8 +210,14 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       lineHeight: font.xs * 1.5,
     },
-    dotsWithLines: {
-      marginTop: spacing.xs,
+    phaseRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    phase: {
+      fontSize: font.xs,
+      color: theme.text.secondary,
     },
     skeleton: {
       marginTop: spacing.xs,

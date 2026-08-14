@@ -34,6 +34,7 @@ const session = (over: Partial<MultiSession>): MergedItem => ({
     id: 'sess-1',
     status: 'running',
     ptyAttached: true,
+    subStatus: null,
     projectPath: '/tmp/p',
     projectName: 'wombat-api',
     lastOutput: 'compiling',

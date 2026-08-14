@@ -10,20 +10,22 @@ import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 describe('ThinkingBubble progress skeleton', () => {
   it('shows the skeleton when the agent is working but the PTY has gone quiet', async () => {
     const { queryByTestId } = await render(
-      <ThinkingBubble lines={['Reading file…', 'Done']} isStreaming={false} />,
+      <ThinkingBubble lines={['Reading file…', 'Done']} isStreaming={false} subStatus="working" />,
     )
     expect(queryByTestId('thinking-skeleton')).toBeTruthy()
   })
 
   it('shows dots instead of the skeleton while output is actively streaming', async () => {
     const { queryByTestId } = await render(
-      <ThinkingBubble lines={['Reading file…']} isStreaming />,
+      <ThinkingBubble lines={['Reading file…']} isStreaming subStatus="working" />,
     )
     expect(queryByTestId('thinking-skeleton')).toBeNull()
   })
 
   it('shows dots (not the skeleton) before any output has arrived', async () => {
-    const { queryByTestId } = await render(<ThinkingBubble lines={[]} isStreaming={false} />)
+    const { queryByTestId } = await render(
+      <ThinkingBubble lines={[]} isStreaming={false} subStatus="working" />,
+    )
     expect(queryByTestId('thinking-skeleton')).toBeNull()
   })
 
@@ -41,7 +43,12 @@ describe('ThinkingBubble progress skeleton', () => {
       ],
     }
     const { queryByTestId } = await render(
-      <ThinkingBubble lines={['x']} isStreaming={false} activeQuestion={question} />,
+      <ThinkingBubble
+        lines={['x']}
+        isStreaming={false}
+        subStatus="working"
+        activeQuestion={question}
+      />,
     )
     expect(queryByTestId('thinking-skeleton')).toBeNull()
   })

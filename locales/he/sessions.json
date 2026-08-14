@@ -97,6 +97,13 @@
     "livePill": "LIVE",
     "externalPill": "EXTERNAL"
   },
+  "phase": {
+    "thinking": "חושב",
+    "streaming": "עונה",
+    "hooks": "מריץ hooks",
+    "acting": "מבצע",
+    "working": "עובד"
+  },
   "capability": {
     "observeOnly": "צפייה בלבד",
     "liveControl": "שליטה חיה"

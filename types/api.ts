@@ -17,6 +17,13 @@ export type SessionLifecycle =
   | 'completed'
   | 'failed'
 
+/**
+ * Sub-status the streamer derives from the agent's status line while a turn is
+ * running. The streamer emits only `working` today (Codex sessions); the rest of
+ * the union is reserved, and an unrecognised value must be treated as no phase.
+ */
+export type AgentPhase = 'thinking' | 'streaming' | 'hooks' | 'acting' | 'working'
+
 export interface Session {
   id: string
   provider?: ProviderName
@@ -51,6 +58,12 @@ export interface Session {
    * Live sessions only. Additive; older servers omit it.
    */
   permissionMode?: string
+  /**
+   * Agent phase within a running turn. Always serialised — `null` when there is
+   * no phase — so a merge of a partial frame can clear it. An absent key means a
+   * server too old to have the feature, never "cleared".
+   */
+  subStatus: AgentPhase | null
   lastOutput: string
   elapsedMs: number
   promptCount: number

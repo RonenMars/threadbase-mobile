@@ -107,6 +107,13 @@
     "livePill": "LIVE",
     "externalPill": "EXTERNAL"
   },
+  "phase": {
+    "thinking": "Думает",
+    "streaming": "Отвечает",
+    "hooks": "Хуки",
+    "acting": "Действует",
+    "working": "Работает"
+  },
   "capability": {
     "observeOnly": "Только просмотр",
     "liveControl": "Управление"

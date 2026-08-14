@@ -16,6 +16,7 @@ function makeSession(id: string): Session {
     id,
     status: 'idle',
     ptyAttached: false,
+    subStatus: null,
     projectPath: '/tmp/p',
     projectName: `proj-${id}`,
     branch: 'main',

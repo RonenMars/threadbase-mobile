@@ -1,4 +1,4 @@
-import type { SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
+import type { AgentPhase, SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
 
 /**
  * Wire statuses this build knows how to render. Wider than `SessionStatus`:
@@ -77,6 +77,8 @@ export interface SessionPresentation {
   confidence: SessionConfidence
   activityAt: string | null
   capabilities: SessionCapabilities
+  /** Server-derived agent phase, already gated on `live`. Null when there is none. */
+  subStatus: AgentPhase | null
 }
 
 /** Fields the presentation helper needs from a session (or session-like) row. */
@@ -94,6 +96,8 @@ export type SessionPresentationInput = {
   failureReason?: string
   /** Process-lifetime axis from the streamer. Additive; older servers omit it. */
   lifecycle?: SessionLifecycle
+  /** Agent phase within a running turn. Optional here: session-like rows omit it. */
+  subStatus?: AgentPhase | null
 }
 
 export interface ConversationPresentationInput {
@@ -150,12 +154,32 @@ function activityAtFor(session: SessionPresentationInput): string | null {
   return session.activity?.lastEventAt ?? session.completedAt ?? null
 }
 
+const AGENT_PHASES: AgentPhase[] = ['thinking', 'streaming', 'hooks', 'acting', 'working']
+
+function isAgentPhase(value: string | null | undefined): value is AgentPhase {
+  return value != null && (AGENT_PHASES as string[]).includes(value)
+}
+
 /**
  * Derive a single presentation model for badges, live pills, and action gates.
  */
 export function deriveSessionPresentation(
   session: SessionPresentationInput,
 ): SessionPresentation {
+  const presentation = classifySession(session)
+  // Gate the phase on `live` here, so no caller re-derives liveness and no phase
+  // can render beside a badge that says Idle / External / Stale. An unrecognised
+  // value from a newer server means "no phase" — never coerce it.
+  return {
+    ...presentation,
+    subStatus:
+      presentation.live && isAgentPhase(session.subStatus) ? session.subStatus : null,
+  }
+}
+
+function classifySession(
+  session: SessionPresentationInput,
+): Omit<SessionPresentation, 'subStatus'> {
   const external = isExternalSession(session)
   const externalAlive = external && isExternalAlive(session)
   const status = session.status
@@ -338,6 +362,7 @@ export function deriveConversationPresentation(
         canResume: false,
         isObserveOnly: true,
       },
+      subStatus: null,
     }
   }
   return null
