@@ -24,9 +24,9 @@ Notably, an infinite-query hook for conversations (`useConversations`, a `useInf
 
 ## Decision
 
-Move the Hub's conversation and session data off the eager full-drain and onto lazy, demand-driven loading, and remove the remaining churn sources by construction rather than by guards. Three principles:
+Move the Hub's conversation data off the eager full-drain and onto lazy, demand-driven loading, and remove the remaining churn sources by construction rather than by guards. Three principles:
 
-1. **Lazy pagination instead of eager drain.** Use `useInfiniteQuery` (the existing `useConversations` for conversations; an equivalent for sessions) and `fetchNextPage()` on the list's `onEndReached`. This deletes the per-page progress `setState` machinery (and the throttle #563 added), removes the long-lived "syncing" state, and cuts network to what the user actually scrolls to.
+1. **Lazy pagination instead of eager drain, for conversations.** Use `useInfiniteQuery` (the existing `useConversations`) and `fetchNextPage()` on the list's `onEndReached`. This deletes the per-page progress `setState` machinery (and the throttle #563 added), removes the long-lived "syncing" state, and cuts network to what the user actually scrolls to. Sessions are excluded — see "Why sessions stay eager".
 2. **Colocate ephemeral, high-frequency UI state.** The sync spinner, header health dot, and any remaining progress live in small leaf components that subscribe to just their slice via atomic zustand selectors (or `useShallow`), so a status tick re-renders a chip, not the whole tree. Store setters stay idempotent — return the same state when the value is unchanged (the #564 fix, generalized to a convention).
 3. **Server-driven freshness = surgical cache patch, not broad invalidation.** For `conversation_updated`, patch the single affected entry in the query cache (mirroring `applySessionUpdateToEagerCache`, which already does this for `session_update`) instead of invalidating and re-draining everything.
 
@@ -35,7 +35,7 @@ The target end state is `ProjectsHub` re-rendering approximately once per real, 
 ## Migration order (by leverage)
 
 1. **Infinite-query pagination for conversations** — wire the existing `useConversations` into the Classic History `ConversationList`. This PR prototypes exactly this step.
-2. **Infinite-query pagination for the tree/hub conversation and session sources**, retiring `useEagerConversations` / `useEagerSessions` once every surface is migrated.
+2. **Infinite-query pagination for the tree/hub conversation sources**, retiring `useEagerConversations` once every conversation surface is migrated. `useEagerSessions` stays; its per-page progress plumbing does not.
 3. **Conversation cache-patch** for `conversation_updated`, replacing the #565 debounce.
 4. **Colocate the sync/status/progress subscriptions** out of the Hub root into leaf components.
 
@@ -61,6 +61,23 @@ So a lazily-appended flat page cannot be placed: it scatters items into a half-b
 That leaves one requirement: `(projectPath, count, lastActivity)` for **every** project on a server, in one cheap call. Nothing served that. `/api/projects` was a filesystem scan of `~/.claude/projects` — no counts, no activity, Claude-only, and its `replace(/-/g, "/")` decode mangled any path with a hyphen in a segment. `/api/projects/popular` had the right source and real counts but was top-N with no last-activity and no pagination. The `projects` SQLite table had a maintained `latest_message_at` but was never exposed, and its `message_count` was written as `0` and never updated.
 
 Hence the request that became streamer PR #460. The hard constraint attached to it was **consistency**: the summary must aggregate the same `conversation_meta` rows that `/api/conversations?project=` pages, or a group claims one count and renders another. The streamer's own contract note in `docs/compatibility/tb-mobile.md` states that guarantee from its side.
+
+## Why sessions stay eager
+
+Recorded after the fact, because an earlier draft of step 2 listed `useEagerSessions` alongside `useEagerConversations` and that is wrong.
+
+Conversations paginate safely because they sort chronologically: page N+1 is always older than everything already rendered, so appending preserves the order.
+Sessions sort by **status first** — live cluster to the top, then idle, then chronologically (the contract commented at `app/index.tsx:284`).
+That order is not monotonic in page order: a live session can arrive on page 3 and must jump above every idle row already on screen, so a lazy append would either place it wrongly or re-sort the whole accumulated set on each page and visibly reshuffle the list.
+The tree has the same requirement for a different reason — session counts aggregate up the node tree, which needs the complete set, exactly as described above for `/api/projects/summary`.
+
+The payoff is absent as well.
+The drain exists because 600+ conversations is a `/count` plus ~13 sequential pages; sessions are single-digit to low-dozens on real servers, so `fetchAllPagesForServer` (`hooks/useSession.ts:62`) usually exits after one page.
+Sessions are also the WS-live entities, and `applySessionUpdateToEagerCache` / `removeSessionFromEagerCache` patch a flat array by key — against paged data each patch would first have to decide which page an update belongs to and whether it moves.
+
+What does still apply to sessions is principle 1's *second* half.
+`useEagerSessions` carries the same per-page progress machinery (`serverProgressRef`, `flushAggregate`, and the `useThrottledCallback(setAggregateProgress, 250)` at `hooks/useSession.ts:140` that #563 added), writing Hub-root state to pace a drain that typically completes in one page.
+Delete that plumbing and keep the drain: it removes a Hub-root subscription with no ordering risk and no behavior change.
 
 ## Consequences
 
