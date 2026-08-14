@@ -1,6 +1,6 @@
 # Kick-off — Implement ADR 0001 across all three Hub views (hub / tree / classic)
 
-Implementation brief for [ADR 0001](./0001-hub-data-layer-lazy-pagination.md). Builds on the classic-History prototype in PR #568.
+Implementation brief for [ADR 0001](../../adr/0001-hub-data-layer-lazy-pagination.md). Builds on the classic-History prototype in PR #568.
 
 ## Goal
 
@@ -48,7 +48,7 @@ Row pagination on a grouped view is wrong: `buildTree` / `compactTree` need the 
 ## Verify (mandatory — this whole effort exists because the fix must be measured)
 
 - Instrument with `useRenderTally` / `useWhyRender` (`lib/openTrace.ts`) and read `.expo/dev/logs/start.log`.
-- The flag lives in `.env.local` (`EXPO_PUBLIC_OPEN_TRACE=1`), not a shell export; force-fresh the dev client by reinstalling. Both traps are documented in [`docs/troubleshooting.md`](../troubleshooting.md) → "Measuring the wrong thing".
+- The flag lives in `.env.local` (`EXPO_PUBLIC_OPEN_TRACE=1`), not a shell export; force-fresh the dev client by reinstalling. Both traps are documented in [`docs/troubleshooting.md`](../../troubleshooting.md) → "Measuring the wrong thing".
 - Test against the two real servers (one with 600+ conversations). Success = the Hub does not eager-drain, grouped views load a directory only on expand, live sessions still surface to the top, and the `[render]` count settles to ~1 per real data change.
 
 ## Constraints
