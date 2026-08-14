@@ -239,6 +239,16 @@ jobs:
           (cd ios && bundle exec pod install)
           ./scripts/reset-podfile-lock-path-noise.sh
 
+      # E2E has no use for uploaded source maps and no Sentry secrets, but the
+      # Sentry config plugin injects a sentry-cli phase into every Release build
+      # and that phase exits 65 without credentials — killing the job ~90 seconds
+      # into the compile, before any Maestro flow runs. `development` skips the
+      # upload; deploy.yml stays on the strict default.
+      - name: Resolve app env (skips the Sentry source-map upload)
+        env:
+          APP_ENV: development
+        run: ./scripts/check-sentry-env.sh >> "$GITHUB_ENV"
+
       - name: Build and install iOS app (Release)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         env:

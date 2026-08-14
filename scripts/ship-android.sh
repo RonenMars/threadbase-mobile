@@ -132,6 +132,12 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
   exit 0
 fi
 
+# Every ship uploads to Google Play, so the source maps are never optional here —
+# pinned to production rather than reading APP_ENV, so no caller can ship a build
+# whose crashes arrive unsymbolicated. Placed after the promote fast path, which
+# ships an existing artifact and builds nothing.
+APP_ENV=production "$SCRIPT_DIR/check-sentry-env.sh"
+
 # 1. Fetch Google Play credentials.
 # Cache: ~/.config/threadbase/play-console-sa.json — skipped if already present,
 # matching the iOS/Android keystore bootstrap behavior. Re-run fetch-play-credentials.sh
