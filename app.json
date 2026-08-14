@@ -59,8 +59,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Threadbase to attach photos from your library to Claude Code sessions.",
-          "cameraPermission": false
+          "photosPermission": "Allow Threadbase to attach photos from your library to Claude Code sessions."
         }
       ],
       "expo-secure-store",
