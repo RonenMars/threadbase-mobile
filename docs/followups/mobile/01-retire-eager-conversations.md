@@ -29,6 +29,8 @@ Migrate `mergedClassicItems` off the eager array, then delete:
 
 Sessions stay eager. They are single-digit counts on real servers and must always sort to the top.
 
+`convLoaded` / `convTotal` / `convDone` / `convCounting` are not internal state — they render the conversations row of `LoadingOverlay` (`app/index.tsx:586-595`, `components/ui/LoadingOverlay.tsx:114-119`), whose sessions row is fed by the session drain and stays. So deleting them is a UI decision, not dead-wiring removal: settle what the overlay shows once conversations no longer drain (drop the row and keep the sessions row alone, or replace it with a determinate-free spinner) before writing the deletion. Only the conversation half of that plumbing is in scope here — the session half stays, per `docs/adr/0001-hub-data-layer-lazy-pagination.md` → "Why sessions stay eager".
+
 ## The constraint that will bite
 
 `mergedClassicItems` has a sort contract: **live sessions cluster to the top regardless of conversation recency**, then idle sessions, then conversations chronologically. Comment at `app/index.tsx:~283` explains why. Row pagination must not break it — a conversation arriving on page 3 must still sort below every session, and a session must never be pushed off-screen by conversation loading.

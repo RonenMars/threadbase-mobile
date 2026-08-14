@@ -35,7 +35,7 @@ The target end state is `ProjectsHub` re-rendering approximately once per real, 
 ## Migration order (by leverage)
 
 1. **Infinite-query pagination for conversations** — wire the existing `useConversations` into the Classic History `ConversationList`. This PR prototypes exactly this step.
-2. **Infinite-query pagination for the tree/hub conversation sources**, retiring `useEagerConversations` once every conversation surface is migrated. `useEagerSessions` stays; its per-page progress plumbing does not.
+2. **Infinite-query pagination for the tree/hub conversation sources**, retiring `useEagerConversations` once every conversation surface is migrated. `useEagerSessions` stays, and so does its progress plumbing — see "Why sessions stay eager".
 3. **Conversation cache-patch** for `conversation_updated`, replacing the #565 debounce.
 4. **Colocate the sync/status/progress subscriptions** out of the Hub root into leaf components.
 
@@ -82,9 +82,10 @@ Separately, `sortBy=status` was a plain lexicographic sort (`idle` < `running` <
 Streamer PR [#585](https://github.com/RonenMars/threadbase-streamer/pull/585) fixes the ordering half — `order=asc` now ranks `running` and `waiting_input` equally ahead of `idle`, most recently active first — which makes a future "live sessions only" fetch (the `status` filter, no paging) land in render order.
 It deliberately does not attempt cursor safety, and none of this changes the decision here: sessions stay eager.
 
-What does still apply to sessions is principle 1's *second* half.
-`useEagerSessions` carries the same per-page progress machinery (`serverProgressRef`, `flushAggregate`, and the `useThrottledCallback(setAggregateProgress, 250)` at `hooks/useSession.ts:140` that #563 added), writing Hub-root state to pace a drain that typically completes in one page.
-Delete that plumbing and keep the drain: it removes a Hub-root subscription with no ordering risk and no behavior change.
+Principle 1's *second* half — delete the per-page progress `setState` machinery — does not transfer to sessions either, and an earlier revision of this section wrongly said it did.
+`useEagerSessions` does carry that machinery (`serverProgressRef`, `flushAggregate`, and the `useThrottledCallback(setAggregateProgress, 250)` at `hooks/useSession.ts:140` that #563 added), but it is not internal churn: `loaded` / `total` / `inFlightCount` are returned by the hook and passed to `LoadingOverlay` (`app/index.tsx:586-592`), which renders a labelled sessions row with a live counter and a progress bar (`components/ui/LoadingOverlay.tsx:98-106`) plus the "fetching from N servers" line.
+Removing the plumbing therefore removes that row — a visible behavior change, not a mechanical cleanup, which is why #563 paced these writes instead of deleting them.
+Whether the overlay should still show per-server session progress is a product question; until it is answered, the plumbing stays and the throttle is the correct treatment.
 
 ## Consequences
 
