@@ -33,11 +33,21 @@ describe('ThinkingBubble agent phase', () => {
     expect(getByTestId('thinking-phase')).toBeTruthy()
   })
 
-  it('renders nothing when there is no phase', async () => {
+  // No phase, no claim about what the agent is doing — the whole bubble goes,
+  // terminal lines and dots included, not just the label.
+  it('renders no bubble at all when there is no phase', async () => {
     const { queryByTestId } = await render(
       <ThinkingBubble lines={['Reading file…']} isStreaming subStatus={null} />,
     )
+    expect(queryByTestId('thinking-bubble')).toBeNull()
     expect(queryByTestId('thinking-phase')).toBeNull()
+  })
+
+  it('still renders a question card when there is no phase', async () => {
+    const { queryByTestId } = await render(
+      <ThinkingBubble lines={['x']} isStreaming subStatus={null} activeQuestion={structured} />,
+    )
+    expect(queryByTestId('thinking-bubble')).toBeTruthy()
   })
 
   it('hides the phase behind a structured question card', async () => {
