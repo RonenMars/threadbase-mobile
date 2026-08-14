@@ -67,9 +67,27 @@ const EMPTY_CONVERSATIONS: MultiConversation[] = []
 
 type ClassicTab = 'sessions' | 'history'
 
-type MergedItem =
+export type MergedItem =
   | { kind: 'session'; ms: number; item: MultiSession }
   | { kind: 'conversation'; ms: number; item: MultiConversation }
+
+// Sessions always match client-side — /api/search does not cover them.
+// Conversations only do when they came from the paged set: server results are
+// already matched on message bodies, so re-checking title/preview here could
+// only drop rows the server correctly found.
+export function mergedItemMatchesQuery(
+  item: MergedItem,
+  q: string,
+  conversationsFromServer: boolean,
+): boolean {
+  if (item.kind === 'session') {
+    return Boolean(
+      item.item.projectName?.toLowerCase().includes(q) || item.item.lastOutput?.toLowerCase().includes(q),
+    )
+  }
+  if (conversationsFromServer) return true
+  return Boolean(item.item.title?.toLowerCase().includes(q) || item.item.preview?.toLowerCase().includes(q))
+}
 
 function lastActivityMs(s: MultiSession): number {
   if (s.completedAt) return Date.parse(s.completedAt)
@@ -473,6 +491,7 @@ export default function ProjectsHub() {
               onRefresh={handleRefresh}
               searchOpen={searchOpen}
               searchQuery={classicConvSearch}
+              conversationsFromServer={Boolean(debouncedConvSearch)}
               onSearchChange={setClassicConvSearch}
               isBackgroundRefreshing={isBackgroundRefreshing}
             />
@@ -610,6 +629,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
   onRefresh,
   searchOpen,
   searchQuery,
+  conversationsFromServer,
   onSearchChange,
   isBackgroundRefreshing,
 }: {
@@ -618,6 +638,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
   onRefresh: () => void
   searchOpen: boolean
   searchQuery: string
+  conversationsFromServer: boolean
   onSearchChange: (q: string) => void
   isBackgroundRefreshing?: boolean
 }) {
@@ -646,18 +667,8 @@ const MergedClassicList = React.memo(function MergedClassicList({
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items
     const q = searchQuery.toLowerCase()
-    return items.filter((item) => {
-      if (item.kind === 'session') {
-        const s = item.item as MultiSession
-        return s.projectName?.toLowerCase().includes(q) || s.lastOutput?.toLowerCase().includes(q)
-      }
-      const c = item.item as MultiConversation
-      return (
-        c.title?.toLowerCase().includes(q) ||
-        c.preview?.toLowerCase().includes(q)
-      )
-    })
-  }, [searchQuery, items])
+    return items.filter((item) => mergedItemMatchesQuery(item, q, conversationsFromServer))
+  }, [searchQuery, items, conversationsFromServer])
 
   const visibleServerCount = useMemo(
     () => new Set(filteredItems.map((it) => it.item.serverId)).size,
