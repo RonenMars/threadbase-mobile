@@ -74,6 +74,11 @@ ROOT="$(pwd)"
 TOTAL_STEPS=8
 [[ "$TARGET" == "production" ]] && TOTAL_STEPS=9
 
+# Every ship uploads to App Store Connect, so the source maps are never optional
+# here — pinned to production rather than reading APP_ENV, so no caller can ship
+# a build whose crashes arrive unsymbolicated.
+APP_ENV=production "$SCRIPT_DIR/check-sentry-env.sh"
+
 # 1. Preflight
 if (( SKIP_PREFLIGHT == 0 )); then
   echo "▸ [1/$TOTAL_STEPS] Preflight"

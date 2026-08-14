@@ -98,6 +98,27 @@ function installAndLaunch(appPath) {
   execFileSync('xcrun', ['simctl', 'launch', 'booted', BUNDLE_ID], { stdio: 'inherit' })
 }
 
+// The Sentry config plugin injects a sentry-cli phase into every non-Debug
+// build, and that phase fails the build outright when the upload credentials
+// are absent — which they are for anyone running the mock suite locally. A
+// local E2E build has no use for uploaded source maps, so resolve the same
+// `development` env e2e.yml uses rather than hardcoding a second flag here.
+function resolveSentryEnv() {
+  const out = execFileSync('/bin/bash', [path.join(REPO_ROOT, 'scripts/check-sentry-env.sh')], {
+    env: { ...process.env, APP_ENV: 'development' },
+    encoding: 'utf8',
+  })
+  return Object.fromEntries(
+    out
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const at = line.indexOf('=')
+        return [line.slice(0, at), line.slice(at + 1)]
+      }),
+  )
+}
+
 // Only called for the true first-run case (no build found anywhere) — `npx expo
 // run:ios --configuration Release` is documented (docs/e2e-remaining-work.md,
 // "Environment gotchas") to hold Metro open and never return once it finishes
@@ -105,7 +126,10 @@ function installAndLaunch(appPath) {
 // working tree makes it the common case rather than a rare first-run one.
 function buildFresh() {
   console.log('Building Release build now (this may take a few minutes)...')
-  execFileSync('npx', ['expo', 'run:ios', '--configuration', 'Release'], { stdio: 'inherit' })
+  execFileSync('npx', ['expo', 'run:ios', '--configuration', 'Release'], {
+    stdio: 'inherit',
+    env: { ...process.env, ...resolveSentryEnv() },
+  })
 
   const appPath = findReleaseBuild()
   if (!appPath) {

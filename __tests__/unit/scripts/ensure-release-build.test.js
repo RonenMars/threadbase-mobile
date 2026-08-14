@@ -15,6 +15,7 @@ const os = require('os');
 const path = require('path');
 
 const SCRIPT = path.resolve(__dirname, '../../../e2e/ensure-release-build.js');
+const SENTRY_GUARD = path.resolve(__dirname, '../../../scripts/check-sentry-env.sh');
 const GIT = fs.existsSync('/opt/homebrew/bin/git') ? '/opt/homebrew/bin/git' : '/usr/bin/git';
 
 function git(cwd, args) {
@@ -48,6 +49,9 @@ function makeRepo() {
   git(repo, ['init', '-q', '-b', 'main']);
   fs.mkdirSync(path.join(repo, 'e2e'));
   fs.copyFileSync(SCRIPT, path.join(repo, 'e2e', 'ensure-release-build.js'));
+  // buildFresh() resolves the Sentry build env through the real guard script.
+  fs.mkdirSync(path.join(repo, 'scripts'));
+  fs.copyFileSync(SENTRY_GUARD, path.join(repo, 'scripts', 'check-sentry-env.sh'));
   fs.writeFileSync(path.join(repo, 'package.json'), '{"name":"fixture"}\n');
   fs.writeFileSync(path.join(repo, '.gitignore'), 'ios/build/\n');
   git(repo, ['add', '.']);
@@ -78,6 +82,7 @@ function runScript(repo, { allowStale = false, platform } = {}) {
     [
       'echo "$@" >> "$NPX_LOG"',
       'if [ "$1" = "expo" ] && [ "$2" = "run:ios" ]; then',
+      '  echo "SENTRY_DISABLE_AUTO_UPLOAD=$SENTRY_DISABLE_AUTO_UPLOAD" >> "$NPX_LOG"',
       '  mkdir -p "$APP_DIR"',
       '  echo fake > "$APP_DIR/Info.plist"',
       'fi',
@@ -217,6 +222,9 @@ test('no existing build at all still builds fresh, same as before the staleness 
 
   expect(result.status).toBe(0);
   expect(result.npxLog).toContain('expo run:ios --configuration Release');
+  // Without this the Sentry Xcode phase fails the build for anyone with no
+  // upload credentials — which is every local run of the mock suite.
+  expect(result.npxLog).toContain('SENTRY_DISABLE_AUTO_UPLOAD=true');
   expect(result.xcrunLog).toContain(`simctl install booted ${appDirFor(repo)}`);
   // A stamp for the current commit should now exist, so a second run reuses it without rebuilding.
   const second = runScript(repo);
