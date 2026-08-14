@@ -8,6 +8,7 @@
 import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import OnboardingScreen from '@/app/onboarding'
+import en from '@/locales/en/common.json'
 
 const mockReplace = jest.fn()
 const mockSetOptions = jest.fn()
@@ -136,7 +137,9 @@ describe('Onboarding – error handling', () => {
       await fireEvent.press(getByText('Connect'))
     })
 
-    expect(await findByText(/Invalid API key/)).toBeTruthy()
+    // Pins the string, not a fragment of it: a regex on "API key" stays green
+    // through a copy change that drops the pointer to where the real key lives.
+    expect(await findByText(en.error.authKeyRejectedOnConnect)).toBeTruthy()
     expect(mockReplace).not.toHaveBeenCalled()
   })
 
