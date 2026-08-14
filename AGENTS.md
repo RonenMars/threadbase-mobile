@@ -172,6 +172,20 @@ Expo MCP is configured **globally** (user scope) for both Claude Code and Codex 
 - Use it for **screenshots, device/app logs, and verifying UI on the simulator or emulator**.
 - **Do not use remote tunneling** (`--mcp-server-url` / `@expo/mcp-tunnel`) unless explicitly asked. Local dev server only.
 
+## Server contract — degrade, don't break
+
+The streamer no longer keeps a hand-maintained compatibility list, and it does **not** treat a wire change as blocked by this app (see "Backward compatibility with tb-mobile" in the streamer's `CLAUDE.md`). A server can rename a field, drop an endpoint or emit a status this build has never heard of, and it can do so without asking. This app is the half that absorbs it.
+
+**The rule: a server that moved ahead costs a degraded screen, never a crash.**
+
+- **Treat every response as untrusted input, not as its TypeScript type.** `SessionStatus` in `types/api.ts` is a three-value union (`running` | `waiting_input` | `idle`) — that is what *this build* knows, not what the server may send. Narrow an incoming status through an explicit check and fall back to `idle`; never let an unknown value reach a `switch` that assumes exhaustiveness.
+- **A missing optional field renders without it.** No throw, no empty screen, no error toast — omit the affected piece of UI and show the rest.
+- **A feature that needs a newer server degrades rather than erroring.** Absent endpoint or capability → hide the entry point, or show one plain line saying the server doesn't support it yet. `GET /api/info` and `GET /api/config/feature-flags` are the capability probes; a server too old to answer reads as "off", which is correct — it is also too old to have the feature.
+- **Report, don't repair.** If a response shape looks wrong, surface it to the user and keep the rest of the screen alive. Don't add client-side shims that guess at what the server meant.
+
+None of this is a reason to pin a minimum server version or to ask the streamer to hold a change back.
+
+
 ---
 
 ## Agent skills
