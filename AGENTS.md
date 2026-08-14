@@ -174,6 +174,22 @@ Expo MCP is configured **globally** (user scope) for both Claude Code and Codex 
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues on `RonenMars/threadbase-mobile`, via the `gh` CLI; format and label taxonomy stay canonical in the `threadbase` umbrella repo. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five triage states use their canonical names (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`) and are additive to the existing priority/type/area taxonomy. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — one `CONTEXT.md` at the root (not created yet) plus `docs/adr/`. See `docs/agents/domain.md`.
+
+---
+
 ## Cursor Cloud specific instructions
 
 The Cursor cloud agent runs on a **headless Linux VM** — there is **no macOS, Xcode, iOS simulator, or Android SDK/emulator**. Plan work around that:
