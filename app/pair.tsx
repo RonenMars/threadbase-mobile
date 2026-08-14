@@ -37,14 +37,25 @@ function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
   return t('scanner.errors.generic')
 }
 
-// Expo Router splits `threadbase://pair?url=...&token=...&exp=...` into query
-// params before this screen mounts; rebuild the URI so parsePairUri can
-// validate it exactly as it does for the paste field and the QR scanner.
-function buildPairUri(params: { url?: string; token?: string; exp?: string }): string {
+// One name for both the params this screen accepts and the params it rebuilds,
+// so the two lists cannot drift apart.
+type PairParams = { url?: string; token?: string; exp?: string; spk?: string; v?: string }
+
+// Expo Router splits `threadbase://pair?url=...&token=...&exp=...&spk=...&v=...`
+// into query params before this screen mounts; rebuild the URI so parsePairUri
+// can validate it exactly as it does for the paste field and the QR scanner.
+//
+// The allowlist is the trap: a parameter missing here is dropped silently on
+// this path only, so the deep link and the scanner stop agreeing on what a pair
+// URI contains, with no error either side. Anything parsePairUri reads must be
+// listed here too.
+function buildPairUri(params: PairParams): string {
   const search = new URLSearchParams()
   if (params.url) search.set('url', params.url)
   if (params.token) search.set('token', params.token)
   if (params.exp) search.set('exp', params.exp)
+  if (params.spk) search.set('spk', params.spk)
+  if (params.v) search.set('v', params.v)
   return `threadbase://pair?${search.toString()}`
 }
 
@@ -53,7 +64,7 @@ export default function PairDeepLinkScreen() {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const router = useRouter()
-  const params = useLocalSearchParams<{ url?: string; token?: string; exp?: string }>()
+  const params = useLocalSearchParams<PairParams>()
   const addServer = useServersStore((s) => s.addServer)
   const servers = useServersStore((s) => s.servers)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
