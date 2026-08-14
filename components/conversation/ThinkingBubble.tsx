@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
@@ -48,10 +50,13 @@ interface Props {
   onSendKeys?: (keys: string) => void
   activeQuestion?: QuestionBlock | null
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Server-derived agent phase, already gated on `presentation.live`. */
+  subStatus?: AgentPhase | null
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, subStatus }: Props) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
@@ -148,6 +153,9 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
             ))}
           </ScrollView>
         ) : null}
+        {subStatus ? (
+          <Text style={styles.phase} testID="thinking-phase">{t(`phase.${subStatus}`)}</Text>
+        ) : null}
         {(isStreaming || !hasLines) ? (
           <DotsAnimation style={hasLines ? styles.dotsWithLines : undefined} color={theme.text.accent} />
         ) : (
@@ -196,6 +204,10 @@ function makeStyles(theme: Theme) {
       fontSize: font.xs,
       color: theme.text.secondary,
       lineHeight: font.xs * 1.5,
+    },
+    phase: {
+      fontSize: font.xs,
+      color: theme.text.secondary,
     },
     dotsWithLines: {
       marginTop: spacing.xs,

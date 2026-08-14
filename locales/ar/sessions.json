@@ -117,6 +117,13 @@
     "livePill": "LIVE",
     "externalPill": "EXTERNAL"
   },
+  "phase": {
+    "thinking": "يفكر",
+    "streaming": "يرد",
+    "hooks": "تشغيل الخطافات",
+    "acting": "ينفذ",
+    "working": "يعمل"
+  },
   "capability": {
     "observeOnly": "للمشاهدة فقط",
     "liveControl": "تحكم مباشر"

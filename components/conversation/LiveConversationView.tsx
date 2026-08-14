@@ -28,6 +28,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { spacing, type Theme } from '@/constants/theme'
 import type { ProviderName } from '@/constants/providers'
 import { preferRawTerminal } from '@/lib/renderConfidence'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 
 interface Props {
@@ -202,6 +203,9 @@ export function LiveConversationView({
 
   const handleFadeOutComplete = useCallback(() => setThinkingState('hidden'), [])
 
+  // Phase comes gated on `presentation.live` — never re-derive liveness here.
+  const agentPhase = session ? deriveSessionPresentation(session).subStatus : null
+
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
 
@@ -299,6 +303,7 @@ export function LiveConversationView({
             onFadeOutComplete={handleFadeOutComplete}
             onSendKeys={(keys) => sendKeys.mutate(keys)}
             activeQuestion={activeQuestion}
+            subStatus={agentPhase}
             onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
           />
         ) : null}

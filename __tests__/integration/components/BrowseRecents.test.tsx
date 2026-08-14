@@ -83,6 +83,7 @@ const makeSession = (overrides: Partial<MultiSession>): MultiSession => ({
   serverId: overrides.serverId ?? SERVER_ID,
   status: 'idle',
   ptyAttached: false,
+  subStatus: null,
   projectPath: '/home/user/projects/foo',
   projectName: 'foo',
   lastOutput: '',

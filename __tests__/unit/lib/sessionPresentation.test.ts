@@ -217,6 +217,50 @@ describe('sessionOpensAsHistory', () => {
   })
 })
 
+describe('deriveSessionPresentation subStatus', () => {
+  it('passes the phase through for a managed live session', () => {
+    expect(
+      deriveSessionPresentation(base({ status: 'running', subStatus: 'working' })).subStatus,
+    ).toBe('working')
+  })
+
+  // The gate is `presentation.live`, not raw `status`. An external session is
+  // classified off ownership + processLiveness and never consults `status`, so a
+  // raw-status gate would render a phase beside a badge reading "External".
+  it('drops the phase for a session that is running but presents as external', () => {
+    const presentation = deriveSessionPresentation(
+      base({
+        status: 'running',
+        ownership: 'external',
+        processLiveness: 'gone',
+        subStatus: 'working',
+      }),
+    )
+    expect(presentation.kind).toBe('stale')
+    expect(presentation.subStatus).toBeNull()
+  })
+
+  it('drops the phase on an idle session', () => {
+    expect(
+      deriveSessionPresentation(base({ status: 'idle', subStatus: 'working' })).subStatus,
+    ).toBeNull()
+  })
+
+  // A newer server may emit a phase this build does not know. Treat it as no
+  // phase rather than rendering a raw wire value.
+  it('treats an unrecognised phase as no phase', () => {
+    expect(
+      deriveSessionPresentation(
+        base({ status: 'running', subStatus: 'compacting' as 'working' }),
+      ).subStatus,
+    ).toBeNull()
+  })
+
+  it('is null when the server omits the field entirely', () => {
+    expect(deriveSessionPresentation(base({ status: 'running' })).subStatus).toBeNull()
+  })
+})
+
 describe('deriveConversationPresentation', () => {
   it('returns unavailable when resume is blocked', () => {
     expect(
