@@ -315,3 +315,19 @@ When measuring or debugging on the simulator with an `EXPO_PUBLIC_*` trace flag 
 
 - **A shell-exported `EXPO_PUBLIC_*` flag does not inline into the bundle.** Expo reads these from `.env` / `.env.local` files, not arbitrary shell exports, so `EXPO_PUBLIC_OPEN_TRACE=1 npx expo start` leaves `ENABLED` false. Put it in `.env.local` (gitignored), restart with `--clear`, and verify by grepping the served `expo-router/entry.bundle`. App `console.log` lands in `.expo/dev/logs/start.log`.
 - **The dev client serves a disk-cached bundle.** After a JS change or Metro `--clear`, deep-link / `/reload` / plain `simctl launch` all no-op against the cache — you measure old code. Uninstall + reinstall to force a fresh fetch (this wipes AsyncStorage, so re-pair servers); Fast Refresh handles iteration once you are on the live bundle.
+
+---
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues on `RonenMars/threadbase-mobile`, via the `gh` CLI; format and label taxonomy stay canonical in the `threadbase` umbrella repo. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five triage states use their canonical names (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`) and are additive to the existing priority/type/area taxonomy. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — one `CONTEXT.md` at the root (not created yet) plus `docs/adr/`. See `docs/agents/domain.md`.
