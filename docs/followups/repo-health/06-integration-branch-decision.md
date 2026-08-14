@@ -1,5 +1,7 @@
 # 06 — Retire the long-lived integration branch
 
+> **Resolved 2026-08-12 — retired.** Every open PR was landed on `main` individually (20 merged, 4 closed unmerged) and the integration branches were deleted. #575 and #580 were closed rather than conflict-resolved, their content already being on `main` via #578/#579. The decision, the deleted refs, and the audit that made deletion safe are in [`integration-branch-retirement-2026-08-12.md`](../../integration-branch-retirement-2026-08-12.md). The text below is the state of play that produced the decision — kept for the reasoning, not as open work.
+
 **This is a decision, not a task. Do not execute it.** Gather anything missing, present the options, stop.
 
 ## State of play
