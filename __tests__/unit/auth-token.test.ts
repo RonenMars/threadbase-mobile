@@ -11,7 +11,7 @@
 // clear` invalidates the token, and preferring it there would turn a documented
 // troubleshooting step into "re-pair every device".
 
-import { authToken } from '@/types/api'
+import { authToken } from '@/services/authed-fetch'
 import type { ServerConfig, ServerInfo } from '@/types/api'
 
 type Cred = Pick<ServerConfig, 'apiKey' | 'deviceToken' | 'serverInfo'>

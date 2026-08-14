@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import * as SecureStore from '@/services/secure-store'
 import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
-import { authToken, serverIdFromUrl } from '@/types/api'
+import { serverIdFromUrl } from '@/types/api'
+import { authedFetch } from '@/services/authed-fetch'
 import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
@@ -286,14 +287,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     const timeout = setTimeout(() => controller.abort(), 12000)
 
     try {
-      const response = await fetch(`${server.url}/api/info`, {
-        // authToken falls back to the shared key until serverInfo has told us
-        // this server keeps its device registry durably — which is exactly the
-        // response this request fetches, so the first probe after pairing uses
-        // the shared key and every one after it uses the scoped token.
-        headers: { Authorization: `Bearer ${authToken(server)}` },
-        signal: controller.signal,
-      })
+      // authedFetch falls back to the shared key until serverInfo has told us
+      // this server keeps its device registry durably — which is exactly the
+      // response this request fetches, so the first probe after pairing uses
+      // the shared key and every one after it uses the scoped token.
+      const response = await authedFetch(server, '/api/info', { signal: controller.signal })
       clearTimeout(timeout)
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`)

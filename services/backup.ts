@@ -1,7 +1,7 @@
 import { createApiForServer, NetworkError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { getDeviceClientId } from '@/services/device-id'
-import { authToken } from '@/types/api'
+import { authedFetch, AuthError, serverUrl } from '@/services/authed-fetch'
 import {
   archiveToShareText,
   parseBackupArchive,
@@ -66,14 +66,13 @@ export async function restoreBackup(
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${server.url.replace(/\/$/, '')}/api/backup/restore`
+  const path = '/api/backup/restore'
   const clientId = await getDeviceClientId()
   let response: Response
   try {
-    response = await fetch(url, {
+    response = await authedFetch(server, path, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${authToken(server)}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
         'X-Client-Id': clientId,
@@ -85,7 +84,8 @@ export async function restoreBackup(
       }),
     })
   } catch (err) {
-    throw new NetworkError(`Failed to reach ${url}: ${String(err)}`)
+    if (err instanceof AuthError) throw err
+    throw new NetworkError(`Failed to reach ${serverUrl(server, path)}: ${String(err)}`)
   }
 
   const raw = (await response.json().catch(() => null)) as object | null

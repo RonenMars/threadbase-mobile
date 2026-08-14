@@ -2,8 +2,8 @@ import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import { useServersStore } from '@/stores/servers'
-import { NetworkError, AuthError, NotFoundError } from '@/services/api-client'
-import { authToken } from '@/types/api'
+import { NetworkError, NotFoundError } from '@/services/api-client'
+import { authedFetch } from '@/services/authed-fetch'
 
 export interface PickedImage {
   uri: string
@@ -110,11 +110,9 @@ export async function uploadAttachment(
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const url = `${server.url.replace(/\/$/, '')}/api/sessions/${encodeURIComponent(sessionId)}/files`
-  const response = await fetch(url, {
+  const response = await authedFetch(server, `/api/sessions/${encodeURIComponent(sessionId)}/files`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${authToken(server)}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
@@ -125,7 +123,6 @@ export async function uploadAttachment(
     }),
   })
 
-  if (response.status === 401) throw new AuthError()
   if (response.status === 404) throw new NotFoundError(`/api/sessions/${sessionId}/files`)
   if (!response.ok) {
     let detail = `Server returned ${response.status}`

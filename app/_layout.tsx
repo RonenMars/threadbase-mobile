@@ -30,7 +30,7 @@ import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
 import type { Session } from '@/types/api'
-import { authToken } from '@/types/api'
+import { authToken } from '@/services/authed-fetch'
 import { registerPushTokenForAll } from '@/services/push'
 import {
   adoptRunningActivities,
