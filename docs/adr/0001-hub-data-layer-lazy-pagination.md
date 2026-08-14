@@ -75,6 +75,13 @@ The payoff is absent as well.
 The drain exists because 600+ conversations is a `/count` plus ~13 sequential pages; sessions are single-digit to low-dozens on real servers, so `fetchAllPagesForServer` (`hooks/useSession.ts:62`) usually exits after one page.
 Sessions are also the WS-live entities, and `applySessionUpdateToEagerCache` / `removeSessionFromEagerCache` patch a flat array by key — against paged data each patch would first have to decide which page an update belongs to and whether it moves.
 
+The obvious counter-proposal — have the server sort by status so pagination becomes order-preserving — was put to the streamer and does not rescue it.
+Its cursor is `base64url({k, id})` where `k` is the value of the *current sort key* for the page's last row, and the list is re-derived and re-sorted on every request (`src/session-store.ts:117,132-135`), so a session whose status changes between two page fetches moves across the cursor and is either skipped or returned twice.
+`startedAt` is the only sort key immutable per session and therefore safe to page on; `status` is the worst, being both the highest-churn key and the lowest-cardinality one.
+Separately, `sortBy=status` was a plain lexicographic sort (`idle` < `running` < `waiting_input`) with an id tiebreaker, so it never produced this list's ordering anyway.
+Streamer PR [#585](https://github.com/RonenMars/threadbase-streamer/pull/585) fixes the ordering half — `order=asc` now ranks `running` and `waiting_input` equally ahead of `idle`, most recently active first — which makes a future "live sessions only" fetch (the `status` filter, no paging) land in render order.
+It deliberately does not attempt cursor safety, and none of this changes the decision here: sessions stay eager.
+
 What does still apply to sessions is principle 1's *second* half.
 `useEagerSessions` carries the same per-page progress machinery (`serverProgressRef`, `flushAggregate`, and the `useThrottledCallback(setAggregateProgress, 250)` at `hooks/useSession.ts:140` that #563 added), writing Hub-root state to pace a drain that typically completes in one page.
 Delete that plumbing and keep the drain: it removes a Hub-root subscription with no ordering risk and no behavior change.
