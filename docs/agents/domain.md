@@ -19,16 +19,23 @@ The producer skill (`/grill-with-docs`) creates them lazily when terms or decisi
 /
 ├── CONTEXT.md          ← not created yet
 ├── docs/adr/
-│   ├── 0001-kickoff.md
-│   ├── 0001-hub-data-layer-lazy-pagination.md
-│   ├── 0001-followup-05-chat-flow-hidekeyboard.md
-│   └── 0001-streamer-project-summary-request.md
+│   ├── 0001-hub-data-layer-lazy-pagination.md          ← the ADR
+│   ├── 0001-kickoff.md                                 ← implementation brief for it
+│   ├── 0001-streamer-project-summary-request.md        ← cross-repo request to tb-streamer
+│   └── 0001-followup-05-chat-flow-hidekeyboard.md      ← task prompt, not a decision
 └── app/ components/ services/ hooks/ …
 ```
 
-**The ADR numbering is currently broken** — all four files are numbered `0001`, so "ADR-0001" does not identify a document.
-Cite ADRs here by filename (`docs/adr/0001-hub-data-layer-lazy-pagination.md`), not by number, until they are renumbered.
-Any new ADR should take the next free number (`0002`), not another `0001`.
+**`docs/adr/` currently holds exactly one ADR.**
+`0001-hub-data-layer-lazy-pagination.md` is the only file carrying ADR metadata (`Status: Proposed`, `Date: 2026-08-08`), so "ADR 0001" resolves unambiguously to it.
+The other three share the `0001-` prefix because they are satellites of that same workstream, not because the sequence is broken — two of them link to the ADR by that number in their opening lines.
+
+Numbering is sequential, one number per decision: scan `docs/adr/` for the highest number and increment, so the next real ADR is `0002`.
+A file only belongs here if the decision it records is hard to reverse, surprising without context, and the result of a genuine trade-off — a plan, a request, or a task prompt is none of those.
+
+`0001-followup-05-chat-flow-hidekeyboard.md` is the one misfiled file: a Maestro/iOS keyboard task prompt with no relation to the Hub data layer.
+`docs/followups/repo-health/EVIDENCE.md` already records that it should move out of this directory, and `docs/followups/mobile/05-chat-flow-hidekeyboard.md` points at it as the full brief.
+Don't treat it as a decision.
 
 ## Use the glossary's vocabulary
 
