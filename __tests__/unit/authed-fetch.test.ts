@@ -99,6 +99,43 @@ describe('authedFetch', () => {
     await expect(authedFetch(target(), '/api/info')).rejects.toBeInstanceOf(AuthError)
   })
 
+  // The remedy differs by credential and only this module knows which was sent.
+  // A refused device token means re-pair; a refused shared key means edit the
+  // key. Telling a revoked device to check its API key sends the user to a
+  // screen that cannot fix it, because a devicesDurable server keeps being sent
+  // the device token whatever is typed there.
+  it('attributes a 401 to the device token when that is what it sent', async () => {
+    mockFetch({ status: 401, ok: false })
+    const server = target({ deviceToken: 'dev_tok', serverInfo: info({ devicesDurable: true }) })
+    await expect(authedFetch(server, '/api/devices')).rejects.toMatchObject({
+      credential: 'device',
+    })
+  })
+
+  it('attributes a 401 to the shared key when the device token was not used', async () => {
+    mockFetch({ status: 401, ok: false })
+    // Same stored device token, but the server does not keep its registry
+    // durably, so selectCredential falls back to the shared key — and the error
+    // must follow the credential actually presented, not the one stored.
+    const server = target({ deviceToken: 'dev_tok', serverInfo: info({ devicesDurable: false }) })
+    await expect(authedFetch(server, '/api/devices')).rejects.toMatchObject({
+      credential: 'shared',
+    })
+  })
+
+  it('reports a refused device token as needing a re-pair, not an API key', async () => {
+    mockFetch({ status: 401, ok: false })
+    const server = target({ deviceToken: 'dev_tok', serverInfo: info({ devicesDurable: true }) })
+    const err = await authedFetch(server, '/api/devices').then(
+      () => {
+        throw new Error('expected authedFetch to reject')
+      },
+      (e: AuthError) => e,
+    )
+    expect(err.message).toMatch(/pair/i)
+    expect(err.message).not.toMatch(/API key/i)
+  })
+
   // There must be exactly ONE AuthError class object. A second one with an
   // identical body would keep every `err.name === 'AuthError'` assertion green
   // while `instanceof` silently returns false — and the two call sites that
