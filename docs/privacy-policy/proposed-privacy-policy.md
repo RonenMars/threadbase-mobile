@@ -1,12 +1,27 @@
 # Proposed Privacy Policy — Threadbase Mobile
 
-> **Status:** Proposed replacement text for <https://threadbase.sh/privacy-policy>.
-> The website source is not present in this workspace, so this file contains the
-> complete proposed policy for review. It must be published to the live URL
-> before the crash-reporting or feedback features ship to users.
+> **Status: SUPERSEDED — historical draft. Do not treat this as the policy.**
 >
-> **Effective date:** _(set on publish — proposed: 2026-07-12)_
-> **Contact:** ronenmars@gmail.com
+> The live policy is <https://threadbase.sh/privacy-policy>, whose source is
+> `locales/{en,he,ar,ru}.json` under `pages.privacy` in the **tb-landing** repo.
+> That is the only canonical copy. This file was written when the website source
+> was not available in the workspace, and the live page has since moved ahead of
+> it — a 2026-08-14 line-by-line comparison found the deployed page carries
+> disclosures this draft never had, including the Sentry EU processing location
+> (left here as an unresolved `(set this before publishing)` note), the Android
+> speech-recognition caveat, the MailerLite newsletter section, and the current
+> `support@threadbase.sh` contact address in place of the personal one below.
+>
+> Reconciling the live page *toward* this file would therefore delete accurate
+> disclosures. Edit the tb-landing locales instead, in all four languages.
+>
+> Kept because it is the drafting history, and because exactly one of its
+> sentences was better than the deployed text: the note that credentials in the
+> OS secure store can survive an uninstall. That has now been published (all four
+> locales, 2026-08-14) and is no longer missing.
+>
+> **Effective date:** _(historical draft — proposed: 2026-07-12)_
+> **Contact:** ronenmars@gmail.com _(superseded by support@threadbase.sh)_
 
 Threadbase is a thin client for the Claude Code sessions you run on your own
 computer, reached through a Threadbase streamer instance that you operate.
