@@ -316,6 +316,19 @@ When measuring or debugging on the simulator with an `EXPO_PUBLIC_*` trace flag 
 - **A shell-exported `EXPO_PUBLIC_*` flag does not inline into the bundle.** Expo reads these from `.env` / `.env.local` files, not arbitrary shell exports, so `EXPO_PUBLIC_OPEN_TRACE=1 npx expo start` leaves `ENABLED` false. Put it in `.env.local` (gitignored), restart with `--clear`, and verify by grepping the served `expo-router/entry.bundle`. App `console.log` lands in `.expo/dev/logs/start.log`.
 - **The dev client serves a disk-cached bundle.** After a JS change or Metro `--clear`, deep-link / `/reload` / plain `simctl launch` all no-op against the cache — you measure old code. Uninstall + reinstall to force a fresh fetch (this wipes AsyncStorage, so re-pair servers); Fast Refresh handles iteration once you are on the live bundle.
 
+## Server contract — degrade, don't break
+
+The streamer no longer keeps a hand-maintained compatibility list, and it does **not** treat a wire change as blocked by this app (see "Backward compatibility with tb-mobile" in the streamer's `CLAUDE.md`). A server can rename a field, drop an endpoint or emit a status this build has never heard of, and it can do so without asking. This app is the half that absorbs it.
+
+**The rule: a server that moved ahead costs a degraded screen, never a crash.**
+
+- **Treat every response as untrusted input, not as its TypeScript type.** `SessionStatus` in `types/api.ts` is a three-value union (`running` | `waiting_input` | `idle`) — that is what *this build* knows, not what the server may send. Narrow an incoming status through an explicit check and fall back to `idle`; never let an unknown value reach a `switch` that assumes exhaustiveness.
+- **A missing optional field renders without it.** No throw, no empty screen, no error toast — omit the affected piece of UI and show the rest.
+- **A feature that needs a newer server degrades rather than erroring.** Absent endpoint or capability → hide the entry point, or show one plain line saying the server doesn't support it yet. `GET /api/info` and `GET /api/config/feature-flags` are the capability probes; a server too old to answer reads as "off", which is correct — it is also too old to have the feature.
+- **Report, don't repair.** If a response shape looks wrong, surface it to the user and keep the rest of the screen alive. Don't add client-side shims that guess at what the server meant.
+
+None of this is a reason to pin a minimum server version or to ask the streamer to hold a change back.
+
 ---
 
 ## Agent skills
