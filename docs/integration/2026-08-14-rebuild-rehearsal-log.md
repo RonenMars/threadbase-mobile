@@ -1,6 +1,6 @@
 # Integration merge log — integration/2026-08-14-rebuild (2026-08-14)
 
-**Status:** complete
+**Status:** complete — plus one PR (#684) integrated after the run closed, and the branch has since been pushed; both are recorded in §16 and marked *(post-run)* wherever they appear.
 **Goal:** rebuild the 2026-08-12 rehearsal onto today's `main`, adding the PRs that were missing from it, so the whole non-dependabot open-PR set can be tested together. Done means: every non-dependabot open PR is on one branch, all five required checks green, nothing pushed.
 **Operator:** Claude Code session (flow A — local rehearsal)  **Repo:** threadbase-mobile  **Log started:** 2026-08-14 17:11 IDT
 
@@ -58,7 +58,7 @@ Known-flaky before the run: — none observed. `main` was green on all five, so 
 
 ## 3. Scope — what is in, what is out
 
-Mode: **all open PRs, minus a standing dependabot exclusion.** 13 non-dependabot PRs.
+Mode: **all open PRs, minus a standing dependabot exclusion.** 13 non-dependabot PRs. (#684 was opened after this run and was integrated post-run — §16.)
 
 `mergeable`/`mergeStateStatus` were queried per PR; all but #674 returned `UNKNOWN` (GitHub computes it lazily), so the column below reports what each query actually returned rather than pretending to a verdict. Every PR is non-draft.
 
@@ -168,6 +168,26 @@ Each PR: `git checkout -B rebase/pr-<n> refs/integration/pr/<n>` → `git rebase
 - **Why `--rebase-merges`:** a plain `git rebase` flattens the 11 merge commits, collapsing thirteen separately-attributable PRs into one undifferentiated line and destroying the bisect chain §6 exists to provide.
 - **Verified:** structure preserved (25 commits, 11 merges, unchanged); `git diff 5c8d01e7 0984f89a` is exactly #681 + #682 — 5 files, all under `docs/` — so nothing from the integration set shifted; `git merge-base --is-ancestor origin/main HEAD` true; all five required checks re-run green.
 - **Note:** `main` moved twice during the run itself (`23c60160` #681, `2580f910` #682), on top of the two moves during the preceding audit. The per-PR and checkpoint SHAs in §6 and §10 are **pre-rebase and deliberately not rewritten** — they record the run as it happened, and rewriting them would make the log fiction. Each has an equivalent commit on the rebased branch.
+
+### 18:21 — integrate PR #684 (post-run)
+
+- **Command:** `git merge --no-ff origin/fix/review-defects -m "integrate PR #684: fix(auth): send the scoped device token instead of the shared admin key"`
+- **Branch SHA after:** `0984f89a` → `601c116c`
+- **Result:** no conflicts. 25 commits / 11 merges → **27 / 12**.
+- **Side effect:** the branch came level with `main` @ `3035773e`. #684's own base already contained that commit (`docs(context)`, `[skip-ci]`), so merging #684 brought it along. Not a separate rebase.
+- **Why this is outside the run:** the merge loop closed at 17:29 and the rebase at 18:05. This is a fourteenth PR added afterwards, so §6, §7, §10 and §12 below describe **thirteen** and were not rewritten. The post-run entries are marked as such.
+
+### 18:24 — lint read as red, wrongly
+
+- **Command:** `npx eslint .`
+- **Result:** 398 problems, 384 errors — **none in the merged change**. See O4.
+- **Corrected by:** `npm run lint`, which is what CI gates on. Green, 5 warnings, 0 errors.
+
+### 18:27 — post-run checkpoint and push
+
+- **Result:** all five required checks green on `601c116c` — see §10.
+- **Command:** `git push origin integration/2026-08-14-rebuild`
+- **Note:** this is the first push recorded in this log. The branch had already been pushed before #684 was integrated, which is why the summary's original "local only, never pushed" line was stale independently of this addendum.
 
 ---
 
@@ -324,6 +344,17 @@ Adds 3 lines to `types/api.ts` that #671's head does not have — the source of 
 | Integration SHA after merge | `5c8d01e7` |
 | Verification | all five green |
 
+### #684 — fix(auth): send the scoped device token instead of the shared admin key *(post-run)*
+
+| Field | Value |
+|---|---|
+| Head merged | `b5151418` (`origin/fix/review-defects`) |
+| Rebased onto | not rebased — its base already contained `origin/main` `3035773e` |
+| Conflicts | none |
+| Diff scope | 10 files + `CONTEXT.md` and `docs/` carried in from `main`; the PR's own 10 match `gh pr diff 684 --name-only` |
+| Integration SHA after merge | `601c116c` |
+| Verification | all five green |
+
 ---
 
 ## 7. Conflict ledger
@@ -382,6 +413,14 @@ One conflict in thirteen merges. No whole-file (`--ours`/`--theirs`) resolutions
 - **Cost:** ~2 min.
 - **Recurs?** whenever a set has a conflict — i.e. most runs.
 
+### O4 — bare `eslint .` reports hundreds of errors the repo's lint script excludes *(post-run)*
+
+- **Symptom:** the first lint of the #684 merge reported **398 problems, 384 of them errors**, which reads as a catastrophic regression from a ten-file change.
+- **Cause:** `npx eslint .` walks the whole tree, including `design/`, `design/ui_kits/` and `scripts/` — none of which the repo lints. `package.json`'s `lint` script globs `"**/*.{ts,tsx}" "e2e/**/*.js" "__tests__/unit/scripts/**/*.js"`, and those errors (`'React' is not defined`, `'Buffer' is not defined`, `no-undef` in build scripts) live outside it.
+- **Fix:** `npm run lint`. Green: 5 warnings, 0 errors, all pre-existing.
+- **Cost:** ~2 min, and it nearly produced a reported failure that does not exist.
+- **Recurs?** yes, wherever a lint is run by hand rather than through the script. The failure is doubly misleading: not caused by the change, and not what CI gates on. **Run `npm run lint`, never bare `eslint .`.**
+
 ---
 
 ## 10. Verification checkpoints
@@ -404,6 +443,7 @@ All five required checks (`lint`, `typecheck`, `test:unit`, `test:integration`, 
 | after #674 | `1213b895` | 22 | green | green | green | 0 |
 | after #676 (end of merge loop) | `5c8d01e7` | 25 | green | green | green | 0 |
 | after rebase onto `2580f910` | `0984f89a` | 25 | green | green | green | 0 |
+| after #684 *(post-run)* | `601c116c` | 27 | green | green | green | 0 |
 
 No red checkpoint at any point in the run.
 
@@ -473,6 +513,7 @@ The automated audit reported **9 missing**: #589–593 (the deliberate dependabo
 - **`check:native-deps` and `test:scripts` were not run**, for the same reason. #667 and #676 do edit `package.json` scripts, so `test:scripts` was arguably in scope and was skipped.
 - **Timings are approximate.** Wall-clock came from the log's own timestamps, not from instrumented measurement.
 - **#651's "already landed" verdict rests on two pieces of evidence** — an empty rebase and two byte-identical files — not on locating the commit that landed it on `main`. `git cherry` actively disagrees. The conclusion is well-supported but the landing commit was never named.
+- **#684 was integrated after the run closed**, so it has no baseline-to-final checkpoint sequence of its own — only the single post-run checkpoint in §10. §7's conflict ledger, §12's coverage gate and §13's risk assessment were all computed for the thirteen-PR set and do not account for it.
 - **Per-PR diff-scope checks were done by comparing residuals**, not by a literal set-difference of `gh pr diff --name-only` against the branch for all 13. The four flagged PRs got the full treatment; the other nine were cleared by the audit's content-equivalence/patch-id match alone.
 
 ---
@@ -497,35 +538,19 @@ Three biggest time sinks: the twelve five-check checkpoints (unavoidable and the
 
 ## 16. Post-run integration — PR #684 (18:21–18:27)
 
-Added after the run above had concluded, so §3's checkpoint table, §5's conflict ledger and §14's caveats all describe the thirteen-PR run and were deliberately **not** rewritten. This section is the fourteenth entry.
+[#684](https://github.com/RonenMars/threadbase-mobile/pull/684) — `fix(auth): send the scoped device token instead of the shared admin key` — was merged into this branch after the run above had closed, taking it from 13 PRs / 25 commits to **14 / 27** (`0984f89a` → `601c116c`).
 
-| What | Value |
+It is recorded in this log's own sections rather than summarised here:
+
+| Where | What |
 |---|---|
-| PR | [#684](https://github.com/RonenMars/threadbase-mobile/pull/684) — `fix(auth): send the scoped device token instead of the shared admin key` |
-| Branch merged | `origin/fix/review-defects` @ `b5151418` |
-| Onto | `0984f89a` |
-| Result | `601c116c` |
-| Conflicts | none |
-| Command | `git merge --no-ff origin/fix/review-defects -m "integrate PR #684: …"` |
+| §5 | the merge, the lint misread, the checkpoint and the push, at 18:21 / 18:24 / 18:27 |
+| §6 | the per-PR record, marked *(post-run)* |
+| §9 | **O4** — bare `eslint .` reporting 398 problems the lint script excludes |
+| §10 | the checkpoint row: `601c116c`, 27 commits ahead, all five green |
+| §14 | what this post-run entry does *not* cover |
+| §15 | the timeline row |
 
-The merge also brought the branch level with `main` @ `3035773e` (one docs commit, `[skip-ci]`), because #684's own base already contained it. The branch went from 25 commits / 11 merge commits to **27 / 12**.
+**What was deliberately not rewritten.** §7's conflict ledger, §12's coverage gate and §13's risk assessment were computed for the thirteen-PR run and still describe it. Restating them for fourteen would make the log claim a run that did not happen. The same reasoning the 18:01 rebase entry gives for leaving pre-rebase SHAs in place applies here.
 
-### Checkpoint
-
-All five required checks re-run on `601c116c`:
-
-| Check | Result |
-|---|---|
-| `npm run lint` | green — 5 warnings, 0 errors, all pre-existing |
-| `npm run typecheck` | green |
-| `npm run test:unit` | green — 108 suites, 1023 tests |
-| `npm run test:integration` | green — 44 suites, 299 tests |
-| `npm run test:i18n` | green — 3 suites, 55 passed, 1 skipped |
-
-### One trap worth recording
-
-The first lint attempt used `npx eslint .` and reported **398 problems (384 errors)**. None were in the merged change: bare `eslint .` walks `design/`, `scripts/` and `design/ui_kits/`, which the repo's actual `lint` script excludes — it globs `"**/*.{ts,tsx}" "e2e/**/*.js" "__tests__/unit/scripts/**/*.js"`. Reading that failure as a regression would have been wrong in both directions: it is not caused by the merge, and it is not what CI gates on. **Run `npm run lint`, never bare `eslint .`.**
-
-### Status of the branch after this
-
-Still a test artifact with an expiry, not a landing vehicle. #684 reaches `main` through its own PR, exactly like the thirteen before it.
+**The branch is still not a landing vehicle.** #684 reaches `main` through its own PR, like the thirteen before it.
