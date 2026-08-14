@@ -12,6 +12,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, QrCode, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { authToken } from '@/types/api'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import { useServersStore } from '@/stores/servers'
@@ -113,7 +114,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
       ) ?? serverId
       const updated = state.servers[newId]
       if (updated) {
-        wsManager.connect(newId, updated.url, updated.apiKey)
+        wsManager.connect(newId, updated.url, authToken(updated))
       }
     } else {
       const result = await addServer(trimmedUrl, trimmedKey, label.trim() || undefined)

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import * as SecureStore from '@/services/secure-store'
 import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
-import { serverIdFromUrl } from '@/types/api'
+import { authToken, serverIdFromUrl } from '@/types/api'
 import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
@@ -177,6 +177,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       connectionError: null,
       color,
       deviceId: device?.deviceId,
+      deviceToken: device?.deviceToken,
       deviceCapabilities: device?.capabilities,
     }
 
@@ -286,7 +287,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
     try {
       const response = await fetch(`${server.url}/api/info`, {
-        headers: { Authorization: `Bearer ${server.apiKey}` },
+        // authToken falls back to the shared key until serverInfo has told us
+        // this server keeps its device registry durably — which is exactly the
+        // response this request fetches, so the first probe after pairing uses
+        // the shared key and every one after it uses the scoped token.
+        headers: { Authorization: `Bearer ${authToken(server)}` },
         signal: controller.signal,
       })
       clearTimeout(timeout)
@@ -344,6 +349,13 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
     }
     await SecureStore.setItemAsync(secureKeyForServer(newId), patch.apiKey)
+    // A hand-edited URL or key is a different pairing, so the device identity
+    // minted by the old exchange no longer applies. Dropping it matters now
+    // that the token is actually presented as a credential: `...old` below
+    // would otherwise carry it forward and we would authenticate as a device
+    // the freshly-entered key may know nothing about.
+    await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
+    if (newId !== serverId) await SecureStore.deleteItemAsync(secureKeyForDeviceToken(newId))
 
     set((state) => {
       const { [serverId]: old, ...rest } = state.servers
@@ -356,6 +368,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         isConnected: false,
         serverInfo: null,
         connectionError: null,
+        deviceId: undefined,
+        deviceToken: undefined,
+        deviceCapabilities: undefined,
       }
       const newServers = { ...rest, [newId]: updated }
 
@@ -394,6 +409,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
 
         for (const entry of list) {
           const apiKey = (await SecureStore.getItemAsync(secureKeyForServer(entry.id))) ?? ''
+          // The scoped device credential. It has been WRITTEN at pairing since
+          // C5 and never read back, which is why every request went out with
+          // the shared admin key instead. Undefined rather than '' so
+          // `authToken` falls through cleanly for servers paired before C5.
+          const deviceToken =
+            (await SecureStore.getItemAsync(secureKeyForDeviceToken(entry.id))) ?? undefined
           // Auto-assign a color for legacy entries that predate the field.
           const color = entry.color ?? pickNextServerColor(
             activeServerIds.map((sid) => servers[sid]?.color),
@@ -409,6 +430,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             color,
             symbol: entry.symbol,
             deviceId: entry.deviceId,
+            deviceToken,
             deviceCapabilities: entry.deviceCapabilities,
           }
           activeServerIds.push(entry.id)

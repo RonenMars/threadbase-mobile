@@ -30,6 +30,7 @@ import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
 import type { Session } from '@/types/api'
+import { authToken } from '@/types/api'
 import { registerPushTokenForAll } from '@/services/push'
 import {
   adoptRunningActivities,
@@ -148,7 +149,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     for (const serverId of activeServerIds) {
       const server = currentServers[serverId]
       if (server) {
-        wsManager.connect(serverId, server.url, server.apiKey)
+        wsManager.connect(serverId, server.url, authToken(server))
       }
     }
 

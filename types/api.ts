@@ -308,6 +308,16 @@ export interface ServerInfo {
   /** Additive: true when the server serves /api/projects/summary. Absent on older
    *  servers, which the grouped views cannot render — see useProjectSummaries. */
   projectSummary?: boolean
+  /**
+   * Additive: true when the server keeps its paired-device registry in
+   * runtime.db, so it survives `tb-streamer cache clear`.
+   *
+   * Gates whether we may present the scoped device token instead of the shared
+   * API key — see `authToken` below. Absent means an older server that stores
+   * devices in the deletable cache, where a documented troubleshooting step
+   * would take every device token with it.
+   */
+  devicesDurable?: boolean
 }
 
 // ── Per-server Claude CLI flags ──────────────────────────────────────────────
@@ -418,8 +428,41 @@ export interface ServerConfig {
   symbol?: string
   /** Paired-device id from `/api/pair/exchange` (C5). Not a secret. */
   deviceId?: string
+  /**
+   * Scoped per-device credential from pair exchange (C5). A SECRET: it lives in
+   * SecureStore and must never reach `PersistedServer`, a log, or the UI.
+   * Absent when the streamer predates device identity.
+   */
+  deviceToken?: string
   /** Capability list from pair exchange; absent means legacy owner key (full access). */
   deviceCapabilities?: DeviceCapability[]
+}
+
+/**
+ * The credential to present to a server.
+ *
+ * `apiKey` is the OWNER's shared key and carries `admin` on the streamer — it
+ * can rotate itself and revoke other devices. `deviceToken` is the scoped,
+ * individually revocable credential the pair exchange has been minting since
+ * C5. The app stored it and then sent the shared key on every request anyway,
+ * so a lost phone leaked admin rather than a revocable scope.
+ *
+ * The `devicesDurable` gate is what makes preferring it safe: on a streamer
+ * that keeps its device registry inside the deletable conversation cache,
+ * `tb-streamer cache clear` would invalidate the token and 401 the device.
+ * Falling back to `apiKey` there is exactly today's behaviour, so an older
+ * server is unaffected.
+ *
+ * Deliberately NOT a 401-retry fallback: silently re-presenting the shared key
+ * after a device token is refused would let a revoked device keep working,
+ * which is the one thing revocation has to prevent.
+ */
+export function authToken(
+  server: Pick<ServerConfig, 'apiKey' | 'deviceToken' | 'serverInfo'>,
+): string {
+  return server.serverInfo?.devicesDurable && server.deviceToken
+    ? server.deviceToken
+    : server.apiKey
 }
 
 export type CacheAlertSeverity = 'high' | 'low'
