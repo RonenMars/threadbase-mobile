@@ -300,12 +300,18 @@ export default function ProjectsHub() {
       .map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s }))
       .sort((a, b) => b.ms - a.ms)
 
-    const convs = conversations
+    // While a search is active, take conversations from the server rather than
+    // from the paged set: /api/search matches message bodies, so it finds
+    // conversations that were never paged in. Filtering the loaded pages alone
+    // makes anything past the current page unfindable.
+    const convSource = debouncedConvSearch ? (convSearchData?.conversations ?? []) : conversations
+
+    const convs = convSource
       .map((c) => ({ kind: 'conversation' as const, ms: Date.parse(c.lastActivity) || 0, item: c }))
       .sort((a, b) => b.ms - a.ms)
 
     return [...liveSessions, ...idleSessions, ...convs]
-  }, [visibleSessions, conversations])
+  }, [visibleSessions, conversations, debouncedConvSearch, convSearchData])
 
   // FAB
   // When the user is drilled into a directory in TreeView, the drill store
