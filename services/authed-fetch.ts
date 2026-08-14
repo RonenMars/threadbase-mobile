@@ -12,6 +12,12 @@ export class AuthError extends Error {
  * Deliberately looser than `ServerConfig` so callers that hold only a URL and a
  * key — a pre-pairing credential check, the dev-server client-log target — go
  * through the same path as a stored server rather than a bespoke variant.
+ *
+ * Structural, so it has no identity: two `{ url, apiKey }` literals for the same
+ * server are different objects. Per-connection crypto state must therefore be
+ * keyed off a stable server id, never off the target — keying a sequence counter
+ * off this would silently produce two counters where one is required, and nonce
+ * reuse is the one invariant that has to be assertable rather than improbable.
  */
 export interface AuthedTarget {
   url: string

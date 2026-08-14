@@ -1,4 +1,11 @@
-import { createApiForServer, NetworkError, AuthError, NotFoundError } from '@/services/api-client'
+import {
+  createApiForServer,
+  resolveCacheAlert,
+  stopSession,
+  NetworkError,
+  AuthError,
+  NotFoundError,
+} from '@/services/api-client'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 jest.mock('@/stores/servers', () => ({
@@ -92,9 +99,14 @@ describe('api.get', () => {
   // try/catch that retries network failures. Without the rethrow guard the
   // request is sent twice with the same refused credential and the caller sees
   // a NetworkError instead of an AuthError.
+  //
+  // Asserted as `toBeInstanceOf(AuthError)` rather than `not.toBeInstanceOf(
+  // NetworkError)`: the negative form also passes when the call rejects with
+  // something else entirely, so it cannot tell "threw the right error" from
+  // "broke in a new way".
   it('does not retry a 401, and does not report it as a network failure', async () => {
     mockFetch.mockResolvedValue(mockErrorResponse(401))
-    await expect(api.get('/api/protected')).rejects.not.toBeInstanceOf(NetworkError)
+    await expect(api.get('/api/protected')).rejects.toBeInstanceOf(AuthError)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
@@ -360,5 +372,31 @@ describe('api.getWithMeta – conditional fetch', () => {
     const res = await api.getWithMeta('/api/conversations/c1')
     expect(res.status).toBe(200)
     expect(res.etag).toBeNull()
+  })
+})
+
+// Each entry point below has its OWN catch body rather than sharing
+// request<T>'s, so each needs its own rethrow of AuthError. Without a test per
+// site, deleting any one `if (err instanceof AuthError) throw err` leaves the
+// suite green — the same shape of gap as a duplicate error class.
+describe('a 401 is an AuthError at every entry point, never a retried network failure', () => {
+  it('getWithMeta', async () => {
+    mockFetch.mockResolvedValue(mockErrorResponse(401))
+    await expect(api.getWithMeta('/api/conversations/c1')).rejects.toBeInstanceOf(AuthError)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('stopSession', async () => {
+    mockFetch.mockResolvedValue(mockErrorResponse(401))
+    await expect(stopSession('srv_test', 'sess_1')).rejects.toBeInstanceOf(AuthError)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolveCacheAlert', async () => {
+    mockFetch.mockResolvedValue(mockErrorResponse(401))
+    await expect(
+      resolveCacheAlert('srv_test', { fingerprint: 'fp', action: 'ignore' }),
+    ).rejects.toBeInstanceOf(AuthError)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
