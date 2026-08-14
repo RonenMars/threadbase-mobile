@@ -37,8 +37,15 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 # Resumability follows the server's `resumable` field, not the provider.
-- assertVisible: "Resume Session"
-- assertNotVisible: "Can't resume"
+# The resume button renders a Phosphor <Play weight="fill"/> beside its label,
+# and iOS flattens the button's children into one accessibility string, so the
+# element reads "▶ Resume Session". Maestro matches text against the whole
+# element as a regex, so the bare label never matches — hence the leading `.*`.
+#
+# The same applies to the negative assertion: without `.*` it would match
+# nothing and pass unconditionally, which is worse than failing.
+- assertVisible: ".*Resume Session"
+- assertNotVisible: ".*Can't resume"
 
 # Open the info modal to verify the Provider field.
 - tapOn: "Conversation info"
