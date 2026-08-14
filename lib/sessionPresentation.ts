@@ -36,6 +36,7 @@ export type SessionKind =
   | 'resumed'
   | 'on_hold'
   | 'completed'
+  | 'starting'
   | 'unavailable'
   | 'stale'
   | 'idle'
@@ -67,6 +68,7 @@ export type SessionStatusLabelKey =
   | 'status.unavailablePath'
   | 'status.unavailableWorktree'
   | 'status.stale'
+  | 'status.starting'
 
 export interface SessionPresentation {
   kind: SessionKind
@@ -186,6 +188,21 @@ function classifySession(
   const confidence = confidenceFor(session)
   const activityAt = activityAtFor(session)
   const resumed = Boolean(session.resumedFromConversationId)
+
+  // Pre-attach: the streamer has the session but no PTY yet, so its `status`
+  // is still `idle`. Without this branch it reads as a plain idle row.
+  if (session.lifecycle === 'starting') {
+    return {
+      kind: 'starting',
+      labelKey: 'status.starting',
+      live: false,
+      externalLive: false,
+      colorToken: 'running',
+      confidence,
+      activityAt,
+      capabilities: IDLE_MANAGED_CAPS,
+    }
+  }
 
   if (status === 'on_hold') {
     return {

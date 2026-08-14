@@ -93,6 +93,7 @@
     "running": "Работает",
     "waiting": "Ожидание",
     "idle": "Простой",
+    "starting": "Запускается",
     "externalLive": "Внешняя",
     "historical": "История",
     "interrupted": "Прервана",

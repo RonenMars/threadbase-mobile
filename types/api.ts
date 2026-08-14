@@ -11,6 +11,7 @@ export type SessionStatus = 'running' | 'waiting_input' | 'idle'
  */
 export type SessionLifecycle =
   | 'attached'
+  | 'starting'
   | 'detached'
   | 'orphaned'
   | 'resumable'

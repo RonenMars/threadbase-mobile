@@ -151,6 +151,27 @@ describe('deriveSessionPresentation', () => {
       capabilities: { canResume: true, isObserveOnly: true },
     })
   })
+
+  it('reads lifecycle starting as its own badge, not the idle fallback', () => {
+    expect(
+      deriveSessionPresentation(
+        base({ status: 'idle', ptyAttached: false, lifecycle: 'starting' }),
+      ),
+    ).toMatchObject({
+      kind: 'starting',
+      labelKey: 'status.starting',
+      live: false,
+    })
+  })
+
+  it('degrades an unknown lifecycle instead of throwing', () => {
+    expect(
+      deriveSessionPresentation(
+        // @ts-expect-error — a newer streamer can emit a lifecycle this build has never heard of
+        base({ status: 'idle', ptyAttached: false, lifecycle: 'quarantined' }),
+      ),
+    ).toMatchObject({ kind: 'idle', labelKey: 'status.idle' })
+  })
 })
 
 describe('sessionPhase', () => {

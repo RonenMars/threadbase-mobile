@@ -103,6 +103,7 @@
     "running": "قيد التشغيل",
     "waiting": "في الانتظار",
     "idle": "خامل",
+    "starting": "قيد البدء",
     "externalLive": "خارجي",
     "historical": "سجل",
     "interrupted": "متوقفة",
