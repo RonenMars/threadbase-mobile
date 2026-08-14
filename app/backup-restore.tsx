@@ -70,6 +70,12 @@ export default function BackupRestoreScreen() {
   // help — a `devicesDurable` server keeps being sent the device token whatever
   // is typed there. Returns null for everything else so `err.message` stays the
   // last resort it always was.
+  //
+  // `unknown` is deliberate and is the accurate type: tsconfig sets `strict`,
+  // which turns on useUnknownInCatchVariables, so a catch variable IS unknown.
+  // This mirrors the language's own boundary rather than papering over a type
+  // error — typing it `Error` would force a cast at all three call sites and
+  // would lie about what a catch can hold.
   const authRemedy = useCallback(
     (err: unknown): string | null => {
       if (!(err instanceof AuthError)) return null
