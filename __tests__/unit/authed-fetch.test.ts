@@ -7,6 +7,7 @@
 // object. These tests pin the three things that are now decided exactly once.
 
 import { authedFetch, AuthError, serverUrl } from '@/services/authed-fetch'
+import { AuthError as ApiClientAuthError } from '@/services/api-client'
 import type { ServerConfig, ServerInfo } from '@/types/api'
 
 const info = (over: Partial<ServerInfo> = {}): ServerInfo => ({
@@ -96,6 +97,27 @@ describe('authedFetch', () => {
   it('translates 401 into AuthError', async () => {
     mockFetch({ status: 401, ok: false })
     await expect(authedFetch(target(), '/api/info')).rejects.toBeInstanceOf(AuthError)
+  })
+
+  // There must be exactly ONE AuthError class object. A second one with an
+  // identical body would keep every `err.name === 'AuthError'` assertion green
+  // while `instanceof` silently returns false — and the two call sites that
+  // branch on it, AddServerScreen and useTBPair, are both on the pairing path,
+  // where losing the "your credential was rejected" message costs the most.
+  it('rejects with the same AuthError class api-client exports', async () => {
+    mockFetch({ status: 401, ok: false })
+    expect(ApiClientAuthError).toBe(AuthError)
+    await expect(authedFetch(target(), '/api/info')).rejects.toBeInstanceOf(ApiClientAuthError)
+  })
+
+  // Phase 0 exists so one module decides which credential is presented. A
+  // caller passing its own Authorization must not be able to take that back.
+  it('ignores a caller-supplied Authorization header', async () => {
+    const fn = mockFetch()
+    await authedFetch(target(), '/api/info', {
+      headers: { Authorization: 'Bearer smuggled' },
+    })
+    expect(headersOf(fn).Authorization).toBe('Bearer tb_shared')
   })
 
   // Every other status is the caller's business: a 304 is a cache hit, a 404

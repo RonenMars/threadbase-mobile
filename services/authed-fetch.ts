@@ -75,8 +75,11 @@ export async function authedFetch(
   const response = await fetch(serverUrl(target, path), {
     ...init,
     headers: {
-      Authorization: `Bearer ${authToken(target)}`,
+      // Caller headers first: an `Authorization` among them loses to the one
+      // chosen here. A module that owns credential selection cannot let a
+      // caller quietly opt out of it — the request would still succeed.
       ...init.headers,
+      Authorization: `Bearer ${authToken(target)}`,
     },
   })
   if (response.status === 401) throw new AuthError()
