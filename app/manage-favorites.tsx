@@ -4,12 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { DotsSixVertical, Folder, Lightning, Trash } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
-import type { MultiConversation } from '@/types/api'
+import type { MultiConversationPage } from '@/hooks/useConversations'
+import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 
 export default function ManageFavoritesScreen() {
   const theme = useTheme()
@@ -20,15 +21,28 @@ export default function ManageFavoritesScreen() {
   const { favorites, unpinItem } = useQuickAccessStore()
   const queryClient = useQueryClient()
 
-  // Peek at the React Query cache populated by the Hub's useEagerConversations.
-  // No network call: just read whatever is already there. If the Hub hasn't
-  // been visited this session, the cache will be empty and we fall back to
-  // the static "long-press a chip" copy — which is the right thing to show.
+  // Peek at whatever the Hub has already cached. No network call: just read
+  // what is there. If the Hub hasn't been visited this session the caches are
+  // empty and we fall back to the static "long-press a chip" copy — which is
+  // the right thing to show.
+  //
+  // Retiring the eager drain removed the single ['conversations-eager'] cache
+  // this used to read, so both of the Hub's sources are checked: classic fills
+  // the infinite ['conversations'] query, the grouped views fill
+  // ['project-summaries']. Reading only one would answer "no" for a user who
+  // has only ever opened the other layout.
   const hasAnyConversations = useMemo(() => {
-    const entries = queryClient.getQueriesData<MultiConversation[]>({
-      queryKey: ['conversations-eager'],
+    // ['conversations', 'search', …] shares this prefix but has no `pages`, so
+    // it falls through rather than being mistaken for a loaded list.
+    const convPages = queryClient.getQueriesData<InfiniteData<MultiConversationPage>>({
+      queryKey: ['conversations'],
     })
-    return entries.some(([, data]) => Array.isArray(data) && data.length > 0)
+    if (convPages.some(([, data]) => data?.pages?.some((p) => p.conversations.length > 0))) return true
+
+    const summaries = queryClient.getQueriesData<{ summaries: MultiProjectSummary[] }>({
+      queryKey: ['project-summaries'],
+    })
+    return summaries.some(([, data]) => (data?.summaries?.length ?? 0) > 0)
   }, [queryClient])
 
   return (

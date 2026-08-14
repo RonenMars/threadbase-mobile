@@ -65,4 +65,8 @@ The mock-server records every request in an in-memory array. After the maestro f
 - ≥ 2 distinct offsets seen (else the client never made a second-page request)
 - At least one offset > 0 (else all calls were for page 1)
 
-This catches regressions where `fetchAllConversationPagesForServer` silently exits the loop after the first page (e.g. if `hasMore` were always false, or if `total` were misread).
+This catches regressions where the client silently stops after the first page (e.g. if `hasMore` were always false, or if `total` were misread).
+
+It used to guard `fetchAllConversationPagesForServer`, the eager drain that walked every page up front. ADR 0001 step 2 deleted that function: conversations are now fetched one page at a time by `useConversations`' infinite query as the list is scrolled. The same offsets therefore only appear if `onEndReached` reaches `fetchNextPage`, which is what `parallel-fetch-progress.yaml` and `non-merged-conv-loading.yaml` now scroll to prove.
+
+Both flows need `MOCK_TOTAL_CONVERSATIONS` above the 50-row page size, or there is no second page and nothing can fail.

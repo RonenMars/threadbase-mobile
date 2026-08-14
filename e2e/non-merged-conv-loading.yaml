@@ -1,15 +1,25 @@
-# Non-merged conversation loading overlay — e2e validation.
+# Non-merged History tab lazy pagination — e2e validation.
 #
-# Verifies that in the classic (non-merged) layout, tapping the History tab
-# shows the SessionsLoadingOverlay (conv-only mode) while conversations
-# are still being fetched from the server.
+# Verifies that in the classic (non-merged) layout, the History tab loads
+# conversations one page at a time as the list is scrolled.
+#
+# This flow used to assert that a conversation-only loading overlay appeared
+# while conversations were fetched. That overlay can no longer appear: it is
+# gated on `!hasCachedData`, and once sessions have loaded there IS cached data,
+# so the blocking modal is deliberately suppressed. ADR 0001 step 2 also removed
+# the `convDone` / `convLoaderMode` / `showConvProgress` state the old assertion
+# depended on. What replaces it is the property that actually matters now —
+# scrolling fetches the next page.
 #
 # Flow:
 #   1. Fresh launch with clearState → onboarding → hub
 #   2. Open Settings → disable "Merge sessions & history as Chats"
 #   3. Back to hub → tap History tab
-#   4. Assert loading overlay appears (conv-only, sessions row hidden)
-#   5. Assert overlay dismisses and conversations appear
+#   4. Assert the first page renders
+#   5. Scroll, and assert a second-page row appears
+#
+# MOCK_TOTAL_CONVERSATIONS must exceed the query's page size (50) or there is no
+# second page and step 5 cannot fail.
 #
 # Requires: pagination mock running on http://localhost:7073
 # Run: npm run test:e2e:parallel-fetch:non-merged
@@ -154,10 +164,9 @@ env:
 
 - takeScreenshot: e2e/_artifacts/non-merged-05-hub-non-merged
 
-# ── Step 4: Tap History tab, then pull-to-refresh to re-trigger conv fetch ────
-# convDone is already true after initial load. Pull-to-refresh calls
-# handleConvRefresh which resets convLoaderMode to 'full' and bumps refreshEpoch,
-# making showConvProgress true again → overlay appears.
+# ── Step 4: Tap History tab — the first page renders ─────────────────────────
+# The History tab enables the infinite conversations query; page 1 is
+# conv-0000 … conv-0049.
 - extendedWaitUntil:
     visible:
       id: "hub-history-tab"
@@ -166,34 +175,26 @@ env:
 - tapOn:
     id: "hub-history-tab"
 
-- scroll:
-    direction: DOWN
-    speed: 40
-    duration: 500
-
-- scroll:
-    direction: UP
-    speed: 40
-    duration: 500
-
-- extendedWaitUntil:
-    visible:
-      id: "sessions-loading-overlay"
-    timeout: 8000
-
-- takeScreenshot: e2e/_artifacts/non-merged-06-conv-loading-overlay
-
-# ── Step 5: Overlay dismisses and conversations appear ────────────────────────
-- extendedWaitUntil:
-    notVisible:
-      id: "sessions-loading-overlay"
-    timeout: 120000
-
-- takeScreenshot: e2e/_artifacts/non-merged-07-both-done
-
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-0000"
-    timeout: 30000
+    timeout: 60000
 
-- takeScreenshot: e2e/_artifacts/non-merged-08-conversations-loaded
+- takeScreenshot: e2e/_artifacts/non-merged-06-first-page
+
+# ── Step 5: Scrolling fetches the next page ──────────────────────────────────
+# conv-0050 is the first row of page 2 and cannot render unless onEndReached
+# fired and fetchNextPage resolved.
+- repeat:
+    times: 8
+    commands:
+      - scroll:
+          direction: DOWN
+          speed: 60
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-0050"
+    timeout: 60000
+
+- takeScreenshot: e2e/_artifacts/non-merged-07-second-page

@@ -18,33 +18,29 @@ function DotsIndicator({ color }: { color: string }) {
 
 interface Props {
   visible: boolean
-  // Sessions row — omit to hide it (conv-only mode)
-  sessionsDone?: boolean
+  // One progress row, captioned by `labelKey`. It used to be two — a sessions
+  // row and a conversations row — but conversations load lazily now and a lazy
+  // list has no total to report, so the Hub shows sessions and ConversationList
+  // shows its own drain. Omit loaded/total to hide the row entirely.
+  done?: boolean
   loaded?: number
   total?: number
   inFlightCount?: number
-  // Conversations row
-  convLoaded: number
-  convTotal: number
-  convDone: boolean
-  convCounting?: boolean
+  /** Caption key in the `sessions` namespace. */
+  labelKey?: 'loading.sessionsLabel' | 'loading.conversationsLabel'
 }
 
 const SPIN_DURATION_MS = 900
 
 export function LoadingOverlay({
   visible,
-  sessionsDone,
+  done,
   loaded,
   total,
   inFlightCount,
-  convLoaded,
-  convTotal,
-  convDone,
-  convCounting,
+  labelKey = 'loading.sessionsLabel',
 }: Props) {
-  // Show sessions row whenever sessions props are provided (always visible).
-  const showSessions = loaded !== undefined && total !== undefined
+  const showProgress = loaded !== undefined && total !== undefined
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation('sessions')
@@ -69,8 +65,6 @@ export function LoadingOverlay({
 
   const sessRatio = (total ?? 0) > 0 ? Math.min(1, (loaded ?? 0) / (total ?? 1)) : 0
   const sessShowRatio = (total ?? 0) > 0
-  const convRatio = convTotal > 0 ? Math.min(1, convLoaded / convTotal) : 0
-  const convShowRatio = convTotal > 0
 
   return (
     <View
@@ -91,37 +85,21 @@ export function LoadingOverlay({
             : t('loading.fetchingOne')}
         </Text>
 
-        {/* Sessions row — hidden in conv-only mode */}
-        {showSessions ? (
+        {showProgress ? (
           <View style={styles.row}>
             <View style={styles.rowLabels}>
-              <Text style={styles.rowTitle}>{t('loading.sessionsLabel')}</Text>
-              {sessionsDone
+              <Text style={styles.rowTitle}>{t(labelKey)}</Text>
+              {done
                 ? <Text style={styles.rowCount}>{t('loading.done')}</Text>
                 : sessShowRatio
                   ? <Text style={styles.rowCount}>{t('loading.progress', { loaded, total })}</Text>
                   : <DotsIndicator color={theme.text.accent} />}
             </View>
             <View style={styles.barTrack}>
-              <View style={[styles.barFill, { width: sessionsDone ? '100%' : `${sessRatio * 100}%` }]} />
+              <View style={[styles.barFill, { width: done ? '100%' : `${sessRatio * 100}%` }]} />
             </View>
           </View>
         ) : null}
-
-        {/* Conversations row */}
-        <View style={styles.row}>
-          <View style={styles.rowLabels}>
-            <Text style={styles.rowTitle}>{t('loading.conversationsLabel')}</Text>
-            {convDone
-              ? <Text style={styles.rowCount}>{t('loading.done')}</Text>
-              : convCounting || !convShowRatio
-                ? <DotsIndicator color={theme.text.accent} />
-                : <Text style={styles.rowCount}>{t('loading.progress', { loaded: convLoaded, total: convTotal })}</Text>}
-          </View>
-          <View style={styles.barTrack}>
-            <View style={[styles.barFill, { width: convDone ? '100%' : `${convRatio * 100}%` }]} />
-          </View>
-        </View>
       </View>
     </View>
   )

@@ -6,7 +6,6 @@ import {
   useConversation,
   useConversations,
   useConversationSearch,
-  useEagerConversations,
 } from '@/hooks/useConversations'
 import { __resetTriggerGuardForTests } from '@/hooks/conversationCursor'
 import { useServersStore } from '@/stores/servers'
@@ -23,21 +22,15 @@ function wrapperWithClient() {
   return { qc, wrapper }
 }
 
-// Captures the scan_progress handler registered by useEagerConversations so
-// tests can simulate a broadcast arriving mid-count.
-let scanProgressHandler: ((msg: { type: string; serverId: string; scanned: number; total: number }) => void) | null = null
 // Captures the trigger effect's onAnyStatusChange listener so tests can drive
 // WS connected transitions directly.
 let statusListener: ((sid: string, s: string) => void) | null = null
 
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
-    onAll: (type: string, handler: (msg: any) => void) => {
-      if (type === 'scan_progress') scanProgressHandler = handler
-      return () => {
-        if (type === 'scan_progress') scanProgressHandler = null
-      }
-    },
+    // scan_progress was only read by the retired eager drain's tests; the
+    // subscription still has to succeed for the hooks that register it.
+    onAll: () => () => {},
     onAnyStatusChange: (l: (sid: string, s: string) => void) => {
       statusListener = l
       return () => { statusListener = null }
@@ -570,139 +563,6 @@ describe('useConversationSearch — partial failure (Bug 32)', () => {
 
     expect(result.current.data!.conversations.map((c) => c.id)).toEqual(['a1'])
     expect(result.current.isError).toBe(false)
-  })
-})
-
-describe('useEagerConversations — partial failure (Bug 32)', () => {
-  it('continues to next server when one server fails', async () => {
-    setActiveServers(['srv-A', 'srv-B'])
-
-    // Server A fails on count.
-    handlers['srv-A'] = (path: string) => {
-      if (path.includes('/api/conversations/count')) {
-        return Promise.reject(new Error('A is down'))
-      }
-      return Promise.resolve([]) as Promise<unknown>
-    }
-    // Server B succeeds: count=1, one page with one conversation.
-    handlers['srv-B'] = (path: string) => {
-      if (path.includes('/api/conversations/count')) {
-        return Promise.resolve({ total: 1 }) as Promise<unknown>
-      }
-      return Promise.resolve([rawSession('b1')]) as Promise<unknown>
-    }
-
-    const { result } = await renderHook(() => useEagerConversations(), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
-
-    expect(result.current.conversations.map((c) => c.id)).toEqual(['b1'])
-
-    const statuses = useServerFetchStatusStore.getState().statuses
-    expect(statuses['srv-A']?.status).toBe('error')
-    expect(statuses['srv-B']?.status).toBe('ok')
-  })
-})
-
-describe('useEagerConversations — cold-start count (fix: no refresh=1)', () => {
-  it('never appends refresh=1 to the count URL', async () => {
-    setActiveServers(['srv-X'])
-
-    const countUrls: string[] = []
-    handlers['srv-X'] = (path: string) => {
-      if (path.includes('/api/conversations/count')) {
-        countUrls.push(path)
-        return Promise.resolve({ total: 0 }) as Promise<unknown>
-      }
-      return Promise.resolve([]) as Promise<unknown>
-    }
-
-    const { result } = await renderHook(() => useEagerConversations(undefined, 1), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
-
-    expect(countUrls.length).toBeGreaterThan(0)
-    for (const url of countUrls) {
-      expect(url).not.toContain('refresh=1')
-    }
-  })
-
-  it('records an error when the count request times out', async () => {
-    setActiveServers(['srv-slow'])
-
-    handlers['srv-slow'] = (path: string) => {
-      if (path.includes('/api/conversations/count')) {
-        // Simulate the AbortError message produced by api-client timeout
-        return Promise.reject(new Error('Failed to reach http://stub/api/conversations/count: AbortError: The operation was aborted'))
-      }
-      return Promise.resolve([]) as Promise<unknown>
-    }
-
-    const { result } = await renderHook(() => useEagerConversations(), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
-
-    const statuses = useServerFetchStatusStore.getState().statuses
-    expect(statuses['srv-slow']?.status).toBe('error')
-  })
-
-  it('records warming_up only for the explicit server status', async () => {
-    setActiveServers(['srv-warm'])
-
-    handlers['srv-warm'] = (path: string) => {
-      if (path.includes('/api/conversations/count')) {
-        return Promise.reject({
-          code: 'SERVER_WARMING_UP',
-          warmupState: 'conversation_refresh',
-        })
-      }
-      return Promise.resolve([]) as Promise<unknown>
-    }
-
-    const { result } = await renderHook(() => useEagerConversations(), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
-
-    expect(useServerFetchStatusStore.getState().statuses['srv-warm']).toMatchObject({
-      status: 'warming_up',
-      warmupState: 'conversation_refresh',
-    })
-  })
-})
-
-describe('useEagerConversations — warm-up scan_progress surfaces a live count', () => {
-  it('reflects scan_progress broadcasts while /count is still pending', async () => {
-    setActiveServers(['srv-warm'])
-
-    let resolveCount: ((v: unknown) => void) | undefined
-    handlers['srv-warm'] = (path: string) => {
-      if (path.includes('/api/conversations/count')) {
-        return new Promise((resolve) => {
-          resolveCount = resolve
-        })
-      }
-      return Promise.resolve([]) as Promise<unknown>
-    }
-
-    const { result } = await renderHook(() => useEagerConversations(), {
-      wrapper: createWrapper(),
-    })
-
-    await waitFor(() => expect(scanProgressHandler).not.toBeNull())
-    expect(result.current.isCounting).toBe(true)
-
-    scanProgressHandler?.({ type: 'scan_progress', serverId: 'srv-warm', scanned: 42, total: 120 })
-
-    await waitFor(() => expect(result.current.total).toBe(120))
-    expect(result.current.loaded).toBe(42)
-    expect(result.current.isCounting).toBe(false)
-
-    resolveCount?.({ total: 5 })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
   })
 })
 

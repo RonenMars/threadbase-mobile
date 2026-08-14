@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
-import { useEagerConversations, useConversations, useConversationSearch } from '@/hooks/useConversations'
+import { useConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useProjectSummaries } from '@/hooks/useProjectSummaries'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
@@ -229,12 +229,10 @@ export default function ProjectsHub() {
 
   // Conversations data
   const [refreshEpoch, setRefreshEpoch] = useState(0)
-  const [convLoaderMode, setConvLoaderMode] = useState<'full' | 'minimal'>('full')
 
   // Unified refresh — always reloads both sessions and conversations.
   const handleRefresh = useCallback(async () => {
     setManualRefreshing(true)
-    setConvLoaderMode('full')
     setRefreshEpoch((e) => e + 1)
     try {
       await refetchSessions()
@@ -245,8 +243,7 @@ export default function ProjectsHub() {
 
   // ADR 0001 step 2: the grouped views (tree, hub) render their structure from
   // /api/projects/summary and fetch a project's conversations only when it is
-  // opened, so the eager full-drain is not mounted for them at all. Classic
-  // still uses it until its own migration lands.
+  // opened.
   const isGroupedLayout = sessionsLayout === 'tree' || sessionsLayout === 'hub'
 
   const {
@@ -256,27 +253,21 @@ export default function ProjectsHub() {
     isFetching: summariesFetching,
   } = useProjectSummaries(refreshEpoch, { enabled: isGroupedLayout })
 
-  const { conversations, loaded: convLoaded, total: convTotal, isDone: convDone, isCounting: convCounting } =
-    useEagerConversations(
-      providerFilter ? { provider: providerFilter } : undefined,
-      refreshEpoch,
-      { enabled: !isGroupedLayout },
-    )
-
-  const showConvProgress = !convDone && convLoaderMode === 'full'
-
-  // ADR 0001 prototype (step 1): feed the Classic History list from the infinite
-  // `useConversations` (lazy pagination) instead of the eager full-drain. Gated
-  // to only fetch when that tab is visible; the eager path still backs the
-  // tree/hub/classic-sessions surfaces, so the two coexist during migration.
+  // ADR 0001 step 2 complete: every classic surface that shows conversations now
+  // reads the infinite `useConversations`, so the eager full-drain is gone. Both
+  // classic conversation surfaces share this one query — the merged list and the
+  // History tab — so switching between them reuses pages already fetched instead
+  // of restarting the walk.
   // See docs/adr/0001-hub-data-layer-lazy-pagination.md.
-  const isClassicHistory =
-    sessionsLayout !== 'tree' && sessionsLayout !== 'hub' && !mergeChats && classicTab === 'history'
+  const needsClassicConversations = !isGroupedLayout && (mergeChats || classicTab === 'history')
   const convPages = useConversations(
     providerFilter ? { provider: providerFilter } : undefined,
     refreshEpoch,
-    { enabled: isClassicHistory },
+    { enabled: needsClassicConversations },
   )
+  const loadMoreConversations = () => {
+    if (convPages.hasNextPage && !convPages.isFetchingNextPage) void convPages.fetchNextPage()
+  }
   const paginatedConversations = useMemo(
     () => convPages.data?.pages.flatMap((p) => p.conversations) ?? EMPTY_CONVERSATIONS,
     [convPages.data],
@@ -287,12 +278,21 @@ export default function ProjectsHub() {
   // the refetch resolves. Show the blocking modal ONLY when there is nothing
   // cached to show (fresh install / cache cleared); any warm state gets the
   // unobtrusive "Showing cached data" spinner instead.
+  // The classic conversation query is disabled on the sessions tab, and a
+  // disabled query never reports progress. Gating both derivations on
+  // `needsClassicConversations` keeps that from reading as "still fetching
+  // forever", which would pin the blocking modal open whenever there are also
+  // no sessions to show.
   const hasCachedData =
-    sessions.length > 0 || (isGroupedLayout ? summaries.length > 0 : conversations.length > 0)
-  const isStillFetching = !sessionsDone || (isGroupedLayout ? summariesLoading : showConvProgress)
+    sessions.length > 0 || (isGroupedLayout ? summaries.length > 0 : paginatedConversations.length > 0)
+  const isStillFetching =
+    !sessionsDone ||
+    (isGroupedLayout ? summariesLoading : needsClassicConversations && convPages.isLoading)
   const showLoadingModal = !hasCachedData && isStillFetching
   const isBackgroundRefreshing =
-    hasCachedData && (!sessionsDone || (isGroupedLayout ? summariesFetching : !convDone))
+    hasCachedData &&
+    (!sessionsDone ||
+      (isGroupedLayout ? summariesFetching : needsClassicConversations && convPages.isFetching))
   // Single-server has no server-name rows to host the cached-data chip, so the
   // notice overlays the list: centered banner in Hub/Tree, caption under the
   // header fallback spinner in Classic. Multi-server is covered by the chips.
@@ -322,14 +322,21 @@ export default function ProjectsHub() {
     // from the paged set: /api/search matches message bodies, so it finds
     // conversations that were never paged in. Filtering the loaded pages alone
     // makes anything past the current page unfindable.
-    const convSource = debouncedConvSearch ? (convSearchData?.conversations ?? []) : conversations
+    //
+    // Sessions are concatenated ahead of conversations rather than co-sorted, so
+    // the contract survives pagination by construction: a conversation arriving
+    // on page 3 still lands below every session, and no session can be pushed
+    // off-screen by conversation loading.
+    const convSource = debouncedConvSearch
+      ? (convSearchData?.conversations ?? [])
+      : paginatedConversations
 
     const convs = convSource
       .map((c) => ({ kind: 'conversation' as const, ms: Date.parse(c.lastActivity) || 0, item: c }))
       .sort((a, b) => b.ms - a.ms)
 
     return [...liveSessions, ...idleSessions, ...convs]
-  }, [visibleSessions, conversations, debouncedConvSearch, convSearchData])
+  }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
   // FAB
   // When the user is drilled into a directory in TreeView, the drill store
@@ -489,6 +496,7 @@ export default function ProjectsHub() {
               items={mergedClassicItems}
               refreshing={manualRefreshing}
               onRefresh={handleRefresh}
+              onEndReached={loadMoreConversations}
               searchOpen={searchOpen}
               searchQuery={classicConvSearch}
               conversationsFromServer={Boolean(debouncedConvSearch)}
@@ -535,9 +543,7 @@ export default function ProjectsHub() {
                   conversations={debouncedConvSearch ? (convSearchData?.conversations ?? []) : paginatedConversations}
                   onRefresh={handleRefresh}
                   refreshing={manualRefreshing}
-                  onEndReached={() => {
-                    if (convPages.hasNextPage && !convPages.isFetchingNextPage) void convPages.fetchNextPage()
-                  }}
+                  onEndReached={loadMoreConversations}
                   searchQuery={classicConvSearch}
                   onSearchChange={setClassicConvSearch}
                   searchOpen={searchOpen}
@@ -609,14 +615,10 @@ export default function ProjectsHub() {
 
       <LoadingOverlay
         visible={showLoadingModal}
-        sessionsDone={sessionsDone}
+        done={sessionsDone}
         loaded={sessionsLoaded}
         total={sessionsTotal}
         inFlightCount={sessionsInFlight}
-        convLoaded={convLoaded}
-        convTotal={convTotal}
-        convDone={convDone}
-        convCounting={convCounting}
       />
 
     </SafeAreaView>
@@ -627,6 +629,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
   items,
   refreshing,
   onRefresh,
+  onEndReached,
   searchOpen,
   searchQuery,
   conversationsFromServer,
@@ -636,6 +639,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
   items: MergedItem[]
   refreshing: boolean
   onRefresh: () => void
+  onEndReached: () => void
   searchOpen: boolean
   searchQuery: string
   conversationsFromServer: boolean
@@ -789,6 +793,8 @@ const MergedClassicList = React.memo(function MergedClassicList({
       ) : null}
       <FlatList
         data={flatData}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
         keyExtractor={(item) => {
           if (item.kind === 'header') return `header-${item.serverId}`
           if (item.kind === 'liveHeader') return item.id
