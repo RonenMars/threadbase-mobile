@@ -45,6 +45,7 @@ interface PersistedServer {
   deviceId?: string
   deviceCapabilities?: DeviceCapability[]
   publicUrl?: string
+  requireEncryption?: boolean
 }
 
 interface ServersStore {
@@ -70,6 +71,7 @@ interface ServersStore {
   removeServer: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
+  setRequireEncryption: (serverId: string, requireEncryption: boolean) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
   setScanProgress: (serverId: string, scanned: number, total: number) => void
   setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
@@ -109,6 +111,7 @@ async function persistServerList(
       deviceId: servers[id].deviceId,
       deviceCapabilities: servers[id].deviceCapabilities,
       publicUrl: servers[id].publicUrl,
+      requireEncryption: servers[id].requireEncryption,
     }))
   const payload = {
     list,
@@ -245,6 +248,19 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const server = state.servers[serverId]
       if (!server) return state
       const servers = { ...state.servers, [serverId]: { ...server, label } }
+      persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
+      return { servers }
+    })
+  },
+
+  // The one writer of the pin. The design has it auto-set on the first
+  // successful encrypted connection too; that caller lands with the connection
+  // wiring, and writes the same bit through here.
+  setRequireEncryption: (serverId: string, requireEncryption: boolean) => {
+    set((state) => {
+      const server = state.servers[serverId]
+      if (!server) return state
+      const servers = { ...state.servers, [serverId]: { ...server, requireEncryption } }
       persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
       return { servers }
     })
@@ -441,6 +457,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             deviceToken,
             deviceCapabilities: entry.deviceCapabilities,
             publicUrl: entry.publicUrl,
+            requireEncryption: entry.requireEncryption,
           }
           activeServerIds.push(entry.id)
         }
