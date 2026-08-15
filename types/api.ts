@@ -399,6 +399,30 @@ export function serverSpeaksE2ee(info: ServerInfo | null | undefined): boolean {
   return e2ee.supported && e2ee.enabled && e2ee.version === E2EE_CLIENT_VERSION
 }
 
+/**
+ * Whether this device's `requireEncryption` pin refuses this server.
+ *
+ * Deliberately silent until the server has actually answered `GET /api/info`:
+ * a server we have never reached is unreachable, which is a different problem
+ * with a different message, and naming it a downgrade would be a lie.
+ *
+ * Note the asymmetry that makes that safe today, because it is invisible from
+ * here: `refreshServerInfo` overwrites `serverInfo` on success but sets it to
+ * `null` on error, so forcing an error erases the record that this server ever
+ * spoke encryption and quiets this predicate. That buys an attacker nothing
+ * while a null `serverInfo` also means not connected — they already had denial
+ * of service. It stops being free the moment this bit gates a live connection,
+ * and "force an error to clear the evidence" is the test that has to land with
+ * that change.
+ */
+export function encryptionPinRefuses(
+  server: Pick<ServerConfig, 'requireEncryption' | 'serverInfo'>,
+): boolean {
+  if (!server.requireEncryption) return false
+  if (!server.serverInfo) return false
+  return !serverSpeaksE2ee(server.serverInfo)
+}
+
 // ── Per-server Claude CLI flags ──────────────────────────────────────────────
 // The registry is served BY the streamer (only it knows which claude binary is
 // installed locally), so the app renders the form generically from this metadata
@@ -543,6 +567,21 @@ export interface ServerConfig {
    * has the value without needing a re-pair. See threadbase-mobile#722.
    */
   publicUrl?: string
+  /**
+   * This device's pin: refuse to talk to this server unencrypted. Absent means
+   * unpinned, which is not the same as "plaintext is fine" — it means the
+   * question has not been answered yet.
+   *
+   * It is deliberately a device-side bit rather than something read off the
+   * wire: `GET /api/info` crosses the network unauthenticated, so an
+   * intermediary that strips `e2ee` would otherwise be able to downgrade the
+   * connection by deleting one field. This bit is what it cannot reach.
+   *
+   * Set by the user today. The design also has it auto-set on the first
+   * successful encrypted connection; that call site lands with the connection
+   * wiring, which does not exist yet — see threadbase-mobile#698.
+   */
+  requireEncryption?: boolean
 }
 
 export type CacheAlertSeverity = 'high' | 'low'

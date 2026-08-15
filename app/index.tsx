@@ -49,6 +49,7 @@ import { clientLog } from '@/lib/clientLog'
 import { conversationHref } from '@/lib/conversationHref'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
+import { EncryptionRefusalBanner } from '@/components/servers/EncryptionRefusalBanner'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
@@ -447,6 +448,8 @@ export default function ProjectsHub() {
 
       {/* Shown while server is scanning/indexing conversations on first boot */}
       <ServerIndexingBanner />
+
+      <EncryptionRefusalBanner />
 
       <CacheAlertBanner onPress={() => {
         const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')
