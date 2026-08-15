@@ -58,7 +58,13 @@ export default function BrowseScreen() {
   const setRecentsOpen = useViewPrefsStore((s) => s.setRecentsOpen)
   const [showAllRecents, setShowAllRecents] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
-  const { data: providerHealth } = useProviderHealth(serverId)
+  // `isLoading` and not `isPending`: in react-query v5 a disabled query (no
+  // serverId) stays pending forever, and an errored one — an older streamer
+  // with no /api/providers — must fall through to the normal buttons rather
+  // than skeleton indefinitely. `isLoading` is `isPending && isFetching`, so it
+  // means "we are actually asking, right now", which is the only state that
+  // should hide the selector.
+  const { data: providerHealth, isLoading: providerHealthLoading } = useProviderHealth(serverId)
   const selectedHealth = findProviderHealth(providerHealth?.providers, selectedProvider)
   const selectedUnavailable = selectedHealth?.available === false
   const selectedWarnings = selectedHealth?.warnings ?? []
@@ -450,7 +456,28 @@ export default function BrowseScreen() {
       ) : (
         <>
         <View style={styles.providerSelector}>
-          {([
+          {/*
+            Until the health answer arrives we do not know whether a provider
+            can start a session, and `available === false` cannot express that:
+            an undefined `health` reads as "not unavailable", so the buttons
+            used to paint fully enabled and then grey out once the answer
+            landed. They render outside the directory list's `isLoading`
+            branch, so they paint before either request resolves — folding this
+            into the browse payload would only re-time it to the slower of the
+            two. Skeleton them the same way the list beside them is skeletoned,
+            and assert nothing until there is something to assert.
+          */}
+          {providerHealthLoading
+            ? [CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER].map((provider) => (
+                <View
+                  key={provider}
+                  style={styles.providerOptionSkeleton}
+                  testID={`start-provider-skeleton-${provider}`}
+                >
+                  <SkeletonBox height={40} borderRadius={radius.md} />
+                </View>
+              ))
+            : ([
             { value: CLAUDE_CODE_PROVIDER, label: 'Claude', color: brand.claude },
             { value: CODEX_CLI_PROVIDER, label: 'Codex', color: brand.codex },
           ]).map((option) => {
@@ -639,6 +666,9 @@ function makeStyles(theme: Theme) {
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
+  },
+  providerOptionSkeleton: {
+    flex: 1,
   },
   providerOption: {
     flex: 1,
