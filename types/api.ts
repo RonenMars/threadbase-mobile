@@ -332,6 +332,60 @@ export interface ServerInfo {
    * troubleshooting step would take every device token with it.
    */
   devicesDurable?: boolean
+  /**
+   * Additive: whether this server speaks application-layer encryption, and
+   * whether it is switched on right now.
+   *
+   * Absent means an older streamer, which must be read as **unknown** — the same
+   * contract every other field here follows — and resolves to today's plaintext
+   * path. Never read as "this server cannot encrypt": that conclusion belongs to
+   * the pinned bit, not to a field an intermediary can strip.
+   */
+  e2ee?: E2eeCapability
+}
+
+/**
+ * A streamer's encryption capability, as reported by `GET /api/info`.
+ *
+ * Mirrors `describeE2eeCapability()` in the streamer's `misc.routes.ts`.
+ * `supported` says the build has the code path; `enabled` says it is on right
+ * now. `required` is the streamer's stage-3 bit — it refuses plaintext from any
+ * client — and is not the same thing as this device requiring encryption.
+ */
+export interface E2eeCapability {
+  supported: boolean
+  enabled: boolean
+  version: number
+  required: boolean
+  /** Why `enabled` is false; absent when it is true. */
+  reason?: string
+}
+
+/**
+ * The envelope version this app implements. A server offering anything else is
+ * one we cannot talk to, and must be treated as offering nothing.
+ */
+export const E2EE_CLIENT_VERSION = 1
+
+/**
+ * Whether to attempt an encrypted handshake with this server.
+ *
+ * This answers exactly one question — *may* we encrypt — and deliberately not
+ * its inverse. Whether falling back to plaintext is acceptable is decided by
+ * this device's own "require encryption" pin, because `/api/info` crosses the
+ * network unauthenticated: an intermediary can strip `e2ee` and a client that
+ * inferred "so plaintext is fine" would have been downgraded by one deleted
+ * field. That is why a `false` here means "do not attempt", never "plaintext is
+ * safe".
+ *
+ * The version has to match rather than merely be present. A future streamer
+ * advertising `version: 2` speaks a transcript this build cannot produce, and
+ * attempting it would fail after the handshake rather than before it.
+ */
+export function serverSpeaksE2ee(info: ServerInfo | null | undefined): boolean {
+  const e2ee = info?.e2ee
+  if (!e2ee) return false
+  return e2ee.supported && e2ee.enabled && e2ee.version === E2EE_CLIENT_VERSION
 }
 
 // ── Per-server Claude CLI flags ──────────────────────────────────────────────
