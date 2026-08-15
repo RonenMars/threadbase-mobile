@@ -34,13 +34,13 @@ Nothing arrives at the server — its request log stays empty for the attempt. M
 
 **Cause**
 
-The app does not declare cleartext permission for release builds, so the platform blocks the request before it leaves the process.
+The app did not declare cleartext permission for release builds, so the platform blocked the request before it left the process.
 
 - `android/app/src/debug/AndroidManifest.xml` and `src/debugOptimized/AndroidManifest.xml` set `android:usesCleartextTraffic="true"`, but both are **build-type source sets** and neither merges into a release build.
-- `src/main/AndroidManifest.xml` sets neither `usesCleartextTraffic` nor `networkSecurityConfig`.
+- `src/main/AndroidManifest.xml` set neither `usesCleartextTraffic` nor `networkSecurityConfig`.
 - At `targetSdkVersion` 28 and above, the platform default is cleartext **denied**.
 
-Every developer build permits cleartext, which is why this survives development entirely.
+Every developer build permits cleartext, which is why this survived development entirely.
 
 **How to tell it apart from a real network problem**
 
@@ -53,12 +53,10 @@ Worth knowing that a genuine network failure has its own trap on the server side
 
 **Fix**
 
-Not fixed yet — tracked as #727, which is a policy decision rather than a one-line manifest change. The app exists to reach servers the user runs themselves on their own network, so permitting cleartext, denying it, or permitting it narrowly are genuinely different products.
+Fixed for local-network addresses — `app.json` now sets `usesCleartextTraffic` under `expo-build-properties`, so the release manifest permits cleartext, and `services/cleartext-policy.ts` keeps it to the local network the way iOS already does. The reasoning is in `docs/adr/0002-android-cleartext-policy.md`. A build predating that carries the defect; `versionCode 54` on the Play alpha track is one.
 
-**Until then**
+**If it still happens after that fix**
 
-Use `https://` — a tunnel address works. `tb-streamer pair` embeds whatever `public_url` is set to in `~/.threadbase/server.yaml`, so pointing that at the tunnel and re-running produces a QR the app can use.
+The address is plain HTTP and is **not** on your local network, so the app refuses it deliberately rather than the platform blocking it. The message says so, and names the remedy: use an `https://` address, or `tb serve --tunnel`. `tb-streamer pair` embeds whatever `public_url` is set to in `~/.threadbase/server.yaml`, so pointing that at the tunnel and re-running produces a QR the app can use.
 
-**Related**
-
-A blocked cleartext request should report itself distinctly rather than as a generic unreachable error. Android raises `java.io.IOException: Cleartext HTTP traffic to <host> not permitted`, which is detectable in one place — `services/authed-fetch.ts` — since #701. Covered in #727.
+The permitted set is loopback, `10.x`, `192.168.x`, `172.16–31.x`, Tailscale's `100.64–127.x`, `169.254.x`, IPv6 loopback / link-local / unique-local, `*.local`, and unqualified hostnames. Anything else over `http://` or `ws://` is refused before a socket is opened.

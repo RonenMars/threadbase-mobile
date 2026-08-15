@@ -84,7 +84,8 @@
             "deploymentTarget": "16.4"
           },
           "android": {
-            "enableProguardInReleaseBuilds": true
+            "enableProguardInReleaseBuilds": true,
+            "usesCleartextTraffic": true
           }
         }
       ],
