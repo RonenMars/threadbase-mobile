@@ -29,7 +29,13 @@ capture_failure() {
   STATUS=$?
   if [ "$STATUS" -ne 0 ]; then
     adb exec-out screencap -p > e2e/_artifacts/fallback/emulator-at-failure.png || true
-    LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
+    # `|| true` is load-bearing. With `set -euo pipefail`, an unmatched glob makes
+    # this pipeline fail, the assignment inherits that status, and `set -e` aborts
+    # the trap — so the script exits with `ls`'s status instead of the real one and
+    # never copies the session directory. It is also platform-dependent: GNU `ls`
+    # exits 2 where BSD `ls` exits 1, so the wrong code differs between CI and a
+    # Mac, which is what made it survive local runs.
+    LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1) || true
     if [ -n "$LATEST" ]; then
       mkdir -p e2e/_artifacts/maestro-session
       cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true

@@ -24,11 +24,14 @@ const SCRIPT = path.resolve(__dirname, '../../../e2e/run-android-ci.sh');
  * Runs the script with a stubbed `adb` in a throwaway cwd, so the artifacts it
  * creates and the failure trap it fires land in the temp dir, not the repo.
  */
-function runWithStubbedAdb(adbBody, env = {}) {
+function runWithStubbedAdb(adbBody, env = {}, extraStubs = {}) {
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'device-guard-')));
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin);
   fs.writeFileSync(path.join(bin, 'adb'), `#!/bin/bash\n${adbBody}\n`, { mode: 0o755 });
+  for (const [name, body] of Object.entries(extraStubs)) {
+    fs.writeFileSync(path.join(bin, name), `#!/bin/bash\n${body}\n`, { mode: 0o755 });
+  }
 
   const result = spawnSync('/bin/bash', [SCRIPT], {
     cwd: dir,
@@ -62,6 +65,18 @@ describe('run-android-ci.sh device wait', () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(/List of devices attached/);
+  });
+
+  it("preserves the real exit status when the failure trap's ls finds nothing", () => {
+    // GNU `ls` exits 2 on a glob that matches nothing where BSD `ls` exits 1, so
+    // this reproduces on a Mac what CI sees on Linux. Without `|| true` on that
+    // assignment, `set -e` aborts the trap and the script reports ls's status
+    // instead of its own — every CI failure gets the wrong exit code, and the
+    // Maestro session directory is never copied into the artifacts.
+    const result = runWithStubbedAdb('exit 0', { E2E_DEVICE_WAIT_SECONDS: '2' }, { ls: 'exit 2' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/No booted Android device/);
   });
 
   it('proceeds past the wait once the device reports booted', () => {
