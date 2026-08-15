@@ -6,14 +6,35 @@
  * These tests only exercise argument validation and the promote fast-path
  * (which exits before running Gradle or calling Play). Full pipeline tests
  * would require mocked signing secrets + Play API and are out of scope here.
+ *
+ * Run with cwd + HOME pointed at a throwaway temp dir (see #712): on a
+ * machine with real Google Play credentials cached at
+ * ~/.config/threadbase/play-console-sa.json, the un-sandboxed script used to
+ * sail past credential setup into check-version-code.sh, which bumped the
+ * real app.json + android/app/build.gradle, and then into `npm ci`, which
+ * the 10s execFileSync timeout killed mid-reinstall, deleting
+ * node_modules/.bin. Sandboxing HOME makes the cache lookup miss, so every
+ * case here still fails at credential setup exactly as the comments say.
  */
 
 'use strict';
 
 const { execFileSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/ship-android.sh');
+
+let tmpDir;
+
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ship-android-test-'));
+});
+
+afterEach(() => {
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
 
 function runScript(args) {
   try {
@@ -21,6 +42,13 @@ function runScript(args) {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 10000,
+      cwd: tmpDir,
+      env: {
+        ...process.env,
+        HOME: tmpDir,
+        GOOGLE_APPLICATION_CREDENTIALS: '',
+        PLAY_SA_JSON_B64: '',
+      },
     });
     return { stdout, stderr: '', code: 0 };
   } catch (err) {
