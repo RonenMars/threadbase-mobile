@@ -23,10 +23,18 @@ name: E2E
 # Narrowing `flows` skips no setup — the Release build is the expensive part and
 # happens either way — so it saves minutes, not the bulk of the run.
 #
-# Always dispatched from `main`: GitHub reads a workflow_dispatch definition
-# from the default branch, so `ref` selects the *code under test*, never which
-# version of this file runs. That also means a change to this workflow is only
-# live once it lands on `main`.
+# Two independent selectors, easy to confuse:
+#
+#   * `--ref` (the UI's "Use workflow from") picks which branch's copy of THIS
+#     file runs. It defaults to the default branch, which is why an unqualified
+#     dispatch runs main's definition — but it is not a restriction. Point it at
+#     a branch to test a change to this workflow before merging it.
+#   * `-f ref=` picks the *code under test*, independent of the above.
+#
+#   gh workflow run E2E --ref my/branch -f ref=my/branch   # this file AND the code from my/branch
+#
+# `workflow_dispatch` must exist on the default branch for the trigger to be
+# offered at all; once it is, any branch's version can be run.
 
 on:
   workflow_dispatch:
@@ -115,6 +123,21 @@ jobs:
           MAESTRO_VERSION=2.8.0 curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
           "$HOME/.maestro/bin/maestro" --version
+
+      # ubuntu-24.04 ships /dev/kvm but leaves it root-owned, so without this rule
+      # the emulator silently falls back to software emulation. Run
+      # [31851391066](https://github.com/RonenMars/threadbase-mobile/actions/runs/31851391066)
+      # took 744 seconds to boot that way and then died at `adb shell input
+      # keyevent 82` with `Broken pipe (32)` and exit code 224 — the emulator's
+      # system_server was still not serving binder calls when the action's own
+      # post-boot unlock ran, before any of the script below executed. With KVM
+      # the boot is ~1 minute and those calls land on a settled system.
+      - name: Enable KVM
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       # This action installs the Android emulator, platform tools, API 35 SDK,
       # and Google APIs x86_64 image, then waits for the one requested emulator
