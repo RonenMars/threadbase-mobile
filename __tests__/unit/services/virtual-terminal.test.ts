@@ -187,6 +187,43 @@ describe('VirtualTerminal – VT100 emulation', () => {
     expect(vt.getLines()).toEqual(['textred'])
   })
 
+  it('preserves complete escape sequences split at every WebSocket boundary', () => {
+    const frames = [
+      `stale${CSI}2J${CSI}Hfresh`,
+      `typed ${ESC}(B`,
+      `${ESC}]0;Codex${ESC}\\title cleared`,
+      `${ESC}Pignored DCS${ESC}\\dcs kept`,
+      `${ESC}Xignored SOS${ESC}\\sos kept`,
+      `${ESC}^ignored PM${ESC}\\pm kept`,
+      `${ESC}_ignored APC${ESC}\\apc kept`,
+    ]
+
+    for (const frame of frames) {
+      const unsplit = new VirtualTerminal()
+      unsplit.feed(frame)
+      const expectedLines = unsplit.getLines()
+      const expectedStats = unsplit.getParseStats()
+
+      for (let split = 1; split < frame.length; split++) {
+        const vt = new VirtualTerminal()
+        vt.feed(frame.slice(0, split))
+        vt.feed(frame.slice(split))
+        expect(vt.getLines()).toEqual(expectedLines)
+        expect(vt.getParseStats()).toEqual(expectedStats)
+        expect(vt.getParseConfidence()).toBe('high')
+      }
+    }
+  })
+
+  it('counts an incomplete escape only after the pending buffer safety cap', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${ESC}]${'x'.repeat(8_192)}`)
+    expect(vt.getParseStats().truncatedEscapeCount).toBe(1)
+
+    vt.feed('still renders')
+    expect(vt.getLines()).toEqual(['still renders'])
+  })
+
   // ── Reset ──
   it('reset() clears all state', () => {
     const vt = new VirtualTerminal()
