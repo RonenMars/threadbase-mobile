@@ -70,7 +70,7 @@
     <key>NSMicrophoneUsageDescription</key>
     <string>Threadbase needs the microphone to dictate prompts.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow Threadbase to attach photos from your library to Claude Code sessions.</string>
+    <string>Used to attach photos from your library to your Claude Code sessions.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Threadbase converts your speech to text on-device.</string>
     <key>NSSupportsLiveActivities</key>

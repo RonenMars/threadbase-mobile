@@ -19,9 +19,6 @@
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Threadbase uses Face ID to protect access to your conversations.",
-        "NSPhotoLibraryUsageDescription": "Used to attach photos from your library to your Claude Code sessions.",
-        "NSMicrophoneUsageDescription": "Threadbase needs the microphone to dictate prompts.",
-        "NSSpeechRecognitionUsageDescription": "Threadbase converts your speech to text on-device.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -58,7 +55,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Threadbase to attach photos from your library to Claude Code sessions."
+          "photosPermission": "Used to attach photos from your library to your Claude Code sessions."
         }
       ],
       "expo-secure-store",
