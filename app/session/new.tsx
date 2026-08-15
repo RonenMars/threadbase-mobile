@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, Alert, StyleSheet, type AlertButton } from 'react-native'
 import { useRouter, useLocalSearchParams, type Href } from 'expo-router'
 import Animated, {
   useSharedValue,
@@ -23,9 +23,13 @@ import {
   clearBrowseStartAutoNavSuppress,
 } from '@/lib/sessionNavGuard'
 import { clientLog } from '@/lib/clientLog'
+import type { RemediationCode } from '@/types/server-diagnostics'
 
 const TICK_MS = 100
 const PHRASE_ROTATE_MS = 2_500
+// A missing provider CLI can't be fixed by an immediate retry — the binary
+// won't have appeared in the intervening second (issue #748).
+const PROVIDER_NOT_INSTALLED_CODE: RemediationCode = 'PROVIDER_NOT_INSTALLED'
 
 // The bouncing-robot loader, moved here from the session screen's
 // WakingUpOverlay — the start wait lives on this screen now.
@@ -214,30 +218,31 @@ export default function NewSessionScreen() {
       clearBrowseStartAutoNavSuppress()
       haltedRef.current = true
       const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
+      const isProviderNotInstalled = err instanceof NetworkError && err.code === PROVIDER_NOT_INSTALLED_CODE
       const message = isTimeout ? t('error.startTimeout') : err.message
-      Alert.alert(
-        t('error.startFailed'),
-        message,
-        [
-          {
-            text: t('common:button.cancel'),
-            style: 'cancel',
-            onPress: () => {
-              clientLog.info('startSession', 'error dialog CANCEL → back to hub')
-              router.back()
+      const cancelButton: AlertButton = {
+        text: t('common:button.cancel'),
+        style: 'cancel',
+        onPress: () => {
+          clientLog.info('startSession', 'error dialog CANCEL → back to hub')
+          router.back()
+        },
+      }
+      // The CLI won't appear in the time it takes to tap Retry, so don't offer it.
+      const buttons: AlertButton[] = isProviderNotInstalled
+        ? [cancelButton]
+        : [
+            cancelButton,
+            {
+              text: t('common:button.retry'),
+              onPress: () => {
+                clientLog.info('startSession', 'error dialog RETRY → new attempt')
+                setRemainingMs(START_SESSION_TIMEOUT_MS)
+                setAttempt((a) => a + 1)
+              },
             },
-          },
-          {
-            text: t('common:button.retry'),
-            onPress: () => {
-              clientLog.info('startSession', 'error dialog RETRY → new attempt')
-              setRemainingMs(START_SESSION_TIMEOUT_MS)
-              setAttempt((a) => a + 1)
-            },
-          },
-        ],
-        { cancelable: false },
-      )
+          ]
+      Alert.alert(t('error.startFailed'), message, buttons, { cancelable: false })
     },
     [router, t],
   )
