@@ -51,7 +51,7 @@ export function TerminalView({
   )
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion } = useActiveQuestion(serverId, sessionId)
 
   const onViewResumedConversation = useCallback(() => {
     if (!resumedConversationId) return
@@ -116,6 +116,7 @@ export function TerminalView({
         onSendKeys={(keys) => sendKeys.mutate(keys)}
         activeQuestion={activeQuestion}
         onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+        onDismissQuestion={clearQuestion}
         onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
         onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
       />
