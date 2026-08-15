@@ -24,6 +24,7 @@ export function mapPermissionToBlock(
       },
     ],
     permissionIndices: options.map(o => o.index),
+    permissionAnswerKeys: options.map(o => o.answerKeys),
     ...(selectedIndex >= 0 ? { selectedIndex } : {}),
   }
 }

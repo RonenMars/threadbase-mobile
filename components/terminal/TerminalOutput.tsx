@@ -18,6 +18,7 @@ import { spacing } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
@@ -202,8 +203,8 @@ export function TerminalOutput({
   const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
     if (!activeQuestion) return
     if (activeQuestion.source === 'permission') {
-      const realIndex = activeQuestion.permissionIndices?.[optionIndex]
-      if (realIndex !== undefined) onSendKeys?.(`${realIndex}\r`)
+      const keys = permissionAnswerKeys(activeQuestion, optionIndex)
+      if (keys !== null) onSendKeys?.(keys)
       return
     }
     if (!activeQuestion.toolUseId) return

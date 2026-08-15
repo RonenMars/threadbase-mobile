@@ -24,9 +24,18 @@ export interface QuestionBlock {
   /**
    * Permission-gate only: the REAL on-screen option numbers (not 1-based),
    * positionally aligned with questions[0].options. Selecting option i is
-   * answered by sending `${permissionIndices[i]}\r` via the keystroke route.
+   * answered by sending `${permissionIndices[i]}\r` via the keystroke route,
+   * unless permissionAnswerKeys[i] says otherwise.
    */
   permissionIndices?: number[]
+  /**
+   * Permission-gate only: literal keystrokes per option, positionally aligned
+   * with permissionIndices. Authoritative when present — a Codex EXEC approval
+   * shows "1. yes" but is answered by `y`, so the on-screen number would be the
+   * wrong bytes. Sparse: OSC-777 gates leave every entry undefined and fall
+   * back to the index.
+   */
+  permissionAnswerKeys?: (string | undefined)[]
 }
 
 const QUESTION_RE = /^\?\s+(.+)$/
