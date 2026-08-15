@@ -141,7 +141,7 @@ export function QuickAccessStrip() {
 
         <View style={styles.tabRight}>
           {!stripCollapsed && (
-            <Pressable style={styles.iconBtn} onPress={() => router.push('/manage-favorites' as any)} hitSlop={8}>
+            <Pressable style={styles.iconBtn} onPress={() => router.push('/manage-favorites')} hitSlop={8}>
               <GearSix size={16} color={theme.text.secondary} />
             </Pressable>
           )}

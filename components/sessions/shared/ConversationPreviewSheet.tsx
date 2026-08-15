@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useEffect, useCallback } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet } from 'react-native'
 import BottomSheet from '@gorhom/bottom-sheet'
-import { useRouter } from 'expo-router'
+import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -63,12 +63,11 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
 
   const handleOpen = useCallback(() => {
     if (!target) return
-    const url = target.kind === 'session'
+    const url: Href = target.kind === 'session'
       ? `/session/${target.id}?server=${target.serverId}`
       : `/conversation/${target.id}?server=${target.serverId}`
     sheetRef.current?.close()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push(url as any)
+    router.push(url)
   }, [target, router])
 
   if (!target) return null
