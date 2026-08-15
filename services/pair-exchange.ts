@@ -24,8 +24,19 @@ export interface PairUri {
 }
 
 export interface ExchangeResult {
+  /**
+   * The address the user typed or scanned, normalised. Never the server's
+   * `publicUrl` — see the comment at the return site for why substitution was
+   * removed.
+   */
   url: string
   apiKey: string
+  /**
+   * What the server advertises as its public address, recorded and **not
+   * applied**. Stored on the server record so a future feature can offer it as
+   * an alternative route; nothing reads it today. Whether it is ever used, and
+   * on what terms, is RonenMars/threadbase-mobile#722.
+   */
   publicUrl: string | null
   machineName: string | null
   /** Per-device id minted at exchange (C5). Absent on older streamers. */
@@ -217,8 +228,20 @@ export async function exchangeToken({
     throw new PairExchangeError('decrypt', 'Could not decrypt sealed api key')
   }
 
-  const resolvedUrl = body.publicUrl ?? trimmedUrl
-  assertHttpServerUrl(resolvedUrl)
+  // The address the user chose is authoritative. `publicUrl` is carried out as
+  // data below and never substituted for it.
+  //
+  // It used to be `resolvedUrl = body.publicUrl ?? trimmedUrl`, which made a
+  // typed address a fallback rather than a preference: pairing against a LAN IP
+  // silently moved the app to whatever the server advertised, with no signal
+  // that it happened. Two reasons that is wrong. The reply is unauthenticated
+  // before E2EE — the seal uses a server-side ephemeral key the client cannot
+  // verify — so one response could relocate a device permanently. And even from
+  // an honest server it discards a choice the user made deliberately.
+  //
+  // The `assertHttpServerUrl(resolvedUrl)` that stood here went with it: it
+  // guarded a value the *server* supplied, and `trimmedUrl` is already checked
+  // on entry (stripping a trailing slash cannot change a protocol).
 
   const deviceId = typeof body.deviceId === 'string' ? body.deviceId : null
   const deviceToken = typeof body.deviceToken === 'string' ? body.deviceToken : null
@@ -227,7 +250,7 @@ export async function exchangeToken({
     : null
 
   return {
-    url: resolvedUrl,
+    url: trimmedUrl,
     apiKey: naclUtil.encodeUTF8(plain),
     publicUrl: body.publicUrl ?? null,
     machineName: body.machineName ?? null,

@@ -21,10 +21,17 @@ function secureKeyForDeviceToken(serverId: string): string {
   return `threadbase_device_token_${serverId}`
 }
 
-export interface AddServerDeviceMeta {
+/**
+ * Extra facts a pair exchange produces, beyond the url/key/label a manual add
+ * supplies. Named `…DeviceMeta` until `publicUrl` joined it, which is about the
+ * server rather than the device.
+ */
+export interface AddServerMeta {
   deviceId?: string
   deviceToken?: string
   capabilities?: DeviceCapability[]
+  /** What the server advertises as its public address. Recorded, never applied — see ServerConfig. */
+  publicUrl?: string
 }
 
 /** Minimal shape persisted to AsyncStorage (no secrets). */
@@ -37,6 +44,7 @@ interface PersistedServer {
   symbol?: string
   deviceId?: string
   deviceCapabilities?: DeviceCapability[]
+  publicUrl?: string
 }
 
 interface ServersStore {
@@ -57,7 +65,7 @@ interface ServersStore {
     url: string,
     apiKey: string,
     label?: string,
-    device?: AddServerDeviceMeta,
+    device?: AddServerMeta,
   ) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
@@ -100,6 +108,7 @@ async function persistServerList(
       symbol: servers[id].symbol,
       deviceId: servers[id].deviceId,
       deviceCapabilities: servers[id].deviceCapabilities,
+      publicUrl: servers[id].publicUrl,
     }))
   const payload = {
     list,
@@ -146,7 +155,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     url: string,
     apiKey: string,
     label?: string,
-    device?: AddServerDeviceMeta,
+    device?: AddServerMeta,
   ): Promise<string | { error: 'duplicate' }> => {
     const normalised = url.replace(/\/+$/, '')
 
@@ -180,6 +189,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       deviceId: device?.deviceId,
       deviceToken: device?.deviceToken,
       deviceCapabilities: device?.capabilities,
+      publicUrl: device?.publicUrl,
     }
 
     set((state) => {
@@ -430,6 +440,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             deviceId: entry.deviceId,
             deviceToken,
             deviceCapabilities: entry.deviceCapabilities,
+            publicUrl: entry.publicUrl,
           }
           activeServerIds.push(entry.id)
         }
