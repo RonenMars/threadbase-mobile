@@ -23,10 +23,18 @@ name: E2E
 # Narrowing `flows` skips no setup — the Release build is the expensive part and
 # happens either way — so it saves minutes, not the bulk of the run.
 #
-# Always dispatched from `main`: GitHub reads a workflow_dispatch definition
-# from the default branch, so `ref` selects the *code under test*, never which
-# version of this file runs. That also means a change to this workflow is only
-# live once it lands on `main`.
+# Two independent selectors, easy to confuse:
+#
+#   * `--ref` (the UI's "Use workflow from") picks which branch's copy of THIS
+#     file runs. It defaults to the default branch, which is why an unqualified
+#     dispatch runs main's definition — but it is not a restriction. Point it at
+#     a branch to test a change to this workflow before merging it.
+#   * `-f ref=` picks the *code under test*, independent of the above.
+#
+#   gh workflow run E2E --ref my/branch -f ref=my/branch   # this file AND the code from my/branch
+#
+# `workflow_dispatch` must exist on the default branch for the trigger to be
+# offered at all; once it is, any branch's version can be run.
 
 on:
   workflow_dispatch:
@@ -116,6 +124,21 @@ jobs:
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
           "$HOME/.maestro/bin/maestro" --version
 
+      # ubuntu-24.04 ships /dev/kvm but leaves it root-owned, so without this rule
+      # the emulator silently falls back to software emulation. Run
+      # [31851391066](https://github.com/RonenMars/threadbase-mobile/actions/runs/31851391066)
+      # took 744 seconds to boot that way and then died at `adb shell input
+      # keyevent 82` with `Broken pipe (32)` and exit code 224 — the emulator's
+      # system_server was still not serving binder calls when the action's own
+      # post-boot unlock ran, before any of the script below executed. With KVM
+      # the boot is ~1 minute and those calls land on a settled system.
+      - name: Enable KVM
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       # This action installs the Android emulator, platform tools, API 35 SDK,
       # and Google APIs x86_64 image, then waits for the one requested emulator
       # to finish booting before it runs the script below.
@@ -144,55 +167,10 @@ jobs:
           disable-animations: true
           # android-emulator-runner runs `script` under /usr/bin/sh (dash on
           # ubuntu), which rejects `set -o pipefail`. Hand the body to bash.
-          script: |
-            bash <<'EOF'
-            set -euo pipefail
-            capture_failure() {
-              STATUS=$?
-              if [ "$STATUS" -ne 0 ]; then
-                adb exec-out screencap -p > e2e/_artifacts/fallback/emulator-at-failure.png || true
-                LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
-                if [ -n "$LATEST" ]; then
-                  mkdir -p e2e/_artifacts/maestro-session
-                  cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
-                fi
-              fi
-              exit "$STATUS"
-            }
-            trap capture_failure EXIT
-            adb wait-for-device
-            until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 1; done
-            adb shell input keyevent 82
-            (cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64)
-            adb install -r android/app/build/outputs/apk/release/app-release.apk
-            mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
-            if [ -z "$FLOWS" ]; then
-              npm run test:e2e:mock
-              exit 0
-            fi
-            for f in $FLOWS; do
-              case "$f" in
-                e2e/*.yaml) ;;
-                *) echo "::error::Refusing flow '$f' — expected a path like e2e/<name>.yaml."; exit 1 ;;
-              esac
-              if [ ! -f "$f" ]; then
-                echo "::error::No such flow: $f"
-                exit 1
-              fi
-            done
-            echo "Running flows: $FLOWS" >> "$GITHUB_STEP_SUMMARY"
-            node e2e/check-sim.js
-            node e2e/ensure-release-build.js
-            MOCK_PORTS=7071,7072 node e2e/mock-server.js &
-            MOCK_PID=$!
-            sleep 1
-            set +e
-            node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug $FLOWS
-            STATUS=$?
-            set -e
-            kill "$MOCK_PID" 2>/dev/null || true
-            exit $STATUS
-            EOF
+          # One line on purpose: android-emulator-runner runs each line of
+          # `script` as its own `sh -c`, so a multi-line body is not a script.
+          # See the header of e2e/run-android-ci.sh.
+          script: bash e2e/run-android-ci.sh
 
       - uses: ruby/setup-ruby@v1
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
