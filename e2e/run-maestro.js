@@ -237,10 +237,32 @@ async function copyReports(reports, artifactDirectory, warnOnce) {
   return copied
 }
 
+// Maestro resolves `${VAR}` inside a flow only from `-e`, never from the
+// environment it was spawned with. `e2e/setup.yaml` — shared by every flow that
+// walks onboarding, on both platforms — types `${E2E_MOCK_SERVER_URL}` into the
+// server field, so without this the app dials the literal host `undefined`, no
+// request reaches the mock server, and each flow fails on a later assertion
+// naming something unrelated (`onboarding-notifications-cta` is the usual one).
+//
+// Every caller routes through this file, so injecting here covers
+// `test:e2e:mock`, `e2e/run-android-ci.sh` and the iOS scripts at once. A caller
+// that passes its own `-e E2E_MOCK_SERVER_URL=` wins; the demo and prod scripts
+// pass unrelated variables and are untouched.
+function withMockServerUrl(args) {
+  const alreadySet = args.some(
+    (arg, i) => arg === '-e' && String(args[i + 1] || '').startsWith('E2E_MOCK_SERVER_URL='),
+  )
+  if (alreadySet || args.length === 0) return args
+
+  const url = process.env.E2E_MOCK_SERVER_URL || 'http://localhost:7071'
+  // After the subcommand (`test`, `record`), before the flow paths.
+  return [args[0], '-e', `E2E_MOCK_SERVER_URL=${url}`, ...args.slice(1)]
+}
+
 function runMaestro(args) {
   return new Promise((resolve) => {
     const command = process.env.MAESTRO_BIN || 'maestro'
-    const child = spawn(command, args, { stdio: 'inherit', shell: false })
+    const child = spawn(command, withMockServerUrl(args), { stdio: 'inherit', shell: false })
     let settled = false
     let forwardedSignal = null
     const signalHandlers = new Map()
