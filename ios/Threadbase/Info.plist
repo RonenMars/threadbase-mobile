@@ -62,7 +62,7 @@
       <string>_expo._tcp</string>
     </array>
     <key>NSCameraUsageDescription</key>
-    <string>Allow Threadbase to access your camera for QR code scanning.</string>
+    <string>Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Threadbase uses Face ID to protect access to your conversations.</string>
     <key>NSLocalNetworkUsageDescription</key>
@@ -70,7 +70,7 @@
     <key>NSMicrophoneUsageDescription</key>
     <string>Threadbase needs the microphone to dictate prompts.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow Threadbase to attach photos from your library to Claude Code sessions.</string>
+    <string>Used to attach photos from your library to your Claude Code sessions.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Threadbase converts your speech to text on-device.</string>
     <key>NSSupportsLiveActivities</key>

@@ -207,7 +207,12 @@ export function LiveConversationView({
   const agentPhase = session ? deriveSessionPresentation(session).subStatus : null
 
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion } = useActiveQuestion(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion } = useActiveQuestion(serverId, sessionId)
+
+  // A question arrives on the running → waiting_input edge, which is exactly the
+  // edge that retires the thinking bubble. Mount on the question too, or a card
+  // that lands a beat later has no host left to render in.
+  const showThinkingFooter = activeQuestion !== null || thinkingState !== 'hidden'
 
   const isConnected = () => wsManager.getClient(serverId)?.status() === 'connected'
 
@@ -295,7 +300,7 @@ export function LiveConversationView({
           // chat isn't blank until the first message lands, then bubbles take over.
           <LivePtyPlaceholder lines={ptyLines} theme={theme} />
         }
-        ListFooterComponent={thinkingState !== 'hidden' ? (
+        ListFooterComponent={showThinkingFooter ? (
           <ThinkingBubble
             lines={ptyLines}
             isStreaming={isStreaming}
@@ -305,6 +310,7 @@ export function LiveConversationView({
             activeQuestion={activeQuestion}
             subStatus={agentPhase}
             onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+            onDismissQuestion={clearQuestion}
           />
         ) : null}
       />

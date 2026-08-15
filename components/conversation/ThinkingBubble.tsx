@@ -50,11 +50,14 @@ interface Props {
   onSendKeys?: (keys: string) => void
   activeQuestion?: QuestionBlock | null
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Drop the structured card locally — Esc closes the menu, but nothing on the
+   *  server notices, so the card would otherwise linger and stay tappable. */
+  onDismissQuestion?: () => void
   /** Server-derived agent phase, already gated on `presentation.live`. */
   subStatus?: AgentPhase | null
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, subStatus }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onDismissQuestion, subStatus }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -67,6 +70,12 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
     [lines, onSendKeys]
   )
+
+  // A question puts the session in `waiting_input`, which is exactly what ends
+  // the thinking bubble's life — so the fade would take the card down with it
+  // ~350ms after it appeared, leaving nothing to tap. A card outlives the phase
+  // it happened to arrive in.
+  const hasCard = Boolean(activeQuestion ?? questionBlock)
 
   const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
@@ -91,13 +100,13 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   }, [activeQuestion, onAnswer, onSendKeys])
 
   useEffect(() => {
-    if (!fadingOut) return
+    if (!fadingOut || hasCard) return
     Animated.timing(opacity, {
       toValue: 0,
       duration: 350,
       useNativeDriver: true,
     }).start(() => onFadeOutComplete?.())
-  }, [fadingOut, opacity, onFadeOutComplete])
+  }, [fadingOut, hasCard, opacity, onFadeOutComplete])
 
   useEffect(() => {
     if (hasLines) scrollRef.current?.scrollToEnd({ animated: false })
@@ -115,7 +124,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
       <QuestionCard
         block={activeQuestion}
         onSelect={handleStructuredSelect}
-        onCancel={onSendKeys ? () => onSendKeys('\x1b') : undefined}
+        onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
       />
     )
     : questionBlock

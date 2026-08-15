@@ -90,6 +90,9 @@ interface Props {
   activeQuestion?: QuestionBlock | null
   /** Answer a structured AskUserQuestion (POST). Permission gates answer via onSendKeys. */
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Drop the structured card locally — Esc closes the menu, but nothing on the
+   *  server notices, so the card would otherwise linger and stay tappable. */
+  onDismissQuestion?: () => void
   /**
    * Resumed sessions start a fresh PTY — prior terminal bytes are gone.
    * When set, show a scrollback-top disclosure linking to the durable conversation.
@@ -107,6 +110,7 @@ export function TerminalOutput({
   onSendKeys,
   activeQuestion,
   onAnswer,
+  onDismissQuestion,
   onViewResumedConversation,
   onSearchResumedConversation,
 }: Props) {
@@ -280,7 +284,7 @@ export function TerminalOutput({
         <QuestionCard
           block={activeQuestion}
           onSelect={handleStructuredSelect}
-          onCancel={onSendKeys ? () => onSendKeys('\x1b') : undefined}
+          onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
         />
       ) : questionBlock && onSendKeys ? (
         <QuestionCard

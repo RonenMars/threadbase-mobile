@@ -28,6 +28,8 @@ export interface PairResult {
   deviceId?: string
   deviceToken?: string
   capabilities?: DeviceCapability[]
+  /** Advertised public address of the server. Recorded, never used as `url`. */
+  publicUrl?: string
 }
 
 interface PairOptions {
@@ -76,6 +78,7 @@ async function resolveCredentials(
       deviceId: exchanged.deviceId ?? undefined,
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
+      publicUrl: exchanged.publicUrl ?? undefined,
     }
   }
 
@@ -93,6 +96,7 @@ async function resolveCredentials(
       deviceId: exchanged.deviceId ?? undefined,
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
+      publicUrl: exchanged.publicUrl ?? undefined,
     }
   }
 

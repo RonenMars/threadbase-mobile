@@ -167,6 +167,52 @@ describe('exchangeToken', () => {
     expect(result.capabilities).toBeNull()
   })
 
+  // The regression this exists to prevent (TB-S-13). `resolvedUrl` used to be
+  // `body.publicUrl ?? trimmedUrl`, so a server that advertised a public
+  // address silently replaced the one the user typed — pairing against a LAN IP
+  // moved the app to the tunnel with no signal.
+  //
+  // The two URLs MUST differ. The test above uses the same value for both, so
+  // it passes on the old behaviour and proves nothing about this one.
+  it('keeps the typed address when the server advertises a different publicUrl', async () => {
+    const apiKey = 'tb_typed_address_is_authoritative'
+    const typed = 'http://192.168.68.125:8766'
+    const advertised = 'https://tunnel.example.test'
+
+    global.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      // The request itself must go to the typed address, not the advertised one.
+      expect(String(input)).toBe(`${typed}/api/pair/exchange`)
+      const body = JSON.parse(String(init?.body)) as { clientPublicKey: string }
+      const recipientPk = naclUtil.decodeBase64(body.clientPublicKey)
+      const ephemeral = nacl.box.keyPair()
+      const nonce = nacl.randomBytes(nacl.box.nonceLength)
+      const cipher = nacl.box(
+        naclUtil.decodeUTF8(apiKey),
+        nonce,
+        recipientPk,
+        ephemeral.secretKey,
+      )
+      return new Response(
+        JSON.stringify({
+          ciphertext: naclUtil.encodeBase64(cipher),
+          nonce: naclUtil.encodeBase64(nonce),
+          ephemeralPublicKey: naclUtil.encodeBase64(ephemeral.publicKey),
+          publicUrl: advertised,
+          machineName: 'ronen-mac.local',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      )
+    }) as typeof fetch
+
+    const result = await exchangeToken({ url: typed, token: 'pt_abc' })
+
+    expect(result.url).toBe(typed)
+    expect(result.url).not.toBe(advertised)
+    // Recorded rather than discarded — a later feature needs it, and losing it
+    // here would mean a re-pair to recover a value the server already sent.
+    expect(result.publicUrl).toBe(advertised)
+  })
+
   it('forwards deviceName/readOnly and returns device fields', async () => {
     const apiKey = 'tb_device_fields'
 
