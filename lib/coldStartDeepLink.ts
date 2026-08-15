@@ -1,3 +1,5 @@
+import type { Href } from 'expo-router'
+
 /**
  * Cold-start routing for taps that launch the app from a terminated state.
  *
@@ -13,7 +15,7 @@
  *  the nav guard without re-parsing the path they were just handed. */
 export interface SessionRoute {
   sessionId: string
-  path: string
+  path: Href
 }
 
 function route(sessionId: string, serverId: string | null | undefined): SessionRoute {

@@ -1,3 +1,5 @@
+import type { Href } from 'expo-router'
+
 /**
  * Builds the conversation detail route. When a search query is active it is
  * appended so the detail screen can resolve an anchored, highlighted window —
@@ -16,12 +18,15 @@ export function conversationHref(
   serverId: string,
   search?: string,
   opts?: { fromSession?: string; openSearch?: boolean },
-): string {
+): Href {
   let href = `/conversation/${id}?server=${serverId}`
   const q = search?.trim()
   if (q) href += `&search=${encodeURIComponent(q)}`
   const fromSession = opts?.fromSession?.trim()
   if (fromSession) href += `&fromSession=${encodeURIComponent(fromSession)}`
   if (opts?.openSearch) href += '&openSearch=1'
-  return href
+  // `id`/`serverId` are runtime strings, so the compiler can't statically prove
+  // this matches the generated `/conversation/[id]` route template — the shape
+  // is guaranteed by construction (see the route list in `app/conversation/[id].tsx`).
+  return href as Href
 }
