@@ -134,6 +134,46 @@ describe('/session/new start lifecycle', () => {
     alertSpy.mockRestore()
   })
 
+  it('suppresses Retry when the provider CLI is not installed (#748)', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    await renderScreen()
+
+    const { onError } = mockStartMutate.mock.calls[0][1]
+    await act(async () => onError(new NetworkError('The claude command was not found on this server.', 'PROVIDER_NOT_INSTALLED')))
+
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
+    expect(buttons.some((b) => b.text === 'Cancel')).toBe(true)
+
+    alertSpy.mockRestore()
+  })
+
+  it('still offers Retry for an ordinary failure', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    await renderScreen()
+
+    const { onError } = mockStartMutate.mock.calls[0][1]
+    await act(async () => onError(new NetworkError('boom')))
+
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.some((b) => b.text === 'Retry')).toBe(true)
+
+    alertSpy.mockRestore()
+  })
+
+  it('still offers Retry on a TIMEOUT failure', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    await renderScreen()
+
+    const { onError } = mockStartMutate.mock.calls[0][1]
+    await act(async () => onError(new NetworkError('boom', 'TIMEOUT')))
+
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.some((b) => b.text === 'Retry')).toBe(true)
+
+    alertSpy.mockRestore()
+  })
+
   it('cancel button under the countdown goes back to the hub', async () => {
     const { getByTestId } = await renderScreen()
 
