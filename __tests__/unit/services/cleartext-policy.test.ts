@@ -96,6 +96,22 @@ describe('isCleartextAllowed', () => {
   it('refuses a URL whose host it cannot read', () => {
     expect(isCleartextAllowed('http://')).toBe(false)
   })
+
+  // Deliberate false negatives, pinned so they are not "fixed" into holes.
+  //
+  // `inet_aton`'s short forms are real: 127.1 is loopback and 192.168.1 is
+  // 192.168.0.1, and a user may well type the first. Accepting them means
+  // teaching this module to parse the same short forms the platform does —
+  // which is precisely the parser-disagreement class the numeric guards above
+  // exist to close, reopened for a convenience. They stay denied: the cost is a
+  // confusing error on an address the user can rewrite in full, and the cost of
+  // the alternative is a bypass.
+  it.each(['http://127.1', 'http://192.168.1', 'http://10.1'])(
+    'refuses the shorthand %s even though it is local',
+    (url) => {
+      expect(isCleartextAllowed(url)).toBe(false)
+    },
+  )
 })
 
 describe('CleartextBlockedError', () => {
