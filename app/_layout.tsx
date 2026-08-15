@@ -13,6 +13,7 @@ import {
   DefaultTheme as NavDefaultTheme,
   DarkTheme as NavDarkTheme,
 } from 'expo-router'
+import type { Href } from 'expo-router'
 import { CaretLeft } from 'phosphor-react-native'
 import { StatusBar } from 'expo-status-bar'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -196,7 +197,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         })
         return
       }
-      const target = `/session/${msg.session.id}?server=${msg.serverId}`
+      const target: Href = `/session/${msg.session.id}?server=${msg.serverId}`
       clientLog.info('layout.session_ready', 'auto-nav router.push', {
         sessionId: msg.session.id,
         serverId: msg.serverId,

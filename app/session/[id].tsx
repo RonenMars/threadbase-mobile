@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
+import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import { CopySimple, InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
@@ -153,7 +154,7 @@ function PendingSessionScreen({
     }
 
     const goReady = (sessionId: string, via: string) => {
-      const target = `/session/${sessionId}?server=${serverId}`
+      const target: Href = `/session/${sessionId}?server=${serverId}`
       clientLog.info('session.pending', 'ready — replace to session', { sessionId, via, target })
       router.replace(target)
     }
