@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { CameraView, useCameraPermissions } from 'expo-camera'
+import { CameraView } from 'expo-camera'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
 import {
   exchangeToken,
   parsePairUri,
@@ -48,7 +49,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const [permission, requestPermission] = useCameraPermissions()
+  const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
   const [scanEnabled, setScanEnabled] = useState(true)

@@ -81,11 +81,21 @@ jest.mock('expo-clipboard', () => ({
 // hook. Consumers (usePermissionsStatus) put `cameraPermission` in a useEffect
 // dependency array; a fresh object per call would make that effect's setState
 // re-run every render → "Maximum update depth exceeded".
+//
+// The tuple has THREE elements, like the real hook: the third is the
+// non-prompting getter that re-reads OS state. A two-element mock silently
+// hands `undefined` to any caller that destructures it, so the mock has to
+// mirror the real shape or it tests a different API than the one that ships.
 jest.mock('expo-camera', () => {
   const React = require('react')
   const cameraPermission = { granted: true, canAskAgain: true, status: 'granted' }
   const requestCameraPermission = jest.fn().mockResolvedValue(cameraPermission)
-  const cameraPermissionTuple = [cameraPermission, requestCameraPermission]
+  const getCameraPermission = jest.fn().mockResolvedValue(cameraPermission)
+  const cameraPermissionTuple = [
+    cameraPermission,
+    requestCameraPermission,
+    getCameraPermission,
+  ]
   return {
     CameraView: ({ children }) => React.createElement('CameraView', null, children),
     useCameraPermissions: () => cameraPermissionTuple,
