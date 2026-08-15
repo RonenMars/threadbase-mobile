@@ -94,6 +94,18 @@ jobs:
       # exists on disk after the repo is checked out.
       - uses: actions/checkout@v5
 
+      # `.expo/` is gitignored, so a fresh checkout has no route declarations
+      # and `Href` degrades to a loose type — every bad route then typechecks
+      # and this job passes on code that does not compile under the project's
+      # own config. Generating them first is what makes the check below mean
+      # what its name says; the script exits non-zero if it cannot, rather
+      # than letting `tsc` pass vacuously.
+      - name: Generate route types
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
+        with:
+          run: ./scripts/generate-route-types.sh
+
       - name: Type check
         if: needs.gate.outputs.skip != 'true'
         uses: ./.github/actions/run-ci
