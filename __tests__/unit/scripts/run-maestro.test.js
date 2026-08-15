@@ -174,7 +174,7 @@ test('a nonzero Maestro exit status is preserved', () => {
   expect(result.stderr).toMatch(/Maestro result is invalid/i);
 });
 
-test('arguments reach Maestro unchanged without shell re-parsing', () => {
+test('caller arguments reach Maestro unmangled, without shell re-parsing', () => {
   fixture = makeFixture();
   const argsPath = path.join(fixture.root, 'args.json');
   const args = ['test', '--env', 'VALUE=a b;$(touch nope)', 'e2e/flow with spaces.yaml'];
@@ -182,7 +182,17 @@ test('arguments reach Maestro unchanged without shell re-parsing', () => {
   const result = runGuard(fixture, { args, env: { FAKE_ARGS_PATH: argsPath } });
 
   expect(result.status).toBe(0);
-  expect(JSON.parse(fs.readFileSync(argsPath, 'utf8'))).toEqual(args);
+
+  // run-maestro injects `-e E2E_MOCK_SERVER_URL=...` after the subcommand, so the
+  // received list is not identical to the caller's. What this test is about is
+  // that nothing is re-parsed by a shell: every argument the caller passed must
+  // arrive verbatim and in order around that injection.
+  const received = JSON.parse(fs.readFileSync(argsPath, 'utf8'));
+  expect(received[0]).toBe('test');
+  expect(received[1]).toBe('-e');
+  expect(received[2]).toMatch(/^E2E_MOCK_SERVER_URL=/);
+  expect(received.slice(3)).toEqual(args.slice(1));
+
   expect(fs.existsSync(path.join(fixture.root, 'nope'))).toBe(false);
 });
 
