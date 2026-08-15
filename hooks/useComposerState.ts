@@ -14,6 +14,7 @@ import {
 import { useDraftsStore } from '@/stores/drafts'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
 import type { SlashCommand } from '@/constants/slashCommands'
 
 export interface UseComposerStateOptions {
@@ -142,6 +143,21 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     resetComposer()
   }
 
+  // A refused credential is the one failure whose remedy the user can act on, and the two
+  // remedies are not interchangeable — mirrors authRemedy in app/backup-restore.tsx (#706).
+  // NetworkError/NotFoundError carry internal ids and API routes in their message, so they
+  // get a plain translated fallback instead of rendering err.message.
+  const attachErrorMessage = useCallback(
+    (err: unknown): string => {
+      if (err instanceof AuthError) {
+        return err.credential === 'device' ? t('error.authDeviceRevoked') : t('error.authKeyRejected')
+      }
+      if (err instanceof NetworkError || err instanceof NotFoundError) return t('error.attachFailed')
+      return err instanceof Error ? err.message : t('error.attachFailed')
+    },
+    [t],
+  )
+
   const runUpload = async (source: 'camera' | 'library' | 'files') => {
     setAttachError(null)
     try {
@@ -169,7 +185,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
       } else if (err instanceof Error && err.message === 'CAMERA_PERMISSION_DENIED') {
         setAttachError(t('error.cameraPermissionDenied'))
       } else {
-        setAttachError(err instanceof Error ? err.message : 'Failed to attach file')
+        setAttachError(attachErrorMessage(err))
       }
     } finally {
       setIsUploading(false)

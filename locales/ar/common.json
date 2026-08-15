@@ -16,7 +16,8 @@
     "authKeyRejectedOnConnect": "رفض الخادم مفتاح API هذا. تحقّق من THREADBASE_API_KEY على خادمك والصقه مجددًا.",
     "cameraPermissionDenied": "تم رفض الوصول إلى الكاميرا. أعد المحاولة لالتقاط صورة.",
     "cameraAccessNeededTitle": "الوصول إلى الكاميرا مطلوب",
-    "cameraAccessNeededMessage": "فعّل الوصول إلى الكاميرا من الإعدادات لالتقاط الصور."
+    "cameraAccessNeededMessage": "فعّل الوصول إلى الكاميرا من الإعدادات لالتقاط الصور.",
+    "attachFailed": "تعذّر إرفاق الملف. حاول مجدداً."
   },
   "search": {
     "placeholder": "بحث…"

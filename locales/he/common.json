@@ -16,7 +16,8 @@
     "authKeyRejectedOnConnect": "השרת דחה את מפתח ה-API הזה. בדוק את THREADBASE_API_KEY בשרת שלך והדבק אותו שוב.",
     "cameraPermissionDenied": "הגישה למצלמה נדחתה. נסה שוב כדי לצלם תמונה.",
     "cameraAccessNeededTitle": "נדרשת גישה למצלמה",
-    "cameraAccessNeededMessage": "אפשר גישה למצלמה בהגדרות כדי לצלם תמונות."
+    "cameraAccessNeededMessage": "אפשר גישה למצלמה בהגדרות כדי לצלם תמונות.",
+    "attachFailed": "צירוף הקובץ נכשל. נסו שוב."
   },
   "search": {
     "placeholder": "חיפוש…"
