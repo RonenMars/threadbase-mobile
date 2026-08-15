@@ -169,4 +169,66 @@ describe('BrowseScreen e2e provider flow', () => {
     expect(queryByTestId('start-provider-skeleton-codex-cli')).toBeNull()
     expect(getByTestId('start-provider-codex-cli').props.accessibilityState.disabled).toBe(false)
   })
+
+  // The "you'll answer in the RAW terminal" note is about structured questions
+  // specifically. Codex has no structured question menu but its prompts arrive
+  // as tappable permission-gate cards, not raw terminal — the note must not
+  // fire when either capability covers the interaction.
+  describe('the raw-terminal capability note', () => {
+    const noStructuredQuestionsText =
+      'This provider has no structured question menus — you’ll answer in the RAW terminal.'
+
+    const healthWith = (capabilities: Partial<Record<string, unknown>>) => ({
+      name: 'codex-cli',
+      available: true,
+      version: null,
+      verifiedAgainst: { captured: [], min: null },
+      capabilities: {
+        freshSessionId: 'late-bound',
+        resume: 'unsupported',
+        systemPrompt: 'unsupported',
+        structuredQuestions: false,
+        permissionGates: false,
+        liveControl: true,
+        ...capabilities,
+      },
+      warnings: [],
+    })
+
+    it('is absent when permissionGates covers the missing structured questions (Codex-like)', async () => {
+      mockHealth = {
+        data: { providers: [healthWith({ structuredQuestions: false, permissionGates: true })] },
+        isLoading: false,
+      }
+      const { getByTestId, queryByText } = await renderScreen()
+
+      await fireEvent.press(getByTestId('start-provider-codex-cli'))
+
+      expect(queryByText(noStructuredQuestionsText)).toBeNull()
+    })
+
+    it('is present when neither capability covers the interaction (generic terminal fallback)', async () => {
+      mockHealth = {
+        data: { providers: [healthWith({ structuredQuestions: false, permissionGates: false })] },
+        isLoading: false,
+      }
+      const { getByTestId, getByText } = await renderScreen()
+
+      await fireEvent.press(getByTestId('start-provider-codex-cli'))
+
+      expect(getByText(noStructuredQuestionsText)).toBeTruthy()
+    })
+
+    it('is absent when structuredQuestions is supported (Claude-like)', async () => {
+      mockHealth = {
+        data: { providers: [healthWith({ structuredQuestions: true, permissionGates: false })] },
+        isLoading: false,
+      }
+      const { getByTestId, queryByText } = await renderScreen()
+
+      await fireEvent.press(getByTestId('start-provider-codex-cli'))
+
+      expect(queryByText(noStructuredQuestionsText)).toBeNull()
+    })
+  })
 })
