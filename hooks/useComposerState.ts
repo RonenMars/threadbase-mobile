@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, AppState, Linking } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
 import { useRenameSession } from '@/hooks/useSessionName'
@@ -44,6 +45,7 @@ export interface ComposerState {
 }
 
 export function useComposerState({ serverId, sessionId, onSend }: UseComposerStateOptions): ComposerState {
+  const { t } = useTranslation('common')
   const [inputText, setInputText] = useState('')
   const [attachments, setAttachments] = useState<UploadedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -159,7 +161,16 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
       const uploaded = await Promise.all(images.map((img) => uploadAttachment(serverId, sessionId, img)))
       setAttachments((prev) => [...prev, ...uploaded])
     } catch (err) {
-      setAttachError(err instanceof Error ? err.message : 'Failed to attach file')
+      if (err instanceof Error && err.message === 'CAMERA_PERMISSION_BLOCKED') {
+        Alert.alert(t('error.cameraAccessNeededTitle'), t('error.cameraAccessNeededMessage'), [
+          { text: t('button.cancel'), style: 'cancel' },
+          { text: t('button.openSettings'), onPress: () => Linking.openSettings() },
+        ])
+      } else if (err instanceof Error && err.message === 'CAMERA_PERMISSION_DENIED') {
+        setAttachError(t('error.cameraPermissionDenied'))
+      } else {
+        setAttachError(err instanceof Error ? err.message : 'Failed to attach file')
+      }
     } finally {
       setIsUploading(false)
     }

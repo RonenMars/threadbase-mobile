@@ -1,5 +1,7 @@
 import { renderHook, act } from '@testing-library/react-native'
+import { Alert, Linking } from 'react-native'
 import { useComposerState } from '@/hooks/useComposerState'
+import { pickFromCamera } from '@/services/uploads'
 
 // ── mocks ────────────────────────────────────────────────────────────────────
 // jest.mock factories are hoisted so we cannot reference outer consts inside them.
@@ -52,7 +54,7 @@ jest.mock('@/services/ws-client', () => ({
   wsManager: { getClient: () => ({ status: () => 'connected' }) },
 }))
 
-jest.mock('react-native/Libraries/Alert/Alert', () => ({ alert: jest.fn() }))
+jest.mock('react-native/Libraries/Alert/Alert', () => ({ __esModule: true, default: { alert: jest.fn() } }))
 
 // ── tests ────────────────────────────────────────────────────────────────────
 
@@ -128,6 +130,45 @@ describe('useComposerState', () => {
     await act(() => { result.current.handleSlashArgConfirm(cmd, 'foo bar') })
     expect(onSend).toHaveBeenCalledWith('/search foo bar', '/search foo bar')
     expect(result.current.pendingArgCommand).toBeNull()
+  })
+})
+
+// Triggers a real Alert.alert('Attach', ...) call via handleAttach, then invokes
+// the "Take Photo" button's onPress directly — Alert.alert itself is mocked to a
+// no-op, so button presses don't happen on their own.
+async function tapTakePhoto(result: { current: { handleAttach: () => void } }) {
+  await act(() => { result.current.handleAttach() })
+  const attachButtons = (Alert.alert as jest.Mock).mock.calls[0][2] as { text: string; onPress?: () => void | Promise<void> }[]
+  const takePhoto = attachButtons.find((b) => b.text === 'Take Photo')
+  await act(async () => { await takePhoto?.onPress?.() })
+}
+
+describe('runUpload camera permission handling', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('shows a retryable, translated error when the camera permission can be asked again', async () => {
+    ;(pickFromCamera as jest.Mock).mockRejectedValueOnce(new Error('CAMERA_PERMISSION_DENIED'))
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+    expect(result.current.attachError).toBe('Camera access denied. Try again to take a photo.')
+    expect(Alert.alert).toHaveBeenCalledTimes(1) // only the 'Attach' action sheet, no second alert
+  })
+
+  it('offers a translated Settings remedy when the camera permission is permanently blocked', async () => {
+    ;(pickFromCamera as jest.Mock).mockRejectedValueOnce(new Error('CAMERA_PERMISSION_BLOCKED'))
+    const openSettings = jest.spyOn(Linking, 'openSettings').mockImplementation(() => Promise.resolve())
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+
+    expect(result.current.attachError).toBeNull()
+    const remedyCall = (Alert.alert as jest.Mock).mock.calls[1]
+    expect(remedyCall[0]).toBe('Camera access needed')
+    expect(remedyCall[1]).toBe('Enable camera access in Settings to take photos.')
+    const remedyButtons = remedyCall[2] as { text: string; onPress?: () => void | Promise<void> }[]
+    expect(remedyButtons.map((b) => b.text)).toEqual(['Cancel', 'Open Settings'])
+
+    await remedyButtons.find((b) => b.text === 'Open Settings')?.onPress?.()
+    expect(openSettings).toHaveBeenCalledTimes(1)
   })
 })
 
