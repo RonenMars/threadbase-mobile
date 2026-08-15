@@ -519,6 +519,13 @@ export default function SessionDetailScreen() {
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
   const { sendKeys, sendInput, stopSession } = useSessionActions(serverId, id ?? '')
+  // The effect below subscribes to `beforeRemove`, and it must depend on the
+  // stable `mutate` rather than on `stopSession`: the mutation object gets a new
+  // identity on every state transition, so depending on it would tear down and
+  // re-register that listener mid-session. Hoisting `mutate` says the same thing
+  // as `stopSession.mutate` in the dependency array, but as a plain identifier
+  // exhaustive-deps can verify instead of warn about.
+  const { mutate: stopSessionMutate } = stopSession
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
   const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
     enabled: Boolean(serverId && reviewConversationId),
@@ -545,7 +552,7 @@ export default function SessionDetailScreen() {
       if (!unusedFresh) return
       clientLog.info('session', 'discard unused empty session on back', { sessionId: id, serverId })
       clearSessionUsed(id)
-      stopSession.mutate(undefined, {
+      stopSessionMutate(undefined, {
         onError: (err) => {
           clientLog.info('session', 'discard stop failed', {
             sessionId: id,
@@ -561,7 +568,7 @@ export default function SessionDetailScreen() {
     id,
     serverId,
     session,
-    stopSession.mutate,
+    stopSessionMutate,
   ])
 
   // Mirrors the `isLive` check computed later (post early-returns) — needed
