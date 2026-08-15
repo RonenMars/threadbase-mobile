@@ -5,6 +5,7 @@ import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
@@ -87,11 +88,12 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
 
   const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
     if (!activeQuestion) return
-    // Permission gate: answer by sending the REAL on-screen option number + Enter
-    // (e.g. "2\r") via the keystroke route — never a 1-based index, never a POST.
+    // Permission gate: answered over the keystroke route, never a POST. The
+    // detector's literal keys win over the on-screen number — see
+    // permissionAnswerKeys.
     if (activeQuestion.source === 'permission') {
-      const realIndex = activeQuestion.permissionIndices?.[optionIndex]
-      if (realIndex !== undefined) onSendKeys?.(`${realIndex}\r`)
+      const keys = permissionAnswerKeys(activeQuestion, optionIndex)
+      if (keys !== null) onSendKeys?.(keys)
       return
     }
     if (!activeQuestion.toolUseId) return

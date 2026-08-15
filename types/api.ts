@@ -270,10 +270,21 @@ export interface QuestionCancelledWsMessage {
 
 // A permission-gate option scraped from the rendered screen. `index` is the
 // ACTUAL on-screen number (e.g. 2, 3), not a 1-based array index — gates can
-// show "2. Yes / 3. No". Answered by sending `${index}\r` via /input { keys }.
+// show "2. Yes / 3. No".
 export interface PermissionOption {
   index: number
   label: string
+  /**
+   * Literal keystroke bytes that answer this option, when the detector knows
+   * them — authoritative over `index`, which is only presentational for some
+   * prompts. A Codex EXEC approval renders "1. yes / 2. no" but is answered by
+   * `y` and Escape; a shell `[y/N]` renders no numbers at all.
+   *
+   * Absent for OSC-777 gates, where `${index}\r` is correct and remains the
+   * fallback. The streamer has sent this since it added `detectShellPrompt`;
+   * the client used to drop it.
+   */
+  answerKeys?: string
 }
 
 // Permission gate detected live by the streamer (OSC 777). Additive WS event.
