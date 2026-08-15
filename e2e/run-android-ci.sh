@@ -39,13 +39,37 @@ capture_failure() {
 }
 trap capture_failure EXIT
 
-adb wait-for-device
-until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 1; done
+# Bounded, because the obvious form is not: `adb wait-for-device` and a bare
+# `until getprop` loop both block forever and print nothing when no device is
+# attached. On 2026-08-15 an emulator went away mid-run and this step sat for
+# fifteen minutes writing a zero-byte log; on CI that consumes the whole
+# 75-minute job and yields no signal. Failing loudly after a bounded wait costs
+# a rerun; failing silently costs the runner.
+#
+# The getprop poll subsumes `wait-for-device`: with nothing attached it just
+# keeps failing until the deadline.
+E2E_DEVICE_WAIT_SECONDS="${E2E_DEVICE_WAIT_SECONDS:-300}"
+device_deadline=$(( SECONDS + E2E_DEVICE_WAIT_SECONDS ))
+until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
+  if [ "$SECONDS" -ge "$device_deadline" ]; then
+    echo "::error::No booted Android device after ${E2E_DEVICE_WAIT_SECONDS}s. Attached devices:" >&2
+    adb devices >&2 || true
+    exit 1
+  fi
+  sleep 2
+done
 adb shell input keyevent 82
 # x86_64 is what the CI emulator image is. Overridable so the same script can be
 # run against a local arm64 emulator, which is the only way to exercise this file
 # outside a paid runner.
 (cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}")
+# Uninstall first: `-r` keeps app data, and `launchApp: clearState: true` does
+# not wipe SecureStore, so credentials from a previous successful pairing
+# survive into the next run and change the path onboarding takes. The resulting
+# failure looks like an app defect rather than stale state — it cost two
+# debugging cycles on 2026-08-15. CI is masked from this because every job gets
+# a fresh emulator; a local rerun is not.
+adb uninstall com.ronenmars.threadbase > /dev/null 2>&1 || true
 adb install -r android/app/build/outputs/apk/release/app-release.apk
 if [ -z "${FLOWS:-}" ]; then
   npm run test:e2e:mock
