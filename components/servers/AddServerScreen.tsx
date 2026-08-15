@@ -94,6 +94,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
       deviceId,
       deviceToken,
       capabilities,
+      publicUrl,
     }: {
       url: string
       apiKey: string
@@ -101,6 +102,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
       deviceId?: string
       deviceToken?: string
       capabilities?: import('@/types/devices').DeviceCapability[]
+      publicUrl?: string
     }) => {
       setError(null)
       setLoading(true)
@@ -114,6 +116,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           deviceId,
           deviceToken,
           capabilities,
+          publicUrl,
         })
         if (typeof addResult !== 'string') {
           setError('This server is already in your list.')
@@ -178,6 +181,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
       deviceId: result.deviceId ?? undefined,
       deviceToken: result.deviceToken ?? undefined,
       capabilities: result.capabilities ?? undefined,
+      publicUrl: result.publicUrl ?? undefined,
     })
   }
 
