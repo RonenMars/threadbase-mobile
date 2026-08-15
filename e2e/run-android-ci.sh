@@ -19,6 +19,12 @@
 
 set -euo pipefail
 
+# Before the trap, not alongside the Maestro setup further down: the trap's
+# screenshot redirect targets this directory, so creating it late means an early
+# failure — a gradle or install failure, the ones most worth a screenshot — loses
+# its evidence to `No such file or directory` before the redirect even runs.
+mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
+
 capture_failure() {
   STATUS=$?
   if [ "$STATUS" -ne 0 ]; then
@@ -36,9 +42,11 @@ trap capture_failure EXIT
 adb wait-for-device
 until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 1; done
 adb shell input keyevent 82
-(cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64)
+# x86_64 is what the CI emulator image is. Overridable so the same script can be
+# run against a local arm64 emulator, which is the only way to exercise this file
+# outside a paid runner.
+(cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}")
 adb install -r android/app/build/outputs/apk/release/app-release.apk
-mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
 if [ -z "${FLOWS:-}" ]; then
   npm run test:e2e:mock
   exit 0
