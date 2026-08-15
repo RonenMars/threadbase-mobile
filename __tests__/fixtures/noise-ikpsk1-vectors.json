@@ -1,0 +1,21 @@
+{
+  "protocolName": "Noise_IKpsk1_25519_ChaChaPoly_SHA256",
+  "prologueUtf8": "threadbase-e2ee/1 pair",
+  "pairToken": "pt_00112233445566778899aabbccddeeff",
+  "psk": "DyYpm8XCb3GoHMjo7gVa9aNMeGa+47pfV1qjO5ZW7Ng=",
+  "keys": {
+    "serverStaticPrivate": "UbtMKeUqtjahNk59JwiNOCrbtg+k5U4krRnFa4MTcYM=",
+    "serverStaticPublic": "Q77bN0q9Y3ba3E2MtMeloVqN3YB7BOhwKx6/+tN+zCQ=",
+    "clientStaticPrivate": "UoeRkBUbvymok25DR+LK0qnH9Qx11ETSJ3Ce7MSkUIk=",
+    "clientStaticPublic": "Zzu093gJgdtPG3j0pibtytlOHraViNhM42LVjrr+lQg=",
+    "clientEphemeralPrivate": "Xfe6flroaXJQW1BuRr222LGItfoz/pUEuwSDaoQZL8A=",
+    "serverEphemeralPrivate": "g0UAupC8DkkMuxMPcEm/wv75yAQApnYZ4Ej3mDffRV8="
+  },
+  "payload1Utf8": "{\"v\":1}",
+  "payload2Utf8": "{\"v\":1,\"deviceId\":\"11111111-2222-3333-4444-555555555555\"}",
+  "message1": "V9Xr9L64ZLzDZmIQihAb15/n8qwY9g0dPo3NqgLUvE5aitg1vQo21kDr8kNr+LkIT2IPm6Dxj+95/kPrDTmrgGUsDH6qNaB0ScY6WwB52UqUugfEGNcdtkufEy8nCUzZqJSOFBLm6g==",
+  "message2": "aasWeEZrZ+0RFzNQX29CqpDBa33bwOz/BX9WgXqONyjlOJYtbxK+OcLvx4UKKMDLk85CdbYg03yJUd6/qHNd9j3izIbaA1B0TSHLrh8ka0gpgLliZ2MVYaKrFwnNk4TXjhodENHoOv3c",
+  "handshakeHash": "YD5o/CLU+8uc+57LdA9KHa83BHeFyBqSGFQnC8yiXeE=",
+  "clientToServerKey": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+  "serverToClientKey": "+C3SvUXpO91Es/LrIvB5PLekK5AcXdwAkerPV0AcjEU="
+}

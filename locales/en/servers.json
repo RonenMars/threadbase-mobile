@@ -200,5 +200,21 @@
         "action": ""
       }
     }
+  },
+  "encryption": {
+    "requireLabel": "Require encryption for this server",
+    "requireHint": "This device will refuse to talk to it in plaintext.",
+    "clearTitle": "Stop requiring encryption?",
+    "clearMessage": "{{server}} will be contacted in plaintext whenever it does not offer encryption, and anything on the network in between can read every prompt, reply and file path.",
+    "clearCancel": "Keep requiring it",
+    "clearConfirm": "Stop requiring",
+    "refusedTitle": "Not connecting to {{server}}",
+    "refusedBody": "You require encryption for this server and it is not offering any, so nothing has been sent to it.",
+    "refusedRetry": "Retry",
+    "refusedForget": "Forget and re-pair",
+    "forgetTitle": "Forget {{server}}?",
+    "forgetMessage": "This device's credentials for {{server}} are deleted. Scan its QR code again to pair from scratch.",
+    "forgetCancel": "Cancel",
+    "forgetConfirm": "Forget"
   }
 }
