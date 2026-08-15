@@ -81,6 +81,47 @@ describe('parsePairUri', () => {
     expect(caught).toBeInstanceOf(PairUriError)
     expect((caught as PairUriError).code).toBe('bad-server-url')
   })
+
+  // The QR is the only out-of-band channel in pairing, so it is the only place
+  // the server's identity can arrive un-substitutable. Nothing reads it yet;
+  // these pin that it survives the parse to where Phase 2 can.
+  const SPK = 'A'.repeat(43)
+
+  it('surfaces the server public key', () => {
+    const out = parsePairUri(
+      `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&spk=${SPK}&v=1`,
+    )
+    expect(out.spk).toBe(SPK)
+    expect(out.v).toBe(1)
+  })
+
+  // An older streamer emits neither field, and that has to stay an ordinary
+  // successful pairing rather than become a new failure.
+  it('parses a URI carrying neither field', () => {
+    const out = parsePairUri('threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x')
+    expect(out.spk).toBeUndefined()
+    expect(out.v).toBeUndefined()
+    expect(out.url).toBe('https://a.test')
+  })
+
+  // Dropped, not carried and not thrown: refusing the pairing would fail it over
+  // a field nothing consumes, and passing the value through would let a later
+  // consumer treat 42 characters of junk as a key.
+  it.each([['A'.repeat(42)], ['A'.repeat(44)], ['not+base64url/at=all'], ['']])(
+    'drops a wrong-shaped spk (%p) without failing the pairing',
+    (bad) => {
+      const out = parsePairUri(
+        `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&spk=${bad}`,
+      )
+      expect(out.spk).toBeUndefined()
+      expect(out.token).toBe('pt_x')
+    },
+  )
+
+  it('drops a non-numeric v', () => {
+    const out = parsePairUri('threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&v=abc')
+    expect(out.v).toBeUndefined()
+  })
 })
 
 describe('exchangeToken', () => {

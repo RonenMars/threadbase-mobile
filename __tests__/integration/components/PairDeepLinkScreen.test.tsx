@@ -13,6 +13,11 @@ jest.mock('@/services/pair-exchange', () => {
   return {
     ...actual,
     exchangeToken: jest.fn(),
+    // Wraps the real parser rather than replacing it: the screen still parses
+    // for real, and the call is recorded so a test can read what the rebuilt
+    // URI actually carried. Spying on the module object does not work here —
+    // the screen's import is bound directly, so the spy never sees the call.
+    parsePairUri: jest.fn(actual.parsePairUri),
   }
 })
 
@@ -23,16 +28,27 @@ jest.mock('@/services/pair-device-name', () => ({
 const exchangeToken = pairExchange.exchangeToken as jest.MockedFunction<
   typeof pairExchange.exchangeToken
 >
+const parsePairUri = pairExchange.parsePairUri as jest.MockedFunction<
+  typeof pairExchange.parsePairUri
+>
 
 const mockReplace = jest.fn()
 const FUTURE_EXP = String(Math.floor(Date.now() / 1000) + 180)
 
-function setParams(params: { url?: string; token?: string; exp?: string }) {
+function setParams(params: {
+  url?: string
+  token?: string
+  exp?: string
+  spk?: string
+  v?: string
+}) {
   ;(useLocalSearchParams as jest.Mock).mockReturnValue(params)
 }
 
 beforeEach(() => {
   exchangeToken.mockReset()
+  // Clear, not reset — reset would drop the real implementation it wraps.
+  parsePairUri.mockClear()
   mockReplace.mockReset()
   ;(useRouter as jest.Mock).mockReturnValue({
     push: jest.fn(),
@@ -77,6 +93,50 @@ describe('PairDeepLinkScreen', () => {
     expect(added[0].url).toBe('https://example.test')
     expect(added[0].apiKey).toBe('tb_sealed')
     expect(added[0].label).toBe('ronen-mac.local')
+  })
+
+  // Expo Router hands this screen loose query params, so it rebuilds the URI
+  // from an allowlist before parsing. A parameter missing from that list is
+  // dropped here and nowhere else, silently — the scanner and paste paths hand
+  // parsePairUri the original string. Asserting on the parser's own return value
+  // covers both halves at once: the rebuild kept `spk`, and the parse surfaced it.
+  it('carries the server public key through the deep-link rebuild', async () => {
+    const spk = 'B'.repeat(43)
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk, v: '1' })
+    exchangeToken.mockResolvedValue({
+      url: 'https://example.test',
+      apiKey: 'tb_sealed',
+      publicUrl: 'https://example.test',
+      machineName: 'ronen-mac.local',
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: null,
+    })
+
+    await renderWithI18n(<PairDeepLinkScreen />)
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+
+    expect(parsePairUri).toHaveBeenCalled()
+    expect(parsePairUri.mock.results[0].value).toMatchObject({ spk, v: 1 })
+  })
+
+  // An older streamer sends no spk, and that must stay an ordinary pairing.
+  it('pairs normally when the link carries no server public key', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP })
+    exchangeToken.mockResolvedValue({
+      url: 'https://example.test',
+      apiKey: 'tb_sealed',
+      publicUrl: 'https://example.test',
+      machineName: 'ronen-mac.local',
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: null,
+    })
+
+    await renderWithI18n(<PairDeepLinkScreen />)
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    expect(Object.values(useServersStore.getState().servers)).toHaveLength(1)
   })
 
   it('shows a real error for an expired link, without exchanging', async () => {

@@ -6,6 +6,21 @@ export interface PairUri {
   url: string
   token: string
   exp?: number
+  /**
+   * The server's long-term X25519 public key, unpadded base64url.
+   *
+   * Carried, never checked — Phase 2 owns verification. It matters that it
+   * arrives at all: the QR is the only out-of-band channel in pairing, so it is
+   * the one value a man in the middle cannot substitute. The URL, `/api/info`
+   * and the exchange reply's ephemeral key all cross the network before any
+   * encryption exists.
+   *
+   * Optional forever: a streamer that predates the field emits no `spk`, and
+   * that stays an ordinary successful pairing.
+   */
+  spk?: string
+  /** QR payload format version. Absent on older streamers. Not a capability signal — see `parsePairUri`. */
+  v?: number
 }
 
 export interface ExchangeResult {
@@ -54,6 +69,9 @@ export class PairExchangeError extends Error {
 
 const PAIR_EXCHANGE_TIMEOUT_MS = 15_000
 
+/** 32 bytes of X25519 public key, unpadded base64url. */
+const SERVER_PUBLIC_KEY_SHAPE = /^[A-Za-z0-9_-]{43}$/
+
 export function parsePairUri(raw: string): PairUri {
   let parsed: URL
   try {
@@ -77,7 +95,21 @@ export function parsePairUri(raw: string): PairUri {
   const exp = expRaw ? Number.parseInt(expRaw, 10) : undefined
   const parsedExp = Number.isFinite(exp) ? (exp as number) : undefined
   assertNotExpired(parsedExp)
-  return { url, token, exp: parsedExp }
+  // A wrong-shaped `spk` is dropped rather than carried or rejected. Rejecting
+  // would fail a pairing over a field nothing reads yet; carrying it would let a
+  // later consumer mistake the value for a key. Absent is the honest answer.
+  const spkRaw = parsed.searchParams.get('spk')
+  const spk = spkRaw && SERVER_PUBLIC_KEY_SHAPE.test(spkRaw) ? spkRaw : undefined
+  // Format version of the QR, not a capability probe: a relayed QR is not an
+  // authenticated source, so branching on this to decide whether to demand
+  // encryption would be downgradable by editing one character. Capability comes
+  // from `GET /api/info`. It is carried because it is the only thing that
+  // distinguishes "this QR predates spk" from "this QR's spk was malformed and
+  // dropped above" — two failures the line above otherwise makes identical.
+  const vRaw = parsed.searchParams.get('v')
+  const vParsed = vRaw ? Number.parseInt(vRaw, 10) : undefined
+  const v = Number.isFinite(vParsed) ? vParsed : undefined
+  return { url, token, exp: parsedExp, spk, v }
 }
 
 function assertHttpServerUrl(raw: string): void {
