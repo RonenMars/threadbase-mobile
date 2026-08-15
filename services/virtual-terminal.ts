@@ -208,6 +208,16 @@ export class VirtualTerminal {
       return start + 1
     }
 
+    // ESC I…I F (ECMA-48): intermediate bytes in 0x20–0x2F, then one final byte.
+    // Claude Code emits `ESC ( B` (designate ASCII into G0) after every keystroke
+    // write, so skipping only the `(` left the `B` to be drawn as text — a stray
+    // glyph at the cursor, i.e. on the prompt row, until the next repaint of that
+    // row wiped it.
+    if (data[i] >= '\x20' && data[i] <= '\x2f') {
+      while (i < data.length && data[i] >= '\x20' && data[i] <= '\x2f') i++
+      return i + 1
+    }
+
     // Single-character escape (ESC M, ESC 7, ESC 8, etc.) — skip
     return i + 1
   }

@@ -196,6 +196,24 @@ describe('VirtualTerminal – VT100 emulation', () => {
     vt.feed('new content')
     expect(vt.getLines()).toEqual(['new content'])
   })
+
+  // ── Charset designation (ESC I…I F) ──
+  // Claude Code emits `ESC ( B` (designate ASCII into G0) after every keystroke
+  // write. Skipping only the intermediate `(` left the final `B` on screen as a
+  // stray glyph at the cursor — observed 2026-08-15 as a phantom "B" on the
+  // prompt row that cleared itself when that row was next repainted.
+  it('consumes a charset designation instead of printing its final byte', () => {
+    // A bare `❯` is filtered as chrome, so assert on text the filter keeps.
+    expect(feedAndGet(`typed ${ESC}(B`)).toEqual(['typed'])
+  })
+
+  it('consumes the other charset designators too', () => {
+    expect(feedAndGet(`${ESC}(0${ESC})B${ESC}*B${ESC}+B`)).toEqual([])
+  })
+
+  it('leaves single-character escapes alone', () => {
+    expect(feedAndGet(`a${ESC}7b`)).toEqual(['ab'])
+  })
 })
 
 // ── Claude Code TUI Chrome Filtering ────────────────────────────────────────
