@@ -111,6 +111,37 @@ export class ConversationBusyError extends Error {
   }
 }
 
+/**
+ * Reason POST /api/sessions/:id/answer sends on a 409 when the question's menu
+ * already closed on the host (streamer commit bbc1568) — the common, benign
+ * case: the server also broadcasts `question_cancelled`, which dismisses the
+ * question card on its own. That endpoint sends `reason`, not `code`; folded
+ * into `code` below (see the reason fallback in request()) so callers only
+ * ever need to check one field.
+ */
+export const QUESTION_GONE_CODE = 'question_gone'
+
+/**
+ * Every reason POST /answer gives for "this question can no longer be
+ * answered". They differ only in how the server noticed — the menu closed
+ * (`question_gone`), the pending entry was already dropped
+ * (`no_pending_question`), or the client answered with a stale id
+ * (`tool_use_mismatch`) — and mean one thing to the user.
+ *
+ * Retrying any of them is pointless, and worse than pointless: the server drops
+ * the pending question on the first 409, so a retry answers `no_pending_question`
+ * and the settled error no longer says why it actually failed.
+ */
+const QUESTION_CLOSED_CODES: readonly string[] = [
+  QUESTION_GONE_CODE,
+  'no_pending_question',
+  'tool_use_mismatch',
+]
+
+export function isQuestionClosedError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code !== undefined && QUESTION_CLOSED_CODES.includes(err.code)
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.
@@ -261,6 +292,7 @@ async function request<T>(
       errBody = await response.json()
       if (errBody?.error) detail = errBody.error as string
       if (errBody?.code) code = errBody.code as string
+      else if (errBody?.reason) code = errBody.reason as string
       if (isWarmupFetchEndpoint(method, path)) warmupState = recordWarmupError(serverId, errBody)
       if (isStartSession) {
         clientLog.info('startSession', 'start response error body', {

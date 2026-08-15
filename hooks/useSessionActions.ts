@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, NetworkError, stopSession } from '@/services/api-client'
+import { createApiForServer, isQuestionClosedError, NetworkError, stopSession } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
@@ -87,6 +87,12 @@ export function useSessionActions(serverId: string, sessionId: string) {
 
   const respondToQuestion = useMutation({
     ...retryOnNetwork,
+    // Keep the radio-drop retry, but never retry a question the server says is
+    // closed: a retry cannot succeed, and it overwrites the settled error with
+    // `no_pending_question` (the 409 path drops the pending entry), which is
+    // what the call sites read to tell a benign close from a real failure.
+    retry: (count: number, err: Error) =>
+      err instanceof NetworkError && !isQuestionClosedError(err) && count < 2,
     mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) =>
       api.post(`/api/sessions/${sessionId}/answer`, vars),
   })
