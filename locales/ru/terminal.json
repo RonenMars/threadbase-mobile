@@ -62,8 +62,5 @@
     "resumedHistoryLinkSearch": "поиск",
     "resumedHistoryLinkIn": " в ",
     "resumedHistoryLinkTail": "истории беседы →"
-  },
-  "a11y": {
-    "line": "Строка {{n}}: {{text}}"
   }
 }

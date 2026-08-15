@@ -60,8 +60,5 @@
     "resumedHistoryLinkSearch": "חפש",
     "resumedHistoryLinkIn": " ב",
     "resumedHistoryLinkTail": "היסטוריית השיחה ←"
-  },
-  "a11y": {
-    "line": "שורה {{n}}: {{text}}"
   }
 }

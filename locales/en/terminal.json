@@ -60,8 +60,5 @@
     "resumedHistoryLinkSearch": "search",
     "resumedHistoryLinkIn": " in ",
     "resumedHistoryLinkTail": "the conversation history →"
-  },
-  "a11y": {
-    "line": "Line {{n}}: {{text}}"
   }
 }

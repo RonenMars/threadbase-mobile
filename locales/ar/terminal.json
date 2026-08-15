@@ -64,8 +64,5 @@
     "resumedHistoryLinkSearch": "بحث",
     "resumedHistoryLinkIn": " في ",
     "resumedHistoryLinkTail": "سجل المحادثة ←"
-  },
-  "a11y": {
-    "line": "السطر {{n}}: {{text}}"
   }
 }
