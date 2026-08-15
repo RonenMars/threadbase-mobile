@@ -40,8 +40,15 @@ jest.mock('@/hooks/useConversationStream', () => ({
   useConversationStream: () => ({ liveMessages: mockLive }),
 }))
 
+// respondToQuestion's error state is read during render (to tell a closed
+// question from a real send failure), not just inside a callback, so the mock
+// has to carry the whole mutation rather than only what the send path touches.
 jest.mock('@/hooks/useSessionActions', () => ({
-  useSessionActions: () => ({ sendInput: { mutate: mockMutate } }),
+  useSessionActions: () => ({
+    sendInput: { mutate: mockMutate, isError: false, error: null },
+    sendKeys: { mutate: jest.fn() },
+    respondToQuestion: { mutate: jest.fn(), isError: false, error: null },
+  }),
 }))
 
 // The composer guards sends on a connected WS client. Report connected so the

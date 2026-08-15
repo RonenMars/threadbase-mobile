@@ -73,4 +73,14 @@ describe('ChatComposer', () => {
     await fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(props.onSend).not.toHaveBeenCalled()
   })
+
+  it('shows sendNotice text when set', async () => {
+    await renderComposer({ sendNotice: 'That question isn\'t open anymore.' })
+    expect(screen.getByText('That question isn\'t open anymore.')).toBeTruthy()
+  })
+
+  it('does not render a sendNotice element when null', async () => {
+    await renderComposer({ sendNotice: null })
+    expect(screen.queryByText('That question isn\'t open anymore.')).toBeNull()
+  })
 })

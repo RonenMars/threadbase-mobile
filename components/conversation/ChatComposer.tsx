@@ -39,6 +39,9 @@ export interface ChatComposerProps {
   isUploading: boolean
   attachError: string | null
   sendError: string | null
+  /** Calm, non-failure notice shown in the same slot as sendError (e.g. a
+   *  question that closed itself) — not styled as a failure. */
+  sendNotice?: string | null
   disabled: boolean
   voice: { listening: boolean; start: () => Promise<void>; stop: () => void }
   micGranted: boolean
@@ -55,6 +58,7 @@ export function ChatComposer({
   isUploading,
   attachError,
   sendError,
+  sendNotice = null,
   disabled,
   voice,
   micGranted,
@@ -109,6 +113,11 @@ export function ChatComposer({
       {sendError ? (
         <Text style={styles.sendError} numberOfLines={2}>
           {sendError}
+        </Text>
+      ) : null}
+      {sendNotice ? (
+        <Text style={styles.sendNotice} numberOfLines={2}>
+          {sendNotice}
         </Text>
       ) : null}
       {attachError ? (
@@ -317,6 +326,7 @@ function makeStyles(theme: Theme) {
     },
     inputAreaExpanded: { flex: 1, borderTopWidth: 0 },
     sendError: { color: theme.status.failed, fontSize: font.sm },
+    sendNotice: { color: theme.text.secondary, fontSize: font.sm },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
     input: {
       flex: 1,

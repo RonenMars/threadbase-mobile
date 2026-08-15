@@ -5,6 +5,7 @@ import {
   NetworkError,
   AuthError,
   NotFoundError,
+  QUESTION_GONE_CODE,
 } from '@/services/api-client'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
@@ -306,6 +307,48 @@ describe('api.post', () => {
         body: JSON.stringify({ input: 'hello' }),
       })
     )
+  })
+})
+
+// POST /api/sessions/:id/answer's 409 sends `reason`, not `code` — the shape
+// every other 409 on this client uses. Without a fallback, that reason is
+// dropped entirely and the caller can't tell this benign case apart from a
+// generic failure.
+describe('api.post – 409 reason fallback (question_gone)', () => {
+  it('falls back to errBody.reason for code when code is absent', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({ ok: false, reason: 'question_gone' }),
+    })
+
+    await expect(
+      api.post('/api/sessions/sess1/answer', { toolUseId: 't1', answers: {} }),
+    ).rejects.toMatchObject({ code: QUESTION_GONE_CODE })
+  })
+
+  it('prefers errBody.code over errBody.reason when both are present', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({ code: 'SOMETHING_ELSE', reason: 'question_gone' }),
+    })
+
+    await expect(
+      api.post('/api/sessions/sess1/answer', { toolUseId: 't1', answers: {} }),
+    ).rejects.toMatchObject({ code: 'SOMETHING_ELSE' })
+  })
+
+  it('leaves code undefined when neither code nor reason is present', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: jest.fn().mockResolvedValue({}),
+    })
+
+    await expect(api.post('/api/sessions/sess1/answer', {})).rejects.toMatchObject({
+      code: undefined,
+    })
   })
 })
 
