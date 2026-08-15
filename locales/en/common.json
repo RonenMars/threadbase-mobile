@@ -6,13 +6,17 @@
     "back": "Back",
     "close": "Close",
     "retry": "Retry",
-    "apply": "Apply"
+    "apply": "Apply",
+    "openSettings": "Open Settings"
   },
   "error": {
     "loadFailed": "Unable to load",
     "authDeviceRevoked": "This device is no longer authorized. Pair it with the server again.",
     "authKeyRejected": "The server rejected the API key. Update the API key and try again.",
-    "authKeyRejectedOnConnect": "The server rejected this API key. Check THREADBASE_API_KEY on your server and paste it again."
+    "authKeyRejectedOnConnect": "The server rejected this API key. Check THREADBASE_API_KEY on your server and paste it again.",
+    "cameraPermissionDenied": "Camera access denied. Try again to take a photo.",
+    "cameraAccessNeededTitle": "Camera access needed",
+    "cameraAccessNeededMessage": "Enable camera access in Settings to take photos."
   },
   "search": {
     "placeholder": "Search…"

@@ -6,13 +6,17 @@
     "back": "חזרה",
     "close": "סגירה",
     "retry": "נסה שוב",
-    "apply": "החל"
+    "apply": "החל",
+    "openSettings": "פתח הגדרות"
   },
   "error": {
     "loadFailed": "נכשל בטעינה",
     "authDeviceRevoked": "המכשיר הזה כבר אינו מורשה. בצע זיווג מחדש מול השרת.",
     "authKeyRejected": "השרת דחה את מפתח ה-API. עדכן את מפתח ה-API ונסה שוב.",
-    "authKeyRejectedOnConnect": "השרת דחה את מפתח ה-API הזה. בדוק את THREADBASE_API_KEY בשרת שלך והדבק אותו שוב."
+    "authKeyRejectedOnConnect": "השרת דחה את מפתח ה-API הזה. בדוק את THREADBASE_API_KEY בשרת שלך והדבק אותו שוב.",
+    "cameraPermissionDenied": "הגישה למצלמה נדחתה. נסה שוב כדי לצלם תמונה.",
+    "cameraAccessNeededTitle": "נדרשת גישה למצלמה",
+    "cameraAccessNeededMessage": "אפשר גישה למצלמה בהגדרות כדי לצלם תמונות."
   },
   "search": {
     "placeholder": "חיפוש…"

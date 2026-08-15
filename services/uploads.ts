@@ -60,7 +60,10 @@ export async function pickFromLibraryMulti(): Promise<PickedImage[]> {
 
 export async function pickFromCamera(): Promise<PickedImage | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync()
-  if (!perm.granted) throw new Error('Camera permission denied')
+  // canAskAgain distinguishes a one-off refusal (the OS dialog will show again)
+  // from USER_FIXED / "don't ask again" (only Settings can change it) — the
+  // caller needs to react differently to each.
+  if (!perm.granted) throw new Error(perm.canAskAgain ? 'CAMERA_PERMISSION_DENIED' : 'CAMERA_PERMISSION_BLOCKED')
 
   const result = await ImagePicker.launchCameraAsync(SINGLE_PICKER_OPTIONS)
   if (result.canceled || result.assets.length === 0) return null
