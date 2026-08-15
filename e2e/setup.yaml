@@ -54,10 +54,13 @@ appId: com.ronenmars.threadbase
       # the OS permission prompt, which Maestro cannot dismiss.
       #
       # Both commands are optional because this is not reliably the screen we
-      # land on: on a slow emulator the DONE screen has been observed already
-      # showing by the time these run, which failed every flow on an assertion
-      # naming notifications while the real subject was pairing. What the flows
-      # after this one need is a reached DONE, not a particular route to it.
+      # land on. On an Android release build the DONE screen has been observed
+      # showing directly after the handshake, repeatably and on a clean install,
+      # so it is not a timing artifact — but why the step is skipped there has
+      # not been established, and asserting it failed every flow on a message
+      # naming notifications while the real subject was pairing.
+      # What the flows after this one need is a reached DONE, not a particular
+      # route to it.
       - extendedWaitUntil:
           visible:
             id: "onboarding-notifications-cta"
