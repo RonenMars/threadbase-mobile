@@ -73,6 +73,13 @@ jest.mock('@/hooks/useSession', () => ({
   useSessions: () => ({ data: mockSessions.current, refetch: jest.fn(), isPending: false }),
 }))
 
+// Settled, so the provider selector renders its buttons rather than the
+// skeletons it shows while the health answer is in flight. Left unmocked, this
+// hook fetched for real and these tests raced it.
+jest.mock('@/hooks/useProviderHealth', () => ({
+  useProviderHealth: () => ({ data: { providers: [] }, isLoading: false }),
+}))
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const SERVER_ID = 'srv_alpha'
