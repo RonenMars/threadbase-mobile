@@ -23,6 +23,12 @@ appId: com.ronenmars.threadbase
 # dismiss the iOS 26.x keyboard, so this prelude never needs it — the form is
 # scrolled above the keyboard and the token input submits via its return key
 # (ConnectStep wires onSubmitEditing to the handshake).
+#
+# Use ${E2E_MOCK_SERVER_URL}, not a hardcoded localhost: on Android CI the mock
+# lives on the runner and the emulator reaches it only via 10.0.2.2 (set by the
+# E2E workflow). Localhost here is the emulator itself and pairing never lands.
+# Notifications is optional for the same reason as setup.yaml: a Release Android
+# build has been observed advancing straight to DONE after handshake.
 - launchApp:
     clearState: true
 
@@ -37,7 +43,7 @@ appId: com.ronenmars.threadbase
           id: "onboarding-connect-paste-card"
       - tapOn:
           id: "onboarding-connect-url-input"
-      - inputText: "http://localhost:7071"
+      - inputText: "${E2E_MOCK_SERVER_URL}"
       # Scroll the KeyboardAwareScrollView so the token input clears the keyboard.
       - swipe:
           start: 50%, 45%
@@ -57,8 +63,10 @@ appId: com.ronenmars.threadbase
           visible:
             id: "onboarding-notifications-cta"
           timeout: 8000
+          optional: true
       - tapOn:
           id: "onboarding-notifications-cta"
+          optional: true
       - extendedWaitUntil:
           visible:
             id: "onboarding-done-cta"

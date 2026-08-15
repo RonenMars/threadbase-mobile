@@ -72,6 +72,32 @@ describe('run-maestro.js flow variables', () => {
   });
 });
 
+describe('mock-suite flow server URLs', () => {
+  // The Android emulator's localhost is the emulator itself; the mock server
+  // lives on the runner host and is reached only via E2E_MOCK_SERVER_URL
+  // (http://10.0.2.2:7071 in CI). A hardcoded localhost in a mock-suite flow
+  // pairs against nothing on Android and fails on an onboarding assertion that
+  // looks unrelated — that is what E2E run #14's 07_conversation_scroll_gaps
+  // failure was.
+  it('does not hardcode localhost into the mock-suite pairing URL', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, '../../../package.json'), 'utf8'),
+    );
+    const script = packageJson.scripts['test:e2e:mock'];
+    const flows = [...script.matchAll(/\be2e\/[\w.-]+\.yaml\b/g)].map((m) => m[0]);
+    expect(flows.length).toBeGreaterThan(0);
+
+    const offenders = [];
+    for (const flow of flows) {
+      const content = fs.readFileSync(path.resolve(__dirname, '../../..', flow), 'utf8');
+      if (/inputText:\s*"http:\/\/localhost(?::\d+)?"/.test(content)) {
+        offenders.push(flow);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('wait-for-mock.js', () => {
   it('exits 0 once something is listening', (done) => {
     const server = net.createServer().listen(0, '127.0.0.1', () => {
