@@ -17,6 +17,7 @@ import { parseConfidenceFromCounters, type ParseConfidence } from '@/lib/renderC
 // long append-only session would otherwise grow the grid forever and make
 // getLines() an O(total-lines) scan on every frame.
 const MAX_ROWS = 10_000
+const MAX_PENDING_ESCAPE_BYTES = 8_192
 
 // The TUI paints against a fixed-geometry screen — the streamer spawns every
 // PTY at 120x40 (tb-streamer src/pty-manager.ts:42-43 and
@@ -51,8 +52,8 @@ export class VirtualTerminal {
     return Math.max(0, this.grid.length - VIEWPORT_ROWS)
   }
 
-  /** Holds a trailing ESC that was at the end of a feed() chunk. */
-  private pendingEsc = false
+  /** Incomplete escape sequence retained across WebSocket frame boundaries. */
+  private pendingEscape = ''
   private chromeFilter: TerminalChromeFilter = getTerminalChromeFilter('claude-code')
   private rawMode = false
   private unsupportedSequenceCount = 0
@@ -72,24 +73,23 @@ export class VirtualTerminal {
   /** Feed a chunk of raw terminal data. Can be called incrementally. */
   feed(data: string): void {
     this.bytesFed += data.length
+    const input = this.pendingEscape + data
+    this.pendingEscape = ''
     let i = 0
-    // If previous chunk ended with a bare ESC, prepend it
-    if (this.pendingEsc) {
-      this.pendingEsc = false
-      if (data.length > 0) {
-        i = this.parseEscape(data, 0)
-      }
-    }
-    while (i < data.length) {
-      const ch = data[i]
+    while (i < input.length) {
+      const ch = input[i]
 
       if (ch === '\x1b') {
-        if (i + 1 >= data.length) {
-          // ESC at end of chunk — save for next feed
-          this.pendingEsc = true
+        const next = this.parseEscape(input, i + 1)
+        if (next === null) {
+          this.pendingEscape = input.slice(i)
+          if (this.pendingEscape.length > MAX_PENDING_ESCAPE_BYTES) {
+            this.pendingEscape = ''
+            this.truncatedEscapeCount++
+          }
           return
         }
-        i = this.parseEscape(data, i + 1)
+        i = next
       } else if (ch === '\n') {
         this.row++
         this.col = 0
@@ -160,7 +160,7 @@ export class VirtualTerminal {
     this.grid = [[]]
     this.row = 0
     this.col = 0
-    this.pendingEsc = false
+    this.pendingEscape = ''
     this.unsupportedSequenceCount = 0
     this.truncatedEscapeCount = 0
     this.bytesFed = 0
@@ -175,8 +175,8 @@ export class VirtualTerminal {
     this.col++
   }
 
-  private parseEscape(data: string, i: number): number {
-    if (i >= data.length) return i
+  private parseEscape(data: string, i: number): number | null {
+    if (i >= data.length) return null
 
     if (data[i] === '[') {
       return this.parseCSI(data, i + 1)
@@ -189,23 +189,18 @@ export class VirtualTerminal {
         if (data[i] === '\x1b' && i + 1 < data.length && data[i + 1] === '\\') return i + 2
         i++
       }
-      // Truncated OSC — count as uncertain
-      this.truncatedEscapeCount++
-      return i
+      return null
     }
 
     // DCS / SOS / PM / APC — skip until ST when present; otherwise mark unsupported
     if (data[i] === 'P' || data[i] === 'X' || data[i] === '^' || data[i] === '_') {
-      const start = i
       i++
       while (i < data.length) {
         if (data[i] === '\x1b' && i + 1 < data.length && data[i + 1] === '\\') return i + 2
         if (data[i] === '\x07') return i + 1
         i++
       }
-      this.unsupportedSequenceCount++
-      this.truncatedEscapeCount++
-      return start + 1
+      return null
     }
 
     // ESC I…I F (ECMA-48): intermediate bytes in 0x20–0x2F, then one final byte.
@@ -215,6 +210,7 @@ export class VirtualTerminal {
     // row wiped it.
     if (data[i] >= '\x20' && data[i] <= '\x2f') {
       while (i < data.length && data[i] >= '\x20' && data[i] <= '\x2f') i++
+      if (i >= data.length) return null
       return i + 1
     }
 
@@ -222,7 +218,7 @@ export class VirtualTerminal {
     return i + 1
   }
 
-  private parseCSI(data: string, i: number): number {
+  private parseCSI(data: string, i: number): number | null {
     let params = ''
     while (i < data.length && /[0-9;?>=<:]/.test(data[i])) {
       params += data[i]
@@ -232,8 +228,7 @@ export class VirtualTerminal {
       i++
     }
     if (i >= data.length) {
-      this.truncatedEscapeCount++
-      return i
+      return null
     }
     const cmd = data[i]
     i++
