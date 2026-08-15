@@ -18,21 +18,46 @@ const E2E_PLATFORM = process.env.E2E_PLATFORM || 'ios'
 const ANDROID_API_LEVEL = process.env.E2E_ANDROID_API_LEVEL || '35'
 
 function checkAndroidEmulator() {
-  const devices = execFileSync('adb', ['devices'], { encoding: 'utf8' })
+  const attached = execFileSync('adb', ['devices'], { encoding: 'utf8' })
     .split('\n')
     .slice(1)
     .map((line) => line.trim().split(/\s+/))
-    .filter(([serial, state]) => serial && state === 'device')
+    .filter(([serial]) => serial)
 
-  if (devices.length !== 1) {
-    console.error(
-      `Error: expected exactly one ready Android emulator, found ${devices.length}.\n` +
-        'Fix: boot one emulator, wait for it to finish starting, then re-run.',
-    )
-    process.exit(1)
+  // adb itself honours ANDROID_SERIAL, so when it is set the downstream E2E
+  // steps already target that device — only this gate has to agree.
+  const requestedSerial = process.env.ANDROID_SERIAL
+  let serial
+
+  if (requestedSerial) {
+    const requested = attached.find(([attachedSerial]) => attachedSerial === requestedSerial)
+    if (!requested) {
+      console.error(
+        `Error: ANDROID_SERIAL is set to ${requestedSerial}, but adb does not list that device.\n` +
+          'Fix: run `adb devices`, then set ANDROID_SERIAL to a listed serial or unset it.',
+      )
+      process.exit(1)
+    }
+    if (requested[1] !== 'device') {
+      console.error(
+        `Error: Android device ${requestedSerial} is in state '${requested[1]}', not 'device'.\n` +
+          'Fix: wait for it to finish starting (or authorise it), then re-run.',
+      )
+      process.exit(1)
+    }
+    serial = requestedSerial
+  } else {
+    const devices = attached.filter(([, state]) => state === 'device')
+    if (devices.length !== 1) {
+      console.error(
+        `Error: expected exactly one ready Android emulator, found ${devices.length}.\n` +
+          'Fix: boot one emulator, wait for it to finish starting, then re-run.',
+      )
+      process.exit(1)
+    }
+    ;[serial] = devices[0]
   }
 
-  const [serial] = devices[0]
   const bootCompleted = execFileSync('adb', ['-s', serial, 'shell', 'getprop', 'sys.boot_completed'], {
     encoding: 'utf8',
   }).trim()
