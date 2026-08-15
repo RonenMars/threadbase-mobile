@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import * as Notifications from 'expo-notifications'
-import { useCameraPermissions } from 'expo-camera'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
+import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
 
 export type PermissionStatus = 'granted' | 'denied' | 'undetermined'
 export type PermissionKey = 'camera' | 'microphone' | 'photos' | 'notifications'
@@ -29,7 +29,11 @@ async function fetchStatuses(): Promise<Omit<PermissionsStatus, 'camera'>> {
 }
 
 export function usePermissionsStatus() {
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions()
+  // Camera is the one permission `refresh` below cannot see: fetchStatuses is
+  // typed `Omit<PermissionsStatus, 'camera'>` and only re-reads the other three,
+  // so the foreground listener left the Camera row showing whatever was true
+  // before the user walked to Settings. The live hook re-reads it there.
+  const [cameraPermission, requestCameraPermission] = useLiveCameraPermissions()
   const [statuses, setStatuses] = useState<PermissionsStatus>({
     camera: 'undetermined',
     microphone: 'undetermined',
