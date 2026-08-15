@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, StyleSheet, Text, View, Keyboard } from 'react-native'
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View, Keyboard } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
+import { useTranslation } from 'react-i18next'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -30,6 +31,7 @@ import type { ProviderName } from '@/constants/providers'
 import { preferRawTerminal } from '@/lib/renderConfidence'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
+import { CaretDown } from 'phosphor-react-native'
 
 interface Props {
   serverId: string
@@ -79,9 +81,11 @@ export function LiveConversationView({
   onPreferRawTerminal,
 }: Props) {
   const theme = useTheme()
+  const { t } = useTranslation('conversation')
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
   const qc = useQueryClient()
+  const [followLiveOutput, setFollowLiveOutput] = useState(true)
 
   // Optimistic user turns: shown immediately on send so the bubble doesn't
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
@@ -268,10 +272,16 @@ export function LiveConversationView({
     return () => { subShow.remove(); subChange.remove() }
   }, [])
 
+  const jumpToLatest = useCallback(() => {
+    listRef.current?.scrollToEnd({ animated: true })
+    setFollowLiveOutput(true)
+  }, [])
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding" automaticOffset>
       <FlashList
         ref={listRef}
+        testID="live-conversation-list"
         data={allMessages}
         keyExtractor={(m) => m.id}
         renderItem={({ item, index }) => (
@@ -282,7 +292,10 @@ export function LiveConversationView({
             <MessageItem message={item} isLast={index === allMessages.length - 1} />
           </RenderErrorBoundary>
         )}
-        maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
+        maintainVisibleContentPosition={followLiveOutput
+          ? { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }
+          : { disabled: true }}
+        onScrollBeginDrag={() => setFollowLiveOutput(false)}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
         onStartReached={hasNextPage ? fetchNextPage : undefined}
         onStartReachedThreshold={0.3}
@@ -314,6 +327,17 @@ export function LiveConversationView({
           />
         ) : null}
       />
+      {!followLiveOutput ? (
+        <TouchableOpacity
+          style={styles.jumpToLatest}
+          onPress={jumpToLatest}
+          accessibilityLabel={t('action.scrollToBottom')}
+          accessibilityRole="button"
+          testID="chat-jump-to-latest"
+        >
+          <CaretDown size={20} color="#fff" weight="bold" />
+        </TouchableOpacity>
+      ) : null}
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
@@ -403,6 +427,22 @@ function makeStyles(theme: Theme) {
       fontSize: 11,
       color: theme.text.secondary,
       lineHeight: 16,
+    },
+    jumpToLatest: {
+      position: 'absolute',
+      right: spacing.md,
+      bottom: spacing.md,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.text.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 4,
     },
   })
 }

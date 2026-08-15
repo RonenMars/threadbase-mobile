@@ -120,7 +120,8 @@ jobs:
 
       - name: Install Maestro CLI
         run: |
-          MAESTRO_VERSION=2.8.0 curl -fsSL "https://get.maestro.mobile.dev" | bash
+          MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
+          MAESTRO_VERSION="$MAESTRO_VERSION" curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
           "$HOME/.maestro/bin/maestro" --version
 
