@@ -24,15 +24,25 @@ Do not connect this to the Android E2E suite. On 2026-08-15 the Maestro flows we
 
 ## The decision this needs before any code
 
-**This is a policy call, not a manifest edit.** Three options, laid out in #727:
+**This is a policy call, not a manifest edit.** Three options are laid out in #727; (d) is a fourth, added when the decision was taken:
 
 - **(a) `cleartextTrafficPermitted="true"` in `base-config`** — restores the documented flow. A security review on 2026-08-15 recommended this, on the grounds that the app exists to reach servers the user runs themselves; requiring TLS on a home server does not harden that flow so much as delete it, and pushes users onto the tunnel where traffic passes through a third party in plaintext by design.
-- **(b) Permit private ranges only** — **not expressible.** Android's `<domain>` matching is hostname-based with no CIDR support; emulating it needs a runtime trust manager, which is a larger hazard than the thing it guards.
+- **(b) Permit private ranges only, declaratively** — **not expressible in a network security config.** Android's `<domain>` matching is hostname-based with no CIDR support; emulating it there needs a runtime trust manager, which is a larger hazard than the thing it guards. This rules out the *mechanism*, not the policy — see (d).
 - **(c) Require HTTPS** — defensible, but it removes `http://192.168.x.x` as a supported path and the onboarding and add-server copy must change with it.
+- **(d) Permit cleartext at the platform level, enforce private-ranges in the app** — `android.usesCleartextTraffic: true` via the already-registered `expo-build-properties`, which writes the attribute into the main manifest's `<application>` on every prebuild, plus an application-layer rule that refuses `http://` to non-private hosts. Reaches (b)'s policy without (b)'s mechanism.
 
-If (a) is chosen, three things travel with it and are not optional: `http://` servers marked as unencrypted **persistently** in the server list and at pairing rather than behind a dismissible warning; application-layer encryption named as the actual protection (#698, `threadbase-streamer#590`, with the per-server control in `threadbase-streamer#591`); and the decision written down with its reasoning so the next reader of the manifest does not "fix" it.
+**Decision, 2026-08-15: (d).** It is the only option that matches what iOS already ships — `ios/Threadbase/Info.plist:53` sets `NSAllowsArbitraryLoads=false` with `NSAllowsLocalNetworking=true`, so the app permits cleartext to the LAN and denies it to public hosts on that platform today. Blanket (a) would be strictly more permissive on Android than the shipped iOS behaviour, and (c) deletes the primary deployment: a self-hosted streamer on a LAN has no certificate.
 
-**Surface the choice and its consequences, and let the repo owner decide.** Do not pick silently.
+**Both fetch boundaries carry the rule, or the parity claim is false.** `services/authed-fetch.ts` is the single REST seam since #701, but `services/ws-client.ts:141` constructs its own `new WebSocket(this.url)` and never routes through it. The WebSocket carries terminal output, replay and prompts — the most sensitive traffic in the app — and iOS's platform-level setting covers it while an `authed-fetch.ts` rule alone does not. Two call sites, not one.
+
+Two conditions travel with (d) and are not optional:
+
+- **The decision written down** beside the config, with its reasoning, so the next reader of the manifest does not "fix" the attribute back.
+- **A typed cleartext error** in `services/authed-fetch.ts` carrying the remedy, per #720's render pattern. Under (a) this would rarely fire; under (d) it is the mechanism that reports the refusal, so it is load-bearing rather than defensive.
+
+**Deferred, deliberately:** marking `http://` servers as unencrypted persistently in the server list and at pairing. That was written as non-optional under (a), where the app would happily talk cleartext to a public host and the label was the user's only protection. Under (d) the app refuses that case outright, so the label drops from sole protection to honest disclosure about a LAN server — still worth building, no longer a condition of this change. It is also copy that Phase 3 will rewrite: once the record layer lands, `http://` carries an encrypted payload and "unencrypted" stops being the accurate word. File it as a follow-up rather than writing copy twice.
+
+Application-layer encryption remains the actual protection (#698, `threadbase-streamer#590`, with the per-server control in `threadbase-streamer#591`) and should be named as such wherever this is explained to a user.
 
 ## Constraints that will cost you time if you rediscover them
 
