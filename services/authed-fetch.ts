@@ -1,4 +1,5 @@
 import type { ServerConfig, ServerInfo } from '@/types/api'
+import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
 
 /** Which credential a request presented. See `selectCredential`. */
 export type CredentialKind = 'device' | 'shared'
@@ -118,7 +119,9 @@ export function authToken(
  *
  * Callers that wrap the call in a try/catch for network failures must rethrow
  * `AuthError` — a rejected credential is not a network failure, and retrying it
- * only presents the same rejected key again.
+ * only presents the same rejected key again. The same holds for
+ * `CleartextBlockedError`: the request never left the process, and every retry
+ * of the same URL is refused at the same line.
  */
 export async function authedFetch(
   target: AuthedTarget,
@@ -126,7 +129,9 @@ export async function authedFetch(
   init: AuthedFetchInit = {},
 ): Promise<Response> {
   const credential = selectCredential(target)
-  const response = await fetch(serverUrl(target, path), {
+  const url = serverUrl(target, path)
+  if (!isCleartextAllowed(url)) throw new CleartextBlockedError(url)
+  const response = await fetch(url, {
     ...init,
     headers: {
       // Caller headers first: an `Authorization` among them loses to the one

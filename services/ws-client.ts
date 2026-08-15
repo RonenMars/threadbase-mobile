@@ -9,6 +9,7 @@ import type {
   CacheAlertResolveAction,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
+import { isCleartextAllowed } from './cleartext-policy'
 import { clientLog } from '@/lib/clientLog'
 
 export type WSMessage =
@@ -86,6 +87,7 @@ export interface ConnectionLogEntry {
     | 'schedule_reconnect'
     | 'force_reconnect'
     | 'disconnect'
+    | 'cleartext_blocked'
   attempt?: number
 }
 
@@ -118,7 +120,18 @@ class WSClient {
   constructor(private serverId = 'default') {}
 
   connect(url: string, apiKey: string) {
-    this.url = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
+    const wsUrl = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
+    // The socket carries the whole live session — terminal output, replay and
+    // every prompt typed — so it is the traffic the cleartext policy exists for.
+    // Refusing here rather than throwing keeps a server the user can still fix
+    // from taking down the screen: the same URL is refused at authedFetch, which
+    // has a render site and will say why.
+    if (!isCleartextAllowed(wsUrl)) {
+      logConnection(this.serverId, 'cleartext_blocked')
+      this._setStatus('disconnected')
+      return
+    }
+    this.url = wsUrl
     this.reconnectAttempt = 0
     this._doConnect()
   }

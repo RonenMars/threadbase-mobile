@@ -1,6 +1,7 @@
 import nacl from 'tweetnacl'
 import naclUtil from 'tweetnacl-util'
 import { parseCapabilityList, type DeviceCapability } from '@/types/devices'
+import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
 
 export interface PairUri {
   url: string
@@ -70,7 +71,7 @@ export function classifyPairCredential(raw: string): PairCredentialKind {
 }
 
 export class PairExchangeError extends Error {
-  readonly kind: 'network' | 'token' | 'rate-limited' | 'decrypt' | 'server'
+  readonly kind: 'network' | 'token' | 'rate-limited' | 'decrypt' | 'server' | 'cleartext'
   constructor(kind: PairExchangeError['kind'], message: string) {
     super(message)
     this.name = 'PairExchangeError'
@@ -169,9 +170,18 @@ export async function exchangeToken({
   if (deviceName?.trim()) bodyPayload.deviceName = deviceName.trim().slice(0, 100)
   if (readOnly) bodyPayload.readOnly = true
 
+  // Its own fetch rather than authedFetch's: there is no credential to present
+  // until this call returns one. So the cleartext policy has to be applied here
+  // too — this is the request #727 was filed about.
+  const exchangeUrl = `${trimmedUrl}/api/pair/exchange`
+  if (!isCleartextAllowed(exchangeUrl)) {
+    clearTimeout(timeoutId)
+    throw new PairExchangeError('cleartext', new CleartextBlockedError(exchangeUrl).message)
+  }
+
   let res: Response
   try {
-    res = await fetch(`${trimmedUrl}/api/pair/exchange`, {
+    res = await fetch(exchangeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bodyPayload),

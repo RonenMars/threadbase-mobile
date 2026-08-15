@@ -17,6 +17,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { NetworkError } from '@/services/api-client'
 import { authedFetch, AuthError } from '@/services/authed-fetch'
+import { CleartextBlockedError } from '@/services/cleartext-policy'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -141,6 +142,11 @@ export function AddServerScreen({ isAddingServer }: Props) {
           // a key that used to work stopped, here a key that never worked was
           // just pasted, and the useful pointer is where the real one lives.
           setError(t('common:error.authKeyRejectedOnConnect'))
+        } else if (err instanceof CleartextBlockedError) {
+          // Ahead of the network branch: the request never left the process, so
+          // the generic "is the streamer running?" pointer would send the user
+          // to look at a server that is fine.
+          setError(t('common:error.cleartextBlocked'))
         } else if (err instanceof NetworkError || err instanceof TypeError) {
           const usesLocalhost = /localhost|127\.0\.0\.1/.test(url)
           if (usesLocalhost) {

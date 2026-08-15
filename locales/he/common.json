@@ -17,7 +17,8 @@
     "cameraPermissionDenied": "הגישה למצלמה נדחתה. נסה שוב כדי לצלם תמונה.",
     "cameraAccessNeededTitle": "נדרשת גישה למצלמה",
     "cameraAccessNeededMessage": "אפשר גישה למצלמה בהגדרות כדי לצלם תמונות.",
-    "attachFailed": "צירוף הקובץ נכשל. נסו שוב."
+    "attachFailed": "צירוף הקובץ נכשל. נסו שוב.",
+    "cleartextBlocked": "הכתובת הזו היא HTTP רגיל ואינה נמצאת ברשת המקומית שלכם. השתמשו בכתובת https:// או הריצו tb serve --tunnel."
   },
   "search": {
     "placeholder": "חיפוש…"
