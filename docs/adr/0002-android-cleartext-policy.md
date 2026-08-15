@@ -68,6 +68,25 @@ Not expressible; see Context.
 - A plain-HTTP request to a **public** host is now refused on both platforms, with a specific message naming the remedy rather than the generic unreachable error that cost two sessions of misdiagnosis. A user who was reaching a public `http://` server on Android is newly blocked — no such configuration is known, and the app has never worked that way on iOS.
 - The rule is **advisory**. It constrains the three URL builders above, not the platform: a native module opening its own socket is not covered and cannot be. That is the cost of the platform having no expressible middle ground, not a gap to close in JS — and not an open action item. The question is not whether a dependency does its own networking but whether one does it in *cleartext*, and those that network here talk to their own HTTPS endpoints.
 - **Do not "fix" `usesCleartextTraffic` back to false, and do not add a `network_security_config.xml`.** Both are load-bearing decisions recorded here. `__tests__/unit/scripts/android-cleartext-policy.test.js` fails if either half drifts.
+- **`WSClient.connect()` must clear `this.url` on every path that refuses to connect.** This is not tidiness; see below.
+
+## The refusal path has to clear `url`, and why that is not obvious
+
+The first version of the WebSocket refusal returned early — log, set status, `return` — before the line that assigns `this.url`.
+That shipped in #752 and was a defect, found while checking whether a permanently-refused URL could retry-loop.
+
+It cannot: `forceReconnect()` guards on `if (!this.url) return`.
+But `disconnect()` does not clear `url` either, so on the refusal path `url` kept whatever the *previous* successful `connect()` left there.
+`forceReconnect()` runs on every foreground resume, saw a non-empty `url`, and silently redialled the previous server — carrying that server's credential, because the WS key travels in the query string rather than a header.
+
+So connecting to server A, then being refused on server B, left the app talking to A while the user believed they had moved to B.
+Fixed in #757 by assigning `this.url = ''` and calling `disconnect()` before returning.
+
+Three things about this generalise beyond the cleartext policy and are the reason it is written down rather than left to the code comment:
+
+- **`connect()` is the only thing that maintains `url`, and no teardown resets it.** Any future early return added to `connect()` inherits the same bug. The invariant is that `url` always reflects the most recent `connect()` target, or is empty — nothing else in the class enforces that.
+- **The symptom is not an error.** The app is connected, the status is healthy, frames arrive. It is connected to the wrong server, which is only visible if you already suspect it.
+- **The guard that prevented the retry loop is what hid the worse bug.** `if (!this.url) return` reads as a null check; it is actually load-bearing policy, and it silently did nothing here because `url` was stale rather than empty.
 
 ## What is not verified
 
