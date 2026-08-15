@@ -39,8 +39,18 @@ appId: com.ronenmars.threadbase
 
       - pressKey: Enter
 
+      # Optional because the `pressKey: Enter` above may already have fired the
+      # handshake: the token field is the only one wired to `onSubmitEditing`
+      # (ServerFormFields passes it to the key input alone, with
+      # returnKeyType="done"), and ConnectStep points that at handleConnect. So
+      # whether this CTA is still on screen is a race with an async handshake
+      # that has already started. Losing it failed `codex_parity` on Android
+      # with "Element not found: onboarding-connect-handshake-cta" — after
+      # `GET /api/profiles` had already succeeded. Keep the tap for the runs
+      # where Enter does not submit; skip it for the runs where it did.
       - tapOn:
           id: "onboarding-connect-handshake-cta"
+          optional: true
 
       # iOS may show a "Save Password?" dialog after secureTextEntry input
       - runFlow:
