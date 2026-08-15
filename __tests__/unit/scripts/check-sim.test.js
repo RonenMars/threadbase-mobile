@@ -12,10 +12,24 @@ const path = require('path');
 const SCRIPT = path.resolve(__dirname, '../../../e2e/check-sim.js');
 const tmpDirs = [];
 
-function runAndroidCheck({ apiLevel = '35', devices = [['emulator-5554', 'device']], androidSerial } = {}) {
+const PINNED = require('../../../e2e/maestro-version.json').version;
+
+function runAndroidCheck({
+  apiLevel = '35',
+  devices = [['emulator-5554', 'device']],
+  androidSerial,
+  maestroVersion = PINNED,
+} = {}) {
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'check-sim-bin-'));
   tmpDirs.push(bin);
   const listing = devices.map(([serial, state]) => `${serial}\\t${state}\\n`).join('');
+  if (maestroVersion !== null) {
+    fs.writeFileSync(
+      path.join(bin, 'maestro'),
+      `#!/bin/sh\nprintf '${maestroVersion}\\n'\n`,
+      { mode: 0o755 },
+    );
+  }
   fs.writeFileSync(
     path.join(bin, 'adb'),
     `#!/bin/sh
@@ -105,4 +119,21 @@ test('rejects an ANDROID_SERIAL device that is not in device state', () => {
 
   expect(result.status).not.toBe(0);
   expect(result.stderr).toContain("Android device eb57e2b6 is in state 'unauthorized'");
+});
+
+// CI installs the pinned version; nothing pins the local CLI. A dev on an older
+// Maestro drives the same flows with a different tool, which is how 2.0.10's
+// broken `clearState` produced failures that read as app bugs.
+test('rejects a Maestro older than the pinned version', () => {
+  const result = runAndroidCheck({ maestroVersion: '2.6.1' });
+
+  expect(result.status).not.toBe(0);
+  expect(result.stderr).toContain(`older than the pinned ${PINNED}`);
+});
+
+test('accepts a Maestro newer than the pinned version', () => {
+  const result = runAndroidCheck({ maestroVersion: '2.9.1' });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain(`newer than the pinned ${PINNED}`);
 });

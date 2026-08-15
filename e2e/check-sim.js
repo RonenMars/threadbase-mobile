@@ -16,6 +16,69 @@ const { execFileSync } = require('child_process')
 
 const E2E_PLATFORM = process.env.E2E_PLATFORM || 'ios'
 const ANDROID_API_LEVEL = process.env.E2E_ANDROID_API_LEVEL || '35'
+// Single source of truth with .github/workflows/e2e.yml, which installs exactly
+// this version. Nothing pins the local CLI — `npm ci` cannot install a JVM binary
+// and the npm packages named `maestro` are unrelated projects — so without this
+// gate a local run drives the same flows with whatever Homebrew last gave you.
+const { version: PINNED_MAESTRO } = require('./maestro-version.json')
+
+function parseVersion(text) {
+  const m = text.match(/(\d+)\.(\d+)\.(\d+)/)
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null
+}
+
+// Negative when `a` is older than `b`.
+function compareVersions(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] !== b[i]) return a[i] - b[i]
+  }
+  return 0
+}
+
+// Older than the pin is an error, not a warning: 2.0.10's XCUITest driver broke
+// `launchApp: clearState: true` outright, so the flows fail in a way that reads
+// as an app bug. Newer is allowed — fixes accumulate — but is worth naming.
+function checkMaestroVersion() {
+  const bin = process.env.MAESTRO_BIN || 'maestro'
+  let output
+  try {
+    output = execFileSync(bin, ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  } catch {
+    console.error(
+      `Error: '${bin}' not found or not runnable.\n` +
+        `Fix: MAESTRO_VERSION=${PINNED_MAESTRO} curl -fsSL "https://get.maestro.mobile.dev" | bash`,
+    )
+    process.exit(1)
+  }
+
+  const found = parseVersion(output)
+  const pinned = parseVersion(PINNED_MAESTRO)
+  if (!found) {
+    console.warn(`Warning: could not read a version from '${bin} --version'; skipping the check.`)
+    return
+  }
+
+  const delta = compareVersions(found, pinned)
+  if (delta < 0) {
+    console.error(
+      [
+        '',
+        `Error: Maestro ${found.join('.')} is older than the pinned ${PINNED_MAESTRO}.`,
+        'CI installs the pinned version, so local runs would exercise a different CLI.',
+        `Fix: MAESTRO_VERSION=${PINNED_MAESTRO} curl -fsSL "https://get.maestro.mobile.dev" | bash`,
+        '',
+      ].join('\n'),
+    )
+    process.exit(1)
+  }
+  if (delta > 0) {
+    console.log(`Maestro ${found.join('.')} (newer than the pinned ${PINNED_MAESTRO})`)
+    return
+  }
+  console.log(`Maestro ${PINNED_MAESTRO}`)
+}
+
+checkMaestroVersion()
 
 function checkAndroidEmulator() {
   const attached = execFileSync('adb', ['devices'], { encoding: 'utf8' })
