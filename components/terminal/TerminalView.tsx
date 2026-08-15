@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Warning } from 'phosphor-react-native'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { isQuestionClosedError } from '@/services/api-client'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
@@ -100,6 +101,24 @@ export function TerminalView({
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend })
 
+  // The server closes the question's menu on its own (common, self-healing —
+  // it also broadcasts question_cancelled, which dismisses the card), so that
+  // case reads as a calm notice rather than a failure the user must act on.
+  const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
+  const answerErrorMessage =
+    respondToQuestion.isError && !isQuestionGoneError
+      ? respondToQuestion.error instanceof Error
+        ? respondToQuestion.error.message
+        : t('answer.failed')
+      : null
+  const answerNoticeMessage = respondToQuestion.isError && isQuestionGoneError ? t('answer.questionClosed') : null
+  const sendInputErrorMessage = sendInput.isError
+    ? sendInput.error instanceof Error
+      ? sendInput.error.message
+      : 'Failed to send'
+    : null
+  const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
       {confidence === 'low' ? (
@@ -129,7 +148,8 @@ export function TerminalView({
         onRemoveAttachment={removeAttachment}
         isUploading={isUploading}
         attachError={attachError}
-        sendError={sendInput.isError ? (sendInput.error instanceof Error ? sendInput.error.message : 'Failed to send') : null}
+        sendError={sendErrorMessage}
+        sendNotice={answerNoticeMessage}
         disabled={disabled}
         voice={voice}
         micGranted={micGranted}

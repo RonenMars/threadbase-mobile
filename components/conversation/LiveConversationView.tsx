@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { isQuestionClosedError } from '@/services/api-client'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -82,6 +83,7 @@ export function LiveConversationView({
 }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('conversation')
+  const { t: tTerminal } = useTranslation('terminal')
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
   const qc = useQueryClient()
@@ -259,6 +261,24 @@ export function LiveConversationView({
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend: send })
 
+  // The server closes the question's menu on its own (common, self-healing —
+  // it also broadcasts question_cancelled, which dismisses the card), so that
+  // case reads as a calm notice rather than a failure the user must act on.
+  const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
+  const answerErrorMessage =
+    respondToQuestion.isError && !isQuestionGoneError
+      ? respondToQuestion.error instanceof Error
+        ? respondToQuestion.error.message
+        : tTerminal('answer.failed')
+      : null
+  const answerNoticeMessage = respondToQuestion.isError && isQuestionGoneError ? tTerminal('answer.questionClosed') : null
+  const sendInputErrorMessage = sendInput.isError
+    ? sendInput.error instanceof Error
+      ? sendInput.error.message
+      : 'Failed to send'
+    : null
+  const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
+
   // Auto-scroll to bottom when keyboard opens or app resumes with keyboard already up.
   // New-message/thinking-bubble scrolling is left to FlashList's native
   // maintainVisibleContentPosition bottom-anchoring below — a JS scrollToEnd
@@ -347,7 +367,8 @@ export function LiveConversationView({
         onRemoveAttachment={removeAttachment}
         isUploading={isUploading}
         attachError={attachError}
-        sendError={sendInput.isError ? (sendInput.error instanceof Error ? sendInput.error.message : 'Failed to send') : null}
+        sendError={sendErrorMessage}
+        sendNotice={answerNoticeMessage}
         disabled={disabled}
         voice={voice}
         micGranted={micGranted}

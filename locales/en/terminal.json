@@ -9,6 +9,10 @@
     "sendInput": "Send Input",
     "stop": "Stop session"
   },
+  "answer": {
+    "failed": "Couldn't send your answer. Check your connection and try again.",
+    "questionClosed": "That question isn't open anymore."
+  },
   "voice": {
     "start": "Start dictation",
     "stop": "Stop dictation"

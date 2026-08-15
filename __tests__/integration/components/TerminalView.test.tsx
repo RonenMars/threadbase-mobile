@@ -38,6 +38,11 @@ jest.mock('expo-router', () => ({
 // ── feature mocks ────────────────────────────────────────────────────────────
 const mockSendInputMutate = jest.fn()
 const mockSendKeysMutate = jest.fn()
+const mockRespondToQuestionMutate = jest.fn()
+let mockRespondToQuestionState: { isError: boolean; error: Error | null } = {
+  isError: false,
+  error: null,
+}
 
 jest.mock('@/hooks/useTerminalStream', () => ({
   useTerminalStream: () => ({
@@ -50,7 +55,11 @@ jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
     sendInput: { mutate: mockSendInputMutate, isError: false, error: null },
     sendKeys: { mutate: mockSendKeysMutate },
-    respondToQuestion: { mutate: jest.fn() },
+    respondToQuestion: {
+      mutate: mockRespondToQuestionMutate,
+      isError: mockRespondToQuestionState.isError,
+      error: mockRespondToQuestionState.error,
+    },
   }),
 }))
 
@@ -98,6 +107,8 @@ jest.mock('@/components/queue/PlanPreviewSheet', () => ({
 
 // eslint-disable-next-line import/first
 import { TerminalView } from '@/components/terminal/TerminalView'
+// eslint-disable-next-line import/first
+import { NetworkError, QUESTION_GONE_CODE } from '@/services/api-client'
 
 async function renderView(props?: { resumedConversationId?: string }) {
   return await render(
@@ -111,6 +122,7 @@ describe('TerminalView', () => {
     mockSendInputMutate.mockClear()
     mockSendKeysMutate.mockClear()
     mockPush.mockClear()
+    mockRespondToQuestionState = { isError: false, error: null }
   })
 
   it('renders terminal-line-row elements when lines are provided', async () => {
@@ -159,5 +171,21 @@ describe('TerminalView', () => {
     expect(mockPush).toHaveBeenCalledWith(
       '/conversation/conv-42?server=srv1&fromSession=sess1',
     )
+  })
+
+  it('shows an error message when answering a question fails for a genuine reason', async () => {
+    mockRespondToQuestionState = { isError: true, error: new NetworkError('Server returned 500') }
+    await renderView()
+    expect(screen.getByText('Server returned 500')).toBeTruthy()
+  })
+
+  it('shows a calm notice instead of an error when the question already closed (question_gone)', async () => {
+    mockRespondToQuestionState = {
+      isError: true,
+      error: new NetworkError('Server returned 409', QUESTION_GONE_CODE),
+    }
+    await renderView()
+    expect(screen.getByText("That question isn't open anymore.")).toBeTruthy()
+    expect(screen.queryByText('Server returned 409')).toBeNull()
   })
 })
