@@ -101,6 +101,7 @@ export default function PairDeepLinkScreen() {
         deviceId: exchanged.deviceId ?? undefined,
         deviceToken: exchanged.deviceToken ?? undefined,
         capabilities: exchanged.capabilities ?? undefined,
+        publicUrl: exchanged.publicUrl ?? undefined,
       })
       router.replace('/')
     } catch (err) {

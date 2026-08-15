@@ -285,3 +285,55 @@ describe('setCacheAlert / clearCacheAlert', () => {
     expect(useServersStore.getState().cacheAlert[server.id]).toEqual(alert)
   })
 })
+
+// ── publicUrl is recorded, never substituted (TB-S-13) ─────────────────────
+
+describe('addServer – publicUrl', () => {
+  const SecureStore = jest.requireMock('expo-secure-store') as {
+    setItemAsync: jest.Mock
+  }
+
+  /** The payload the store wrote under the server-list key, parsed. */
+  function persistedList(): Array<Record<string, unknown>> {
+    const call = SecureStore.setItemAsync.mock.calls
+      .filter(([key]) => key === 'threadbase_servers')
+      .pop()
+    if (!call) throw new Error('the server list was never persisted')
+    return (JSON.parse(String(call[1])) as { list: Array<Record<string, unknown>> }).list
+  }
+
+  it('keeps the typed url and records publicUrl beside it', async () => {
+    const id = await useServersStore.getState().addServer(
+      'http://192.168.68.125:8766',
+      'key-abc',
+      undefined,
+      { publicUrl: 'https://tunnel.example.test' },
+    )
+
+    const server = useServersStore.getState().getServer(String(id))
+    expect(server?.url).toBe('http://192.168.68.125:8766')
+    expect(server?.publicUrl).toBe('https://tunnel.example.test')
+  })
+
+  // In memory is not enough: the field has to survive the write, or it is lost
+  // on the next launch and only a re-pair recovers it. `persistServerList`
+  // builds its own object literal, so a field added to ServerConfig alone is
+  // silently dropped here — which is the shape of bug this asserts against.
+  it('writes publicUrl into the persisted server list', async () => {
+    await useServersStore.getState().addServer(
+      'http://192.168.68.125:8766',
+      'key-abc',
+      undefined,
+      { publicUrl: 'https://tunnel.example.test' },
+    )
+
+    const entry = persistedList().find((s) => s.url === 'http://192.168.68.125:8766')
+    expect(entry).toBeDefined()
+    expect(entry?.publicUrl).toBe('https://tunnel.example.test')
+  })
+
+  it('leaves publicUrl undefined for a manual add that has none', async () => {
+    const id = await useServersStore.getState().addServer('http://10.0.0.5:8766', 'key-xyz')
+    expect(useServersStore.getState().getServer(String(id))?.publicUrl).toBeUndefined()
+  })
+})

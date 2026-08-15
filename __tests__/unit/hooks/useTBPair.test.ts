@@ -44,7 +44,9 @@ describe('useTBPair (prod path)', () => {
     exchangeToken.mockResolvedValue({
       url: 'https://example.test',
       apiKey: 'tb_sealed_key',
-      publicUrl: 'https://example.test',
+      // Deliberately different from `url`: the hook must forward both without
+      // confusing one for the other.
+      publicUrl: 'https://tunnel.example.test',
       machineName: null,
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -81,9 +83,11 @@ describe('useTBPair (prod path)', () => {
     expect(onSuccess).toHaveBeenCalledWith({
       url: 'https://example.test',
       apiKey: 'tb_sealed_key',
+      label: undefined,
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
       capabilities: ['history:read', 'session:control'],
+      publicUrl: 'https://tunnel.example.test',
     })
     expect(result.current.phase).toBe('ok')
   })
@@ -92,7 +96,7 @@ describe('useTBPair (prod path)', () => {
     exchangeToken.mockResolvedValue({
       url: 'https://from-uri.test',
       apiKey: 'tb_from_uri',
-      publicUrl: 'https://from-uri.test',
+      publicUrl: 'https://tunnel.from-uri.test',
       machineName: null,
       deviceId: null,
       deviceToken: null,
@@ -126,6 +130,11 @@ describe('useTBPair (prod path)', () => {
     expect(onSuccess).toHaveBeenCalledWith({
       url: 'https://from-uri.test',
       apiKey: 'tb_from_uri',
+      label: undefined,
+      deviceId: undefined,
+      deviceToken: undefined,
+      capabilities: undefined,
+      publicUrl: 'https://tunnel.from-uri.test',
     })
   })
 
