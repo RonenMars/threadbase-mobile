@@ -1,4 +1,6 @@
-import { wsClient } from '@/services/ws-client'
+import { getConnectionLog, wsClient } from '@/services/ws-client'
+import { authedFetch } from '@/services/authed-fetch'
+import { CleartextBlockedError } from '@/services/cleartext-policy'
 
 // ── Minimal WebSocket mock ───────────────────────────────────────────────────
 type MockSocket = {
@@ -317,5 +319,60 @@ describe('WSClient – forceReconnect', () => {
     // past it would legitimately trigger an abandon-and-retry.)
     jest.advanceTimersByTime(14_000)
     expect(MockWebSocket).toHaveBeenCalledTimes(2)
+  })
+})
+
+// The WebSocket carries the whole live session, so the cleartext policy has to
+// reach it and not just the HTTP seam. It refuses silently — no throw — which
+// is only safe because of two things that are easy to break by accident, so
+// both are pinned here rather than left as reasoning in a comment.
+describe('cleartext policy', () => {
+  const PUBLIC_HTTP = 'http://example.com'
+
+  it('opens no socket to a public http:// host', () => {
+    wsClient.connect(PUBLIC_HTTP, 'key')
+    expect(MockWebSocket).not.toHaveBeenCalled()
+    expect(getConnectionLog().at(-1)).toMatchObject({ event: 'cleartext_blocked' })
+  })
+
+  // A silent refusal presents as 'disconnected', which is indistinguishable
+  // from a network drop. If a refused URL ever reached the backoff machinery it
+  // would retry forever against a destination that can never be permitted —
+  // a worse symptom than the invisible failure. Today `this.url` is left unset
+  // and `forceReconnect` guards on it; assigning it eagerly would break that.
+  it('never schedules a retry for a URL that can never be permitted', () => {
+    wsClient.connect(PUBLIC_HTTP, 'key')
+    wsClient.forceReconnect()
+    jest.advanceTimersByTime(120_000)
+    expect(MockWebSocket).not.toHaveBeenCalled()
+  })
+
+  // The refusal must not leave the previous server's URL — which carries its
+  // credential in the query string — as the client's target.
+  it('does not strand the previous server as the reconnect target', () => {
+    wsClient.connect('http://192.168.68.102:8766', 'key-a')
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+
+    wsClient.connect(PUBLIC_HTTP, 'key-b')
+    wsClient.forceReconnect()
+    jest.advanceTimersByTime(120_000)
+
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+  })
+
+  it('still connects to a local-network http:// host', () => {
+    wsClient.connect('http://192.168.68.102:8766', 'key')
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+    expect(mockSocket.url).toContain('ws://192.168.68.102:8766/ws')
+  })
+
+  // The refusal says nothing to the user; the reason surfaces because the same
+  // server's REST calls are refused at authedFetch, which has a render site.
+  // That makes the HTTP seam's behaviour a dependency of this one, not an
+  // assumption — so it is asserted here on the same host.
+  it('is backed by authedFetch refusing the same host', async () => {
+    await expect(
+      authedFetch({ url: PUBLIC_HTTP, apiKey: 'key' }, '/api/profiles'),
+    ).rejects.toBeInstanceOf(CleartextBlockedError)
   })
 })

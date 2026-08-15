@@ -70,6 +70,17 @@ describe('isCleartextAllowed', () => {
     'http://notlocal.example',
     'http://local.example.com',
     'http://[2001:db8::1]:8766',
+    // Nor by being an address written in a form this parser does not read and
+    // a resolver may. `inet_aton` accepts a bare 32-bit integer, so 134744072
+    // is 8.8.8.8 and 2130706433 is 127.0.0.1; a leading 0 makes an octet octal,
+    // so 010.0.0.1 is 8.0.0.1 to the platform and 10.0.0.1 to Number().
+    'http://134744072:8766',
+    'http://2130706433',
+    'http://0x08080808',
+    'http://010.0.0.1',
+    'http://0177.0.0.1',
+    // Userinfo is the classic bypass: the host is what follows the last '@'.
+    'http://192.168.1.1@evil.com/',
   ])('refuses %s', (url) => {
     expect(isCleartextAllowed(url)).toBe(false)
   })

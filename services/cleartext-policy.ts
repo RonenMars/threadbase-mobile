@@ -35,6 +35,10 @@ const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/
 function isLocalIPv4(host: string): boolean {
   const match = IPV4.exec(host)
   if (!match) return false
+  // A leading zero means octal to inet_aton and decimal to Number(), so
+  // `010.0.0.1` is 8.0.0.1 to the platform and 10.0.0.1 here. Where the two
+  // could disagree about which network an address is on, deny.
+  if (match.slice(1).some((octet) => octet.length > 1 && octet.startsWith('0'))) return false
   const octets = match.slice(1).map(Number)
   if (octets.some((octet) => octet > 255)) return false
   const [a, b] = octets
@@ -57,6 +61,14 @@ function isLocalHost(host: string): boolean {
     return /^::1$/.test(host) || /^fe[89ab]/i.test(host) || /^f[cd]/i.test(host)
   }
   if (IPV4.test(host)) return isLocalIPv4(host)
+  // A single label that is entirely digits, or hex, is not a hostname — it is
+  // an IPv4 address in a form this parser does not read and a resolver may.
+  // `inet_aton` accepts a bare 32-bit integer, so `134744072` is 8.8.8.8 and
+  // would otherwise reach the unqualified-name branch below as a local name.
+  // Whether Android's resolver actually parses it is a platform detail; a
+  // policy that disagrees with the resolver in the permissive direction is the
+  // thing to remove, not to measure.
+  if (/^\d+$/.test(host) || /^0x/i.test(host)) return false
   // An unqualified name resolves only against the local network's own
   // resolver, and `.local` is mDNS by definition.
   return !host.includes('.') || /\.local$/i.test(host)

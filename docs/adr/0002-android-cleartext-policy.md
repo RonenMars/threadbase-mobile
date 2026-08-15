@@ -42,7 +42,10 @@ It is applied at all three places this app builds a URL to a streamer, because c
 - `services/ws-client.ts` — the WebSocket carries terminal output, replay and every prompt typed, which is the most sensitive traffic the app has; it refuses to connect and logs `cleartext_blocked` rather than throwing, since the same URL is refused at `authedFetch`, which has a render site.
 - `services/pair-exchange.ts` — builds its own `fetch` because there is no credential to present until it returns one; throws `PairExchangeError('cleartext', …)`, which both pairing resolvers already map to a translated string by kind.
 
-The addresses are parsed rather than prefix-matched. `/^192\.168\./` accepts the registrable public domain `192.168.0.1.example.com`, and `/^10\./` accepts `10.example.com`; both would have been permitted silently.
+The addresses are parsed rather than prefix-matched, and the parse is deliberately stricter than the resolver.
+`/^192\.168\./` accepts the registrable public domain `192.168.0.1.example.com` and `/^10\./` accepts `10.example.com`, so prefixes are out.
+Beyond that, any host the policy and a resolver could read differently is denied rather than investigated: `inet_aton` accepts a bare 32-bit integer, so `134744072` is 8.8.8.8 while a single-label rule reads it as a local name, and a leading zero makes an octet octal, so `010.0.0.1` is 8.0.0.1 to the platform and 10.0.0.1 to `Number()`.
+Whether Android's resolver actually accepts those forms is a platform detail that cannot be settled from here; a policy that disagrees with the resolver in the *permissive* direction is the thing to remove, not to measure.
 
 ## Why not the alternatives
 
@@ -63,7 +66,7 @@ Not expressible; see Context.
 
 - `http://192.168.x.x:8766`, Tailscale addresses and `*.local` work again on Android release builds, matching iOS.
 - A plain-HTTP request to a **public** host is now refused on both platforms, with a specific message naming the remedy rather than the generic unreachable error that cost two sessions of misdiagnosis. A user who was reaching a public `http://` server on Android is newly blocked — no such configuration is known, and the app has never worked that way on iOS.
-- The rule is **advisory**. It constrains the three URL builders above, not the platform: a native module opening its own socket is not covered and cannot be. That is the cost of the platform having no expressible middle ground, not a gap to close in JS.
+- The rule is **advisory**. It constrains the three URL builders above, not the platform: a native module opening its own socket is not covered and cannot be. That is the cost of the platform having no expressible middle ground, not a gap to close in JS — and not an open action item. The question is not whether a dependency does its own networking but whether one does it in *cleartext*, and those that network here talk to their own HTTPS endpoints.
 - **Do not "fix" `usesCleartextTraffic` back to false, and do not add a `network_security_config.xml`.** Both are load-bearing decisions recorded here. `__tests__/unit/scripts/android-cleartext-policy.test.js` fails if either half drifts.
 
 ## What is not verified

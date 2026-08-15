@@ -127,8 +127,16 @@ class WSClient {
     // from taking down the screen: the same URL is refused at authedFetch, which
     // has a render site and will say why.
     if (!isCleartextAllowed(wsUrl)) {
+      // Clearing `url` is what makes the refusal safe, and it is not tidiness.
+      // `disconnect()` leaves `url` set, so a refused connect that returned
+      // early would strand the *previous* server's URL here — with its
+      // credential, which travels in the query string — and `forceReconnect()`
+      // (every foreground resume) would silently redial that old server.
+      // Empty is also what stops `forceReconnect` from retrying a destination
+      // this policy can never permit.
+      this.url = ''
+      this.disconnect()
       logConnection(this.serverId, 'cleartext_blocked')
-      this._setStatus('disconnected')
       return
     }
     this.url = wsUrl
