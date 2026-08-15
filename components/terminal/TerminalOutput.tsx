@@ -21,7 +21,6 @@ import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlo
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
-import i18n from '@/lib/i18n'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -43,33 +42,15 @@ function isUserLine(clean: string, userMessageTexts?: Set<string>): boolean {
 
 interface LineRowProps {
   line: string
-  index: number
   userMessageTexts?: Set<string>
 }
-
-// Gutter renders the line number. Split out + memoised on `index` only so
-// `LineText` (the heavier ANSI-strip + styled <Text>) doesn't re-render when
-// only the position changes — which happens on every WS frame.
-const LineGutter = memo(function LineGutter({ index }: { index: number }) {
-  return (
-    <Text
-      style={styles.lineNum}
-      selectable={false}
-      maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
-    >
-      {index + 1}
-    </Text>
-  )
-})
 
 const LineText = memo(function LineText({
   line,
   userMessageTexts,
-  accessibilityLabel,
 }: {
   line: string
   userMessageTexts?: Set<string>
-  accessibilityLabel?: string
 }) {
   const clean = stripAnsi(line)
   const userOwned = isUserLine(clean, userMessageTexts)
@@ -78,24 +59,21 @@ const LineText = memo(function LineText({
       style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText}
       selectable
       maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
-      accessibilityLabel={accessibilityLabel}
     >
       {clean}
     </Text>
   )
 })
 
-const LineRow = memo(function LineRow({ line, index, userMessageTexts }: LineRowProps) {
+const LineRow = memo(function LineRow({ line, userMessageTexts }: LineRowProps) {
   const clean = stripAnsi(line)
-  const a11yLabel = i18n.t('terminal:a11y.line', { n: index + 1, text: clean })
   return (
     <RenderErrorBoundary tag="terminal_line" rawFallback={clean}>
       <View
         style={styles.lineRow}
         testID="terminal-line-row"
       >
-        <LineGutter index={index} />
-        <LineText line={line} userMessageTexts={userMessageTexts} accessibilityLabel={a11yLabel} />
+        <LineText line={line} userMessageTexts={userMessageTexts} />
       </View>
     </RenderErrorBoundary>
   )
@@ -181,8 +159,8 @@ export function TerminalOutput({
     setShowJumpButton(0)
   }, [scrollToBottom])
 
-  const renderItem = useCallback(({ item, index }: { item: TerminalLine; index: number }) => {
-    return <LineRow line={item} index={index} userMessageTexts={userMessageTexts} />
+  const renderItem = useCallback(({ item }: { item: TerminalLine }) => {
+    return <LineRow line={item} userMessageTexts={userMessageTexts} />
   }, [userMessageTexts])
 
   // Stable keys by content + per-content occurrence. Positional keys broke
@@ -385,15 +363,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 1,
     borderRadius: 3,
-  },
-  lineNum: {
-    color: '#484f58',
-    fontSize: 11,
-    fontFamily: 'monospace',
-    width: 36,
-    textAlign: 'right',
-    paddingRight: 8,
-    userSelect: 'none',
   },
   lineText: {
     color: '#e6edf3',

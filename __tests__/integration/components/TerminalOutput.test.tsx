@@ -12,15 +12,6 @@ describe('TerminalOutput – rendering', () => {
     expect(getByText('second line')).toBeTruthy()
   })
 
-  it('renders line numbers starting at 1', async () => {
-    const { getByText } = await render(
-      <TerminalOutput lines={['line-a', 'line-b', 'line-c']} isStreaming={false} />
-    )
-    expect(getByText('1')).toBeTruthy()
-    expect(getByText('2')).toBeTruthy()
-    expect(getByText('3')).toBeTruthy()
-  })
-
   it('renders empty state without crash', async () => {
     await render(<TerminalOutput lines={[]} isStreaming={false} />)
   })
