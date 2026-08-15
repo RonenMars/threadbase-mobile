@@ -173,8 +173,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
               ) : null}
               {convCount > conversations.length ? (
                 <TouchableOpacity
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onPress={() => router.push(`/project/${projectId}?path=${encodedPath}` as any)}
+                  onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
                   activeOpacity={0.75}
                   style={styles.seeAllRow}
                 >
@@ -218,8 +217,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
                   ))}
                   {convCount > 5 && (
                     <TouchableOpacity
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}` as any)}
+                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
                       activeOpacity={0.75}
                       style={styles.seeAllRow}
                     >

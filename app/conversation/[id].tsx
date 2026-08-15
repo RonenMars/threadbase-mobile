@@ -455,8 +455,7 @@ export default function ConversationDetailScreen() {
       startParams.set('resumedFromConversationId', result.conversationId)
       startParams.set('starting', '1')
       markNavigatedToSession(result.sessionId)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.replace(`/session/${result.sessionId}?${startParams.toString()}` as any)
+      router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
     },
     [qc, serverId, conversation?.projectPath, router],
   )
@@ -528,8 +527,7 @@ export default function ConversationDetailScreen() {
               startParams.set('conversationId', result.conversationId)
               startParams.set('starting', '1')
               markNavigatedToSession(result.sessionId)
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              router.replace(`/session/${result.sessionId}?${startParams.toString()}` as any)
+              router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
             },
             onError: (err) =>
               Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err)),
@@ -602,8 +600,7 @@ export default function ConversationDetailScreen() {
   const handleBackToLiveSession = useCallback(() => {
     if (!fromSession) return
     markNavigatedToSession(fromSession)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace(`/session/${fromSession}?server=${serverId}` as any)
+    router.replace(`/session/${fromSession}?server=${serverId}`)
   }, [fromSession, router, serverId])
 
   const handleShare = useCallback(async () => {

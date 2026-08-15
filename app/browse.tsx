@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native'
-import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router'
+import { useRouter, useLocalSearchParams, useNavigation, type Href } from 'expo-router'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
@@ -222,7 +222,7 @@ export default function BrowseScreen() {
     (path: string, projectName: string) => {
       const params = new URLSearchParams({ server: serverId ?? '', path, projectName })
       if (selectedProvider === CODEX_CLI_PROVIDER) params.set('provider', selectedProvider)
-      const target = `/session/new?${params.toString()}`
+      const target: Href = `/session/new?${params.toString()}`
       clientLog.info('browse', 'dismiss modal + push /session/new', { target })
       router.back()
       // One frame is enough: back() has already committed the pop, and the
@@ -230,8 +230,7 @@ export default function BrowseScreen() {
       // tied to the browse route).
       requestAnimationFrame(() => {
         clientLog.info('browse', 'push /session/new after dismiss', { target })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        router.push(target as any)
+        router.push(target)
       })
     },
     [router, serverId, selectedProvider],

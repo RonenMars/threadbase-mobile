@@ -59,7 +59,7 @@ export function TerminalView({
     router.push(
       conversationHref(resumedConversationId, serverId, undefined, {
         fromSession: sessionId,
-      }) as never,
+      }),
     )
   }, [resumedConversationId, router, serverId, sessionId])
 
@@ -69,7 +69,7 @@ export function TerminalView({
       conversationHref(resumedConversationId, serverId, undefined, {
         fromSession: sessionId,
         openSearch: true,
-      }) as never,
+      }),
     )
   }, [resumedConversationId, router, serverId, sessionId])
 

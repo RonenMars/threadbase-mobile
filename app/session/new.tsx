@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -137,7 +137,7 @@ function buildSessionRoute(
   session: { id: string; projectId?: string; projectPath?: string | null },
   serverId: string,
   opts?: { starting?: boolean },
-): string {
+): Href {
   const params = new URLSearchParams({ server: serverId })
   if (session.projectId) params.set('projectId', session.projectId)
   if (session.projectPath) params.set('projectPath', session.projectPath)
@@ -189,8 +189,7 @@ export default function NewSessionScreen() {
           target,
         })
         markNavigatedToSession(result.session.id)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        router.replace(target as any)
+        router.replace(target)
       } else {
         // Server ready-wait timed out (202): hand over to the existing
         // exact-id pending screen, which replaces itself on session_ready.
@@ -200,8 +199,7 @@ export default function NewSessionScreen() {
           target,
         })
         markNavigatedToSession(result.id)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        router.replace(target as any)
+        router.replace(target)
       }
     },
     [router, serverId],
