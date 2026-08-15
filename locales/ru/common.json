@@ -16,7 +16,8 @@
     "authKeyRejectedOnConnect": "Сервер отклонил этот API-ключ. Проверьте THREADBASE_API_KEY на сервере и вставьте его снова.",
     "cameraPermissionDenied": "Доступ к камере отклонён. Повторите попытку, чтобы сделать фото.",
     "cameraAccessNeededTitle": "Нужен доступ к камере",
-    "cameraAccessNeededMessage": "Разрешите доступ к камере в настройках, чтобы делать фото."
+    "cameraAccessNeededMessage": "Разрешите доступ к камере в настройках, чтобы делать фото.",
+    "attachFailed": "Не удалось прикрепить файл. Попробуйте снова."
   },
   "search": {
     "placeholder": "Поиск…"

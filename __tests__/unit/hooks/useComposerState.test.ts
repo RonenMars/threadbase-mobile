@@ -1,7 +1,8 @@
 import { renderHook, act } from '@testing-library/react-native'
 import { Alert, Linking } from 'react-native'
 import { useComposerState } from '@/hooks/useComposerState'
-import { pickFromCamera } from '@/services/uploads'
+import { pickFromCamera, uploadAttachment } from '@/services/uploads'
+import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
 
 // ── mocks ────────────────────────────────────────────────────────────────────
 // jest.mock factories are hoisted so we cannot reference outer consts inside them.
@@ -169,6 +170,79 @@ describe('runUpload camera permission handling', () => {
 
     await remedyButtons.find((b) => b.text === 'Open Settings')?.onPress?.()
     expect(openSettings).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('runUpload service error translation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(pickFromCamera as jest.Mock).mockResolvedValue({
+      uri: 'file:///tmp/photo.jpg',
+      base64: 'ZmFrZQ==',
+      filename: 'photo.jpg',
+      mimeType: 'image/jpeg',
+    })
+  })
+
+  it('shows the pairing remedy for an AuthError on a revoked device credential', async () => {
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce(
+      new AuthError('device', '/api/sessions/sess1/files'),
+    )
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+    expect(result.current.attachError).toBe(
+      'This device is no longer authorized. Pair it with the server again.',
+    )
+  })
+
+  it('shows the API-key remedy for an AuthError on a rejected shared credential', async () => {
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce(
+      new AuthError('shared', '/api/sessions/sess1/files'),
+    )
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+    expect(result.current.attachError).toBe(
+      'The server rejected the API key. Update the API key and try again.',
+    )
+  })
+
+  it('the device and shared AuthError remedies are distinct', async () => {
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce(
+      new AuthError('device', '/api/sessions/sess1/files'),
+    )
+    const { result: deviceResult } = await renderComposer()
+    await tapTakePhoto(deviceResult)
+
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce(
+      new AuthError('shared', '/api/sessions/sess1/files'),
+    )
+    const { result: sharedResult } = await renderComposer()
+    await tapTakePhoto(sharedResult)
+
+    expect(deviceResult.current.attachError).not.toBe(sharedResult.current.attachError)
+  })
+
+  it('shows a plain translated message for a NetworkError, not the internal server id it carries', async () => {
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce(new NetworkError('Unknown server: srv1'))
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+    expect(result.current.attachError).toBe("Couldn't attach the file. Please try again.")
+  })
+
+  it('shows a plain translated message for a NotFoundError, not the API route it carries', async () => {
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce(
+      new NotFoundError('/api/sessions/sess1/files'),
+    )
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+    expect(result.current.attachError).toBe("Couldn't attach the file. Please try again.")
+  })
+
+  it('shows the translated fallback for a non-Error throw', async () => {
+    ;(uploadAttachment as jest.Mock).mockRejectedValueOnce('boom')
+    const { result } = await renderComposer()
+    await tapTakePhoto(result)
+    expect(result.current.attachError).toBe("Couldn't attach the file. Please try again.")
   })
 })
 
