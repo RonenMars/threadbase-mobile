@@ -7,7 +7,7 @@
  *    back over the WebSocket.
  */
 import React from 'react'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { createWrapper } from '@/test-utils'
 import type { Message } from '@/types/api'
@@ -150,6 +150,22 @@ describe('LiveConversationView — optimistic sent message', () => {
 
     expect(screen.getByText('Scanning project...')).toBeTruthy()
     expect(screen.getByText('Found 12 apps')).toBeTruthy()
+  })
+
+  it('stops following live output as soon as the user drags the chat', async () => {
+    mockHistorical = [
+      { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+
+    await renderView()
+    const messageList = screen.getByTestId('live-conversation-list')
+
+    expect(messageList).toBeTruthy()
+    expect(messageList!.props.onScrollBeginDrag).toEqual(expect.any(Function))
+    await act(async () => messageList!.props.onScrollBeginDrag())
+
+    const jumpToLatest = screen.getByTestId('chat-jump-to-latest')
+    expect(jumpToLatest).toBeTruthy()
   })
 
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
