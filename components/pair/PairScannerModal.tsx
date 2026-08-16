@@ -83,6 +83,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
           url: parsed.url,
           token: parsed.token,
           deviceName: defaultPairDeviceName(),
+          serverPublicKey: parsed.spk,
         })
         reset()
         onSuccess(result)

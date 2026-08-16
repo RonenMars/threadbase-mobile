@@ -10,6 +10,7 @@ import { authedFetch } from '@/services/authed-fetch'
 import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
+import { clearDeviceStaticKey } from '@/services/e2ee/pair-handshake'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
 
@@ -36,6 +37,10 @@ export interface AddServerMeta {
   capabilities?: DeviceCapability[]
   /** What the server advertises as its public address. Recorded, never applied — see ServerConfig. */
   publicUrl?: string
+  /** The server identity key the pairing handshake authenticated. Absent on a plaintext pairing. */
+  serverPublicKey?: string
+  /** Set only by a pairing that completed a Noise handshake; never cleared here. */
+  requireEncryption?: boolean
 }
 
 /** Minimal shape persisted to AsyncStorage (no secrets). */
@@ -49,6 +54,7 @@ interface PersistedServer {
   deviceId?: string
   deviceCapabilities?: DeviceCapability[]
   publicUrl?: string
+  serverPublicKey?: string
   requireEncryption?: boolean
 }
 
@@ -111,6 +117,7 @@ async function persistServerList(
       deviceId: servers[id].deviceId,
       deviceCapabilities: servers[id].deviceCapabilities,
       publicUrl: servers[id].publicUrl,
+      serverPublicKey: servers[id].serverPublicKey,
       requireEncryption: servers[id].requireEncryption,
     }))
   const payload = {
@@ -193,6 +200,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       deviceToken: device?.deviceToken,
       deviceCapabilities: device?.capabilities,
       publicUrl: device?.publicUrl,
+      serverPublicKey: device?.serverPublicKey,
     }
 
     set((state) => {
@@ -207,6 +215,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       return { servers, activeServerIds, displayedServerIds, hasEverHadServer: true }
     })
 
+    // Through the one writer, never as a second one — and only ever to set it.
+    // A pairing that did not encrypt says nothing about whether this device
+    // should demand encryption, so it must not answer the question with `false`.
+    if (device?.requireEncryption) get().setRequireEncryption(id, true)
+
     recordDiagnosticEvent('server_added')
     return id
   },
@@ -214,6 +227,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   removeServer: async (serverId: string) => {
     await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
     await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
+    await clearDeviceStaticKey(serverId)
     recordDiagnosticEvent('server_removed')
 
     set((state) => {
@@ -380,6 +394,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     // the freshly-entered key may know nothing about.
     await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
     if (newId !== serverId) await SecureStore.deleteItemAsync(secureKeyForDeviceToken(newId))
+    // Same terms, same reason: this device's static key was registered by the
+    // old exchange and the pinned server identity was proved by it. Neither
+    // survives a hand-edited URL or key.
+    await clearDeviceStaticKey(serverId)
+    if (newId !== serverId) await clearDeviceStaticKey(newId)
 
     set((state) => {
       const { [serverId]: old, ...rest } = state.servers
@@ -395,6 +414,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         deviceId: undefined,
         deviceToken: undefined,
         deviceCapabilities: undefined,
+        // `requireEncryption` is deliberately NOT cleared alongside it. The
+        // pinned key says "this is that machine" and stops applying; the pin
+        // says "this device refuses plaintext" and is the user's demand, not
+        // the pairing's. Clearing it here would make editing a URL a silent
+        // downgrade — §6.1 requires a deliberate act with a confirmation.
+        serverPublicKey: undefined,
       }
       const newServers = { ...rest, [newId]: updated }
 
@@ -455,6 +480,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
             deviceToken,
             deviceCapabilities: entry.deviceCapabilities,
             publicUrl: entry.publicUrl,
+            serverPublicKey: entry.serverPublicKey,
             requireEncryption: entry.requireEncryption,
           }
           activeServerIds.push(entry.id)

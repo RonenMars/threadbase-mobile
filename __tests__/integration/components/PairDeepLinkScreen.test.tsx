@@ -77,6 +77,8 @@ describe('PairDeepLinkScreen', () => {
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
       capabilities: null,
+      serverPublicKey: null,
+      e2eeRequired: false,
     })
 
     await renderWithI18n(<PairDeepLinkScreen />)
@@ -111,6 +113,8 @@ describe('PairDeepLinkScreen', () => {
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
       capabilities: null,
+      serverPublicKey: null,
+      e2eeRequired: false,
     })
 
     await renderWithI18n(<PairDeepLinkScreen />)
@@ -131,6 +135,8 @@ describe('PairDeepLinkScreen', () => {
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
       capabilities: null,
+      serverPublicKey: null,
+      e2eeRequired: false,
     })
 
     await renderWithI18n(<PairDeepLinkScreen />)
@@ -214,6 +220,8 @@ describe('PairDeepLinkScreen', () => {
       deviceId: null,
       deviceToken: null,
       capabilities: null,
+      serverPublicKey: null,
+      e2eeRequired: false,
     })
     fireEvent.press(await findByText('Try again'))
 
