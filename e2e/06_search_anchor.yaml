@@ -69,7 +69,10 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "search-anchor-message"
 
-- assertVisible: "wombat timeout"
+# Wrapped in `.*`: a Maestro text selector is a regex that has to match the
+# whole node, and the keyword sits mid-sentence in a 55-character bubble.
+# Unwrapped it fails while the text is plainly on screen and highlighted.
+- assertVisible: ".*wombat timeout.*"
 
 - takeScreenshot: e2e/_artifacts/screenshots/search-anchor-02-highlighted.png
 
@@ -84,7 +87,7 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 - extendedWaitUntil:
-    visible: "wombat mascot"
+    visible: ".*wombat mascot.*"
     timeout: 8000
 
 - takeScreenshot: e2e/_artifacts/screenshots/search-anchor-03-prev-match.png

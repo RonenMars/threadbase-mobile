@@ -9,10 +9,23 @@ const BUNDLE_ID = 'com.ronenmars.threadbase'
 const APP_NAME = 'Threadbase.app'
 const REPO_ROOT = path.join(__dirname, '..')
 
-if (process.env.E2E_PLATFORM === 'android') {
-  // Android CI builds and installs its Release APK before this shared suite
-  // starts. Keep the iOS freshness/install guard below for every local iOS path.
-  console.log('Android Release APK was installed by the E2E runner.')
+// Both halves of the E2E workflow build and install the Release app themselves
+// before this shared suite starts, and `E2E_PLATFORM` is set only there — so it
+// is the signal for "the runner already did this". Keep the freshness/install
+// guard below for every local path.
+//
+// iOS was missing from this list, and the cost was not a duplicate build: the
+// workflow builds with `-derivedDataPath build/ios-ci`, which `findReleaseBuild`
+// does not probe, so the script concluded there was no build at all and ran
+// `expo run:ios --configuration Release` from scratch — which then holds Metro
+// open and opens the dev-client URL. Run 31927177499 spent its whole 75-minute
+// budget there and was cancelled without executing a single flow.
+const RUNNER_INSTALLED = {
+  android: 'Android Release APK was installed by the E2E runner.',
+  ios: 'iOS Release build was installed by the E2E runner.',
+}
+if (RUNNER_INSTALLED[process.env.E2E_PLATFORM]) {
+  console.log(RUNNER_INSTALLED[process.env.E2E_PLATFORM])
   process.exit(0)
 }
 

@@ -19,65 +19,14 @@
 
 appId: com.ronenmars.threadbase
 ---
-# Inline pairing instead of setup.yaml: Maestro 2.6.1's `hideKeyboard` does not
-# dismiss the iOS 26.x keyboard, so this prelude never needs it — the form is
-# scrolled above the keyboard and the token input submits via its return key
-# (ConnectStep wires onSubmitEditing to the handshake).
-#
-# Use ${E2E_MOCK_SERVER_URL}, not a hardcoded localhost: on Android CI the mock
-# lives on the runner and the emulator reaches it only via 10.0.2.2 (set by the
-# E2E workflow). Localhost here is the emulator itself and pairing never lands.
-# Notifications is optional for the same reason as setup.yaml: a Release Android
-# build has been observed advancing straight to DONE after handshake.
-- launchApp:
-    clearState: true
-
-- runFlow:
-    when:
-      visible:
-        id: "onboarding-welcome-cta"
-    commands:
-      - tapOn:
-          id: "onboarding-welcome-cta"
-      - tapOn:
-          id: "onboarding-connect-paste-card"
-      - tapOn:
-          id: "onboarding-connect-url-input"
-      - inputText: "${E2E_MOCK_SERVER_URL}"
-      # Scroll the KeyboardAwareScrollView so the token input clears the keyboard.
-      - swipe:
-          start: 50%, 45%
-          end: 50%, 25%
-          duration: 300
-      - tapOn:
-          id: "onboarding-connect-token-input"
-      - inputText: "mock-key-123"
-      # returnKeyType="done" → onSubmitEditing fires the handshake.
-      - pressKey: Enter
-      - runFlow:
-          when:
-            visible: "Not Now"
-          commands:
-            - tapOn: "Not Now"
-      - extendedWaitUntil:
-          visible:
-            id: "onboarding-notifications-cta"
-          timeout: 8000
-          optional: true
-      - tapOn:
-          id: "onboarding-notifications-cta"
-          optional: true
-      - extendedWaitUntil:
-          visible:
-            id: "onboarding-done-cta"
-          timeout: 8000
-      - tapOn:
-          id: "onboarding-done-cta"
-
-- extendedWaitUntil:
-    visible:
-      id: "hub-screen"
-    timeout: 8000
+# Pairing is setup.yaml's job. This flow used to inline its own copy of it to
+# avoid a `hideKeyboard` that setup.yaml no longer contains, and the copy had
+# drifted: it typed the token into a form it had scrolled by hand and relied on
+# the return key alone to fire the handshake. On Android that never landed — the
+# mock server logged no request at all for this flow — and it failed several
+# steps later on `onboarding-notifications-cta`, naming notifications while the
+# real subject was pairing.
+- runFlow: setup.yaml
 
 # Deeplink straight into the fixture conversation; no ?server= param — the
 # screen falls back to the freshly paired mock server.
