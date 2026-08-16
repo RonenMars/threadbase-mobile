@@ -76,8 +76,8 @@ describe('PairConfirmGate', () => {
   // typed order can only be confirmed on a real iOS/Android bidi renderer,
   // which this suite cannot reach.
   it('wraps mono values (URL, fingerprint) in left-to-right isolate marks', async () => {
-    const LRI = '⁦'
-    const PDI = '⁩'
+    const LRI = '\u2066'
+    const PDI = '\u2069'
     const { screen } = await renderGate()
     expect(await screen.findByTestId('pair-confirm-url')).toHaveTextContent(
       `${LRI}https://ronen-mbp.local:8765${PDI}`,

@@ -139,9 +139,8 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
 // text. Isolating forces the run to display in the order it was written in
 // every locale; `writingDirection` below is a same-intent style hint for
 // engines that honor it, not a substitute for the marks.
-// These two are invisible in most editors — grep for the codepoints, not the glyphs.
-const LRI = '⁦' // U+2066 LEFT-TO-RIGHT ISOLATE
-const PDI = '⁩' // U+2069 POP DIRECTIONAL ISOLATE
+const LRI = '\u2066' // U+2066 LEFT-TO-RIGHT ISOLATE
+const PDI = '\u2069' // U+2069 POP DIRECTIONAL ISOLATE
 
 function DetailRow({
   theme,
