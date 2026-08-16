@@ -105,6 +105,8 @@ export function OnboardingNavigator({ onDone }: Props) {
           deviceToken: paired.deviceToken,
           capabilities: paired.capabilities,
           publicUrl: paired.publicUrl,
+          serverPublicKey: paired.serverPublicKey,
+          requireEncryption: paired.requireEncryption,
         })
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,

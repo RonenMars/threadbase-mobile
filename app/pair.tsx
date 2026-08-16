@@ -96,12 +96,15 @@ export default function PairDeepLinkScreen() {
         url: parsed.url,
         token: parsed.token,
         deviceName: defaultPairDeviceName(),
+        serverPublicKey: parsed.spk,
       })
       await addServer(exchanged.url, exchanged.apiKey, exchanged.machineName ?? undefined, {
         deviceId: exchanged.deviceId ?? undefined,
         deviceToken: exchanged.deviceToken ?? undefined,
         capabilities: exchanged.capabilities ?? undefined,
         publicUrl: exchanged.publicUrl ?? undefined,
+        serverPublicKey: exchanged.serverPublicKey ?? undefined,
+        requireEncryption: exchanged.e2eeRequired,
       })
       router.replace('/')
     } catch (err) {
