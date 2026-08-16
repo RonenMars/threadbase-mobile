@@ -28,5 +28,20 @@
         "cleartext": "This server is reachable only over plain HTTP and is not on your local network. Use an https:// address, or run tb serve --tunnel."
       }
     }
+  },
+  "confirm": {
+    "title": "Add this server?",
+    "machineLabel": "Machine",
+    "urlLabel": "Address",
+    "fingerprintLabel": "Identity fingerprint",
+    "machineFallback": "Unnamed machine",
+    "encryptedLine": "Encrypted from this device to this computer.",
+    "compareHint": "Run tb-streamer identity on the computer you're pairing with and compare it to the fingerprint above.",
+    "noSpkTitle": "No identity to verify",
+    "noSpkBody": "This server isn't offering encryption, so there's nothing to compare — anything you send will be readable by anything between this device and the server.",
+    "apiKeyTitle": "Add server with a pasted key?",
+    "apiKeyBody": "This key was typed or pasted, not exchanged with the server. It can't be tied to a specific device or verified — only use a key from a source you trust.",
+    "addButton": "Add server",
+    "cancelButton": "Cancel"
   }
 }
