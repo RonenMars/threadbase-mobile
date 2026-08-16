@@ -10,6 +10,23 @@ appId: com.ronenmars.threadbase
 - launchApp:
     clearState: true
 
+# Give the splash time to clear before anything decides which screen this is.
+# `runFlow when:` is a one-shot probe with a short window, and a cold Release
+# start on a CI simulator is slower than that window: on iOS run 31930896875 the
+# probe gave up at 7.8s, skipped the whole onboarding block as "already paired",
+# and the flow died on hub-screen — with the welcome screen fully rendered in the
+# failure screenshot 16 seconds later.
+#
+# Waiting on hub-screen rather than the welcome CTA is what makes this free in
+# the common case: a run that really is already paired satisfies it immediately,
+# and only a genuinely cold first run pays the timeout — by which point the
+# carousel is up and the probe below reads it correctly.
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 30000
+    optional: true
+
 # If the welcome step is visible, walk the onboarding carousel.
 # Otherwise the app already has credentials cached and is on the hub.
 - runFlow:
