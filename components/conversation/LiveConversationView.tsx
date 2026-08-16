@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View, Keyboard } from 'react-native'
+import { Alert, StyleSheet, Text, TouchableOpacity, Keyboard } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -14,6 +14,7 @@ import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
 import { MessageItem } from '@/components/conversation/MessageItem'
+import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
@@ -32,6 +33,7 @@ import type { ProviderName } from '@/constants/providers'
 import { preferRawTerminal } from '@/lib/renderConfidence'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
+import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { CaretDown } from 'phosphor-react-native'
 
 interface Props {
@@ -94,8 +96,13 @@ export function LiveConversationView({
   // matching echo arrives in the historical/live stream (matched on text).
   const [pendingSends, setPendingSends] = useState<Message[]>([])
 
-  // Historical messages (REST)
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId)
+  // Historical messages (REST). Bounded by SESSION_HISTORY_MAX_BYTES so a huge
+  // conversation doesn't seed the whole heap on open — the rest pages in on
+  // backward scroll via onStartReached below (see docs/superpowers/specs/
+  // 2026-08-15-session-history-byte-budget-design.md).
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId, {
+    maxBytes: SESSION_HISTORY_MAX_BYTES,
+  })
   const historicalMessages: Message[] = data?.messages ?? []
 
   // Live appended messages (WS)
@@ -320,11 +327,7 @@ export function LiveConversationView({
         onStartReached={hasNextPage ? fetchNextPage : undefined}
         onStartReachedThreshold={0.3}
         ListHeaderComponent={
-          isFetchingNextPage ? (
-            <View style={styles.pageLoading}>
-              <ActivityIndicator color={theme.text.secondary} />
-            </View>
-          ) : null
+          <HistoryLoadBoundary hasOlder={Boolean(hasNextPage)} isFetching={isFetchingNextPage} />
         }
         ListEmptyComponent={
           // A freshly-started / waiting_input session has no JSONL yet, so there
@@ -436,11 +439,6 @@ function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme })
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
-    pageLoading: {
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     ptyContainer: { flex: 1, paddingHorizontal: 12 },
     ptyContent: { paddingVertical: 12 },
     ptyLine: {

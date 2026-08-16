@@ -240,6 +240,11 @@ export interface ConversationMessagePagination {
   // changes on every append, so it detects a file changing between reads, not
   // cursor continuity. Read only on after_index responses.
   etag?: string
+  // Bytes spent against a `max_bytes`-bounded first-page request (see
+  // useConversation's `maxBytes` option). Informational only — nothing reads
+  // it to decide behaviour. Absent on servers that predate `max_bytes` and on
+  // any page fetched without it.
+  served_bytes?: number
 }
 
 export interface RawConversationDetail {
@@ -401,18 +406,23 @@ const CONVERSATION_ANCHORED_LIMIT = 120
 export function useConversation(
   serverId: string,
   id: string,
-  opts?: { anchorIndex?: number; enabled?: boolean },
+  opts?: { anchorIndex?: number; enabled?: boolean; maxBytes?: number },
 ) {
   const anchorIndex = opts?.anchorIndex
+  const maxBytes = opts?.maxBytes
   const api = createApiForServer(serverId)
   const queryClient = useQueryClient()
   // The tail view keeps the exact historical key (persisted caches and prefix
   // invalidations depend on it); anchored views get their own cache entry so
-  // the two never share incompatible first pages.
+  // the two never share incompatible first pages. A byte-bounded ("seed")
+  // request is a third variant: its first page is truncated relative to the
+  // plain tail view's, so it must not share a cache entry (or an ETag) with it.
   const queryKey =
     anchorIndex != null
       ? (['conversation', serverId, id, `anchor-${anchorIndex}`] as const)
-      : (['conversation', serverId, id] as const)
+      : maxBytes != null
+        ? (['conversation', serverId, id, `seed-${maxBytes}`] as const)
+        : (['conversation', serverId, id] as const)
   // Anchored windows are throwaway scroll targets; the tail view is what users
   // return to, so it earns the long-lived persisted retention window.
   const conversationGcTime = anchorIndex != null ? QUERY_GC_TIME : SEVEN_DAYS
@@ -464,6 +474,11 @@ export function useConversation(
       params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
       if (!isFirstPage) {
         params.set('before_index', String(pageParam))
+      } else if (maxBytes != null) {
+        // Additive param (see docs/superpowers/specs/2026-08-15-session-history-byte-budget-design.md).
+        // Only the first page is byte-bounded — older pages page in by
+        // before_index/msg_limit like any other backward fetch.
+        params.set('max_bytes', String(maxBytes))
       }
       const path = `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
 
@@ -473,8 +488,10 @@ export function useConversation(
       }
 
       // First page: send If-None-Match with the last known ETag (if any) and
-      // use the conditional path so a 304 keeps the cached copy.
-      const etagKey = `${serverId}::${id}`
+      // use the conditional path so a 304 keeps the cached copy. Scoped by
+      // maxBytes so a byte-bounded seed and the plain tail view never trade
+      // each other's validator.
+      const etagKey = maxBytes != null ? `${serverId}::${id}::seed-${maxBytes}` : `${serverId}::${id}`
       const knownEtag = getEtag(etagKey)
       const res = await api.getWithMeta<RawConversationDetail>(
         path,
@@ -544,13 +561,17 @@ export function useConversation(
     // Reset the imperative handle first; only the active tail-view path below
     // re-points it at a live runDelta.
     triggerDeltaRef.current = () => {}
-    // Delta-on-open lives only on the tail view; anchored windows are
-    // navigation artifacts with their own bidirectional pagination. A consumer
+    // Delta-on-open lives only on the plain tail view; anchored windows are
+    // navigation artifacts with their own bidirectional pagination, and a
+    // byte-bounded seed view is a one-shot history read (the live PTY stream
+    // is the "present" for that surface, not a drained/resumed conversation
+    // cursor) — draining it would also target the wrong cache entry, since
+    // the tailKey rebuilt below doesn't carry the maxBytes suffix. A consumer
     // that mounts with enabled: false must not trigger either — imperative
     // fetches (fetchPreviousPage) bypass react-query's `enabled` gate, so
     // without this check a disabled consumer with a warm cache would still
     // fire mount/foreground/WS deltas.
-    if (!triggerEnabled || anchorIndex != null || !serverId || !id) return
+    if (!triggerEnabled || anchorIndex != null || maxBytes != null || !serverId || !id) return
 
     // Rebuild the tail key locally so queryKey (a fresh array each render) never
     // enters the deps array. Only the tail view reaches here, so this is always
@@ -670,7 +691,7 @@ export function useConversation(
       unsubStatus()
       unsubSession?.()
     }
-  }, [serverId, id, anchorIndex, queryKeyHash, queryClient, triggerEnabled])
+  }, [serverId, id, anchorIndex, maxBytes, queryKeyHash, queryClient, triggerEnabled])
 
   // Every drain rebuilds ConversationDetail from raw pages, so each Message is a
   // fresh object even when its content is byte-identical to the one already on
