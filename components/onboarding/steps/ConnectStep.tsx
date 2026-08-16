@@ -138,6 +138,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       deviceId: result.deviceId ?? undefined,
       deviceToken: result.deviceToken ?? undefined,
       capabilities: result.capabilities ?? undefined,
+      serverPublicKey: result.serverPublicKey ?? undefined,
+      requireEncryption: result.e2eeRequired,
     })
     onAdvance()
   }

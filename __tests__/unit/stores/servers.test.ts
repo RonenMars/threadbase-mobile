@@ -382,3 +382,99 @@ describe('addServer – publicUrl', () => {
     expect(useServersStore.getState().getServer(String(id))?.publicUrl).toBeUndefined()
   })
 })
+
+// ── The pairing handshake's half of the server record (#698) ────────────────
+//
+// **Only the write half is covered, and the read half is a known gap.**
+// `loadPersistedServers` reads these fields back at `stores/servers.ts:410-482`
+// and no test in this repo can execute it: its first statement awaits a dynamic
+// `import()` of AsyncStorage, and jest runs without `--experimental-vm-modules`,
+// so that throws — `TypeError: A dynamic import callback was invoked without
+// --experimental-vm-modules` — regardless of `moduleNameMapper`. Verified with a
+// bare `await import('@react-native-async-storage/async-storage')` in a throwaway
+// test, not assumed from the note in `e2ee-require-encryption.test.ts`.
+//
+// So a reader that dropped `serverPublicKey` on load would be caught by nothing
+// here. The assertions below deliberately name the persisted key rather than
+// round-tripping through the store's in-memory state, because that round trip
+// passes whenever the two copies have not yet diverged, which is the failure it
+// is supposed to detect.
+
+describe('addServer – e2ee material', () => {
+  const SecureStore = jest.requireMock('expo-secure-store') as {
+    setItemAsync: jest.Mock
+    deleteItemAsync: jest.Mock
+  }
+
+  const SPK = 'A'.repeat(43)
+  const URL = 'http://192.168.68.125:8766'
+
+  function persistedList(): Record<string, unknown>[] {
+    const call = SecureStore.setItemAsync.mock.calls
+      .filter(([key]) => key === 'threadbase_servers')
+      .pop()
+    if (!call) throw new Error('the server list was never persisted')
+    return (JSON.parse(String(call[1])) as { list: Record<string, unknown>[] }).list
+  }
+
+  it('records the pinned server key and the pin, in memory and on disk', async () => {
+    // On disk matters on its own: `persistServerList` builds its own object
+    // literal, so a field added to ServerConfig alone survives until the next
+    // launch and then only a re-pair recovers it.
+    const id = await useServersStore.getState().addServer(URL, 'key-abc', undefined, {
+      serverPublicKey: SPK,
+      requireEncryption: true,
+    })
+
+    const server = useServersStore.getState().getServer(String(id))
+    expect(server?.serverPublicKey).toBe(SPK)
+    expect(server?.requireEncryption).toBe(true)
+
+    const entry = persistedList().find((s) => s.url === URL)
+    expect(entry?.serverPublicKey).toBe(SPK)
+    expect(entry?.requireEncryption).toBe(true)
+  })
+
+  it('leaves the pin unanswered for a pairing that did not encrypt', async () => {
+    // The positive control's sibling: `requireEncryption` must stay absent
+    // rather than becoming `false`, because "we did not encrypt this time" is
+    // not an answer to "does this device demand encryption".
+    const id = await useServersStore.getState().addServer(URL, 'key-abc', undefined, {
+      requireEncryption: false,
+    })
+
+    const server = useServersStore.getState().getServer(String(id))
+    expect(server?.requireEncryption).toBeUndefined()
+    expect(server?.serverPublicKey).toBeUndefined()
+  })
+
+  it('forgets this device static key when the server is removed', async () => {
+    const id = String(await useServersStore.getState().addServer(URL, 'key-abc'))
+    SecureStore.deleteItemAsync.mockClear()
+
+    await useServersStore.getState().removeServer(id)
+
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+  })
+
+  it('drops the pinned key but keeps the pin when the server is hand-edited', async () => {
+    // A hand-edited URL or key is a different pairing, so the identity the old
+    // exchange proved no longer applies. The pin is the user's demand rather
+    // than the pairing's, and clearing it here would make editing a URL a
+    // silent downgrade.
+    const id = String(
+      await useServersStore.getState().addServer(URL, 'key-abc', undefined, {
+        serverPublicKey: SPK,
+        requireEncryption: true,
+      }),
+    )
+    SecureStore.deleteItemAsync.mockClear()
+
+    await useServersStore.getState().editServer(id, { url: URL, apiKey: 'key-different' })
+
+    const server = useServersStore.getState().getServer(id)
+    expect(server?.serverPublicKey).toBeUndefined()
+    expect(server?.requireEncryption).toBe(true)
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+  })
+})

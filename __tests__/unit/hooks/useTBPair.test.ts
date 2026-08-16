@@ -51,6 +51,8 @@ describe('useTBPair (prod path)', () => {
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
       capabilities: ['history:read', 'session:control'],
+      serverPublicKey: null,
+      e2eeRequired: false,
     })
 
     const onSuccess = jest.fn()
@@ -88,6 +90,8 @@ describe('useTBPair (prod path)', () => {
       deviceToken: 'dt_1',
       capabilities: ['history:read', 'session:control'],
       publicUrl: 'https://tunnel.example.test',
+      serverPublicKey: undefined,
+      requireEncryption: false,
     })
     expect(result.current.phase).toBe('ok')
   })
@@ -101,6 +105,8 @@ describe('useTBPair (prod path)', () => {
       deviceId: null,
       deviceToken: null,
       capabilities: null,
+      serverPublicKey: null,
+      e2eeRequired: false,
     })
 
     const onSuccess = jest.fn()
@@ -135,6 +141,8 @@ describe('useTBPair (prod path)', () => {
       deviceToken: undefined,
       capabilities: undefined,
       publicUrl: 'https://tunnel.from-uri.test',
+      serverPublicKey: undefined,
+      requireEncryption: false,
     })
   })
 

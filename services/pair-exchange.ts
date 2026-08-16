@@ -1,7 +1,10 @@
 import nacl from 'tweetnacl'
 import naclUtil from 'tweetnacl-util'
 import { parseCapabilityList, type DeviceCapability } from '@/types/devices'
+import { E2EE_CLIENT_VERSION, serverIdFromUrl } from '@/types/api'
 import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
+import { PAIR_MESSAGE1_PAYLOAD, beginPairHandshake } from '@/services/e2ee/pair-handshake'
+import type { NoiseInitiator } from '@/services/e2ee/noise'
 
 export interface PairUri {
   url: string
@@ -45,6 +48,21 @@ export interface ExchangeResult {
   /** Scoped credential — store only in SecureStore; never display. */
   deviceToken: string | null
   capabilities: DeviceCapability[] | null
+  /**
+   * The server's long-term X25519 public key, exactly as the QR carried it
+   * (unpadded base64url), and only once the Noise handshake proved the
+   * responder holds the matching private half.
+   *
+   * `null` on a plaintext pairing. A key nobody has proved possession of is not
+   * something to pin, so an unverified one must never reach the server record.
+   */
+  serverPublicKey: string | null
+  /**
+   * True when this pairing completed a Noise handshake and the server recorded
+   * it on its side. This is the client half of the downgrade lock (design.md
+   * §6.3): once set, this device never speaks plaintext to that server again.
+   */
+  e2eeRequired: boolean
 }
 
 export type PairUriErrorCode = 'invalid' | 'expired' | 'bad-server-url'
@@ -70,13 +88,43 @@ export function classifyPairCredential(raw: string): PairCredentialKind {
   return 'api-key'
 }
 
+/**
+ * The three `e2ee-*` kinds are deliberately not one kind, because the remedies
+ * differ and none of them spends the pair token:
+ *
+ * - `e2ee-handshake` — the server could not authenticate our message 1, or we
+ *   could not authenticate its message 2. Retrying with the same QR is
+ *   legitimate; it is also what a man in the middle produces, so it is never a
+ *   reason to pair in plaintext instead.
+ * - `e2ee-malformed` — one side sent an `e2ee` field the other could not parse.
+ *   Also retryable with the same QR.
+ * - `e2ee-version` — the two builds do not speak the same envelope version.
+ *   Retrying changes nothing; this is the one case where falling back is a
+ *   deliberate decision rather than a failure, and it belongs to the caller.
+ */
 export class PairExchangeError extends Error {
-  readonly kind: 'network' | 'token' | 'rate-limited' | 'decrypt' | 'server' | 'cleartext'
+  readonly kind:
+    | 'network'
+    | 'token'
+    | 'rate-limited'
+    | 'decrypt'
+    | 'server'
+    | 'cleartext'
+    | 'e2ee-handshake'
+    | 'e2ee-malformed'
+    | 'e2ee-version'
   constructor(kind: PairExchangeError['kind'], message: string) {
     super(message)
     this.name = 'PairExchangeError'
     this.kind = kind
   }
+}
+
+/** `{ error, code }` refusals from the streamer's `handlePairExchange`, by code. */
+const E2EE_REFUSAL_KINDS: Record<string, PairExchangeError['kind']> = {
+  E2EE_HANDSHAKE_FAILED: 'e2ee-handshake',
+  E2EE_MALFORMED: 'e2ee-malformed',
+  E2EE_VERSION_UNSUPPORTED: 'e2ee-version',
 }
 
 const PAIR_EXCHANGE_TIMEOUT_MS = 15_000
@@ -147,16 +195,40 @@ export async function exchangeToken({
   token,
   deviceName,
   readOnly = false,
+  serverPublicKey,
 }: {
   url: string
   token: string
   deviceName?: string
   readOnly?: boolean
+  /**
+   * The scanned QR's `spk`. Its presence is the whole capability gate for
+   * pairing: `GET /api/info` is authenticated and this is the request that
+   * mints the credential, so the QR is the only thing that can say whether the
+   * server speaks E2EE before a credential exists.
+   */
+  serverPublicKey?: string
 }): Promise<ExchangeResult> {
   assertHttpServerUrl(url)
   const trimmedUrl = url.replace(/\/$/, '')
   const recipient = nacl.box.keyPair()
   const clientPublicKey = naclUtil.encodeBase64(recipient.publicKey)
+
+  // Before the timeout starts, because it writes this device's static key to
+  // the Keychain and that write is not part of the request's budget.
+  let started: Awaited<ReturnType<typeof beginPairHandshake>>
+  try {
+    started = await beginPairHandshake({
+      serverId: serverIdFromUrl(trimmedUrl),
+      serverPublicKey,
+      pairToken: token,
+    })
+  } catch (err) {
+    // Includes a `spk` that is present but unusable. mobile-design §3.2: a
+    // corrupted QR parameter must not be a route back to plaintext.
+    const message = err instanceof Error ? err.message : 'Could not start the encrypted pairing'
+    throw new PairExchangeError('e2ee-malformed', message)
+  }
 
   const timeoutController = new AbortController()
   const timeoutId = setTimeout(() => timeoutController.abort(), PAIR_EXCHANGE_TIMEOUT_MS)
@@ -166,9 +238,20 @@ export async function exchangeToken({
     clientPublicKey: string
     deviceName?: string
     readOnly?: boolean
+    e2ee?: { v: number; noise: string }
   } = { token, clientPublicKey }
   if (deviceName?.trim()) bodyPayload.deviceName = deviceName.trim().slice(0, 100)
   if (readOnly) bodyPayload.readOnly = true
+  // Additive and last, so a pairing with no server key serialises byte for byte
+  // as it does today — which is the whole of the old-server compatibility story.
+  if (started.ok) {
+    bodyPayload.e2ee = {
+      v: E2EE_CLIENT_VERSION,
+      noise: naclUtil.encodeBase64(
+        started.handshake.writeMessage1(naclUtil.decodeUTF8(PAIR_MESSAGE1_PAYLOAD)),
+      ),
+    }
+  }
 
   // Its own fetch rather than authedFetch's: there is no credential to present
   // until this call returns one. So the cleartext policy has to be applied here
@@ -204,6 +287,16 @@ export async function exchangeToken({
     const body = (await safeJson(res)) as { error?: string } | null
     throw new PairExchangeError('token', body?.error ?? 'Pair token rejected')
   }
+  // The streamer refuses a bad `e2ee` field with 400 and a code, and spends no
+  // token doing it. Anything else with a 400 keeps today's message.
+  if (res.status === 400) {
+    const body = (await safeJson(res)) as { error?: string; code?: string } | null
+    const refusal = body?.code ? E2EE_REFUSAL_KINDS[body.code] : undefined
+    if (refusal) {
+      throw new PairExchangeError(refusal, body?.error ?? 'Server refused the encrypted pairing')
+    }
+    throw new PairExchangeError('server', `Server returned ${res.status}`)
+  }
   if (!res.ok) {
     throw new PairExchangeError('server', `Server returned ${res.status}`)
   }
@@ -217,6 +310,7 @@ export async function exchangeToken({
     deviceId?: string
     deviceToken?: string
     capabilities?: unknown
+    e2ee?: unknown
   } | null
 
   if (!body?.ciphertext || !body.nonce || !body.ephemeralPublicKey) {
@@ -259,6 +353,12 @@ export async function exchangeToken({
     ? parseCapabilityList(body.capabilities)
     : null
 
+  // A reply with no `e2ee` field is a plaintext pairing, and that is not an
+  // error even when we offered one: the streamer logs and continues if it
+  // cannot write message 2, and an older build never had the field. What it is
+  // not is a reason to pin — nothing here authenticated the responder.
+  const reply = started.ok ? readPairHandshakeReply(started.handshake, body.e2ee) : null
+
   return {
     url: trimmedUrl,
     apiKey: naclUtil.encodeUTF8(plain),
@@ -267,6 +367,56 @@ export async function exchangeToken({
     deviceId,
     deviceToken,
     capabilities,
+    serverPublicKey: reply ? serverPublicKey ?? null : null,
+    e2eeRequired: reply?.e2eeRequired === true,
+  }
+}
+
+/** Message 2's decrypted payload, per design.md §2.4. */
+interface PairHandshakeReply {
+  v?: number
+  deviceId?: string | null
+  serverVersion?: string
+  e2eeRequired?: boolean
+}
+
+/**
+ * Reads the reply's additive `e2ee` field, or `null` when it carried none.
+ *
+ * That the payload decrypts at all is the key confirmation — Noise's handshake
+ * hash already commits to both static keys, both ephemerals and the PSK, and it
+ * is the AAD for this AEAD. There is no separate confirmation value and design
+ * §2.4 says there deliberately is not one.
+ */
+function readPairHandshakeReply(handshake: NoiseInitiator, raw: unknown): PairHandshakeReply | null {
+  if (raw == null) return null
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new PairExchangeError('e2ee-malformed', 'Server sent a malformed e2ee reply')
+  }
+  const { v, noise } = raw as { v?: unknown; noise?: unknown }
+  if (v !== E2EE_CLIENT_VERSION) {
+    throw new PairExchangeError(
+      'e2ee-version',
+      `Server replied with e2ee version ${String(v)}; this app speaks ${E2EE_CLIENT_VERSION}`,
+    )
+  }
+  if (typeof noise !== 'string' || noise.length === 0) {
+    throw new PairExchangeError('e2ee-malformed', 'Server sent a malformed e2ee reply')
+  }
+
+  let payload: Uint8Array
+  try {
+    payload = handshake.readMessage2(naclUtil.decodeBase64(noise)).payload
+  } catch {
+    // Wrong static key, wrong PSK, or a rewritten reply — one kind, because the
+    // remedy is the same and the difference is only useful to whoever caused it.
+    throw new PairExchangeError('e2ee-handshake', 'Could not authenticate the handshake reply')
+  }
+
+  try {
+    return JSON.parse(naclUtil.encodeUTF8(payload)) as PairHandshakeReply
+  } catch {
+    throw new PairExchangeError('e2ee-malformed', 'Server sent an unreadable handshake payload')
   }
 }
 

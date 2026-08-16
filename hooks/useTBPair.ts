@@ -30,6 +30,10 @@ export interface PairResult {
   capabilities?: DeviceCapability[]
   /** Advertised public address of the server. Recorded, never used as `url`. */
   publicUrl?: string
+  /** Server identity key proved by the pairing handshake. Absent on a plaintext pairing. */
+  serverPublicKey?: string
+  /** True when the pairing completed a Noise handshake — the client half of the downgrade lock. */
+  requireEncryption?: boolean
 }
 
 interface PairOptions {
@@ -70,6 +74,7 @@ async function resolveCredentials(
       token: parsed.token,
       deviceName,
       readOnly,
+      serverPublicKey: parsed.spk,
     })
     return {
       url: exchanged.url,
@@ -79,10 +84,14 @@ async function resolveCredentials(
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
       publicUrl: exchanged.publicUrl ?? undefined,
+      serverPublicKey: exchanged.serverPublicKey ?? undefined,
+      requireEncryption: exchanged.e2eeRequired,
     }
   }
 
   if (kind === 'pair-token') {
+    // A bare `pt_` token is typed or pasted, so it carries no server key and
+    // this stays the plaintext path — there is no out-of-band channel to lose.
     const exchanged = await exchangeToken({
       url: trimmedUrl,
       token: trimmedToken,
@@ -97,6 +106,8 @@ async function resolveCredentials(
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
       publicUrl: exchanged.publicUrl ?? undefined,
+      serverPublicKey: exchanged.serverPublicKey ?? undefined,
+      requireEncryption: exchanged.e2eeRequired,
     }
   }
 
@@ -118,6 +129,11 @@ function messageForPairFailure(err: unknown): string {
     if (err.kind === 'rate-limited') return 'too many attempts · try again shortly'
     if (err.kind === 'network') return 'connection refused · is the server running?'
     if (err.kind === 'decrypt') return 'could not unseal api key'
+    // None of these spent the token, so the same code is still worth retrying —
+    // except the version mismatch, where retrying changes nothing.
+    if (err.kind === 'e2ee-handshake') return 'could not verify server identity · scan again'
+    if (err.kind === 'e2ee-malformed') return 'encrypted pairing mismatch · scan again'
+    if (err.kind === 'e2ee-version') return 'server speaks a different e2ee version · update both'
     return 'exchange failed'
   }
   if (err instanceof AuthError) {

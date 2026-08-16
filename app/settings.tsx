@@ -445,6 +445,8 @@ await refreshServerInfo(serverId)
       deviceToken: result.deviceToken ?? undefined,
       capabilities: result.capabilities ?? undefined,
       publicUrl: result.publicUrl ?? undefined,
+      serverPublicKey: result.serverPublicKey ?? undefined,
+      requireEncryption: result.e2eeRequired,
     })
     if (typeof addResult === 'string') {
       wsManager.connect(addResult, result.url, result.apiKey)
