@@ -12,12 +12,17 @@ interface PersistedState {
   // state stays the same across them. `null` = follow the count-based default
   // (collapsed when there are many sessions); a boolean is an explicit choice.
   sessionsHeaderCollapsed: boolean | null
+  // Session-history region above the live terminal (SessionHistoryFeed).
+  // `null` = no explicit choice yet, defaults to expanded; a boolean is an
+  // explicit choice, shared across sessions like the other prefs here.
+  historyFeedCollapsed: boolean | null
 }
 
 interface ViewPrefsStore extends PersistedState {
   toggleServerCollapsed: (serverId: string) => void
   setRecentsOpen: (open: boolean) => void
   setSessionsHeaderCollapsed: (collapsed: boolean) => void
+  setHistoryFeedCollapsed: (collapsed: boolean) => void
   hydrate: () => Promise<void>
 }
 
@@ -25,6 +30,7 @@ const DEFAULTS: PersistedState = {
   collapsedServers: [],
   recentsOpen: true,
   sessionsHeaderCollapsed: null,
+  historyFeedCollapsed: null,
 }
 
 export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
@@ -41,6 +47,8 @@ export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
 
   setSessionsHeaderCollapsed: (sessionsHeaderCollapsed) => set({ sessionsHeaderCollapsed }),
 
+  setHistoryFeedCollapsed: (historyFeedCollapsed) => set({ historyFeedCollapsed }),
+
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(VIEW_PREFS_STORAGE_KEY)
@@ -50,6 +58,7 @@ export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
         collapsedServers: Array.isArray(parsed.collapsedServers) ? parsed.collapsedServers : s.collapsedServers,
         recentsOpen: parsed.recentsOpen ?? s.recentsOpen,
         sessionsHeaderCollapsed: parsed.sessionsHeaderCollapsed ?? s.sessionsHeaderCollapsed,
+        historyFeedCollapsed: parsed.historyFeedCollapsed ?? s.historyFeedCollapsed,
       }))
     } catch {
       // storage unavailable or corrupted — ignore
@@ -62,6 +71,7 @@ useViewPrefsStore.subscribe((state) => {
     collapsedServers: state.collapsedServers,
     recentsOpen: state.recentsOpen,
     sessionsHeaderCollapsed: state.sessionsHeaderCollapsed,
+    historyFeedCollapsed: state.historyFeedCollapsed,
   }
   AsyncStorage.setItem(VIEW_PREFS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})
 })

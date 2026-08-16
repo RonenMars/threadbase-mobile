@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Alert, View, Text, StyleSheet } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useRouter } from 'expo-router'
@@ -10,6 +10,7 @@ import { isQuestionClosedError } from '@/services/api-client'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
+import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -30,6 +31,8 @@ interface Props {
   onClosePlan?: () => void
   /** Conversation that was resumed into this session — when set, disclose missing PTY scrollback. */
   resumedConversationId?: string | null
+  /** Conversation backing this session — seeds a history region above the live terminal tail. */
+  conversationId?: string | null
 }
 
 export function TerminalView({
@@ -41,6 +44,7 @@ export function TerminalView({
   pendingPlan = null,
   onClosePlan,
   resumedConversationId = null,
+  conversationId = null,
 }: Props) {
   const { t } = useTranslation('terminal')
   const router = useRouter()
@@ -53,6 +57,15 @@ export function TerminalView({
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
   const { question: activeQuestion, clear: clearQuestion } = useActiveQuestion(serverId, sessionId)
+
+  // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
+  // not in SessionHistoryFeed itself, because entering it also has to hide
+  // this component's own TerminalOutput region below. Derived (not reset via
+  // an effect) against conversationId: without a conversationId,
+  // SessionHistoryFeed doesn't render at all, so honoring a stale `true`
+  // here would hide the terminal with no minimize control left to undo it.
+  const [historyFull, setHistoryFull] = useState(false)
+  const isHistoryFull = historyFull && conversationId != null
 
   const onViewResumedConversation = useCallback(() => {
     if (!resumedConversationId) return
@@ -127,18 +140,31 @@ export function TerminalView({
           <Text style={styles.rawNoteText}>{t('session.rawModeNote')}</Text>
         </View>
       ) : null}
-      <TerminalOutput
-        lines={lines}
-        isStreaming={isStreaming}
-        userMessageTexts={userMessageTexts}
-        onSendInput={(text) => sendInput.mutate(text)}
-        onSendKeys={(keys) => sendKeys.mutate(keys)}
-        activeQuestion={activeQuestion}
-        onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
-        onDismissQuestion={clearQuestion}
-        onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
-        onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
-      />
+      {conversationId ? (
+        <SessionHistoryFeed
+          serverId={serverId}
+          conversationId={conversationId}
+          isFull={isHistoryFull}
+          onToggleFull={() => setHistoryFull((full) => !full)}
+        />
+      ) : null}
+      {/* Wrapped (not conditionally rendered) so full-screen history hides the
+          terminal via style, not unmount — its live PTY stream and scroll
+          position must survive being hidden. See SessionHistoryFeed. */}
+      <View testID="terminal-output-region" style={isHistoryFull ? styles.terminalHidden : styles.terminalVisible}>
+        <TerminalOutput
+          lines={lines}
+          isStreaming={isStreaming}
+          userMessageTexts={userMessageTexts}
+          onSendInput={(text) => sendInput.mutate(text)}
+          onSendKeys={(keys) => sendKeys.mutate(keys)}
+          activeQuestion={activeQuestion}
+          onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+          onDismissQuestion={clearQuestion}
+          onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
+          onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
+        />
+      </View>
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
@@ -205,5 +231,11 @@ const styles = StyleSheet.create({
     color: '#d29922',
     fontSize: 11,
     lineHeight: 15,
+  },
+  terminalVisible: {
+    flex: 1,
+  },
+  terminalHidden: {
+    display: 'none',
   },
 })
