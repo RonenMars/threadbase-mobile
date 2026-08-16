@@ -11,6 +11,1956 @@
   },
   "messages": [
     {
+      "message_index": 0,
+      "uuid": "uuid-0",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:00.000Z",
+      "text": "Question about step 0: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 0: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 1,
+      "uuid": "uuid-1",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:01.000Z",
+      "text": "Answer for step 1: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 1: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 2,
+      "uuid": "uuid-2",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:02.000Z",
+      "text": "Question about step 2: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 2: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 3,
+      "uuid": "uuid-3",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:03.000Z",
+      "text": "Answer for step 3: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 3: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 4,
+      "uuid": "uuid-4",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:04.000Z",
+      "text": "Question about step 4: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 4: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 5,
+      "uuid": "uuid-5",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:05.000Z",
+      "text": "Answer for step 5: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 5: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 6,
+      "uuid": "uuid-6",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:06.000Z",
+      "text": "Question about step 6: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 6: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 7,
+      "uuid": "uuid-7",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:07.000Z",
+      "text": "Answer for step 7: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 7: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 8,
+      "uuid": "uuid-8",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:08.000Z",
+      "text": "Question about step 8: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 8: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 9,
+      "uuid": "uuid-9",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:09.000Z",
+      "text": "Answer for step 9: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 9: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 10,
+      "uuid": "uuid-10",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:10.000Z",
+      "text": "Question about step 10: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 10: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 11,
+      "uuid": "uuid-11",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:11.000Z",
+      "text": "Answer for step 11: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 11: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 12,
+      "uuid": "uuid-12",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:12.000Z",
+      "text": "Question about step 12: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 12: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 13,
+      "uuid": "uuid-13",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:13.000Z",
+      "text": "Answer for step 13: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 13: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 14,
+      "uuid": "uuid-14",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:14.000Z",
+      "text": "Question about step 14: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 14: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 15,
+      "uuid": "uuid-15",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:15.000Z",
+      "text": "The wombat mascot art lives in assets/brand, next to the retry docs.",
+      "content": [
+        {
+          "type": "text",
+          "text": "The wombat mascot art lives in assets/brand, next to the retry docs."
+        }
+      ]
+    },
+    {
+      "message_index": 16,
+      "uuid": "uuid-16",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:16.000Z",
+      "text": "Question about step 16: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 16: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 17,
+      "uuid": "uuid-17",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:17.000Z",
+      "text": "Answer for step 17: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 17: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 18,
+      "uuid": "uuid-18",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:18.000Z",
+      "text": "Question about step 18: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 18: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 19,
+      "uuid": "uuid-19",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:19.000Z",
+      "text": "Answer for step 19: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 19: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 20,
+      "uuid": "uuid-20",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:20.000Z",
+      "text": "Question about step 20: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 20: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 21,
+      "uuid": "uuid-21",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:21.000Z",
+      "text": "Answer for step 21: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 21: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 22,
+      "uuid": "uuid-22",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:22.000Z",
+      "text": "Question about step 22: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 22: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 23,
+      "uuid": "uuid-23",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:23.000Z",
+      "text": "Answer for step 23: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 23: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 24,
+      "uuid": "uuid-24",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:24.000Z",
+      "text": "Question about step 24: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 24: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 25,
+      "uuid": "uuid-25",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:25.000Z",
+      "text": "Answer for step 25: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 25: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 26,
+      "uuid": "uuid-26",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:26.000Z",
+      "text": "Question about step 26: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 26: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 27,
+      "uuid": "uuid-27",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:27.000Z",
+      "text": "Answer for step 27: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 27: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 28,
+      "uuid": "uuid-28",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:28.000Z",
+      "text": "Question about step 28: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 28: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 29,
+      "uuid": "uuid-29",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:29.000Z",
+      "text": "Answer for step 29: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 29: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 30,
+      "uuid": "uuid-30",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:30.000Z",
+      "text": "Question about step 30: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 30: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 31,
+      "uuid": "uuid-31",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:31.000Z",
+      "text": "Answer for step 31: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 31: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 32,
+      "uuid": "uuid-32",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:32.000Z",
+      "text": "Question about step 32: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 32: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 33,
+      "uuid": "uuid-33",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:33.000Z",
+      "text": "Answer for step 33: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 33: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 34,
+      "uuid": "uuid-34",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:34.000Z",
+      "text": "Question about step 34: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 34: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 35,
+      "uuid": "uuid-35",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:35.000Z",
+      "text": "Answer for step 35: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 35: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 36,
+      "uuid": "uuid-36",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:36.000Z",
+      "text": "Question about step 36: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 36: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 37,
+      "uuid": "uuid-37",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:37.000Z",
+      "text": "Answer for step 37: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 37: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 38,
+      "uuid": "uuid-38",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:38.000Z",
+      "text": "Question about step 38: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 38: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 39,
+      "uuid": "uuid-39",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:39.000Z",
+      "text": "Answer for step 39: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 39: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 40,
+      "uuid": "uuid-40",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:40.000Z",
+      "text": "Question about step 40: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 40: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 41,
+      "uuid": "uuid-41",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:41.000Z",
+      "text": "Answer for step 41: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 41: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 42,
+      "uuid": "uuid-42",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:42.000Z",
+      "text": "Question about step 42: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 42: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 43,
+      "uuid": "uuid-43",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:43.000Z",
+      "text": "Answer for step 43: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 43: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 44,
+      "uuid": "uuid-44",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:44.000Z",
+      "text": "Question about step 44: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 44: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 45,
+      "uuid": "uuid-45",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:45.000Z",
+      "text": "Answer for step 45: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 45: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 46,
+      "uuid": "uuid-46",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:46.000Z",
+      "text": "Question about step 46: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 46: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 47,
+      "uuid": "uuid-47",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:47.000Z",
+      "text": "Answer for step 47: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 47: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 48,
+      "uuid": "uuid-48",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:48.000Z",
+      "text": "Question about step 48: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 48: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 49,
+      "uuid": "uuid-49",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:49.000Z",
+      "text": "Answer for step 49: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 49: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 50,
+      "uuid": "uuid-50",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:50.000Z",
+      "text": "Question about step 50: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 50: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 51,
+      "uuid": "uuid-51",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:51.000Z",
+      "text": "Answer for step 51: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 51: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 52,
+      "uuid": "uuid-52",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:52.000Z",
+      "text": "Question about step 52: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 52: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 53,
+      "uuid": "uuid-53",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:53.000Z",
+      "text": "Answer for step 53: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 53: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 54,
+      "uuid": "uuid-54",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:54.000Z",
+      "text": "Question about step 54: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 54: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 55,
+      "uuid": "uuid-55",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:55.000Z",
+      "text": "Answer for step 55: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 55: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 56,
+      "uuid": "uuid-56",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:56.000Z",
+      "text": "Question about step 56: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 56: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 57,
+      "uuid": "uuid-57",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:57.000Z",
+      "text": "Answer for step 57: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 57: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 58,
+      "uuid": "uuid-58",
+      "role": "user",
+      "timestamp": "2026-05-20T10:00:58.000Z",
+      "text": "Question about step 58: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 58: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 59,
+      "uuid": "uuid-59",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:00:59.000Z",
+      "text": "Answer for step 59: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 59: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 60,
+      "uuid": "uuid-60",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:00.000Z",
+      "text": "Question about step 60: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 60: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 61,
+      "uuid": "uuid-61",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:01.000Z",
+      "text": "Answer for step 61: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 61: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 62,
+      "uuid": "uuid-62",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:02.000Z",
+      "text": "Question about step 62: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 62: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 63,
+      "uuid": "uuid-63",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:03.000Z",
+      "text": "Answer for step 63: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 63: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 64,
+      "uuid": "uuid-64",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:04.000Z",
+      "text": "Question about step 64: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 64: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 65,
+      "uuid": "uuid-65",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:05.000Z",
+      "text": "Answer for step 65: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 65: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 66,
+      "uuid": "uuid-66",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:06.000Z",
+      "text": "Question about step 66: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 66: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 67,
+      "uuid": "uuid-67",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:07.000Z",
+      "text": "Answer for step 67: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 67: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 68,
+      "uuid": "uuid-68",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:08.000Z",
+      "text": "Question about step 68: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 68: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 69,
+      "uuid": "uuid-69",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:09.000Z",
+      "text": "Answer for step 69: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 69: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 70,
+      "uuid": "uuid-70",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:10.000Z",
+      "text": "Question about step 70: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 70: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 71,
+      "uuid": "uuid-71",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:11.000Z",
+      "text": "Answer for step 71: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 71: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 72,
+      "uuid": "uuid-72",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:12.000Z",
+      "text": "Question about step 72: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 72: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 73,
+      "uuid": "uuid-73",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:13.000Z",
+      "text": "Answer for step 73: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 73: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 74,
+      "uuid": "uuid-74",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:14.000Z",
+      "text": "Question about step 74: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 74: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 75,
+      "uuid": "uuid-75",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:15.000Z",
+      "text": "Answer for step 75: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 75: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 76,
+      "uuid": "uuid-76",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:16.000Z",
+      "text": "Question about step 76: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 76: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 77,
+      "uuid": "uuid-77",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:17.000Z",
+      "text": "Answer for step 77: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 77: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 78,
+      "uuid": "uuid-78",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:18.000Z",
+      "text": "Question about step 78: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 78: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 79,
+      "uuid": "uuid-79",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:19.000Z",
+      "text": "Answer for step 79: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 79: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 80,
+      "uuid": "uuid-80",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:20.000Z",
+      "text": "Question about step 80: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 80: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 81,
+      "uuid": "uuid-81",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:21.000Z",
+      "text": "Answer for step 81: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 81: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 82,
+      "uuid": "uuid-82",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:22.000Z",
+      "text": "Question about step 82: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 82: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 83,
+      "uuid": "uuid-83",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:23.000Z",
+      "text": "Answer for step 83: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 83: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 84,
+      "uuid": "uuid-84",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:24.000Z",
+      "text": "Question about step 84: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 84: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 85,
+      "uuid": "uuid-85",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:25.000Z",
+      "text": "Answer for step 85: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 85: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 86,
+      "uuid": "uuid-86",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:26.000Z",
+      "text": "Question about step 86: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 86: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 87,
+      "uuid": "uuid-87",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:27.000Z",
+      "text": "Answer for step 87: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 87: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 88,
+      "uuid": "uuid-88",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:28.000Z",
+      "text": "Question about step 88: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 88: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 89,
+      "uuid": "uuid-89",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:29.000Z",
+      "text": "Answer for step 89: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 89: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 90,
+      "uuid": "uuid-90",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:30.000Z",
+      "text": "Question about step 90: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 90: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 91,
+      "uuid": "uuid-91",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:31.000Z",
+      "text": "Answer for step 91: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 91: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 92,
+      "uuid": "uuid-92",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:32.000Z",
+      "text": "Question about step 92: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 92: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 93,
+      "uuid": "uuid-93",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:33.000Z",
+      "text": "Answer for step 93: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 93: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 94,
+      "uuid": "uuid-94",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:34.000Z",
+      "text": "Question about step 94: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 94: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 95,
+      "uuid": "uuid-95",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:35.000Z",
+      "text": "Answer for step 95: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 95: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 96,
+      "uuid": "uuid-96",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:36.000Z",
+      "text": "Question about step 96: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 96: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 97,
+      "uuid": "uuid-97",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:37.000Z",
+      "text": "Answer for step 97: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 97: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 98,
+      "uuid": "uuid-98",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:38.000Z",
+      "text": "Question about step 98: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 98: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 99,
+      "uuid": "uuid-99",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:39.000Z",
+      "text": "Answer for step 99: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 99: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 100,
+      "uuid": "uuid-100",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:40.000Z",
+      "text": "Question about step 100: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 100: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 101,
+      "uuid": "uuid-101",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:41.000Z",
+      "text": "Answer for step 101: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 101: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 102,
+      "uuid": "uuid-102",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:42.000Z",
+      "text": "Question about step 102: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 102: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 103,
+      "uuid": "uuid-103",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:43.000Z",
+      "text": "Answer for step 103: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 103: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 104,
+      "uuid": "uuid-104",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:44.000Z",
+      "text": "Question about step 104: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 104: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 105,
+      "uuid": "uuid-105",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:45.000Z",
+      "text": "Answer for step 105: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 105: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 106,
+      "uuid": "uuid-106",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:46.000Z",
+      "text": "Question about step 106: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 106: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 107,
+      "uuid": "uuid-107",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:47.000Z",
+      "text": "Answer for step 107: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 107: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 108,
+      "uuid": "uuid-108",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:48.000Z",
+      "text": "Question about step 108: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 108: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 109,
+      "uuid": "uuid-109",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:49.000Z",
+      "text": "Answer for step 109: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 109: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 110,
+      "uuid": "uuid-110",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:50.000Z",
+      "text": "Question about step 110: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 110: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 111,
+      "uuid": "uuid-111",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:51.000Z",
+      "text": "Answer for step 111: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 111: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 112,
+      "uuid": "uuid-112",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:52.000Z",
+      "text": "Question about step 112: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 112: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 113,
+      "uuid": "uuid-113",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:53.000Z",
+      "text": "Answer for step 113: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 113: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 114,
+      "uuid": "uuid-114",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:54.000Z",
+      "text": "Question about step 114: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 114: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 115,
+      "uuid": "uuid-115",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:55.000Z",
+      "text": "Answer for step 115: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 115: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 116,
+      "uuid": "uuid-116",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:56.000Z",
+      "text": "Question about step 116: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 116: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 117,
+      "uuid": "uuid-117",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:57.000Z",
+      "text": "Answer for step 117: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 117: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 118,
+      "uuid": "uuid-118",
+      "role": "user",
+      "timestamp": "2026-05-20T10:01:58.000Z",
+      "text": "Question about step 118: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 118: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 119,
+      "uuid": "uuid-119",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:01:59.000Z",
+      "text": "Answer for step 119: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 119: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 120,
+      "uuid": "uuid-120",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:00.000Z",
+      "text": "Question about step 120: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 120: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 121,
+      "uuid": "uuid-121",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:01.000Z",
+      "text": "Answer for step 121: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 121: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 122,
+      "uuid": "uuid-122",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:02.000Z",
+      "text": "Question about step 122: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 122: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 123,
+      "uuid": "uuid-123",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:03.000Z",
+      "text": "Answer for step 123: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 123: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 124,
+      "uuid": "uuid-124",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:04.000Z",
+      "text": "Question about step 124: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 124: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 125,
+      "uuid": "uuid-125",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:05.000Z",
+      "text": "Answer for step 125: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 125: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 126,
+      "uuid": "uuid-126",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:06.000Z",
+      "text": "Question about step 126: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 126: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 127,
+      "uuid": "uuid-127",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:07.000Z",
+      "text": "Answer for step 127: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 127: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 128,
+      "uuid": "uuid-128",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:08.000Z",
+      "text": "Question about step 128: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 128: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 129,
+      "uuid": "uuid-129",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:09.000Z",
+      "text": "Answer for step 129: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 129: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 130,
+      "uuid": "uuid-130",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:10.000Z",
+      "text": "Question about step 130: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 130: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 131,
+      "uuid": "uuid-131",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:11.000Z",
+      "text": "Answer for step 131: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 131: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 132,
+      "uuid": "uuid-132",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:12.000Z",
+      "text": "Question about step 132: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 132: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 133,
+      "uuid": "uuid-133",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:13.000Z",
+      "text": "Answer for step 133: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 133: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 134,
+      "uuid": "uuid-134",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:14.000Z",
+      "text": "Question about step 134: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 134: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 135,
+      "uuid": "uuid-135",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:15.000Z",
+      "text": "Answer for step 135: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 135: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 136,
+      "uuid": "uuid-136",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:16.000Z",
+      "text": "Question about step 136: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 136: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 137,
+      "uuid": "uuid-137",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:17.000Z",
+      "text": "Answer for step 137: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 137: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 138,
+      "uuid": "uuid-138",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:18.000Z",
+      "text": "Question about step 138: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 138: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 139,
+      "uuid": "uuid-139",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:19.000Z",
+      "text": "Answer for step 139: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 139: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 140,
+      "uuid": "uuid-140",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:20.000Z",
+      "text": "Question about step 140: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 140: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 141,
+      "uuid": "uuid-141",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:21.000Z",
+      "text": "Answer for step 141: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 141: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 142,
+      "uuid": "uuid-142",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:22.000Z",
+      "text": "Question about step 142: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 142: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 143,
+      "uuid": "uuid-143",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:23.000Z",
+      "text": "Answer for step 143: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 143: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 144,
+      "uuid": "uuid-144",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:24.000Z",
+      "text": "Question about step 144: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 144: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 145,
+      "uuid": "uuid-145",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:25.000Z",
+      "text": "Answer for step 145: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 145: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 146,
+      "uuid": "uuid-146",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:26.000Z",
+      "text": "Question about step 146: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 146: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 147,
+      "uuid": "uuid-147",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:27.000Z",
+      "text": "Answer for step 147: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 147: proceeding as planned."
+        }
+      ]
+    },
+    {
+      "message_index": 148,
+      "uuid": "uuid-148",
+      "role": "user",
+      "timestamp": "2026-05-20T10:02:28.000Z",
+      "text": "Question about step 148: what happens next?",
+      "content": [
+        {
+          "type": "text",
+          "text": "Question about step 148: what happens next?"
+        }
+      ]
+    },
+    {
+      "message_index": 149,
+      "uuid": "uuid-149",
+      "role": "assistant",
+      "timestamp": "2026-05-20T10:02:29.000Z",
+      "text": "Answer for step 149: proceeding as planned.",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer for step 149: proceeding as planned."
+        }
+      ]
+    },
+    {
       "message_index": 150,
       "uuid": "uuid-150",
       "role": "user",
@@ -1314,10 +3264,10 @@
   "message_pagination": {
     "total": 250,
     "before_index": 250,
-    "from_index": 150,
-    "has_more_older": true,
-    "next_before_index": 150,
-    "anchor_index": 210,
+    "from_index": 0,
+    "has_more_older": false,
+    "next_before_index": null,
+    "anchor_index": null,
     "has_more_newer": false,
     "next_after_index": null
   }

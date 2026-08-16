@@ -121,9 +121,9 @@ module.exports = defineConfig([
       "react/display-name": "off",
     },
   },
-  // Script tests drive real git repos under Node — allow Node built-ins.
+  // Plain-JS unit tests read files off disk under Node — allow Node built-ins.
   {
-    files: ["__tests__/unit/scripts/**/*.js"],
+    files: ["__tests__/unit/**/*.js"],
     languageOptions: {
       globals: {
         ...globals.node,

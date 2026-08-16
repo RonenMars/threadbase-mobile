@@ -64,5 +64,13 @@
     "resumedHistoryLinkSearch": "חפש",
     "resumedHistoryLinkIn": " ב",
     "resumedHistoryLinkTail": "היסטוריית השיחה ←"
+  },
+  "history": {
+    "header_one": "היסטוריה · הודעה אחת",
+    "header_other": "היסטוריה · {{count}} הודעות",
+    "expandLabel": "הרחב היסטוריית שיחה",
+    "collapseLabel": "כווץ היסטוריית שיחה",
+    "maximizeLabel": "הגדל למסך מלא את היסטוריית השיחה",
+    "minimizeLabel": "צמצם ממסך מלא את היסטוריית השיחה"
   }
 }

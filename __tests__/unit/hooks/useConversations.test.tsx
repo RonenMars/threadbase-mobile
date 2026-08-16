@@ -391,6 +391,133 @@ describe('useConversation — anchored window (bidirectional pagination)', () =>
   })
 })
 
+describe('useConversation — byte-bounded seed (maxBytes)', () => {
+  it('sends max_bytes on the first page only, not on an older (before_index) page', async () => {
+    setActiveServers(['srv_seed'])
+    const paths: string[] = []
+    metaHandlers.srv_seed = (path) => {
+      paths.push(path)
+      return Promise.resolve({
+        status: 200,
+        etag: '"v1"',
+        body: {
+          meta: { id: 'c_seed', project_name: 'proj-c_seed', message_count: 6 },
+          messages: [3, 4, 5].map((i) => ({
+            message_index: i,
+            role: i % 2 === 0 ? 'user' : 'assistant',
+            content: [{ type: 'text', text: `msg ${i}` }],
+            timestamp: '2026-06-11T10:00:00.000Z',
+          })),
+          message_pagination: { total: 6, before_index: 6, from_index: 3, has_more_older: true, next_before_index: 3 },
+        },
+      })
+    }
+    handlers.srv_seed = (path) => {
+      paths.push(path)
+      return Promise.resolve(rawAnchoredPage('c_seed', 0, 3, 6, { has_more_older: false, next_before_index: null }))
+    }
+
+    const { result } = await renderHook(
+      () => useConversation('srv_seed', 'c_seed', { maxBytes: 524_288 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    expect(paths[0]).toContain('max_bytes=524288')
+
+    await result.current.fetchNextPage()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(6))
+    expect(paths[1]).toContain('before_index=3')
+    expect(paths[1]).not.toContain('max_bytes')
+  })
+
+  it('merges the seeded page and the older page at the seam with no duplicate ids', async () => {
+    setActiveServers(['srv_seam'])
+    metaHandlers.srv_seam = () =>
+      Promise.resolve({
+        status: 200,
+        etag: '"v1"',
+        body: {
+          meta: { id: 'c_seam', project_name: 'proj-c_seam', message_count: 6 },
+          messages: [3, 4, 5].map((i) => ({
+            message_index: i,
+            role: i % 2 === 0 ? 'user' : 'assistant',
+            content: [{ type: 'text', text: `msg ${i}` }],
+            timestamp: '2026-06-11T10:00:00.000Z',
+          })),
+          message_pagination: { total: 6, before_index: 6, from_index: 3, has_more_older: true, next_before_index: 3 },
+        },
+      })
+    handlers.srv_seam = () =>
+      Promise.resolve(rawAnchoredPage('c_seam', 0, 3, 6, { has_more_older: false, next_before_index: null }))
+
+    const { result } = await renderHook(
+      () => useConversation('srv_seam', 'c_seam', { maxBytes: 524_288 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    expect(result.current.hasNextPage).toBe(true)
+
+    await result.current.fetchNextPage()
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(6))
+
+    const indexes = result.current.data!.messages.map((m) => m.messageIndex)
+    expect(indexes).toEqual([0, 1, 2, 3, 4, 5])
+    const ids = result.current.data!.messages.map((m) => m.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(result.current.hasNextPage).toBe(false)
+  })
+
+  it('keeps a separate cache entry from the plain tail view for the same conversation', async () => {
+    setActiveServers(['srv_seed_key'])
+    let calls = 0
+    metaHandlers.srv_seed_key = () => {
+      calls += 1
+      return Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_sk', ['a']) })
+    }
+
+    const plain = await renderHook(() => useConversation('srv_seed_key', 'c_sk'), { wrapper: createWrapper() })
+    await waitFor(() => expect(plain.result.current.data).toBeDefined())
+    const seeded = await renderHook(
+      () => useConversation('srv_seed_key', 'c_sk', { maxBytes: 524_288 }),
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(seeded.result.current.data).toBeDefined())
+
+    // A shared query/ETag key would have let the second mount's conditional
+    // GET be served from the first mount's cache (or a mismatched 304) —
+    // instead each variant made its own request.
+    expect(calls).toBe(2)
+  })
+
+  it('does not drain after_index deltas for a byte-bounded seed view (history is a one-shot read, not a live-following cursor)', async () => {
+    setActiveServers(['srv_no_drain'])
+    const paths: string[] = []
+    // A cold mount never has a cursor to resume from, so the mount-time drain
+    // is a no-op with or without the guard — that would make this test pass
+    // for the wrong reason. Pre-warm the cache (under the seed-suffixed key
+    // the maxBytes view actually reads/writes) so a cursor is available the
+    // instant the component mounts, same as the plain-tail-view drain tests
+    // above do via warmTailCache.
+    metaHandlers.srv_no_drain = () => Promise.reject(new Error('tail fetch must not fire — cache is warm'))
+    handlers.srv_no_drain = (path) => {
+      paths.push(path)
+      return Promise.reject(new Error('must not drain deltas for a maxBytes view'))
+    }
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_no_drain', 'c_nd', 'seed-524288'], warmTailCache('c_nd'))
+
+    const { result } = await renderHook(
+      () => useConversation('srv_no_drain', 'c_nd', { maxBytes: 524_288 }),
+      { wrapper },
+    )
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    // Give the mount-time drain effect (if it were wrongly active) time to fire.
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(paths).toHaveLength(0)
+  })
+})
+
 describe('useConversation — { resume } delta on the tail view', () => {
   it('resumes from the derived cursor: after_index GET, plain get (no If-None-Match), merges newer messages', async () => {
     setActiveServers(['srv_resume'])

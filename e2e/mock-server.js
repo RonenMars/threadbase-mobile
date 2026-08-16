@@ -14,6 +14,12 @@ const PORTS = (process.env.MOCK_PORTS ?? process.env.MOCK_PORT ?? '7071')
   .filter((p) => Number.isFinite(p))
 const FIXTURES = path.join(__dirname, 'fixtures')
 
+// The anchored window the streamer returns around a resolved search target.
+// Skewed backwards because the anchor is usually read with its lead-up: these
+// two put anchor 210 at [150,250), the window 06_search_anchor documents.
+const ANCHOR_WINDOW_BEFORE = 60
+const ANCHOR_WINDOW_AFTER = 40
+
 function readFixture(name) {
   return fs.readFileSync(path.join(FIXTURES, name), 'utf8')
 }
@@ -174,8 +180,8 @@ async function handleRequest(req, res) {
   // - feat2 fixture (`conversation-detail.json`) is a minimal payload for the
   //   export-in-info-shelf flow.
   // - search-anchor fixture (`conv-search-anchor.json`) has 250 messages;
-  //   serves the anchored window [150,250) when requested with anchor_index,
-  //   otherwise the plain last-80-message tail like a real streamer would.
+  //   serves the window around whichever anchor_index is asked for, otherwise
+  //   the plain last-80-message tail like a real streamer would.
   // - Unknown ids get an empty body — the screen renders the empty-state copy.
   const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
   if (method === 'GET' && conversationMatch) {
@@ -229,7 +235,29 @@ async function handleRequest(req, res) {
     }
     if (conversationMatch[1] === 'conv-search-anchor') {
       if (url.searchParams.has('anchor_index')) {
-        return json(res, 200, readFixture('conv-search-anchor.json'))
+        // Sliced per request, not served whole: stepping Previous re-anchors to
+        // message 15, and a fixed [150,250) window answers that with the same
+        // page it already had — the re-anchor path the flow exists to exercise
+        // would pass against a client that never re-fetched at all.
+        const fixture = JSON.parse(readFixture('conv-search-anchor.json'))
+        const total = fixture.message_pagination.total
+        const anchor = Math.min(Math.max(parseInt(url.searchParams.get('anchor_index'), 10) || 0, 0), total - 1)
+        const from = Math.max(0, anchor - ANCHOR_WINDOW_BEFORE)
+        const to = Math.min(total, anchor + ANCHOR_WINDOW_AFTER)
+        return json(res, 200, {
+          meta: fixture.meta,
+          messages: fixture.messages.slice(from, to),
+          message_pagination: {
+            total,
+            before_index: to,
+            from_index: from,
+            has_more_older: from > 0,
+            next_before_index: from > 0 ? from : null,
+            anchor_index: anchor,
+            has_more_newer: to < total,
+            next_after_index: to < total ? to : null,
+          },
+        })
       }
       // Non-anchored requests (tail view, or an older mobile build that never
       // sends anchor_index) get an empty-but-valid tail so the screen doesn't
