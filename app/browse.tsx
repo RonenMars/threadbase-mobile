@@ -71,7 +71,8 @@ export default function BrowseScreen() {
   const showProviderNotes =
     selectedUnavailable ||
     selectedWarnings.length > 0 ||
-    selectedHealth?.capabilities.structuredQuestions === false ||
+    (selectedHealth?.capabilities.structuredQuestions === false &&
+      selectedHealth?.capabilities.permissionGates === false) ||
     selectedHealth?.capabilities.liveControl === false
 
   const { data: allSessions = [] } = useSessions()
@@ -530,7 +531,9 @@ export default function BrowseScreen() {
                 </Text>
               )
             })}
-            {selectedHealth && !selectedHealth.capabilities.structuredQuestions ? (
+            {selectedHealth &&
+            !selectedHealth.capabilities.structuredQuestions &&
+            !selectedHealth.capabilities.permissionGates ? (
               <Text style={styles.providerWarningText}>{t('provider.noStructuredQuestions')}</Text>
             ) : null}
             {selectedHealth && !selectedHealth.capabilities.liveControl ? (

@@ -70,6 +70,17 @@ describe('isCleartextAllowed', () => {
     'http://notlocal.example',
     'http://local.example.com',
     'http://[2001:db8::1]:8766',
+    // Nor by being an address written in a form this parser does not read and
+    // a resolver may. `inet_aton` accepts a bare 32-bit integer, so 134744072
+    // is 8.8.8.8 and 2130706433 is 127.0.0.1; a leading 0 makes an octet octal,
+    // so 010.0.0.1 is 8.0.0.1 to the platform and 10.0.0.1 to Number().
+    'http://134744072:8766',
+    'http://2130706433',
+    'http://0x08080808',
+    'http://010.0.0.1',
+    'http://0177.0.0.1',
+    // Userinfo is the classic bypass: the host is what follows the last '@'.
+    'http://192.168.1.1@evil.com/',
   ])('refuses %s', (url) => {
     expect(isCleartextAllowed(url)).toBe(false)
   })
@@ -85,6 +96,22 @@ describe('isCleartextAllowed', () => {
   it('refuses a URL whose host it cannot read', () => {
     expect(isCleartextAllowed('http://')).toBe(false)
   })
+
+  // Deliberate false negatives, pinned so they are not "fixed" into holes.
+  //
+  // `inet_aton`'s short forms are real: 127.1 is loopback and 192.168.1 is
+  // 192.168.0.1, and a user may well type the first. Accepting them means
+  // teaching this module to parse the same short forms the platform does —
+  // which is precisely the parser-disagreement class the numeric guards above
+  // exist to close, reopened for a convenience. They stay denied: the cost is a
+  // confusing error on an address the user can rewrite in full, and the cost of
+  // the alternative is a bypass.
+  it.each(['http://127.1', 'http://192.168.1', 'http://10.1'])(
+    'refuses the shorthand %s even though it is local',
+    (url) => {
+      expect(isCleartextAllowed(url)).toBe(false)
+    },
+  )
 })
 
 describe('CleartextBlockedError', () => {
