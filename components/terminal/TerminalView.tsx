@@ -161,8 +161,8 @@ export function TerminalView({
           activeQuestion={activeQuestion}
           onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
           onDismissQuestion={clearQuestion}
-          onViewResumedConversation={resumedConversationId ? onViewResumedConversation : undefined}
-          onSearchResumedConversation={resumedConversationId ? onSearchResumedConversation : undefined}
+          onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
+          onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
         />
       </View>
       <ChatComposer

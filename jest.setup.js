@@ -210,7 +210,10 @@ jest.mock('@shopify/flash-list', () => {
       // Real FlashList fires onLoad once it has drawn items; the skeleton gate
       // depends on it. FlatList has no such callback, so emit it once on mount
       // (skipped when a ListEmptyComponent would render, matching real behavior).
-      const { onLoad, onStartReached, onStartReachedThreshold, maintainVisibleContentPosition, ...flatProps } = props
+      // onStartReached / maintainVisibleContentPosition / drawDistance are
+      // forwarded so tests can assert chat-list config and fire the backward-
+      // scroll trigger; FlatList ignores the ones it doesn't implement.
+      const { onLoad, ...flatProps } = props
       React.useEffect(() => {
         if (onLoad && (props.data?.length ?? 0) > 0) onLoad({ elapsedTimeInMs: 0 })
         // eslint-disable-next-line react-hooks/exhaustive-deps
