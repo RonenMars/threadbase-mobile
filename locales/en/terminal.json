@@ -65,6 +65,17 @@
     "resumedHistoryLinkIn": " in ",
     "resumedHistoryLinkTail": "the conversation history →"
   },
+  "leaveSession": {
+    "title": "Leave this session?",
+    "body": "The agent on the computer keeps running until you choose.",
+    "kill": "Kill it",
+    "killHint": "Stop the session now. History stays if there is one.",
+    "leave": "Leave it",
+    "leaveHint": "Keep it running so you can come back.",
+    "kill_on_idle": "Kill on idle",
+    "kill_on_idleHint": "Don't cut a turn in progress; hold when the session is idle.",
+    "remember": "Don't ask me again"
+  },
   "history": {
     "header_one": "History · {{count}} message",
     "header_other": "History · {{count}} messages",

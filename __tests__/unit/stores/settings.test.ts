@@ -23,6 +23,7 @@ beforeEach(() => {
     notifications: { ...DEFAULT_NOTIFICATIONS },
     crashReportingEnabled: false,
     crashReportingNoticeDismissed: false,
+    sessionLeaveAction: 'ask',
   })
 })
 
@@ -197,5 +198,35 @@ describe('SettingsStore – crashReportingEnabled (opt-in consent)', () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
     await useSettingsStore.getState().hydrate()
     expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
+  })
+})
+
+describe('SettingsStore – sessionLeaveAction', () => {
+  it('defaults to always ask', () => {
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+  })
+
+  it('persists and can restore Always ask', async () => {
+    useSettingsStore.getState().setSessionLeaveAction('kill')
+    await Promise.resolve()
+    const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
+    expect(JSON.parse(raw[1]).sessionLeaveAction).toBe('kill')
+
+    useSettingsStore.getState().setSessionLeaveAction('ask')
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+  })
+
+  it('hydrates a stored action and rejects unknown values', async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ sessionLeaveAction: 'kill_on_idle', notifications: DEFAULT_NOTIFICATIONS }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill_on_idle')
+
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ sessionLeaveAction: 'explode', notifications: DEFAULT_NOTIFICATIONS }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
   })
 })
