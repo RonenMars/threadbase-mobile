@@ -20,6 +20,14 @@ appId: com.ronenmars.threadbase
     commands:
       - tapOn: "Close app"
 
+# Same overlay class on Play-store AVDs: Digital Wellbeing ANRs on a cold boot
+# and "Close app" kills wellbeing, not Threadbase.
+- runFlow:
+    when:
+      visible: "Digital Wellbeing isn't responding"
+    commands:
+      - tapOn: "Close app"
+
 # Give the splash time to clear before anything decides which screen this is.
 # `runFlow when:` is a one-shot probe with a short window, and a cold Release
 # start on a CI simulator is slower than that window: on iOS run 31930896875 the

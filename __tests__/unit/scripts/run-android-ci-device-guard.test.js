@@ -120,8 +120,10 @@ describe('run-android-ci.sh device wait', () => {
     const src = fs.readFileSync(SCRIPT, 'utf8');
     const postWaitAt = src.indexOf('offline after APK install');
     const launcherAt = src.indexOf('com.google.android.apps.nexuslauncher');
+    const wellbeingAt = src.indexOf('com.google.android.apps.wellbeing');
     expect(postWaitAt).toBeGreaterThan(-1);
     expect(launcherAt).toBeGreaterThan(postWaitAt);
+    expect(wellbeingAt).toBeGreaterThan(postWaitAt);
   });
 
   it('still compiles when no Release APK is present', () => {
