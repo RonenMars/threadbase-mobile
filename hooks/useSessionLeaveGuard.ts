@@ -67,9 +67,13 @@ export function useSessionLeaveGuard(opts: {
   const allowRemoveRef = useRef(false)
   const modalVisibleRef = useRef(false)
   const sessionRef = useRef(session)
-  sessionRef.current = session
   const stopRef = useRef(stopSessionMutate)
-  stopRef.current = stopSessionMutate
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
+  useEffect(() => {
+    stopRef.current = stopSessionMutate
+  }, [stopSessionMutate])
 
   const applyChoice = useCallback(
     (choice: AppliedSessionLeaveAction) => {

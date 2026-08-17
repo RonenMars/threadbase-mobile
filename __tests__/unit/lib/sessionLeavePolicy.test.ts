@@ -6,13 +6,12 @@ import {
   isLiveAttachedPty,
   isSessionLeaveInFlight,
   markSessionLeaveInFlight,
+  type LeaveSessionSnapshot,
 } from '@/lib/sessionLeavePolicy'
 
-const live = {
+const live: LeaveSessionSnapshot = {
   ptyAttached: true,
-  status: 'running' as const,
-  promptCount: 3,
-  resumedFromConversationId: null as string | null,
+  status: 'running',
 }
 
 describe('sessionLeavePolicy', () => {
@@ -32,8 +31,8 @@ describe('sessionLeavePolicy', () => {
     expect(isLiveAttachedPty(null)).toBe(false)
   })
 
-  it('prompts on empty live sessions the same as prompted ones', () => {
-    expect(decideSessionLeave({ session: { ...live, promptCount: 0 }, setting: 'ask' })).toEqual({
+  it('prompts on an empty live session the same as any other live session', () => {
+    expect(decideSessionLeave({ session: live, setting: 'ask' })).toEqual({
       kind: 'prompt',
     })
   })
