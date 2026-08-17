@@ -84,14 +84,25 @@ appId: com.ronenmars.threadbase
     id: "chat-message-input"
 - inputText: "hello from chat-flow e2e"
 
-# No hideKeyboard here. The composer dismisses the keyboard itself —
-# ChatComposer.handleSend calls Keyboard.dismiss() before onSend() — and the send
-# button sits in the composer row above the keyboard, so it is tappable with the
-# keyboard up. Dropping the step also removes the Maestro 2.6.1 / iOS 26.x
-# silent-no-op risk recorded in issue #611.
+# On iOS the composer stays above the keyboard, and hideKeyboard is a silent
+# no-op on Maestro 2.6.1 / iOS 26.x (issue #611). On Android the IME covers
+# the row: empty composer is chat-mic-button, and after typing chat-send-button
+# is off-screen. Run 32040349995 died there. Dismiss only on Android.
 #
 # Do not "fix" a future keyboard problem here with `pressKey: Enter`: this input
 # is multiline, so Enter inserts a newline and the text assertion below fails.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-send-button"
+    timeout: 5000
+
 - tapOn:
     id: "chat-send-button"
 
