@@ -1,5 +1,5 @@
 /**
- * SessionScreen — leave-session gate wiring (beforeRemove + unused discard).
+ * SessionScreen — leave-session gate wiring (beforeRemove).
  * Policy details live in useSessionLeaveGuard unit tests; this file checks the
  * screen still registers the listener and that backgrounding is unchanged.
  */
@@ -9,7 +9,6 @@ import { render, screen, act } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 import { useSettingsStore } from '@/stores/settings'
 import { clearSessionLeaveInFlight } from '@/lib/sessionLeavePolicy'
-import { clearSessionUsed } from '@/lib/sessionUsage'
 
 let beforeRemoveListener: ((e: { preventDefault: () => void; data: { action: object } }) => void) | undefined
 let appStateListeners: ((s: string) => void)[] = []
@@ -133,7 +132,6 @@ describe('SessionScreen — leave-session gate', () => {
       resumedFromConversationId: null,
     }
     useSettingsStore.setState({ sessionLeaveAction: 'ask', sessionView: 'chat' })
-    clearSessionUsed('sess-live')
     clearSessionLeaveInFlight('sess-live')
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, cb) => {
       appStateListeners.push(cb as (s: string) => void)
@@ -159,7 +157,7 @@ describe('SessionScreen — leave-session gate', () => {
     expect(mockStopMutate).not.toHaveBeenCalled()
   })
 
-  it('promptCount === 0 unused discard still POSTs stop with no modal', async () => {
+  it('Always ask: empty live session also shows the modal', async () => {
     mockSession = { ...mockSession, promptCount: 0 }
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
@@ -168,9 +166,9 @@ describe('SessionScreen — leave-session gate', () => {
       beforeRemoveListener?.({ preventDefault, data: { action: { type: 'GO_BACK' } } })
     })
 
-    expect(preventDefault).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('leave-session-modal')).toBeNull()
-    expect(mockStopMutate).toHaveBeenCalled()
+    expect(preventDefault).toHaveBeenCalled()
+    expect(screen.getByTestId('leave-session-modal')).toBeTruthy()
+    expect(mockStopMutate).not.toHaveBeenCalled()
   })
 
   it('backgrounding still sends hold_session and does not show the leave modal', async () => {
