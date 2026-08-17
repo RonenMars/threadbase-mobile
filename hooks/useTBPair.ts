@@ -122,6 +122,8 @@ function messageForPairFailure(err: unknown): string {
   if (err instanceof PairUriError) {
     if (err.code === 'expired') return 'pair link expired · run tb pair again'
     if (err.code === 'bad-server-url') return 'invalid server URL in pair link'
+    // Present but unusable, which is never a reason to pair in plaintext.
+    if (err.code === 'bad-server-key') return 'damaged server key in pair link · run tb pair again'
     return 'invalid pair link · paste the threadbase:// URL from tb pair'
   }
   if (err instanceof PairExchangeError) {
@@ -134,6 +136,10 @@ function messageForPairFailure(err: unknown): string {
     if (err.kind === 'e2ee-handshake') return 'could not verify server identity · scan again'
     if (err.kind === 'e2ee-malformed') return 'encrypted pairing mismatch · scan again'
     if (err.kind === 'e2ee-version') return 'server speaks a different e2ee version · update both'
+    // This exchange did happen, so the token is likely spent — a fresh QR, not
+    // a retry of this one, and never a plaintext attempt at the same server.
+    if (err.kind === 'e2ee-refused') return 'server would not finish encrypting · run tb pair again'
+    if (err.kind === 'e2ee-web-unsupported') return 'encrypted pairing needs the iOS or Android app'
     return 'exchange failed'
   }
   if (err instanceof AuthError) {
