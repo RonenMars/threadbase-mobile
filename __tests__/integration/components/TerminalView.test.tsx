@@ -90,7 +90,12 @@ jest.mock('@/components/conversation/MessageItem', () => ({
 
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
-    sendInput: { mutate: mockSendInputMutate, isError: false, error: null },
+    sendInput: {
+      mutate: mockSendInputMutate,
+      mutateAsync: mockSendInputMutate,
+      isError: false,
+      error: null,
+    },
     sendKeys: { mutate: mockSendKeysMutate },
     respondToQuestion: {
       mutate: mockRespondToQuestionMutate,
@@ -467,7 +472,7 @@ describe('TerminalView', () => {
   it('tapping chat-send-button calls sendInput.mutate with the payload', async () => {
     await renderView()
     await fireEvent.press(screen.getByTestId('chat-send-button'))
-    expect(mockSendInputMutate).toHaveBeenCalledWith('test-payload', expect.anything())
+    expect(mockSendInputMutate).toHaveBeenCalledWith('test-payload')
   })
 
   it('does not show the resumed scrollback notice for a fresh session', async () => {

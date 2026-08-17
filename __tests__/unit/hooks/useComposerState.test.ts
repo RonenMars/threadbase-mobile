@@ -81,13 +81,48 @@ describe('useComposerState', () => {
     expect(result.current.slashBoardVisible).toBe(false)
   })
 
-  it('handleSend calls onSend with trimmed text and clears the input', async () => {
-    const onSend = jest.fn()
+  it('handleSend calls onSend with trimmed text and clears the input on success', async () => {
+    const onSend = jest.fn().mockResolvedValue(undefined)
     const { result } = await renderComposer(onSend)
     await act(() => { result.current.handleInputChange('  hello world  ') })
-    await act(() => { result.current.handleSend() })
+    await act(async () => { await result.current.handleSend() })
     expect(onSend).toHaveBeenCalledWith('hello world', 'hello world')
     expect(result.current.inputText).toBe('')
+  })
+
+  it('handleSend keeps the input and attachments when onSend rejects', async () => {
+    ;(pickFromCamera as jest.Mock).mockResolvedValue({
+      uri: 'file:///tmp/photo.jpg',
+      base64: 'ZmFrZQ==',
+      filename: 'photo.jpg',
+      mimeType: 'image/jpeg',
+    })
+    ;(uploadAttachment as jest.Mock).mockResolvedValue({
+      id: 'att-1',
+      path: '/tmp/photo.jpg',
+      originalName: 'photo.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 4,
+    })
+    const onSend = jest.fn().mockRejectedValue(new Error('send failed'))
+    const { result } = await renderComposer(onSend)
+    await act(() => { result.current.handleInputChange('keep me') })
+    await tapTakePhoto(result)
+    expect(result.current.attachments).toHaveLength(1)
+
+    await act(async () => { await result.current.handleSend() })
+
+    expect(onSend).toHaveBeenCalledWith('@/tmp/photo.jpg keep me', 'keep me')
+    expect(result.current.inputText).toBe('keep me')
+    expect(result.current.attachments).toEqual([
+      {
+        id: 'att-1',
+        path: '/tmp/photo.jpg',
+        originalName: 'photo.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 4,
+      },
+    ])
   })
 
   it('handleSend does nothing when input is empty and no attachments', async () => {
@@ -107,10 +142,10 @@ describe('useComposerState', () => {
   })
 
   it('handleSlashCommandSelect for a no-args command calls onSend immediately', async () => {
-    const onSend = jest.fn()
+    const onSend = jest.fn().mockResolvedValue(undefined)
     const { result } = await renderComposer(onSend)
     const cmd = { id: 'compact', icon: null as never, title: 'Compact', needsArgs: false, description: 'Compact context' }
-    await act(() => { result.current.handleSlashCommandSelect(cmd) })
+    await act(async () => { await result.current.handleSlashCommandSelect(cmd) })
     expect(onSend).toHaveBeenCalledWith('/compact', '/compact')
   })
 
@@ -124,11 +159,11 @@ describe('useComposerState', () => {
   })
 
   it('handleSlashArgConfirm calls onSend with /<id> <arg> and clears pendingArgCommand', async () => {
-    const onSend = jest.fn()
+    const onSend = jest.fn().mockResolvedValue(undefined)
     const { result } = await renderComposer(onSend)
     const cmd = { id: 'search', icon: null as never, title: 'Search', needsArgs: true, description: 'Search' }
     await act(() => { result.current.handleSlashCommandSelect(cmd) })
-    await act(() => { result.current.handleSlashArgConfirm(cmd, 'foo bar') })
+    await act(async () => { await result.current.handleSlashArgConfirm(cmd, 'foo bar') })
     expect(onSend).toHaveBeenCalledWith('/search foo bar', '/search foo bar')
     expect(result.current.pendingArgCommand).toBeNull()
   })
