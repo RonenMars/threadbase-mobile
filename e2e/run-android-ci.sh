@@ -71,10 +71,20 @@ wait_for_booted() {
 E2E_DEVICE_WAIT_SECONDS="${E2E_DEVICE_WAIT_SECONDS:-300}"
 wait_for_booted "$E2E_DEVICE_WAIT_SECONDS" "No booted Android device after ${E2E_DEVICE_WAIT_SECONDS}s. Attached devices:"
 adb shell input keyevent 82
-# x86_64 is what the CI emulator image is. Overridable so the same script can be
-# run against a local arm64 emulator, which is the only way to exercise this file
-# outside a paid runner.
-(cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}")
+# The workflow assembles this APK before the emulator boots and restores it
+# from Actions cache on a later dispatch of the same commit. Skip gradle when
+# that file is already here so the emulator is not held idle for a 20-minute
+# compile — that idle window is what made later Maestro flows die with
+# `device offline`. A local run without a prebuilt APK still compiles here.
+RELEASE_APK="${E2E_RELEASE_APK:-android/app/build/outputs/apk/release/app-release.apk}"
+if [ -f "$RELEASE_APK" ]; then
+  echo "Using existing Release APK at ${RELEASE_APK}."
+else
+  # x86_64 is what the CI emulator image is. Overridable so the same script can
+  # be run against a local arm64 emulator, which is the only way to exercise
+  # this file outside a paid runner.
+  (cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}")
+fi
 # Uninstall first: `-r` keeps app data, and `launchApp: clearState: true` does
 # not wipe SecureStore, so credentials from a previous successful pairing
 # survive into the next run and change the path onboarding takes. The resulting
@@ -82,7 +92,7 @@ adb shell input keyevent 82
 # debugging cycles on 2026-08-15. CI is masked from this because every job gets
 # a fresh emulator; a local rerun is not.
 adb uninstall com.ronenmars.threadbase > /dev/null 2>&1 || true
-adb install -r android/app/build/outputs/apk/release/app-release.apk
+adb install -r "$RELEASE_APK"
 # `adb install` can bounce the emulator's adb transport. The first Maestro flow
 # (launch.yaml) then died in ~2s with "device offline" on runs 31937461153,
 # 31941055453, and 32004798693, while every later flow paired fine. Re-wait
