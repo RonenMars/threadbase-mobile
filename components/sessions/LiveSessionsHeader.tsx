@@ -44,7 +44,11 @@ export function LiveSessionsHeader({ count, hasLive, collapsed, onToggle }: Prop
 
   if (collapsible) {
     return (
-      <TouchableOpacity onPress={onToggle} activeOpacity={0.7}>
+      <TouchableOpacity
+        testID="live-sessions-header"
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
         {inner}
       </TouchableOpacity>
     )
