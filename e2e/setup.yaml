@@ -10,6 +10,16 @@ appId: com.ronenmars.threadbase
 - launchApp:
     clearState: true
 
+# Cold Android CI boots can put a Pixel Launcher ANR over the welcome screen.
+# Maestro then sees neither hub-screen nor onboarding-welcome-cta and treats
+# the run as "already paired". "Close app" kills the launcher, not Threadbase.
+# Run 32036081591 died that way, with Get started fully rendered underneath.
+- runFlow:
+    when:
+      visible: "Pixel Launcher isn't responding"
+    commands:
+      - tapOn: "Close app"
+
 # Give the splash time to clear before anything decides which screen this is.
 # `runFlow when:` is a one-shot probe with a short window, and a cold Release
 # start on a CI simulator is slower than that window: on iOS run 31930896875 the
