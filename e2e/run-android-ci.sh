@@ -98,6 +98,15 @@ adb install -r "$RELEASE_APK"
 # 31941055453, and 32004798693, while every later flow paired fine. Re-wait
 # before Maestro talks to the device.
 wait_for_booted 60 "Emulator went offline after APK install."
+# Pixel Launcher ANRs on a cold google_apis Pixel_6 boot. The system dialog
+# sits on top of the app, so Maestro's hub/welcome probes both miss — run
+# 32036081591 died that way, with Get started visible under the ANR.
+# Previously gradle held the emulator idle for ~20 min before Maestro, which
+# let the launcher settle. The suite never uses the launcher.
+for pkg in com.google.android.apps.nexuslauncher com.android.launcher3; do
+  adb shell pm disable-user --user 0 "$pkg" >/dev/null 2>&1 || \
+    adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
+done
 if [ -z "${FLOWS:-}" ]; then
   npm run test:e2e:mock
   exit 0
