@@ -54,16 +54,22 @@ trap capture_failure EXIT
 #
 # The getprop poll subsumes `wait-for-device`: with nothing attached it just
 # keeps failing until the deadline.
+wait_for_booted() {
+  local seconds="$1"
+  local message="$2"
+  local deadline=$(( SECONDS + seconds ))
+  until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "::error::${message}" >&2
+      adb devices >&2 || true
+      exit 1
+    fi
+    sleep 2
+  done
+}
+
 E2E_DEVICE_WAIT_SECONDS="${E2E_DEVICE_WAIT_SECONDS:-300}"
-device_deadline=$(( SECONDS + E2E_DEVICE_WAIT_SECONDS ))
-until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
-  if [ "$SECONDS" -ge "$device_deadline" ]; then
-    echo "::error::No booted Android device after ${E2E_DEVICE_WAIT_SECONDS}s. Attached devices:" >&2
-    adb devices >&2 || true
-    exit 1
-  fi
-  sleep 2
-done
+wait_for_booted "$E2E_DEVICE_WAIT_SECONDS" "No booted Android device after ${E2E_DEVICE_WAIT_SECONDS}s. Attached devices:"
 adb shell input keyevent 82
 # x86_64 is what the CI emulator image is. Overridable so the same script can be
 # run against a local arm64 emulator, which is the only way to exercise this file
@@ -77,6 +83,11 @@ adb shell input keyevent 82
 # a fresh emulator; a local rerun is not.
 adb uninstall com.ronenmars.threadbase > /dev/null 2>&1 || true
 adb install -r android/app/build/outputs/apk/release/app-release.apk
+# `adb install` can bounce the emulator's adb transport. The first Maestro flow
+# (launch.yaml) then died in ~2s with "device offline" on runs 31937461153,
+# 31941055453, and 32004798693, while every later flow paired fine. Re-wait
+# before Maestro talks to the device.
+wait_for_booted 60 "Emulator went offline after APK install."
 if [ -z "${FLOWS:-}" ]; then
   npm run test:e2e:mock
   exit 0

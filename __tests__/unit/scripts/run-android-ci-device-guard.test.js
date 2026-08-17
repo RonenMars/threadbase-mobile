@@ -89,4 +89,12 @@ describe('run-android-ci.sh device wait', () => {
 
     expect(result.stderr).not.toMatch(/No booted Android device/);
   });
+
+  it('re-checks boot_completed after adb install so the first Maestro flow does not hit device offline', () => {
+    const src = fs.readFileSync(SCRIPT, 'utf8');
+    const installAt = src.indexOf('adb install');
+    const postWaitAt = src.indexOf('offline after APK install');
+    expect(installAt).toBeGreaterThan(-1);
+    expect(postWaitAt).toBeGreaterThan(installAt);
+  });
 });

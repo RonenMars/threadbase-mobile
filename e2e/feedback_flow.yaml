@@ -22,15 +22,46 @@ appId: com.ronenmars.threadbase
 # height, so the row is mounted but off-screen and `visible` alone never matches.
 #
 # `scrollUntilVisible` does NOT work here — it fails to detect the row even at
-# timeout 20000 / speed 80 / visibilityPercentage 60. Two explicit swipes do
-# reach it, and `assertVisible` then matches immediately, so the ScrollView and
-# the testID are both fine; only Maestro's scroll-and-detect loop is not.
-- swipe:
-    start: 50%, 90%
-    end: 50%, 20%
-- swipe:
-    start: 50%, 90%
-    end: 50%, 20%
+# timeout 20000 / speed 80 / visibilityPercentage 60. Explicit swipes do, and
+# `assertVisible` then matches immediately, so the ScrollView and the testID
+# are both fine; only Maestro's scroll-and-detect loop is not.
+#
+# Two swipes reach it on iOS. The Android emulator viewport is shorter: run
+# 32004798693 landed on the Crash Reporting header after two swipes, with
+# Permissions + About + Help still below. Keep swiping only while the row is
+# off-screen so iOS does not overshoot.
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
 - assertVisible:
     id: "settings-help-feedback-row"
 

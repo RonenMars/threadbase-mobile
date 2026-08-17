@@ -28,6 +28,26 @@ appId: com.ronenmars.threadbase
 # ── Navigate to running session ────────────────────────────────────────────────
 # first-session-card → session-abc123: status=running, promptCount=3
 # Fix 3: isWakingUp must be FALSE (promptCount > 0 means not first run)
+#
+# Default hub is classic + mergeChats. The merged list auto-collapses the
+# session block when there are more than 3 sessions (SESSIONS_COLLAPSE_THRESHOLD
+# in app/index.tsx). The mock fixture has 4, so LIVE · 4 is showing and the
+# cards are hidden — run 32004798693 failed here with only conversation rows
+# in the hierarchy. Expand the header only when the card is not already visible.
+
+- extendedWaitUntil:
+    visible:
+      id: "live-sessions-header"
+    timeout: 8000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: "first-session-card"
+    commands:
+      - tapOn:
+          id: "live-sessions-header"
 
 - extendedWaitUntil:
     visible:
