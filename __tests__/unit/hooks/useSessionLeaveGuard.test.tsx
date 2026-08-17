@@ -1,7 +1,6 @@
 import { renderHook, act } from '@testing-library/react-native'
 import { useSessionLeaveGuard, type BeforeRemoveEvent } from '@/hooks/useSessionLeaveGuard'
 import { clearSessionLeaveInFlight } from '@/lib/sessionLeavePolicy'
-import { clearSessionUsed, markSessionUsed } from '@/lib/sessionUsage'
 import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 
@@ -54,7 +53,6 @@ describe('useSessionLeaveGuard', () => {
     ;(wsManager.send as jest.Mock).mockClear()
     ;(wsManager.status as jest.Mock).mockReturnValue('connected')
     useSettingsStore.setState({ sessionLeaveAction: 'ask' })
-    clearSessionUsed('sess-live')
     clearSessionLeaveInFlight('sess-live')
   })
 
@@ -191,21 +189,13 @@ describe('useSessionLeaveGuard', () => {
     expect(stopSessionMutate).toHaveBeenCalled()
   })
 
-  it('promptCount === 0 unused discard: no modal, still POST stop', async () => {
+  it('Always ask: empty live session also shows the modal (no auto-stop)', async () => {
     const { fire, dispatch, hook } = await setup({ ...live, promptCount: 0 })
     const { preventDefault } = fire()
-    expect(hook.result.current.leaveModalVisible).toBe(false)
-    expect(preventDefault).not.toHaveBeenCalled()
-    expect(stopSessionMutate).toHaveBeenCalled()
-    expect(dispatch).not.toHaveBeenCalled()
-  })
-
-  it('used promptCount 0 is not auto-discarded (adopted/external history)', async () => {
-    markSessionUsed('sess-live')
-    const { fire, hook } = await setup({ ...live, promptCount: 0 })
-    fire()
     expect(hook.result.current.leaveModalVisible).toBe(true)
+    expect(preventDefault).toHaveBeenCalled()
     expect(stopSessionMutate).not.toHaveBeenCalled()
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('idle / on_hold: no modal', async () => {

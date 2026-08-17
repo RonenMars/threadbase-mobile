@@ -553,8 +553,8 @@ export default function SessionDetailScreen() {
     [reviewMessages],
   )
 
-  // Bug 16 unused-empty discard plus the leave-session policy both live in
-  // useSessionLeaveGuard (beforeRemove). Do not add a second listener here.
+  // Leave-session policy lives in useSessionLeaveGuard (beforeRemove).
+  // Do not add a second listener here.
 
   const isLiveForStream =
     session?.ptyAttached === true &&
