@@ -231,20 +231,30 @@ export function LiveConversationView({
 
   // Append the user's own message optimistically and fire the send. The
   // optimistic bubble shows what the user typed; the payload may also carry
-  // attachment @refs.
-  const send = (payload: string, optimisticText: string) => {
+  // attachment @refs. Composer text/attachments stay until this resolves —
+  // a failed send must not wipe what the user typed.
+  const send = async (payload: string, optimisticText: string) => {
     if (!isConnected()) {
       Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
-      return
+      throw new Error('not-connected')
     }
     markSessionUsed(sessionId)
+    let optimisticId: string | undefined
     if (optimisticText) {
-      setPendingSends((prev) => [...prev, makeOptimisticMessage(optimisticText)])
+      const msg = makeOptimisticMessage(optimisticText)
+      optimisticId = msg.id
+      setPendingSends((prev) => [...prev, msg])
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    sendInput.mutate(payload, {
-      onError: (err) => Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
-    })
+    try {
+      await sendInput.mutateAsync(payload)
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    } catch (err) {
+      if (optimisticId) {
+        setPendingSends((prev) => prev.filter((m) => m.id !== optimisticId))
+      }
+      Alert.alert('Send failed', err instanceof Error ? err.message : String(err))
+      throw err
+    }
   }
 
   const {

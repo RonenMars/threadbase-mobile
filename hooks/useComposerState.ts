@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, AppState, Linking } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
@@ -20,7 +20,7 @@ import type { SlashCommand } from '@/constants/slashCommands'
 export interface UseComposerStateOptions {
   serverId: string
   sessionId: string
-  onSend: (payload: string, optimisticText: string) => void
+  onSend: (payload: string, optimisticText: string) => void | Promise<void>
 }
 
 export interface ComposerState {
@@ -55,6 +55,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
   const [queueVisible, setQueueVisible] = useState(false)
   const [micGranted, setMicGranted] = useState(false)
+  const sendingRef = useRef(false)
 
   const setDraft = useDraftsStore((s) => s.setDraft)
   const clearDraft = useDraftsStore((s) => s.clearDraft)
@@ -106,6 +107,20 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     clearDraft(serverId, sessionId)
   }
 
+  const sendAndReset = async (payload: string, optimisticText: string): Promise<boolean> => {
+    if (sendingRef.current) return false
+    sendingRef.current = true
+    try {
+      await onSend(payload, optimisticText)
+      resetComposer()
+      return true
+    } catch {
+      return false
+    } finally {
+      sendingRef.current = false
+    }
+  }
+
   const handleInputChange = (text: string) => {
     setInputText(text)
     setDraft(serverId, sessionId, text)
@@ -120,8 +135,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
       const autoName = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20)
       if (autoName) renameSession.mutate({ sessionId, name: autoName, origin: 'auto' })
     }
-    onSend(payload, text || payload)
-    resetComposer()
+    return sendAndReset(payload, text || payload)
   }
 
   const handleSlashCommandSelect = (command: SlashCommand) => {
@@ -132,15 +146,13 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
       return
     }
     const payload = `/${command.id}`
-    onSend(payload, payload)
-    resetComposer()
+    return sendAndReset(payload, payload)
   }
 
-  const handleSlashArgConfirm = (command: SlashCommand, arg: string) => {
-    setPendingArgCommand(null)
+  const handleSlashArgConfirm = async (command: SlashCommand, arg: string) => {
     const payload = `/${command.id} ${arg}`
-    onSend(payload, payload)
-    resetComposer()
+    const sent = await sendAndReset(payload, payload)
+    if (sent) setPendingArgCommand(null)
   }
 
   // A refused credential is the one failure whose remedy the user can act on, and the two
