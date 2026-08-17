@@ -83,25 +83,19 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "chat-message-input"
 - inputText: "hello from chat-flow e2e"
+- waitForAnimationToEnd
 
-# On iOS the composer stays above the keyboard, and hideKeyboard is a silent
-# no-op on Maestro 2.6.1 / iOS 26.x (issue #611). On Android the IME covers
-# the row: empty composer is chat-mic-button, and after typing chat-send-button
-# is off-screen. Run 32040349995 died there. Dismiss only on Android.
+# Do not hideKeyboard on Android: Maestro implements that as Back, which pops
+# the session and fails the send-button assert on the hub. iOS hideKeyboard is
+# a no-op (Maestro issue #611). Do not pressKey Enter: this input is multiline.
 #
-# Do not "fix" a future keyboard problem here with `pressKey: Enter`: this input
-# is multiline, so Enter inserts a newline and the text assertion below fails.
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - hideKeyboard
-      - waitForAnimationToEnd
-
+# After typing, KeyboardAvoidingView needs a beat to settle. 5s was too short
+# on Android (run 32040349995); the headed re-run showed send on screen while
+# tapOn was still waiting on the default timeout.
 - extendedWaitUntil:
     visible:
       id: "chat-send-button"
-    timeout: 5000
+    timeout: 15000
 
 - tapOn:
     id: "chat-send-button"
