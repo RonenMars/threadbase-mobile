@@ -44,7 +44,7 @@ export interface AddServerMeta {
 }
 
 /** Minimal shape persisted to AsyncStorage (no secrets). */
-interface PersistedServer {
+export interface PersistedServer {
   id: string
   url: string
   label?: string
@@ -131,6 +131,63 @@ async function persistServerList(
   }
   // SecureStore uses iOS Keychain, which survives app uninstalls
   await SecureStore.setItemAsync(ASYNC_KEY_SERVERS, JSON.stringify(payload))
+}
+
+/**
+ * The read half of `persistServerList`, and the reason it is a named export
+ * rather than inline below: `loadPersistedServers` cannot be executed by any
+ * test in this repo. Its first statement awaits a dynamic `import()` of
+ * AsyncStorage and jest runs without `--experimental-vm-modules`, so that throws
+ * — `TypeError: A dynamic import callback was invoked without
+ * --experimental-vm-modules` — whatever `moduleNameMapper` says. A reader that
+ * dropped a field on load was therefore caught by nothing, and the loss would
+ * only surface at the next launch, by which point only a re-pair recovers it.
+ *
+ * The two shapes are historical: a bare array predates the wrapper object.
+ */
+export function parsePersistedServers(raw: string): {
+  list: PersistedServer[]
+  displayedServerIds?: string[]
+  hasEverHadServer?: boolean
+} {
+  const parsed = JSON.parse(raw) as
+    | PersistedServer[]
+    | { list?: PersistedServer[]; displayedServerIds?: string[]; hasEverHadServer?: boolean }
+  if (Array.isArray(parsed)) return { list: parsed }
+  return {
+    list: parsed.list ?? [],
+    displayedServerIds: parsed.displayedServerIds,
+    hasEverHadServer: parsed.hasEverHadServer,
+  }
+}
+
+/**
+ * Rebuilds one server record from its persisted entry and the secrets that
+ * never went into it. Every field `persistServerList` writes has to be read
+ * back here; the two lists are only kept in step by the test that compares them.
+ */
+export function serverConfigFromPersisted(
+  entry: PersistedServer,
+  secrets: { apiKey: string; deviceToken?: string },
+  color: string,
+): ServerConfig {
+  return {
+    id: entry.id,
+    url: entry.url,
+    apiKey: secrets.apiKey,
+    label: entry.label,
+    isConnected: false,
+    serverInfo: null,
+    connectionError: entry.connectionError ?? null,
+    color,
+    symbol: entry.symbol,
+    deviceId: entry.deviceId,
+    deviceToken: secrets.deviceToken,
+    deviceCapabilities: entry.deviceCapabilities,
+    publicUrl: entry.publicUrl,
+    serverPublicKey: entry.serverPublicKey,
+    requireEncryption: entry.requireEncryption,
+  }
 }
 
 function defaultDisplayedServerIds(order: string[]): string[] {
@@ -397,23 +454,32 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     const urlChanged = normalised !== existingServer.url
     const newId = urlChanged ? serverIdFromUrl(normalised) : serverId
 
+    // The edit UI always submits url, key and label together, so "did anything
+    // identifying change?" cannot be read off which fields arrived. A rename is
+    // a label-only edit and must leave the pairing entirely alone: dropping the
+    // device key on one would break this server's E2EE identity and leave the
+    // pin demanding encryption of a server it can no longer recognise.
+    const identityReplaced = urlChanged || patch.apiKey !== existingServer.apiKey
+
     // Update SecureStore key if ID changed
     if (urlChanged && newId !== serverId) {
       await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
     }
     await SecureStore.setItemAsync(secureKeyForServer(newId), patch.apiKey)
-    // A hand-edited URL or key is a different pairing, so the device identity
-    // minted by the old exchange no longer applies. Dropping it matters now
-    // that the token is actually presented as a credential: `...old` below
-    // would otherwise carry it forward and we would authenticate as a device
-    // the freshly-entered key may know nothing about.
-    await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
-    if (newId !== serverId) await SecureStore.deleteItemAsync(secureKeyForDeviceToken(newId))
-    // Same terms, same reason: this device's static key was registered by the
-    // old exchange and the pinned server identity was proved by it. Neither
-    // survives a hand-edited URL or key.
-    await clearDeviceStaticKey(serverId)
-    if (newId !== serverId) await clearDeviceStaticKey(newId)
+    if (identityReplaced) {
+      // A hand-edited URL or key is a different pairing, so the device identity
+      // minted by the old exchange no longer applies. Dropping it matters now
+      // that the token is actually presented as a credential: `...old` below
+      // would otherwise carry it forward and we would authenticate as a device
+      // the freshly-entered key may know nothing about.
+      await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
+      if (newId !== serverId) await SecureStore.deleteItemAsync(secureKeyForDeviceToken(newId))
+      // Same terms, same reason: this device's static key was registered by the
+      // old exchange and the pinned server identity was proved by it. Neither
+      // survives a hand-edited URL or key.
+      await clearDeviceStaticKey(serverId)
+      if (newId !== serverId) await clearDeviceStaticKey(newId)
+    }
 
     set((state) => {
       const { [serverId]: old, ...rest } = state.servers
@@ -426,15 +492,22 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         isConnected: false,
         serverInfo: null,
         connectionError: null,
-        deviceId: undefined,
-        deviceToken: undefined,
-        deviceCapabilities: undefined,
-        // `requireEncryption` is deliberately NOT cleared alongside it. The
-        // pinned key says "this is that machine" and stops applying; the pin
-        // says "this device refuses plaintext" and is the user's demand, not
-        // the pairing's. Clearing it here would make editing a URL a silent
-        // downgrade — §6.1 requires a deliberate act with a confirmation.
-        serverPublicKey: undefined,
+        // Device key, pinned server key and pin move as one. They describe a
+        // single pairing: keeping the pin after the identity it was proved
+        // against is gone leaves a demand pointing at nothing, and keeping the
+        // pinned key after the URL moved would claim a machine we never reached.
+        // Replacing the identity here is itself the deliberate act §6.1 asks
+        // for, so this is not the silent downgrade that clearing it on a rename
+        // would have been.
+        ...(identityReplaced
+          ? {
+              deviceId: undefined,
+              deviceToken: undefined,
+              deviceCapabilities: undefined,
+              serverPublicKey: undefined,
+              requireEncryption: undefined,
+            }
+          : {}),
       }
       const newServers = { ...rest, [newId]: updated }
 
@@ -460,16 +533,11 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       }
       const raw = secureRaw ?? asyncRaw
       if (raw) {
-        const parsed: unknown = JSON.parse(raw)
-        const legacyList = Array.isArray(parsed) ? (parsed as PersistedServer[]) : null
-        const list = legacyList ?? (parsed as { list?: PersistedServer[] }).list ?? []
-        const persistedDisplayed = legacyList
-          ? undefined
-          : (parsed as { displayedServerIds?: string[] }).displayedServerIds
+        const parsed = parsePersistedServers(raw)
         const servers: Record<string, ServerConfig> = {}
         const activeServerIds: string[] = []
 
-        for (const entry of list) {
+        for (const entry of parsed.list) {
           const apiKey = (await SecureStore.getItemAsync(secureKeyForServer(entry.id))) ?? ''
           // The scoped device credential. It has been WRITTEN at pairing since
           // C5 and never read back, which is why every request went out with
@@ -481,32 +549,17 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           const color = entry.color ?? pickNextServerColor(
             activeServerIds.map((sid) => servers[sid]?.color),
           )
-          servers[entry.id] = {
-            id: entry.id,
-            url: entry.url,
-            apiKey,
-            label: entry.label,
-            isConnected: false,
-            serverInfo: null,
-            connectionError: entry.connectionError ?? null,
-            color,
-            symbol: entry.symbol,
-            deviceId: entry.deviceId,
-            deviceToken,
-            deviceCapabilities: entry.deviceCapabilities,
-            publicUrl: entry.publicUrl,
-            serverPublicKey: entry.serverPublicKey,
-            requireEncryption: entry.requireEncryption,
-          }
+          servers[entry.id] = serverConfigFromPersisted(entry, { apiKey, deviceToken }, color)
           activeServerIds.push(entry.id)
         }
 
-        const validDisplayed = (persistedDisplayed ?? []).filter((id) => activeServerIds.includes(id))
+        const validDisplayed = (parsed.displayedServerIds ?? []).filter((id) =>
+          activeServerIds.includes(id),
+        )
         const displayedServerIds = validDisplayed.length > 0
           ? validDisplayed
           : defaultDisplayedServerIds(activeServerIds)
-        const hasEverHadServer = (parsed as { hasEverHadServer?: boolean }).hasEverHadServer
-          ?? activeServerIds.length > 0
+        const hasEverHadServer = parsed.hasEverHadServer ?? activeServerIds.length > 0
         set({ servers, activeServerIds, displayedServerIds, hasEverHadServer })
         return
       }

@@ -28,6 +28,14 @@ export interface NoiseResponder {
   writeMessage2(payload: Uint8Array): Uint8Array
   handshakeHash(): Uint8Array
   split(): [Uint8Array, Uint8Array]
+  /**
+   * The initiator's static public key, recovered from message 1.
+   *
+   * This is what the streamer deduplicates device rows on
+   * (`devices.repository.ts`), so it is how a test can ask the question that
+   * matters — did a second pairing present the same device, or a new one?
+   */
+  remoteStaticPublic(): Uint8Array
 }
 
 export function createNoiseResponder(config: NoiseResponderConfig): NoiseResponder {
@@ -73,6 +81,10 @@ export function createNoiseResponder(config: NoiseResponderConfig): NoiseRespond
 
     handshakeHash(): Uint8Array {
       return sym.h
+    },
+
+    remoteStaticPublic(): Uint8Array {
+      return rs
     },
 
     split(): [Uint8Array, Uint8Array] {

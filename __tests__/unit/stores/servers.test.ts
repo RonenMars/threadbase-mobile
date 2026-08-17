@@ -1,4 +1,12 @@
-import { useServersStore } from '@/stores/servers'
+import {
+  parsePersistedServers,
+  serverConfigFromPersisted,
+  useServersStore,
+} from '@/stores/servers'
+// Read through the app's own module, never `expo-secure-store` directly: Metro
+// swaps this one for a localStorage shim on web, so it is the boundary the app
+// actually uses. The mock below stands in for whatever it re-exports.
+import * as SecureStore from '@/services/secure-store'
 
 // Mock SecureStore so tests don't hit the keychain
 jest.mock('expo-secure-store', () => ({
@@ -6,6 +14,11 @@ jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn().mockResolvedValue(null),
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }))
+
+const setItemAsync = SecureStore.setItemAsync as jest.MockedFunction<typeof SecureStore.setItemAsync>
+const deleteItemAsync = SecureStore.deleteItemAsync as jest.MockedFunction<
+  typeof SecureStore.deleteItemAsync
+>
 
 // Mock fetch for refreshServerInfo
 const mockFetch = jest.fn()
@@ -385,36 +398,34 @@ describe('addServer – publicUrl', () => {
 
 // ── The pairing handshake's half of the server record (#698) ────────────────
 //
-// **Only the write half is covered, and the read half is a known gap.**
-// `loadPersistedServers` reads these fields back at `stores/servers.ts:410-482`
-// and no test in this repo can execute it: its first statement awaits a dynamic
-// `import()` of AsyncStorage, and jest runs without `--experimental-vm-modules`,
-// so that throws — `TypeError: A dynamic import callback was invoked without
-// --experimental-vm-modules` — regardless of `moduleNameMapper`. Verified with a
-// bare `await import('@react-native-async-storage/async-storage')` in a throwaway
-// test, not assumed from the note in `e2ee-require-encryption.test.ts`.
+// `loadPersistedServers` still cannot be executed by a test: its first statement
+// awaits a dynamic `import()` of AsyncStorage, and jest runs without
+// `--experimental-vm-modules`, so that throws — `TypeError: A dynamic import
+// callback was invoked without --experimental-vm-modules` — regardless of
+// `moduleNameMapper`. Verified with a bare
+// `await import('@react-native-async-storage/async-storage')` in a throwaway
+// test rather than assumed.
 //
-// So a reader that dropped `serverPublicKey` on load would be caught by nothing
-// here. The assertions below deliberately name the persisted key rather than
-// round-tripping through the store's in-memory state, because that round trip
-// passes whenever the two copies have not yet diverged, which is the failure it
-// is supposed to detect.
+// Its *reader* is now reachable: `parsePersistedServers` and
+// `serverConfigFromPersisted` are the two halves that dropping a field would
+// break, and the round trip below drives them with the exact string
+// `persistServerList` wrote. That is deliberately not a round trip through the
+// store's in-memory state, which passes whenever the write and read copies have
+// not yet diverged — precisely the failure being guarded against.
 
 describe('addServer – e2ee material', () => {
-  const SecureStore = jest.requireMock('expo-secure-store') as {
-    setItemAsync: jest.Mock
-    deleteItemAsync: jest.Mock
-  }
-
   const SPK = 'A'.repeat(43)
   const URL = 'http://192.168.68.125:8766'
 
-  function persistedList(): Record<string, unknown>[] {
-    const call = SecureStore.setItemAsync.mock.calls
-      .filter(([key]) => key === 'threadbase_servers')
-      .pop()
+  /** The exact string `persistServerList` handed to SecureStore, latest first. */
+  function persistedPayload(): string {
+    const call = setItemAsync.mock.calls.filter(([key]) => key === 'threadbase_servers').pop()
     if (!call) throw new Error('the server list was never persisted')
-    return (JSON.parse(String(call[1])) as { list: Record<string, unknown>[] }).list
+    return String(call[1])
+  }
+
+  function persistedList(): Record<string, unknown>[] {
+    return (JSON.parse(persistedPayload()) as { list: Record<string, unknown>[] }).list
   }
 
   it('records the pinned server key and the pin, in memory and on disk', async () => {
@@ -450,31 +461,119 @@ describe('addServer – e2ee material', () => {
 
   it('forgets this device static key when the server is removed', async () => {
     const id = String(await useServersStore.getState().addServer(URL, 'key-abc'))
-    SecureStore.deleteItemAsync.mockClear()
+    deleteItemAsync.mockClear()
 
     await useServersStore.getState().removeServer(id)
 
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+    expect(deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
   })
 
-  it('drops the pinned key but keeps the pin when the server is hand-edited', async () => {
-    // A hand-edited URL or key is a different pairing, so the identity the old
-    // exchange proved no longer applies. The pin is the user's demand rather
-    // than the pairing's, and clearing it here would make editing a URL a
-    // silent downgrade.
-    const id = String(
-      await useServersStore.getState().addServer(URL, 'key-abc', undefined, {
+  async function addPinnedServer(): Promise<string> {
+    return String(
+      await useServersStore.getState().addServer(URL, 'key-abc', 'Old name', {
+        deviceId: 'device-1',
+        deviceToken: 'dt_1',
         serverPublicKey: SPK,
         requireEncryption: true,
       }),
     )
-    SecureStore.deleteItemAsync.mockClear()
+  }
 
-    await useServersStore.getState().editServer(id, { url: URL, apiKey: 'key-different' })
+  it('preserves the device key, server key and pin on a label-only edit', async () => {
+    // The edit UI always submits url, key and label together, so a rename
+    // arrives looking exactly like a re-pointing. Treating it as one deleted
+    // D_priv and the pinned key while keeping `requireEncryption`, which left
+    // the pin demanding encryption of a server it could no longer recognise.
+    const id = await addPinnedServer()
+    deleteItemAsync.mockClear()
+
+    await useServersStore.getState().editServer(id, {
+      url: URL,
+      apiKey: 'key-abc',
+      label: 'New name',
+    })
 
     const server = useServersStore.getState().getServer(id)
-    expect(server?.serverPublicKey).toBeUndefined()
+    expect(server?.label).toBe('New name')
+    expect(server?.serverPublicKey).toBe(SPK)
     expect(server?.requireEncryption).toBe(true)
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+    expect(server?.deviceToken).toBe('dt_1')
+    expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+    expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_device_token_${id}`)
+  })
+
+  it.each([
+    ['a new api key', { url: URL, apiKey: 'key-different' }],
+    ['a new url', { url: 'http://192.168.68.126:8766', apiKey: 'key-abc' }],
+  ])('clears device key, server key and pin together on %s', async (_label, patch) => {
+    // The three describe one pairing, so they move as one. A pin left behind
+    // after the identity it was proved against is gone points at nothing, and a
+    // pinned key left behind after the URL moved claims a machine never reached.
+    // Replacing the identity by hand is itself the deliberate act §6.1 requires.
+    const id = await addPinnedServer()
+    deleteItemAsync.mockClear()
+
+    await useServersStore.getState().editServer(id, patch)
+
+    const newId = useServersStore.getState().activeServerIds[0]
+    const server = useServersStore.getState().getServer(newId)
+    expect(server?.serverPublicKey).toBeUndefined()
+    expect(server?.requireEncryption).toBeUndefined()
+    expect(server?.deviceToken).toBeUndefined()
+    expect(deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+  })
+})
+
+// ── The read half, driven by the exact bytes the write half produced ─────────
+
+describe('reading a persisted server back', () => {
+  const SPK = 'B'.repeat(43)
+  const URL = 'http://192.168.68.130:8766'
+
+  it('restores every field the persisted entry carried', async () => {
+    // Not a round trip through `useServersStore`'s in-memory state: that passes
+    // whenever the write and read copies have not yet diverged, which is exactly
+    // the divergence this is here to catch. The input is the string
+    // `persistServerList` actually wrote.
+    await useServersStore.getState().addServer(URL, 'key-abc', 'Studio Mac', {
+      deviceId: 'device-9',
+      deviceToken: 'dt_9',
+      capabilities: ['history:read'],
+      publicUrl: 'https://tunnel.example.test',
+      serverPublicKey: SPK,
+      requireEncryption: true,
+    })
+
+    const written = setItemAsync.mock.calls
+      .filter(([key]) => key === 'threadbase_servers')
+      .pop()
+    const parsed = parsePersistedServers(String(written?.[1]))
+    const entry = parsed.list.find((s) => s.url === URL)
+    expect(entry).toBeDefined()
+    if (!entry) return
+
+    const restored = serverConfigFromPersisted(
+      entry,
+      { apiKey: 'key-abc', deviceToken: 'dt_9' },
+      '#123456',
+    )
+
+    expect(restored.serverPublicKey).toBe(SPK)
+    expect(restored.requireEncryption).toBe(true)
+    expect(restored.publicUrl).toBe('https://tunnel.example.test')
+    expect(restored.deviceId).toBe('device-9')
+    expect(restored.deviceToken).toBe('dt_9')
+    expect(restored.deviceCapabilities).toEqual(['history:read'])
+    expect(restored.label).toBe('Studio Mac')
+    expect(restored.url).toBe(URL)
+  })
+
+  it('reads back the bare-array shape that predates the wrapper object', () => {
+    const parsed = parsePersistedServers(
+      JSON.stringify([{ id: 'srv_legacy', url: URL, serverPublicKey: SPK }]),
+    )
+    expect(parsed.list).toHaveLength(1)
+    expect(parsed.list[0].serverPublicKey).toBe(SPK)
+    expect(parsed.hasEverHadServer).toBeUndefined()
   })
 })

@@ -17,18 +17,37 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native'
 import { act } from 'react'
 import { AppState } from 'react-native'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { PairExchangeError } from '@/services/pair-exchange'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+
+jest.mock('@/services/pair-exchange', () => ({
+  ...jest.requireActual('@/services/pair-exchange'),
+  exchangeToken: jest.fn(),
+}))
+
+const exchangeToken = jest.requireMock('@/services/pair-exchange').exchangeToken as jest.Mock
 
 const DENIED = { granted: false, canAskAgain: false, status: 'denied' }
 const GRANTED = { granted: true, canAskAgain: true, status: 'granted' }
 
 let mockOsPermission: { granted: boolean; canAskAgain: boolean; status: string } = DENIED
 
+/** The scanner's barcode callback, captured so a test can deliver a QR to it. */
+let mockScanHandler: ((event: { data: string }) => void) | null = null
+
 jest.mock('expo-camera', () => {
   const React = require('react')
   return {
-    CameraView: ({ children }: { children?: React.ReactNode }) =>
-      React.createElement('CameraView', null, children),
+    CameraView: ({
+      children,
+      onBarcodeScanned,
+    }: {
+      children?: React.ReactNode
+      onBarcodeScanned?: (event: { data: string }) => void
+    }) => {
+      mockScanHandler = onBarcodeScanned ?? null
+      return React.createElement('CameraView', null, children)
+    },
     useCameraPermissions: () => {
       const [held, setHeld] = React.useState(mockOsPermission)
       const getPermission = React.useCallback(async () => {
@@ -128,5 +147,51 @@ describe('PairScannerModal — permission granted in system Settings', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('pair-scanner-allow-camera')).toBeNull(),
     )
+  })
+})
+
+// ── Which failures offer a retry, and which must not ────────────────────────
+//
+// The three refusal codes are distinct because their remedies are. Neither
+// `E2EE_HANDSHAKE_FAILED` nor `E2EE_MALFORMED` spends the pair token, so the
+// same QR is genuinely worth rescanning. `E2EE_VERSION_UNSUPPORTED` never is:
+// retrying changes nothing, and offering "Try again" beside it spends the
+// user's patience on an outcome that cannot move. The deliberate fallback it
+// wants — a QR without `spk`, or the manual API-key path — is somewhere else,
+// and none of these ever offers plaintext to this server instead.
+
+describe('PairScannerModal — retry is offered only where it can help', () => {
+  const PAIR_URI = 'threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x'
+
+  async function scanFailingWith(kind: PairExchangeError['kind']) {
+    mockOsPermission = GRANTED
+    exchangeToken.mockRejectedValue(new PairExchangeError(kind, 'failed'))
+    const screen = await renderScanner()
+
+    await act(async () => {
+      mockScanHandler?.({ data: PAIR_URI })
+    })
+    await waitFor(() => expect(screen.getByTestId('pair-scanner-support')).toBeTruthy())
+    return screen
+  }
+
+  it.each<PairExchangeError['kind']>(['e2ee-handshake', 'e2ee-malformed'])(
+    'offers a retry after %s, which does not spend the token',
+    async (kind) => {
+      const screen = await scanFailingWith(kind)
+      expect(screen.getByTestId('pair-scanner-try-again')).toBeTruthy()
+    },
+  )
+
+  it.each<PairExchangeError['kind']>([
+    'e2ee-version',
+    'e2ee-refused',
+    'e2ee-web-unsupported',
+  ])('offers no retry after %s, and no way to connect unencrypted', async (kind) => {
+    const screen = await scanFailingWith(kind)
+    expect(screen.queryByTestId('pair-scanner-try-again')).toBeNull()
+    // The failure is still visible and still has no downgrade affordance —
+    // a "connect anyway" button would be the downgrade wearing a consent dialog.
+    expect(screen.getByTestId('pair-scanner-support')).toBeTruthy()
   })
 })

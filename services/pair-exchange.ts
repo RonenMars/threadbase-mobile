@@ -3,7 +3,8 @@ import naclUtil from 'tweetnacl-util'
 import { parseCapabilityList, type DeviceCapability } from '@/types/devices'
 import { E2EE_CLIENT_VERSION, serverIdFromUrl } from '@/types/api'
 import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
-import { PAIR_MESSAGE1_PAYLOAD, beginPairHandshake } from '@/services/e2ee/pair-handshake'
+import { HAS_SECURE_KEYCHAIN } from '@/services/secure-store'
+import { beginPairHandshake, pairMessage1Payload } from '@/services/e2ee/pair-handshake'
 import type { NoiseInitiator } from '@/services/e2ee/noise'
 
 export interface PairUri {
@@ -13,14 +14,14 @@ export interface PairUri {
   /**
    * The server's long-term X25519 public key, unpadded base64url.
    *
-   * Carried, never checked — Phase 2 owns verification. It matters that it
-   * arrives at all: the QR is the only out-of-band channel in pairing, so it is
-   * the one value a man in the middle cannot substitute. The URL, `/api/info`
-   * and the exchange reply's ephemeral key all cross the network before any
-   * encryption exists.
+   * The QR is the only out-of-band channel in pairing, so this is the one value
+   * a man in the middle cannot substitute. The URL, `/api/info` and the exchange
+   * reply's ephemeral key all cross the network before any encryption exists.
    *
-   * Optional forever: a streamer that predates the field emits no `spk`, and
-   * that stays an ordinary successful pairing.
+   * Absent forever remains valid: a streamer that predates the field, or has the
+   * handshake disabled, emits no `spk`, and that stays an ordinary successful
+   * plaintext pairing. Present means this pairing must encrypt — `parsePairUri`
+   * has already rejected a value that is present and unusable.
    */
   spk?: string
   /** QR payload format version. Absent on older streamers. Not a capability signal — see `parsePairUri`. */
@@ -34,6 +35,14 @@ export interface ExchangeResult {
    * removed.
    */
   url: string
+  /**
+   * The credential to present as `Authorization: Bearer`.
+   *
+   * On a legacy pairing this is the shared owner key from the sealed box. On an
+   * encrypted pairing it is the authenticated **device token** (§4.1) — the
+   * sealed box is a compatibility field a new client does not read, so its
+   * contents never become this device's credential.
+   */
   apiKey: string
   /**
    * What the server advertises as its public address, recorded and **not
@@ -65,7 +74,7 @@ export interface ExchangeResult {
   e2eeRequired: boolean
 }
 
-export type PairUriErrorCode = 'invalid' | 'expired' | 'bad-server-url'
+export type PairUriErrorCode = 'invalid' | 'expired' | 'bad-server-url' | 'bad-server-key'
 
 /** How a pasted manual-entry credential should be resolved. */
 export type PairCredentialKind = 'pair-uri' | 'pair-token' | 'api-key'
@@ -101,6 +110,15 @@ export function classifyPairCredential(raw: string): PairCredentialKind {
  * - `e2ee-version` — the two builds do not speak the same envelope version.
  *   Retrying changes nothing; this is the one case where falling back is a
  *   deliberate decision rather than a failure, and it belongs to the caller.
+ *
+ * Two more are not refusals the server names, and both are hard failures with
+ * no plaintext road out of them:
+ *
+ * - `e2ee-refused` — message 1 went out and the reply carried no message 2. The
+ *   exchange did happen, so unlike the three above this one has probably spent
+ *   the token; retrying wants a fresh QR.
+ * - `e2ee-web-unsupported` — this build cannot hold a device key on this
+ *   platform, so it declines before writing one rather than after.
  */
 export class PairExchangeError extends Error {
   readonly kind:
@@ -113,6 +131,8 @@ export class PairExchangeError extends Error {
     | 'e2ee-handshake'
     | 'e2ee-malformed'
     | 'e2ee-version'
+    | 'e2ee-refused'
+    | 'e2ee-web-unsupported'
   constructor(kind: PairExchangeError['kind'], message: string) {
     super(message)
     this.name = 'PairExchangeError'
@@ -155,17 +175,20 @@ export function parsePairUri(raw: string): PairUri {
   const exp = expRaw ? Number.parseInt(expRaw, 10) : undefined
   const parsedExp = Number.isFinite(exp) ? (exp as number) : undefined
   assertNotExpired(parsedExp)
-  // A wrong-shaped `spk` is dropped rather than carried or rejected. Rejecting
-  // would fail a pairing over a field nothing reads yet; carrying it would let a
-  // later consumer mistake the value for a key. Absent is the honest answer.
+  // Absent and present-but-invalid are different answers and must stay so.
+  // Absent means a streamer that offers no key, which is the legacy path. A
+  // wrong-shaped one is a hard error: dropping it to `undefined` would select
+  // that same legacy path, making a plaintext downgrade reachable by corrupting
+  // one QR parameter (mobile-design §3.2).
   const spkRaw = parsed.searchParams.get('spk')
-  const spk = spkRaw && SERVER_PUBLIC_KEY_SHAPE.test(spkRaw) ? spkRaw : undefined
-  // Format version of the QR, not a capability probe: a relayed QR is not an
-  // authenticated source, so branching on this to decide whether to demand
-  // encryption would be downgradable by editing one character. Capability comes
-  // from `GET /api/info`. It is carried because it is the only thing that
-  // distinguishes "this QR predates spk" from "this QR's spk was malformed and
-  // dropped above" — two failures the line above otherwise makes identical.
+  if (spkRaw !== null && !SERVER_PUBLIC_KEY_SHAPE.test(spkRaw)) {
+    throw new PairUriError('bad-server-key', 'Server key in pair QR is malformed')
+  }
+  const spk = spkRaw ?? undefined
+  // Format version of the QR, and deliberately not a capability signal: `spk` is
+  // the only thing that selects a path. Branching on `v` to decide whether to
+  // demand encryption would be downgradable by editing one character, so a
+  // wrong-shaped `v` is dropped rather than being made a second gate.
   const vRaw = parsed.searchParams.get('v')
   const vParsed = vRaw ? Number.parseInt(vRaw, 10) : undefined
   const v = Number.isFinite(vParsed) ? vParsed : undefined
@@ -214,6 +237,18 @@ export async function exchangeToken({
   const recipient = nacl.box.keyPair()
   const clientPublicKey = naclUtil.encodeBase64(recipient.publicKey)
 
+  // Before `beginPairHandshake`, so nothing is written anywhere: on web the
+  // store is `localStorage`, which any script that achieves XSS on the origin
+  // can read, and a device static key is not a value to keep there. Refusing is
+  // the whole remedy — there is deliberately no plaintext retry of this same
+  // exchange (mobile-design §5.2). A QR with no `spk` never reaches here.
+  if (serverPublicKey && !HAS_SECURE_KEYCHAIN) {
+    throw new PairExchangeError(
+      'e2ee-web-unsupported',
+      'Encrypted pairing needs the Threadbase app for iOS or Android',
+    )
+  }
+
   // Before the timeout starts, because it writes this device's static key to
   // the Keychain and that write is not part of the request's budget.
   let started: Awaited<ReturnType<typeof beginPairHandshake>>
@@ -240,7 +275,10 @@ export async function exchangeToken({
     readOnly?: boolean
     e2ee?: { v: number; noise: string }
   } = { token, clientPublicKey }
-  if (deviceName?.trim()) bodyPayload.deviceName = deviceName.trim().slice(0, 100)
+  // One normalisation, used by both copies, so the authenticated payload and the
+  // compatibility field can never describe the device differently.
+  const trimmedDeviceName = deviceName?.trim() ? deviceName.trim().slice(0, 100) : undefined
+  if (trimmedDeviceName) bodyPayload.deviceName = trimmedDeviceName
   if (readOnly) bodyPayload.readOnly = true
   // Additive and last, so a pairing with no server key serialises byte for byte
   // as it does today — which is the whole of the old-server compatibility story.
@@ -248,7 +286,11 @@ export async function exchangeToken({
     bodyPayload.e2ee = {
       v: E2EE_CLIENT_VERSION,
       noise: naclUtil.encodeBase64(
-        started.handshake.writeMessage1(naclUtil.decodeUTF8(PAIR_MESSAGE1_PAYLOAD)),
+        started.handshake.writeMessage1(
+          // The authenticated copy of the same two values. The outer ones above
+          // stay for released servers and stop being what a new server believes.
+          naclUtil.decodeUTF8(pairMessage1Payload({ deviceName: trimmedDeviceName, readOnly })),
+        ),
       ),
     }
   }
@@ -301,17 +343,37 @@ export async function exchangeToken({
     throw new PairExchangeError('server', `Server returned ${res.status}`)
   }
 
-  const body = (await safeJson(res)) as {
-    ciphertext?: string
-    nonce?: string
-    ephemeralPublicKey?: string
-    publicUrl?: string | null
-    machineName?: string | null
-    deviceId?: string
-    deviceToken?: string
-    capabilities?: unknown
-    e2ee?: unknown
-  } | null
+  const body = (await safeJson(res)) as ExchangeResponseBody | null
+
+  // ── The E2EE path reads nothing from the outer envelope ────────────────────
+  //
+  // Every field beside `e2ee` exists for released clients that cannot read
+  // message 2, and not one of them is authenticated — an active attacker
+  // rewrites all of them for free, including the sealed api key, whose seal
+  // uses a server-side ephemeral key nothing here can verify. Message 2 is the
+  // only part of this response the handshake proves, so on this path it is the
+  // only part read. Reading an outer copy "as a fallback" is what would let the
+  // unauthenticated value win.
+  if (started.ok) {
+    const reply = readPairHandshakeReply(started.handshake, body?.e2ee)
+    return {
+      url: trimmedUrl,
+      // The authenticated device credential, which is what §4.1 puts in
+      // `Authorization` on an encrypted pairing. The streamer resolves device
+      // tokens ahead of the shared key on both the header and the `?key=`
+      // query param, so this authenticates everywhere the shared key did.
+      apiKey: reply.deviceToken,
+      publicUrl: reply.publicUrl,
+      machineName: reply.machineName,
+      deviceId: reply.deviceId,
+      deviceToken: reply.deviceToken,
+      capabilities: reply.capabilities,
+      serverPublicKey: serverPublicKey ?? null,
+      e2eeRequired: true,
+    }
+  }
+
+  // ── The legacy path, byte-identical to a build that never had a handshake ──
 
   if (!body?.ciphertext || !body.nonce || !body.ephemeralPublicKey) {
     throw new PairExchangeError('server', 'Server response missing sealed payload')
@@ -353,12 +415,6 @@ export async function exchangeToken({
     ? parseCapabilityList(body.capabilities)
     : null
 
-  // A reply with no `e2ee` field is a plaintext pairing, and that is not an
-  // error even when we offered one: the streamer logs and continues if it
-  // cannot write message 2, and an older build never had the field. What it is
-  // not is a reason to pin — nothing here authenticated the responder.
-  const reply = started.ok ? readPairHandshakeReply(started.handshake, body.e2ee) : null
-
   return {
     url: trimmedUrl,
     apiKey: naclUtil.encodeUTF8(plain),
@@ -367,41 +423,93 @@ export async function exchangeToken({
     deviceId,
     deviceToken,
     capabilities,
-    serverPublicKey: reply ? serverPublicKey ?? null : null,
-    e2eeRequired: reply?.e2eeRequired === true,
+    // No handshake ran, so there is no proved key to pin and nothing to demand.
+    serverPublicKey: null,
+    e2eeRequired: false,
   }
 }
 
-/** Message 2's decrypted payload, per design.md §2.4. */
+/**
+ * The exchange response. Every field but `e2ee` is the compatibility envelope
+ * released clients read; a new client reads it only on the legacy path.
+ */
+interface ExchangeResponseBody {
+  ciphertext?: string
+  nonce?: string
+  ephemeralPublicKey?: string
+  publicUrl?: string | null
+  machineName?: string | null
+  deviceId?: string
+  deviceToken?: string
+  capabilities?: unknown
+  e2ee?: { v?: number; noise?: string }
+}
+
+/**
+ * Message 2's authenticated payload, validated. Everything the E2EE path
+ * records about a server comes from here and nowhere else.
+ */
 interface PairHandshakeReply {
+  deviceId: string
+  deviceToken: string
+  capabilities: DeviceCapability[]
+  /** `null` on any streamer without an operator-set public URL — the LAN default. */
+  publicUrl: string | null
+  machineName: string
+}
+
+/** Message 2's payload before validation — what `JSON.parse` may actually hand back. */
+interface PairHandshakeReplyWire {
   v?: number
-  deviceId?: string | null
+  deviceId?: string
+  deviceToken?: string
+  capabilities?: unknown
+  publicUrl?: string | null
+  machineName?: string | null
   serverVersion?: string
   e2eeRequired?: boolean
 }
 
+function nonEmptyString(value: string | undefined): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
 /**
- * Reads the reply's additive `e2ee` field, or `null` when it carried none.
+ * Reads and validates the reply's `e2ee` field. Throws on anything else — once
+ * message 1 has gone out there is no successful outcome that is not a complete,
+ * authenticated message 2.
  *
  * That the payload decrypts at all is the key confirmation — Noise's handshake
  * hash already commits to both static keys, both ephemerals and the PSK, and it
  * is the AAD for this AEAD. There is no separate confirmation value and design
- * §2.4 says there deliberately is not one.
+ * §2.4 says there deliberately is not one. Decryption proves *who wrote it*; the
+ * shape check below is what makes an authenticated `{}` a failure rather than a
+ * successful pairing carrying nothing.
  */
-function readPairHandshakeReply(handshake: NoiseInitiator, raw: unknown): PairHandshakeReply | null {
-  if (raw == null) return null
-  if (typeof raw !== 'object' || Array.isArray(raw)) {
-    throw new PairExchangeError('e2ee-malformed', 'Server sent a malformed e2ee reply')
-  }
-  const { v, noise } = raw as { v?: unknown; noise?: unknown }
-  if (v !== E2EE_CLIENT_VERSION) {
+function readPairHandshakeReply(
+  handshake: NoiseInitiator,
+  raw: { v?: number; noise?: string } | undefined,
+): PairHandshakeReply {
+  // Message 1 was sent, so a reply with no message 2 is the server refusing to
+  // encrypt after the fact. That is a hard failure, never a plaintext result:
+  // answering as an old server is a man in the middle's cheapest attack, and a
+  // streamer that will not encrypt is expected to omit `spk` from the QR and
+  // never get asked (GATE 5).
+  if (raw == null) {
     throw new PairExchangeError(
-      'e2ee-version',
-      `Server replied with e2ee version ${String(v)}; this app speaks ${E2EE_CLIENT_VERSION}`,
+      'e2ee-refused',
+      'Server did not complete the encrypted pairing it offered',
     )
   }
-  if (typeof noise !== 'string' || noise.length === 0) {
+  const noise = raw.noise
+  if (!nonEmptyString(noise)) {
     throw new PairExchangeError('e2ee-malformed', 'Server sent a malformed e2ee reply')
+  }
+  if (raw.v !== E2EE_CLIENT_VERSION) {
+    throw new PairExchangeError(
+      'e2ee-version',
+      `Server replied with e2ee version ${String(raw.v)}; this app speaks ${E2EE_CLIENT_VERSION}`,
+    )
   }
 
   let payload: Uint8Array
@@ -413,10 +521,67 @@ function readPairHandshakeReply(handshake: NoiseInitiator, raw: unknown): PairHa
     throw new PairExchangeError('e2ee-handshake', 'Could not authenticate the handshake reply')
   }
 
+  let wire: PairHandshakeReplyWire
   try {
-    return JSON.parse(naclUtil.encodeUTF8(payload)) as PairHandshakeReply
+    wire = JSON.parse(naclUtil.encodeUTF8(payload)) as PairHandshakeReplyWire
   } catch {
     throw new PairExchangeError('e2ee-malformed', 'Server sent an unreadable handshake payload')
+  }
+
+  if (wire.v !== E2EE_CLIENT_VERSION) {
+    throw new PairExchangeError(
+      'e2ee-version',
+      `Handshake payload is version ${String(wire.v)}; this app speaks ${E2EE_CLIENT_VERSION}`,
+    )
+  }
+  // A pairing that cannot produce a device id and a device token has not
+  // registered this device, whatever else it managed to say.
+  if (!nonEmptyString(wire.deviceId) || !nonEmptyString(wire.deviceToken)) {
+    throw new PairExchangeError(
+      'e2ee-malformed',
+      'Encrypted pairing did not return a device credential',
+    )
+  }
+  if (!Array.isArray(wire.capabilities) || !nonEmptyString(wire.serverVersion)) {
+    throw new PairExchangeError('e2ee-malformed', 'Encrypted pairing returned an incomplete result')
+  }
+  // `null` is a value here, not a failure: the streamer defaults `publicUrl` to
+  // null and only fills it from `--public-url` / `THREADBASE_PUBLIC_URL` /
+  // `public_url:`, none of which a LAN streamer sets. So the ordinary local
+  // pairing authenticates `"publicUrl": null`, and demanding a string here —
+  // which is what the written contract says, and is the tempting reading —
+  // would refuse every LAN pairing while looking like a handshake bug.
+  //
+  // An ABSENT key is still malformed. The streamer builds a typed object
+  // literal and `JSON.stringify` drops `undefined` but never `null`, so the key
+  // is always on the wire. "Server has no public URL" and "server sent a
+  // payload missing a field" are two different bugs and must not collapse.
+  if (!(wire.publicUrl === null || typeof wire.publicUrl === 'string')) {
+    throw new PairExchangeError('e2ee-malformed', 'Encrypted pairing returned an incomplete result')
+  }
+  // Always a real string — the streamer passes `os.hostname()`, which cannot be
+  // null or absent. Empty is tolerated rather than refused: it is a display
+  // label, and failing a whole pairing over a cosmetic field is the opposite of
+  // the rule that a missing optional field renders without it.
+  if (typeof wire.machineName !== 'string') {
+    throw new PairExchangeError('e2ee-malformed', 'Encrypted pairing returned an incomplete result')
+  }
+  // The server records the same bit at this same event. A reply that declines to
+  // say so has not pinned us, and pinning it alone would produce the split state
+  // §6.1 exists to prevent.
+  if (wire.e2eeRequired !== true) {
+    throw new PairExchangeError(
+      'e2ee-refused',
+      'Server completed the handshake without requiring encryption',
+    )
+  }
+
+  return {
+    deviceId: wire.deviceId,
+    deviceToken: wire.deviceToken,
+    capabilities: parseCapabilityList(wire.capabilities),
+    publicUrl: wire.publicUrl,
+    machineName: wire.machineName,
   }
 }
 
