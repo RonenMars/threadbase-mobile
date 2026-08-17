@@ -13,6 +13,9 @@ import { createWrapper } from '@/test-utils'
 import type { Message } from '@/types/api'
 
 const mockMutate = jest.fn()
+const mockMutateAsync = jest.fn(async (payload: string) => {
+  mockMutate(payload, {})
+})
 
 // MessageItem has no stable per-message testID exposing its text (only row-level
 // testIDs for the last/search-anchor rows), so render order can't be asserted
@@ -45,7 +48,12 @@ jest.mock('@/hooks/useConversationStream', () => ({
 // has to carry the whole mutation rather than only what the send path touches.
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
-    sendInput: { mutate: mockMutate, isError: false, error: null },
+    sendInput: {
+      mutate: mockMutate,
+      mutateAsync: mockMutateAsync,
+      isError: false,
+      error: null,
+    },
     sendKeys: { mutate: jest.fn() },
     respondToQuestion: { mutate: jest.fn(), isError: false, error: null },
   }),
@@ -130,6 +138,7 @@ async function renderView() {
 describe('LiveConversationView — optimistic sent message', () => {
   beforeEach(() => {
     mockMutate.mockClear()
+    mockMutateAsync.mockClear()
     mockOnStatusChange.mockClear()
     mockHistorical = []
     mockLive = []
@@ -186,6 +195,20 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(mockMutate).toHaveBeenCalledWith('hello there', expect.anything())
     // …and the user's text shows up right away as a bubble, with no live echo.
     expect(screen.getByText('hello there')).toBeTruthy()
+    expect(input.props.value).toBe('')
+  })
+
+  it('keeps composer text and does not leave an optimistic bubble when send fails', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new Error('offline'))
+    await renderView()
+
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent.changeText(input, 'keep this')
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
+
+    expect(mockMutateAsync).toHaveBeenCalledWith('keep this')
+    expect(input.props.value).toBe('keep this')
+    expect(screen.queryByTestId('message-text')).toBeNull()
   })
 
   it('does not duplicate the message once the WS echo arrives with the same text', async () => {
