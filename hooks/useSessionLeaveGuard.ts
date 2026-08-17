@@ -10,7 +10,6 @@ import {
   type AppliedSessionLeaveAction,
   type LeaveSessionSnapshot,
 } from '@/lib/sessionLeavePolicy'
-import { clearSessionUsed, wasSessionUsed } from '@/lib/sessionUsage'
 import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -117,28 +116,10 @@ export function useSessionLeaveGuard(opts: {
 
       const decision = decideSessionLeave({
         session: sessionRef.current,
-        wasUsed: wasSessionUsed(sessionId),
         setting: coerceSessionLeaveAction(readLeaveSetting()),
       })
 
       if (decision.kind === 'none') return
-
-      if (decision.kind === 'discard_unused') {
-        clientLog.info('session', 'discard unused empty session on back', {
-          sessionId,
-          serverId,
-        })
-        clearSessionUsed(sessionId)
-        stopRef.current(undefined, {
-          onError: (err) => {
-            clientLog.info('session', 'discard stop failed', {
-              sessionId,
-              err: err instanceof Error ? err.message : String(err),
-            })
-          },
-        })
-        return
-      }
 
       e.preventDefault()
 

@@ -8,13 +8,10 @@ export const DEFAULT_LEAVE_MODAL_CHOICE: AppliedSessionLeaveAction = 'leave'
 export interface LeaveSessionSnapshot {
   ptyAttached?: boolean | null
   status?: string | null
-  promptCount?: number | null
-  resumedFromConversationId?: string | null
 }
 
 export type SessionLeaveDecision =
   | { kind: 'none' }
-  | { kind: 'discard_unused' }
   | { kind: 'prompt' }
   | { kind: 'apply'; action: AppliedSessionLeaveAction }
 
@@ -34,26 +31,10 @@ export function isLiveAttachedPty(session: LeaveSessionSnapshot | null | undefin
   return session.status === 'running' || session.status === 'waiting_input'
 }
 
-export function isUnusedEmptyDiscard(
-  session: LeaveSessionSnapshot | null | undefined,
-  wasUsed: boolean,
-): boolean {
-  if (!isLiveAttachedPty(session) || session == null) return false
-  return (
-    (session.promptCount ?? 0) === 0 &&
-    !session.resumedFromConversationId &&
-    !wasUsed
-  )
-}
-
 export function decideSessionLeave(opts: {
   session: LeaveSessionSnapshot | null | undefined
-  wasUsed: boolean
   setting: unknown
 }): SessionLeaveDecision {
-  if (isUnusedEmptyDiscard(opts.session, opts.wasUsed)) {
-    return { kind: 'discard_unused' }
-  }
   if (!isLiveAttachedPty(opts.session)) {
     return { kind: 'none' }
   }

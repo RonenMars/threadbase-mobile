@@ -5,7 +5,6 @@ import {
   decideSessionLeave,
   isLiveAttachedPty,
   isSessionLeaveInFlight,
-  isUnusedEmptyDiscard,
   markSessionLeaveInFlight,
 } from '@/lib/sessionLeavePolicy'
 
@@ -33,36 +32,31 @@ describe('sessionLeavePolicy', () => {
     expect(isLiveAttachedPty(null)).toBe(false)
   })
 
-  it('keeps the unused-empty discard shape', () => {
-    const unused = { ...live, promptCount: 0 }
-    expect(isUnusedEmptyDiscard(unused, false)).toBe(true)
-    expect(isUnusedEmptyDiscard(unused, true)).toBe(false)
-    expect(isUnusedEmptyDiscard({ ...unused, resumedFromConversationId: 'c1' }, false)).toBe(false)
-    expect(isUnusedEmptyDiscard({ ...unused, promptCount: 1 }, false)).toBe(false)
-  })
-
-  it('decides prompt / apply / none / discard', () => {
-    expect(decideSessionLeave({ session: live, wasUsed: true, setting: 'ask' })).toEqual({
+  it('prompts on empty live sessions the same as prompted ones', () => {
+    expect(decideSessionLeave({ session: { ...live, promptCount: 0 }, setting: 'ask' })).toEqual({
       kind: 'prompt',
     })
-    expect(decideSessionLeave({ session: live, wasUsed: true, setting: 'kill' })).toEqual({
+  })
+
+  it('decides prompt / apply / none', () => {
+    expect(decideSessionLeave({ session: live, setting: 'ask' })).toEqual({
+      kind: 'prompt',
+    })
+    expect(decideSessionLeave({ session: live, setting: 'kill' })).toEqual({
       kind: 'apply',
       action: 'kill',
     })
-    expect(decideSessionLeave({ session: live, wasUsed: true, setting: 'leave' })).toEqual({
+    expect(decideSessionLeave({ session: live, setting: 'leave' })).toEqual({
       kind: 'apply',
       action: 'leave',
     })
-    expect(decideSessionLeave({ session: live, wasUsed: true, setting: 'kill_on_idle' })).toEqual({
+    expect(decideSessionLeave({ session: live, setting: 'kill_on_idle' })).toEqual({
       kind: 'apply',
       action: 'kill_on_idle',
     })
     expect(
-      decideSessionLeave({ session: { ...live, status: 'idle' }, wasUsed: true, setting: 'ask' }),
+      decideSessionLeave({ session: { ...live, status: 'idle' }, setting: 'ask' }),
     ).toEqual({ kind: 'none' })
-    expect(
-      decideSessionLeave({ session: { ...live, promptCount: 0 }, wasUsed: false, setting: 'ask' }),
-    ).toEqual({ kind: 'discard_unused' })
   })
 
   it('maps kill / leave / hold, and hold without WS falls back to leave', () => {
