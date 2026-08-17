@@ -49,8 +49,8 @@ describe('LeaveSessionModal', () => {
       <LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />,
     )
     await fireEvent.press(screen.getByTestId('leave-session-option-kill'))
-    rerender(<LeaveSessionModal visible={false} onCancel={jest.fn()} onConfirm={onConfirm} />)
-    rerender(<LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />)
+    await rerender(<LeaveSessionModal visible={false} onCancel={jest.fn()} onConfirm={onConfirm} />)
+    await rerender(<LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />)
     await fireEvent.press(screen.getByTestId('leave-session-confirm'))
     expect(onConfirm).toHaveBeenCalledWith('leave', false)
   })
