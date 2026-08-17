@@ -32,6 +32,25 @@ interface Props {
 
 type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 
+/**
+ * The failures that rescanning the same QR cannot fix.
+ *
+ * `e2ee-version` is the one that matters: offering "Try again" beside it invites
+ * the user to burn attempts on an outcome that cannot change, and the deliberate
+ * fallback it wants — a QR without `spk`, or the manual API-key path — is
+ * somewhere else entirely. None of these three ever offers plaintext instead;
+ * a "connect anyway" affordance is the downgrade wearing a consent dialog.
+ */
+const NON_RETRYABLE_KINDS: ReadonlySet<PairExchangeError['kind']> = new Set([
+  'e2ee-version',
+  'e2ee-refused',
+  'e2ee-web-unsupported',
+])
+
+function isRetryable(err: unknown): boolean {
+  return !(err instanceof PairExchangeError) || !NON_RETRYABLE_KINDS.has(err.kind)
+}
+
 function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
   if (err instanceof PairUriError) {
     return t(`scanner.errors.uri.${err.code}`)
@@ -52,6 +71,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
+  const [canRetry, setCanRetry] = useState(true)
   const [scanEnabled, setScanEnabled] = useState(true)
   const handledRef = useRef(false)
 
@@ -60,6 +80,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
     setScanEnabled(true)
     setPhase('scanning')
     setError(null)
+    setCanRetry(true)
   }, [])
 
   const handleClose = useCallback(() => {
@@ -90,6 +111,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
         onClose()
       } catch (err) {
         setError(resolveErrorMessage(err, t))
+        setCanRetry(isRetryable(err))
         setPhase('error')
       }
     },
@@ -151,9 +173,11 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <TouchableOpacity testID="pair-scanner-try-again" style={styles.primaryBtn} onPress={reset}>
-          <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
-        </TouchableOpacity>
+        {canRetry && (
+          <TouchableOpacity testID="pair-scanner-try-again" style={styles.primaryBtn} onPress={reset}>
+            <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           testID="pair-scanner-support"
           onPress={() => {
