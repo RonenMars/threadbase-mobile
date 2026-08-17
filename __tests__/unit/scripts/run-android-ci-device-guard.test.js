@@ -24,7 +24,7 @@ const SCRIPT = path.resolve(__dirname, '../../../e2e/run-android-ci.sh');
  * Runs the script with a stubbed `adb` in a throwaway cwd, so the artifacts it
  * creates and the failure trap it fires land in the temp dir, not the repo.
  */
-function runWithStubbedAdb(adbBody, env = {}, extraStubs = {}) {
+function runWithStubbedAdb(adbBody, env = {}, extraStubs = {}, prepare) {
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'device-guard-')));
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin);
@@ -32,6 +32,7 @@ function runWithStubbedAdb(adbBody, env = {}, extraStubs = {}) {
   for (const [name, body] of Object.entries(extraStubs)) {
     fs.writeFileSync(path.join(bin, name), `#!/bin/bash\n${body}\n`, { mode: 0o755 });
   }
+  if (typeof prepare === 'function') prepare(dir);
 
   const result = spawnSync('/bin/bash', [SCRIPT], {
     cwd: dir,
@@ -96,5 +97,31 @@ describe('run-android-ci.sh device wait', () => {
     const postWaitAt = src.indexOf('offline after APK install');
     expect(installAt).toBeGreaterThan(-1);
     expect(postWaitAt).toBeGreaterThan(installAt);
+  });
+
+  it('skips gradle when a Release APK is already present', () => {
+    const result = runWithStubbedAdb(
+      'if [ "$1" = "shell" ] && [ "$2" = "getprop" ]; then echo 1; fi\nexit 0',
+      { E2E_DEVICE_WAIT_SECONDS: '30', FLOWS: 'e2e/nope.yaml' },
+      {},
+      (dir) => {
+        const apk = path.join(dir, 'android/app/build/outputs/apk/release/app-release.apk');
+        fs.mkdirSync(path.dirname(apk), { recursive: true });
+        fs.writeFileSync(apk, 'fake-apk');
+      },
+    );
+
+    expect(result.stdout).toMatch(/Using existing Release APK/);
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/No such flow: e2e\/nope.yaml/);
+    expect(result.status).toBe(1);
+  });
+
+  it('still compiles when no Release APK is present', () => {
+    const src = fs.readFileSync(SCRIPT, 'utf8');
+    const skipAt = src.indexOf('Using existing Release APK');
+    const gradleAt = src.indexOf(':app:assembleRelease');
+    expect(skipAt).toBeGreaterThan(-1);
+    expect(gradleAt).toBeGreaterThan(skipAt);
+    expect(src).toMatch(/if \[ -f "\$RELEASE_APK" \]/);
   });
 });
