@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Modal,
   Pressable,
@@ -26,6 +26,14 @@ export function LeaveSessionModal({ visible, onCancel, onConfirm }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['terminal', 'common'])
+  const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
+  const [remember, setRemember] = useState(false)
+
+  useEffect(() => {
+    if (!visible) return
+    setChoice(DEFAULT_LEAVE_MODAL_CHOICE)
+    setRemember(false)
+  }, [visible])
 
   return (
     <Modal
@@ -47,95 +55,73 @@ export function LeaveSessionModal({ visible, onCancel, onConfirm }: Props) {
           accessibilityViewIsModal
           testID="leave-session-modal"
         >
-          {visible ? (
-            <LeaveSessionModalBody onCancel={onCancel} onConfirm={onConfirm} />
-          ) : null}
+          <Text style={styles.title}>{t('terminal:leaveSession.title')}</Text>
+          <Text style={styles.body}>{t('terminal:leaveSession.body')}</Text>
+
+          <View accessibilityRole="radiogroup" style={styles.options}>
+            {OPTIONS.map((id) => {
+              const selected = choice === id
+              return (
+                <TouchableOpacity
+                  key={id}
+                  style={styles.option}
+                  onPress={() => setChoice(id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  testID={`leave-session-option-${id}`}
+                >
+                  {selected ? (
+                    <RadioButtonIcon size={22} color={theme.text.accent} weight="fill" />
+                  ) : (
+                    <CircleIcon size={22} color={theme.text.secondary} />
+                  )}
+                  <View style={styles.optionCopy}>
+                    <Text style={styles.optionTitle}>{t(`terminal:leaveSession.${id}`)}</Text>
+                    <Text style={styles.optionHint}>{t(`terminal:leaveSession.${id}Hint`)}</Text>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
+          <TouchableOpacity
+            style={styles.rememberRow}
+            onPress={() => setRemember((v) => !v)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: remember }}
+            testID="leave-session-remember"
+          >
+            {remember ? (
+              <CheckSquareIcon size={22} color={theme.text.accent} weight="fill" />
+            ) : (
+              <SquareIcon size={22} color={theme.text.secondary} />
+            )}
+            <Text style={styles.rememberLabel}>{t('terminal:leaveSession.remember')}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onCancel}
+              testID="leave-session-cancel"
+              accessibilityRole="button"
+              accessibilityLabel={t('common:button.cancel')}
+            >
+              <Text style={styles.cancelLabel}>{t('common:button.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={() => onConfirm(choice, remember)}
+              testID="leave-session-confirm"
+              accessibilityRole="button"
+              accessibilityLabel={t('common:button.confirm')}
+            >
+              <Text style={styles.confirmLabel}>{t('common:button.confirm')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
-  )
-}
-
-function LeaveSessionModalBody({
-  onCancel,
-  onConfirm,
-}: {
-  onCancel: () => void
-  onConfirm: (choice: AppliedSessionLeaveAction, remember: boolean) => void
-}) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const { t } = useTranslation(['terminal', 'common'])
-  const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
-  const [remember, setRemember] = useState(false)
-
-  return (
-    <>
-      <Text style={styles.title}>{t('terminal:leaveSession.title')}</Text>
-      <Text style={styles.body}>{t('terminal:leaveSession.body')}</Text>
-
-      <View accessibilityRole="radiogroup" style={styles.options}>
-        {OPTIONS.map((id) => {
-          const selected = choice === id
-          return (
-            <TouchableOpacity
-              key={id}
-              style={styles.option}
-              onPress={() => setChoice(id)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              testID={`leave-session-option-${id}`}
-            >
-              {selected ? (
-                <RadioButtonIcon size={22} color={theme.text.accent} weight="fill" />
-              ) : (
-                <CircleIcon size={22} color={theme.text.secondary} />
-              )}
-              <View style={styles.optionCopy}>
-                <Text style={styles.optionTitle}>{t(`terminal:leaveSession.${id}`)}</Text>
-                <Text style={styles.optionHint}>{t(`terminal:leaveSession.${id}Hint`)}</Text>
-              </View>
-            </TouchableOpacity>
-          )
-        })}
-      </View>
-
-      <TouchableOpacity
-        style={styles.rememberRow}
-        onPress={() => setRemember((v) => !v)}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: remember }}
-        testID="leave-session-remember"
-      >
-        {remember ? (
-          <CheckSquareIcon size={22} color={theme.text.accent} weight="fill" />
-        ) : (
-          <SquareIcon size={22} color={theme.text.secondary} />
-        )}
-        <Text style={styles.rememberLabel}>{t('terminal:leaveSession.remember')}</Text>
-      </TouchableOpacity>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={onCancel}
-          testID="leave-session-cancel"
-          accessibilityRole="button"
-          accessibilityLabel={t('common:button.cancel')}
-        >
-          <Text style={styles.cancelLabel}>{t('common:button.cancel')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={() => onConfirm(choice, remember)}
-          testID="leave-session-confirm"
-          accessibilityRole="button"
-          accessibilityLabel={t('common:button.confirm')}
-        >
-          <Text style={styles.confirmLabel}>{t('common:button.confirm')}</Text>
-        </TouchableOpacity>
-      </View>
-    </>
   )
 }
 
