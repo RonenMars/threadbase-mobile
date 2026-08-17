@@ -103,7 +103,7 @@ wait_for_booted 60 "Emulator went offline after APK install."
 # 32036081591 died that way, with Get started visible under the ANR.
 # Previously gradle held the emulator idle for ~20 min before Maestro, which
 # let the launcher settle. The suite never uses the launcher.
-for pkg in com.google.android.apps.nexuslauncher com.android.launcher3; do
+for pkg in com.google.android.apps.nexuslauncher com.android.launcher3 com.google.android.apps.wellbeing; do
   adb shell pm disable-user --user 0 "$pkg" >/dev/null 2>&1 || \
     adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
 done
