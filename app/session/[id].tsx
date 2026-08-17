@@ -33,6 +33,7 @@ import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlow
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
+import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useNavLockStore } from '@/stores/navLock'
 import { useLiveInstanceCount } from '@/lib/openTrace'
@@ -45,7 +46,7 @@ import { LiveConversationView } from '@/components/conversation/LiveConversation
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
-import { clearSessionUsed, wasSessionUsed } from '@/lib/sessionUsage'
+import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
 import {
   evictStaleSessionFavorite,
   rehydrateSessionAfterReconnect,
@@ -520,13 +521,28 @@ export default function SessionDetailScreen() {
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
   const { sendKeys, sendInput, stopSession } = useSessionActions(serverId, id ?? '')
-  // The effect below subscribes to `beforeRemove`, and it must depend on the
-  // stable `mutate` rather than on `stopSession`: the mutation object gets a new
-  // identity on every state transition, so depending on it would tear down and
-  // re-register that listener mid-session. Hoisting `mutate` says the same thing
-  // as `stopSession.mutate` in the dependency array, but as a plain identifier
-  // exhaustive-deps can verify instead of warn about.
   const { mutate: stopSessionMutate } = stopSession
+  const { leaveModalVisible, cancelLeave, confirmLeave } = useSessionLeaveGuard({
+    navigation: {
+      addListener: (event, cb) =>
+        navigation.addListener(event, (e) => {
+          cb({
+            preventDefault: () => {
+              e.preventDefault()
+            },
+            data: { action: e.data.action },
+          })
+        }),
+      dispatch: (action) => {
+        navigation.dispatch(action as Parameters<typeof navigation.dispatch>[0])
+      },
+    },
+    serverId,
+    sessionId: id,
+    session,
+    isPending,
+    stopSessionMutate,
+  })
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
   const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
     enabled: Boolean(serverId && reviewConversationId),
@@ -537,44 +553,9 @@ export default function SessionDetailScreen() {
     [reviewMessages],
   )
 
-  // Bug 16: leaving a never-used fresh session should hard-stop the PTY so it
-  // doesn't linger in the hub as an empty idle entry. Fire-and-forget — don't
-  // block the back gesture. Skips resumes and sessions the user already typed in.
-  useEffect(() => {
-    if (isPending || !id) return
-    const unsub = navigation.addListener('beforeRemove', () => {
-      const unusedFresh =
-        session != null &&
-        session.ptyAttached === true &&
-        (session.status === 'running' || session.status === 'waiting_input') &&
-        session.promptCount === 0 &&
-        !session.resumedFromConversationId &&
-        !wasSessionUsed(id)
-      if (!unusedFresh) return
-      clientLog.info('session', 'discard unused empty session on back', { sessionId: id, serverId })
-      clearSessionUsed(id)
-      stopSessionMutate(undefined, {
-        onError: (err) => {
-          clientLog.info('session', 'discard stop failed', {
-            sessionId: id,
-            err: err instanceof Error ? err.message : String(err),
-          })
-        },
-      })
-    })
-    return unsub
-  }, [
-    navigation,
-    isPending,
-    id,
-    serverId,
-    session,
-    stopSessionMutate,
-  ])
+  // Bug 16 unused-empty discard plus the leave-session policy both live in
+  // useSessionLeaveGuard (beforeRemove). Do not add a second listener here.
 
-  // Mirrors the `isLive` check computed later (post early-returns) — needed
-  // here too since useTerminalStream must be called unconditionally, before
-  // this component's early returns.
   const isLiveForStream =
     session?.ptyAttached === true &&
     (session?.status === 'waiting_input' || session?.status === 'running') &&
@@ -1091,6 +1072,12 @@ export default function SessionDetailScreen() {
       </View>
 
       {infoModal}
+
+      <LeaveSessionModal
+        visible={leaveModalVisible}
+        onCancel={cancelLeave}
+        onConfirm={confirmLeave}
+      />
 
       <NameSessionModal
         visible={renameSheetVisible}
