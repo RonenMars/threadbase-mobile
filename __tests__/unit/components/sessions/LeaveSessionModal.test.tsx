@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent, screen, act } from '@testing-library/react-native'
+import { render, fireEvent, screen } from '@testing-library/react-native'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
 
 describe('LeaveSessionModal', () => {
@@ -51,7 +51,6 @@ describe('LeaveSessionModal', () => {
     await fireEvent.press(screen.getByTestId('leave-session-option-kill'))
     rerender(<LeaveSessionModal visible={false} onCancel={jest.fn()} onConfirm={onConfirm} />)
     rerender(<LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />)
-    await act(async () => {})
     await fireEvent.press(screen.getByTestId('leave-session-confirm'))
     expect(onConfirm).toHaveBeenCalledWith('leave', false)
   })
