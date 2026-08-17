@@ -21,7 +21,7 @@ import * as Updates from 'expo-updates'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { useServersStore } from '@/stores/servers'
-import { useSettingsStore, type AddServerAction } from '@/stores/settings'
+import { useSettingsStore, type AddServerAction, type SessionLeaveAction } from '@/stores/settings'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
@@ -45,6 +45,24 @@ function addServerActionLabel(action: AddServerAction): string {
     case 'add': return 'Add to displayed'
     case 'replace': return 'Display only new'
     case 'keep': return 'Keep current'
+  }
+}
+
+function sessionLeaveActionLabel(
+  action: SessionLeaveAction,
+  t: (
+    key:
+      | 'session.leaveActionAsk'
+      | 'session.leaveActionKill'
+      | 'session.leaveActionLeave'
+      | 'session.leaveActionKillOnIdle',
+  ) => string,
+): string {
+  switch (action) {
+    case 'ask': return t('session.leaveActionAsk')
+    case 'kill': return t('session.leaveActionKill')
+    case 'leave': return t('session.leaveActionLeave')
+    case 'kill_on_idle': return t('session.leaveActionKillOnIdle')
   }
 }
 
@@ -253,6 +271,8 @@ export default function SettingsScreen() {
     setHistoryMessageDisplay,
     addServerAction,
     setAddServerAction,
+    sessionLeaveAction,
+    setSessionLeaveAction,
     sessionsLayout,
     setSessionsLayout,
     mergeChats,
@@ -285,6 +305,7 @@ export default function SettingsScreen() {
     setGlassThemeVariant,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
+  const [isLeaveActionOpen, setIsLeaveActionOpen] = React.useState(false)
   const [throwOnRender, setThrowOnRender] = useState(false)
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
@@ -659,6 +680,25 @@ await refreshServerInfo(serverId)
         </View>
 
         <SectionHeader title={t('section.session')} />
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill />
+          <TouchableOpacity
+            style={s.row}
+            onPress={() => setIsLeaveActionOpen((v) => !v)}
+            testID="settings-session-leave-action"
+            accessibilityRole="button"
+            accessibilityLabel={t('session.leaveAction')}
+          >
+            <Text style={s.rowLabel}>{t('session.leaveAction')}</Text>
+            <Text style={s.rowValue}>{sessionLeaveActionLabel(sessionLeaveAction, t)}</Text>
+          </TouchableOpacity>
+          {isLeaveActionOpen ? (
+            <View style={s.accordionBody}>
+              <SessionLeaveActionList value={sessionLeaveAction} onChange={setSessionLeaveAction} />
+              <Text style={s.rowNote}>{t('session.leaveActionNote')}</Text>
+            </View>
+          ) : null}
+        </View>
         <SettingsRow
           label={t('session.chatView')}
           value={sessionView === 'chat'}
@@ -975,6 +1015,40 @@ await refreshServerInfo(serverId)
   )
 }
 
+function SessionLeaveActionList({
+  value,
+  onChange,
+}: {
+  value: SessionLeaveAction
+  onChange: (v: SessionLeaveAction) => void
+}) {
+  const theme = useTheme()
+  const s = useMemo(() => styles(theme), [theme])
+  const { t } = useTranslation('settings')
+  const options: SessionLeaveAction[] = ['ask', 'kill', 'leave', 'kill_on_idle']
+  return (
+    <View accessibilityRole="radiogroup">
+      {options.map((id) => {
+        const selected = value === id
+        return (
+          <TouchableOpacity
+            key={id}
+            style={s.leaveOptionRow}
+            onPress={() => onChange(id)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            testID={`settings-session-leave-${id}`}
+          >
+            <Text style={[s.leaveOptionLabel, selected && s.leaveOptionLabelActive]}>
+              {sessionLeaveActionLabel(id, t)}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
+    </View>
+  )
+}
+
 function ActionSegment({
   value,
   onChange,
@@ -1097,6 +1171,9 @@ function styles(theme: ReturnType<typeof useTheme>) {
     },
     resetBtn: { minHeight: 44, justifyContent: 'center' },
     resetBtnText: { color: theme.text.accent, fontSize: font.sm, fontWeight: '500' },
+    leaveOptionRow: { minHeight: 44, justifyContent: 'center' },
+    leaveOptionLabel: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
+    leaveOptionLabelActive: { color: theme.text.accent, fontWeight: '700' },
     testBtn: { padding: spacing.md, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
     testBtnText: { color: theme.text.accent, fontSize: font.base },
     segmentedControl: {

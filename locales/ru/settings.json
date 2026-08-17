@@ -19,7 +19,13 @@
   "session": {
     "chatView": "Вид чата",
     "chatViewNote": "Показывать активные сессии в виде чат-пузырей вместо вывода терминала RAW. Бета — может работать нестабильно.",
-    "betaBadge": "Бета"
+    "betaBadge": "Бета",
+    "leaveAction": "Действие при выходе из сессии",
+    "leaveActionAsk": "Всегда спрашивать",
+    "leaveActionKill": "Остановить",
+    "leaveActionLeave": "Оставить",
+    "leaveActionKillOnIdle": "Остановить в простое",
+    "leaveActionNote": "Срабатывает при уходе с экрана живой сессии. Сворачивание приложения не меняется."
   },
   "permissions": {
     "camera": "Камера",

@@ -194,3 +194,15 @@ describe('Settings – remove server flow', () => {
     expect(mockReplace).not.toHaveBeenCalled()
   })
 })
+
+describe('Settings – session leave action', () => {
+  it('shows Action on session leave and can restore Always ask', async () => {
+    const { getByText, getByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(getByText('Action on session leave')).toBeTruthy()
+    await fireEvent.press(getByTestId('settings-session-leave-action'))
+    await fireEvent.press(getByTestId('settings-session-leave-kill'))
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill')
+    await fireEvent.press(getByTestId('settings-session-leave-ask'))
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+  })
+})
