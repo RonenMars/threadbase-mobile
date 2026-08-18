@@ -122,6 +122,12 @@ describe('PairDeepLinkScreen', () => {
 
     expect(parsePairUri).toHaveBeenCalled()
     expect(parsePairUri.mock.results[0].value).toMatchObject({ spk, v: 1 })
+    expect(exchangeToken).toHaveBeenCalledWith({
+      url: 'https://example.test',
+      token: 'pt_abc',
+      deviceName: 'Test Phone',
+      serverPublicKey: spk,
+    })
   })
 
   // An older streamer sends no spk, and that must stay an ordinary pairing.
@@ -263,6 +269,44 @@ describe('PairDeepLinkScreen', () => {
       ),
     ).toBeTruthy()
     expect(queryByText(/Server returned 500/)).toBeNull()
+  })
+
+  it('refuses an empty server key instead of pairing in plaintext', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk: '' })
+
+    const { findByText, queryByTestId } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText(
+        'The server key in this pairing code is damaged, so this pairing cannot be encrypted. Generate a fresh QR on your server.',
+      ),
+    ).toBeTruthy()
+    expect(exchangeToken).not.toHaveBeenCalled()
+    expect(queryByTestId('pair-deep-link-try-again')).toBeNull()
+  })
+
+  it.each<[pairExchange.PairExchangeError['kind'], string]>([
+    [
+      'e2ee-version',
+      'This server encrypts pairing in a version this app does not speak. Update the app and the streamer to matching versions.',
+    ],
+    [
+      'e2ee-refused',
+      'This server offered an encrypted pairing and then did not finish it. Generate a fresh pairing code on your server and scan it again.',
+    ],
+    [
+      'e2ee-web-unsupported',
+      'Encrypted pairing needs the Threadbase app for iOS or Android. A browser cannot store the key that identifies this device.',
+    ],
+  ])('shows %s without offering to retry the same link', async (kind, message) => {
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk: 'B'.repeat(43) })
+    exchangeToken.mockRejectedValueOnce(new pairExchange.PairExchangeError(kind, 'failed'))
+
+    const { findByText, queryByTestId } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(await findByText(message)).toBeTruthy()
+    expect(queryByTestId('pair-deep-link-try-again')).toBeNull()
+    expect(queryByTestId('pair-deep-link-support')).toBeTruthy()
   })
 
   it('falls back to the generic translated message for an unrecognised error shape', async () => {

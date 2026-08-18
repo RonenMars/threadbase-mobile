@@ -140,6 +140,24 @@ export class PairExchangeError extends Error {
   }
 }
 
+/**
+ * Failures where retrying this same pairing code cannot change the outcome.
+ *
+ * Scanner "Try again" goes back to the camera; deep-link "Try again" retries
+ * the same URI. Neither helps for these three, and offering the button invites
+ * burning attempts (or patience) on a result that cannot move. The deliberate
+ * fallback — a QR without `spk`, or the manual API-key path — is somewhere else.
+ */
+const NON_RETRYABLE_EXCHANGE_KINDS: ReadonlySet<PairExchangeError['kind']> = new Set([
+  'e2ee-version',
+  'e2ee-refused',
+  'e2ee-web-unsupported',
+])
+
+export function isRetryablePairFailure(err: PairExchangeError): boolean {
+  return !NON_RETRYABLE_EXCHANGE_KINDS.has(err.kind)
+}
+
 /** `{ error, code }` refusals from the streamer's `handlePairExchange`, by code. */
 const E2EE_REFUSAL_KINDS: Record<string, PairExchangeError['kind']> = {
   E2EE_HANDSHAKE_FAILED: 'e2ee-handshake',
@@ -326,13 +344,13 @@ export async function exchangeToken({
     throw new PairExchangeError('rate-limited', 'Too many attempts; try again in a minute')
   }
   if (res.status === 401) {
-    const body = (await safeJson(res)) as { error?: string } | null
+    const body = await safeJson(res)
     throw new PairExchangeError('token', body?.error ?? 'Pair token rejected')
   }
   // The streamer refuses a bad `e2ee` field with 400 and a code, and spends no
   // token doing it. Anything else with a 400 keeps today's message.
   if (res.status === 400) {
-    const body = (await safeJson(res)) as { error?: string; code?: string } | null
+    const body = await safeJson(res)
     const refusal = body?.code ? E2EE_REFUSAL_KINDS[body.code] : undefined
     if (refusal) {
       throw new PairExchangeError(refusal, body?.error ?? 'Server refused the encrypted pairing')
@@ -343,7 +361,7 @@ export async function exchangeToken({
     throw new PairExchangeError('server', `Server returned ${res.status}`)
   }
 
-  const body = (await safeJson(res)) as ExchangeResponseBody | null
+  const body = await safeJson(res)
 
   // ── The E2EE path reads nothing from the outer envelope ────────────────────
   //
@@ -441,7 +459,9 @@ interface ExchangeResponseBody {
   machineName?: string | null
   deviceId?: string
   deviceToken?: string
-  capabilities?: unknown
+  capabilities?: string[]
+  error?: string
+  code?: string
   e2ee?: { v?: number; noise?: string }
 }
 
@@ -463,7 +483,7 @@ interface PairHandshakeReplyWire {
   v?: number
   deviceId?: string
   deviceToken?: string
-  capabilities?: unknown
+  capabilities?: string[]
   publicUrl?: string | null
   machineName?: string | null
   serverVersion?: string
@@ -521,12 +541,16 @@ function readPairHandshakeReply(
     throw new PairExchangeError('e2ee-handshake', 'Could not authenticate the handshake reply')
   }
 
-  let wire: PairHandshakeReplyWire
+  let parsed: PairHandshakeReplyWire
   try {
-    wire = JSON.parse(naclUtil.encodeUTF8(payload)) as PairHandshakeReplyWire
+    parsed = JSON.parse(naclUtil.encodeUTF8(payload)) as PairHandshakeReplyWire
   } catch {
     throw new PairExchangeError('e2ee-malformed', 'Server sent an unreadable handshake payload')
   }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new PairExchangeError('e2ee-malformed', 'Server sent an unreadable handshake payload')
+  }
+  const wire = parsed
 
   if (wire.v !== E2EE_CLIENT_VERSION) {
     throw new PairExchangeError(
@@ -585,9 +609,11 @@ function readPairHandshakeReply(
   }
 }
 
-async function safeJson(res: Response): Promise<unknown> {
+async function safeJson(res: Response): Promise<ExchangeResponseBody | null> {
   try {
-    return await res.json()
+    const parsed: ExchangeResponseBody = await res.json()
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    return parsed
   } catch {
     return null
   }

@@ -16,6 +16,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
 import {
   exchangeToken,
+  isRetryablePairFailure,
   parsePairUri,
   PairExchangeError,
   PairUriError,
@@ -32,26 +33,7 @@ interface Props {
 
 type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 
-/**
- * The failures that rescanning the same QR cannot fix.
- *
- * `e2ee-version` is the one that matters: offering "Try again" beside it invites
- * the user to burn attempts on an outcome that cannot change, and the deliberate
- * fallback it wants — a QR without `spk`, or the manual API-key path — is
- * somewhere else entirely. None of these three ever offers plaintext instead;
- * a "connect anyway" affordance is the downgrade wearing a consent dialog.
- */
-const NON_RETRYABLE_KINDS: ReadonlySet<PairExchangeError['kind']> = new Set([
-  'e2ee-version',
-  'e2ee-refused',
-  'e2ee-web-unsupported',
-])
-
-function isRetryable(err: unknown): boolean {
-  return !(err instanceof PairExchangeError) || !NON_RETRYABLE_KINDS.has(err.kind)
-}
-
-function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
+function resolveErrorMessage(err: Error, t: TFunction<'pair'>): string {
   if (err instanceof PairUriError) {
     return t(`scanner.errors.uri.${err.code}`)
   }
@@ -110,8 +92,9 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
         onSuccess(result)
         onClose()
       } catch (err) {
-        setError(resolveErrorMessage(err, t))
-        setCanRetry(isRetryable(err))
+        const failure = err instanceof Error ? err : new Error('Pairing failed')
+        setError(resolveErrorMessage(failure, t))
+        setCanRetry(!(failure instanceof PairExchangeError) || isRetryablePairFailure(failure))
         setPhase('error')
       }
     },
