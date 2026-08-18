@@ -1,9 +1,10 @@
-import React, { useRef, useCallback, memo, useMemo, useState } from 'react'
+import React, { useRef, useCallback, useEffect, memo, useMemo, useState } from 'react'
 import {
   Text,
   View,
   TouchableOpacity,
   StyleSheet,
+  type LayoutChangeEvent,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native'
@@ -101,6 +102,12 @@ interface Props {
   onViewResumedConversation?: () => void
   /** Same destination as view, but opens in-chat search with the keyboard up. */
   onSearchResumedConversation?: () => void
+  /**
+   * Composer is locked while the PTY is still waking. A true→false edge is the
+   * resume moment when replay/prompt lines have often already landed on a list
+   * that measured empty — kick a re-anchor so they paint without a manual drag.
+   */
+  disabled?: boolean
 }
 
 export function TerminalOutput({
@@ -114,6 +121,7 @@ export function TerminalOutput({
   onDismissQuestion,
   onViewResumedConversation,
   onSearchResumedConversation,
+  disabled = false,
 }: Props) {
   const { t } = useTranslation('common')
   const { t: tTerminal } = useTranslation('terminal')
@@ -135,6 +143,22 @@ export function TerminalOutput({
   showJumpButtonVal.value = showJumpButton
   showTopButtonVal.value = showTopButton
 
+  // FlashList v2 draws items only after the first measure cycle. A resumed
+  // session mounts the list empty (fresh PTY), then dumps replay / the prompt
+  // around the same frame the composer unlocks — often after the list already
+  // measured at 0 or the wrong height. mVCP will not re-bind cells until a
+  // scroll, which is why the tail stays blank until the user drags. Kick
+  // scrollToEnd after first paint, first content, viewport resize, and
+  // composer unlock while the user is still following the bottom.
+  const followingRef = useRef(true)
+  const hadLinesRef = useRef(false)
+  const viewportHeightRef = useRef(0)
+  const prevDisabledRef = useRef(disabled)
+
+  const stickToBottom = useCallback(() => {
+    listRef.current?.scrollToEnd({ animated: false })
+  }, [])
+
   const bottomBtnStyle = useAnimatedStyle(() => ({
     opacity: withTiming(showJumpButtonVal.value, { duration: 200 }),
     pointerEvents: showJumpButtonVal.value > 0 ? 'auto' : 'none',
@@ -151,15 +175,58 @@ export function TerminalOutput({
     prevScrollYRef.current = y
     const distanceFromBottom = contentSize.height - y - layoutMeasurement.height
     const atBottom = distanceFromBottom < 50
+    followingRef.current = atBottom
     setShowJumpButton(atBottom ? 0 : 1)
     setShowTopButton(scrollingUp && y > 100 ? 1 : 0)
   }, [])
+
+  const handleContentSizeChange = useCallback(() => {
+    const hasLines = collapsedLines.length > 0
+    const firstContent = hasLines && !hadLinesRef.current
+    hadLinesRef.current = hasLines
+    if (firstContent) stickToBottom()
+  }, [collapsedLines.length, stickToBottom])
+
+  const handleContainerLayout = useCallback((e: LayoutChangeEvent) => {
+    const height = e.nativeEvent.layout.height
+    const prevHeight = viewportHeightRef.current
+    viewportHeightRef.current = height
+    if (
+      prevHeight > 0 &&
+      Math.abs(height - prevHeight) > 2 &&
+      followingRef.current &&
+      collapsedLines.length > 0
+    ) {
+      stickToBottom()
+    }
+  }, [collapsedLines.length, stickToBottom])
+
+  useEffect(() => {
+    if (collapsedLines.length === 0) {
+      hadLinesRef.current = false
+      followingRef.current = true
+    }
+  }, [collapsedLines.length])
+
+  useEffect(() => {
+    const justUnlocked = prevDisabledRef.current && !disabled
+    prevDisabledRef.current = disabled
+    if (!justUnlocked || collapsedLines.length === 0 || !followingRef.current) return
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) stickToBottom()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [disabled, collapsedLines.length, stickToBottom])
 
   const scrollToBottom = useCallback((animated: boolean) => {
     listRef.current?.scrollToEnd({ animated })
   }, [])
 
   const jumpToBottom = useCallback(() => {
+    followingRef.current = true
     scrollToBottom(true)
     setShowJumpButton(0)
   }, [scrollToBottom])
@@ -265,14 +332,19 @@ export function TerminalOutput({
   }, [onSearchResumedConversation, onViewResumedConversation, tTerminal])
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={handleContainerLayout}>
       <FlashList
         ref={listRef}
         data={collapsedLines}
+        // Remount once the first PTY rows exist so startRenderingFromBottom
+        // measures against real content, not the empty waking list.
+        key={collapsedLines.length === 0 ? 'empty' : 'ready'}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         ListHeaderComponent={listHeader}
         onScroll={handleScroll}
+        onLoad={stickToBottom}
+        onContentSizeChange={handleContentSizeChange}
         scrollEventThrottle={100}
         maintainVisibleContentPosition={{
           startRenderingFromBottom: true,
