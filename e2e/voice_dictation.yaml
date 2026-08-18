@@ -18,14 +18,10 @@ appId: com.ronenmars.threadbase
     id: "hub-screen"
 
 # Deep-link into a PTY session (ptyAttached: true in fixtures/sessions.json)
-- openLink: "threadbase:///session/session-abc123"
-
-# iOS shows a "Open in Threadbase?" system confirmation for incoming deeplinks.
 - runFlow:
-    when:
-      visible: "Open"
-    commands:
-      - tapOn: "Open"
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-abc123"
 
 # Session detail screen is mounted
 - extendedWaitUntil:
