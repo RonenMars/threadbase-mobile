@@ -192,6 +192,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           firstMessage={item.firstMessage}
           lastMessage={item.lastMessage}
           preview={item.preview}
+          matches={item.matches}
           serverLabel={item.serverLabel}
           serverColor={serverColor}
           activeServerCount={activeServerCount}

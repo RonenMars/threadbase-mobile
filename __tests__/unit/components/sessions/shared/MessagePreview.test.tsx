@@ -20,6 +20,21 @@ function rendered(element: React.ReactElement): string {
   return collectText(tree!.toJSON() as unknown as Json)
 }
 
+/**
+ * Text of the emphasised spans only. Highlighted parts are nested <Text> nodes
+ * inside the outer preview <Text>; plain parts are bare strings.
+ */
+function highlighted(element: React.ReactElement): string[] {
+  let tree: renderer.ReactTestRenderer | null = null
+  act(() => {
+    tree = renderer.create(element)
+  })
+  const root = tree!.toJSON() as { children?: unknown[] } | null
+  return (root?.children ?? [])
+    .filter((c): c is { children?: Json[] } => typeof c === 'object' && c != null)
+    .map((c) => collectText(c as Json))
+}
+
 describe('MessagePreview', () => {
   it('renders firstMessage when mode is "first"', () => {
     const out = rendered(
@@ -115,5 +130,118 @@ describe('MessagePreview', () => {
         <MessagePreview firstMessage={{ text: 'fix the Metro bundler crash' }} highlight="metro" />,
       ),
     ).toBe('fix the Metro bundler crash')
+  })
+
+  describe('search matches', () => {
+    it('renders the content snippet in place of first/last/preview', () => {
+      const out = rendered(
+        <MessagePreview
+          lastMessage={{ text: 'generic tail message' }}
+          preview="server summary"
+          matches={[{ field: 'content', snippet: 'reconnect timeout was not cleared', highlights: [{ start: 10, end: 17 }] }]}
+        />,
+      )
+      expect(out).toBe('reconnect timeout was not cleared')
+    })
+
+    it('emphasises the given ranges, not the query length', () => {
+      // FTS ranges follow token boundaries: searching "timeout" hits "timeoutMs".
+      const parts = highlighted(
+        <MessagePreview
+          highlight="timeout"
+          matches={[{ field: 'content', snippet: 'cleared the timeoutMs handle', highlights: [{ start: 12, end: 21 }] }]}
+        />,
+      )
+      expect(parts).toEqual(['timeoutMs'])
+    })
+
+    it('renders every range in one snippet', () => {
+      const parts = highlighted(
+        <MessagePreview
+          matches={[{
+            field: 'content',
+            snippet: '…socket close then socket reopen…',
+            highlights: [{ start: 1, end: 7 }, { start: 19, end: 25 }],
+          }]}
+        />,
+      )
+      expect(parts).toEqual(['socket', 'socket'])
+    })
+
+    it('renders a metadata hit plain when highlights are absent', () => {
+      const el = (
+        <MessagePreview matches={[{ field: 'gitBranch', snippet: 'feat/reconnect-timeout' }]} />
+      )
+      expect(rendered(el)).toBe('feat/reconnect-timeout')
+      expect(highlighted(el)).toEqual([])
+    })
+
+    it('prefers the content match over a metadata match listed first', () => {
+      const out = rendered(
+        <MessagePreview
+          matches={[
+            { field: 'projectName', snippet: 'tb-mobile' },
+            { field: 'content', snippet: 'the body hit', highlights: [{ start: 4, end: 8 }] },
+          ]}
+        />,
+      )
+      expect(out).toBe('the body hit')
+    })
+
+    it('collapses newlines inside a snippet without shifting offsets', () => {
+      const el = (
+        <MessagePreview
+          matches={[{ field: 'content', snippet: 'first line\n\n  socket   closed', highlights: [{ start: 14, end: 20 }] }]}
+        />
+      )
+      expect(rendered(el)).toBe('first line socket closed')
+      expect(highlighted(el)).toEqual(['socket'])
+    })
+
+    it('drops out-of-range, inverted and overlapping ranges but keeps the snippet', () => {
+      const el = (
+        <MessagePreview
+          matches={[{
+            field: 'content',
+            snippet: 'socket closed',
+            highlights: [
+              { start: 0, end: 6 },
+              { start: 3, end: 9 },
+              { start: 99, end: 120 },
+              { start: 8, end: 2 },
+            ],
+          }]}
+        />
+      )
+      expect(rendered(el)).toBe('socket closed')
+      expect(highlighted(el)).toEqual(['socket'])
+    })
+
+    it('clamps a range that runs past the end of the snippet', () => {
+      const parts = highlighted(
+        <MessagePreview matches={[{ field: 'content', snippet: 'socket', highlights: [{ start: 0, end: 99 }] }]} />,
+      )
+      expect(parts).toEqual(['socket'])
+    })
+
+    it('falls back to the normal preview when no match is usable', () => {
+      const out = rendered(
+        <MessagePreview
+          preview="server summary"
+          matches={[{ field: 'content', snippet: '   ' }]}
+        />,
+      )
+      expect(out).toBe('server summary')
+    })
+
+    it('mode "none" suppresses the snippet too', () => {
+      let r: renderer.ReactTestRenderer | null = null
+      act(() => {
+        r = renderer.create(
+          <MessagePreview mode="none" matches={[{ field: 'content', snippet: 'body hit' }]} />,
+        )
+      })
+      expect(r!.toJSON()).toBeNull()
+    })
   })
 })
