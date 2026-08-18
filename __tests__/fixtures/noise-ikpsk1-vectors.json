@@ -1,5 +1,6 @@
 {
   "protocolName": "Noise_IKpsk1_25519_ChaChaPoly_SHA256",
+  "fingerprintOfServerStaticPublic": "3cfe 00ad 6d01 6dd3 782c 8628 4b1d a1d2",
   "prologueUtf8": "threadbase-e2ee/1 pair",
   "pairToken": "pt_00112233445566778899aabbccddeeff",
   "psk": "DyYpm8XCb3GoHMjo7gVa9aNMeGa+47pfV1qjO5ZW7Ng=",
