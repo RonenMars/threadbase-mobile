@@ -114,19 +114,28 @@ describe('encryptionPinRefuses', () => {
 /**
  * Reads back what `persistServerList` wrote to SecureStore.
  *
- * The other end — `loadPersistedServers` — cannot be driven from a test at all:
- * its first statement awaits a dynamic `import()` of AsyncStorage, and `import()`
- * throws under this jest configuration regardless of mocks (verified against a
- * bare `await import('@react-native-async-storage/async-storage')`, which fails
- * the same way). That is pre-existing and repo-wide: no test in `__tests__` calls
- * `loadPersistedServers` either. So the write half is asserted here and the read
- * half is not covered.
+ * The matching read is `loadPersistedServers` below. An in-memory round trip
+ * through the store's own state is not that test: it passes whenever the write
+ * and read copies have not yet diverged, which is the failure being guarded
+ * against. The load case wipes the in-memory map first and then exercises the
+ * real load path.
  */
 function persistedPin(): boolean | undefined {
   const raw = mockSecureStore.get('threadbase_servers')
   if (!raw) return undefined
   const payload = JSON.parse(raw) as { list: { id: string; requireEncryption?: boolean }[] }
   return payload.list.find((entry) => entry.id === SERVER_ID)?.requireEncryption
+}
+
+function forgetInMemoryServers() {
+  useServersStore.setState({
+    servers: {},
+    activeServerIds: [],
+    displayedServerIds: [],
+    isLoading: false,
+    hasEverHadServer: false,
+    cacheAlert: {},
+  })
 }
 
 describe('setRequireEncryption', () => {
@@ -155,5 +164,25 @@ describe('setRequireEncryption', () => {
     seedServer()
     useServersStore.getState().setRequireEncryption('srv_nonexistent', true)
     expect(useServersStore.getState().servers[SERVER_ID].requireEncryption).toBeUndefined()
+  })
+})
+
+describe('loadPersistedServers – encryption fields', () => {
+  it('restores the require-encryption pin from the persisted store after memory is wiped', async () => {
+    // A reader that dropped the field on load would look identical to an
+    // unpinned server: the next connection goes out in plaintext, with nothing
+    // pointing back here. Wiping in-memory state first is the point — a pass
+    // that still had the write copy in the zustand map would not catch that.
+    seedServer()
+    useServersStore.getState().setRequireEncryption(SERVER_ID, true)
+    await Promise.resolve()
+    expect(persistedPin()).toBe(true)
+
+    forgetInMemoryServers()
+    expect(useServersStore.getState().servers[SERVER_ID]).toBeUndefined()
+
+    await useServersStore.getState().loadPersistedServers()
+
+    expect(useServersStore.getState().servers[SERVER_ID].requireEncryption).toBe(true)
   })
 })
