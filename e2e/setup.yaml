@@ -28,6 +28,20 @@ appId: com.ronenmars.threadbase
     commands:
       - tapOn: "Close app"
 
+# iOS keeps "Open in Threadbase?" over a relaunch. After a missed Open tap
+# (run 32172109495) every later flow skipped onboarding and died on
+# hub-screen. Cancel — do not Open — so we do not follow the previous
+# flow's deeplink.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          when:
+            visible: "Open in"
+          commands:
+            - tapOn: "Cancel"
+
 # Give the splash time to clear before anything decides which screen this is.
 # `runFlow when:` is a one-shot probe with a short window, and a cold Release
 # start on a CI simulator is slower than that window: on iOS run 31930896875 the

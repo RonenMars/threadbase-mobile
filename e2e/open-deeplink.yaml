@@ -6,8 +6,12 @@
 # host; iOS 26 then leaves Maestro on the hub (run 32060587863, bug6).
 #
 # Requires env DEEPLINK. After openLink, dismiss the iOS "Open in
-# Threadbase?" sheet if it appears. If the hub is still showing, try once
-# more — the first openLink can complete before the sheet is tappable.
+# Threadbase?" sheet if it appears. A single tapOn Open can complete with
+# no UI change (run 32172109495: screenshot d=0.0) while the sheet stays
+# up; Maestro then treats hub-screen as hidden, skips the retry, and the
+# rest of the suite dies on hub-screen. Retry the Open tap while the
+# sheet title is still visible. If the hub is still showing with no
+# sheet, try the link once more.
 appId: com.ronenmars.threadbase
 ---
 - openLink: ${DEEPLINK}
@@ -16,7 +20,21 @@ appId: com.ronenmars.threadbase
     when:
       visible: "Open"
     commands:
-      - tapOn: "Open"
+      - tapOn:
+          text: "Open"
+          retryTapIfNoChange: true
+      - waitForAnimationToEnd
+
+# Sheet tap missed: title still on screen. Tap Open again before using
+# hub visibility, which is false while the alert covers the hub.
+- runFlow:
+    when:
+      visible: "Open in"
+    commands:
+      - tapOn:
+          text: "Open"
+          retryTapIfNoChange: true
+      - waitForAnimationToEnd
 
 - runFlow:
     when:
@@ -29,4 +47,15 @@ appId: com.ronenmars.threadbase
           when:
             visible: "Open"
           commands:
-            - tapOn: "Open"
+            - tapOn:
+                text: "Open"
+                retryTapIfNoChange: true
+            - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Open in"
+          commands:
+            - tapOn:
+                text: "Open"
+                retryTapIfNoChange: true
+            - waitForAnimationToEnd
