@@ -87,7 +87,11 @@ appId: com.ronenmars.threadbase
           id: "onboarding-connect-handshake-cta"
           optional: true
 
-      # iOS may show a "Save Password?" dialog after secureTextEntry input
+      # iOS may show a "Save Password?" dialog after secureTextEntry input.
+      # The sheet is async: on iOS CI run 32110237753 the first probe skipped,
+      # then the sheet covered NOTIFY so the done-cta wait failed and the rest
+      # of the suite cascaded (including 07). Wait for it before Done, then
+      # retry Notify in case the sheet ate the first tap.
       - runFlow:
           when:
             visible: "Not Now"
@@ -112,6 +116,25 @@ appId: com.ronenmars.threadbase
           timeout: 8000
           optional: true
 
+      - tapOn:
+          id: "onboarding-notifications-cta"
+          optional: true
+
+      - extendedWaitUntil:
+          visible: "Not Now"
+          timeout: 8000
+          optional: true
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-notifications-cta"
+          timeout: 8000
+          optional: true
       - tapOn:
           id: "onboarding-notifications-cta"
           optional: true
