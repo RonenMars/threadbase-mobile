@@ -144,7 +144,7 @@ export function useConversationStream(
   const dropStream = useCallback(() => {
     if (!heldRef.current) return
     heldRef.current = false
-    wsManager.releaseSession?.(serverId, sessionId)
+    if (sessionId) wsManager.releaseSession?.(serverId, sessionId)
   }, [serverId, sessionId])
 
   useFocusEffect(
