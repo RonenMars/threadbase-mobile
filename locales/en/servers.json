@@ -92,6 +92,18 @@
     "successToastNoBackup": "Resolved.",
     "selectAtLeastOne": "Select at least one conversation to prune."
   },
+  "hostPressure": {
+    "bannerElevated": "{{server}} is under load ({{count}} agents running)",
+    "bannerCritical": "{{server}} is critically low on resources ({{count}} agents running)",
+    "sheetBody": "{{count}} agents are running on {{server}}",
+    "dismiss": "Dismiss",
+    "reason": {
+      "memory": "Memory pressure",
+      "event_loop": "Event-loop delay",
+      "load": "High system load",
+      "agents": "Too many live agents"
+    }
+  },
   "claudeFlags": {
     "title": "Claude CLI flags",
     "description": "Applied to every session this server starts. Takes effect on the next session.",

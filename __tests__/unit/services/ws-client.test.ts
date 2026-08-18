@@ -159,6 +159,38 @@ describe('WSClient – message handling', () => {
     unsub()
   })
 
+  it('dispatches host_pressure to registered handler', () => {
+    const handler = jest.fn()
+    const unsub = wsClient.on('host_pressure', handler)
+
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    const msg = {
+      type: 'host_pressure',
+      level: 'elevated',
+      reasons: ['memory', 'load'],
+      liveAgents: 4,
+      updatedAt: '2026-08-18T00:00:00.000Z',
+    }
+    mockSocket.onmessage!({ data: JSON.stringify(msg) })
+
+    expect(handler).toHaveBeenCalledWith(msg)
+    unsub()
+  })
+
+  it('dispatches host_pressure_cleared to registered handler', () => {
+    const handler = jest.fn()
+    const unsub = wsClient.on('host_pressure_cleared', handler)
+
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    const msg = { type: 'host_pressure_cleared', updatedAt: '2026-08-18T00:00:00.000Z' }
+    mockSocket.onmessage!({ data: JSON.stringify(msg) })
+
+    expect(handler).toHaveBeenCalledWith(msg)
+    unsub()
+  })
+
   it('silently ignores invalid JSON', () => {
     const handler = jest.fn()
     const unsub = wsClient.on('session_update', handler)

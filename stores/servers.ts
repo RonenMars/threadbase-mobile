@@ -4,7 +4,7 @@ import { create } from 'zustand'
 // on native import(), so the load path was untestable regardless of mocks.
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as SecureStore from '@/services/secure-store'
-import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
+import type { CacheAlert, HostPressureAlert, ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
 import { authedFetch } from '@/services/authed-fetch'
 import type { DeviceCapability } from '@/types/devices'
@@ -71,6 +71,8 @@ interface ServersStore {
   hasEverHadServer: boolean
   /** Per-server pending cache-integrity alert, or null if none. */
   cacheAlert: Record<string, CacheAlert | null>
+  /** Per-server host resource pressure, or null if none. In-memory only. */
+  hostPressure: Record<string, HostPressureAlert | null>
 
   addServer: (
     url: string,
@@ -86,6 +88,8 @@ interface ServersStore {
   setScanProgress: (serverId: string, scanned: number, total: number) => void
   setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
   clearCacheAlert: (serverId: string, fingerprint: string) => void
+  setHostPressure: (serverId: string, pressure: HostPressureAlert | null) => void
+  clearHostPressure: (serverId: string) => void
   refreshServerInfo: (serverId: string) => Promise<void>
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
@@ -203,6 +207,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   scanProgress: {},
   hasEverHadServer: false,
   cacheAlert: {},
+  hostPressure: {},
 
   get serverUrl() {
     const { servers, activeServerIds } = get()
@@ -349,6 +354,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const cacheAlert = connected
         ? state.cacheAlert
         : { ...state.cacheAlert, [serverId]: null }
+      const hostPressure = connected
+        ? state.hostPressure
+        : { ...state.hostPressure, [serverId]: null }
 
       return {
         servers: {
@@ -357,6 +365,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         },
         scanProgress,
         cacheAlert,
+        hostPressure,
       }
     })
   },
@@ -375,6 +384,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       if (!current || current.fingerprint !== fingerprint) return state
       return { cacheAlert: { ...state.cacheAlert, [serverId]: null } }
     }),
+
+  setHostPressure: (serverId: string, pressure: HostPressureAlert | null) =>
+    set((state) => ({ hostPressure: { ...state.hostPressure, [serverId]: pressure } })),
+
+  clearHostPressure: (serverId: string) =>
+    set((state) => ({ hostPressure: { ...state.hostPressure, [serverId]: null } })),
 
   refreshServerInfo: async (serverId: string): Promise<void> => {
     const server = get().servers[serverId]
