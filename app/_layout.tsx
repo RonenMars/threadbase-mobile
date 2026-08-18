@@ -30,7 +30,7 @@ import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
-import type { Session } from '@/types/api'
+import { isHostPressureLevel, parseHostPressureReasons, type Session } from '@/types/api'
 import { authToken } from '@/services/authed-fetch'
 import { registerPushTokenForAll } from '@/services/push'
 import {
@@ -98,6 +98,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const setScanProgress = useServersStore((s) => s.setScanProgress)
   const setCacheAlert = useServersStore((s) => s.setCacheAlert)
   const clearCacheAlert = useServersStore((s) => s.clearCacheAlert)
+  const setHostPressure = useServersStore((s) => s.setHostPressure)
+  const clearHostPressure = useServersStore((s) => s.clearHostPressure)
 
   useEffect(() => {
     hydrateSettings().then(() => {
@@ -233,6 +235,25 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       if (msg.type !== 'cache_alert_resolved') return
       clearCacheAlert(msg.serverId, msg.fingerprint)
     })
+    const unsubHostPressure = wsManager.onAll('host_pressure', (msg) => {
+      if (msg.type !== 'host_pressure') return
+      if (!isHostPressureLevel(msg.level)) return
+      const liveAgents = typeof msg.liveAgents === 'number' && Number.isFinite(msg.liveAgents)
+        ? msg.liveAgents
+        : 0
+      const updatedAt = typeof msg.updatedAt === 'string' ? msg.updatedAt : ''
+      const reasons = Array.isArray(msg.reasons) ? parseHostPressureReasons(msg.reasons) : []
+      setHostPressure(msg.serverId, {
+        level: msg.level,
+        reasons,
+        liveAgents,
+        updatedAt,
+      })
+    })
+    const unsubHostPressureCleared = wsManager.onAll('host_pressure_cleared', (msg) => {
+      if (msg.type !== 'host_pressure_cleared') return
+      clearHostPressure(msg.serverId)
+    })
 
     // Register push tokens for all servers
     registerPushTokenForAll(activeServerIds).catch(() => {})
@@ -246,6 +267,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       unsubScanProgress()
       unsubCacheAlert()
       unsubCacheAlertResolved()
+      unsubHostPressure()
+      unsubHostPressureCleared()
       wsManager.disconnectAll()
     }
     // router from expo-router is a stable singleton; setConnected is a stable

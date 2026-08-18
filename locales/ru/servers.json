@@ -92,6 +92,18 @@
     "successToastNoBackup": "Готово.",
     "selectAtLeastOne": "Выберите хотя бы одну беседу для удаления."
   },
+  "hostPressure": {
+    "bannerElevated": "{{server}} под нагрузкой (запущено агентов: {{count}})",
+    "bannerCritical": "{{server}} критически не хватает ресурсов (запущено агентов: {{count}})",
+    "sheetBody": "На {{server}} запущено агентов: {{count}}",
+    "dismiss": "Закрыть",
+    "reason": {
+      "memory": "Нехватка памяти",
+      "event_loop": "Задержка цикла событий",
+      "load": "Высокая нагрузка системы",
+      "agents": "Слишком много активных агентов"
+    }
+  },
   "claudeFlags": {
     "title": "Флаги Claude CLI",
     "description": "Применяются к каждой сессии этого сервера. Вступают в силу со следующей сессии.",

@@ -92,6 +92,18 @@
     "successToastNoBackup": "تم الحل.",
     "selectAtLeastOne": "حدد محادثة واحدة على الأقل للحذف."
   },
+  "hostPressure": {
+    "bannerElevated": "{{server}} تحت ضغط ({{count}} وكلاء قيد التشغيل)",
+    "bannerCritical": "{{server}} يعاني نقصاً حرجاً في الموارد ({{count}} وكلاء قيد التشغيل)",
+    "sheetBody": "{{count}} وكلاء قيد التشغيل على {{server}}",
+    "dismiss": "إغلاق",
+    "reason": {
+      "memory": "ضغط الذاكرة",
+      "event_loop": "تأخير حلقة الأحداث",
+      "load": "حمل نظام مرتفع",
+      "agents": "عدد كبير من الوكلاء النشطين"
+    }
+  },
   "claudeFlags": {
     "title": "أعلام Claude CLI",
     "description": "تُطبَّق على كل جلسة يبدأها هذا الخادم. تسري من الجلسة التالية.",
