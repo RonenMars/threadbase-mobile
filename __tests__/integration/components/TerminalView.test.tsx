@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 
 // ── native module mocks (must be hoisted) ────────────────────────────────────
@@ -62,12 +62,16 @@ let mockHistoryIsFetchingNextPage = false
 // true size, not merely what the byte-bounded seed has loaded so far.
 let mockHistoryTotalMessages = 0
 const mockHistoryFetchNextPage = jest.fn()
+const mockHistoryFetchNewerPage = jest.fn()
 jest.mock('@/hooks/useConversations', () => ({
   useConversation: () => ({
     data: { messages: mockHistoryMessages },
     fetchNextPage: mockHistoryFetchNextPage,
     hasNextPage: mockHistoryHasNextPage,
     isFetchingNextPage: mockHistoryIsFetchingNextPage,
+    fetchNewerPage: mockHistoryFetchNewerPage,
+    hasNewerPage: false,
+    isFetchingNewerPage: false,
     totalMessages: mockHistoryTotalMessages,
   }),
 }))
@@ -138,12 +142,21 @@ jest.mock('@/components/queue/PlanPreviewSheet', () => ({
   PlanPreviewSheet: () => null,
 }))
 
+const mockSearchTargetQuery = jest.fn()
+jest.mock('@/services/api-client', () => {
+  const actual = jest.requireActual('@/services/api-client')
+  return {
+    ...actual,
+    createApiForServer: () => ({
+      query: (path: string, body: { q: string }) => mockSearchTargetQuery(path, body),
+    }),
+  }
+})
+
 // eslint-disable-next-line import/first
 import { TerminalView } from '@/components/terminal/TerminalView'
 // eslint-disable-next-line import/first
 import { NetworkError, QUESTION_GONE_CODE } from '@/services/api-client'
-// eslint-disable-next-line import/first
-import { useViewPrefsStore } from '@/stores/viewPrefs'
 
 async function renderView(props?: { resumedConversationId?: string; conversationId?: string }) {
   return await render(
@@ -163,7 +176,8 @@ describe('TerminalView', () => {
     mockHistoryIsFetchingNextPage = false
     mockHistoryTotalMessages = 0
     mockHistoryFetchNextPage.mockClear()
-    useViewPrefsStore.setState({ historyFeedCollapsed: null })
+    mockHistoryFetchNewerPage.mockClear()
+    mockSearchTargetQuery.mockReset()
   })
 
   describe('session history feed (seeded from the conversation)', () => {
@@ -175,17 +189,44 @@ describe('TerminalView', () => {
       expect(screen.queryByTestId('session-history-feed')).toBeNull()
     })
 
-    it('renders seeded history messages above the terminal when a conversationId is given', async () => {
+    it('renders the history header above the terminal when a conversationId is given', async () => {
       mockHistoryMessages = [
         { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message one' }], timestamp: '', is_sidechain: false, parent_uuid: null },
         { id: 'm2', uuid: null, role: 'assistant', content: [{ type: 'text', text: 'older message two' }], timestamp: '', is_sidechain: false, parent_uuid: null },
       ]
       await renderView({ conversationId: 'conv-1' })
       expect(screen.getByTestId('session-history-feed')).toBeTruthy()
-      const texts = screen.getAllByTestId('session-history-message').map((n) => n.props.children)
-      expect(texts).toEqual(['older message one', 'older message two'])
+      expect(screen.queryByTestId('session-history-message')).toBeNull()
       // The live terminal tail still renders as its own separate region.
       expect(screen.getAllByTestId('terminal-line-row').length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('gives the expanded history region and list a concrete height', async () => {
+      mockHistoryMessages = [
+        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+      ]
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      expect(screen.getByTestId('session-history-feed')).toHaveStyle({ height: '35%' })
+      expect(screen.getByTestId('session-history-list')).toHaveStyle({ flex: 1 })
+    })
+
+    it('opens from the latest message without autoscrolling back to the tail on prepend', async () => {
+      mockHistoryMessages = [
+        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+      ]
+      mockHistoryHasNextPage = true
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      const list = screen.getByTestId('session-history-list')
+      expect(list.props.maintainVisibleContentPosition).toEqual(
+        expect.objectContaining({ startRenderingFromBottom: true }),
+      )
+      expect(list.props.maintainVisibleContentPosition.autoscrollToBottomThreshold).toBeUndefined()
+      expect(list.props.drawDistance).toBe(2000)
+      expect(mockHistoryFetchNextPage).not.toHaveBeenCalled()
+      fireEvent(list, 'startReached')
+      expect(mockHistoryFetchNextPage).toHaveBeenCalledTimes(1)
     })
 
     it('does not render the history feed when the conversation has no messages yet', async () => {
@@ -201,49 +242,38 @@ describe('TerminalView', () => {
       mockHistoryHasNextPage = true
       mockHistoryIsFetchingNextPage = true
       await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
       expect(screen.getByTestId('history-load-boundary-spinner')).toBeTruthy()
     })
 
-    it('defaults to expanded on first open (no stored preference)', async () => {
-      mockHistoryMessages = [
-        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
-      ]
-      await renderView({ conversationId: 'conv-1' })
-      expect(screen.getByTestId('session-history-message')).toBeTruthy()
-      expect(screen.getByTestId('session-history-toggle').props.accessibilityState).toEqual({ expanded: true })
-    })
-
-    it('collapses on tap, hiding the messages, and persists the choice', async () => {
-      mockHistoryMessages = [
-        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
-      ]
-      await renderView({ conversationId: 'conv-1' })
-      await fireEvent.press(screen.getByTestId('session-history-toggle'))
-      expect(screen.queryByTestId('session-history-message')).toBeNull()
-      expect(useViewPrefsStore.getState().historyFeedCollapsed).toBe(true)
-      // The live terminal tail is unaffected by the history region collapsing.
-      expect(screen.getAllByTestId('terminal-line-row').length).toBeGreaterThanOrEqual(2)
-    })
-
-    it('expands again on a second tap, restoring the messages', async () => {
-      mockHistoryMessages = [
-        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
-      ]
-      await renderView({ conversationId: 'conv-1' })
-      await fireEvent.press(screen.getByTestId('session-history-toggle'))
-      await fireEvent.press(screen.getByTestId('session-history-toggle'))
-      expect(screen.getByTestId('session-history-message')).toBeTruthy()
-      expect(useViewPrefsStore.getState().historyFeedCollapsed).toBe(false)
-    })
-
-    it('honors a previously stored collapsed preference on mount', async () => {
-      useViewPrefsStore.setState({ historyFeedCollapsed: true })
+    it('starts collapsed on every live-session visit', async () => {
       mockHistoryMessages = [
         { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
       ]
       await renderView({ conversationId: 'conv-1' })
       expect(screen.queryByTestId('session-history-message')).toBeNull()
       expect(screen.getByTestId('session-history-toggle').props.accessibilityState).toEqual({ expanded: false })
+    })
+
+    it('expands on tap, showing the messages, without writing a persisted preference', async () => {
+      mockHistoryMessages = [
+        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+      ]
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      expect(screen.getByTestId('session-history-message')).toBeTruthy()
+      // The live terminal tail is unaffected by the history region expanding.
+      expect(screen.getAllByTestId('terminal-line-row').length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('collapses again on a second tap, hiding the messages', async () => {
+      mockHistoryMessages = [
+        { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+      ]
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      expect(screen.queryByTestId('session-history-message')).toBeNull()
     })
 
     it('shows the conversation\'s real total in the header, not just what the byte-bounded seed has loaded', async () => {
@@ -272,6 +302,9 @@ describe('TerminalView', () => {
 
     it('offers a maximize control when expanded, but not while collapsed', async () => {
       await renderView({ conversationId: 'conv-1' })
+      expect(screen.queryByTestId('expand-history-button')).toBeNull()
+
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
       expect(screen.getByTestId('expand-history-button')).toBeTruthy()
 
       await fireEvent.press(screen.getByTestId('session-history-toggle'))
@@ -283,9 +316,12 @@ describe('TerminalView', () => {
       const rowsBefore = screen.getAllByTestId('terminal-line-row').length
       expect(rowsBefore).toBeGreaterThanOrEqual(2)
 
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
       await fireEvent.press(screen.getByTestId('expand-history-button'))
 
       expect(screen.getByTestId('minimize-history-button')).toBeTruthy()
+      expect(screen.getByTestId('session-history-feed')).toHaveStyle({ flex: 1 })
+      expect(screen.getByTestId('session-history-feed')).not.toHaveStyle({ maxHeight: '35%' })
       expect(screen.queryByTestId('expand-history-button')).toBeNull()
       // The collapse toggle is not offered while full — there is nothing to
       // collapse into once the terminal is hidden and history owns the screen.
@@ -300,16 +336,15 @@ describe('TerminalView', () => {
       expect(screen.getByTestId('session-history-message')).toBeTruthy()
     })
 
-    it('minimizing restores the terminal region and returns to the prior (mini) state', async () => {
+    it('minimizing restores the terminal region and returns to mini', async () => {
       await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
       await fireEvent.press(screen.getByTestId('expand-history-button'))
       await fireEvent.press(screen.getByTestId('minimize-history-button'))
 
       expect(screen.getByTestId('terminal-output-region').props.style).toEqual({ flex: 1 })
       expect(screen.getByTestId('expand-history-button')).toBeTruthy()
       expect(screen.getByTestId('session-history-toggle')).toBeTruthy()
-      // Collapse preference is untouched by the full-screen detour.
-      expect(useViewPrefsStore.getState().historyFeedCollapsed).toBeNull()
       expect(screen.getByTestId('session-history-message')).toBeTruthy()
     })
 
@@ -318,16 +353,103 @@ describe('TerminalView', () => {
     // means minimize lands on mini. "Returns to the prior state" therefore has
     // exactly one reachable case; there is no collapsed→full→collapsed path.
     it('lands on mini after expanding out of collapsed to reach full-screen', async () => {
-      useViewPrefsStore.setState({ historyFeedCollapsed: true })
       await renderView({ conversationId: 'conv-1' })
       // Collapsed hides the maximize control (see the test above), so reach
-      // full-screen the only other way it's offered: expand, then maximize.
+      // full-screen the only way it's offered: expand, then maximize.
       await fireEvent.press(screen.getByTestId('session-history-toggle'))
       await fireEvent.press(screen.getByTestId('expand-history-button'))
       await fireEvent.press(screen.getByTestId('minimize-history-button'))
 
-      expect(useViewPrefsStore.getState().historyFeedCollapsed).toBe(false)
       expect(screen.getByTestId('session-history-message')).toBeTruthy()
+    })
+  })
+
+  describe('session history in-feed search', () => {
+    const seedMessage = {
+      id: 'm1',
+      uuid: null,
+      role: 'user' as const,
+      content: [{ type: 'text' as const, text: 'needle in history' }],
+      timestamp: '',
+      is_sidechain: false,
+      parent_uuid: null,
+      messageIndex: 1,
+    }
+
+    beforeEach(() => {
+      mockHistoryMessages = [seedMessage]
+      mockHistoryTotalMessages = 1
+      mockSearchTargetQuery.mockResolvedValue({
+        query: 'needle',
+        message_index: 1,
+        uuid: null,
+        snippet: 'needle in history',
+        match_indexes: [1],
+        total_matches: 1,
+      })
+    })
+
+    it('hides search while collapsed and shows it once the feed is mini', async () => {
+      await renderView({ conversationId: 'conv-1' })
+      expect(screen.queryByTestId('session-history-search-btn')).toBeNull()
+
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      expect(screen.getByTestId('session-history-search-btn')).toBeTruthy()
+      expect(screen.getByTestId('session-history-chevron')).toBeTruthy()
+    })
+
+    it('opening search from mini expands to full-screen and shows the query bar', async () => {
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      await fireEvent.press(screen.getByTestId('session-history-search-btn'))
+
+      expect(screen.getByTestId('session-history-search-input')).toBeTruthy()
+      expect(screen.getByTestId('session-history-feed')).toHaveStyle({ flex: 1 })
+      expect(screen.getByTestId('minimize-history-button')).toBeTruthy()
+      expect(screen.queryByTestId('session-history-toggle')).toBeNull()
+    })
+
+    it('submits a conversation-scoped search-target query, not hub /api/search', async () => {
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      await fireEvent.press(screen.getByTestId('session-history-search-btn'))
+      const input = screen.getByTestId('session-history-search-input')
+      await act(async () => {
+        fireEvent.changeText(input, '  needle  ')
+      })
+      await act(async () => {
+        fireEvent(input, 'submitEditing')
+      })
+
+      await waitFor(() => {
+        expect(mockSearchTargetQuery).toHaveBeenCalledWith(
+          '/api/conversations/conv-1/search-target',
+          { q: 'needle' },
+        )
+      })
+    })
+
+    it('shows match navigation when the resolver returns hits, and clear restores the seed list', async () => {
+      await renderView({ conversationId: 'conv-1' })
+      await fireEvent.press(screen.getByTestId('session-history-toggle'))
+      await fireEvent.press(screen.getByTestId('session-history-search-btn'))
+      const input = screen.getByTestId('session-history-search-input')
+      await act(async () => {
+        fireEvent.changeText(input, 'needle')
+      })
+      await act(async () => {
+        fireEvent(input, 'submitEditing')
+      })
+
+      await waitFor(() => {
+        expect(screen.getByTestId('search-match-nav')).toBeTruthy()
+      })
+      expect(screen.getByTestId('search-match-count')).toHaveTextContent('1 of 1')
+      expect(screen.queryByTestId('session-history-list')).toBeNull()
+
+      await fireEvent.press(screen.getByTestId('search-match-clear'))
+      expect(screen.queryByTestId('search-match-nav')).toBeNull()
+      expect(screen.getByTestId('session-history-list')).toBeTruthy()
     })
   })
 
@@ -350,6 +472,15 @@ describe('TerminalView', () => {
 
   it('does not show the resumed scrollback notice for a fresh session', async () => {
     await renderView()
+    expect(screen.queryByTestId('terminal-resumed-scrollback-notice')).toBeNull()
+  })
+
+  it('does not show the resumed scrollback notice when conversation history is embedded', async () => {
+    mockHistoryMessages = [
+      { id: 'm1', uuid: null, role: 'user', content: [{ type: 'text', text: 'older message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await renderView({ resumedConversationId: 'conv-42', conversationId: 'conv-42' })
+    expect(screen.getByTestId('session-history-feed')).toBeTruthy()
     expect(screen.queryByTestId('terminal-resumed-scrollback-notice')).toBeNull()
   })
 

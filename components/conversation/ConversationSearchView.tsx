@@ -30,6 +30,8 @@ export interface ConversationSearchViewProps {
   activeMatchPos: number
   /** Step the active match; delta wraps. The screen owns re-anchoring. */
   onStep: (delta: 1 | -1, loadedRowIndex: number) => void
+  /** Clears the active search. Conversation detail omits this and writes route params. */
+  onClear?: () => void
   onReady?: () => void
   onStartReached?: () => void
   onEndReached?: () => void
@@ -47,6 +49,7 @@ export function ConversationSearchView({
   anchorIndex,
   activeMatchPos,
   onStep,
+  onClear,
   onReady,
   onStartReached,
   onEndReached,
@@ -211,7 +214,7 @@ export function ConversationSearchView({
             <CaretDown size={18} color={theme.text.primary} weight="bold" />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.setParams({ search: '', anchor_index: '' })}
+            onPress={() => (onClear ? onClear() : router.setParams({ search: '', anchor_index: '' }))}
             hitSlop={8}
             accessibilityLabel={t('search.clearSearch')}
             testID="search-match-clear"

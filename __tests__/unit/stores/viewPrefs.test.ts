@@ -6,7 +6,6 @@ beforeEach(() => {
     collapsedServers: [],
     recentsOpen: true,
     sessionsHeaderCollapsed: null,
-    historyFeedCollapsed: null,
   })
   ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
 })
@@ -46,16 +45,6 @@ describe('ViewPrefsStore – sessions header (shared by tree + classic)', () => 
   })
 })
 
-describe('ViewPrefsStore – session history feed (TerminalView)', () => {
-  it('defaults to null (follow the expanded-by-default fallback) and stores an explicit choice', () => {
-    expect(useViewPrefsStore.getState().historyFeedCollapsed).toBeNull()
-    useViewPrefsStore.getState().setHistoryFeedCollapsed(true)
-    expect(useViewPrefsStore.getState().historyFeedCollapsed).toBe(true)
-    useViewPrefsStore.getState().setHistoryFeedCollapsed(false)
-    expect(useViewPrefsStore.getState().historyFeedCollapsed).toBe(false)
-  })
-})
-
 describe('ViewPrefsStore – hydrate', () => {
   it('merges persisted values', async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(
@@ -63,14 +52,12 @@ describe('ViewPrefsStore – hydrate', () => {
         collapsedServers: ['srv9'],
         recentsOpen: false,
         sessionsHeaderCollapsed: true,
-        historyFeedCollapsed: true,
       }),
     )
     await useViewPrefsStore.getState().hydrate()
     expect(useViewPrefsStore.getState().collapsedServers).toEqual(['srv9'])
     expect(useViewPrefsStore.getState().recentsOpen).toBe(false)
     expect(useViewPrefsStore.getState().sessionsHeaderCollapsed).toBe(true)
-    expect(useViewPrefsStore.getState().historyFeedCollapsed).toBe(true)
   })
 
   it('ignores malformed collapsedServers, keeping defaults', async () => {
