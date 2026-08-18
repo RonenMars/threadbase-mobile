@@ -74,11 +74,17 @@ jest.mock('@/hooks/useSessionName', () => ({
 jest.mock('@/stores/settings', () => ({
   useSettingsStore: () => ({ sessionView: 'chat' }),
 }))
-jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
-  useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
-  useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
-}))
+jest.mock('expo-router', () => {
+  const React = require('react')
+  return {
+    useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
+    useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
+    useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
+    useFocusEffect: (cb) => {
+      React.useEffect(() => cb(), [cb])
+    },
+  }
+})
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
   useQueryClient: () => ({ invalidateQueries: jest.fn() }),
