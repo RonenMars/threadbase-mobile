@@ -5,24 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
-import type { HostPressureReason } from '@/types/api'
 import { GlassFill } from '@/components/ui/GlassFill'
-
-function reasonLabel(
-  t: (key: string) => string,
-  reason: HostPressureReason,
-): string {
-  switch (reason) {
-    case 'memory':
-      return t('hostPressure.reason.memory')
-    case 'event_loop':
-      return t('hostPressure.reason.event_loop')
-    case 'load':
-      return t('hostPressure.reason.load')
-    case 'agents':
-      return t('hostPressure.reason.agents')
-  }
-}
 
 export function HostPressureBanner() {
   const theme = useTheme()
@@ -48,7 +31,18 @@ export function HostPressureBanner() {
     count: pressure.liveAgents,
   })
   const reasonLine = pressure.reasons
-    .map((reason) => reasonLabel(t, reason))
+    .map((reason) => {
+      switch (reason) {
+        case 'memory':
+          return t('hostPressure.reason.memory')
+        case 'event_loop':
+          return t('hostPressure.reason.event_loop')
+        case 'load':
+          return t('hostPressure.reason.load')
+        case 'agents':
+          return t('hostPressure.reason.agents')
+      }
+    })
     .join(', ')
 
   return (
