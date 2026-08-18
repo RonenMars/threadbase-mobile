@@ -1,4 +1,8 @@
 import { create } from 'zustand'
+// Static, not `import()`: Jest 29 (jest-expo / SDK 57) throws
+// "A dynamic import callback was invoked without --experimental-vm-modules"
+// on native import(), so the load path was untestable regardless of mocks.
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as SecureStore from '@/services/secure-store'
 import type { CacheAlert, ServerConfig, ServerInfo } from '@/types/api'
 import { serverIdFromUrl } from '@/types/api'
@@ -87,10 +91,6 @@ interface ServersStore {
   get serverUrl(): string
   /** First server's API key, or empty. */
   get apiKey(): string
-}
-
-async function getAsyncStorage() {
-  return (await import('@react-native-async-storage/async-storage')).default
 }
 
 async function persistServerList(
@@ -410,8 +410,6 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   loadPersistedServers: async () => {
     set({ isLoading: true })
     try {
-      const AsyncStorage = await getAsyncStorage()
-
       // ── Try SecureStore first (survives uninstall on iOS), then migrate from AsyncStorage ──
       const secureRaw = await SecureStore.getItemAsync(ASYNC_KEY_SERVERS)
       const asyncRaw = secureRaw ? null : await AsyncStorage.getItem(ASYNC_KEY_SERVERS)
