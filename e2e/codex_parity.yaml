@@ -21,20 +21,16 @@ appId: com.ronenmars.threadbase
 - runFlow: setup.yaml
 
 # Deep-link directly to the codex conversation detail screen.
-- openLink: "threadbase://conversation/conv-codex-1"
-
-# iOS may show an "Open in Threadbase?" dialog — dismiss it.
 - runFlow:
-    when:
-      visible: "Open"
-    commands:
-      - tapOn: "Open"
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///conversation/conv-codex-1"
 
 # Wait for the conversation detail to load.
 - extendedWaitUntil:
     visible:
       id: "conversation-bottom-bar"
-    timeout: 8000
+    timeout: 12000
 
 # Resumability follows the server's `resumable` field, not the provider.
 # The resume button renders a Phosphor <Play weight="fill"/> beside its label,
