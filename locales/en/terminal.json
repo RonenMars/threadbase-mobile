@@ -64,5 +64,13 @@
     "resumedHistoryLinkSearch": "search",
     "resumedHistoryLinkIn": " in ",
     "resumedHistoryLinkTail": "the conversation history →"
+  },
+  "history": {
+    "header_one": "History · {{count}} message",
+    "header_other": "History · {{count}} messages",
+    "expandLabel": "Expand conversation history",
+    "collapseLabel": "Collapse conversation history",
+    "maximizeLabel": "Maximize conversation history",
+    "minimizeLabel": "Minimize conversation history"
   }
 }

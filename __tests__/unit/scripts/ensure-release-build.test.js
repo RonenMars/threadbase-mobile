@@ -243,3 +243,22 @@ test('Android CI leaves build and installation to the workflow', () => {
   expect(result.npxLog).toBe('');
   expect(result.xcrunLog).toBe('');
 });
+
+// The repo built here has no .app anywhere, which is exactly the CI shape: the
+// workflow builds into `-derivedDataPath build/ios-ci`, a location
+// `findReleaseBuild` does not probe. Before E2E_PLATFORM=ios was honoured that
+// put the script on the first-run path and it shelled out to `expo run:ios`,
+// which holds Metro open and never returns — run 31927177499 burned its whole
+// 75-minute budget there without executing a flow. `npxLog` staying empty is
+// the assertion that matters.
+test('iOS CI leaves build and installation to the workflow', () => {
+  const made = makeRepo();
+  repo = made.repo;
+
+  const result = runScript(repo, { platform: 'ios' });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain('iOS Release build was installed by the E2E runner');
+  expect(result.npxLog).toBe('');
+  expect(result.xcrunLog).toBe('');
+});

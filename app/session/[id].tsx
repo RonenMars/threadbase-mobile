@@ -1022,6 +1022,7 @@ export default function SessionDetailScreen() {
                 pendingPlan={planVisible ? pendingPlan : null}
                 onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
                 resumedConversationId={session.resumedFromConversationId}
+                conversationId={historyConversationId}
               />
             ) : (
               <LiveConversationView

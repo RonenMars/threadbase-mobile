@@ -68,5 +68,17 @@
     "resumedHistoryLinkSearch": "بحث",
     "resumedHistoryLinkIn": " في ",
     "resumedHistoryLinkTail": "سجل المحادثة ←"
+  },
+  "history": {
+    "header_zero": "السجل · لا رسائل",
+    "header_one": "السجل · رسالة واحدة",
+    "header_two": "السجل · رسالتان",
+    "header_few": "السجل · {{count}} رسائل",
+    "header_many": "السجل · {{count}} رسالة",
+    "header_other": "السجل · {{count}} رسالة",
+    "expandLabel": "توسيع سجل المحادثة",
+    "collapseLabel": "طي سجل المحادثة",
+    "maximizeLabel": "تكبير سجل المحادثة لملء الشاشة",
+    "minimizeLabel": "تصغير سجل المحادثة من ملء الشاشة"
   }
 }

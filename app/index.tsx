@@ -796,6 +796,10 @@ const MergedClassicList = React.memo(function MergedClassicList({
       ) : null}
       <FlatList
         data={flatData}
+        // The search bar above autoFocuses, so the first tap on a result lands
+        // while the keyboard is up — and the RN default ("never") spends that
+        // tap dismissing the keyboard instead of delivering it to the row.
+        keyboardShouldPersistTaps="handled"
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
         keyExtractor={(item) => {

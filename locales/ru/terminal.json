@@ -66,5 +66,15 @@
     "resumedHistoryLinkSearch": "поиск",
     "resumedHistoryLinkIn": " в ",
     "resumedHistoryLinkTail": "истории беседы →"
+  },
+  "history": {
+    "header_one": "История · {{count}} сообщение",
+    "header_few": "История · {{count}} сообщения",
+    "header_many": "История · {{count}} сообщений",
+    "header_other": "История · {{count}} сообщений",
+    "expandLabel": "Развернуть историю беседы",
+    "collapseLabel": "Свернуть историю беседы",
+    "maximizeLabel": "Развернуть историю беседы на весь экран",
+    "minimizeLabel": "Свернуть историю беседы из полноэкранного режима"
   }
 }

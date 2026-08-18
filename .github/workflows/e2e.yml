@@ -247,6 +247,11 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         env:
           FLOWS: ${{ inputs.flows }}
+          # Tells e2e/ensure-release-build.js that the step above already built
+          # and installed the Release app. Without it the script cannot find a
+          # build under `-derivedDataPath build/ios-ci` and rebuilds from
+          # scratch with `expo run:ios`, which never returns.
+          E2E_PLATFORM: ios
         run: |
           set -euo pipefail
           mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
@@ -271,26 +276,20 @@ jobs:
           MOCK_PID=$!
           sleep 1
           set +e
-          node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug $FLOWS
+          node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug --test-output-dir e2e/_artifacts/maestro-output $FLOWS
           STATUS=$?
           set -e
           kill "$MOCK_PID" 2>/dev/null || true
           exit $STATUS
 
-      - name: Capture emulator screenshot + Maestro session dir on failure
-        if: ${{ failure() && (github.event_name != 'workflow_dispatch' || inputs.platform == 'android') }}
-        run: |
-          # Snapshot the booted emulator so we have at least one image even if
-          # Maestro wrote no per-flow debug output to e2e/_artifacts/debug.
-          adb exec-out screencap -p > e2e/_artifacts/fallback/emulator-at-failure.png || true
-          # Maestro defaults to writing test session output under
-          # ~/.maestro/tests/<timestamp>/. Copy the most recent session into
-          # the artifact dir so commands JSON + hierarchy snapshots survive.
-          LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
-          if [ -n "$LATEST" ]; then
-            mkdir -p e2e/_artifacts/maestro-session
-            cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
-          fi
+      # No Android counterpart to the iOS step below: `android-emulator-runner`
+      # kills the emulator when its own step ends, so anything running here has
+      # no device left to photograph. The equivalent capture lives in
+      # `e2e/run-android-ci.sh`'s EXIT trap, which runs inside that step while
+      # the emulator is still up. A duplicate step here did not merely fail —
+      # `adb exec-out screencap -p > file` truncates its target before adb
+      # errors out, so it overwrote the trap's good screenshot with zero bytes.
+      # That is what run 31904637356 uploaded: an empty PNG and nothing else.
 
       - name: Capture iOS simulator screenshot on failure
         if: ${{ failure() && github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}

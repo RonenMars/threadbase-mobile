@@ -98,7 +98,7 @@ MOCK_PORTS=7071,7072 node e2e/mock-server.js &
 MOCK_PID=$!
 node e2e/wait-for-mock.js || { kill "$MOCK_PID" 2>/dev/null; exit 1; }
 set +e
-node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug $FLOWS
+node e2e/run-maestro.js test --debug-output e2e/_artifacts/debug --test-output-dir e2e/_artifacts/maestro-output $FLOWS
 STATUS=$?
 set -e
 kill "$MOCK_PID" 2>/dev/null || true

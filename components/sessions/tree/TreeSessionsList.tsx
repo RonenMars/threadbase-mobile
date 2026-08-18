@@ -322,6 +322,9 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
         ) : (
           <SectionList
             sections={searchSections}
+            // See app/index.tsx: without this the first tap on a result is
+            // spent dismissing the search keyboard rather than opening the row.
+            keyboardShouldPersistTaps="handled"
             keyExtractor={(item) =>
               'status' in item
                 ? `session:${item.serverId}::${item.id}`
