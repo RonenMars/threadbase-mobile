@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Modal,
   Pressable,
@@ -23,18 +23,6 @@ interface Props {
 }
 
 export function LeaveSessionModal({ visible, onCancel, onConfirm }: Props) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const { t } = useTranslation(['terminal', 'common'])
-  const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
-  const [remember, setRemember] = useState(false)
-
-  useEffect(() => {
-    if (!visible) return
-    setChoice(DEFAULT_LEAVE_MODAL_CHOICE)
-    setRemember(false)
-  }, [visible])
-
   return (
     <Modal
       visible={visible}
@@ -43,6 +31,24 @@ export function LeaveSessionModal({ visible, onCancel, onConfirm }: Props) {
       statusBarTranslucent
       onRequestClose={onCancel}
     >
+      {visible ? (
+        <LeaveSessionForm onCancel={onCancel} onConfirm={onConfirm} />
+      ) : null}
+    </Modal>
+  )
+}
+
+function LeaveSessionForm({
+  onCancel,
+  onConfirm,
+}: Omit<Props, 'visible'>) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const { t } = useTranslation(['terminal', 'common'])
+  const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
+  const [remember, setRemember] = useState(false)
+
+  return (
       <View style={styles.overlay}>
         <Pressable
           style={StyleSheet.absoluteFill}
@@ -121,7 +127,6 @@ export function LeaveSessionModal({ visible, onCancel, onConfirm }: Props) {
           </View>
         </View>
       </View>
-    </Modal>
   )
 }
 
