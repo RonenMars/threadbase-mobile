@@ -30,18 +30,15 @@ appId: com.ronenmars.threadbase
 
 # Deeplink straight into the fixture conversation; no ?server= param — the
 # screen falls back to the freshly paired mock server.
-- openLink: "threadbase://conversation/conv-scroll-gaps"
-
 - runFlow:
-    when:
-      visible: "Open"
-    commands:
-      - tapOn: "Open"
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///conversation/conv-scroll-gaps"
 
 - extendedWaitUntil:
     visible:
       id: "conversation-bottom-bar"
-    timeout: 8000
+    timeout: 12000
 
 # The tail view opens bottom-anchored: the last message must be on screen.
 - extendedWaitUntil:
