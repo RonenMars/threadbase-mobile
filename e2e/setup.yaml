@@ -120,24 +120,32 @@ appId: com.ronenmars.threadbase
           id: "onboarding-notifications-cta"
           optional: true
 
-      - extendedWaitUntil:
-          visible: "Not Now"
-          timeout: 8000
-          optional: true
+      # iOS-only: the Save Password sheet is async and often appears *after*
+      # the first Not Now probe (run 32137256820's predecessor 32110237753).
+      # Waiting 8s on Android for a dialog that never exists burned a full
+      # timeout into every flow and the emulator went offline mid-suite
+      # (run 32137263102).
       - runFlow:
           when:
-            visible: "Not Now"
+            platform: iOS
           commands:
-            - tapOn: "Not Now"
-
-      - extendedWaitUntil:
-          visible:
-            id: "onboarding-notifications-cta"
-          timeout: 8000
-          optional: true
-      - tapOn:
-          id: "onboarding-notifications-cta"
-          optional: true
+            - extendedWaitUntil:
+                visible: "Not Now"
+                timeout: 8000
+                optional: true
+            - runFlow:
+                when:
+                  visible: "Not Now"
+                commands:
+                  - tapOn: "Not Now"
+            - extendedWaitUntil:
+                visible:
+                  id: "onboarding-notifications-cta"
+                timeout: 8000
+                optional: true
+            - tapOn:
+                id: "onboarding-notifications-cta"
+                optional: true
 
       # Step 4 / DONE — enter the app
       - extendedWaitUntil:

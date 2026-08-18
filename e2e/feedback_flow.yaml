@@ -103,11 +103,18 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "feedback-diagnostics-toggle"
 
-# Expand the diagnostics preview to confirm the exact fields shown.
-- tapOn:
-    id: "feedback-diagnostics-toggle"
-- assertVisible:
-    id: "feedback-diagnostics-rows"
+# The toggle sits under a multi-line preview intro. iOS CI run 32137256820
+# found the testID and reported the tap COMPLETED, but the caret stayed down
+# and `feedback-diagnostics-rows` never mounted — the touch missed an
+# off-screen control. Bring it into the viewport, then tap the visible label.
+- swipe:
+    start: 50%, 80%
+    end: 50%, 35%
+- tapOn: "See what's included"
+- extendedWaitUntil:
+    visible:
+      id: "feedback-diagnostics-rows"
+    timeout: 5000
 
 - takeScreenshot: e2e/_artifacts/screenshots/feedback-form-filled
 
