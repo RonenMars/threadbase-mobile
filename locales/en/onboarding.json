@@ -60,7 +60,7 @@
     "allowTitle": "Push notifications",
     "body": "Threadbase taps you when a session needs a decision, finishes a run, or hits an error — the things worth knowing without watching a terminal.",
     "continue": "Continue",
-    "skipCta": "Skip — I'll watch the kanban",
+    "skipCta": "Skip for now",
     "enabledStatus": "ENABLED · alerts.threadbase.dev",
     "tapToAllow": "TAP TO ALLOW"
   }
