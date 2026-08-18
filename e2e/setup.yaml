@@ -56,6 +56,16 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-welcome-cta"
 
+      # Wait for Connect before touching the paste card. On a cold first
+      # launch (iOS run 32148843310) Maestro tapped Get started and then
+      # searched for the card while Welcome was still on screen, so the
+      # error named paste-card and hid whether the tap dropped or the
+      # transition was late. A failed wait here isolates that.
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-connect-paste-card"
+          timeout: 8000
+
       # Step 2 / CONNECT — paste credentials, fill URL + token, handshake
       - tapOn:
           id: "onboarding-connect-paste-card"
