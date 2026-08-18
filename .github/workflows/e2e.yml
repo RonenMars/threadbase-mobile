@@ -80,7 +80,10 @@ jobs:
   e2e-maestro:
     name: E2E maestro
     runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && 'macos-15' || 'ubuntu-24.04' }}
-    timeout-minutes: 75
+    # 75m was enough when the iOS Release cache was warm (~39m build + ~19m
+    # Maestro). A cold DerivedData miss (run 32161343357) spent ~57m on the
+    # build and was cancelled at 75m with the suite still running.
+    timeout-minutes: 120
     steps:
       # `ref` is the one piece of attacker-controllable input in this workflow,
       # so it is validated here and never interpolated into a `run:` script —
