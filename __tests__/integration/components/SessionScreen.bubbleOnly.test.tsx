@@ -3,7 +3,7 @@
  *
  * Guards Task 3: in the live branch the tab bar and terminal composer are gone.
  */
-import React from 'react'
+import React, { type EffectCallback } from 'react'
 import { render, screen } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 
@@ -80,7 +80,7 @@ jest.mock('expo-router', () => {
     useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
     useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
     useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
-    useFocusEffect: (cb) => {
+    useFocusEffect: (cb: EffectCallback) => {
       React.useEffect(() => cb(), [cb])
     },
   }
