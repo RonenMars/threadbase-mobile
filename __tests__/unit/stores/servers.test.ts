@@ -352,12 +352,12 @@ describe('addServer – publicUrl', () => {
   }
 
   /** The payload the store wrote under the server-list key, parsed. */
-  function persistedList(): Array<Record<string, unknown>> {
+  function persistedList(): Record<string, unknown>[] {
     const call = SecureStore.setItemAsync.mock.calls
       .filter(([key]) => key === 'threadbase_servers')
       .pop()
     if (!call) throw new Error('the server list was never persisted')
-    return (JSON.parse(String(call[1])) as { list: Array<Record<string, unknown>> }).list
+    return (JSON.parse(String(call[1])) as { list: Record<string, unknown>[] }).list
   }
 
   it('keeps the typed url and records publicUrl beside it', async () => {
