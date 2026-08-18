@@ -1,0 +1,32 @@
+# Open a threadbase:// link and land in-app.
+#
+# Conversation routes must use the three-slash form
+# (`threadbase:///conversation/<id>`), matching session links
+# (`threadbase:///session/<id>`). Two slashes make `conversation` the URL
+# host; iOS 26 then leaves Maestro on the hub (run 32060587863, bug6).
+#
+# Requires env DEEPLINK. After openLink, dismiss the iOS "Open in
+# Threadbase?" sheet if it appears. If the hub is still showing, try once
+# more — the first openLink can complete before the sheet is tappable.
+appId: com.ronenmars.threadbase
+---
+- openLink: ${DEEPLINK}
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+
+- runFlow:
+    when:
+      visible:
+        id: "hub-screen"
+    commands:
+      - openLink: ${DEEPLINK}
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Open"
+          commands:
+            - tapOn: "Open"

@@ -23,21 +23,16 @@ appId: com.ronenmars.threadbase
 # Deeplink into the many-message conversation. No ?server= param — the
 # screen falls back to activeServerIds[0], which is the freshly paired
 # mock server, so the request hits localhost:7071.
-- openLink: "threadbase://conversation/conv-many-messages"
-
-# iOS shows a "Open in Threadbase?" system confirmation for incoming
-# deeplinks — dismiss it so the conversation actually loads.
 - runFlow:
-    when:
-      visible: "Open"
-    commands:
-      - tapOn: "Open"
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///conversation/conv-many-messages"
 
 # Bottom action bar should always be mounted on conversation screen.
 - extendedWaitUntil:
     visible:
       id: "conversation-bottom-bar"
-    timeout: 8000
+    timeout: 12000
 
 # Scroll down until the final message row enters the viewport. The list
 # auto-scrolls to bottom on mount but scrollToEnd targets contentSize

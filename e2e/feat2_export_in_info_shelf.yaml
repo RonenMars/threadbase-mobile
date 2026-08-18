@@ -24,26 +24,17 @@ appId: com.ronenmars.threadbase
 # Open the conversation detail via deep link. expo-router maps the path
 # segment to app/conversation/[id].tsx; with no server query param the
 # screen falls back to the first active server (set by setup.yaml).
-- openLink: "threadbase://conversation/conv-111"
-
-# iOS shows an "Open in 'Threadbase'?" disambiguation dialog whenever a
-# custom URL scheme is launched and no per-app association has been
-# stored. `launchApp { clearState }` from setup.yaml wipes that
-# association, so the dialog appears on every Maestro run. Wrap in a
-# conditional so it's a no-op on builds where iOS has already remembered
-# the association.
 - runFlow:
-    when:
-      visible: "Open"
-    commands:
-      - tapOn: "Open"
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///conversation/conv-111"
 
 # Confirm we are on the conversation route: the footer action bar mounts
 # with a stable testID.
 - extendedWaitUntil:
     visible:
       id: "conversation-bottom-bar"
-    timeout: 8000
+    timeout: 12000
 
 # The primary action renders its label.
 # "▶ Resume Session" once iOS flattens the Phosphor Play icon into the button's
