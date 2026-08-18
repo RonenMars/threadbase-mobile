@@ -204,3 +204,18 @@ describe('TerminalOutput – resumed scrollback notice', () => {
     expect(onView).not.toHaveBeenCalled()
   })
 })
+
+describe('TerminalOutput – resume first paint', () => {
+  it('keeps prompt lines visible when the composer unlocks after wake', async () => {
+    const lines = ['hello from pty', 'prompt ready']
+    const { getByText, rerender } = await render(
+      <TerminalOutput lines={lines} isStreaming={false} disabled />,
+    )
+    expect(getByText('hello from pty')).toBeTruthy()
+    rerender(
+      <TerminalOutput lines={lines} isStreaming={false} disabled={false} />,
+    )
+    expect(getByText('hello from pty')).toBeTruthy()
+    expect(getByText('prompt ready')).toBeTruthy()
+  })
+})

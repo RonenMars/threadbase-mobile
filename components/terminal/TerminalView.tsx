@@ -163,6 +163,7 @@ export function TerminalView({
           onDismissQuestion={clearQuestion}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
+          disabled={disabled}
         />
       </View>
       <ChatComposer
