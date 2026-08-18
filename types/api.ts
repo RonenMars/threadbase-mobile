@@ -138,9 +138,11 @@ export interface SearchHighlight {
 }
 
 /**
- * One `/api/search` match. `field` is an open camelCase vocabulary (`content`
- * for a body hit). `highlights` is absent on metadata hits; ranges follow FTS
- * token boundaries, not the query length.
+ * One matched field on an `/api/search` result. `field` is an open vocabulary —
+ * `content` for any body hit, otherwise a camelCase meta field name — so a newer
+ * server may name a field this build has never seen. `highlights` is absent (not
+ * empty) on metadata hits, and its ranges follow FTS token boundaries rather than
+ * the query string.
  */
 export interface SearchMatch {
   field: string
