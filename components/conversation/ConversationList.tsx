@@ -75,6 +75,7 @@ const ConversationRow = React.memo(function ConversationRow({
       firstMessage={c.firstMessage}
       lastMessage={c.lastMessage}
       preview={c.preview}
+      matches={c.matches}
       serverLabel={c.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}
