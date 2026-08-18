@@ -138,6 +138,20 @@ describe('ConversationListItem', () => {
     expect(text).not.toContain("I've patched metro")
   })
 
+  it('renders the search snippet in place of the generic preview', async () => {
+    const tree = await render(
+      <ConversationListItem
+        title="topic"
+        timestamp={NOW.getTime() - 60_000}
+        preview="generic summary"
+        matches={[{ field: 'content', snippet: 'reconnect timeout was not cleared', highlights: [{ start: 10, end: 17 }] }]}
+      />,
+    )
+    const text = collectText(tree.toJSON() as unknown as Json)
+    expect(text).toContain('reconnect timeout was not cleared')
+    expect(text).not.toContain('generic summary')
+  })
+
   it('omits the preview line when previewMode=none', async () => {
     const tree = await render(
       <ConversationListItem

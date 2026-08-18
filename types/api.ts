@@ -131,6 +131,23 @@ export interface MessageSnapshot {
   timestamp: string
 }
 
+/** Half-open `[start, end)` character range into a search snippet. */
+export interface SearchHighlight {
+  start: number
+  end: number
+}
+
+/**
+ * One `/api/search` match. `field` is an open camelCase vocabulary (`content`
+ * for a body hit). `highlights` is absent on metadata hits; ranges follow FTS
+ * token boundaries, not the query length.
+ */
+export interface SearchMatch {
+  field: string
+  snippet: string
+  highlights?: SearchHighlight[]
+}
+
 export interface Conversation {
   id: string
   title: string
@@ -151,6 +168,8 @@ export interface Conversation {
   model?: string
   totalTokens?: number
   provider?: ProviderName
+  /** Only populated by `/api/search`; absent on list and detail responses. */
+  matches?: SearchMatch[]
 }
 
 export interface ConversationFilter {

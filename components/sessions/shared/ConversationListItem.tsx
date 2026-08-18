@@ -10,6 +10,7 @@ import { pathDisplay, type PathDisplayMode } from './pathDisplay'
 import { MessagePreview, type MessagePreviewMode } from './MessagePreview'
 import { ServerChip, type ServerChipVariant } from './ServerChip'
 import { SERVER_COLOR_DEFAULT, initialsFor } from './serverPalette'
+import type { SearchMatch } from '@/types/api'
 
 export type ConversationListDensity = 'comfortable' | 'compact' | 'chip'
 export type ConversationListLeading = 'avatar' | 'dot' | 'depth' | 'none'
@@ -75,6 +76,8 @@ export interface ConversationListItemProps {
 
   /** Search-result inline substring highlight. */
   highlight?: string
+  /** `/api/search` matches — render the matched passage instead of the generic preview. */
+  matches?: SearchMatch[] | null
 
   /** Toggles. */
   showCount?: boolean
@@ -137,6 +140,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     activeServerCount,
     forceServerChip = false,
     highlight,
+    matches,
     showCount = true,
     showBranch = true,
     provider,
@@ -269,6 +273,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
             lastOutput={lastOutput}
             messageCount={messageCount}
             highlight={highlight}
+            matches={matches}
           />
         ) : null}
 

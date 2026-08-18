@@ -769,7 +769,7 @@ export function useConversationSearch(query: string) {
       const settled = await Promise.allSettled(
         displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
-          const raw = await api.get<RawSessionMeta[]>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
+          const raw = await api.get<RawSessionMeta[] | ConversationPage>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
           return { serverId, page: adaptPage(raw, 0, 50) }
         })
       )
