@@ -198,10 +198,10 @@ class WSClient {
       //
       // There used to be a `{ type: 'auth', token }` frame here, sent first on
       // every connection. No streamer has ever had a handler for it — the WS
-      // message handler only knows `register`, `subscribe_session` and
-      // `hold_session`, and unknown types are swallowed — so it re-transmitted
-      // the long-term credential over the wire for nothing. The socket is
-      // already authenticated by `?key=` on the upgrade.
+      // message handler only knows `register`, `subscribe_session`,
+      // `unsubscribe_session` and `hold_session`, and unknown types are swallowed
+      // — so it re-transmitted the long-term credential over the wire for nothing.
+      // The socket is already authenticated by `?key=` on the upgrade.
       getDeviceClientId().then((clientId) => {
         if (isCurrent()) this.send({ type: 'register', clientId })
       })
@@ -338,6 +338,9 @@ class WSClientManager {
   private clients: Map<string, WSClient> = new Map()
   // Manager-level status listeners that survive individual client replacement.
   private managerStatusListeners: Set<(serverId: string, s: 'connecting' | 'connected' | 'disconnected') => void> = new Set()
+  // How many focused session/conversation views currently want each session's
+  // PTY stream. One socket stays subscribed until the last view releases.
+  private sessionRefCounts = new Map<string, Map<string, number>>()
 
   connect(serverId: string, url: string, apiKey: string) {
     // Disconnect existing client for this server if any
@@ -346,6 +349,7 @@ class WSClientManager {
     this.clients.set(serverId, client)
     // Wire this client's status changes into the manager-level listeners.
     client.onStatusChange((s) => {
+      if (s === 'connected') this.resubscribeHeldSessions(serverId)
       this.managerStatusListeners.forEach((l) => l(serverId, s))
     })
     client.connect(url, apiKey)
@@ -408,6 +412,46 @@ class WSClientManager {
 
   send(serverId: string, msg: unknown) {
     this.clients.get(serverId)?.send(msg)
+  }
+
+  acquireSession(serverId: string, sessionId: string) {
+    if (!serverId || !sessionId) return
+    let bySession = this.sessionRefCounts.get(serverId)
+    if (!bySession) {
+      bySession = new Map()
+      this.sessionRefCounts.set(serverId, bySession)
+    }
+    const next = (bySession.get(sessionId) ?? 0) + 1
+    bySession.set(sessionId, next)
+    if (next === 1) {
+      this.clients.get(serverId)?.send({ type: 'subscribe_session', sessionId })
+    }
+  }
+
+  releaseSession(serverId: string, sessionId: string) {
+    if (!serverId || !sessionId) return
+    const bySession = this.sessionRefCounts.get(serverId)
+    if (!bySession) return
+    const cur = bySession.get(sessionId) ?? 0
+    if (cur <= 1) {
+      bySession.delete(sessionId)
+      if (bySession.size === 0) this.sessionRefCounts.delete(serverId)
+      if (cur === 1) {
+        this.clients.get(serverId)?.send({ type: 'unsubscribe_session', sessionId })
+      }
+      return
+    }
+    bySession.set(sessionId, cur - 1)
+  }
+
+  private resubscribeHeldSessions(serverId: string) {
+    const bySession = this.sessionRefCounts.get(serverId)
+    if (!bySession || bySession.size === 0) return
+    const client = this.clients.get(serverId)
+    if (!client) return
+    for (const sessionId of bySession.keys()) {
+      client.send({ type: 'subscribe_session', sessionId })
+    }
   }
 }
 
