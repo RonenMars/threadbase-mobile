@@ -118,7 +118,7 @@ async function resolveCredentials(
   return { url: trimmedUrl, apiKey: trimmedToken }
 }
 
-function messageForPairFailure(err: unknown): string {
+function messageForPairFailure(err: Error): string {
   if (err instanceof PairUriError) {
     if (err.code === 'expired') return 'pair link expired · run tb pair again'
     if (err.code === 'bad-server-url') return 'invalid server URL in pair link'
@@ -248,7 +248,7 @@ export function useTBPair() {
             onSuccess?.(result)
           })
         } catch (err) {
-          fail(messageForPairFailure(err))
+          fail(messageForPairFailure(err instanceof Error ? err : new Error('handshake failed')))
         }
       })()
     },
