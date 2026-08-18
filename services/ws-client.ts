@@ -7,6 +7,8 @@ import type {
   PermissionCancelledWsMessage,
   CacheAlertSeverity,
   CacheAlertResolveAction,
+  HostPressureLevel,
+  HostPressureReason,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
@@ -49,6 +51,14 @@ export type WSMessage =
       sample: { id: string; title?: string }[]
     }
   | { type: 'cache_alert_resolved'; fingerprint: string; action: CacheAlertResolveAction }
+  | {
+      type: 'host_pressure'
+      level: HostPressureLevel
+      reasons: HostPressureReason[]
+      liveAgents: number
+      updatedAt: string
+    }
+  | { type: 'host_pressure_cleared'; updatedAt: string }
   | { type: 'conversation_event'; sessionId: string; line: string }
   // Additive batched variant (streamer #202): one frame carries all lines from
   // a single watcher read. `seqs`, when present, is parallel to `lines` —

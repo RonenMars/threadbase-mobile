@@ -37,6 +37,7 @@ beforeEach(() => {
     displayedServerIds: [],
     isLoading: false,
     cacheAlert: {},
+    hostPressure: {},
   })
   jest.clearAllMocks()
 })
@@ -283,6 +284,50 @@ describe('setCacheAlert / clearCacheAlert', () => {
     useServersStore.getState().setCacheAlert(server.id, alert)
     useServersStore.getState().setConnected(server.id, true)
     expect(useServersStore.getState().cacheAlert[server.id]).toEqual(alert)
+  })
+})
+
+describe('setHostPressure / clearHostPressure', () => {
+  const pressure = {
+    level: 'elevated' as const,
+    reasons: ['memory' as const, 'load' as const],
+    liveAgents: 3,
+    updatedAt: '2026-08-18T00:00:00.000Z',
+  }
+
+  it('setHostPressure stores the pressure wholesale', () => {
+    const server = seedServer()
+    useServersStore.getState().setHostPressure(server.id, pressure)
+    expect(useServersStore.getState().hostPressure[server.id]).toEqual(pressure)
+  })
+
+  it('setHostPressure replaces a previous value for the same server', () => {
+    const server = seedServer()
+    useServersStore.getState().setHostPressure(server.id, pressure)
+    const updated = { ...pressure, level: 'critical' as const, liveAgents: 8 }
+    useServersStore.getState().setHostPressure(server.id, updated)
+    expect(useServersStore.getState().hostPressure[server.id]).toEqual(updated)
+  })
+
+  it('clearHostPressure clears the pending pressure', () => {
+    const server = seedServer()
+    useServersStore.getState().setHostPressure(server.id, pressure)
+    useServersStore.getState().clearHostPressure(server.id)
+    expect(useServersStore.getState().hostPressure[server.id]).toBeNull()
+  })
+
+  it('setConnected(false) clears host pressure for a disconnected server', () => {
+    const server = seedServer({ isConnected: true })
+    useServersStore.getState().setHostPressure(server.id, pressure)
+    useServersStore.getState().setConnected(server.id, false)
+    expect(useServersStore.getState().hostPressure[server.id]).toBeNull()
+  })
+
+  it('setConnected(true) does not touch existing host pressure', () => {
+    const server = seedServer({ isConnected: false })
+    useServersStore.getState().setHostPressure(server.id, pressure)
+    useServersStore.getState().setConnected(server.id, true)
+    expect(useServersStore.getState().hostPressure[server.id]).toEqual(pressure)
   })
 })
 

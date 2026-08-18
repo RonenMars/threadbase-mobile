@@ -92,6 +92,18 @@
     "successToastNoBackup": "טופל.",
     "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה."
   },
+  "hostPressure": {
+    "bannerElevated": "{{server}} בעומס ({{count}} סוכנים פעילים)",
+    "bannerCritical": "{{server}} במחסור קריטי במשאבים ({{count}} סוכנים פעילים)",
+    "sheetBody": "{{count}} סוכנים רצים ב-{{server}}",
+    "dismiss": "סגור",
+    "reason": {
+      "memory": "לחץ זיכרון",
+      "event_loop": "עיכוב בלולאת האירועים",
+      "load": "עומס מערכת גבוה",
+      "agents": "יותר מדי סוכנים פעילים"
+    }
+  },
   "claudeFlags": {
     "title": "דגלי Claude CLI",
     "description": "חלים על כל סשן שהשרת הזה מפעיל. ייכנסו לתוקף בסשן הבא.",
