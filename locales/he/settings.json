@@ -95,9 +95,6 @@
     "testCrashConfirmMessage": "פעולה זו יוצרת שגיאת בדיקה כדי לוודא שהדיווח פועל. זמין רק בגרסאות פיתוח.",
     "testCrashSend": "שלח קריסת בדיקה"
   },
-  "dev": {
-    "scannerPreview": "סורק Knight Rider"
-  },
   "servers": {
     "scanQr": "סרוק QR להוספת שרת"
   },
