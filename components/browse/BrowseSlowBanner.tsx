@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useBannerSync } from '@/hooks/useBannerSync'
+import type { AlertSpec } from '@/types/alerts'
 
 interface Props {
   onAbort: () => void
@@ -9,13 +10,19 @@ interface Props {
 
 export function BrowseSlowBanner({ onAbort }: Props) {
   const theme = useTheme()
-  return (
-    <Banner
-      title="That's a heavy file tree…"
-      message="Didn't think it'd be this big. Give us just a moment."
-      accent={theme.text.warning}
-      icon={<ActivityIndicator color={theme.text.warning} />}
-      action={{ label: 'Cancel', onPress: onAbort, variant: 'destructive' }}
-    />
-  )
+
+  const spec = useMemo((): AlertSpec => ({
+    level: 'warning',
+    title: "That's a heavy file tree…",
+    message: "Didn't think it'd be this big. Give us just a moment.",
+    hideCloseButton: true,
+    buttonText: 'Cancel',
+    buttonAction: onAbort,
+    buttonVariant: 'destructive',
+    icon: <ActivityIndicator color={theme.text.warning} />,
+    timeout: null,
+  }), [onAbort, theme.text.warning])
+
+  useBannerSync('slow-browse', spec)
+  return null
 }

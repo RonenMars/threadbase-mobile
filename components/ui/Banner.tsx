@@ -5,80 +5,96 @@ import { useTranslation } from 'react-i18next'
 import { font, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { alertAppearance } from '@/lib/alertAppearance'
+import type { AlertSpec } from '@/types/alerts'
 
-interface BannerAction {
-  label: string
-  onPress: () => void
-  variant?: 'primary' | 'secondary' | 'destructive'
-}
-
-interface Props {
-  title: string
-  message: string
-  accent: string
-  icon?: React.ReactNode
-  action?: BannerAction
-  secondaryAction?: BannerAction
-  details?: string
+type Props = AlertSpec & {
   style?: ViewStyle
+  onDismiss?: () => void
 }
 
-export function Banner({ title, message, accent, icon, action, secondaryAction, details, style }: Props) {
-  const { t } = useTranslation('shared')
+export function Banner({
+  level,
+  title,
+  message,
+  details,
+  buttonText,
+  buttonAction,
+  buttonVariant,
+  hideCloseButton = false,
+  accent,
+  icon,
+  style,
+  onDismiss,
+  onClose,
+}: Props) {
+  const { t } = useTranslation(['shared', 'common'])
   const theme = useTheme()
   const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const appearance = alertAppearance(level, theme, accent)
+  const Icon = appearance.Icon
+  const moreInfoLabel = t('shared:banner.moreInfo')
+  const closeLabel = t('common:button.close')
+
+  function handleClose() {
+    onClose?.()
+    onDismiss?.()
+  }
 
   return (
     <View style={s.overlay} pointerEvents="box-none">
-      <View style={[s.card, isGlass && s.cardGlass, { borderColor: accent }, style]}>
+      <View style={[s.card, isGlass && s.cardGlass, { borderColor: appearance.accent }, style]}>
         <GlassFill />
-        {icon}
+        {icon ?? <Icon size={28} color={appearance.accent} weight={appearance.iconWeight} />}
         <Text style={s.title}>{title}</Text>
-        <Text style={[s.message, { color: accent }]}>{message}</Text>
+        <Text style={[s.message, { color: appearance.accent }]}>{message}</Text>
 
         {details ? (
           <View style={s.detailsContainer}>
             <TouchableOpacity
               style={s.detailsToggle}
               onPress={() => setDetailsOpen((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={moreInfoLabel}
             >
-              <Text style={{ color: accent, fontSize: 12 }}>{t('banner.moreInfo')}</Text>
+              <Text style={{ color: appearance.accent, fontSize: 12 }}>{moreInfoLabel}</Text>
               {detailsOpen
-                ? <CaretUp size={12} color={accent} />
-                : <CaretDown size={12} color={accent} />}
+                ? <CaretUp size={12} color={appearance.accent} />
+                : <CaretDown size={12} color={appearance.accent} />}
             </TouchableOpacity>
             {detailsOpen ? (
-              <Text style={[s.detailsText, { color: accent }]}>{details}</Text>
+              <Text style={[s.detailsText, { color: appearance.accent }]}>{details}</Text>
             ) : null}
           </View>
         ) : null}
 
-        {(action || secondaryAction) ? (
+        {(buttonText || !hideCloseButton) ? (
           <View style={s.actions}>
-            {secondaryAction ? (
-              <TouchableOpacity style={s.actionBtn} onPress={secondaryAction.onPress}>
-                <Text style={s.actionLabel}>{secondaryAction.label}</Text>
+            {hideCloseButton ? null : (
+              <TouchableOpacity style={s.actionBtn} onPress={handleClose} accessibilityRole="button">
+                <Text style={s.actionLabel}>{closeLabel}</Text>
               </TouchableOpacity>
-            ) : null}
-            {action ? (
+            )}
+            {buttonText ? (
               <TouchableOpacity
                 style={[
                   s.actionBtn,
-                  action.variant === 'destructive' && { borderColor: theme.text.danger },
-                  action.variant === 'primary' && { borderColor: accent },
+                  buttonVariant === 'destructive' && { borderColor: theme.text.danger },
+                  buttonVariant === 'primary' && { borderColor: appearance.accent },
                 ]}
-                onPress={action.onPress}
+                onPress={buttonAction}
+                accessibilityRole="button"
               >
                 <Text
                   style={[
                     s.actionLabel,
-                    action.variant === 'destructive' && { color: theme.text.danger },
-                    action.variant === 'primary' && { color: accent },
+                    buttonVariant === 'destructive' && { color: theme.text.danger },
+                    buttonVariant === 'primary' && { color: appearance.accent },
                   ]}
                 >
-                  {action.label}
+                  {buttonText}
                 </Text>
               </TouchableOpacity>
             ) : null}

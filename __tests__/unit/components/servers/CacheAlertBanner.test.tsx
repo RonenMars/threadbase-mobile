@@ -1,7 +1,9 @@
 import React from 'react'
 import { fireEvent } from '@testing-library/react-native'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
+import { ToastViewport } from '@/components/ui/ToastViewport'
 import { useServersStore } from '@/stores/servers'
+import { useToastStore } from '@/stores/toasts'
 import { renderWithI18n } from '@/test-utils/render'
 
 function seedServer(overrides: Partial<import('@/types/api').ServerConfig> = {}) {
@@ -24,7 +26,20 @@ function seedServer(overrides: Partial<import('@/types/api').ServerConfig> = {})
   return server
 }
 
+async function renderBanner(onPress = jest.fn()) {
+  return {
+    onPress,
+    ...(await renderWithI18n(
+      <>
+        <ToastViewport id="home" />
+        <CacheAlertBanner onPress={onPress} />
+      </>,
+    )),
+  }
+}
+
 beforeEach(() => {
+  useToastStore.getState().reset()
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
@@ -37,8 +52,8 @@ beforeEach(() => {
 describe('CacheAlertBanner', () => {
   it('renders nothing when there is no cache alert', async () => {
     seedServer()
-    const { toJSON } = await renderWithI18n(<CacheAlertBanner onPress={jest.fn()} />)
-    expect(toJSON()).toBeNull()
+    const { queryByText } = await renderBanner()
+    expect(queryByText(/conversation histories are missing/)).toBeNull()
   })
 
   it('renders nothing for a high-severity alert (handled by the modal, not the banner)', async () => {
@@ -50,8 +65,8 @@ describe('CacheAlertBanner', () => {
       missingCount: 3,
       totalRows: 10,
     })
-    const { toJSON } = await renderWithI18n(<CacheAlertBanner onPress={jest.fn()} />)
-    expect(toJSON()).toBeNull()
+    const { queryByText } = await renderBanner()
+    expect(queryByText(/conversation histories are missing/)).toBeNull()
   })
 
   it('renders the banner for a low-severity alert with the missing count and server label', async () => {
@@ -63,11 +78,11 @@ describe('CacheAlertBanner', () => {
       missingCount: 3,
       totalRows: 10,
     })
-    const { findByText } = await renderWithI18n(<CacheAlertBanner onPress={jest.fn()} />)
+    const { findByText } = await renderBanner()
     expect(await findByText(/3 conversation histories are missing on My Server/)).toBeTruthy()
   })
 
-  it('calls onPress when tapped', async () => {
+  it('calls onPress from the Review button', async () => {
     const server = seedServer()
     useServersStore.getState().setCacheAlert(server.id, {
       fingerprint: 'fp1',
@@ -76,10 +91,8 @@ describe('CacheAlertBanner', () => {
       missingCount: 1,
       totalRows: 10,
     })
-    const onPress = jest.fn()
-    const { findByRole } = await renderWithI18n(<CacheAlertBanner onPress={onPress} />)
-    const banner = await findByRole('button')
-    fireEvent.press(banner)
+    const { onPress, findByLabelText } = await renderBanner()
+    fireEvent.press(await findByLabelText('Review'))
     expect(onPress).toHaveBeenCalled()
   })
 })

@@ -58,6 +58,7 @@
     "viewModeChat": "Chat",
     "ptyActiveFallbackBanner": "Live terminal output is active before conversation messages are available.",
     "rawModeNote": "RAW terminal mode — unsupported sequences detected; output is unfiltered.",
+    "rawModeDetails": "Some control sequences in this output are not supported, so the app is showing the stream unfiltered. Appearance may differ from a full terminal.",
     "resumedEmptyScrollback": "Earlier output isn't available for a resumed session.",
     "resumedHistoryLinkView": "View",
     "resumedHistoryLinkOr": " or ",
