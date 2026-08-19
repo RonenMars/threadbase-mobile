@@ -13,7 +13,9 @@ import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { pendingTargetFromPaste } from '@/services/pair-confirm-target'
+import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { ServerFormFields } from '@/components/servers/ServerFormFields'
 import { classifyPairCredential, type ExchangeResult } from '@/services/pair-exchange'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
@@ -98,7 +100,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   const [mode, setMode] = useState<Mode>('choose')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const [cameraFingerprint, setCameraFingerprint] = useState<string | null>(null)
   const pendingResult = useRef<PairResult | null>(null)
+  const pendingScan = useRef<ExchangeResult | null>(null)
   const { phase, log, pair, reset } = useTBPair()
 
   // A pasted threadbase:// pair URI carries its own server URL.
@@ -129,10 +133,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     })
   }
 
-  const handleScanSuccess = (result: ExchangeResult) => {
-    setScannerOpen(false)
-    // QR exchange already sealed the API key — advance immediately instead of
-    // flipping to manual mode and re-running the handshake theater.
+  const commitScan = (result: ExchangeResult) => {
     onPaired({
       url: result.url,
       apiKey: result.apiKey,
@@ -144,6 +145,26 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       requireEncryption: result.e2eeRequired,
     })
     onAdvance()
+  }
+
+  const handleScanSuccess = (result: ExchangeResult) => {
+    setScannerOpen(false)
+    // Camera scan is the out-of-band channel, so this is not a confirm gate.
+    // When the QR carried a fingerprint, show it so it can be glanced at next
+    // to the code printed under that QR.
+    if (result.serverPublicKey) {
+      pendingScan.current = result
+      setCameraFingerprint(formatFingerprint(result.serverPublicKey))
+      return
+    }
+    commitScan(result)
+  }
+
+  const finishCameraIdentity = () => {
+    const result = pendingScan.current
+    pendingScan.current = null
+    setCameraFingerprint(null)
+    if (result) commitScan(result)
   }
 
   if (mode === 'choose') {
@@ -215,6 +236,11 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           visible={scannerOpen}
           onClose={() => setScannerOpen(false)}
           onSuccess={handleScanSuccess}
+        />
+        <PairCameraIdentityCard
+          visible={cameraFingerprint !== null}
+          fingerprint={cameraFingerprint}
+          onDone={finishCameraIdentity}
         />
       </View>
     )
@@ -377,6 +403,11 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           setConfirmTarget(null)
           reset()
         }}
+      />
+      <PairCameraIdentityCard
+        visible={cameraFingerprint !== null}
+        fingerprint={cameraFingerprint}
+        onDone={finishCameraIdentity}
       />
     </View>
   )
