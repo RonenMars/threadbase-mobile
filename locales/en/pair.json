@@ -53,7 +53,7 @@
     "howToCheckStep2": "You should see the same grouped code as above.",
     "howToCheckStep3Pair": "If it doesn't match, tap Cancel. This is not that computer.",
     "howToCheckStep3Settings": "If it doesn't match, this is not that computer. Forget it and pair again.",
-    "cameraMatchHint": "This should match the code shown next to the QR on that computer.",
+    "cameraMatchHint": "This should match the code shown under the QR on that computer.",
     "cameraDone": "Done",
     "noSpkTitle": "No identity to verify",
     "noSpkBody": "This link doesn't include a fingerprint, so you can't check which computer it belongs to. Anything you send will be readable by anything between this device and the server.",
