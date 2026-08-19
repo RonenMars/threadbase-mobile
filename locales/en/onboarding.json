@@ -37,7 +37,6 @@
     "connectOk": "Connected",
     "connectErr": "Retry",
     "connectBusy": "…connecting",
-    "connectErrHint": "Token expired? Run tb pair again on your computer.",
     "backToOptions": "← Other options",
     "step1": "1. On your server, run tb pair. A QR will print to the terminal.",
     "step2": "2. Tap Open camera below. Threadbase will ask permission to use the camera — that's only used to read the QR.",

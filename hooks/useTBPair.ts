@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { NetworkError } from '@/services/api-client'
 import { authedFetch, AuthError } from '@/services/authed-fetch'
 import {
@@ -8,6 +10,7 @@ import {
   PairExchangeError,
   PairUriError,
 } from '@/services/pair-exchange'
+import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import type { DeviceCapability } from '@/types/devices'
 
@@ -118,41 +121,27 @@ async function resolveCredentials(
   return { url: trimmedUrl, apiKey: trimmedToken }
 }
 
-function messageForPairFailure(err: Error): string {
-  if (err instanceof PairUriError) {
-    if (err.code === 'expired') return 'pair link expired · run tb pair again'
-    if (err.code === 'bad-server-url') return 'invalid server URL in pair link'
-    // Present but unusable, which is never a reason to pair in plaintext.
-    if (err.code === 'bad-server-key') return 'damaged server key in pair link · run tb pair again'
-    return 'invalid pair link · paste the threadbase:// URL from tb pair'
-  }
-  if (err instanceof PairExchangeError) {
-    if (err.kind === 'token') return 'token rejected · run tb pair again'
-    if (err.kind === 'rate-limited') return 'too many attempts · try again shortly'
-    if (err.kind === 'network') return 'connection refused · is the server running?'
-    if (err.kind === 'decrypt') return 'could not unseal api key'
-    // None of these spent the token, so the same code is still worth retrying —
-    // except the version mismatch, where retrying changes nothing.
-    if (err.kind === 'e2ee-handshake') return 'could not verify server identity · scan again'
-    if (err.kind === 'e2ee-malformed') return 'encrypted pairing mismatch · scan again'
-    if (err.kind === 'e2ee-version') return 'server speaks a different e2ee version · update both'
-    // This exchange did happen, so the token is likely spent — a fresh QR, not
-    // a retry of this one, and never a plaintext attempt at the same server.
-    if (err.kind === 'e2ee-refused') return 'server would not finish encrypting · run tb pair again'
-    if (err.kind === 'e2ee-web-unsupported') return 'encrypted pairing needs the iOS or Android app'
-    return 'exchange failed'
+function messageForPairFailure(
+  err: Error,
+  tPair: TFunction<'pair'>,
+  tCommon: TFunction<'common'>,
+): string {
+  if (err instanceof PairUriError || err instanceof PairExchangeError) {
+    return resolvePairFailureMessage(err, tPair)
   }
   if (err instanceof AuthError) {
-    return 'token rejected · check THREADBASE_API_KEY'
+    return tCommon('error.authKeyRejectedOnConnect')
   }
   if (err instanceof NetworkError || err instanceof TypeError) {
-    return 'connection refused · is the server running?'
+    return tPair('scanner.errors.exchange.network')
   }
-  return 'handshake failed'
+  return tPair('scanner.errors.generic')
 }
 
 // Mocks the handshake in dev; resolves pair tokens / URIs / API keys in prod.
 export function useTBPair() {
+  const { t: tPair } = useTranslation('pair')
+  const { t: tCommon } = useTranslation('common')
   const [phase, setPhase] = useState<PairPhase>('idle')
   const [log, setLog] = useState<PairLogLine[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -248,11 +237,15 @@ export function useTBPair() {
             onSuccess?.(result)
           })
         } catch (err) {
-          fail(messageForPairFailure(err instanceof Error ? err : new Error('handshake failed')))
+          fail(messageForPairFailure(
+            err instanceof Error ? err : new Error('handshake failed'),
+            tPair,
+            tCommon,
+          ))
         }
       })()
     },
-    [append, fail, phase, reset],
+    [append, fail, phase, reset, tCommon, tPair],
   )
 
   return { phase, log, error, pair, reset }
