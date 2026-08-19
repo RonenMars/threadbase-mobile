@@ -616,12 +616,15 @@ export type CacheAlertResolveAction = 'prune_all' | 'prune_selected' | 'ignore' 
 
 export type HostPressureLevel = 'elevated' | 'critical'
 export type HostPressureReason = 'memory' | 'event_loop' | 'load' | 'agents'
+export type HostPressureOs = 'darwin' | 'linux' | 'win32'
 
 export interface HostPressureAlert {
   level: HostPressureLevel
   reasons: HostPressureReason[]
   liveAgents: number
   updatedAt: string
+  /** Additive: host OS from the WS frame or GET /api/info. Absent on older streamers. */
+  os?: HostPressureOs
 }
 
 export function parseHostPressureReasons(reasons: string[]): HostPressureReason[] {
@@ -632,6 +635,15 @@ export function parseHostPressureReasons(reasons: string[]): HostPressureReason[
     }
   }
   return parsed
+}
+
+export function parseHostPressureOs(value: string | undefined): HostPressureOs | undefined {
+  if (!value) return undefined
+  const normalized = value.toLowerCase()
+  if (normalized === 'darwin' || normalized === 'macos' || normalized === 'osx') return 'darwin'
+  if (normalized === 'linux') return 'linux'
+  if (normalized === 'win32' || normalized === 'windows') return 'win32'
+  return undefined
 }
 
 export function isHostPressureLevel(level: string): level is HostPressureLevel {

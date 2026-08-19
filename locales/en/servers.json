@@ -93,16 +93,36 @@
     "selectAtLeastOne": "Select at least one conversation to prune."
   },
   "hostPressure": {
-    "bannerElevated": "{{server}} is under load ({{count}} agents running)",
-    "bannerCritical": "{{server}} is critically low on resources ({{count}} agents running)",
-    "sheetBody": "{{count}} agents are running on {{server}}",
-    "dismiss": "Dismiss",
-    "reason": {
-      "memory": "Memory pressure",
-      "event_loop": "Event-loop delay",
-      "load": "High system load",
-      "agents": "Too many live agents"
-    }
+    "banner": {
+      "memoryElevated": "{{server}} is under memory pressure.",
+      "memoryCritical": "{{server}} is low on memory.",
+      "loadElevated": "{{server}} is under load.",
+      "loadCritical": "{{server}} is running at full load.",
+      "eventLoopElevated": "{{server}} is responding slowly.",
+      "eventLoopCritical": "{{server}} is badly delayed.",
+      "agents": "{{server}} has too many live agents.",
+      "fallbackElevated": "{{server}} is under pressure.",
+      "fallbackCritical": "{{server}} is under heavy pressure."
+    },
+    "modalLead": "New sessions may be slow until something is closed on the computer.",
+    "detected": {
+      "memory": "The computer is low on free RAM.",
+      "event_loop": "The Threadbase server itself is delayed. Other work on the computer is crowding it.",
+      "load": "The CPU is busy.",
+      "agents": "{{count}} agents are running on this computer."
+    },
+    "whyFine": {
+      "memory": "The CPU can still look idle. The OS will swap RAM to disk, so the machine feels fine until something new needs memory.",
+      "event_loop": "Sessions you already have still work. New ones wait behind that delay.",
+      "load": "A high load can sit there even when the screen looks quiet. Background compiles, VMs, and indexing add up."
+    },
+    "whatToDo": {
+      "darwin": "On this Mac, quit Cursor, Chrome, or any VMs you don't need. Activity Monitor shows what's using RAM and CPU.",
+      "linux": "On this Linux machine, quit heavy editors, browsers, or VMs. System Monitor or top shows what's using RAM and CPU.",
+      "win32": "On this Windows PC, quit Cursor, Chrome, or any VMs you don't need. Task Manager shows what's using RAM and CPU.",
+      "generic": "On the computer, quit Cursor, Chrome, or any VMs you don't need, then check RAM and CPU."
+    },
+    "dismiss": "Dismiss"
   },
   "claudeFlags": {
     "title": "Claude CLI flags",

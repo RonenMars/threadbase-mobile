@@ -30,7 +30,7 @@ import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
-import { isHostPressureLevel, parseHostPressureReasons, type Session } from '@/types/api'
+import { isHostPressureLevel, parseHostPressureOs, parseHostPressureReasons, type Session } from '@/types/api'
 import { authToken } from '@/services/authed-fetch'
 import { registerPushTokenForAll } from '@/services/push'
 import {
@@ -243,11 +243,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         : 0
       const updatedAt = typeof msg.updatedAt === 'string' ? msg.updatedAt : ''
       const reasons = Array.isArray(msg.reasons) ? parseHostPressureReasons(msg.reasons) : []
+      const os = typeof msg.os === 'string' ? parseHostPressureOs(msg.os) : undefined
       setHostPressure(msg.serverId, {
         level: msg.level,
         reasons,
         liveAgents,
         updatedAt,
+        ...(os ? { os } : {}),
       })
     })
     const unsubHostPressureCleared = wsManager.onAll('host_pressure_cleared', (msg) => {
