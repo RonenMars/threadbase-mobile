@@ -9,6 +9,7 @@
     "close": "Close",
     "exchanging": "Exchanging pair token…",
     "errorTitle": "Pairing failed",
+    "alreadyAddedTitle": "Server already added",
     "tryAgain": "Try again",
     "contactSupport": "Need help? Contact support",
     "reticleHint": "Point at the QR shown by your server",
@@ -32,7 +33,8 @@
         "e2ee-version": "This server encrypts pairing in a version this app does not speak. Update the app and the streamer to matching versions.",
         "e2ee-refused": "This server offered an encrypted pairing and then did not finish it. Generate a fresh pairing code on your server and scan it again.",
         "e2ee-web-unsupported": "Encrypted pairing needs the Threadbase app for iOS or Android. A browser cannot store the key that identifies this device."
-      }
+      },
+      "alreadyAdded": "This address is already in your list. Delete that server first if you want to add it again."
     }
   },
   "confirm": {

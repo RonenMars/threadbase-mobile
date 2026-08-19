@@ -450,6 +450,11 @@ await refreshServerInfo(serverId)
     })
     if (typeof addResult === 'string') {
       wsManager.connect(addResult, result.url, result.apiKey)
+    } else {
+      Alert.alert(
+        i18n.t('pair:scanner.alreadyAddedTitle'),
+        i18n.t('pair:scanner.errors.alreadyAdded'),
+      )
     }
   }
 

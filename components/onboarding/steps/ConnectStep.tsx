@@ -17,7 +17,8 @@ import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard
 import { pendingTargetFromPaste } from '@/services/pair-confirm-target'
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { ServerFormFields } from '@/components/servers/ServerFormFields'
-import { classifyPairCredential, type ExchangeResult } from '@/services/pair-exchange'
+import { classifyPairCredential, parsePairUri, type ExchangeResult } from '@/services/pair-exchange'
+import { isServerUrlAlreadyAdded } from '@/stores/servers'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isValidHttpServerUrl } from '@/lib/serverUrl'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -91,7 +92,7 @@ const copyStyles = StyleSheet.create({
 })
 
 export function ConnectStep({ onPaired, onAdvance }: Props) {
-  const { t } = useTranslation('onboarding')
+  const { t } = useTranslation(['onboarding', 'pair'])
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
   const [urlHost, setUrlHost] = useState('')
   const [token, setToken] = useState('')
@@ -119,6 +120,16 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       if (!isValidHttpServerUrl(fullUrl)) {
         setUrlError(t('connect.invalidUrl'))
         return
+      }
+    } else {
+      try {
+        const parsed = parsePairUri(token)
+        if (isServerUrlAlreadyAdded(parsed.url)) {
+          setUrlError(t('pair:scanner.errors.alreadyAdded'))
+          return
+        }
+      } catch {
+        // parsePairUri throws on a bad URI; pair() reports that itself.
       }
     }
     setUrlError(null)

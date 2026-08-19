@@ -67,13 +67,14 @@ describe('addServer – duplicate detection', () => {
     expect(result).toEqual({ error: 'duplicate' })
   })
 
-  it('allows same URL with different API key', async () => {
+  it('returns duplicate error when the URL already exists, even with a different API key', async () => {
     seedServer()
     const result = await useServersStore.getState().addServer(
-      'http://192.168.1.10:7070',
+      'http://192.168.1.10:7070/',
       'key-different',
     )
-    expect(result).not.toEqual({ error: 'duplicate' })
+    expect(result).toEqual({ error: 'duplicate' })
+    expect(useServersStore.getState().servers.srv_test1.apiKey).toBe('key-abc')
   })
 
   it('allows same API key with different URL', async () => {
@@ -195,6 +196,25 @@ describe('editServer', () => {
     const result = await useServersStore.getState().editServer('srv_test1', {
       url: 'http://other:7070',
       apiKey: 'k2',
+      label: '',
+    })
+    expect(result).toEqual({ error: 'duplicate' })
+  })
+
+  it('returns duplicate error when the new URL matches another server with a different key', async () => {
+    seedServer()
+    useServersStore.setState((s) => {
+      const second = { id: 'srv_second', url: 'http://other:7070', apiKey: 'k2', isConnected: false, serverInfo: null, connectionError: null }
+      return {
+        servers: { ...s.servers, srv_second: second },
+        activeServerIds: [...s.activeServerIds, 'srv_second'],
+        displayedServerIds: [...s.displayedServerIds, 'srv_second'],
+      }
+    })
+
+    const result = await useServersStore.getState().editServer('srv_test1', {
+      url: 'http://other:7070',
+      apiKey: 'different-key',
       label: '',
     })
     expect(result).toEqual({ error: 'duplicate' })

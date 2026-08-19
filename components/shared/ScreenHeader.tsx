@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { goBackOrHub } from '@/lib/goBackOrHub'
 
 interface Props {
   title?: string
@@ -18,21 +19,11 @@ export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
   const styles = makeStyles(theme)
-  // Deep links (push notifications, threadbase:// URLs) can mount a screen as
-  // the only entry in the stack — there is nothing to pop, so GO_BACK would be
-  // unhandled. Fall back to the hub instead.
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back()
-    } else {
-      router.replace('/')
-    }
-  }
   return (
     <View style={styles.bar}>
       <Pressable
         testID="screen-header-back-button"
-        onPress={onBack ?? goBack}
+        onPress={onBack ?? (() => goBackOrHub(router))}
         hitSlop={16}
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}
         accessibilityLabel={t('button.back')}
