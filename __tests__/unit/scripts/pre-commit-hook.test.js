@@ -15,6 +15,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '../../..');
 const HOOK = path.join(ROOT, 'scripts/git-hooks/pre-commit');
 const RESET = path.join(ROOT, 'scripts/reset-podfile-lock-path-noise.sh');
+const STORY_CHECK = path.join(ROOT, 'scripts/check-story-coverage.js');
 const BASH = '/bin/bash';
 const GIT = fs.existsSync('/opt/homebrew/bin/git')
   ? '/opt/homebrew/bin/git'
@@ -57,6 +58,7 @@ beforeEach(() => {
   fs.mkdirSync(path.join(repo, 'scripts/git-hooks'), { recursive: true });
   fs.copyFileSync(RESET, path.join(repo, 'scripts', path.basename(RESET)));
   fs.chmodSync(path.join(repo, 'scripts', path.basename(RESET)), 0o755);
+  fs.copyFileSync(STORY_CHECK, path.join(repo, 'scripts', path.basename(STORY_CHECK)));
   fs.copyFileSync(HOOK, path.join(repo, 'scripts/git-hooks/pre-commit'));
   fs.writeFileSync(path.join(repo, 'ios/Podfile.lock'), COMMITTED);
   git(repo, ['add', '.']);

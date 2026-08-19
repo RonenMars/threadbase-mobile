@@ -74,6 +74,10 @@ For physical devices or off-network dev, see `docs/dev-on-physical-device-ios.md
 
 **Web (early spike, not full parity):** `npx expo start --web`. See [docs/expo-web-support.md](docs/expo-web-support.md) for status and known blockers.
 
+**Component catalog (laptop, Chrome):** `npm run storybook` opens an isolated-component
+Storybook at `http://localhost:6006` via Vite — unrelated to the Web target above. See
+[docs/storybook.md](docs/storybook.md).
+
 On first launch, add a server via QR scan or manual entry during Onboarding.
 
 ## 📁 Project Structure

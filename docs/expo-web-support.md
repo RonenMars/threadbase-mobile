@@ -4,6 +4,9 @@ Threadbase Mobile can run as a web app via Expo's `web` platform target, reusing
 same React Native codebase (Expo Router, Zustand stores, components) instead of a
 separate web project.
 
+Not to be confused with [Storybook](./storybook.md), which mounts one component at a
+time via Vite for isolated dev/design work — no app shell, no stores hydration.
+
 ## Prerequisites
 
 `web` must be present in `app.json`'s `expo.platforms` array, and `react-dom`,

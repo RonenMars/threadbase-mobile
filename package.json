@@ -17,6 +17,8 @@
     "prepare": "node -e \"const {execSync}=require('child_process');try{execSync('git config core.hooksPath scripts/git-hooks',{stdio:'ignore'})}catch(e){}\"",
     "postinstall": "patch-package",
     "start": "expo start",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
     "dev:metro": "node scripts/dev-metro.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -136,6 +138,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@react-native/jest-preset": "^0.86.0",
+    "@storybook/react-native-web-vite": "10.5.9",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.0",
@@ -149,9 +152,11 @@
     "patch-package": "^8.0.1",
     "react-refresh": "^0.18.0",
     "react-test-renderer": "19.2.7",
+    "storybook": "10.5.9",
     "tailwindcss": "^3.4.10",
     "test-renderer": "^1.2.0",
     "typescript": "~6.0.3",
+    "vite": "7.3.6",
     "ws": "^8.21.1"
   },
   "expo": {
@@ -178,7 +183,8 @@
       "/node_modules/",
       "/.claude/",
       "<rootDir>/.worktrees/",
-      "/__tests__/unit/scripts/"
+      "/__tests__/unit/scripts/",
+      "\\.stories\\.tsx$"
     ],
     "modulePathIgnorePatterns": [
       "<rootDir>/.worktrees/"
