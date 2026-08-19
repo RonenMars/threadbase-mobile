@@ -62,6 +62,46 @@ appId: com.ronenmars.threadbase
       - swipe:
           start: 50%, 90%
           end: 50%, 20%
+
+# Android CI Pixel (run 32245888850): four swipes still showed About with
+# HELP cut off at the bottom; Server health was in the tree, Help &
+# Feedback was not. Extra swipes are Android-only so iOS stays put.
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
 - assertVisible:
     id: "settings-help-feedback-row"
 
