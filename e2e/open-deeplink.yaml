@@ -45,14 +45,14 @@ appId: com.ronenmars.threadbase
                 text: "Open"
                 retryTapIfNoChange: true
             - waitForAnimationToEnd
-      - runFlow:
-          when:
-            visible: "Open in"
-          commands:
-            - tapOn:
-                text: "Open"
-                retryTapIfNoChange: true
-            - waitForAnimationToEnd
+      # First stopApp+openLink of a suite can sit on the splash well past
+      # the callers' 12s dest wait (bug6 on run 32224568103). Later
+      # conversation/session flows passed. id is regex.
+      - extendedWaitUntil:
+          visible:
+            id: "conversation-bottom-bar|session-detail-screen"
+          timeout: 40000
+          optional: true
 
 - runFlow:
     when:
