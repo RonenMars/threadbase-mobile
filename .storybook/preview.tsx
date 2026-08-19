@@ -9,13 +9,17 @@ import '@/global.css'
 const THEME_OPTIONS: Exclude<ThemeId, 'system' | 'appleGlass'>[] = ['dark', 'light', 'dracula', 'catppuccin']
 
 function ThemedStory({ themeId, children }: { themeId: ThemeId; children: React.ReactNode }) {
+  const bg = THEMES[themeId === 'system' ? 'dark' : themeId].bg.primary
+
   useEffect(() => {
     useSettingsStore.setState({ colorScheme: themeId })
-  }, [themeId])
+    document.documentElement.style.background = bg
+    document.body.style.background = bg
+  }, [themeId, bg])
 
   return (
     <ThemeProvider>
-      <div style={{ minHeight: '100%', background: THEMES[themeId === 'system' ? 'dark' : themeId].bg.primary }}>
+      <div style={{ minHeight: '100vh', background: bg }}>
         {children}
       </div>
     </ThemeProvider>
@@ -50,6 +54,10 @@ const preview: Preview = {
         color: /(background|color)$/i,
         date: /Date$/i,
       },
+    },
+    backgrounds: {
+      default: 'dark',
+      values: [{ name: 'dark', value: THEMES.dark.bg.primary }],
     },
   },
 }
