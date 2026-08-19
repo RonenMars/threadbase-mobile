@@ -92,6 +92,18 @@ appId: com.ronenmars.threadbase
 # After typing, KeyboardAvoidingView needs a beat to settle. 5s was too short
 # on Android (run 32040349995); the headed re-run showed send on screen while
 # tapOn was still waiting on the default timeout.
+#
+# Real Android lifts the composer above the IME (adjustResize +
+# keyboard-controller). Maestro's CI IME does not: #52 (32254187459) had
+# the keyboard over the bar and no chat-send-button in the tree. Tap
+# session chrome to blur. Do not hideKeyboard — that is Back and pops.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: "50%, 25%"
+      - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
       id: "chat-send-button"
