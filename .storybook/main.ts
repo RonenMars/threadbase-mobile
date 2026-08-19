@@ -19,6 +19,9 @@ const config: StorybookConfig = {
       ],
       pluginReactOptions: {
         jsxImportSource: 'nativewind',
+        babel: {
+          plugins: ['react-native-worklets/plugin'],
+        },
       },
     },
   },
