@@ -33,7 +33,7 @@ interface Props {
 export function AddServerScreen({ isAddingServer }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const { t } = useTranslation(['servers', 'shared', 'settings', 'common'])
+  const { t } = useTranslation(['servers', 'shared', 'settings', 'common', 'pair'])
   const router = useRouter()
   const navigation = useNavigation()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
@@ -138,7 +138,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           requireEncryption,
         })
         if (typeof addResult !== 'string') {
-          setError('This server is already in your list.')
+          setError(t('pair:scanner.errors.alreadyAdded'))
           return
         }
         const id = addResult

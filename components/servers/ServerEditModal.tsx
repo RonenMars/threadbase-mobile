@@ -34,7 +34,7 @@ interface Props {
 }
 
 export function ServerEditModal({ visible, serverId, onClose }: Props) {
-  const { t } = useTranslation(['common', 'servers'])
+  const { t } = useTranslation(['common', 'servers', 'pair'])
   const theme = useTheme()
   const { addServer, editServer } = useServersStore()
   const isEditMode = serverId !== null
@@ -128,7 +128,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     if (isEditMode && serverId) {
       const result = await editServer(serverId, { url: trimmedUrl, apiKey: trimmedKey, label: labelArg })
       if (result && 'error' in result && result.error === 'duplicate') {
-        setError('A server with this URL and API key already exists.')
+        setError(t('pair:scanner.errors.alreadyAdded'))
         return
       }
       const state = useServersStore.getState()
@@ -142,7 +142,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     } else {
       const result = await addServer(trimmedUrl, trimmedKey, labelArg, pendingScanMeta.current)
       if (result && typeof result === 'object' && 'error' in result && result.error === 'duplicate') {
-        setError('A server with this URL and API key already exists.')
+        setError(t('pair:scanner.errors.alreadyAdded'))
         return
       }
       const newId = result as string

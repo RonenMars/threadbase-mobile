@@ -161,27 +161,33 @@ describe('PairDeepLinkScreen', () => {
   it('shows a real error for an expired link, without exchanging', async () => {
     setParams({ url: 'https://example.test', token: 'pt_x', exp: '1' })
 
-    const { findByText } = await renderWithI18n(<PairDeepLinkScreen />)
+    const screen = await renderWithI18n(<PairDeepLinkScreen />)
 
     expect(
-      await findByText('This pair QR has expired. Run tb pair on your server again.'),
+      await screen.findByText('This pair QR has expired. Run tb pair on your server again.'),
     ).toBeTruthy()
     expect(exchangeToken).not.toHaveBeenCalled()
     expect(mockReplace).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('pair-deep-link-try-again')).toBeNull()
+    fireEvent.press(await screen.findByTestId('pair-deep-link-close'))
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
   it('shows an invalid-link error when the url or token is missing', async () => {
     setParams({ token: 'pt_x' })
 
-    const { findByText } = await renderWithI18n(<PairDeepLinkScreen />)
+    const screen = await renderWithI18n(<PairDeepLinkScreen />)
 
     expect(
-      await findByText("That QR doesn't look like a Threadbase pair code."),
+      await screen.findByText("That QR doesn't look like a Threadbase pair code."),
     ).toBeTruthy()
     expect(exchangeToken).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('pair-deep-link-try-again')).toBeNull()
+    fireEvent.press(await screen.findByTestId('pair-deep-link-close'))
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
-  it('is idempotent when the server is already paired, without re-exchanging', async () => {
+  it('shows an already-added error when the server is already paired, without re-exchanging', async () => {
     useServersStore.setState({
       servers: {
         'srv-1': {
@@ -201,11 +207,23 @@ describe('PairDeepLinkScreen', () => {
     // strips it, so this must still match the already-paired server.
     setParams({ url: 'https://example.test/', token: 'pt_abc', exp: FUTURE_EXP })
 
-    await renderWithI18n(<PairDeepLinkScreen />)
+    const screen = await renderWithI18n(<PairDeepLinkScreen />)
 
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    expect(await screen.findByTestId('pair-deep-link-already-added')).toBeTruthy()
+    expect(
+      await screen.findByText(
+        'This address is already in your list. Delete that server first if you want to add it again.',
+      ),
+    ).toBeTruthy()
+    expect(await screen.findByText('Server already added')).toBeTruthy()
+    expect(screen.queryByTestId('pair-deep-link-try-again')).toBeNull()
+    expect(screen.queryByTestId('pair-deep-link-support')).toBeNull()
     expect(exchangeToken).not.toHaveBeenCalled()
+    expect(mockReplace).not.toHaveBeenCalled()
     expect(Object.keys(useServersStore.getState().servers)).toEqual(['srv-1'])
+
+    fireEvent.press(await screen.findByTestId('pair-deep-link-close'))
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
   it('does not add the server when the confirmation is cancelled', async () => {
@@ -312,6 +330,7 @@ describe('PairDeepLinkScreen', () => {
     ).toBeTruthy()
     expect(exchangeToken).not.toHaveBeenCalled()
     expect(queryByTestId('pair-deep-link-try-again')).toBeNull()
+    expect(queryByTestId('pair-deep-link-close')).toBeTruthy()
   })
 
   it.each<[pairExchange.PairExchangeError['kind'], string]>([
@@ -335,6 +354,7 @@ describe('PairDeepLinkScreen', () => {
 
     expect(await findByText(message)).toBeTruthy()
     expect(queryByTestId('pair-deep-link-try-again')).toBeNull()
+    expect(queryByTestId('pair-deep-link-close')).toBeTruthy()
     expect(queryByTestId('pair-deep-link-support')).toBeTruthy()
   })
 
@@ -346,5 +366,26 @@ describe('PairDeepLinkScreen', () => {
 
     expect(await findByText('Pairing failed.')).toBeTruthy()
     expect(queryByText(/Network request failed/)).toBeNull()
+  })
+
+  // OS-camera QR with the app closed mounts this screen as the only stack
+  // entry. Back must go to the hub, not fire an unhandled GO_BACK.
+  it('sends the header back to the hub when this is the only stack entry', async () => {
+    const back = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({
+      push: jest.fn(),
+      replace: mockReplace,
+      back,
+      navigate: jest.fn(),
+      setParams: jest.fn(),
+      canGoBack: () => false,
+    })
+    setParams({ url: 'https://example.test', token: 'pt_x', exp: '1' })
+
+    const screen = await renderWithI18n(<PairDeepLinkScreen />)
+    fireEvent.press(await screen.findByTestId('screen-header-back-button'))
+
+    expect(back).not.toHaveBeenCalled()
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 })

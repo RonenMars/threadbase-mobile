@@ -26,6 +26,16 @@ function secureKeyForDeviceToken(serverId: string): string {
   return `threadbase_device_token_${serverId}`
 }
 
+export function normalisedServerUrl(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
+export function isServerUrlAlreadyAdded(url: string): boolean {
+  const normalised = normalisedServerUrl(url)
+  const { servers, activeServerIds } = useServersStore.getState()
+  return activeServerIds.some((id) => servers[id]?.url === normalised)
+}
+
 /**
  * Extra facts a pair exchange produces, beyond the url/key/label a manual add
  * supplies. Named `…DeviceMeta` until `publicUrl` joined it, which is about the
@@ -229,13 +239,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     label?: string,
     device?: AddServerMeta,
   ): Promise<string | { error: 'duplicate' }> => {
-    const normalised = url.replace(/\/+$/, '')
+    const normalised = normalisedServerUrl(url)
 
-    // Duplicate check: same normalised URL AND same API key
     const { servers, activeServerIds } = get()
     for (const id of activeServerIds) {
       const s = servers[id]
-      if (s && s.url === normalised && s.apiKey === apiKey) {
+      if (s && s.url === normalised) {
         return { error: 'duplicate' }
       }
     }
@@ -436,14 +445,13 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     serverId: string,
     patch: { url: string; apiKey: string; label?: string },
   ): Promise<void | { error: 'duplicate' }> => {
-    const normalised = patch.url.replace(/\/+$/, '')
+    const normalised = normalisedServerUrl(patch.url)
     const { servers, activeServerIds } = get()
 
-    // Duplicate check: same URL+key as any OTHER server
     for (const id of activeServerIds) {
       if (id === serverId) continue
       const s = servers[id]
-      if (s && s.url === normalised && s.apiKey === patch.apiKey) {
+      if (s && s.url === normalised) {
         return { error: 'duplicate' }
       }
     }
