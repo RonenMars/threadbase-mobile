@@ -899,13 +899,25 @@ await refreshServerInfo(serverId)
           ) : null}
           {__DEV__ ? (
             <TouchableOpacity
-              style={[s.row, { borderBottomWidth: 0 }]}
+              style={s.row}
               onPress={handleThrowUncaught}
               accessibilityRole="button"
               accessibilityLabel={t('crashReporting.testThrow')}
               testID="settings-throw-uncaught-btn"
             >
               <Text style={s.rowLabel}>{t('crashReporting.testThrow')}</Text>
+              <Text style={s.rowValue}>›</Text>
+            </TouchableOpacity>
+          ) : null}
+          {__DEV__ ? (
+            <TouchableOpacity
+              style={[s.row, { borderBottomWidth: 0 }]}
+              onPress={() => router.push('/dev/scanner')}
+              accessibilityRole="button"
+              accessibilityLabel={t('dev.scannerPreview')}
+              testID="settings-scanner-preview-btn"
+            >
+              <Text style={s.rowLabel}>{t('dev.scannerPreview')}</Text>
               <Text style={s.rowValue}>›</Text>
             </TouchableOpacity>
           ) : null}

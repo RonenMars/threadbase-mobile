@@ -95,6 +95,9 @@
     "testCrashConfirmMessage": "يؤدي هذا إلى إطلاق خطأ اختباري للتأكد من أن الإبلاغ يعمل. متاح فقط في إصدارات التطوير.",
     "testCrashSend": "إرسال عطل اختباري"
   },
+  "dev": {
+    "scannerPreview": "ماسح Knight Rider"
+  },
   "servers": {
     "scanQr": "امسح QR لإضافة خادم"
   },

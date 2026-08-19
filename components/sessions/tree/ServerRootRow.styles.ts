@@ -57,15 +57,5 @@ export function makeStyles(theme: Theme) {
     color: theme.text.accent,
     fontWeight: '600',
   },
-  syncChip: {
-    fontSize: font.xs - 1,
-    fontWeight: '500',
-    color: theme.status.waiting,
-    backgroundColor: theme.status.waiting + '21',
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    flexShrink: 1,
-  },
   })
 }
