@@ -20,9 +20,9 @@
     "invalidUrl": "הזינו כתובת שרת מלאה שמתחילה ב־http:// או https://.",
     "contactSupport": "צריכים עזרה? פנו לתמיכה",
     "scanQr": "סרוק QR",
-    "scanQrBody": "הרץ tb pair על השרת שלך כדי להדפיס QR. הכי מהיר, בלי הקלדה.",
+    "scanQrBody": "הרץ tb-streamer pair על השרת שלך כדי להדפיס QR. הכי מהיר, בלי הקלדה.",
     "pasteCredentials": "הקלד / הדבק באופן ידני",
-    "pasteCredentialsBody": "הרץ tb pair על השרת שלך, ואז הדבק את ה-URL והטוקן — או את קישור threadbase:// המלא.",
+    "pasteCredentialsBody": "הרץ tb-streamer pair על השרת שלך, ואז הדבק את ה-URL והטוקן — או את קישור threadbase:// המלא.",
     "qrEyebrow": "> 02 / זיווג · QR",
     "qrHeadline": "סרוק כדי לזווג.",
     "openCamera": "פתח מצלמה",
@@ -38,9 +38,9 @@
     "connectErr": "נסה שוב",
     "connectBusy": "…מתחבר",
     "backToOptions": "← אפשרויות אחרות",
-    "step1": "1. על השרת שלך, הרץ tb pair. QR יודפס לטרמינל.",
+    "step1": "1. על השרת שלך, הרץ tb-streamer pair. QR יודפס לטרמינל.",
     "step2": "2. הקש על פתח מצלמה למטה. Threadbase תבקש הרשאה להשתמש במצלמה — היא משמשת רק לקריאת ה-QR.",
-    "step3": "3. כוון את הטלפון ל-QR. הטוקן תקף ל-3 דקות; אם פג, הרץ tb pair שוב."
+    "step3": "3. כוון את הטלפון ל-QR. הטוקן תקף ל-3 דקות; אם פג, הרץ tb-streamer pair שוב."
   },
   "done": {
     "eyebrowPaired": "לחיצת היד הושלמה",

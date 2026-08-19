@@ -282,7 +282,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       <TerminalCard>
         <Text style={styles.sectionLabel}>{t('connect.manualSectionLabel')}</Text>
         <Text style={styles.sectionHint}>{t('connect.manualSectionHint')}</Text>
-        <CopyableCommand command="tb pair" />
+        <CopyableCommand command="tb-streamer pair" />
         <Text style={[styles.sectionHint, { marginTop: 6 }]}>{t('connect.manualSectionPasteHint')}</Text>
       </TerminalCard>
 
@@ -315,7 +315,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
               linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
             >
               {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-              <Text>A short-lived pt_ token or the full threadbase:// link from tb pair. Valid for 3 minutes — run tb pair again if it expires. Long-lived tb_ API keys also work.</Text>
+              <Text>A short-lived pt_ token or the full threadbase:// link from tb-streamer pair. Valid for 3 minutes — run tb-streamer pair again if it expires. Long-lived tb_ API keys also work.</Text>
             </InfoTooltip>
           }
           editable={!busy}
