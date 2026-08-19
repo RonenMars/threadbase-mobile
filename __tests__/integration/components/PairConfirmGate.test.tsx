@@ -156,6 +156,14 @@ describe('PairConfirmGate', () => {
     expect(onConfirm).not.toHaveBeenCalled()
   })
 
+  it('uses the app screen header and treats its back control as cancel', async () => {
+    const { screen, onConfirm, onCancel } = await renderGate()
+    expect(await screen.findByText('Pairing')).toBeTruthy()
+    fireEvent.press(await screen.findByTestId('screen-header-back-button'))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
   it('does not dismiss on a backdrop tap — there is no backdrop', async () => {
     const { screen, onConfirm, onCancel } = await renderGate()
     expect(screen.queryByTestId('pair-confirm-backdrop')).toBeNull()
