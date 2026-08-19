@@ -116,7 +116,7 @@ describe('PairConfirmGate', () => {
     expect(await screen.findByText('No identity to verify')).toBeTruthy()
     expect(
       await screen.findByText(
-        "This link doesn't include a fingerprint, so you can't check which computer it belongs to. Anything you send will be readable by anything between this device and the server.",
+        "This link doesn't include an identity code, so you can't check which computer it belongs to. Anything you send will be readable by anything between this device and the server.",
       ),
     ).toBeTruthy()
   })
