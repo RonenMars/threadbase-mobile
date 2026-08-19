@@ -138,7 +138,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           requireEncryption,
         })
         if (typeof addResult !== 'string') {
-          setError('This server is already in your list.')
+          setError(t('pair:scanner.errors.alreadyAdded'))
           return
         }
         const id = addResult

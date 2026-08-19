@@ -15,7 +15,7 @@
  * color mode.
  */
 import React from 'react'
-import { render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 import type { NativeStackNavigationOptions } from 'expo-router'
 
 import { ThemedStack } from '@/app/_layout'
@@ -42,6 +42,14 @@ const mockCapture: {
   navTheme?: NavTheme
   screenOptions?: NativeStackNavigationOptions
 } = {}
+
+const mockStackRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  back: jest.fn(),
+  navigate: jest.fn(),
+  canGoBack: jest.fn(() => true),
+}
 
 // Override the global jest.setup.js mock: tests here drive theme + glass mode.
 jest.mock('@/contexts/ThemeContext', () => ({
@@ -88,13 +96,7 @@ jest.mock('expo-router', () => {
     },
     DefaultTheme,
     DarkTheme,
-    useRouter: () => ({
-      push: jest.fn(),
-      replace: jest.fn(),
-      back: jest.fn(),
-      navigate: jest.fn(),
-      canGoBack: jest.fn(() => true),
-    }),
+    useRouter: () => mockStackRouter,
     useSegments: () => [],
     useGlobalSearchParams: () => ({}),
     useRootNavigationState: () => ({ key: 'root' }),
@@ -154,6 +156,15 @@ async function renderThemedStack(theme: Theme, isGlass: boolean) {
 }
 
 describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', () => {
+  beforeEach(() => {
+    mockStackRouter.push.mockReset()
+    mockStackRouter.replace.mockReset()
+    mockStackRouter.back.mockReset()
+    mockStackRouter.navigate.mockReset()
+    mockStackRouter.canGoBack.mockReset()
+    mockStackRouter.canGoBack.mockReturnValue(true)
+  })
+
   it('provides a transparent nav background under a glass theme', async () => {
     await renderThemedStack(appleGlassThemes.aurora, true)
 
@@ -185,5 +196,23 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
     expect(mockCapture.navTheme?.colors.background).toBe(light.bg.primary)
     expect(mockCapture.navTheme?.dark).toBe(false)
     expect(mockCapture.navTheme?.colors.text).toBe(NavDefaultTheme.colors.text)
+  })
+
+  // A closed-app OS-camera QR opens pairing as the only stack entry. The
+  // native header used to call router.back() unconditionally and LogBox
+  // "GO_BACK was not handled by any navigator".
+  it('falls back to the hub from the native header when the stack cannot go back', async () => {
+    mockStackRouter.canGoBack.mockReturnValue(false)
+    await renderThemedStack(dark, false)
+
+    const HeaderLeft = mockCapture.screenOptions?.headerLeft
+    expect(HeaderLeft).toBeDefined()
+    const { getByTestId } = await render(
+      <>{HeaderLeft?.({ tintColor: '#fff', canGoBack: false })}</>,
+    )
+    fireEvent.press(getByTestId('header-back'))
+
+    expect(mockStackRouter.back).not.toHaveBeenCalled()
+    expect(mockStackRouter.replace).toHaveBeenCalledWith('/')
   })
 })

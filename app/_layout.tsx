@@ -38,6 +38,7 @@ import {
   reconcile as reconcileLiveActivity,
 } from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
+import { goBackOrHub } from '@/lib/goBackOrHub'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
@@ -385,7 +386,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },
         headerLeft: ({ tintColor }) => (
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBackOrHub(router)}
             hitSlop={16}
             style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
             accessibilityLabel="Back"
@@ -398,10 +399,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="pair"
-        options={{ title: i18n.t('pair:screenTitle'), headerShown: true }}
-      />
+      <Stack.Screen name="pair" options={{ headerShown: false }} />
       <Stack.Screen name="session" options={{ headerShown: false }} />
       <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
       <Stack.Screen

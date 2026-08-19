@@ -24,6 +24,7 @@ import {
 } from '@/services/pair-exchange'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
+import { isServerUrlAlreadyAdded } from '@/stores/servers'
 
 interface Props {
   visible: boolean
@@ -53,6 +54,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
+  const [alreadyAdded, setAlreadyAdded] = useState(false)
   const [canRetry, setCanRetry] = useState(true)
   const [scanEnabled, setScanEnabled] = useState(true)
   const handledRef = useRef(false)
@@ -62,6 +64,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
     setScanEnabled(true)
     setPhase('scanning')
     setError(null)
+    setAlreadyAdded(false)
     setCanRetry(true)
   }, [])
 
@@ -82,6 +85,13 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       setPhase('exchanging')
       try {
         const parsed = parsePairUri(data)
+        if (isServerUrlAlreadyAdded(parsed.url)) {
+          setAlreadyAdded(true)
+          setError(t('scanner.errors.alreadyAdded'))
+          setCanRetry(false)
+          setPhase('error')
+          return
+        }
         const result = await exchangeToken({
           url: parsed.url,
           token: parsed.token,
@@ -93,6 +103,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
         onClose()
       } catch (err) {
         const failure = err instanceof Error ? err : new Error('Pairing failed')
+        setAlreadyAdded(false)
         setError(resolveErrorMessage(failure, t))
         setCanRetry(!(failure instanceof PairExchangeError) || isRetryablePairFailure(failure))
         setPhase('error')
@@ -152,25 +163,33 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       </View>
     )
   } else if (phase === 'error') {
+    const errorHeading = alreadyAdded ? t('scanner.alreadyAddedTitle') : t('scanner.errorTitle')
     body = (
       <View style={styles.center}>
-        <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
-        <Text style={styles.errorBody}>{error}</Text>
+        <Text style={styles.errorTitle}>{errorHeading}</Text>
+        <Text
+          style={styles.errorBody}
+          testID={alreadyAdded ? 'pair-scanner-already-added' : undefined}
+        >
+          {error}
+        </Text>
         {canRetry && (
           <TouchableOpacity testID="pair-scanner-try-again" style={styles.primaryBtn} onPress={reset}>
             <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          testID="pair-scanner-support"
-          onPress={() => {
-            void Linking.openURL(
-              `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
-            )
-          }}
-        >
-          <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>
-        </TouchableOpacity>
+        {alreadyAdded ? null : (
+          <TouchableOpacity
+            testID="pair-scanner-support"
+            onPress={() => {
+              void Linking.openURL(
+                `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
+              )
+            }}
+          >
+            <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     )
   } else {
