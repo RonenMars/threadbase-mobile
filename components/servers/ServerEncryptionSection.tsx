@@ -3,6 +3,8 @@ import { Alert, StyleSheet, Switch, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
+import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
+import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { useServersStore } from '@/stores/servers'
 
 interface Props {
@@ -27,6 +29,9 @@ export function ServerEncryptionSection({ serverId }: Props) {
   if (!server) return null
 
   const serverName = server.label ?? server.url
+  const fingerprint = server.serverPublicKey
+    ? formatFingerprint(server.serverPublicKey)
+    : null
 
   function handleChange(on: boolean) {
     if (on) {
@@ -44,32 +49,40 @@ export function ServerEncryptionSection({ serverId }: Props) {
   }
 
   return (
-    <View style={styles.row}>
-      <View style={styles.textBlock}>
-        <Text style={styles.label}>{t('encryption.requireLabel')}</Text>
-        <Text style={styles.hint}>{t('encryption.requireHint')}</Text>
+    <View style={styles.wrap}>
+      {fingerprint ? (
+        <IdentityFingerprintBlock fingerprint={fingerprint} variant="settings" />
+      ) : null}
+      <View style={styles.row}>
+        <View style={styles.textBlock}>
+          <Text style={styles.label}>{t('encryption.requireLabel')}</Text>
+          <Text style={styles.hint}>{t('encryption.requireHint')}</Text>
+        </View>
+        <Switch
+          value={server.requireEncryption === true}
+          onValueChange={handleChange}
+          trackColor={{ false: theme.border, true: theme.text.accent }}
+          thumbColor="#fff"
+          testID="server-require-encryption"
+        />
       </View>
-      <Switch
-        value={server.requireEncryption === true}
-        onValueChange={handleChange}
-        trackColor={{ false: theme.border, true: theme.text.accent }}
-        thumbColor="#fff"
-        testID="server-require-encryption"
-      />
     </View>
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
+    wrap: {
+      gap: spacing.md,
+      paddingTop: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.md,
-      paddingTop: spacing.sm,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.border,
     },
     textBlock: {
       flex: 1,

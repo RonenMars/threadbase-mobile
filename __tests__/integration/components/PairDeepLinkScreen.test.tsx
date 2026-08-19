@@ -123,7 +123,7 @@ describe('PairDeepLinkScreen', () => {
     })
 
     const screen = await renderWithI18n(<PairDeepLinkScreen />)
-    expect(await screen.findByTestId('pair-confirm-fingerprint')).toBeTruthy()
+    expect(await screen.findByTestId('identity-fingerprint')).toBeTruthy()
     expect(await screen.findByText('ronen-mac.local')).toBeTruthy()
     expect(Object.keys(useServersStore.getState().servers)).toHaveLength(0)
     fireEvent.press(await screen.findByTestId('pair-confirm-add-btn'))
