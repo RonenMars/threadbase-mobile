@@ -80,7 +80,7 @@ export function shouldRedirectToOnboarding(
   hasServers: boolean,
 ): boolean {
   if (hasServers) return false
-  return firstSegment !== 'onboarding' && firstSegment !== 'pair' && firstSegment !== 'dev'
+  return firstSegment !== 'onboarding' && firstSegment !== 'pair'
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
@@ -441,10 +441,6 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       <Stack.Screen
         name="backup-restore"
         options={{ title: i18n.t('settings:backup.screenTitle'), headerShown: true }}
-      />
-      <Stack.Screen
-        name="dev/scanner"
-        options={{ title: 'Scanner preview', headerShown: true }}
       />
       <Stack.Screen
         name="project/[id]"
