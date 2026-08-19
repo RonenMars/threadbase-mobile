@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import {
   Linking,
   StyleSheet,
@@ -12,6 +12,8 @@ import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { pendingTargetFromPaste } from '@/services/pair-confirm-target'
 import { ServerFormFields } from '@/components/servers/ServerFormFields'
 import { classifyPairCredential, type ExchangeResult } from '@/services/pair-exchange'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
@@ -95,7 +97,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   const [urlError, setUrlError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('choose')
   const [scannerOpen, setScannerOpen] = useState(false)
-  const { phase, log, pair } = useTBPair()
+  const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const pendingResult = useRef<PairResult | null>(null)
+  const { phase, log, pair, reset } = useTBPair()
 
   // A pasted threadbase:// pair URI carries its own server URL.
   const credentialKind = classifyPairCredential(token)
@@ -118,11 +122,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       url: urlHost.trim() ? `${protocol}://${urlHost.trim()}` : '',
       token,
       onSuccess: (result) => {
-        onPaired({
-          ...result,
-          label: label.trim() || result.label,
-        })
-        onAdvance()
+        const merged = { ...result, label: label.trim() || result.label }
+        pendingResult.current = merged
+        setConfirmTarget(pendingTargetFromPaste(token, merged))
       },
     })
   }
@@ -219,8 +221,9 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   }
 
   return (
+    <View style={styles.root}>
     <KeyboardAwareScrollView
-      style={styles.root}
+      style={styles.flex}
       contentContainerStyle={styles.rootContent}
       keyboardShouldPersistTaps="handled"
       bottomOffset={16}
@@ -358,6 +361,24 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       </PrimaryButton>
       <View style={{ height: 14 }} />
     </KeyboardAwareScrollView>
+    <PairConfirmGate
+        visible={confirmTarget !== null}
+        target={confirmTarget}
+        onConfirm={() => {
+          const result = pendingResult.current
+          pendingResult.current = null
+          setConfirmTarget(null)
+          if (!result) return
+          onPaired(result)
+          onAdvance()
+        }}
+        onCancel={() => {
+          pendingResult.current = null
+          setConfirmTarget(null)
+          reset()
+        }}
+      />
+    </View>
   )
 }
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import { useNavigation, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { pendingTargetFromApiKey } from '@/services/pair-confirm-target'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { NetworkError } from '@/services/api-client'
@@ -49,6 +51,12 @@ export function AddServerScreen({ isAddingServer }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [newServerId, setNewServerId] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const pendingConnect = useRef<{
+    url: string
+    apiKey: string
+    label?: string
+  } | null>(null)
 
   useEffect(() => {
     navigation.setOptions({
@@ -174,7 +182,8 @@ export function AddServerScreen({ isAddingServer }: Props) {
 
   const handleConnect = async () => {
     const url = `${protocol}://${serverUrl.replace(/\/$/, '')}`
-    await connectWith({ url, apiKey, label })
+    pendingConnect.current = { url, apiKey, label }
+    setConfirmTarget(pendingTargetFromApiKey(url))
   }
 
   const handleScanSuccess = async (result: ExchangeResult) => {
@@ -200,7 +209,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
   }
 
   return (
-    <>
+    <View style={styles.flex}>
       <KeyboardAwareScrollView
         style={styles.flex}
         contentContainerStyle={styles.container}
@@ -343,7 +352,21 @@ export function AddServerScreen({ isAddingServer }: Props) {
         onClose={() => setScannerOpen(false)}
         onSuccess={handleScanSuccess}
       />
-    </>
+      <PairConfirmGate
+        visible={confirmTarget !== null}
+        target={confirmTarget}
+        onConfirm={() => {
+          const args = pendingConnect.current
+          pendingConnect.current = null
+          setConfirmTarget(null)
+          if (args) void connectWith(args)
+        }}
+        onCancel={() => {
+          pendingConnect.current = null
+          setConfirmTarget(null)
+        }}
+      />
+    </View>
   )
 }
 

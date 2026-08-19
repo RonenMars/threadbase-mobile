@@ -35,6 +35,13 @@ const parsePairUri = pairExchange.parsePairUri as jest.MockedFunction<
 const mockReplace = jest.fn()
 const FUTURE_EXP = String(Math.floor(Date.now() / 1000) + 180)
 
+async function confirmAndAdd() {
+  const screen = await renderWithI18n(<PairDeepLinkScreen />)
+  fireEvent.press(await screen.findByTestId('pair-confirm-add-btn'))
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+  return screen
+}
+
 function setParams(params: {
   url?: string
   token?: string
@@ -81,9 +88,7 @@ describe('PairDeepLinkScreen', () => {
       e2eeRequired: false,
     })
 
-    await renderWithI18n(<PairDeepLinkScreen />)
-
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    await confirmAndAdd()
 
     expect(exchangeToken).toHaveBeenCalledWith({
       url: 'https://example.test',
@@ -117,7 +122,11 @@ describe('PairDeepLinkScreen', () => {
       e2eeRequired: false,
     })
 
-    await renderWithI18n(<PairDeepLinkScreen />)
+    const screen = await renderWithI18n(<PairDeepLinkScreen />)
+    expect(await screen.findByTestId('pair-confirm-fingerprint')).toBeTruthy()
+    expect(await screen.findByText('ronen-mac.local')).toBeTruthy()
+    expect(Object.keys(useServersStore.getState().servers)).toHaveLength(0)
+    fireEvent.press(await screen.findByTestId('pair-confirm-add-btn'))
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
 
     expect(parsePairUri).toHaveBeenCalled()
@@ -145,9 +154,7 @@ describe('PairDeepLinkScreen', () => {
       e2eeRequired: false,
     })
 
-    await renderWithI18n(<PairDeepLinkScreen />)
-
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    await confirmAndAdd()
     expect(Object.values(useServersStore.getState().servers)).toHaveLength(1)
   })
 
@@ -201,13 +208,34 @@ describe('PairDeepLinkScreen', () => {
     expect(Object.keys(useServersStore.getState().servers)).toEqual(['srv-1'])
   })
 
+  it('does not add the server when the confirmation is cancelled', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP })
+    exchangeToken.mockResolvedValue({
+      url: 'https://example.test',
+      apiKey: 'tb_sealed',
+      publicUrl: null,
+      machineName: 'ronen-mac.local',
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: null,
+      serverPublicKey: null,
+      e2eeRequired: false,
+    })
+
+    const screen = await renderWithI18n(<PairDeepLinkScreen />)
+    fireEvent.press(await screen.findByTestId('pair-confirm-cancel-btn'))
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    expect(Object.keys(useServersStore.getState().servers)).toHaveLength(0)
+  })
+
   it('shows a token-rejected error and lets the user retry', async () => {
     setParams({ url: 'https://example.test', token: 'pt_used', exp: FUTURE_EXP })
     exchangeToken.mockRejectedValueOnce(
       new pairExchange.PairExchangeError('token', 'Pair token rejected'),
     )
 
-    const { findByText } = await renderWithI18n(<PairDeepLinkScreen />)
+    const { findByText, findByTestId } = await renderWithI18n(<PairDeepLinkScreen />)
 
     expect(
       await findByText('Pair token rejected — generate a fresh QR on your server.'),
@@ -230,6 +258,7 @@ describe('PairDeepLinkScreen', () => {
       e2eeRequired: false,
     })
     fireEvent.press(await findByText('Try again'))
+    fireEvent.press(await findByTestId('pair-confirm-add-btn'))
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
     expect(exchangeToken).toHaveBeenCalledTimes(2)

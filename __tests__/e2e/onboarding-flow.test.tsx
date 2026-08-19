@@ -107,7 +107,7 @@ describe('Onboarding – successful connection', () => {
       json: jest.fn().mockResolvedValue([]),
     })
 
-    const { getByText, getByPlaceholderText } = await render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByTestId } = await render(<OnboardingScreen />)
 
     await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.100:7070')
     await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'valid-key')
@@ -115,6 +115,7 @@ describe('Onboarding – successful connection', () => {
     await act(async () => {
       await fireEvent.press(getByText('Connect'))
     })
+    await fireEvent.press(await findByTestId('pair-confirm-add-btn'))
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('/')
@@ -128,7 +129,7 @@ describe('Onboarding – error handling', () => {
   it('shows auth error message on 401 response', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 401, json: jest.fn().mockResolvedValue({}) })
 
-    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText, findByTestId } = await render(<OnboardingScreen />)
 
     await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
     await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'wrong-key')
@@ -136,6 +137,7 @@ describe('Onboarding – error handling', () => {
     await act(async () => {
       await fireEvent.press(getByText('Connect'))
     })
+    await fireEvent.press(await findByTestId('pair-confirm-add-btn'))
 
     // Pins the string, not a fragment of it: a regex on "API key" stays green
     // through a copy change that drops the pointer to where the real key lives.
@@ -146,7 +148,7 @@ describe('Onboarding – error handling', () => {
   it('shows generic network error for non-localhost URL', async () => {
     mockFetch.mockRejectedValue(new TypeError('Network request failed'))
 
-    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText, findByTestId } = await render(<OnboardingScreen />)
 
     await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
     await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
@@ -154,6 +156,7 @@ describe('Onboarding – error handling', () => {
     await act(async () => {
       await fireEvent.press(getByText('Connect'))
     })
+    await fireEvent.press(await findByTestId('pair-confirm-add-btn'))
 
     expect(await findByText(/Could not reach the server/)).toBeTruthy()
   })
@@ -161,7 +164,7 @@ describe('Onboarding – error handling', () => {
   it('shows localhost-specific warning when URL contains localhost', async () => {
     mockFetch.mockRejectedValue(new TypeError('Network request failed'))
 
-    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText, findByTestId } = await render(<OnboardingScreen />)
 
     await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), 'localhost:8766')
     await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'some-key')
@@ -169,6 +172,7 @@ describe('Onboarding – error handling', () => {
     await act(async () => {
       await fireEvent.press(getByText('Connect'))
     })
+    await fireEvent.press(await findByTestId('pair-confirm-add-btn'))
 
     expect(await findByText(/localhost/)).toBeTruthy()
   })
@@ -176,7 +180,7 @@ describe('Onboarding – error handling', () => {
   it('shows network error on 500 response (non-ok is treated as network error)', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: jest.fn().mockResolvedValue({}) })
 
-    const { getByText, getByPlaceholderText, findByText } = await render(<OnboardingScreen />)
+    const { getByText, getByPlaceholderText, findByText, findByTestId } = await render(<OnboardingScreen />)
 
     await fireEvent.changeText(getByPlaceholderText('192.168.x.x:8766'), '192.168.1.1:7070')
     await fireEvent.changeText(getByPlaceholderText('Paste your API token here'), 'key')
@@ -184,6 +188,7 @@ describe('Onboarding – error handling', () => {
     await act(async () => {
       await fireEvent.press(getByText('Connect'))
     })
+    await fireEvent.press(await findByTestId('pair-confirm-add-btn'))
 
     // Non-ok responses throw NetworkError which shows the generic network message
     expect(await findByText(/Could not reach the server/)).toBeTruthy()
