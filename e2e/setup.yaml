@@ -7,6 +7,19 @@
 
 appId: com.ronenmars.threadbase
 ---
+# iOS keeps "Open in Threadbase?" over a relaunch. launchApp then fails
+# with "did not stop in time" (pty on run 32181936801). Cancel first —
+# do not Open — so we do not follow the previous flow's deeplink.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          when:
+            visible: "Open in"
+          commands:
+            - tapOn: "Cancel"
+
 - launchApp:
     clearState: true
 
@@ -27,20 +40,6 @@ appId: com.ronenmars.threadbase
       visible: "Digital Wellbeing isn't responding"
     commands:
       - tapOn: "Close app"
-
-# iOS keeps "Open in Threadbase?" over a relaunch. After a missed Open tap
-# (run 32172109495) every later flow skipped onboarding and died on
-# hub-screen. Cancel — do not Open — so we do not follow the previous
-# flow's deeplink.
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - runFlow:
-          when:
-            visible: "Open in"
-          commands:
-            - tapOn: "Cancel"
 
 # Give the splash time to clear before anything decides which screen this is.
 # `runFlow when:` is a one-shot probe with a short window, and a cold Release

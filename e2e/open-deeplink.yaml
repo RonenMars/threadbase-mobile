@@ -5,44 +5,38 @@
 # (`threadbase:///session/<id>`). Two slashes make `conversation` the URL
 # host; iOS 26 then leaves Maestro on the hub (run 32060587863, bug6).
 #
-# Requires env DEEPLINK. After openLink, dismiss the iOS "Open in
-# Threadbase?" sheet if it appears. A single tapOn Open can complete with
-# no UI change (run 32172109495: screenshot d=0.0) while the sheet stays
-# up; Maestro then treats hub-screen as hidden, skips the retry, and the
-# rest of the suite dies on hub-screen. Retry the Open tap while the
-# sheet title is still visible. If the hub is still showing with no
-# sheet, try the link once more.
+# Requires env DEEPLINK.
+#
+# iOS: openLink while the app is already foreground shows "Open in
+# Threadbase?", and tapping Open can dismiss the sheet without delivering
+# the URL (run 32181936801 — still on hub, no conversation-bottom-bar).
+# Retrying openLink because hub was still visible raced the first link.
+# Stop the app first so the scheme is launch options, then wait for the
+# Open sheet instead of probing once and moving on.
+#
+# Android has no confirmation sheet; a foreground openLink is enough.
+# Do not wait 8s for "Open" there.
 appId: com.ronenmars.threadbase
 ---
-- openLink: ${DEEPLINK}
-- waitForAnimationToEnd
 - runFlow:
     when:
-      visible: "Open"
+      platform: iOS
     commands:
-      - tapOn:
-          text: "Open"
-          retryTapIfNoChange: true
-      - waitForAnimationToEnd
-
-# Sheet tap missed: title still on screen. Tap Open again before using
-# hub visibility, which is false while the alert covers the hub.
-- runFlow:
-    when:
-      visible: "Open in"
-    commands:
-      - tapOn:
-          text: "Open"
-          retryTapIfNoChange: true
-      - waitForAnimationToEnd
-
-- runFlow:
-    when:
-      visible:
-        id: "hub-screen"
-    commands:
+      # Leftover sheet blocks stopApp/launchApp ("did not stop in time",
+      # pty on run 32181936801). Cancel — do not Open — so we do not
+      # follow a previous flow's URL.
+      - runFlow:
+          when:
+            visible: "Open in"
+          commands:
+            - tapOn: "Cancel"
+      - stopApp
       - openLink: ${DEEPLINK}
       - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Open"
+          timeout: 8000
+          optional: true
       - runFlow:
           when:
             visible: "Open"
@@ -59,3 +53,10 @@ appId: com.ronenmars.threadbase
                 text: "Open"
                 retryTapIfNoChange: true
             - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - openLink: ${DEEPLINK}
+      - waitForAnimationToEnd
