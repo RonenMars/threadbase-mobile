@@ -90,7 +90,8 @@
     "selectNone": "נקה בחירה",
     "successToast": "טופל. הגיבוי נשמר ב-{{backupPath}}",
     "successToastNoBackup": "טופל.",
-    "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה."
+    "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה.",
+    "resolveFailed": "לא ניתן להשלים את הפעולה. בדקו את החיבור לשרת ונסו שוב."
   },
   "hostPressure": {
     "banner": {

@@ -90,7 +90,8 @@
     "selectNone": "Снять выбор",
     "successToast": "Готово. Резервная копия сохранена в {{backupPath}}",
     "successToastNoBackup": "Готово.",
-    "selectAtLeastOne": "Выберите хотя бы одну беседу для удаления."
+    "selectAtLeastOne": "Выберите хотя бы одну беседу для удаления.",
+    "resolveFailed": "Не удалось выполнить действие. Проверьте соединение с сервером и повторите попытку."
   },
   "hostPressure": {
     "banner": {

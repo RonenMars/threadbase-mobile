@@ -271,4 +271,20 @@ describe('CacheAlertModal', () => {
     expect(onResolved).not.toHaveBeenCalled()
     expect(useServersStore.getState().cacheAlert[SERVER_ID]?.fingerprint).toBe('fp2')
   })
+
+  it('shows a friendly message when prune fails to reach the server', async () => {
+    seedAlert()
+    mockResolve.mockRejectedValue(new Error('resolve failed: 502'))
+    const onResolved = jest.fn()
+    const { findByText } = await renderWithI18n(
+      <CacheAlertModal visible serverId={SERVER_ID} onClose={jest.fn()} onResolved={onResolved} />
+    )
+    await fireEvent.press(await findByText('Prune All'))
+    await fireEvent.press(await findByText('Proceed'))
+
+    expect(await findByText(
+      "Couldn't complete that action. Check the connection to this server and try again.",
+    )).toBeTruthy()
+    expect(onResolved).not.toHaveBeenCalled()
+  })
 })

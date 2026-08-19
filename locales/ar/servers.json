@@ -90,7 +90,8 @@
     "selectNone": "إلغاء التحديد",
     "successToast": "تم الحل. تم حفظ النسخة الاحتياطية في {{backupPath}}",
     "successToastNoBackup": "تم الحل.",
-    "selectAtLeastOne": "حدد محادثة واحدة على الأقل للحذف."
+    "selectAtLeastOne": "حدد محادثة واحدة على الأقل للحذف.",
+    "resolveFailed": "تعذّر إكمال هذا الإجراء. تحقق من الاتصال بهذا الخادم ثم أعد المحاولة."
   },
   "hostPressure": {
     "banner": {
