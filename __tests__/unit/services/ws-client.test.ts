@@ -171,6 +171,7 @@ describe('WSClient – message handling', () => {
       reasons: ['memory', 'load'],
       liveAgents: 4,
       updatedAt: '2026-08-18T00:00:00.000Z',
+      os: 'darwin',
     }
     mockSocket.onmessage!({ data: JSON.stringify(msg) })
 

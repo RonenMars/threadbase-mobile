@@ -49,6 +49,7 @@ type HostPressureReason = 'memory' | 'event_loop' | 'load' | 'agents'
   reasons: HostPressureReason[]
   liveAgents: number
   updatedAt: string
+  os?: 'darwin' | 'linux' | 'win32'
 }
 
 {
@@ -70,15 +71,12 @@ Mirror `cache_alert`. Do not invent a second alert architecture.
 
    Set on `host_pressure`. Clear on `host_pressure_cleared` and on disconnect for that `serverId`.
 3. Wire listeners in `app/_layout.tsx` next to `cache_alert` via `wsManager.onAll`.
-4. Hub banner on `app/index.tsx`, same slot family as `CacheAlertBanner` (below or above it; do not cover session rows). Phosphor icon (`WarningCircle` or `Cpu`). **No emoji.** `testID="host-pressure-banner"`.
+4. Hub banner on `app/index.tsx`, same slot family as `CacheAlertBanner` (below or above it; do not cover session rows). Phosphor `Warning` (regular, amber) plus a `Details` chip matching `ServerStateMessage`. **No emoji.** `testID="host-pressure-banner"`.
 5. Copy in `locales/{en,ar,he,ru}/servers.json`. Extract multi-branch strings **above** the JSX return.
 
-Suggested keys under `servers:hostPressure`:
+Headline names the first resource reason (`memory` / `load` / `event_loop`). Do not put `liveAgents` in the banner unless `reasons` includes `agents` — and even then only in the Details sheet. Both `elevated` and `critical` use the warning chrome; critical is stronger copy, not error-red.
 
-- `bannerElevated` / `bannerCritical` — include `{{server}}` and `{{count}}` (liveAgents)
-- `reason.memory`, `reason.event_loop`, `reason.load`, `reason.agents`
-
-Tap: a small non-destructive sheet (“N agents are running on {{server}}”, reason line, dismiss). **No** kill/stop-all from this banner. Stopping a session already exists on the session screen.
+Details opens a modal: what fired, why it can still feel fine, then OS-specific “quit Cursor/Chrome/VMs” (`os` on the frame, else `GET /api/info` `platform`). **No** kill/stop-all from this banner.
 
 ## Tests
 

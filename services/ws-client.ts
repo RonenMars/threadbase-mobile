@@ -57,6 +57,7 @@ export type WSMessage =
       reasons: HostPressureReason[]
       liveAgents: number
       updatedAt: string
+      os?: string
     }
   | { type: 'host_pressure_cleared'; updatedAt: string }
   | { type: 'conversation_event'; sessionId: string; line: string }
