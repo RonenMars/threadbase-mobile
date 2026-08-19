@@ -187,4 +187,39 @@ describe('useTBPair (prod path)', () => {
       apiKey: 'tb_df11da2b8b037fd61d82349d182a87b6',
     })
   })
+
+  it('surfaces the pair.json expired sentence for an expired paste link', async () => {
+    const { result } = await renderHook(() => useTBPair())
+    const uri = 'threadbase://pair?url=https%3A%2F%2Fexample.test&token=pt_x&exp=1'
+
+    await act(() => {
+      result.current.pair({ url: '', token: uri })
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(exchangeToken).not.toHaveBeenCalled()
+    expect(result.current.phase).toBe('err')
+    expect(result.current.error).toBe(
+      'This pair QR has expired. Run tb pair on your server again.',
+    )
+  })
+
+  it('surfaces the pair.json token sentence when the exchange rejects the token', async () => {
+    exchangeToken.mockRejectedValue(new pairExchange.PairExchangeError('token', 'Pair token rejected'))
+    const { result } = await renderHook(() => useTBPair())
+
+    await act(() => {
+      result.current.pair({ url: 'https://example.test', token: 'pt_used' })
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.phase).toBe('err')
+    expect(result.current.error).toBe(
+      'Pair token rejected — generate a fresh QR on your server.',
+    )
+  })
 })
