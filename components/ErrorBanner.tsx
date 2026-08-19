@@ -1,10 +1,8 @@
-import React from 'react'
-import { WarningCircle } from 'phosphor-react-native'
-import { Banner } from '@/components/ui/Banner'
+import { useMemo } from 'react'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 import { queryClient } from '@/services/query-client'
-
-const ERROR_RED = '#ef4444'
+import { useBannerSync } from '@/hooks/useBannerSync'
+import type { AlertSpec } from '@/types/alerts'
 
 const TITLES: Record<QueryCategory, string> = {
   sessions: 'Sessions failed to load',
@@ -31,7 +29,7 @@ function formatDetails(status?: number, message?: string): string | undefined {
   return parts.length ? parts.join('\n') : undefined
 }
 
-function categoryQueryKey(category: QueryCategory): unknown[] {
+function categoryQueryKey(category: QueryCategory): string[] {
   switch (category) {
     case 'sessions': return ['sessions']
     case 'conversations': return ['conversations']
@@ -45,26 +43,28 @@ function categoryQueryKey(category: QueryCategory): unknown[] {
 export function ErrorBanner() {
   const errors = useLoadingStateStore((s) => s.errors)
   const dismissError = useLoadingStateStore((s) => s.dismissError)
-
-  if (errors.length === 0) return null
-
   const current = errors[0]
   const count = errors.length
 
-  function handleRetry() {
-    queryClient.invalidateQueries({ queryKey: categoryQueryKey(current.category) })
-    dismissError(current.id)
-  }
+  const spec = useMemo((): AlertSpec | null => {
+    if (!current) return null
+    const title = count > 1 ? `${TITLES[current.category]} (1 of ${count})` : TITLES[current.category]
+    return {
+      level: 'error',
+      title,
+      message: MESSAGES[current.category],
+      details: formatDetails(current.status, current.message),
+      hideCloseButton: false,
+      buttonText: 'Retry',
+      buttonAction: () => {
+        queryClient.invalidateQueries({ queryKey: categoryQueryKey(current.category) })
+        dismissError(current.id)
+      },
+      buttonVariant: 'primary',
+      onClose: () => dismissError(current.id),
+    }
+  }, [count, current, dismissError])
 
-  return (
-    <Banner
-      title={count > 1 ? `${TITLES[current.category]} (1 of ${count})` : TITLES[current.category]}
-      message={MESSAGES[current.category]}
-      accent={ERROR_RED}
-      icon={<WarningCircle size={28} color={ERROR_RED} weight="fill" />}
-      details={formatDetails(current.status, current.message)}
-      action={{ label: 'Retry', onPress: handleRetry, variant: 'primary' }}
-      secondaryAction={{ label: 'Close', onPress: () => dismissError(current.id) }}
-    />
-  )
+  useBannerSync('query-error', spec)
+  return null
 }

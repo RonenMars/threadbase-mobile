@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useBannerSync } from '@/hooks/useBannerSync'
+import type { AlertSpec } from '@/types/alerts'
 
 interface Props {
   onAbort: () => void
@@ -9,13 +10,19 @@ interface Props {
 
 export function SessionDetailSlowBanner({ onAbort }: Props) {
   const theme = useTheme()
-  return (
-    <Banner
-      title="Session details are taking their time…"
-      message="Fetching the details — shouldn't be long."
-      accent={theme.text.warning}
-      icon={<ActivityIndicator color={theme.text.warning} />}
-      action={{ label: 'Cancel', onPress: onAbort, variant: 'destructive' }}
-    />
-  )
+
+  const spec = useMemo((): AlertSpec => ({
+    level: 'warning',
+    title: 'Session details are taking their time…',
+    message: "Fetching the details — shouldn't be long.",
+    hideCloseButton: true,
+    buttonText: 'Cancel',
+    buttonAction: onAbort,
+    buttonVariant: 'destructive',
+    icon: <ActivityIndicator color={theme.text.warning} />,
+    timeout: null,
+  }), [onAbort, theme.text.warning])
+
+  useBannerSync('slow-session-detail', spec)
+  return null
 }

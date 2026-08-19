@@ -1,3 +1,9 @@
 # Components exempt from the mandatory-story pre-commit check — one path per
 # line, exact match against the git-tracked path. See docs/storybook.md and
 # scripts/check-story-coverage.js. Add a reason as a trailing comment.
+# predates the story gate (#789); add stories when #785 lands for real
+components/terminal/TerminalRawModeToast.tsx
+components/ui/AlertDetailsModal.tsx
+components/ui/BannerHost.tsx
+components/ui/Toast.tsx
+components/ui/ToastViewport.tsx

@@ -25,6 +25,8 @@ export const WithPrimaryAction: Story = {
     title: 'Connection lost',
     message: 'The server stopped responding.',
     accent: '#f85149',
-    action: { label: 'Details', onPress: fn(), variant: 'primary' },
+    buttonText: 'Details',
+    buttonAction: fn(),
+    buttonVariant: 'primary',
   },
 }
