@@ -1,10 +1,15 @@
 import React from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context'
 import { ShieldCheck, ShieldSlash, ShieldWarning } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
 import { isolateLtr } from '@/components/pair/ltr-isolate'
 
@@ -70,56 +75,68 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
 
   const machineName = target.machineName ?? t('confirm.machineFallback')
 
+  // A RN Modal is a new native window; without its own SafeAreaProvider the
+  // insets read as 0 and the title sits under the status bar. initialWindowMetrics
+  // seeds the first frame so there is no unpadded flash while the provider measures.
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onCancel} presentationStyle="fullScreen">
-      <SafeAreaView style={styles.screen} testID="pair-confirm-screen">
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            {icon}
-            <Text style={styles.title}>{title}</Text>
-          </View>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onCancel}
+      presentationStyle="fullScreen"
+      statusBarTranslucent
+    >
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID="pair-confirm-screen">
+          <ScreenHeader title={t('screenTitle')} onBack={onCancel} />
+          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            <View style={styles.heading}>
+              {icon}
+              <Text style={styles.title}>{title}</Text>
+            </View>
 
-          <View style={styles.detailRows}>
-            {target.kind !== 'api-key' ? (
-              <DetailRow theme={theme} label={t('confirm.machineLabel')} value={machineName} />
+            <View style={styles.detailRows}>
+              {target.kind !== 'api-key' ? (
+                <DetailRow theme={theme} label={t('confirm.machineLabel')} value={machineName} />
+              ) : null}
+              <DetailRow
+                theme={theme}
+                label={t('confirm.urlLabel')}
+                value={target.url}
+                mono
+                testID="pair-confirm-url"
+              />
+            </View>
+
+            {target.kind === 'e2ee' && target.fingerprint ? (
+              <IdentityFingerprintBlock fingerprint={target.fingerprint} variant="deep-link" />
             ) : null}
-            <DetailRow
-              theme={theme}
-              label={t('confirm.urlLabel')}
-              value={target.url}
-              mono
-              testID="pair-confirm-url"
-            />
+
+            <Text style={[styles.body, ctaWarning && styles.bodyWarning]}>{bodyText}</Text>
+          </ScrollView>
+
+          <View style={styles.actions}>
+            <Pressable
+              style={styles.cancelBtn}
+              onPress={onCancel}
+              testID="pair-confirm-cancel-btn"
+              accessibilityRole="button"
+            >
+              <Text style={styles.cancelText}>{t('confirm.cancelButton')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.confirmBtn, ctaWarning && styles.confirmBtnWarning]}
+              onPress={onConfirm}
+              testID="pair-confirm-add-btn"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.confirmText, ctaWarning && styles.confirmTextWarning]}>
+                {t('confirm.addButton')}
+              </Text>
+            </Pressable>
           </View>
-
-          {target.kind === 'e2ee' && target.fingerprint ? (
-            <IdentityFingerprintBlock fingerprint={target.fingerprint} variant="deep-link" />
-          ) : null}
-
-          <Text style={[styles.body, ctaWarning && styles.bodyWarning]}>{bodyText}</Text>
-        </ScrollView>
-
-        <View style={styles.actions}>
-          <Pressable
-            style={styles.cancelBtn}
-            onPress={onCancel}
-            testID="pair-confirm-cancel-btn"
-            accessibilityRole="button"
-          >
-            <Text style={styles.cancelText}>{t('confirm.cancelButton')}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.confirmBtn, ctaWarning && styles.confirmBtnWarning]}
-            onPress={onConfirm}
-            testID="pair-confirm-add-btn"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.confirmText, ctaWarning && styles.confirmTextWarning]}>
-              {t('confirm.addButton')}
-            </Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   )
 }
@@ -160,7 +177,7 @@ function makeStyles(theme: Theme) {
       gap: spacing.md,
       paddingBottom: spacing.xl,
     },
-    header: {
+    heading: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
