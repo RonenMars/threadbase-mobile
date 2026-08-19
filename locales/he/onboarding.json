@@ -37,7 +37,6 @@
     "connectOk": "מחובר",
     "connectErr": "נסה שוב",
     "connectBusy": "…מתחבר",
-    "connectErrHint": "פג תוקף הטוקן? הרץ tb pair שוב במחשב.",
     "backToOptions": "← אפשרויות אחרות",
     "step1": "1. על השרת שלך, הרץ tb pair. QR יודפס לטרמינל.",
     "step2": "2. הקש על פתח מצלמה למטה. Threadbase תבקש הרשאה להשתמש במצלמה — היא משמשת רק לקריאת ה-QR.",

@@ -14,6 +14,7 @@ import {
   PairUriError,
   type ExchangeResult,
 } from '@/services/pair-exchange'
+import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
@@ -24,22 +25,13 @@ import { clientLog } from '@/lib/clientLog'
 
 type Phase = 'exchanging' | 'confirm' | 'error'
 
-// Mirrors PairScannerModal's error mapping so a tapped link and a scanned QR
-// produce the same messages for the same failure. The translated copy never
-// repeats err.message — it stays a developer detail, routed to clientLog for
-// whoever debugs the next pairing failure.
 function resolveErrorMessage(err: Error, t: TFunction<'pair'>): string {
-  if (err instanceof PairUriError) {
-    return t(`scanner.errors.uri.${err.code}`)
-  }
   if (err instanceof PairExchangeError) {
     clientLog.info('pair.exchange', err.kind, { message: err.message })
-    return t(`scanner.errors.exchange.${err.kind}`)
+  } else if (!(err instanceof PairUriError)) {
+    clientLog.info('pair.exchange', 'unrecognized', { message: err.message })
   }
-  clientLog.info('pair.exchange', 'unrecognized', {
-    message: err.message,
-  })
-  return t('scanner.errors.generic')
+  return resolvePairFailureMessage(err, t)
 }
 
 function canRetryPairFailure(err: Error): boolean {

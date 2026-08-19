@@ -1,5 +1,6 @@
 import React from 'react'
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native'
+import { ShieldWarning } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -19,7 +20,7 @@ interface Props {
  * true rather than asking whether the user is sure.
  */
 export function ServerEncryptionSection({ serverId }: Props) {
-  const { t } = useTranslation('servers')
+  const { t } = useTranslation(['servers', 'pair'])
   const theme = useTheme()
   const styles = makeStyles(theme)
 
@@ -32,6 +33,8 @@ export function ServerEncryptionSection({ serverId }: Props) {
   const fingerprint = server.serverPublicKey
     ? formatFingerprint(server.serverPublicKey)
     : null
+  const noIdentityTitle = t('pair:confirm.noSpkTitle')
+  const noIdentityBody = t('pair:confirm.noSpkBody')
 
   function handleChange(on: boolean) {
     if (on) {
@@ -52,7 +55,15 @@ export function ServerEncryptionSection({ serverId }: Props) {
     <View style={styles.wrap}>
       {fingerprint ? (
         <IdentityFingerprintBlock fingerprint={fingerprint} variant="settings" />
-      ) : null}
+      ) : (
+        <View style={styles.noIdentity} testID="server-no-identity">
+          <View style={styles.noIdentityHeading}>
+            <ShieldWarning size={18} color={theme.text.warning} weight="fill" />
+            <Text style={styles.noIdentityTitle}>{noIdentityTitle}</Text>
+          </View>
+          <Text style={styles.noIdentityBody}>{noIdentityBody}</Text>
+        </View>
+      )}
       <View style={styles.row}>
         <View style={styles.textBlock}>
           <Text style={styles.label}>{t('encryption.requireLabel')}</Text>
@@ -77,6 +88,25 @@ function makeStyles(theme: Theme) {
       paddingTop: spacing.sm,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.border,
+    },
+    noIdentity: {
+      gap: spacing.xs,
+    },
+    noIdentityHeading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    noIdentityTitle: {
+      flex: 1,
+      color: theme.text.primary,
+      fontSize: font.base,
+      fontWeight: '700',
+    },
+    noIdentityBody: {
+      color: theme.text.secondary,
+      fontSize: font.sm,
+      lineHeight: 18,
     },
     row: {
       flexDirection: 'row',

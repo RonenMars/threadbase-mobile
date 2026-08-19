@@ -369,14 +369,6 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
                 {t('connect.ready')}
               </Animated.Text>
             )}
-            {phase === 'err' && (
-              <Animated.Text
-                entering={FadeIn.duration(200)}
-                style={[styles.logLine, { color: colors.fg3, marginTop: 6 }]}
-              >
-                {t('connect.connectErrHint')}
-              </Animated.Text>
-            )}
           </View>
         )}
       </View>
