@@ -13,12 +13,14 @@ import { X, QrCode, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { pendingTargetFromApiKey } from '@/services/pair-confirm-target'
+import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { authToken } from '@/services/authed-fetch'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
-import { useServersStore } from '@/stores/servers'
+import { useServersStore, type AddServerMeta } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
@@ -46,7 +48,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const [isDirty, setIsDirty] = useState(false)
   const [fromScan, setFromScan] = useState(false)
   const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const [cameraFingerprint, setCameraFingerprint] = useState<string | null>(null)
   const pendingAdd = useRef<{ url: string; apiKey: string; label?: string } | null>(null)
+  const pendingScanMeta = useRef<AddServerMeta | undefined>(undefined)
 
   const styles = makeStyles(theme)
 
@@ -74,6 +78,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         setIsDirty(false)
         setFromScan(false)
         setConfirmTarget(null)
+        setCameraFingerprint(null)
+        pendingScanMeta.current = undefined
       })
     }
   }, [visible, serverId])
@@ -134,7 +140,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         wsManager.connect(newId, updated.url, authToken(updated))
       }
     } else {
-      const result = await addServer(trimmedUrl, trimmedKey, labelArg)
+      const result = await addServer(trimmedUrl, trimmedKey, labelArg, pendingScanMeta.current)
       if (result && typeof result === 'object' && 'error' in result && result.error === 'duplicate') {
         setError('A server with this URL and API key already exists.')
         return
@@ -146,6 +152,11 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     onClose()
   }
 
+  function clearScanMeta() {
+    setFromScan(false)
+    pendingScanMeta.current = undefined
+  }
+
   function handleScanSuccess(result: ExchangeResult) {
     setScannerOpen(false)
     const { protocol: p, host } = splitUrl(result.url)
@@ -154,6 +165,17 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     setApiKey(result.apiKey)
     if (result.machineName && !label) setLabel(result.machineName)
     setFromScan(true)
+    pendingScanMeta.current = {
+      deviceId: result.deviceId ?? undefined,
+      deviceToken: result.deviceToken ?? undefined,
+      capabilities: result.capabilities ?? undefined,
+      publicUrl: result.publicUrl ?? undefined,
+      serverPublicKey: result.serverPublicKey ?? undefined,
+      requireEncryption: result.e2eeRequired,
+    }
+    if (result.serverPublicKey) {
+      setCameraFingerprint(formatFingerprint(result.serverPublicKey))
+    }
     markDirty()
   }
 
@@ -198,9 +220,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 protocol={protocol}
                 onProtocolChange={(p) => { setProtocol(p); markDirty() }}
                 urlHost={urlHost}
-                onUrlHostChange={(v) => { setUrlHost(v); setFromScan(false); markDirty() }}
+                onUrlHostChange={(v) => { setUrlHost(v); clearScanMeta(); markDirty() }}
                 apiKey={apiKey}
-                onApiKeyChange={(v) => { setApiKey(v); setFromScan(false); markDirty() }}
+                onApiKeyChange={(v) => { setApiKey(v); clearScanMeta(); markDirty() }}
                 urlInputTestID="server-edit-url-input"
                 keyInputTestID="server-edit-key-input"
                 onSubmitEditing={handleSave}
@@ -251,6 +273,11 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
           pendingAdd.current = null
           setConfirmTarget(null)
         }}
+      />
+      <PairCameraIdentityCard
+        visible={cameraFingerprint !== null}
+        fingerprint={cameraFingerprint}
+        onDone={() => setCameraFingerprint(null)}
       />
     </>
   )
