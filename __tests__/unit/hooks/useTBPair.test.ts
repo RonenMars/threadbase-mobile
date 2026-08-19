@@ -202,7 +202,7 @@ describe('useTBPair (prod path)', () => {
     expect(exchangeToken).not.toHaveBeenCalled()
     expect(result.current.phase).toBe('err')
     expect(result.current.error).toBe(
-      'This pair QR has expired. Run tb pair on your server again.',
+      'This pair QR has expired. Run tb-streamer pair on your server again.',
     )
   })
 

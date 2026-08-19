@@ -43,12 +43,12 @@ describe('ConnectStep – manual mode', () => {
     expect(getByText('On your computer')).toBeTruthy()
   })
 
-  it('shows copyable tb pair command in manual mode', async () => {
+  it('shows copyable tb-streamer pair command in manual mode', async () => {
     const { getByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
     await fireEvent.press(getByText('Type / paste manually'))
-    expect(getByText(/tb pair/)).toBeTruthy()
+    expect(getByText(/tb-streamer pair/)).toBeTruthy()
   })
 
   it('shows "Server URL" and "Token" field labels (not faux-shell labels)', async () => {
@@ -58,8 +58,8 @@ describe('ConnectStep – manual mode', () => {
     await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText('Server URL')).toBeTruthy()
     expect(getByText('Token')).toBeTruthy()
-    expect(queryByText(/\$ tb pair --server/)).toBeNull()
-    expect(queryByText(/\$ tb pair --token/)).toBeNull()
+    expect(queryByText(/\$ tb-streamer pair --server/)).toBeNull()
+    expect(queryByText(/\$ tb-streamer pair --token/)).toBeNull()
   })
 
   it('CTA shows "Connect" not "Open handshake"', async () => {

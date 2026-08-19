@@ -7,7 +7,7 @@ const t = i18n.getFixedT('en', 'pair')
 describe('resolvePairFailureMessage', () => {
   it('maps URI failures onto scanner.errors.uri', () => {
     expect(resolvePairFailureMessage(new PairUriError('expired', 'Pair QR expired'), t)).toBe(
-      'This pair QR has expired. Run tb pair on your server again.',
+      'This pair QR has expired. Run tb-streamer pair on your server again.',
     )
     expect(resolvePairFailureMessage(new PairUriError('invalid', 'Not a URL'), t)).toBe(
       "That QR doesn't look like a Threadbase pair code.",
