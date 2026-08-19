@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Modal,
   View,
@@ -12,6 +12,8 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, QrCode, XCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { pendingTargetFromApiKey } from '@/services/pair-confirm-target'
 import { authToken } from '@/services/authed-fetch'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
@@ -42,6 +44,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+  const [fromScan, setFromScan] = useState(false)
+  const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const pendingAdd = useRef<{ url: string; apiKey: string; label?: string } | null>(null)
 
   const styles = makeStyles(theme)
 
@@ -67,6 +72,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         }
         setError(null)
         setIsDirty(false)
+        setFromScan(false)
+        setConfirmTarget(null)
       })
     }
   }, [visible, serverId])
@@ -102,13 +109,22 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
     setError(null)
 
+    if (!isEditMode && !fromScan) {
+      pendingAdd.current = { url: trimmedUrl, apiKey: trimmedKey, label: label.trim() || undefined }
+      setConfirmTarget(pendingTargetFromApiKey(trimmedUrl))
+      return
+    }
+
+    await commitSave(trimmedUrl, trimmedKey, label.trim() || undefined)
+  }
+
+  async function commitSave(trimmedUrl: string, trimmedKey: string, labelArg?: string) {
     if (isEditMode && serverId) {
-      const result = await editServer(serverId, { url: trimmedUrl, apiKey: trimmedKey, label: label.trim() || undefined })
+      const result = await editServer(serverId, { url: trimmedUrl, apiKey: trimmedKey, label: labelArg })
       if (result && 'error' in result && result.error === 'duplicate') {
         setError('A server with this URL and API key already exists.')
         return
       }
-      // Reconnect WS with potentially new credentials
       const state = useServersStore.getState()
       const newId = Object.keys(state.servers).find(
         (id) => state.servers[id].url === trimmedUrl && state.servers[id].apiKey === trimmedKey
@@ -118,7 +134,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         wsManager.connect(newId, updated.url, authToken(updated))
       }
     } else {
-      const result = await addServer(trimmedUrl, trimmedKey, label.trim() || undefined)
+      const result = await addServer(trimmedUrl, trimmedKey, labelArg)
       if (result && typeof result === 'object' && 'error' in result && result.error === 'duplicate') {
         setError('A server with this URL and API key already exists.')
         return
@@ -137,6 +153,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     setUrlHost(host)
     setApiKey(result.apiKey)
     if (result.machineName && !label) setLabel(result.machineName)
+    setFromScan(true)
     markDirty()
   }
 
@@ -181,9 +198,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 protocol={protocol}
                 onProtocolChange={(p) => { setProtocol(p); markDirty() }}
                 urlHost={urlHost}
-                onUrlHostChange={(v) => { setUrlHost(v); markDirty() }}
+                onUrlHostChange={(v) => { setUrlHost(v); setFromScan(false); markDirty() }}
                 apiKey={apiKey}
-                onApiKeyChange={(v) => { setApiKey(v); markDirty() }}
+                onApiKeyChange={(v) => { setApiKey(v); setFromScan(false); markDirty() }}
                 urlInputTestID="server-edit-url-input"
                 keyInputTestID="server-edit-key-input"
                 onSubmitEditing={handleSave}
@@ -220,6 +237,20 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         visible={scannerOpen}
         onClose={() => setScannerOpen(false)}
         onSuccess={handleScanSuccess}
+      />
+      <PairConfirmGate
+        visible={confirmTarget !== null}
+        target={confirmTarget}
+        onConfirm={() => {
+          const pending = pendingAdd.current
+          pendingAdd.current = null
+          setConfirmTarget(null)
+          if (pending) void commitSave(pending.url, pending.apiKey, pending.label)
+        }}
+        onCancel={() => {
+          pendingAdd.current = null
+          setConfirmTarget(null)
+        }}
       />
     </>
   )
