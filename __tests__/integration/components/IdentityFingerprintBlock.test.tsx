@@ -33,7 +33,13 @@ describe('IdentityFingerprintBlock', () => {
       <IdentityFingerprintBlock fingerprint={FINGERPRINT} variant="camera" />,
     )
     expect(getByTestId('identity-fingerprint')).toBeTruthy()
-    expect(getByTestId('identity-camera-hint')).toBeTruthy()
+    // The exact sentence, not just its presence: it tells the user where on the
+    // terminal to look, and the streamer prints the fingerprint *under* the QR
+    // (cli/pair-banner.ts). A presence-only assertion stayed green while this
+    // said "next to", which is the kind of instruction a user gives up on.
+    expect(getByTestId('identity-camera-hint')).toHaveTextContent(
+      'This should match the code shown under the QR on that computer.',
+    )
     expect(queryByTestId('identity-compare-columns')).toBeNull()
     expect(queryByTestId('identity-how-to-check')).toBeNull()
   })
