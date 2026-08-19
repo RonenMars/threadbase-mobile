@@ -5,6 +5,11 @@ import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSe
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 import type { ServerConfig } from '@/types/api'
+import vectors from '@/__tests__/fixtures/noise-ikpsk1-vectors.json'
+
+function toBase64Url(base64: string): string {
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
 
 const SERVER_ID = 'srv_test1'
 
@@ -89,5 +94,29 @@ describe('ServerEncryptionSection', () => {
     buttons?.find((b) => b.style === 'cancel')?.onPress?.()
 
     expect(useServersStore.getState().setRequireEncryption).not.toHaveBeenCalled()
+  })
+
+  it('shows the identity fingerprint when the server was paired with a public key', async () => {
+    const spk = toBase64Url(vectors.keys.serverStaticPublic)
+    seedServer({ serverPublicKey: spk })
+    const { getByTestId, queryByTestId, findByTestId } = await renderWithI18n(
+      <ServerEncryptionSection serverId={SERVER_ID} />,
+    )
+    expect(getByTestId('identity-fingerprint')).toHaveTextContent(
+      vectors.fingerprintOfServerStaticPublic,
+      { exact: false },
+    )
+    expect(queryByTestId('identity-how-to-check-steps')).toBeNull()
+    fireEvent.press(getByTestId('identity-how-to-check'))
+    expect(await findByTestId('identity-how-to-check-steps')).toBeTruthy()
+  })
+
+  it('hides the fingerprint when the server was added without a public key', async () => {
+    seedServer()
+    const { queryByTestId, getByTestId } = await renderWithI18n(
+      <ServerEncryptionSection serverId={SERVER_ID} />,
+    )
+    expect(queryByTestId('identity-fingerprint')).toBeNull()
+    expect(getByTestId('server-require-encryption')).toBeTruthy()
   })
 })

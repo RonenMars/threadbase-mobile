@@ -1,10 +1,12 @@
 import React from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { ShieldCheck, ShieldSlash, ShieldWarning } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassFill } from '@/components/ui/GlassFill'
+import { useTheme } from '@/contexts/ThemeContext'
+import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
+import { isolateLtr } from '@/components/pair/ltr-isolate'
 
 /**
  * A deep link or a pasted credential has no out-of-band channel — a camera
@@ -41,20 +43,17 @@ interface Props {
 export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props) {
   const { t } = useTranslation('pair')
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
 
   if (!target) return null
 
-  // Branch once, above the JSX, into the four things that vary by kind — no
-  // inline conditional strings in the markup below.
   let icon: React.ReactNode
   let title: string
   let bodyText: string
   let ctaWarning: boolean
   if (target.kind === 'e2ee') {
     icon = <ShieldCheck size={22} color={theme.text.success} weight="fill" testID="pair-confirm-icon-e2ee" />
-    title = t('confirm.title')
+    title = t('confirm.checkTitle')
     bodyText = t('confirm.encryptedLine')
     ctaWarning = false
   } else if (target.kind === 'no-spk') {
@@ -72,10 +71,9 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
   const machineName = target.machineName ?? t('confirm.machineFallback')
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onCancel} testID="pair-confirm-backdrop">
-        <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
-          <GlassFill />
+    <Modal visible={visible} animationType="slide" onRequestClose={onCancel} presentationStyle="fullScreen">
+      <SafeAreaView style={styles.screen} testID="pair-confirm-screen">
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             {icon}
             <Text style={styles.title}>{title}</Text>
@@ -92,55 +90,39 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
               mono
               testID="pair-confirm-url"
             />
-            {target.fingerprint ? (
-              <DetailRow
-                theme={theme}
-                label={t('confirm.fingerprintLabel')}
-                value={target.fingerprint}
-                mono
-                testID="pair-confirm-fingerprint"
-              />
-            ) : null}
           </View>
+
+          {target.kind === 'e2ee' && target.fingerprint ? (
+            <IdentityFingerprintBlock fingerprint={target.fingerprint} variant="deep-link" />
+          ) : null}
 
           <Text style={[styles.body, ctaWarning && styles.bodyWarning]}>{bodyText}</Text>
+        </ScrollView>
 
-          {target.kind === 'e2ee' ? <Text style={styles.hint}>{t('confirm.compareHint')}</Text> : null}
-
-          <View style={styles.actions}>
-            <Pressable
-              style={styles.cancelBtn}
-              onPress={onCancel}
-              testID="pair-confirm-cancel-btn"
-              accessibilityRole="button"
-            >
-              <Text style={styles.cancelText}>{t('confirm.cancelButton')}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.confirmBtn, ctaWarning && styles.confirmBtnWarning]}
-              onPress={onConfirm}
-              testID="pair-confirm-add-btn"
-              accessibilityRole="button"
-            >
-              <Text style={[styles.confirmText, ctaWarning && styles.confirmTextWarning]}>
-                {t('confirm.addButton')}
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            style={styles.cancelBtn}
+            onPress={onCancel}
+            testID="pair-confirm-cancel-btn"
+            accessibilityRole="button"
+          >
+            <Text style={styles.cancelText}>{t('confirm.cancelButton')}</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.confirmBtn, ctaWarning && styles.confirmBtnWarning]}
+            onPress={onConfirm}
+            testID="pair-confirm-add-btn"
+            accessibilityRole="button"
+          >
+            <Text style={[styles.confirmText, ctaWarning && styles.confirmTextWarning]}>
+              {t('confirm.addButton')}
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     </Modal>
   )
 }
-
-// Left-to-Right Isolate / Pop Directional Isolate. `mono` rows carry URLs and
-// hex, which the Unicode bidi algorithm can reorder token-by-token inside an
-// RTL (he/ar) paragraph — the same trap that reverses a phone number in RTL
-// text. Isolating forces the run to display in the order it was written in
-// every locale; `writingDirection` below is a same-intent style hint for
-// engines that honor it, not a substitute for the marks.
-const LRI = '\u2066' // U+2066 LEFT-TO-RIGHT ISOLATE
-const PDI = '\u2069' // U+2069 POP DIRECTIONAL ISOLATE
 
 function DetailRow({
   theme,
@@ -156,7 +138,7 @@ function DetailRow({
   testID?: string
 }) {
   const styles = makeStyles(theme)
-  const displayValue = mono ? `${LRI}${value}${PDI}` : value
+  const displayValue = mono ? isolateLtr(value) : value
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -169,24 +151,14 @@ function DetailRow({
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
-    backdrop: {
+    screen: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.55)',
-      justifyContent: 'flex-end',
-      paddingBottom: 40,
-      paddingHorizontal: spacing.md,
+      backgroundColor: theme.bg.primary,
     },
-    sheet: {
-      backgroundColor: theme.bg.secondary,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: theme.border,
-      padding: spacing.md,
-      gap: spacing.sm,
-    },
-    sheetGlass: {
-      backgroundColor: 'transparent',
-      overflow: 'hidden',
+    scroll: {
+      padding: spacing.lg,
+      gap: spacing.md,
+      paddingBottom: spacing.xl,
     },
     header: {
       flexDirection: 'row',
@@ -201,9 +173,6 @@ function makeStyles(theme: Theme) {
     },
     detailRows: {
       gap: spacing.xs,
-      paddingTop: spacing.xs,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.border,
     },
     detailRow: {
       flexDirection: 'row',
@@ -233,15 +202,14 @@ function makeStyles(theme: Theme) {
     bodyWarning: {
       color: theme.text.warning,
     },
-    hint: {
-      color: theme.text.secondary,
-      fontSize: font.xs,
-      lineHeight: 16,
-    },
     actions: {
       flexDirection: 'row',
       gap: spacing.sm,
-      marginTop: spacing.xs,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.md,
+      paddingTop: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
     },
     cancelBtn: {
       flex: 1,
