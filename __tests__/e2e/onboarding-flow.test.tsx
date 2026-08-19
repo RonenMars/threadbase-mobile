@@ -69,9 +69,9 @@ describe('Onboarding – initial render', () => {
     expect(getByText('Hide')).toBeTruthy()
   })
 
-  it('shows the cch hint text', async () => {
+  it('shows the pairing hint text', async () => {
     const { getByText } = await render(<OnboardingScreen />)
-    expect(getByText(/cch serve/)).toBeTruthy()
+    expect(getByText(/tb pair/)).toBeTruthy()
   })
 
   it('shows optional Label field', async () => {
@@ -155,7 +155,7 @@ describe('Onboarding – error handling', () => {
       await fireEvent.press(getByText('Connect'))
     })
 
-    expect(await findByText(/Could not reach the server/)).toBeTruthy()
+    expect(await findByText(/Could not reach that server/)).toBeTruthy()
   })
 
   it('shows localhost-specific warning when URL contains localhost', async () => {
@@ -186,7 +186,7 @@ describe('Onboarding – error handling', () => {
     })
 
     // Non-ok responses throw NetworkError which shows the generic network message
-    expect(await findByText(/Could not reach the server/)).toBeTruthy()
+    expect(await findByText(/Could not reach that server/)).toBeTruthy()
   })
 })
 
