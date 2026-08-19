@@ -1,0 +1,3 @@
+# Components exempt from the mandatory-story pre-commit check — one path per
+# line, exact match against the git-tracked path. See docs/storybook.md and
+# scripts/check-story-coverage.js. Add a reason as a trailing comment.
