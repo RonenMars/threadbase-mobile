@@ -95,6 +95,9 @@
     "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
     "testCrashSend": "Send test crash"
   },
+  "dev": {
+    "scannerPreview": "Knight Rider scanner"
+  },
   "servers": {
     "scanQr": "Scan QR to add server"
   },

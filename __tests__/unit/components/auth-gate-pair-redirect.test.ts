@@ -28,6 +28,10 @@ describe('shouldRedirectToOnboarding', () => {
     expect(shouldRedirectToOnboarding('onboarding', false)).toBe(false)
   })
 
+  it('does not bounce a dev preview route with no paired servers', () => {
+    expect(shouldRedirectToOnboarding('dev', false)).toBe(false)
+  })
+
   it('never redirects once a server is paired', () => {
     expect(shouldRedirectToOnboarding('pair', true)).toBe(false)
     expect(shouldRedirectToOnboarding('index', true)).toBe(false)
