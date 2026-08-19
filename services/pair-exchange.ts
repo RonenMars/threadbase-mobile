@@ -92,7 +92,7 @@ export class PairUriError extends Error {
 export function classifyPairCredential(raw: string): PairCredentialKind {
   const trimmed = raw.trim()
   if (trimmed.startsWith('threadbase:')) return 'pair-uri'
-  // Short-lived tokens from `tb pair` / `/api/pair/start` (`pt_<hex>`).
+  // Short-lived tokens from `tb-streamer pair` / `/api/pair/start` (`pt_<hex>`).
   if (trimmed.startsWith('pt_')) return 'pair-token'
   return 'api-key'
 }

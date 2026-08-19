@@ -20,9 +20,9 @@
     "invalidUrl": "أدخل عنوان خادم كاملاً يبدأ بـ http:// أو https://.",
     "contactSupport": "تحتاج مساعدة؟ تواصل مع الدعم",
     "scanQr": "مسح QR",
-    "scanQrBody": "شغّل tb pair على خادمك لطباعة QR. أسرع طريقة، بدون كتابة.",
+    "scanQrBody": "شغّل tb-streamer pair على خادمك لطباعة QR. أسرع طريقة، بدون كتابة.",
     "pasteCredentials": "الإدخال اليدوي",
-    "pasteCredentialsBody": "شغّل tb pair على خادمك، ثم الصق URL والرمز — أو رابط threadbase:// الكامل.",
+    "pasteCredentialsBody": "شغّل tb-streamer pair على خادمك، ثم الصق URL والرمز — أو رابط threadbase:// الكامل.",
     "qrEyebrow": "> 02 / إقران · QR",
     "qrHeadline": "امسح للإقران.",
     "openCamera": "فتح الكاميرا",
@@ -38,9 +38,9 @@
     "connectErr": "إعادة المحاولة",
     "connectBusy": "…جارٍ الاتصال",
     "backToOptions": "← خيارات أخرى",
-    "step1": "1. على خادمك، شغّل tb pair. سيُطبَع رمز QR في الطرفية.",
+    "step1": "1. على خادمك، شغّل tb-streamer pair. سيُطبَع رمز QR في الطرفية.",
     "step2": "2. اضغط على فتح الكاميرا بالأسفل. سيطلب Threadbase إذنًا لاستخدام الكاميرا — يُستخدم فقط لقراءة رمز QR.",
-    "step3": "3. وجّه هاتفك نحو رمز QR. الرمز صالح لمدة 3 دقائق؛ إن انتهت صلاحيته، شغّل tb pair مجدداً."
+    "step3": "3. وجّه هاتفك نحو رمز QR. الرمز صالح لمدة 3 دقائق؛ إن انتهت صلاحيته، شغّل tb-streamer pair مجدداً."
   },
   "done": {
     "eyebrowPaired": "اكتمل الإقران",

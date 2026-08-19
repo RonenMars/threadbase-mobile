@@ -17,7 +17,7 @@
       "generic": "Pairing failed.",
       "uri": {
         "invalid": "That QR doesn't look like a Threadbase pair code.",
-        "expired": "This pair QR has expired. Run tb pair on your server again.",
+        "expired": "This pair QR has expired. Run tb-streamer pair on your server again.",
         "bad-server-url": "The server URL in this QR is not valid.",
         "bad-server-key": "The server key in this pairing code is damaged, so this pairing cannot be encrypted. Generate a fresh QR on your server."
       },
