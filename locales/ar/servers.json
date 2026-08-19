@@ -20,7 +20,7 @@
     "labelOptional": "التسمية (اختياري)",
     "serverUrl": "عنوان الخادم",
     "apiKey": "مفتاح API",
-    "hint": "شغّل cch serve --tunnel --qr على جهاز Mac للحصول على عنوان قابل للمسح عبر QR."
+    "hint": "شغّل tb pair على جهاز Mac للحصول على رمز QR، أو tb serve --tunnel للحصول على عنوان URL عام."
   },
   "manage": {
     "addServer": "إضافة خادم"

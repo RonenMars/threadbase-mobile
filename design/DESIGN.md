@@ -81,7 +81,7 @@ The IMPLEMENTATION-GUIDELINES doc spells this out and we follow it:
 
 | Feature language (avoid) | Benefit language (use) |
 |---|---|
-| _Added --sort flag to cch list_ | _Sort sessions by recency, message count, or alphabetically from the terminal_ |
+| _Added --sort flag to tb-streamer list_ | _Sort sessions by recency, message count, or alphabetically from the terminal_ |
 | _Implemented TaskToolCard component_ | _Task agent cards show AI planning context in-line with the conversation_ |
 
 ---
