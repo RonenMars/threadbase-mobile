@@ -57,7 +57,7 @@ function normalise(text: string): string {
 }
 
 /** Body hits win over metadata hits; position is not relied on. */
-function pickMatch(matches: SearchMatch[] | null | undefined): SearchMatch | null {
+export function pickMatch(matches: SearchMatch[] | null | undefined): SearchMatch | null {
   const usable = (matches ?? []).filter((m) => typeof m?.snippet === 'string' && m.snippet.trim().length > 0)
   return usable.find((m) => m.field === 'content') ?? usable[0] ?? null
 }

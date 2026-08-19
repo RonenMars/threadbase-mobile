@@ -1,6 +1,6 @@
 import { act } from 'react'
 import renderer from 'react-test-renderer'
-import { MessagePreview } from '@/components/sessions/shared/MessagePreview'
+import { MessagePreview, pickMatch } from '@/components/sessions/shared/MessagePreview'
 
 type Json = null | string | { children?: Json[] | null }
 
@@ -243,5 +243,31 @@ describe('MessagePreview', () => {
       })
       expect(r!.toJSON()).toBeNull()
     })
+  })
+})
+
+/**
+ * The merged conversation card (app/index.tsx) calls pickMatch to decide whether
+ * a row is a search hit. Its generic path renders one truncated line, so the
+ * card only swaps in MessagePreview when there is really a snippet to show.
+ */
+describe('pickMatch', () => {
+  it('returns null when there is nothing usable to render', () => {
+    expect(pickMatch(undefined)).toBeNull()
+    expect(pickMatch(null)).toBeNull()
+    expect(pickMatch([])).toBeNull()
+    expect(pickMatch([{ field: 'content', snippet: '   ' }])).toBeNull()
+  })
+
+  it('prefers a content hit over a metadata hit listed first', () => {
+    const picked = pickMatch([
+      { field: 'projectName', snippet: 'tb-mobile' },
+      { field: 'content', snippet: 'the body hit' },
+    ])
+    expect(picked?.field).toBe('content')
+  })
+
+  it('still returns a metadata hit when that is all there is', () => {
+    expect(pickMatch([{ field: 'gitBranch', snippet: 'feat/x' }])?.field).toBe('gitBranch')
   })
 })
