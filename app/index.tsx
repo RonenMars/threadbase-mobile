@@ -27,6 +27,7 @@ import { useFetchSessionNames } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
+import { MessagePreview, pickMatch } from '@/components/sessions/shared/MessagePreview'
 import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
@@ -766,7 +767,12 @@ const MergedClassicList = React.memo(function MergedClassicList({
             </View>
           ) : null}
         </View>
-        {item.preview ? (
+        {/* A search row shows the matched passage; every other row keeps the
+            plain two-line preview, which MessagePreview's generic path would
+            truncate to one line. */}
+        {pickMatch(item.matches) ? (
+          <MessagePreview matches={item.matches} />
+        ) : item.preview ? (
           <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
         ) : null}
         <Text style={styles.convCardMeta}>
@@ -843,7 +849,14 @@ const MergedClassicList = React.memo(function MergedClassicList({
         }
         ListEmptyComponent={
           <View style={{ flex: 1 }}>
-            <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+            {searchQuery ? (
+              <EmptyState
+                title={t('list.noResults')}
+                subtitle={t('list.noResultsSubtitle', { query: searchQuery })}
+              />
+            ) : (
+              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+            )}
           </View>
         }
       />
