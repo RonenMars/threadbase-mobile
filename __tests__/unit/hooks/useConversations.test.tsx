@@ -258,6 +258,92 @@ describe('useConversation — assistant prose alongside tool blocks', () => {
   })
 })
 
+describe('useConversation — unrenderable rows from a degraded page', () => {
+  // Captured from a real streamer serving its SQLite cache tail for a Codex
+  // conversation whose project folder had moved: findConversationByUuid returns
+  // null, the GET falls back to the tail, and the tail held legacy rows carrying
+  // a raw rollout envelope type as `role`, with no text and no content blocks.
+  const envelopeRow = (i: number, role: string) => ({
+    message_index: i,
+    role,
+    text: '',
+    content: [],
+    tool_calls: [],
+    timestamp: '2026-07-07T18:41:26.810Z',
+  })
+
+  it('drops rows that carry neither text nor content', async () => {
+    setActiveServers(['srv_tail'])
+    const page = {
+      meta: { id: 'c_tail', project_name: 'proj-tail', message_count: 10 },
+      messages: [
+        envelopeRow(0, 'event_msg'),
+        envelopeRow(1, 'response_item'),
+        envelopeRow(2, 'event_msg'),
+      ],
+      message_pagination: { total: 3, before_index: 3, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_tail = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = await renderHook(() => useConversation('srv_tail', 'c_tail'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    // Every row renders null, so an empty list is the honest answer — counting
+    // them leaves the screen black with no empty state.
+    expect(result.current.data!.messages).toHaveLength(0)
+  })
+
+  it('keeps a row whose only content is a tool block, with no text', async () => {
+    setActiveServers(['srv_tool_only'])
+    const page = {
+      meta: { id: 'c_tool', project_name: 'proj-tool', message_count: 1 },
+      messages: [
+        {
+          message_index: 0,
+          role: 'assistant',
+          text: '',
+          content: [{ type: 'tool_use', id: 'tu_1', name: 'Read', input: {} }],
+          timestamp: '2026-06-11T10:00:00.000Z',
+        },
+      ],
+      message_pagination: { total: 1, before_index: 1, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_tool_only = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = await renderHook(() => useConversation('srv_tool_only', 'c_tool'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data!.messages).toHaveLength(1)
+  })
+
+  it('keeps the renderable rows when a page mixes both', async () => {
+    setActiveServers(['srv_mixed'])
+    const page = {
+      meta: { id: 'c_mixed', project_name: 'proj-mixed', message_count: 3 },
+      messages: [
+        envelopeRow(0, 'event_msg'),
+        {
+          message_index: 1,
+          role: 'user',
+          text: 'a real question',
+          content: [],
+          timestamp: '2026-06-11T10:00:00.000Z',
+        },
+        envelopeRow(2, 'response_item'),
+      ],
+      message_pagination: { total: 3, before_index: 3, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_mixed = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = await renderHook(() => useConversation('srv_mixed', 'c_mixed'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    const messages = result.current.data!.messages
+    expect(messages).toHaveLength(1)
+    expect(messages[0].messageIndex).toBe(1)
+  })
+})
+
 describe('useConversation — messageIndex on adapted rows', () => {
   it('sets messageIndex from the server message_index on a tail page', async () => {
     setActiveServers(['srv_idx_tail'])
