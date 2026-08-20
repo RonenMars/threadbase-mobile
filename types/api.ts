@@ -317,6 +317,14 @@ export interface PermissionWsMessage {
   detail?: string
   options: PermissionOption[]
   cursor?: number
+  /**
+   * Server-computed content identity of this gate, cursor deliberately excluded.
+   * Opaque: echo it back on POST /permission/answer verbatim, never construct,
+   * parse or compare it — a second implementation of the hash is exactly what
+   * the opaque token exists to prevent. Additive; a streamer that omits it is
+   * too old to have the validated route at all.
+   */
+  contentKey?: string
 }
 
 export interface PermissionCancelledWsMessage {
