@@ -84,4 +84,52 @@ describe('ThinkingBubble question lifecycle', () => {
     expect(onSendKeys).toHaveBeenCalledWith('\x1b')
     expect(onDismissQuestion).toHaveBeenCalled()
   })
+
+  // The server closes a permission gate only when its PTY detector sees the box
+  // gone — the end of the turn, tens of seconds after the tap. The answer is
+  // the user's own action, so the card goes on their input, not on the echo.
+  it('drops the card locally as soon as a permission option is answered', async () => {
+    const onSendKeys = jest.fn()
+    const onDismissQuestion = jest.fn()
+    const gate: QuestionBlock = {
+      source: 'permission',
+      questions: [{
+        question: 'Do you want to proceed?',
+        multiSelect: false,
+        options: [{ label: 'Yes' }, { label: 'No' }],
+      }],
+      permissionIndices: [1, 2],
+    }
+    const { getByLabelText } = await render(
+      <ThinkingBubble
+        lines={[]}
+        isStreaming={false}
+        activeQuestion={gate}
+        onSendKeys={onSendKeys}
+        onDismissQuestion={onDismissQuestion}
+      />,
+    )
+
+    await fireEvent.press(getByLabelText('Yes'))
+    expect(onSendKeys).toHaveBeenCalledWith('1\r')
+    expect(onDismissQuestion).toHaveBeenCalled()
+  })
+
+  it('drops the card locally as soon as a structured question is answered', async () => {
+    const onAnswer = jest.fn()
+    const onDismissQuestion = jest.fn()
+    const { getByLabelText } = await render(
+      <ThinkingBubble
+        lines={[]}
+        isStreaming={false}
+        activeQuestion={aq}
+        onAnswer={onAnswer}
+        onDismissQuestion={onDismissQuestion}
+      />,
+    )
+
+    await fireEvent.press(getByLabelText('B'))
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'B' })
+    expect(onDismissQuestion).toHaveBeenCalled()
+  })
 })

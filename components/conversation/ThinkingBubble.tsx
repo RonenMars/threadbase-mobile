@@ -93,13 +93,19 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     // permissionAnswerKeys.
     if (activeQuestion.source === 'permission') {
       const keys = permissionAnswerKeys(activeQuestion, optionIndex)
-      if (keys !== null) onSendKeys?.(keys)
+      if (keys === null || !onSendKeys) return
+      onSendKeys(keys)
+      // The server closes a gate only once its PTY detector sees the box gone —
+      // the end of the turn, tens of seconds later. The tap is the user's own
+      // action, so the card goes on that, not on the echo.
+      onDismissQuestion?.()
       return
     }
-    if (!activeQuestion.toolUseId) return
+    if (!activeQuestion.toolUseId || !onAnswer) return
     const q = activeQuestion.questions[questionIndex]
-    onAnswer?.(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
-  }, [activeQuestion, onAnswer, onSendKeys])
+    onAnswer(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
+    onDismissQuestion?.()
+  }, [activeQuestion, onAnswer, onDismissQuestion, onSendKeys])
 
   useEffect(() => {
     if (!fadingOut || hasCard) return

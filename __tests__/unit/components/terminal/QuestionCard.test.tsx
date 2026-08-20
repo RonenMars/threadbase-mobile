@@ -122,4 +122,50 @@ describe('QuestionCard', () => {
     await fireEvent.press(getByText('Cancel'))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
+
+  // The card holds its slot in the tree, so the next prompt re-renders this
+  // same instance rather than mounting a fresh one — the previous answer's
+  // highlight used to ride along onto a question it was never given for.
+  it('drops the previous prompt selection when a new prompt arrives', async () => {
+    const { getAllByRole, getByText, rerender } = await render(
+      <QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} />
+    )
+    await fireEvent.press(getAllByRole('button')[1])
+    expect(getByText('indicator only')).toHaveStyle({ fontWeight: '500' })
+
+    const next: QuestionBlock = {
+      ...BASE_BLOCK,
+      questions: [{
+        ...BASE_BLOCK.questions[0],
+        question: 'Do you want to proceed?',
+        options: [{ label: 'Yes' }, { label: 'Yes, and don’t ask again' }, { label: 'No' }],
+      }],
+    }
+    await rerender(<QuestionCard block={next} onSelect={jest.fn()} />)
+    expect(getByText('Yes, and don’t ask again')).not.toHaveStyle({ fontWeight: '500' })
+  })
+
+  // The streamer re-broadcasts a gate whenever the terminal cursor moves, which
+  // is a brand-new block object holding the same prompt. That must not read as
+  // a new prompt and undo the tap the user already made.
+  it('keeps the selection when the same prompt repaints', async () => {
+    const gate: QuestionBlock = {
+      source: 'permission',
+      questions: [{
+        question: 'Do you want to proceed?',
+        multiSelect: false,
+        options: [{ label: 'Yes' }, { label: 'No' }],
+      }],
+      permissionIndices: [1, 2],
+      selectedIndex: 0,
+    }
+    const { getAllByRole, getByText, rerender } = await render(
+      <QuestionCard block={gate} onSelect={jest.fn()} />
+    )
+    await fireEvent.press(getAllByRole('button')[1])
+    expect(getByText('No')).toHaveStyle({ fontWeight: '500' })
+
+    await rerender(<QuestionCard block={{ ...gate, selectedIndex: 1 }} onSelect={jest.fn()} />)
+    expect(getByText('No')).toHaveStyle({ fontWeight: '500' })
+  })
 })
