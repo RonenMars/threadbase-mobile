@@ -224,6 +224,23 @@ git rev-parse --short origin/main       # state this SHA in the first report
 `origin/main` is a cached ref. **Re-fetch immediately before cutting** — a stale one silently produces
 a branch that is not from today's `main`, with no error at any point.
 
+**A local branch sharing a PR's name may not be that PR.** These runs leave integration branches behind
+that carry the feature's name locally while never being pushed, so the local and remote refs diverge in
+silence — identical tip subjects, wildly different history. On 2026-08-20 local `feat/pair-identity-check-ux`
+was a 43-commit integration branch (`integrate PR #782`, `#779`, `#777`, `#774`, `#773`, `#772` and an e2e
+tail); the PR of that name, #783, was the 7-commit *remote* branch. Rebasing the local ref would have put
+all of it on `main`. Before rebasing or remapping anything that backs a PR:
+
+```bash
+git rev-parse <branch> origin/<branch>    # differ → do not use the local ref
+git worktree add --detach <path> origin/<branch>
+```
+
+To prove such a branch is safe to delete, compare **content, not commit subjects** — squash-merges break
+patch-id and subject matching, so 28 of 36 subjects read "unmatched" on a branch every file of which was
+already on `main`. The decisive checks are `comm -23` over `git ls-tree -r --name-only` (files existing only
+on the branch) and per-file blob comparison for the rest.
+
 Work in a **dedicated worktree**, never the primary checkout:
 
 ```bash

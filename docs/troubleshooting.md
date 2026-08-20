@@ -253,6 +253,25 @@ Tapping the header back button unmounts correctly, so that path does not stack. 
 
 **The general form, and the reason this entry exists:** an unattended harness is code, and code nobody tested measures whatever it happens to do rather than what it was meant to do. This rig was a deliberate, sensible choice — scripted `openurl` is the only way to drive repeated opens with nobody watching — and it was specified by the same person who wrote the rule about verifying what you are measuring. That is not a contradiction. The rule is habitually applied to the thing under test, and the apparatus is not usually thought of as being under test. It should be: before comparing runs, give the harness one invariant that must hold on every run (live screen count, open handles, cache size, row count) and check it, because otherwise drift in the rig gets absorbed by whichever hypothesis is current and reads as evidence for it.
 
+### `npx tsc` in a fresh worktree reports a clean typecheck it never ran
+
+In a worktree whose `npm ci` has not finished, `npx tsc --noEmit --pretty false` does not run the compiler. npx resolves a placeholder package instead, which prints:
+
+```
+This is not the tsc command you are looking for
+```
+
+It exits **1** and emits **zero** `error TS` lines, so `grep -c "error TS"` reports `0` — identical to a clean run. The non-zero exit is easy to misattribute to the grep or to a pipeline stage rather than to `tsc`.
+
+The usual trigger is a backgrounded `npm ci` that finishes *after* verification starts. Assert the toolchain before believing a pass, and read the head of the output rather than only counting matches:
+
+```bash
+ls node_modules/typescript/package.json   # must exist
+npx tsc --noEmit --pretty false > /tmp/t.txt 2>&1; echo "exit=$?"; head -5 /tmp/t.txt
+```
+
+Same family as the `EXPO_PUBLIC_*` flag entry above: the command you believe you ran did not run, and its silence reads as success rather than as an error.
+
 ---
 
 ## Windows dev machine

@@ -357,6 +357,13 @@ Rules:
 
 - **One PR at a time.** Never sync/merge PRs in parallel — rebase one, wait for its CI to go green, squash-merge it, then move to the next. A just-merged PR advances `main`, so the next PR is usually behind and must be rebased again.
 - **Dependency order first.** If PR B is stacked on PR A (GitHub shows A's branch as B's base), merge A before B and rebase B onto the updated `main` afterward.
+- **`--delete-branch` only on a leaf.** Deleting A's branch auto-closes every PR based on it: B goes `CLOSED` with `mergedAt=null` — nothing landed — and it cannot be reopened or retargeted while the base branch is gone (`gh pr edit --base main` fails). Check first:
+
+  ```bash
+  gh pr list --state open --json number,baseRefName -q '.[] | select(.baseRefName=="<branch>") | .number'
+  ```
+
+  Non-empty → merge **without** `--delete-branch`, or retarget the dependents to `main` first. Merging without it leaves the branch alive and GitHub retargets the dependents to `main` on its own. Recovering a PR closed this way means opening a new one from the same branch. This is what closed #786 on 2026-08-20; it was re-opened as #804.
 - **CI gate.** Only squash-merge when required checks are green. If CI is red on a flaky/infra failure, re-run it **once**; if the re-run still fails, stop and report — do not merge red.
 - **Stuck cap.** If any single step hangs for more than ~3–4 minutes (CI not progressing, a rebase that won't resolve cleanly), stop and report rather than waiting indefinitely.
 
