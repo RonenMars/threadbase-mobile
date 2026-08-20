@@ -159,6 +159,16 @@ npm run dev:tunnel -- -c
 3. Kills the placeholder listener.
 4. Starts Metro with `EXPO_PACKAGER_PROXY_URL` set.
 
+**`--native` delegates to `scripts/dev-device.sh` for the build.** That is not an
+implementation detail worth ignoring: an on-device build of this app cannot use
+Xcode's automatic signing, because the profile it generates carries no App Groups
+and both `Threadbase` and `ExpoWidgetsTarget` declare
+`group.com.ronenmars.threadbase`. `dev-device.sh` is where the per-target
+provisioning-profile discovery lives, so anything that builds to a device has to
+go through it rather than calling `expo run:ios` itself. A path that skips it
+fails to sign with six errors and `xcodebuild` exits 65 — see
+[troubleshooting.md](troubleshooting.md).
+
 ### Named tunnel (stable URL)
 
 ```bash

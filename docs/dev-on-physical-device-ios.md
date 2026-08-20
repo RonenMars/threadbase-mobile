@@ -44,8 +44,18 @@ the dev client isn't on the device yet:
 
 ```bash
 cd <repo-root>
-npx expo run:ios --device "<your-device-udid>"
+DEVICE_UDID="<your-device-udid>" npm run dev:device
 ```
+
+> **Use `dev:device`, not a bare `npx expo run:ios --device`.** The bare command uses
+> Xcode's automatic signing, whose generated profile carries no App Groups — and both
+> `Threadbase` and `ExpoWidgetsTarget` declare `group.com.ronenmars.threadbase`. It fails
+> to sign with six errors and `xcodebuild` exits 65. `scripts/dev-device.sh` discovers a
+> development provisioning profile per target and passes them through
+> `XCODE_XCCONFIG_FILE`. See [troubleshooting.md](troubleshooting.md).
+>
+> Add `TUNNEL_URL=<https-url>` when the phone is not on the same Wi-Fi, or use
+> `npm run dev:tunnel:native`, which delegates here.
 
 > If Watchman misbehaves (see friction table), prepend `EXPO_NO_WATCHMAN=1`.
 > Leave it off by default — it's a workaround, not the norm.
