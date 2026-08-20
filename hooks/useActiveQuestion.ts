@@ -30,8 +30,34 @@ function gateKey(msg: PermissionWsMessage): string {
   return `${msg.prompt ?? ''}::${msg.detail ?? ''}::${options}`
 }
 
+/**
+ * How long a ghost card stands after its answer before it is assumed lost.
+ * The gate normally closes long before this — the ttl only covers a close event
+ * that never arrives, and the resubscribe on resume is the real backstop.
+ */
+export const GHOST_TTL_MS = 30_000
+
+/**
+ * `active` — the gate is live: the card is tappable and send is disabled.
+ * `pending` — the user answered and the server took it, but the gate has not
+ * been observed closing yet. The card stands as a non-tappable ghost and
+ * blocks nothing.
+ */
+export type QuestionPhase = 'active' | 'pending'
+
+// One object, so `phase` cannot outlive the card it describes. Two parallel
+// pieces of state could disagree, and the dangerous direction is not
+// hypothetical: send is disabled on `active`, so a phase left behind by a
+// cleared card would disable send with nothing on screen to clear it — the
+// lockout this whole design exists to avoid. `question` and `phase` are
+// derived from this on the way out, so callers and their tests see two plain
+// fields that are incapable of drifting apart.
+type CardState =
+  | { prompt: QuestionBlock; phase: 'active' }
+  | { prompt: QuestionBlock; phase: 'pending'; pendingSince: number }
+
 export function useActiveQuestionReducer(sessionId: string) {
-  const [question, setQuestion] = useState<QuestionBlock | null>(null)
+  const [card, setCard] = useState<CardState | null>(null)
   // Identity of whatever `question` currently holds, and of the last thing
   // `clear()` took down. The server closes a gate only when its PTY detector
   // sees the box gone — end of turn, tens of seconds after the tap — so a card
@@ -53,7 +79,31 @@ export function useActiveQuestionReducer(sessionId: string) {
   const accept = useCallback((key: string | null, block: QuestionBlock) => {
     currentKey.current = key
     dismissedKey.current = null
-    setQuestion(block)
+    setCard({ prompt: block, phase: 'active' })
+  }, [])
+
+  // The user answered and the server took it. The card stays up as a ghost —
+  // it blocks nothing, so an answer the server never confirms costs nothing —
+  // and arms the same suppression clear() does, because the streamer keeps
+  // repainting an open gate until its detector sees the box gone and those
+  // repaints must not drag the card back to active under the user's answer.
+  const markPending = useCallback(() => {
+    setCard(prev =>
+      prev?.phase === 'active'
+        ? { prompt: prev.prompt, phase: 'pending', pendingSince: Date.now() }
+        : prev,
+    )
+    dismissedKey.current = currentKey.current
+  }, [])
+
+  // Evaluated against the stamp, never against a timer's own reckoning. A
+  // timer or an AppState resume only decides *when* to look; this decides what
+  // is true. So a prompt to look can be early or late — twenty minutes late
+  // after a background — without ever being wrong, and calling it is idempotent.
+  const expireIfStale = useCallback(() => {
+    setCard(prev =>
+      prev?.phase === 'pending' && Date.now() - prev.pendingSince >= GHOST_TTL_MS ? null : prev,
+    )
   }, [])
 
   // The card's premise died — the socket dropped, or the session stopped
@@ -66,7 +116,7 @@ export function useActiveQuestionReducer(sessionId: string) {
   // unanswered gate returns on replay, an answered one stays suppressed.
   const reset = useCallback(() => {
     currentKey.current = null
-    setQuestion(null)
+    setCard(null)
   }, [])
 
   const onMessage = useCallback((msg: Incoming) => {
@@ -83,29 +133,38 @@ export function useActiveQuestionReducer(sessionId: string) {
       accept(msg.toolUseId, mapAskQuestionToBlock(msg.toolUseId, msg.questions))
     } else if (msg.type === 'question_cancelled') {
       dismissedKey.current = null
-      setQuestion(prev => (prev?.toolUseId === msg.toolUseId ? null : prev))
+      setCard(prev => (prev?.prompt.toolUseId === msg.toolUseId ? null : prev))
     } else if (msg.type === 'permission') {
       const key = gateKey(msg)
       if (dismissedKey.current === key) return
       accept(key, mapPermissionToBlock(msg.prompt, msg.options, msg.cursor, msg.detail))
     } else if (msg.type === 'permission_cancelled') {
       dismissedKey.current = null
-      setQuestion(prev => (prev?.source === 'permission' ? null : prev))
+      setCard(prev => (prev?.prompt.source === 'permission' ? null : prev))
     }
   }, [accept, reset, sessionId])
 
   const clear = useCallback(() => {
     dismissedKey.current = currentKey.current
-    setQuestion(null)
+    setCard(null)
   }, [])
 
-  return { question, onMessage, clear, reset }
+  return {
+    question: card?.prompt ?? null,
+    phase: card?.phase ?? null,
+    onMessage,
+    clear,
+    reset,
+    markPending,
+    expireIfStale,
+  }
 }
 
 // Public hook: subscribe to the session WS and feed messages into the reducer.
 // Mirrors the subscription pattern in hooks/useConversationStream.ts (same socket source).
 export function useActiveQuestion(serverId: string, sessionId: string) {
-  const { question, onMessage, clear, reset } = useActiveQuestionReducer(sessionId)
+  const { question, phase, onMessage, clear, reset, markPending, expireIfStale } =
+    useActiveQuestionReducer(sessionId)
 
   useEffect(() => {
     if (!serverId || !sessionId) return
@@ -140,5 +199,5 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
     }
   }, [serverId, sessionId, onMessage, reset])
 
-  return { question, onMessage, clear, reset }
+  return { question, phase, onMessage, clear, reset, markPending, expireIfStale }
 }
