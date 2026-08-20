@@ -1,25 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePreventRemove } from 'expo-router/react-navigation'
 import { clientLog } from '@/lib/clientLog'
 import {
   applySessionLeaveAction,
-  clearSessionLeaveInFlight,
   coerceSessionLeaveAction,
   decideSessionLeave,
-  isSessionLeaveInFlight,
-  markSessionLeaveInFlight,
+  isLiveAttachedPty,
   type AppliedSessionLeaveAction,
   type LeaveSessionSnapshot,
 } from '@/lib/sessionLeavePolicy'
 import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
 
-export interface BeforeRemoveEvent {
-  preventDefault: () => void
-  data: { action: { type: string } }
-}
-
 export interface SessionLeaveNavigation {
-  addListener: (event: 'beforeRemove', cb: (e: BeforeRemoveEvent) => void) => () => void
   dispatch: (action: { type: string }) => void
 }
 
@@ -52,6 +45,7 @@ export function useSessionLeaveGuard(opts: {
   sessionId: string | undefined
   session: LeaveSessionSnapshot | null | undefined
   isPending: boolean
+  skipInitialReplace?: boolean
   stopSessionMutate: (
     vars: undefined,
     options?: { onError?: (err: unknown) => void },
@@ -61,10 +55,11 @@ export function useSessionLeaveGuard(opts: {
   cancelLeave: () => void
   confirmLeave: (choice: AppliedSessionLeaveAction, remember: boolean) => void
 } {
-  const { navigation, serverId, sessionId, session, isPending, stopSessionMutate } = opts
+  const { navigation, serverId, sessionId, session, isPending, skipInitialReplace = false, stopSessionMutate } = opts
   const [leaveModalVisible, setLeaveModalVisible] = useState(false)
+  const [continueAction, setContinueAction] = useState<{ type: string } | null>(null)
   const pendingActionRef = useRef<{ type: string } | null>(null)
-  const allowRemoveRef = useRef(false)
+  const skipInitialReplaceRef = useRef(skipInitialReplace)
   const modalVisibleRef = useRef(false)
   const sessionRef = useRef(session)
   const stopRef = useRef(stopSessionMutate)
@@ -74,6 +69,13 @@ export function useSessionLeaveGuard(opts: {
   useEffect(() => {
     stopRef.current = stopSessionMutate
   }, [stopSessionMutate])
+  useEffect(() => {
+    if (!skipInitialReplace) return
+    const timer = setTimeout(() => {
+      skipInitialReplaceRef.current = false
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [skipInitialReplace])
 
   const applyChoice = useCallback(
     (choice: AppliedSessionLeaveAction) => {
@@ -101,47 +103,47 @@ export function useSessionLeaveGuard(opts: {
 
   const proceed = useCallback(
     (action: { type: string } | null) => {
-      if (!sessionId || !action) return
-      allowRemoveRef.current = true
-      markSessionLeaveInFlight(sessionId)
-      navigation.dispatch(action)
+      if (!action) return
+      setContinueAction(action)
     },
-    [navigation, sessionId],
+    [],
   )
 
-  useEffect(() => {
-    if (isPending || !sessionId) return
-    const unsub = navigation.addListener('beforeRemove', (e) => {
-      if (allowRemoveRef.current || isSessionLeaveInFlight(sessionId)) return
-      if (modalVisibleRef.current) {
-        e.preventDefault()
-        return
-      }
+  const shouldPreventRemove = !continueAction && !isPending && Boolean(sessionId) && isLiveAttachedPty(session)
+  usePreventRemove(shouldPreventRemove, ({ data }) => {
+    if (!sessionId || modalVisibleRef.current) return
 
-      const decision = decideSessionLeave({
-        session: sessionRef.current,
-        setting: coerceSessionLeaveAction(readLeaveSetting()),
-      })
-
-      if (decision.kind === 'none') return
-
-      e.preventDefault()
-
-      if (decision.kind === 'apply') {
-        applyChoice(decision.action)
-        proceed(e.data.action)
-        return
-      }
-
-      pendingActionRef.current = e.data.action
-      modalVisibleRef.current = true
-      setLeaveModalVisible(true)
-    })
-    return () => {
-      unsub()
-      if (sessionId) clearSessionLeaveInFlight(sessionId)
+    if (skipInitialReplaceRef.current && data.action.type === 'REPLACE') {
+      skipInitialReplaceRef.current = false
+      proceed(data.action)
+      return
     }
-  }, [navigation, isPending, sessionId, serverId, applyChoice, proceed])
+
+    const decision = decideSessionLeave({
+      session: sessionRef.current,
+      setting: coerceSessionLeaveAction(readLeaveSetting()),
+    })
+
+    if (decision.kind === 'none') {
+      proceed(data.action)
+      return
+    }
+
+    if (decision.kind === 'apply') {
+      applyChoice(decision.action)
+      proceed(data.action)
+      return
+    }
+
+    pendingActionRef.current = data.action
+    modalVisibleRef.current = true
+    setLeaveModalVisible(true)
+  })
+
+  useEffect(() => {
+    if (!continueAction) return
+    navigation.dispatch(continueAction)
+  }, [continueAction, navigation])
 
   const cancelLeave = useCallback(() => {
     modalVisibleRef.current = false

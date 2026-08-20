@@ -524,15 +524,6 @@ export default function SessionDetailScreen() {
   const { mutate: stopSessionMutate } = stopSession
   const { leaveModalVisible, cancelLeave, confirmLeave } = useSessionLeaveGuard({
     navigation: {
-      addListener: (event, cb) =>
-        navigation.addListener(event, (e) => {
-          cb({
-            preventDefault: () => {
-              e.preventDefault()
-            },
-            data: { action: e.data.action },
-          })
-        }),
       dispatch: (action) => {
         navigation.dispatch(action as Parameters<typeof navigation.dispatch>[0])
       },
@@ -541,6 +532,7 @@ export default function SessionDetailScreen() {
     sessionId: id,
     session,
     isPending,
+    skipInitialReplace: isStarting,
     stopSessionMutate,
   })
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
@@ -553,8 +545,8 @@ export default function SessionDetailScreen() {
     [reviewMessages],
   )
 
-  // Leave-session policy lives in useSessionLeaveGuard (beforeRemove).
-  // Do not add a second listener here.
+  // Leave-session policy lives in useSessionLeaveGuard.
+  // Do not add a second guard here.
 
   const isLiveForStream =
     session?.ptyAttached === true &&
