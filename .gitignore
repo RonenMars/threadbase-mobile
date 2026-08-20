@@ -98,3 +98,7 @@ expo-env.d.ts
 
 # Local agent session memory (do not commit)
 .remember/
+
+# Storybook build output and Vite cache
+storybook-static/
+.storybook/.cache/

@@ -17,7 +17,10 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 RESET="$REPO_ROOT/scripts/reset-podfile-lock-path-noise.sh"
 
-git diff --cached --name-only --diff-filter=ACMR | grep -qxF 'ios/Podfile.lock' || exit 0
-[ -x "$RESET" ] || exit 0
+if git diff --cached --name-only --diff-filter=ACMR | grep -qxF 'ios/Podfile.lock'; then
+  [ -x "$RESET" ] && "$RESET"
+fi
 
-"$RESET"
+# Mandatory Storybook coverage: a new components/*.tsx file must ship with a
+# matching *.stories.tsx (see docs/storybook.md). Modified components only warn.
+node "$REPO_ROOT/scripts/check-story-coverage.js"

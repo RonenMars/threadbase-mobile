@@ -145,6 +145,35 @@ Any `expo-secure-store` usage must go through `services/secure-store.ts` (not th
 
 ---
 
+## Storybook (Laptop, Vite)
+
+`npm run storybook` opens a component catalog at `http://localhost:6006` via
+`@storybook/react-native-web-vite` — **not** the same thing as Expo Web above. Storybook
+mounts one component at a time (no `app/_layout.tsx`, no notification/SecureStore/
+biometric bootstrap, no WebSocket); Expo Web boots the full app. Config lives in
+`.storybook/` (Vite-based); on-device Storybook (`@storybook/react-native`, Metro
+`withStorybook`) is out of scope and not installed. See
+[`docs/storybook.md`](./docs/storybook.md).
+
+Co-locate `Component.stories.tsx` next to the component, CSF3 style. The global decorator
+in `.storybook/preview.tsx` wraps every story in the real `ThemeProvider`, driven by a
+theme toolbar that writes directly to `useSettingsStore` (no mocking layer) — so stories
+using `useTheme()` work unmodified. Don't story screens, navigation, camera, SecureStore,
+biometrics, notifications, or the bottom sheet; those need the full app shell.
+
+**A story is mandatory for every new component, not optional.** Any new file under
+`components/**/*.tsx` must ship in the same commit as a matching `*.stories.tsx` —
+`scripts/git-hooks/pre-commit` runs `scripts/check-story-coverage.js` and **blocks the
+commit** if it's missing. If a component genuinely can't be storied (native-API-only,
+a screen-sized composition), list its path in `scripts/git-hooks/story-exempt.txt` with
+a reason instead of skipping the hook. For an **existing** component you modify, add a
+story too when doing so is genuinely small — the hook only warns for modifications, it
+doesn't block, because judging "small effort" is a call for whoever's making the change,
+not something a hook can decide. Don't let that warning become a reason to skip it by
+default.
+
+---
+
 ## Icons
 
 **Never use emojis in the app UI.** All icons must come from the [Phosphor Icons](https://phosphoricons.com/) library (`phosphor-react-native`). Use the appropriate Phosphor component (e.g. `<Star />`, `<Clock />`, `<Fire />`, `<GearSix />`, `<PencilSimple />`). This applies to all new code and any code you touch.

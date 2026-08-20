@@ -85,6 +85,11 @@ Build / lint / type config (any change can flip CI):
 - `global.css` — Tailwind global import
 - `nativewind-env.d.ts` — NativeWind type decls
 
+Storybook (laptop Vite catalog):
+
+- `.storybook/` — Storybook config (`main.ts`, `preview.tsx`); `*.stories.tsx` files
+  live next to their component under `components/`, already covered above
+
 Native / deploy pipeline:
 
 - `scripts/` — build/deploy/signing/version scripts (deploy workflow)

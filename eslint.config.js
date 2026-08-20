@@ -121,6 +121,14 @@ module.exports = defineConfig([
       "react/display-name": "off",
     },
   },
+  {
+    files: ["**/*.stories.tsx", ".storybook/**/*.{ts,tsx}"],
+    rules: {
+      "i18next/no-literal-string": "off",
+      "react-native/no-raw-text": "off",
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   // Plain-JS unit tests read files off disk under Node — allow Node built-ins.
   {
     files: ["__tests__/unit/**/*.js"],

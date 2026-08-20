@@ -172,6 +172,22 @@ Expo MCP is configured **globally** (user scope) for both Claude Code and Codex 
 - Use it for **screenshots, device/app logs, and verifying UI on the simulator or emulator**.
 - **Do not use remote tunneling** (`--mcp-server-url` / `@expo/mcp-tunnel`) unless explicitly asked. Local dev server only.
 
+## Storybook (Laptop, Vite)
+
+`npm run storybook` opens a component catalog at `http://localhost:6006` via
+`@storybook/react-native-web-vite`. It is unrelated to Expo Web (`npx expo start --web`,
+which boots the full app) — Storybook mounts one component at a time with no app shell,
+no notification/SecureStore/biometric bootstrap, no WebSocket. On-device Storybook is
+out of scope and not installed. See [`docs/storybook.md`](./docs/storybook.md).
+
+**A story is mandatory for every new component — not optional.** Any new
+`components/**/*.tsx` file needs a matching `*.stories.tsx` in the same commit;
+`scripts/git-hooks/pre-commit` runs `scripts/check-story-coverage.js` and blocks the
+commit if it's missing (exemptions go in `scripts/git-hooks/story-exempt.txt` with a
+reason, for the rare component that genuinely can't be storied). When you modify an
+**existing** component and adding a story would be small, add it — the hook only warns
+on modifications, it doesn't block, so don't treat the warning as permission to skip it.
+
 ## Server contract — degrade, don't break
 
 The streamer no longer keeps a hand-maintained compatibility list, and it does **not** treat a wire change as blocked by this app (see "Backward compatibility with tb-mobile" in the streamer's `CLAUDE.md`). A server can rename a field, drop an endpoint or emit a status this build has never heard of, and it can do so without asking. This app is the half that absorbs it.
