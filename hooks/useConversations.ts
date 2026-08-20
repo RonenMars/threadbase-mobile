@@ -105,9 +105,18 @@ export function useConversations(
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
   const recordWarmingUp = useServerFetchStatusStore((s) => s.recordWarmingUp)
 
+  // refreshEpoch only ticks up (never resets), so `refreshEpoch > 0` would stay
+  // true forever after the first pull-to-refresh — sending `refresh=1` (full
+  // streamer disk rescan) on every later automatic refetch, not just the one
+  // the user asked for. Consume each epoch once: refresh=1 fires only the
+  // first time this hook sees a given epoch value.
+  const consumedEpochRef = useRef(0)
+
   return useInfiniteQuery({
     queryKey: ['conversations', filter, refreshEpoch, ...displayedServerIds],
     queryFn: async ({ pageParam = 0, signal }): Promise<MultiConversationPage> => {
+      const isFreshEpoch = refreshEpoch > 0 && refreshEpoch !== consumedEpochRef.current
+      if (pageParam === 0 && isFreshEpoch) consumedEpochRef.current = refreshEpoch
       // Bug 32: use allSettled so one unreachable server doesn't blank the Hub.
       // Rejected results update the per-server fetch-status store, which the
       // header dot + ServerStatusModal read to surface partial failure.
@@ -122,7 +131,7 @@ export function useConversations(
           if (filter?.provider) params.set('provider', filter.provider)
           params.set('limit', String(limit))
           params.set('offset', String(pageParam))
-          if (pageParam === 0 && refreshEpoch > 0) {
+          if (pageParam === 0 && isFreshEpoch) {
             params.set('refresh', '1')
           }
           const raw = await api.get<RawSessionMeta[] | ConversationPage>(

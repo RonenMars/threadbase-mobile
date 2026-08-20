@@ -676,6 +676,37 @@ describe('useConversations — partial failure (Bug 32)', () => {
   })
 })
 
+describe('useConversations — refreshEpoch is consumed once, not sticky', () => {
+  it('sends refresh=1 only on the fetch that follows a bumped epoch, not on later refetches at the same epoch', async () => {
+    setActiveServers(['srv-A'])
+    const paths: string[] = []
+    handlers['srv-A'] = (path: string) => {
+      paths.push(path)
+      return Promise.resolve([rawSession('a1')]) as Promise<unknown>
+    }
+
+    const { result, rerender } = await renderHook(
+      ({ epoch }: { epoch: number }) => useConversations(undefined, epoch),
+      { wrapper: createWrapper(), initialProps: { epoch: 0 } },
+    )
+    await waitFor(() => expect(result.current.data?.pages.length).toBe(1))
+    expect(paths[0]).not.toContain('refresh=1')
+
+    // Simulates pull-to-refresh: epoch bumps, a new queryKey fires a fresh fetch.
+    rerender({ epoch: 1 })
+    await waitFor(() => expect(paths.length).toBe(2))
+    expect(paths[1]).toContain('refresh=1')
+
+    // Simulates an automatic refetch (reconnect/refocus) at the SAME epoch —
+    // must not re-send refresh=1, or every later poll forces a full streamer rescan.
+    await act(async () => {
+      await result.current.refetch()
+    })
+    await waitFor(() => expect(paths.length).toBe(3))
+    expect(paths[2]).not.toContain('refresh=1')
+  })
+})
+
 describe('useConversationSearch — partial failure (Bug 32)', () => {
   it('returns matches from healthy server when other server fails', async () => {
     setActiveServers(['srv-A', 'srv-B'])
