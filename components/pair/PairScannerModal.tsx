@@ -10,7 +10,6 @@ import {
 } from 'react-native'
 import { CameraView } from 'expo-camera'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
@@ -19,9 +18,9 @@ import {
   isRetryablePairFailure,
   parsePairUri,
   PairExchangeError,
-  PairUriError,
   type ExchangeResult,
 } from '@/services/pair-exchange'
+import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
@@ -33,19 +32,6 @@ interface Props {
 }
 
 type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
-
-function resolveErrorMessage(err: Error, t: TFunction<'pair'>): string {
-  if (err instanceof PairUriError) {
-    return t(`scanner.errors.uri.${err.code}`)
-  }
-  if (err instanceof PairExchangeError) {
-    if (err.kind === 'network' || err.kind === 'server') {
-      return t(`scanner.errors.exchange.${err.kind}`, { message: err.message })
-    }
-    return t(`scanner.errors.exchange.${err.kind}`)
-  }
-  return t('scanner.errors.generic')
-}
 
 export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
@@ -104,7 +90,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       } catch (err) {
         const failure = err instanceof Error ? err : new Error('Pairing failed')
         setAlreadyAdded(false)
-        setError(resolveErrorMessage(failure, t))
+        setError(resolvePairFailureMessage(failure, t))
         setCanRetry(!(failure instanceof PairExchangeError) || isRetryablePairFailure(failure))
         setPhase('error')
       }

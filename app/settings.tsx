@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useRef } from 'react'
 import {
   Alert,
   View,
@@ -27,6 +27,8 @@ import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
+import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
+import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode } from 'phosphor-react-native'
@@ -312,6 +314,10 @@ export default function SettingsScreen() {
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
   const [qrScannerOpen, setQrScannerOpen] = useState(false)
+  const [cameraFingerprint, setCameraFingerprint] = useState<string | null>(null)
+  // Held across the identity card: the exchange already happened, and the
+  // server is only added once the user dismisses the card.
+  const pendingScan = useRef<ExchangeResult | null>(null)
   const [themeTab, setThemeTab] = useState<'dark' | 'light'>(() => theme.colorMode === 'light' ? 'light' : 'dark')
   const { statuses: permStatuses, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
 
@@ -437,8 +443,27 @@ await refreshServerInfo(serverId)
     }
   }, [setLocale])
 
-  const handleScanQrSuccess = async (result: ExchangeResult) => {
+  // A camera scan needs no confirmation gate — pointing a camera at a screen is
+  // itself the out-of-band channel — but the identity code is still shown, so it
+  // can be compared against `tb-streamer identity` before the server is added.
+  const finishCameraIdentity = () => {
+    const result = pendingScan.current
+    pendingScan.current = null
+    setCameraFingerprint(null)
+    if (result) void applyScanResult(result)
+  }
+
+  const handleScanQrSuccess = (result: ExchangeResult) => {
     setQrScannerOpen(false)
+    if (result.serverPublicKey) {
+      pendingScan.current = result
+      setCameraFingerprint(formatFingerprint(result.serverPublicKey))
+      return
+    }
+    void applyScanResult(result)
+  }
+
+  const applyScanResult = async (result: ExchangeResult) => {
     const label = result.machineName?.trim() || undefined
     const addResult = await addServer(result.url, result.apiKey, label, {
       deviceId: result.deviceId ?? undefined,
@@ -1017,6 +1042,11 @@ await refreshServerInfo(serverId)
         visible={qrScannerOpen}
         onClose={() => setQrScannerOpen(false)}
         onSuccess={handleScanQrSuccess}
+      />
+      <PairCameraIdentityCard
+        visible={cameraFingerprint !== null}
+        fingerprint={cameraFingerprint}
+        onDone={finishCameraIdentity}
       />
     </SafeAreaView>
   )

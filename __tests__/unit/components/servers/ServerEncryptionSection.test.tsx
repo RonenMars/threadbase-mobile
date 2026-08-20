@@ -111,12 +111,19 @@ describe('ServerEncryptionSection', () => {
     expect(await findByTestId('identity-how-to-check-steps')).toBeTruthy()
   })
 
-  it('hides the fingerprint when the server was added without a public key', async () => {
+  it('shows the no-identity copy when the server was added without a public key', async () => {
     seedServer()
-    const { queryByTestId, getByTestId } = await renderWithI18n(
+    const { queryByTestId, getByTestId, getByText } = await renderWithI18n(
       <ServerEncryptionSection serverId={SERVER_ID} />,
     )
     expect(queryByTestId('identity-fingerprint')).toBeNull()
+    expect(getByTestId('server-no-identity')).toBeTruthy()
+    expect(getByText('No identity to verify')).toBeTruthy()
+    expect(
+      getByText(
+        "This link doesn't include an identity code, so you can't check which computer it belongs to. Anything you send will be readable by anything between this device and the server.",
+      ),
+    ).toBeTruthy()
     expect(getByTestId('server-require-encryption')).toBeTruthy()
   })
 })

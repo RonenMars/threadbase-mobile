@@ -164,7 +164,7 @@ describe('PairDeepLinkScreen', () => {
     const screen = await renderWithI18n(<PairDeepLinkScreen />)
 
     expect(
-      await screen.findByText('This pair QR has expired. Run tb pair on your server again.'),
+      await screen.findByText('This pair QR has expired. Run tb-streamer pair on your server again.'),
     ).toBeTruthy()
     expect(exchangeToken).not.toHaveBeenCalled()
     expect(mockReplace).not.toHaveBeenCalled()
