@@ -17,7 +17,8 @@
       "uri": {
         "invalid": "That QR doesn't look like a Threadbase pair code.",
         "expired": "This pair QR has expired. Run tb pair on your server again.",
-        "bad-server-url": "The server URL in this QR is not valid."
+        "bad-server-url": "The server URL in this QR is not valid.",
+        "bad-server-key": "The server key in this pairing code is damaged, so this pairing cannot be encrypted. Generate a fresh QR on your server."
       },
       "exchange": {
         "token": "Pair token rejected — generate a fresh QR on your server.",
@@ -25,7 +26,12 @@
         "network": "Could not reach that server. Check that the streamer is running and your phone is on the same network.",
         "decrypt": "Server response could not be decrypted.",
         "server": "The server responded unexpectedly. Update the streamer to the latest version and try again.",
-        "cleartext": "This server is reachable only over plain HTTP and is not on your local network. Use an https:// address, or run tb serve --tunnel."
+        "cleartext": "This server is reachable only over plain HTTP and is not on your local network. Use an https:// address, or run tb serve --tunnel.",
+        "e2ee-handshake": "Could not verify this server's identity. Your pairing code is still valid — scan it again, and if this keeps happening, generate a fresh one on your server.",
+        "e2ee-malformed": "This app and the server disagreed on the encrypted pairing. Your pairing code is still valid — try scanning it again.",
+        "e2ee-version": "This server encrypts pairing in a version this app does not speak. Update the app and the streamer to matching versions.",
+        "e2ee-refused": "This server offered an encrypted pairing and then did not finish it. Generate a fresh pairing code on your server and scan it again.",
+        "e2ee-web-unsupported": "Encrypted pairing needs the Threadbase app for iOS or Android. A browser cannot store the key that identifies this device."
       }
     }
   },

@@ -103,10 +103,16 @@ jest.mock('expo-camera', () => {
 })
 
 // ─── expo-secure-store ───────────────────────────────────────────────────────
+// The accessibility constants are numbers the native module supplies, so a mock
+// that omits them makes every one of them `undefined` — and an assertion that a
+// key was stored device-only would then pass just as happily on the iCloud-
+// syncing default. Distinct values are what make that assertion mean something.
 jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn().mockResolvedValue(undefined),
   getItemAsync: jest.fn().mockResolvedValue(null),
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
+  WHEN_UNLOCKED: 5,
+  WHEN_UNLOCKED_THIS_DEVICE_ONLY: 6,
 }))
 
 // ─── expo-device ─────────────────────────────────────────────────────────────

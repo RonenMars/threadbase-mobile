@@ -595,6 +595,16 @@ export interface ServerConfig {
    */
   publicUrl?: string
   /**
+   * The server's long-term X25519 public key, unpadded base64url, as carried by
+   * the QR and then proved by the pairing handshake. Absent on a plaintext
+   * pairing and on every server paired before Phase 2.
+   *
+   * This is the half that binds the *identity*: `requireEncryption` below only
+   * demands that a connection be encrypted, which any machine can satisfy with
+   * its own key. The two together are what make either one meaningful.
+   */
+  serverPublicKey?: string
+  /**
    * This device's pin: refuse to talk to this server unencrypted. Absent means
    * unpinned, which is not the same as "plaintext is fine" — it means the
    * question has not been answered yet.

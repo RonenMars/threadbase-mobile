@@ -8,6 +8,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import {
   exchangeToken,
+  isRetryablePairFailure,
   parsePairUri,
   PairExchangeError,
   PairUriError,
@@ -23,7 +24,7 @@ type Phase = 'exchanging' | 'error'
 // produce the same messages for the same failure. The translated copy never
 // repeats err.message — it stays a developer detail, routed to clientLog for
 // whoever debugs the next pairing failure.
-function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
+function resolveErrorMessage(err: Error, t: TFunction<'pair'>): string {
   if (err instanceof PairUriError) {
     return t(`scanner.errors.uri.${err.code}`)
   }
@@ -32,9 +33,16 @@ function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
     return t(`scanner.errors.exchange.${err.kind}`)
   }
   clientLog.info('pair.exchange', 'unrecognized', {
-    message: err instanceof Error ? err.message : String(err),
+    message: err.message,
   })
   return t('scanner.errors.generic')
+}
+
+function canRetryPairFailure(err: Error): boolean {
+  if (err instanceof PairExchangeError) return isRetryablePairFailure(err)
+  // The same damaged link cannot become a valid key by tapping Try again.
+  if (err instanceof PairUriError && err.code === 'bad-server-key') return false
+  return true
 }
 
 // One name for both the params this screen accepts and the params it rebuilds,
@@ -54,7 +62,10 @@ function buildPairUri(params: PairParams): string {
   if (params.url) search.set('url', params.url)
   if (params.token) search.set('token', params.token)
   if (params.exp) search.set('exp', params.exp)
-  if (params.spk) search.set('spk', params.spk)
+  // Empty string is present-invalid, not absent. Dropping it here would
+  // rebuild a URI with no `spk` and select the plaintext path for a
+  // damaged key the scanner would have rejected.
+  if (params.spk !== undefined) search.set('spk', params.spk)
   if (params.v) search.set('v', params.v)
   return `threadbase://pair?${search.toString()}`
 }
@@ -70,6 +81,7 @@ export default function PairDeepLinkScreen() {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const [phase, setPhase] = useState<Phase>('exchanging')
   const [error, setError] = useState<string | null>(null)
+  const [canRetry, setCanRetry] = useState(true)
   const startedRef = useRef(false)
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -96,17 +108,22 @@ export default function PairDeepLinkScreen() {
         url: parsed.url,
         token: parsed.token,
         deviceName: defaultPairDeviceName(),
+        serverPublicKey: parsed.spk,
       })
       await addServer(exchanged.url, exchanged.apiKey, exchanged.machineName ?? undefined, {
         deviceId: exchanged.deviceId ?? undefined,
         deviceToken: exchanged.deviceToken ?? undefined,
         capabilities: exchanged.capabilities ?? undefined,
         publicUrl: exchanged.publicUrl ?? undefined,
+        serverPublicKey: exchanged.serverPublicKey ?? undefined,
+        requireEncryption: exchanged.e2eeRequired,
       })
       router.replace('/')
     } catch (err) {
       if (!mountedRef.current) return
-      setError(resolveErrorMessage(err, t))
+      const failure = err instanceof Error ? err : new Error('Pairing failed')
+      setError(resolveErrorMessage(failure, t))
+      setCanRetry(canRetryPairFailure(failure))
       setPhase('error')
     }
   }, [params, activeServerIds, servers, addServer, router, t])
@@ -130,13 +147,15 @@ export default function PairDeepLinkScreen() {
         <View style={styles.center}>
           <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
           <Text style={styles.errorBody}>{error}</Text>
-          <TouchableOpacity
-            testID="pair-deep-link-try-again"
-            style={styles.primaryBtn}
-            onPress={() => void attempt()}
-          >
-            <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
-          </TouchableOpacity>
+          {canRetry && (
+            <TouchableOpacity
+              testID="pair-deep-link-try-again"
+              style={styles.primaryBtn}
+              onPress={() => void attempt()}
+            >
+              <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             testID="pair-deep-link-support"
             onPress={() => {

@@ -16,6 +16,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
 import {
   exchangeToken,
+  isRetryablePairFailure,
   parsePairUri,
   PairExchangeError,
   PairUriError,
@@ -32,7 +33,7 @@ interface Props {
 
 type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 
-function resolveErrorMessage(err: unknown, t: TFunction<'pair'>): string {
+function resolveErrorMessage(err: Error, t: TFunction<'pair'>): string {
   if (err instanceof PairUriError) {
     return t(`scanner.errors.uri.${err.code}`)
   }
@@ -52,6 +53,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
+  const [canRetry, setCanRetry] = useState(true)
   const [scanEnabled, setScanEnabled] = useState(true)
   const handledRef = useRef(false)
 
@@ -60,6 +62,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
     setScanEnabled(true)
     setPhase('scanning')
     setError(null)
+    setCanRetry(true)
   }, [])
 
   const handleClose = useCallback(() => {
@@ -83,12 +86,15 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
           url: parsed.url,
           token: parsed.token,
           deviceName: defaultPairDeviceName(),
+          serverPublicKey: parsed.spk,
         })
         reset()
         onSuccess(result)
         onClose()
       } catch (err) {
-        setError(resolveErrorMessage(err, t))
+        const failure = err instanceof Error ? err : new Error('Pairing failed')
+        setError(resolveErrorMessage(failure, t))
+        setCanRetry(!(failure instanceof PairExchangeError) || isRetryablePairFailure(failure))
         setPhase('error')
       }
     },
@@ -150,9 +156,11 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <TouchableOpacity testID="pair-scanner-try-again" style={styles.primaryBtn} onPress={reset}>
-          <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
-        </TouchableOpacity>
+        {canRetry && (
+          <TouchableOpacity testID="pair-scanner-try-again" style={styles.primaryBtn} onPress={reset}>
+            <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           testID="pair-scanner-support"
           onPress={() => {
