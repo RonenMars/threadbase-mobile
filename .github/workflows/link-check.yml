@@ -1,0 +1,45 @@
+name: Link check
+
+# Citations into the threadbase umbrella are plain URLs, so a rename there breaks
+# them here silently — nothing in a markdown file 404-checks itself.
+# The schedule matters as much as the PR trigger: the break arrives from the other
+# repo, with no pull request in this one to catch it.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '.github/workflows/link-check.yml'
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  umbrella-links:
+    name: Umbrella doc links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every umbrella link resolves
+        run: |
+          set -uo pipefail
+          mapfile -t urls < <(grep -rhoE 'https://github\.com/RonenMars/threadbase/blob/main/[^)"#[:space:]]+' --include='*.md' . | sort -u)
+          echo "found ${#urls[@]} umbrella link(s)"
+          # Zero means the matcher stopped matching, not that the links are healthy.
+          # If the last such citation is ever genuinely removed, delete this workflow with it.
+          if [ "${#urls[@]}" -eq 0 ]; then
+            echo "::error::no umbrella links found — the matcher is broken"
+            exit 1
+          fi
+          fail=0
+          for u in "${urls[@]}"; do
+            raw="${u/github.com/raw.githubusercontent.com}"
+            raw="${raw/\/blob\//\/}"
+            code=$(curl -sL -o /dev/null -w '%{http_code}' "$raw")
+            printf '  %s  %s\n' "$code" "$u"
+            if [ "$code" != "200" ]; then
+              echo "::error::$u returned $code"
+              fail=1
+            fi
+          done
+          exit $fail

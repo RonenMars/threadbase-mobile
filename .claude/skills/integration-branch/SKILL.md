@@ -30,6 +30,10 @@ the rule it states is the one this skill operates under:
 
 > An integration branch is a staging area with an expiry, not a parallel trunk.
 
+That rule is canonical for every Threadbase repo in
+[`threadbase/docs/integration-branch-lifecycle.md`](https://github.com/RonenMars/threadbase/blob/main/docs/integration-branch-lifecycle.md),
+which the tb-streamer copy of this skill cites too. The retirement doc below is its origin and stays here.
+
 So:
 
 - A branch this skill creates exists to **test a set of PRs together**, and is deleted once `main` holds
@@ -884,6 +888,8 @@ Audit each ref by **content, not ancestry**: ask *does it hold a file `main` has
 `git merge-base --is-ancestor` reports "unmerged" for work that landed in full. It is the same
 principle as Step 8's coverage gate, pointed at refs instead of files — and it is the method that made
 the 2026-08-12 deletions safe, recorded in the retirement doc.
+The script, and two checks from that audit that return a confident wrong answer instead of an error, are in
+[`integration-branch-lifecycle.md`](https://github.com/RonenMars/threadbase/blob/main/docs/integration-branch-lifecycle.md).
 
 If the branch is still alive a week later with nothing landed, that is the parallel-trunk failure
 starting. Say so rather than letting it run.
