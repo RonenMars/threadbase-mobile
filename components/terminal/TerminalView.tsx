@@ -86,11 +86,14 @@ export function TerminalView({
     )
   }, [resumedConversationId, router, serverId, sessionId])
 
-  const onSend = (payload: string) => {
+  const onSend = async (payload: string) => {
     markSessionUsed(sessionId)
-    sendInput.mutate(payload, {
-      onError: (err) => Alert.alert('Send failed', err instanceof Error ? err.message : String(err)),
-    })
+    try {
+      await sendInput.mutateAsync(payload)
+    } catch (err) {
+      Alert.alert('Send failed', err instanceof Error ? err.message : String(err))
+      throw err
+    }
   }
 
   const {
