@@ -17,12 +17,22 @@ export function renderContent(
   recycleKey: string,
   highlight?: string,
   matchAnchor?: MatchAnchor,
+  activeMatch?: boolean,
 ) {
   if (block.type === 'thinking') {
     return <ThinkingCard key={index} block={block} recycleKey={recycleKey} />
   }
   if (block.type === 'tool_use' || block.type === 'tool_result') {
-    return <ToolCard key={index} block={block} recycleKey={recycleKey} highlight={highlight} matchAnchor={matchAnchor} />
+    return (
+      <ToolCard
+        key={index}
+        block={block}
+        recycleKey={recycleKey}
+        highlight={highlight}
+        matchAnchor={matchAnchor}
+        activeMatch={activeMatch}
+      />
+    )
   }
   if (block.type === 'diff') {
     return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
@@ -40,13 +50,20 @@ export const MessageItem = React.memo(function MessageItem({
   message,
   isLast,
   highlight,
+  isActiveMatch,
   onMatchLayout,
   animateIn,
 }: {
   message: Message
   isLast?: boolean
-  /** Search keyword to highlight — set only on the active search-target row. */
+  /** Search keyword to tint. Set on every row while a search is active, not just the anchor. */
   highlight?: string
+  /**
+   * This row holds the active match. Drives the stronger tint, the anchor
+   * test id, the layout report that aims the scroll, and the tool-card
+   * force-open — none of which may fire on the other matching rows.
+   */
+  isActiveMatch?: boolean
   /** Reports the highlighted match's y offset within this row, for anchored scrolling. */
   onMatchLayout?: (messageIndex: number, y: number) => void
   /** Play the fade-in-from-bottom entrance — set only on freshly-arrived tail rows. */
@@ -59,7 +76,7 @@ export const MessageItem = React.memo(function MessageItem({
   const rowRef = useRef<View>(null)
   const messageIndex = message.messageIndex
   const matchAnchor: MatchAnchor | undefined =
-    highlight && onMatchLayout && messageIndex != null
+    isActiveMatch && onMatchLayout && messageIndex != null
       ? { rowRef, onLayout: (y: number) => onMatchLayout(messageIndex, y) }
       : undefined
   const hasToolOrDiff = message.content.some(
@@ -68,10 +85,10 @@ export const MessageItem = React.memo(function MessageItem({
   // Bug 6 e2e: tag the final row so the Maestro flow can assert the last
   // message lands above (not behind) the Export + Resume action bar.
   // search-anchor e2e: tag the active search-match row so a flow can assert
-  // the anchor scroll landed on it. `highlight` takes priority — a row is
+  // the anchor scroll landed on it. The anchor takes priority — a row is
   // never simultaneously the conversation tail and a mid-conversation
   // search anchor in any fixture this app ships.
-  const rowTestId = highlight ? 'search-anchor-message' : isLast ? 'conversation-last-message' : undefined
+  const rowTestId = isActiveMatch ? 'search-anchor-message' : isLast ? 'conversation-last-message' : undefined
 
   // Fade-in-from-bottom on freshly-arrived rows only. FadeInDown keyed on the
   // message id so React runs it once per real message, never on FlashList cell
@@ -95,11 +112,12 @@ export const MessageItem = React.memo(function MessageItem({
                 recycleKey={message.id}
                 highlight={highlight}
                 matchAnchor={matchAnchor}
+                activeMatch={isActiveMatch}
                 noOuterMargin
               />
             )
           }
-          return renderContent(block, i, message.id, highlight, matchAnchor)
+          return renderContent(block, i, message.id, highlight, matchAnchor, isActiveMatch)
         })}
       </Row>
     )
@@ -111,7 +129,13 @@ export const MessageItem = React.memo(function MessageItem({
       {message.has_images ? (
         <Text style={styles.imageBadge}>{t('header.containsImage')}</Text>
       ) : null}
-      <MessageBubble message={message} recycleKey={message.id} highlight={highlight} matchAnchor={matchAnchor} />
+      <MessageBubble
+        message={message}
+        recycleKey={message.id}
+        highlight={highlight}
+        matchAnchor={matchAnchor}
+        activeMatch={isActiveMatch}
+      />
     </Row>
   )
 })
