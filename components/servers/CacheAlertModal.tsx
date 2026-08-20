@@ -33,6 +33,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState(false)
   const [selectError, setSelectError] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   // Reset transient UI state whenever a different alert is shown, without an
   // effect: adjust state during render per
@@ -44,6 +45,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
     setSelectedIds(new Set())
     setSubmitting(false)
     setSelectError(false)
+    setActionError(null)
   }
 
   if (!visible || !serverId || !alert) return null
@@ -67,6 +69,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
 
   const submit = async (action: CacheAlertResolveAction) => {
     setSubmitting(true)
+    setActionError(null)
     try {
       const result = await resolveCacheAlert(serverId, {
         fingerprint: alert.fingerprint,
@@ -91,6 +94,8 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
       } else {
         onResolved(result.backupPath)
       }
+    } catch {
+      setActionError(t('cacheAlert.resolveFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -141,6 +146,9 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
             <View style={styles.confirmBlock}>
               <Text style={styles.confirmTitle}>{t('cacheAlert.confirmTitle')}</Text>
               <Text style={styles.confirmMessage}>{confirmMessage}</Text>
+              {actionError ? (
+                <Text style={styles.selectErrorText}>{actionError}</Text>
+              ) : null}
               <View style={styles.confirmActions}>
                 <TouchableOpacity
                   style={styles.confirmBtn}
@@ -197,6 +205,10 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                     <Text style={styles.selectErrorText}>{t('cacheAlert.selectAtLeastOne')}</Text>
                   ) : null}
                 </>
+              ) : null}
+
+              {actionError ? (
+                <Text style={styles.selectErrorText}>{actionError}</Text>
               ) : null}
 
               <View style={styles.actions}>

@@ -90,7 +90,8 @@
     "selectNone": "Select None",
     "successToast": "Resolved. Backup saved at {{backupPath}}",
     "successToastNoBackup": "Resolved.",
-    "selectAtLeastOne": "Select at least one conversation to prune."
+    "selectAtLeastOne": "Select at least one conversation to prune.",
+    "resolveFailed": "Couldn't complete that action. Check the connection to this server and try again."
   },
   "hostPressure": {
     "banner": {
