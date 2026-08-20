@@ -16,9 +16,10 @@ import {
 } from '@/services/pair-exchange'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { pendingTargetFromExchange } from '@/services/pair-confirm-target'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
-import { useServersStore } from '@/stores/servers'
+import { isServerUrlAlreadyAdded, useServersStore } from '@/stores/servers'
 import { clientLog } from '@/lib/clientLog'
 
 type Phase = 'exchanging' | 'confirm' | 'error'
@@ -42,9 +43,11 @@ function resolveErrorMessage(err: Error, t: TFunction<'pair'>): string {
 }
 
 function canRetryPairFailure(err: Error): boolean {
+  // This screen is bound to the URL that opened it. An expired or malformed
+  // link cannot become valid by retrying the same query params — unlike the
+  // camera, which can scan a fresh QR.
+  if (err instanceof PairUriError) return false
   if (err instanceof PairExchangeError) return isRetryablePairFailure(err)
-  // The same damaged link cannot become a valid key by tapping Try again.
-  if (err instanceof PairUriError && err.code === 'bad-server-key') return false
   return true
 }
 
@@ -80,10 +83,9 @@ export default function PairDeepLinkScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<PairParams>()
   const addServer = useServersStore((s) => s.addServer)
-  const servers = useServersStore((s) => s.servers)
-  const activeServerIds = useServersStore((s) => s.activeServerIds)
   const [phase, setPhase] = useState<Phase>('exchanging')
   const [error, setError] = useState<string | null>(null)
+  const [alreadyAdded, setAlreadyAdded] = useState(false)
   const [canRetry, setCanRetry] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
   const pendingExchange = useRef<ExchangeResult | null>(null)
@@ -98,15 +100,14 @@ export default function PairDeepLinkScreen() {
   const attempt = useCallback(async () => {
     setPhase('exchanging')
     setError(null)
+    setAlreadyAdded(false)
     try {
       const parsed = parsePairUri(buildPairUri(params))
-      const normalizedUrl = parsed.url.replace(/\/+$/, '')
-      // Reopening a link for a server that's already configured must be a
-      // no-op, not a second exchange against a (likely already-consumed)
-      // token and not a duplicate entry.
-      const alreadyPaired = activeServerIds.some((id) => servers[id]?.url === normalizedUrl)
-      if (alreadyPaired) {
-        router.replace('/')
+      if (isServerUrlAlreadyAdded(parsed.url)) {
+        setAlreadyAdded(true)
+        setError(t('scanner.errors.alreadyAdded'))
+        setCanRetry(false)
+        setPhase('error')
         return
       }
       const exchanged = await exchangeToken({
@@ -132,7 +133,7 @@ export default function PairDeepLinkScreen() {
       setCanRetry(canRetryPairFailure(failure))
       setPhase('error')
     }
-  }, [params, activeServerIds, servers, router, t])
+  }, [params, t])
 
   const commitPending = useCallback(async () => {
     const exchanged = pendingExchange.current
@@ -164,8 +165,11 @@ export default function PairDeepLinkScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const errorHeading = alreadyAdded ? t('scanner.alreadyAddedTitle') : t('scanner.errorTitle')
+
   return (
-    <SafeAreaView style={styles.root} testID="pair-deep-link-screen">
+    <SafeAreaView style={styles.root} testID="pair-deep-link-screen" edges={['top', 'bottom']}>
+      <ScreenHeader title={t('screenTitle')} />
       {phase === 'exchanging' ? (
         <View style={styles.center}>
           <ActivityIndicator color={theme.text.primary} />
@@ -173,9 +177,14 @@ export default function PairDeepLinkScreen() {
         </View>
       ) : phase === 'error' ? (
         <View style={styles.center}>
-          <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
-          <Text style={styles.errorBody}>{error}</Text>
-          {canRetry && (
+          <Text style={styles.errorTitle}>{errorHeading}</Text>
+          <Text
+            style={styles.errorBody}
+            testID={alreadyAdded ? 'pair-deep-link-already-added' : undefined}
+          >
+            {error}
+          </Text>
+          {canRetry ? (
             <TouchableOpacity
               testID="pair-deep-link-try-again"
               style={styles.primaryBtn}
@@ -183,15 +192,25 @@ export default function PairDeepLinkScreen() {
             >
               <Text style={styles.primaryBtnText}>{t('scanner.tryAgain')}</Text>
             </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              testID="pair-deep-link-close"
+              style={styles.primaryBtn}
+              onPress={() => router.replace('/')}
+            >
+              <Text style={styles.primaryBtnText}>{t('scanner.close')}</Text>
+            </TouchableOpacity>
           )}
-          <TouchableOpacity
-            testID="pair-deep-link-support"
-            onPress={() => {
-              void Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`)
-            }}
-          >
-            <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>
-          </TouchableOpacity>
+          {alreadyAdded ? null : (
+            <TouchableOpacity
+              testID="pair-deep-link-support"
+              onPress={() => {
+                void Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`)
+              }}
+            >
+              <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : null}
       <PairConfirmGate

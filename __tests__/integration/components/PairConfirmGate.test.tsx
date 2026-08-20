@@ -49,9 +49,11 @@ describe('PairConfirmGate', () => {
     expect(queryByTestId('pair-confirm-add-btn')).toBeNull()
   })
 
-  it('kind "e2ee": shows the machine, address, fingerprint, encrypted line, and compare hint', async () => {
+  it('kind "e2ee": shows the check-this-computer screen, fingerprint, two-sided columns, and encrypted line', async () => {
     const { screen } = await renderGate()
+    expect(await screen.findByTestId('pair-confirm-screen')).toBeTruthy()
     expect(await screen.findByTestId('pair-confirm-icon-e2ee')).toBeTruthy()
+    expect(await screen.findByText('Is this the computer you meant?')).toBeTruthy()
     expect(await screen.findByText('ronen-mbp')).toBeTruthy()
     // Substring match: the mono rows are wrapped in bidi-isolate marks (see the
     // dedicated test below), so an exact match against the bare value would fail.
@@ -59,15 +61,16 @@ describe('PairConfirmGate', () => {
       'https://ronen-mbp.local:8765',
       { exact: false },
     )
-    expect(await screen.findByTestId('pair-confirm-fingerprint')).toHaveTextContent(FINGERPRINT, {
+    expect(await screen.findByTestId('identity-fingerprint')).toHaveTextContent(FINGERPRINT, {
       exact: false,
     })
-    expect(await screen.findByText('Encrypted from this device to this computer.')).toBeTruthy()
+    expect(await screen.findByTestId('identity-compare-columns')).toBeTruthy()
+    expect(await screen.findByText('The code above')).toBeTruthy()
     expect(
-      await screen.findByText(
-        "Run tb-streamer identity on the computer you're pairing with and compare it to the fingerprint above.",
-      ),
+      await screen.findByText('Run tb-streamer identity — it must print this same code.'),
     ).toBeTruthy()
+    expect(await screen.findByText('Encrypted from this device to this computer.')).toBeTruthy()
+    expect(screen.queryByTestId('identity-how-to-check-steps')).toBeNull()
   })
 
   // Verifies the bidi-isolation markup is present in every locale's render —
@@ -83,29 +86,46 @@ describe('PairConfirmGate', () => {
       `${LRI}https://ronen-mbp.local:8765${PDI}`,
       { exact: true },
     )
-    expect(await screen.findByTestId('pair-confirm-fingerprint')).toHaveTextContent(
+    expect(await screen.findByTestId('identity-fingerprint')).toHaveTextContent(
       `${LRI}${FINGERPRINT}${PDI}`,
       { exact: true },
     )
   })
 
-  it('kind "no-spk": drops the fingerprint row and the compare hint, shows the no-identity warning', async () => {
+  it('kind "e2ee": How to check expands to the three CLI steps', async () => {
+    const { screen } = await renderGate()
+    fireEvent.press(await screen.findByTestId('identity-how-to-check'))
+    expect(await screen.findByTestId('identity-how-to-check-steps')).toBeTruthy()
+    expect(
+      await screen.findByText("On the computer you're pairing with, run tb-streamer identity."),
+    ).toBeTruthy()
+    expect(await screen.findByText('You should see the same grouped code as above.')).toBeTruthy()
+    expect(
+      await screen.findByText("If it doesn't match, tap Cancel. This is not that computer."),
+    ).toBeTruthy()
+    expect(
+      screen.queryByText("If it doesn't match, this is not that computer. Forget it and pair again."),
+    ).toBeNull()
+  })
+
+  it('kind "no-spk": drops the fingerprint and How to check, shows the no-identity warning', async () => {
     const { screen } = await renderGate({ target: NO_SPK_TARGET })
     expect(await screen.findByTestId('pair-confirm-icon-no-spk')).toBeTruthy()
-    expect(screen.queryByTestId('pair-confirm-fingerprint')).toBeNull()
-    expect(
-      screen.queryByText(
-        "Run tb-streamer identity on the computer you're pairing with and compare it to the fingerprint above.",
-      ),
-    ).toBeNull()
+    expect(screen.queryByTestId('identity-fingerprint')).toBeNull()
+    expect(screen.queryByTestId('identity-how-to-check')).toBeNull()
     expect(await screen.findByText('No identity to verify')).toBeTruthy()
+    expect(
+      await screen.findByText(
+        "This link doesn't include a fingerprint, so you can't check which computer it belongs to. Anything you send will be readable by anything between this device and the server.",
+      ),
+    ).toBeTruthy()
   })
 
   it('kind "api-key": drops the machine row and fingerprint row, shows the unverifiable-key warning', async () => {
     const { screen } = await renderGate({ target: API_KEY_TARGET })
     expect(await screen.findByTestId('pair-confirm-icon-api-key')).toBeTruthy()
     expect(screen.queryByText('Machine')).toBeNull()
-    expect(screen.queryByTestId('pair-confirm-fingerprint')).toBeNull()
+    expect(screen.queryByTestId('identity-fingerprint')).toBeNull()
     expect(await screen.findByText('Add server with a pasted key?')).toBeTruthy()
   })
 
@@ -136,10 +156,18 @@ describe('PairConfirmGate', () => {
     expect(onConfirm).not.toHaveBeenCalled()
   })
 
-  it('calls onCancel when the backdrop is pressed', async () => {
+  it('uses the app screen header and treats its back control as cancel', async () => {
     const { screen, onConfirm, onCancel } = await renderGate()
-    fireEvent.press(await screen.findByTestId('pair-confirm-backdrop'))
+    expect(await screen.findByText('Pairing')).toBeTruthy()
+    fireEvent.press(await screen.findByTestId('screen-header-back-button'))
     expect(onCancel).toHaveBeenCalledTimes(1)
     expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it('does not dismiss on a backdrop tap — there is no backdrop', async () => {
+    const { screen, onConfirm, onCancel } = await renderGate()
+    expect(screen.queryByTestId('pair-confirm-backdrop')).toBeNull()
+    expect(onConfirm).not.toHaveBeenCalled()
+    expect(onCancel).not.toHaveBeenCalled()
   })
 })

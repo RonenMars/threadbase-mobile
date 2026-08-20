@@ -14,7 +14,9 @@ import { useTranslation } from 'react-i18next'
 import { AddServerActionSheet } from '@/components/servers/AddServerActionSheet'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { pendingTargetFromApiKey } from '@/services/pair-confirm-target'
+import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { NetworkError } from '@/services/api-client'
@@ -52,11 +54,13 @@ export function AddServerScreen({ isAddingServer }: Props) {
   const [newServerId, setNewServerId] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const [cameraFingerprint, setCameraFingerprint] = useState<string | null>(null)
   const pendingConnect = useRef<{
     url: string
     apiKey: string
     label?: string
   } | null>(null)
+  const pendingScan = useRef<ExchangeResult | null>(null)
 
   useEffect(() => {
     navigation.setOptions({
@@ -134,7 +138,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
           requireEncryption,
         })
         if (typeof addResult !== 'string') {
-          setError('This server is already in your list.')
+          setError(t('pair:scanner.errors.alreadyAdded'))
           return
         }
         const id = addResult
@@ -186,9 +190,8 @@ export function AddServerScreen({ isAddingServer }: Props) {
     setConfirmTarget(pendingTargetFromApiKey(url))
   }
 
-  const handleScanSuccess = async (result: ExchangeResult) => {
-    setScannerOpen(false)
-    let nextProtocol: 'https' | 'http' = result.url.startsWith('https://') ? 'https' : 'http'
+  const applyScan = async (result: ExchangeResult) => {
+    const nextProtocol: 'https' | 'http' = result.url.startsWith('https://') ? 'https' : 'http'
     const stripped = result.url.replace(/^https?:\/\//, '').replace(/\/$/, '')
     const labelGuess = result.machineName ?? ''
     setProtocol(nextProtocol)
@@ -206,6 +209,23 @@ export function AddServerScreen({ isAddingServer }: Props) {
       serverPublicKey: result.serverPublicKey ?? undefined,
       requireEncryption: result.e2eeRequired,
     })
+  }
+
+  const handleScanSuccess = (result: ExchangeResult) => {
+    setScannerOpen(false)
+    if (result.serverPublicKey) {
+      pendingScan.current = result
+      setCameraFingerprint(formatFingerprint(result.serverPublicKey))
+      return
+    }
+    void applyScan(result)
+  }
+
+  const finishCameraIdentity = () => {
+    const result = pendingScan.current
+    pendingScan.current = null
+    setCameraFingerprint(null)
+    if (result) void applyScan(result)
   }
 
   return (
@@ -365,6 +385,11 @@ export function AddServerScreen({ isAddingServer }: Props) {
           pendingConnect.current = null
           setConfirmTarget(null)
         }}
+      />
+      <PairCameraIdentityCard
+        visible={cameraFingerprint !== null}
+        fingerprint={cameraFingerprint}
+        onDone={finishCameraIdentity}
       />
     </View>
   )

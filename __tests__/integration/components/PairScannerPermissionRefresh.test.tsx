@@ -19,6 +19,7 @@ import { AppState } from 'react-native'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairExchangeError } from '@/services/pair-exchange'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { useServersStore } from '@/stores/servers'
 
 jest.mock('@/services/pair-exchange', () => ({
   ...jest.requireActual('@/services/pair-exchange'),
@@ -68,6 +69,12 @@ let foreground: ((state: string) => void) | null = null
 beforeEach(() => {
   mockOsPermission = DENIED
   foreground = null
+  exchangeToken.mockReset()
+  useServersStore.setState({
+    servers: {},
+    activeServerIds: [],
+    displayedServerIds: [],
+  })
   jest.spyOn(AppState, 'addEventListener').mockImplementation((type, handler) => {
     if (type === 'change') foreground = handler as (state: string) => void
     return { remove: jest.fn() } as ReturnType<typeof AppState.addEventListener>
@@ -193,5 +200,43 @@ describe('PairScannerModal — retry is offered only where it can help', () => {
     // The failure is still visible and still has no downgrade affordance —
     // a "connect anyway" button would be the downgrade wearing a consent dialog.
     expect(screen.getByTestId('pair-scanner-support')).toBeTruthy()
+  })
+})
+
+describe('PairScannerModal — already-added server', () => {
+  const PAIR_URI = 'threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&exp=9999999999'
+
+  it('refuses the QR before exchanging and tells the user to delete the existing server', async () => {
+    useServersStore.setState({
+      servers: {
+        srv_existing: {
+          id: 'srv_existing',
+          url: 'https://a.test',
+          apiKey: 'existing-key',
+          isConnected: false,
+          serverInfo: null,
+          connectionError: null,
+        },
+      },
+      activeServerIds: ['srv_existing'],
+      displayedServerIds: ['srv_existing'],
+    })
+    mockOsPermission = GRANTED
+    const screen = await renderScanner()
+
+    await act(async () => {
+      mockScanHandler?.({ data: PAIR_URI })
+    })
+
+    expect(await screen.findByTestId('pair-scanner-already-added')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'This address is already in your list. Delete that server first if you want to add it again.',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByText('Server already added')).toBeTruthy()
+    expect(screen.queryByTestId('pair-scanner-try-again')).toBeNull()
+    expect(screen.queryByTestId('pair-scanner-support')).toBeNull()
+    expect(exchangeToken).not.toHaveBeenCalled()
   })
 })
