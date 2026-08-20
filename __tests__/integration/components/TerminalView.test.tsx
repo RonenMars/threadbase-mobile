@@ -130,8 +130,12 @@ jest.mock('@/hooks/useComposerState', () => ({
 }))
 
 jest.mock('@/services/ws-client', () => ({
-  // on() is needed now that TerminalView subscribes via useActiveQuestion.
-  wsManager: { getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }) },
+  // on() is needed now that TerminalView subscribes via useActiveQuestion, and
+  // onAnyStatusChange() now that it tears the card down on a disconnect.
+  wsManager: {
+    getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }),
+    onAnyStatusChange: jest.fn(() => jest.fn()),
+  },
 }))
 
 jest.mock('@/components/shared/SlashCommandBoard', () => ({
