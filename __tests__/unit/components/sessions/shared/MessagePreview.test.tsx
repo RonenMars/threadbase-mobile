@@ -234,6 +234,62 @@ describe('MessagePreview', () => {
       expect(out).toBe('server summary')
     })
 
+    it('skips a metadata match that only repeats the row title', () => {
+      // No session name, so the title falls back to the project path and a
+      // projectName hit would print the same string twice.
+      const out = rendered(
+        <MessagePreview
+          rowTitle="tmux/plugins/tmux-ai-necromancer"
+          preview="the actual first message"
+          matches={[{ field: 'projectName', snippet: 'tmux/plugins/tmux-ai-necromancer' }]}
+        />,
+      )
+      expect(out).toBe('the actual first message')
+    })
+
+    it('keeps a metadata match that names a field the title does not show', () => {
+      const out = rendered(
+        <MessagePreview
+          rowTitle="tmux/plugins/tmux-ai-necromancer"
+          preview="the actual first message"
+          matches={[{ field: 'toolNames', snippet: 'Bash Read Edit' }]}
+        />,
+      )
+      expect(out).toBe('Bash Read Edit')
+    })
+
+    it('keeps a content match even when it matches the title', () => {
+      const out = rendered(
+        <MessagePreview
+          rowTitle="socket"
+          matches={[{ field: 'content', snippet: 'socket', highlights: [{ start: 0, end: 6 }] }]}
+        />,
+      )
+      expect(out).toBe('socket')
+    })
+
+    it('emphasises the query when a snippet carries no ranges', () => {
+      // The `preview` last-resort field, and any streamer older than 1.62.0.
+      const el = (
+        <MessagePreview
+          highlight="tmux"
+          matches={[{ field: 'preview', snippet: 'Move the tmux-ai-necromancer plugin out of dotfiles' }]}
+        />
+      )
+      expect(rendered(el)).toBe('Move the tmux-ai-necromancer plugin out of dotfiles')
+      expect(highlighted(el)).toEqual(['tmux'])
+    })
+
+    it('trusts wire ranges over the query when both are available', () => {
+      const parts = highlighted(
+        <MessagePreview
+          highlight="tmux"
+          matches={[{ field: 'content', snippet: 'tmux and tmux', highlights: [{ start: 9, end: 13 }] }]}
+        />,
+      )
+      expect(parts).toEqual(['tmux'])
+    })
+
     it('mode "none" suppresses the snippet too', () => {
       let r: renderer.ReactTestRenderer | null = null
       act(() => {
