@@ -76,8 +76,7 @@
     "cta": "הוסף שרת"
   },
   "sync": {
-    "cachedData": "מציג נתונים שמורים",
-    "cachedDataSyncing": "מציג נתונים שמורים — מסתנכרן…"
+    "cachedData": "מציג נתונים שמורים"
   },
   "status": {
     "running": "רץ",

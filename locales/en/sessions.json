@@ -76,8 +76,7 @@
     "cta": "Add Server"
   },
   "sync": {
-    "cachedData": "Showing cached data",
-    "cachedDataSyncing": "Showing cached data — syncing…"
+    "cachedData": "Showing cached data"
   },
   "status": {
     "running": "Running",
