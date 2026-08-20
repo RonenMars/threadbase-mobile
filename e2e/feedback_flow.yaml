@@ -22,15 +22,86 @@ appId: com.ronenmars.threadbase
 # height, so the row is mounted but off-screen and `visible` alone never matches.
 #
 # `scrollUntilVisible` does NOT work here — it fails to detect the row even at
-# timeout 20000 / speed 80 / visibilityPercentage 60. Two explicit swipes do
-# reach it, and `assertVisible` then matches immediately, so the ScrollView and
-# the testID are both fine; only Maestro's scroll-and-detect loop is not.
-- swipe:
-    start: 50%, 90%
-    end: 50%, 20%
-- swipe:
-    start: 50%, 90%
-    end: 50%, 20%
+# timeout 20000 / speed 80 / visibilityPercentage 60. Explicit swipes do, and
+# `assertVisible` then matches immediately, so the ScrollView and the testID
+# are both fine; only Maestro's scroll-and-detect loop is not.
+#
+# Two swipes reach it on iOS. The Android emulator viewport is shorter: run
+# 32004798693 landed on the Crash Reporting header after two swipes, with
+# Permissions + About + Help still below. Keep swiping only while the row is
+# off-screen so iOS does not overshoot.
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+
+# Android CI Pixel (run 32245888850): four swipes still showed About with
+# HELP cut off at the bottom; Server health was in the tree, Help &
+# Feedback was not. Extra swipes are Android-only so iOS stays put.
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: "settings-help-feedback-row"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
 - assertVisible:
     id: "settings-help-feedback-row"
 
@@ -72,11 +143,18 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "feedback-diagnostics-toggle"
 
-# Expand the diagnostics preview to confirm the exact fields shown.
-- tapOn:
-    id: "feedback-diagnostics-toggle"
-- assertVisible:
-    id: "feedback-diagnostics-rows"
+# The toggle sits under a multi-line preview intro. iOS CI run 32137256820
+# found the testID and reported the tap COMPLETED, but the caret stayed down
+# and `feedback-diagnostics-rows` never mounted — the touch missed an
+# off-screen control. Bring it into the viewport, then tap the visible label.
+- swipe:
+    start: 50%, 80%
+    end: 50%, 35%
+- tapOn: "See what's included"
+- extendedWaitUntil:
+    visible:
+      id: "feedback-diagnostics-rows"
+    timeout: 5000
 
 - takeScreenshot: e2e/_artifacts/screenshots/feedback-form-filled
 

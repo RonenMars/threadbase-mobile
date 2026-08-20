@@ -21,4 +21,11 @@ describe('LiveSessionsHeader', () => {
     const { getByLabelText } = await render(<LiveSessionsHeader count={1} hasLive={true} />)
     expect(getByLabelText('LIVE · 1')).toBeTruthy()
   })
+
+  it('exposes live-sessions-header when the block is collapsible', async () => {
+    const { getByTestId } = await render(
+      <LiveSessionsHeader count={4} hasLive collapsed onToggle={() => {}} />,
+    )
+    expect(getByTestId('live-sessions-header')).toBeTruthy()
+  })
 })

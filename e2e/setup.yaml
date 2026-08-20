@@ -7,8 +7,39 @@
 
 appId: com.ronenmars.threadbase
 ---
+# iOS keeps "Open in Threadbase?" over a relaunch. launchApp then fails
+# with "did not stop in time" (pty on run 32181936801). Cancel first —
+# do not Open — so we do not follow the previous flow's deeplink.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          when:
+            visible: "Open in"
+          commands:
+            - tapOn: "Cancel"
+
 - launchApp:
     clearState: true
+
+# Cold Android CI boots can put a Pixel Launcher ANR over the welcome screen.
+# Maestro then sees neither hub-screen nor onboarding-welcome-cta and treats
+# the run as "already paired". "Close app" kills the launcher, not Threadbase.
+# Run 32036081591 died that way, with Get started fully rendered underneath.
+- runFlow:
+    when:
+      visible: "Pixel Launcher isn't responding"
+    commands:
+      - tapOn: "Close app"
+
+# Same overlay class on Play-store AVDs: Digital Wellbeing ANRs on a cold boot
+# and "Close app" kills wellbeing, not Threadbase.
+- runFlow:
+    when:
+      visible: "Digital Wellbeing isn't responding"
+    commands:
+      - tapOn: "Close app"
 
 # Give the splash time to clear before anything decides which screen this is.
 # `runFlow when:` is a one-shot probe with a short window, and a cold Release
@@ -37,6 +68,16 @@ appId: com.ronenmars.threadbase
       # Step 1 / WELCOME — "Pull a thread. Watch it weave."
       - tapOn:
           id: "onboarding-welcome-cta"
+
+      # Wait for Connect before touching the paste card. On a cold first
+      # launch (iOS run 32148843310) Maestro tapped Get started and then
+      # searched for the card while Welcome was still on screen, so the
+      # error named paste-card and hid whether the tap dropped or the
+      # transition was late. A failed wait here isolates that.
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-connect-paste-card"
+          timeout: 8000
 
       # Step 2 / CONNECT — paste credentials, fill URL + token, handshake
       - tapOn:
@@ -69,7 +110,11 @@ appId: com.ronenmars.threadbase
           id: "onboarding-connect-handshake-cta"
           optional: true
 
-      # iOS may show a "Save Password?" dialog after secureTextEntry input
+      # iOS may show a "Save Password?" dialog after secureTextEntry input.
+      # The sheet is async: on iOS CI run 32110237753 the first probe skipped,
+      # then the sheet covered NOTIFY so the done-cta wait failed and the rest
+      # of the suite cascaded (including 07). Wait for it before Done, then
+      # retry Notify in case the sheet ate the first tap.
       - runFlow:
           when:
             visible: "Not Now"
@@ -97,6 +142,33 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-notifications-cta"
           optional: true
+
+      # iOS-only: the Save Password sheet is async and often appears *after*
+      # the first Not Now probe (run 32137256820's predecessor 32110237753).
+      # Waiting 8s on Android for a dialog that never exists burned a full
+      # timeout into every flow and the emulator went offline mid-suite
+      # (run 32137263102).
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - extendedWaitUntil:
+                visible: "Not Now"
+                timeout: 8000
+                optional: true
+            - runFlow:
+                when:
+                  visible: "Not Now"
+                commands:
+                  - tapOn: "Not Now"
+            - extendedWaitUntil:
+                visible:
+                  id: "onboarding-notifications-cta"
+                timeout: 8000
+                optional: true
+            - tapOn:
+                id: "onboarding-notifications-cta"
+                optional: true
 
       # Step 4 / DONE — enter the app
       - extendedWaitUntil:

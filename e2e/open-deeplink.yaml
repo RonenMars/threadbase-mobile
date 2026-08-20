@@ -1,0 +1,62 @@
+# Open a threadbase:// link and land in-app.
+#
+# Conversation routes must use the three-slash form
+# (`threadbase:///conversation/<id>`), matching session links
+# (`threadbase:///session/<id>`). Two slashes make `conversation` the URL
+# host; iOS 26 then leaves Maestro on the hub (run 32060587863, bug6).
+#
+# Requires env DEEPLINK.
+#
+# iOS: openLink while the app is already foreground shows "Open in
+# Threadbase?", and tapping Open can dismiss the sheet without delivering
+# the URL (run 32181936801 — still on hub, no conversation-bottom-bar).
+# Retrying openLink because hub was still visible raced the first link.
+# Stop the app first so the scheme is launch options, then wait for the
+# Open sheet instead of probing once and moving on.
+#
+# Android has no confirmation sheet; a foreground openLink is enough.
+# Do not wait 8s for "Open" there.
+appId: com.ronenmars.threadbase
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # Leftover sheet blocks stopApp/launchApp ("did not stop in time",
+      # pty on run 32181936801). Cancel — do not Open — so we do not
+      # follow a previous flow's URL.
+      - runFlow:
+          when:
+            visible: "Open in"
+          commands:
+            - tapOn: "Cancel"
+      - stopApp
+      - openLink: ${DEEPLINK}
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Open"
+          timeout: 8000
+          optional: true
+      - runFlow:
+          when:
+            visible: "Open"
+          commands:
+            - tapOn:
+                text: "Open"
+                retryTapIfNoChange: true
+            - waitForAnimationToEnd
+      # First stopApp+openLink of a suite can sit on the splash well past
+      # the callers' 12s dest wait (bug6 on run 32224568103). Later
+      # conversation/session flows passed. id is regex.
+      - extendedWaitUntil:
+          visible:
+            id: "conversation-bottom-bar|session-detail-screen"
+          timeout: 40000
+          optional: true
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - openLink: ${DEEPLINK}
+      - waitForAnimationToEnd

@@ -20,8 +20,12 @@ name: E2E
 #   gh workflow run E2E -f flows=e2e/codex_parity.yaml            # one flow
 #   gh workflow run E2E -f ref=572 -f flows="e2e/a.yaml e2e/b.yaml"
 #
-# Narrowing `flows` skips no setup — the Release build is the expensive part and
-# happens either way — so it saves minutes, not the bulk of the run.
+# Narrowing `flows` used to skip no setup — the Release build was the expensive
+# part and ran inside the emulator step every time. The APK is now cached per
+# checked-out SHA, and assembleRelease runs *before* the emulator boots. A
+# second dispatch of the same commit (a one-flow warmup, then the rest) reuses
+# that APK and only pays emulator boot + Maestro. The first dispatch of a new
+# SHA still compiles.
 #
 # Two independent selectors, easy to confuse:
 #
@@ -32,6 +36,12 @@ name: E2E
 #   * `-f ref=` picks the *code under test*, independent of the above.
 #
 #   gh workflow run E2E --ref my/branch -f ref=my/branch   # this file AND the code from my/branch
+#
+# Both dispatches of a warmup-then-rest split must use the same `--ref`:
+# Actions cache is scoped to that branch, and `--ref` also selects this file.
+#
+#   gh workflow run E2E --ref my/branch -f ref=my/branch -f flows=e2e/launch.yaml
+#   gh workflow run E2E --ref my/branch -f ref=my/branch -f flows="e2e/a.yaml e2e/b.yaml"
 #
 # `workflow_dispatch` must exist on the default branch for the trigger to be
 # offered at all; once it is, any branch's version can be run.
@@ -70,7 +80,10 @@ jobs:
   e2e-maestro:
     name: E2E maestro
     runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && 'macos-15' || 'ubuntu-24.04' }}
-    timeout-minutes: 75
+    # 75m was enough when the iOS Release cache was warm (~39m build + ~19m
+    # Maestro). A cold DerivedData miss (run 32161343357) spent ~57m on the
+    # build and was cancelled at 75m with the suite still running.
+    timeout-minutes: 120
     steps:
       # `ref` is the one piece of attacker-controllable input in this workflow,
       # so it is validated here and never interpolated into a `run:` script —
@@ -101,6 +114,13 @@ jobs:
         with:
           ref: ${{ steps.resolve.outputs.ref }}
 
+      # github.sha is the commit that *triggered* the workflow (`--ref`), which
+      # is the workflow file's branch and is not always the code under test
+      # (`-f ref=`). The APK cache must follow the checked-out tree.
+      - name: Record checked-out SHA
+        id: head
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && '22' || '24.15.0' }}
@@ -117,6 +137,46 @@ jobs:
 
       - uses: android-actions/setup-android@v4
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+
+      # cache-read-only defaults to true off `main`, which would make a feature-
+      # branch warmup unable to seed the next dispatch on that same branch.
+      - uses: gradle/actions/setup-gradle@v5
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        with:
+          cache-read-only: false
+
+      # Restore a previously built APK for this exact commit. No restore-keys:
+      # a prefix match would install a different SHA's binary. The cache is
+      # scoped to the workflow's branch (`--ref`), so both dispatches must use
+      # the same `--ref` (typically the branch under test).
+      - name: Cache Android Release APK
+        id: apk-cache
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        uses: actions/cache@v5
+        with:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          key: e2e-android-apk-v1-${{ runner.os }}-x86_64-${{ steps.head.outputs.sha }}
+
+      # Assemble before the emulator boots so a 20-minute compile does not hold
+      # a live emulator idle. That idle window is what made later Maestro flows
+      # die with `device offline`. A cache hit skips this step entirely.
+      - name: Assemble Android Release APK
+        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.platform == 'android') && steps.apk-cache.outputs.cache-hit != 'true' }}
+        env:
+          REACT_NATIVE_ARCHITECTURES: x86_64
+          TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
+          TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD: android
+          TB_MOBILE_UPLOAD_KEY_ALIAS: androiddebugkey
+          TB_MOBILE_UPLOAD_KEY_PASSWORD: android
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        working-directory: android
+        run: ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"
+
+      - name: Note APK cache hit
+        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.platform == 'android') && steps.apk-cache.outputs.cache-hit == 'true' }}
+        env:
+          TEST_SHA: ${{ steps.head.outputs.sha }}
+        run: echo "Reusing cached Release APK for $TEST_SHA" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install Maestro CLI
         run: |
@@ -143,7 +203,7 @@ jobs:
       # This action installs the Android emulator, platform tools, API 35 SDK,
       # and Google APIs x86_64 image, then waits for the one requested emulator
       # to finish booting before it runs the script below.
-      - name: Build, install, and run on Android API 35
+      - name: Install APK and run Maestro on Android API 35
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
         uses: reactivecircus/android-emulator-runner@v2
         env:

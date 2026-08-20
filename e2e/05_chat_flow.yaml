@@ -28,6 +28,26 @@ appId: com.ronenmars.threadbase
 # ── Navigate to running session ────────────────────────────────────────────────
 # first-session-card → session-abc123: status=running, promptCount=3
 # Fix 3: isWakingUp must be FALSE (promptCount > 0 means not first run)
+#
+# Default hub is classic + mergeChats. The merged list auto-collapses the
+# session block when there are more than 3 sessions (SESSIONS_COLLAPSE_THRESHOLD
+# in app/index.tsx). The mock fixture has 4, so LIVE · 4 is showing and the
+# cards are hidden — run 32004798693 failed here with only conversation rows
+# in the hierarchy. Expand the header only when the card is not already visible.
+
+- extendedWaitUntil:
+    visible:
+      id: "live-sessions-header"
+    timeout: 8000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: "first-session-card"
+    commands:
+      - tapOn:
+          id: "live-sessions-header"
 
 - extendedWaitUntil:
     visible:
@@ -63,15 +83,32 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "chat-message-input"
 - inputText: "hello from chat-flow e2e"
+- waitForAnimationToEnd
 
-# No hideKeyboard here. The composer dismisses the keyboard itself —
-# ChatComposer.handleSend calls Keyboard.dismiss() before onSend() — and the send
-# button sits in the composer row above the keyboard, so it is tappable with the
-# keyboard up. Dropping the step also removes the Maestro 2.6.1 / iOS 26.x
-# silent-no-op risk recorded in issue #611.
+# Do not hideKeyboard on Android: Maestro implements that as Back, which pops
+# the session and fails the send-button assert on the hub. iOS hideKeyboard is
+# a no-op (Maestro issue #611). Do not pressKey Enter: this input is multiline.
 #
-# Do not "fix" a future keyboard problem here with `pressKey: Enter`: this input
-# is multiline, so Enter inserts a newline and the text assertion below fails.
+# After typing, KeyboardAvoidingView needs a beat to settle. 5s was too short
+# on Android (run 32040349995); the headed re-run showed send on screen while
+# tapOn was still waiting on the default timeout.
+#
+# Real Android lifts the composer above the IME (adjustResize +
+# keyboard-controller). Maestro's CI IME does not: #52 (32254187459) had
+# the keyboard over the bar and no chat-send-button in the tree. Tap
+# session chrome to blur. Do not hideKeyboard — that is Back and pops.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: "50%, 25%"
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "chat-send-button"
+    timeout: 15000
+
 - tapOn:
     id: "chat-send-button"
 

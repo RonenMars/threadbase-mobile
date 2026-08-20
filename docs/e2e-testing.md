@@ -9,11 +9,13 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
 ## Android CI
 
 The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with one Android API 35
-Google APIs `x86_64` `pixel_6` emulator and Maestro CLI 2.8.0. It uses the
-existing Gradle Release task, installs the APK with `adb`, and runs the suite
-through `e2e/run-maestro.js`. The workflow disables Sentry source-map upload
-and uses the committed debug keystore only for this simulator APK, so it does
-not need production Sentry or signing credentials.
+Google APIs `x86_64` `pixel_6` emulator and Maestro CLI 2.8.0. It assembles the Release APK *before*
+the emulator boots, caches that APK per checked-out commit SHA, installs it with `adb`, and runs the
+suite through `e2e/run-maestro.js`. A second dispatch of the same commit reuses the cached APK and
+skips the ~20 minute compile — that is the supported way to split a long suite (one-flow warmup,
+then the remaining flows) without paying Gradle twice. The workflow disables Sentry source-map
+upload and uses the committed debug keystore only for this simulator APK, so it does not need
+production Sentry or signing credentials.
 
 The Android emulator reaches the runner-hosted mock server at `10.0.2.2`, while
 local iOS runs use `localhost`. The Android preflight checks emulator readiness

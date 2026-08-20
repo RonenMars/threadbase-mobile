@@ -30,24 +30,26 @@ appId: com.ronenmars.threadbase
 
 # Deeplink straight into the fixture conversation; no ?server= param — the
 # screen falls back to the freshly paired mock server.
-- openLink: "threadbase://conversation/conv-scroll-gaps"
-
 - runFlow:
-    when:
-      visible: "Open"
-    commands:
-      - tapOn: "Open"
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///conversation/conv-scroll-gaps"
 
 - extendedWaitUntil:
     visible:
       id: "conversation-bottom-bar"
-    timeout: 8000
+    timeout: 12000
 
-# The tail view opens bottom-anchored: the last message must be on screen.
-- extendedWaitUntil:
-    visible:
+# The list is meant to open on the tail, but a multi-viewport code row in this
+# fixture can fill the first paint (Android CI run 32110235453: SkillRow0… on
+# screen, conversation-last-message absent from the tree). Scroll to the last
+# row the same way bug6 does before the dwell that needs the tail.
+- scrollUntilVisible:
+    element:
       id: "conversation-last-message"
-    timeout: 8000
+    direction: DOWN
+    timeout: 10000
+    speed: 40
 
 # Dwell ~10s at the tail (slow no-op swipes at the bottom edge) so the delta
 # poll runs a few ticks first — on the pre-fix client each tick appends a
