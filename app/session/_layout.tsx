@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router'
+import i18n from '@/lib/i18n'
 
 // Session screens draw their own headers (ScreenHeader / the start screen's
 // own chrome), so the whole group runs headerless. `new` replaces itself with
@@ -11,7 +12,13 @@ export default function SessionLayout() {
   // of sessions opened in one run. Freezing suspends the hidden screen's render
   // and effects until it's focused again.
   return (
-    <Stack screenOptions={{ headerShown: false, freezeOnBlur: true }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        freezeOnBlur: true,
+        animation: i18n.dir() === 'rtl' ? 'slide_from_left' : undefined,
+      }}
+    >
       <Stack.Screen name="[id]" />
       <Stack.Screen name="new" />
     </Stack>

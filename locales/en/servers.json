@@ -73,7 +73,31 @@
     "resetDefaults": "Reset to defaults",
     "close": "✕",
     "editOrder": "Edit order",
-    "lockOrder": "Lock order"
+    "lockOrder": "Lock order",
+    "sortLastMessage": "Last message",
+    "sortProjectName": "Project name",
+    "sortCreatedDate": "Created date",
+    "newestFirst": "Newest first",
+    "oldestFirst": "Oldest first",
+    "statusRunning": "Running",
+    "statusActive": "Active",
+    "statusIdle": "Idle"
+  },
+  "stateMessage": {
+    "buildingHistoryNamed": "{{server}} is building history…",
+    "buildingHistory": "Building session history…",
+    "unreachableNamed": "Can't reach {{server}}. Check your connection or server address.",
+    "unreachableAll": "Can't reach any server. Check your connection or server address.",
+    "refreshFailedNamed": "Couldn't refresh sessions from {{server}}.",
+    "refreshFailedAll": "Couldn't refresh sessions from any server.",
+    "refreshFailedSome": "Couldn't refresh sessions from some servers.",
+    "disconnectedNamed": "Disconnected from {{server}}. Showing cached sessions.",
+    "disconnectedAll": "Disconnected from all servers. Showing cached sessions.",
+    "disconnectedSome": "Disconnected from some servers. Showing cached sessions.",
+    "connectingNamed": "Connecting to {{server}}…",
+    "connectingAll": "Connecting to servers…",
+    "partialUnreachableNamed": "{{server}} is unreachable. Some sessions may be missing.",
+    "partialUnreachableSome": "Some servers are unreachable. Some sessions may be missing."
   },
   "displayedServers": {
     "all": "All",

@@ -20,6 +20,8 @@ When adding new Maestro flows:
 - Add new flows to the relevant `test:e2e:*` script in `package.json`
 - Fixtures are in `e2e/fixtures/` — extend them if the new flow needs additional data
 
+On iOS 26.x, do not use Maestro's `hideKeyboard`: it can fail in the simulator's XCTest accessibility path. A crash report naming `SpringBoard`, `launchd_sim`, a `com.apple.CoreSimulator.SimDevice.<UDID>` coalition, and `XCTAutomationSupport` is a simulator-automation crash—not a Threadbase app crash or a crash on a connected physical device. Scroll to reveal the next control instead; use `pressKey: Enter` only for single-line inputs whose return behavior is safe. See [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "SpringBoard crashes in `XCTAutomationSupport` during Maestro".
+
 ---
 
 ## Lint Before Commit

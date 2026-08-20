@@ -66,15 +66,10 @@ export function NotificationsStep({ onNext }: Props) {
 
   return (
     <View style={styles.root}>
-      {/* eslint-disable-next-line i18next/no-literal-string */}
-      <Text style={styles.eyebrow}>{'>'} 03 / NOTIFY</Text>
+      <Text style={styles.eyebrow}>{t('notifications.eyebrow')}</Text>
 
-      {/* eslint-disable-next-line i18next/no-literal-string */}
-      <Text style={styles.headline}>Wake me only when it counts.</Text>
-      {/* eslint-disable-next-line i18next/no-literal-string */}
-      <Text style={styles.subhead}>
-        Push fires on plan-ready, tool-confirms, and run failures. That&apos;s it.
-      </Text>
+      <Text style={styles.headline}>{t('notifications.headline')}</Text>
+      <Text style={styles.subhead}>{t('notifications.subhead')}</Text>
       <Text style={styles.body}>{t('notifications.body')}</Text>
 
       {/* Mock notification preview */}
@@ -86,17 +81,11 @@ export function NotificationsStep({ onNext }: Props) {
           />
           <View style={styles.previewBody}>
             <View style={styles.previewHead}>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
-              <Text style={styles.previewBrand}>THREADBASE</Text>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
-              <Text style={styles.previewTime}>now</Text>
+              <Text style={styles.previewBrand}>{t('notifications.previewBrand')}</Text>
+              <Text style={styles.previewTime}>{t('notifications.previewTime')}</Text>
             </View>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.previewTitle}>Plan ready · feat/queue</Text>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.previewMessage}>
-              3 files queued for edit. Tap to review.
-            </Text>
+            <Text style={styles.previewTitle}>{t('notifications.previewTitle')}</Text>
+            <Text style={styles.previewMessage}>{t('notifications.previewMessage')}</Text>
           </View>
         </View>
       </View>

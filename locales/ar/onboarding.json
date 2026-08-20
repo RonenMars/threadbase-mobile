@@ -1,9 +1,17 @@
 {
+  "language": {
+    "eyebrow": "> 01 / اللغة",
+    "headline": "اختر لغتك.",
+    "body": "يمكنك تغييرها لاحقًا في الإعدادات.",
+    "continue": "متابعة",
+    "persistRetry": "تعذّر حفظ اختيار اللغة. حاول مرة أخرى.",
+    "reloadRetry": "تعذّرت إعادة تحميل التطبيق لتطبيق اللغة. حاول مرة أخرى."
+  },
   "welcome": {
-    "eyebrow": "// AMBIENT CODING",
+    "eyebrow": "// البرمجة المحيطة",
     "headline": "اسحب خيطًا.",
     "headlineAccent": "وشاهده يُنسَج.",
-    "body": "جهاز تحكم عن بُعد لـ Claude Code، على الجهاز الذي تحمله فعلًا.",
+    "body": "جهاز تحكم عن بُعد لـ Claude Code وCodex، على الجهاز الذي تحمله فعلًا.",
     "cta": "هيا نبدأ"
   },
   "shell": {
@@ -11,8 +19,11 @@
     "skip": "تخطي",
     "pairLater": "الاقتران لاحقاً"
   },
+  "tooltip": {
+    "dismiss": "فهمت"
+  },
   "connect": {
-    "eyebrow": "> 02 / إقران",
+    "eyebrow": "> 03 / إقران",
     "headline": "اتصل ببيئة التشغيل.",
     "modeBlurb": "اختر كيف تريد تسليم المفاتيح للخادم.",
     "connectivityHint": "هاتفك يصل إلى حاسوبك عبر نفس شبكة Wi‑Fi أو عبر VPN (مثل Tailscale) أو عبر عنوان نفق عام.",
@@ -23,14 +34,20 @@
     "scanQrBody": "شغّل tb-streamer pair على خادمك لطباعة QR. أسرع طريقة، بدون كتابة.",
     "pasteCredentials": "الإدخال اليدوي",
     "pasteCredentialsBody": "شغّل tb-streamer pair على خادمك، ثم الصق URL والرمز — أو رابط threadbase:// الكامل.",
-    "qrEyebrow": "> 02 / إقران · QR",
+    "qrEyebrow": "> 03 / إقران · QR",
     "qrHeadline": "امسح للإقران.",
     "openCamera": "فتح الكاميرا",
     "ready": "✓ جاهز",
-    "manualSectionLabel": "على جهازك",
+    "manualSectionLabel": "على حاسوبك",
     "manualSectionHint": "افتح Terminal وشغّل:",
     "manualSectionPasteHint": "يطبع URL + رمزًا (أو رابط threadbase://) — الصق أدناه.",
     "manualToken": "الرمز",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "networkingGuide": "دليل الشبكة",
+    "networkingTooltip": "أي عنوان يمكن الوصول إليه — عنوان IP على الشبكة المحلية، أو اسم مضيف، أو عنوان Tailscale IP، أو عنوان URL عام. يجب أن يبدأ بـ http:// أو https://.",
+    "pairingDocs": "دليل الاقتران",
+    "pairingTooltip": "رمز pt_ قصير الأجل أو رابط threadbase:// الكامل من tb-streamer pair. صالح لمدة 3 دقائق — شغّل tb-streamer pair مرة أخرى إذا انتهت صلاحيته. تعمل أيضًا مفاتيح API طويلة الأجل التي تبدأ بـ tb_.",
     "manualScanInstead": "مسح QR بدلًا من ذلك →",
     "manualEnterInstead": "استخدام الإدخال اليدوي بدلًا من ذلك",
     "connectIdle": "اتصال",
@@ -47,7 +64,7 @@
     "eyebrowUnpaired": "جاهز",
     "headlinePaired": "الخيط حي.",
     "headlineUnpaired": "أنت داخل.",
-    "bodyPaired": "جهازك المحمول يستمع. افتح سيشن متى أردت.",
+    "bodyPaired": "حاسوبك المحمول يستمع. افتح جلسة متى أردت.",
     "bodyUnpaired": "تخطَّ الآن — يمكنك توصيل بيئة تشغيل من الإعدادات في أي وقت.",
     "pillPaired": "مقترن · {{host}} · {{port}}",
     "pillPairedNamed": "مقترن · {{name}} · {{host}} · {{port}}",
@@ -56,8 +73,15 @@
     "ctaUnpaired": "متابعة — سأقرن لاحقًا"
   },
   "notifications": {
+    "eyebrow": "> 04 / إشعارات",
+    "headline": "نبّهني فقط عندما يكون الأمر مهمًا.",
+    "subhead": "تصل الإشعارات عند جاهزية الخطة، وطلبات تأكيد الأدوات، وفشل التشغيل. هذا كل شيء.",
+    "previewBrand": "THREADBASE",
+    "previewTime": "الآن",
+    "previewTitle": "الخطة جاهزة · feat/queue",
+    "previewMessage": "3 ملفات في انتظار التعديل. اضغط للمراجعة.",
     "allowTitle": "الإشعارات الفورية",
-    "body": "Threadbase يُنبّهك عندما يحتاج سيشن قرارًا، أو ينتهي تشغيلًا، أو يواجه خطأ — الأشياء التي تستحق المعرفة دون مراقبة الطرفية.",
+    "body": "Threadbase يُنبّهك عندما تحتاج جلسة إلى قرار، أو تنتهي عملية تشغيل، أو يحدث خطأ — الأشياء التي تستحق المعرفة دون مراقبة الطرفية.",
     "continue": "متابعة",
     "skipCta": "تخطي الآن",
     "enabledStatus": "مفعّل · alerts.threadbase.dev",

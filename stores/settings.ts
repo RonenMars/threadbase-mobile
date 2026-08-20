@@ -8,6 +8,8 @@ import {
   coerceSessionLeaveAction,
   type SessionLeaveAction,
 } from '@/lib/sessionLeavePolicy'
+import { getLocales } from 'expo-localization'
+import { resolveSupportedLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
 
 const VALID_THEME_IDS = new Set<string>([...Object.keys(THEMES), 'system'])
 
@@ -25,6 +27,7 @@ export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
 export type { SessionLeaveAction }
 
 const ASYNC_KEY_SETTINGS = 'threadbase_settings'
+const DEFAULT_LOCALE = resolveSupportedLocale(getLocales())
 
 export type RowPreviewMode = 'first' | 'last' | 'auto' | 'off'
 export type RowDensity = 'comfortable' | 'compact'
@@ -45,7 +48,7 @@ interface SettingsStore {
   sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
-  locale: string
+  locale: SupportedLocale
   biometricLock: boolean
   /** Opt-in crash reporting (Sentry). Default OFF. See services/sentry.ts. */
   crashReportingEnabled: boolean
@@ -72,7 +75,7 @@ interface SettingsStore {
   setSessionLeaveAction: (v: SessionLeaveAction) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
-  setLocale: (locale: string) => void
+  setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
   setCrashReportingEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
@@ -113,7 +116,7 @@ interface PersistedSettings {
   sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
-  locale: string
+  locale: SupportedLocale
   biometricLock: boolean
   crashReportingEnabled: boolean
   crashReportingNoticeDismissed: boolean
@@ -141,7 +144,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionLeaveAction: 'ask',
   sessionsLayout: 'classic',
   mergeChats: true,
-  locale: 'en',
+  locale: DEFAULT_LOCALE,
   biometricLock: false,
   crashReportingEnabled: false,
   crashReportingNoticeDismissed: false,
@@ -209,7 +212,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         ),
         sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
         mergeChats: parsed.mergeChats ?? state.mergeChats,
-        locale: parsed.locale ?? state.locale,
+        locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
+          ? parsed.locale
+          : DEFAULT_LOCALE,
         biometricLock: parsed.biometricLock ?? state.biometricLock,
         crashReportingEnabled: parsed.crashReportingEnabled ?? state.crashReportingEnabled,
         crashReportingNoticeDismissed:
@@ -233,7 +238,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   },
 }))
 
-useSettingsStore.subscribe((state) => {
+export function persistSettingsNow(): Promise<void> {
+  const state = useSettingsStore.getState()
   const payload: PersistedSettings = {
     colorScheme: state.colorScheme,
     glassThemeVariant: state.glassThemeVariant,
@@ -259,5 +265,9 @@ useSettingsStore.subscribe((state) => {
     rowServerChipVariant: state.rowServerChipVariant,
     rowPreviewModalCount: state.rowPreviewModalCount,
   }
-  AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload)).catch(() => {})
+  return AsyncStorage.setItem(ASYNC_KEY_SETTINGS, JSON.stringify(payload))
+}
+
+useSettingsStore.subscribe(() => {
+  persistSettingsNow().catch(() => {})
 })

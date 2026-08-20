@@ -1,21 +1,29 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { reloadAppAsync } from 'expo'
+import { I18nManager } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import * as SecureStore from '@/services/secure-store'
+import { isRTLLocale } from '@/lib/locale'
+import { ONBOARDING_RESUME_KEY, parseOnboardingResume } from '@/lib/onboarding-resume'
 import { useServersStore } from '@/stores/servers'
+import { persistSettingsNow, useSettingsStore } from '@/stores/settings'
 import type { PairResult } from '@/hooks/useTBPair'
 import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
 import { DoneStep } from './steps/DoneStep'
+import { LanguageStep } from './steps/LanguageStep'
 import { NotificationsStep } from './steps/NotificationsStep'
 import { WelcomeStep } from './steps/WelcomeStep'
 
-// Welcome → Connect → Notifications → Done (redesign: Notifications after pair)
-export const TOTAL_STEPS = 4
+// Language → Welcome → Connect → Notifications → Done
+export const TOTAL_STEPS = 5
 export const ONBOARDED_KEY = 'threadbase_onboarded'
 const PAIRED_TOKEN_HASH_KEY = 'threadbase_paired_token_hash'
 
 interface Props {
   onDone: () => void
+  mode?: 'review'
 }
 
 // FNV-1a 32-bit hash → hex. Stored alongside `onboarded:true` so we never
@@ -48,39 +56,115 @@ function derivePort(url: string): string {
   }
 }
 
-export function OnboardingNavigator({ onDone }: Props) {
-  const [index, setIndex] = useState(0)
+export function OnboardingNavigator({ onDone, mode }: Props) {
+  const { t } = useTranslation('onboarding')
+  const [index, setIndex] = useState<number | null>(null)
   const [direction, setDirection] = useState<1 | -1 | 0>(0)
   const [paired, setPaired] = useState<PairResult | null>(null)
+  const [languageBusy, setLanguageBusy] = useState(false)
+  const [languageError, setLanguageError] = useState<'persist' | 'reload' | null>(null)
+  const languageInProgress = useRef(false)
   const addServer = useServersStore((s) => s.addServer)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      let initialIndex = 0
+      try {
+        const rawResume = await AsyncStorage.getItem(ONBOARDING_RESUME_KEY)
+        const resume = parseOnboardingResume(rawResume)
+        if (resume?.mode === 'review' && mode !== 'review') return
+        if (rawResume !== null) {
+          await AsyncStorage.removeItem(ONBOARDING_RESUME_KEY)
+          if (resume?.step === 'welcome') initialIndex = 1
+        }
+      } catch {
+        initialIndex = 0
+      }
+      if (!cancelled) setIndex(initialIndex)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [mode])
 
   const goto = useCallback((next: number) => {
     setIndex((curr) => {
       const clamped = Math.max(0, Math.min(TOTAL_STEPS - 1, next))
-      setDirection(clamped >= curr ? 1 : -1)
+      setDirection(clamped >= (curr ?? 0) ? 1 : -1)
       return clamped
     })
   }, [])
 
+  const continueFromLanguage = useCallback(async () => {
+    if (languageInProgress.current) return
+    languageInProgress.current = true
+    setLanguageBusy(true)
+    setLanguageError(null)
+
+    try {
+      await persistSettingsNow()
+    } catch {
+      await AsyncStorage.removeItem(ONBOARDING_RESUME_KEY).catch(() => {})
+      setLanguageError('persist')
+      languageInProgress.current = false
+      setLanguageBusy(false)
+      return
+    }
+
+    const selectedLocale = useSettingsStore.getState().locale
+    const nextIsRTL = isRTLLocale(selectedLocale)
+    const currentIsRTL = I18nManager.isRTL
+    if (nextIsRTL === currentIsRTL) {
+      goto(1)
+      languageInProgress.current = false
+      setLanguageBusy(false)
+      return
+    }
+
+    let directionForced = false
+    try {
+      await AsyncStorage.setItem(
+        ONBOARDING_RESUME_KEY,
+        JSON.stringify({ step: 'welcome', ...(mode === 'review' ? { mode } : {}) }),
+      )
+      I18nManager.forceRTL(nextIsRTL)
+      directionForced = true
+      await reloadAppAsync('onboarding-language-direction')
+    } catch {
+      if (directionForced) I18nManager.forceRTL(currentIsRTL)
+      await AsyncStorage.removeItem(ONBOARDING_RESUME_KEY).catch(() => {})
+      setLanguageError('reload')
+      languageInProgress.current = false
+      setLanguageBusy(false)
+    }
+  }, [goto, mode])
+
   const onNext = useCallback(() => {
+    if (index === 0) {
+      void continueFromLanguage()
+      return
+    }
     setIndex((curr) => {
+      if (curr === null) return curr
       // Connect step: swipe/forward must not jump to Done unpaired.
-      if (curr === 1 && !paired) return curr
+      if (curr === 2 && !paired) return curr
       if (curr >= TOTAL_STEPS - 1) return curr
       setDirection(1)
       return curr + 1
     })
-  }, [paired])
+  }, [continueFromLanguage, index, paired])
 
   // ConnectStep calls this after a successful pair — bypass the unpaired guard
   // (paired state may not have flushed yet when onAdvance runs).
   const advanceAfterPair = useCallback(() => {
     setDirection(1)
-    setIndex(2)
+    setIndex(3)
   }, [])
 
   const onBack = useCallback(() => {
     setIndex((curr) => {
+      if (curr === null) return curr
       if (curr <= 0) return curr
       setDirection(-1)
       return curr - 1
@@ -89,7 +173,7 @@ export function OnboardingNavigator({ onDone }: Props) {
 
   // Skip / pair-later: jump to Done, skipping Notifications when unpaired.
   const onSkip = useCallback(() => {
-    if (index !== 1) return
+    if (index !== 2) return
     goto(TOTAL_STEPS - 1)
   }, [goto, index])
 
@@ -119,6 +203,8 @@ export function OnboardingNavigator({ onDone }: Props) {
     }
   }, [addServer, onDone, paired])
 
+  if (index === null) return null
+
   return (
     <OnboardingShell
       index={index}
@@ -127,15 +213,28 @@ export function OnboardingNavigator({ onDone }: Props) {
       onNext={onNext}
       onBack={onBack}
       onSkip={onSkip}
-      showSkip={index === 1}
+      showSkip={index === 2}
       skipLabelKey="shell.pairLater"
     >
-      {index === 0 && <WelcomeStep onNext={onNext} />}
-      {index === 1 && (
+      {index === 0 && (
+        <LanguageStep
+          onContinue={continueFromLanguage}
+          busy={languageBusy}
+          error={
+            languageError === 'persist'
+              ? t('language.persistRetry')
+              : languageError === 'reload'
+                ? t('language.reloadRetry')
+                : null
+          }
+        />
+      )}
+      {index === 1 && <WelcomeStep onNext={onNext} />}
+      {index === 2 && (
         <ConnectStep onPaired={handlePaired} onAdvance={advanceAfterPair} />
       )}
-      {index === 2 && <NotificationsStep onNext={onNext} />}
-      {index === 3 && (
+      {index === 3 && <NotificationsStep onNext={onNext} />}
+      {index === 4 && (
         <DoneStep
           onEnter={handleEnter}
           serverHost={paired ? deriveHost(paired.url) : undefined}

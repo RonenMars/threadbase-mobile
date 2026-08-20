@@ -1,6 +1,7 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
+import { ArrowLeft, ArrowRight } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { colors, fonts } from '../theme'
 
 interface Props {
@@ -12,8 +13,10 @@ interface Props {
 }
 
 export function PrimaryButton({ children, onPress, disabled, showIcon = true, testID }: Props) {
+  const { i18n } = useTranslation()
   const bg = disabled ? colors.ink3 : colors.blue500
   const fg = disabled ? colors.fg3 : '#0a1424'
+  const isRtl = i18n.dir() === 'rtl'
   return (
     <Pressable
       testID={testID}
@@ -24,16 +27,11 @@ export function PrimaryButton({ children, onPress, disabled, showIcon = true, te
       <Text style={[styles.label, { color: fg }]}>{children}</Text>
       {showIcon && (
         <View style={styles.icon}>
-          <Svg width={18} height={18} viewBox="0 0 24 24">
-            <Path
-              d="M5 12h14M13 6l6 6-6 6"
-              fill="none"
-              stroke={fg}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
+          {isRtl ? (
+            <ArrowLeft testID="primary-button-arrow-left" size={18} weight="bold" color={fg} />
+          ) : (
+            <ArrowRight testID="primary-button-arrow-right" size={18} weight="bold" color={fg} />
+          )}
         </View>
       )}
     </Pressable>
