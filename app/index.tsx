@@ -28,6 +28,7 @@ import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { MessagePreview, pickMatch } from '@/components/sessions/shared/MessagePreview'
+import { HighlightText } from 'one-more-highlight/native'
 import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
@@ -635,6 +636,10 @@ export default function ProjectsHub() {
   )
 }
 
+// Mirrors what the card actually prints, so `pickMatch` can drop a metadata
+// snippet that would just repeat it.
+const convCardTitle = (item: MultiConversation) => item.title || item.projectPath
+
 const MergedClassicList = React.memo(function MergedClassicList({
   items,
   refreshing,
@@ -746,6 +751,8 @@ const MergedClassicList = React.memo(function MergedClassicList({
     return flatData.findIndex((item) => item.kind === 'session')
   }, [flatData])
 
+  const needle = searchQuery.trim()
+
   const renderConvCard = useCallback(
     (item: MultiConversation) => (
       <TouchableOpacity
@@ -762,9 +769,17 @@ const MergedClassicList = React.memo(function MergedClassicList({
         <GlassFill />
         <View style={styles.convCardTitleRow}>
           <FolderSimple size={18} color={theme.text.secondary} weight="fill" />
-          <Text style={styles.convCardTitle} numberOfLines={1}>
-            {item.title || item.projectPath}
-          </Text>
+          {needle ? (
+            <HighlightText
+              text={convCardTitle(item)}
+              searchWords={[needle]}
+              highlightStyle={styles.convCardTitleMatch}
+              style={styles.convCardTitle}
+              textProps={{ numberOfLines: 1 }}
+            />
+          ) : (
+            <Text style={styles.convCardTitle} numberOfLines={1}>{convCardTitle(item)}</Text>
+          )}
           {item.provider != null ? (
             <View style={item.provider === 'codex-cli' ? styles.convCardCodexBadge : styles.convCardClaudeBadge}>
               <Text style={item.provider === 'codex-cli' ? styles.convCardCodexBadgeText : styles.convCardClaudeBadgeText}>
@@ -776,17 +791,27 @@ const MergedClassicList = React.memo(function MergedClassicList({
         {/* A search row shows the matched passage; every other row keeps the
             plain two-line preview, which MessagePreview's generic path would
             truncate to one line. */}
-        {pickMatch(item.matches) ? (
-          <MessagePreview matches={item.matches} />
+        {pickMatch(item.matches, convCardTitle(item)) ? (
+          <MessagePreview matches={item.matches} rowTitle={convCardTitle(item)} highlight={needle} />
         ) : item.preview ? (
-          <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
+          needle ? (
+            <HighlightText
+              text={item.preview}
+              searchWords={[needle]}
+              highlightStyle={styles.convCardPreviewMatch}
+              style={styles.convCardPreview}
+              textProps={{ numberOfLines: 2 }}
+            />
+          ) : (
+            <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
+          )
         ) : null}
         <Text style={styles.convCardMeta}>
           {t('hub.msgs', { count: item.messageCount })}
         </Text>
       </TouchableOpacity>
     ),
-    [router, t, styles, theme, isGlass, searchQuery],
+    [router, t, styles, theme, isGlass, searchQuery, needle],
   )
 
   return (
@@ -1041,9 +1066,17 @@ function makeStyles(theme: Theme) {
     fontSize: font.base,
     fontWeight: '600',
   },
+  convCardTitleMatch: {
+    backgroundColor: `${theme.text.accent}38`,
+    color: theme.text.primary,
+  },
   convCardPreview: {
     color: theme.text.secondary,
     fontSize: font.xs,
+  },
+  convCardPreviewMatch: {
+    backgroundColor: `${theme.text.accent}38`,
+    color: theme.text.primary,
   },
   convCardMeta: {
     color: theme.text.secondary,

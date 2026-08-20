@@ -274,6 +274,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
             messageCount={messageCount}
             highlight={highlight}
             matches={matches}
+            rowTitle={primaryText}
           />
         ) : null}
 

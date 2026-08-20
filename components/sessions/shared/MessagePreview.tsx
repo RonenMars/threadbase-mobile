@@ -23,6 +23,12 @@ export interface MessagePreviewProps {
    * source and renders as a two-line contextual excerpt.
    */
   matches?: SearchMatch[] | null
+  /**
+   * The row's visible title. A metadata match whose snippet merely repeats it
+   * is dropped — the title carries the highlight, so echoing it below costs a
+   * line and says nothing.
+   */
+  rowTitle?: string | null
 }
 
 interface SnippetPart {
@@ -56,10 +62,27 @@ function normalise(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-/** Body hits win over metadata hits; position is not relied on. */
-export function pickMatch(matches: SearchMatch[] | null | undefined): SearchMatch | null {
+function normaliseForCompare(text: string): string {
+  return text.replace(/^(?:…|\.\.\.)/, '').replace(/(?:…|\.\.\.)$/, '').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+/**
+ * Body hits win over metadata hits; position is not relied on. A metadata hit
+ * that only restates `rowTitle` is skipped: when a conversation has no session
+ * name the title falls back to the project path, so a `projectName` hit would
+ * print the title twice.
+ */
+export function pickMatch(
+  matches: SearchMatch[] | null | undefined,
+  rowTitle?: string | null,
+): SearchMatch | null {
   const usable = (matches ?? []).filter((m) => typeof m?.snippet === 'string' && m.snippet.trim().length > 0)
-  return usable.find((m) => m.field === 'content') ?? usable[0] ?? null
+  const title = rowTitle ? normaliseForCompare(rowTitle) : null
+  return (
+    usable.find((m) => m.field === 'content') ??
+    usable.find((m) => !title || normaliseForCompare(m.snippet) !== title) ??
+    null
+  )
 }
 
 /**
@@ -98,6 +121,30 @@ function splitSnippet(snippet: string, highlights: SearchHighlight[] | undefined
     .filter((p) => p.text.length > 0)
 }
 
+/**
+ * Case-insensitive substring split on the query. Used when the server gave no
+ * highlight ranges — an older streamer, or a metadata / `preview` fallback hit.
+ */
+function splitByNeedle(text: string, needle: string): SnippetPart[] {
+  const lower = text.toLowerCase()
+  const lowerNeedle = needle.toLowerCase()
+  if (!lowerNeedle || !lower.includes(lowerNeedle)) return [{ text, match: false }]
+
+  const parts: SnippetPart[] = []
+  let cursor = 0
+  while (cursor < text.length) {
+    const found = lower.indexOf(lowerNeedle, cursor)
+    if (found === -1) {
+      parts.push({ text: text.slice(cursor), match: false })
+      break
+    }
+    if (found > cursor) parts.push({ text: text.slice(cursor, found), match: false })
+    parts.push({ text: text.slice(found, found + lowerNeedle.length), match: true })
+    cursor = found + lowerNeedle.length
+  }
+  return parts
+}
+
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
   return text.slice(0, max - 1).trimEnd() + '…'
@@ -109,8 +156,15 @@ export function MessagePreview(props: MessagePreviewProps) {
 
   // Search snippets are already excerpted around the hit and carry their own
   // offsets, so they bypass pickText / truncate entirely and get a second line.
-  const searchMatch = props.mode === 'none' ? null : pickMatch(props.matches)
-  const snippetParts = searchMatch ? splitSnippet(searchMatch.snippet, searchMatch.highlights) : []
+  const needle = props.highlight?.trim()
+  const searchMatch = props.mode === 'none' ? null : pickMatch(props.matches, props.rowTitle)
+  let snippetParts = searchMatch ? splitSnippet(searchMatch.snippet, searchMatch.highlights) : []
+  // Metadata and `preview` fallback hits carry no ranges, and so does any hit
+  // from a streamer older than 1.62.0. Emphasise the query itself rather than
+  // rendering a snippet that never says why the row matched.
+  if (needle && snippetParts.length > 0 && !snippetParts.some((p) => p.match)) {
+    snippetParts = splitByNeedle(snippetParts.map((p) => p.text).join(''), needle)
+  }
   if (snippetParts.length > 0) {
     return (
       <Text style={styles.preview} numberOfLines={2} testID="search-snippet">
@@ -129,27 +183,13 @@ export function MessagePreview(props: MessagePreviewProps) {
   if (!text) return null
 
   const final = truncate(normalise(text), props.maxChars ?? DEFAULT_MAX)
-  const highlight = props.highlight?.trim()
 
   // Highlight is optional and used only by search results. The Text node still
   // renders a single visual line; we just split on the matched substring
   // (case-insensitive) and wrap matches in a tinted span.
-  if (highlight) {
-    const lower = final.toLowerCase()
-    const needle = highlight.toLowerCase()
-    if (lower.includes(needle)) {
-      const parts: { text: string; match: boolean }[] = []
-      let i = 0
-      while (i < final.length) {
-        const found = lower.indexOf(needle, i)
-        if (found === -1) {
-          parts.push({ text: final.slice(i), match: false })
-          break
-        }
-        if (found > i) parts.push({ text: final.slice(i, found), match: false })
-        parts.push({ text: final.slice(found, found + needle.length), match: true })
-        i = found + needle.length
-      }
+  if (needle) {
+    const parts = splitByNeedle(final, needle)
+    if (parts.some((p) => p.match)) {
       return (
         <Text style={styles.preview} numberOfLines={1}>
           {parts.map((p, idx) =>
