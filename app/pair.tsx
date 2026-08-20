@@ -12,13 +12,16 @@ import {
   parsePairUri,
   PairExchangeError,
   PairUriError,
+  type ExchangeResult,
 } from '@/services/pair-exchange'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
+import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { pendingTargetFromExchange } from '@/services/pair-confirm-target'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { useServersStore } from '@/stores/servers'
 import { clientLog } from '@/lib/clientLog'
 
-type Phase = 'exchanging' | 'error'
+type Phase = 'exchanging' | 'confirm' | 'error'
 
 // Mirrors PairScannerModal's error mapping so a tapped link and a scanned QR
 // produce the same messages for the same failure. The translated copy never
@@ -82,6 +85,8 @@ export default function PairDeepLinkScreen() {
   const [phase, setPhase] = useState<Phase>('exchanging')
   const [error, setError] = useState<string | null>(null)
   const [canRetry, setCanRetry] = useState(true)
+  const [confirmTarget, setConfirmTarget] = useState<PendingPairTarget | null>(null)
+  const pendingExchange = useRef<ExchangeResult | null>(null)
   const startedRef = useRef(false)
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -110,15 +115,16 @@ export default function PairDeepLinkScreen() {
         deviceName: defaultPairDeviceName(),
         serverPublicKey: parsed.spk,
       })
-      await addServer(exchanged.url, exchanged.apiKey, exchanged.machineName ?? undefined, {
-        deviceId: exchanged.deviceId ?? undefined,
-        deviceToken: exchanged.deviceToken ?? undefined,
-        capabilities: exchanged.capabilities ?? undefined,
-        publicUrl: exchanged.publicUrl ?? undefined,
-        serverPublicKey: exchanged.serverPublicKey ?? undefined,
-        requireEncryption: exchanged.e2eeRequired,
-      })
-      router.replace('/')
+      if (!mountedRef.current) return
+      pendingExchange.current = exchanged
+      setConfirmTarget(
+        pendingTargetFromExchange({
+          url: exchanged.url,
+          machineName: exchanged.machineName,
+          serverPublicKey: exchanged.serverPublicKey ?? parsed.spk ?? null,
+        }),
+      )
+      setPhase('confirm')
     } catch (err) {
       if (!mountedRef.current) return
       const failure = err instanceof Error ? err : new Error('Pairing failed')
@@ -126,7 +132,29 @@ export default function PairDeepLinkScreen() {
       setCanRetry(canRetryPairFailure(failure))
       setPhase('error')
     }
-  }, [params, activeServerIds, servers, addServer, router, t])
+  }, [params, activeServerIds, servers, router, t])
+
+  const commitPending = useCallback(async () => {
+    const exchanged = pendingExchange.current
+    if (!exchanged) return
+    pendingExchange.current = null
+    setConfirmTarget(null)
+    await addServer(exchanged.url, exchanged.apiKey, exchanged.machineName ?? undefined, {
+      deviceId: exchanged.deviceId ?? undefined,
+      deviceToken: exchanged.deviceToken ?? undefined,
+      capabilities: exchanged.capabilities ?? undefined,
+      publicUrl: exchanged.publicUrl ?? undefined,
+      serverPublicKey: exchanged.serverPublicKey ?? undefined,
+      requireEncryption: exchanged.e2eeRequired,
+    })
+    router.replace('/')
+  }, [addServer, router])
+
+  const cancelPending = useCallback(() => {
+    pendingExchange.current = null
+    setConfirmTarget(null)
+    router.replace('/')
+  }, [router])
 
   useEffect(() => {
     if (startedRef.current) return
@@ -143,7 +171,7 @@ export default function PairDeepLinkScreen() {
           <ActivityIndicator color={theme.text.primary} />
           <Text style={styles.statusText}>{t('scanner.exchanging')}</Text>
         </View>
-      ) : (
+      ) : phase === 'error' ? (
         <View style={styles.center}>
           <Text style={styles.errorTitle}>{t('scanner.errorTitle')}</Text>
           <Text style={styles.errorBody}>{error}</Text>
@@ -165,7 +193,13 @@ export default function PairDeepLinkScreen() {
             <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
+      <PairConfirmGate
+        visible={phase === 'confirm'}
+        target={confirmTarget}
+        onConfirm={() => void commitPending()}
+        onCancel={cancelPending}
+      />
     </SafeAreaView>
   )
 }
