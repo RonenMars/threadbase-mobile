@@ -24,6 +24,8 @@ interface Props {
   highlight?: string
   /** Set on the anchored search row: reports where the match sits inside the row. */
   matchAnchor?: MatchAnchor
+  /** This row is the active match — solid highlighter fill instead of the wash. */
+  activeMatch?: boolean
   /** Set when nested inside MessageItem's toolContainer, which already applies its own
    * marginVertical + gap — an outer margin here would double the spacing between rows. */
   noOuterMargin?: boolean
@@ -50,11 +52,13 @@ function TextContent({
   isUser,
   highlight,
   matchAnchor,
+  activeMatch,
 }: {
   text: string
   isUser?: boolean
   highlight?: string
   matchAnchor?: MatchAnchor
+  activeMatch?: boolean
 }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -79,7 +83,7 @@ function TextContent({
         ref={textRef}
         text={text}
         searchWords={[needle]}
-        highlightStyle={styles.match}
+        highlightStyle={activeMatch ? styles.match : styles.matchInactive}
         style={textStyle}
         textProps={{ selectable: true }}
         onMatchesLayout={reportMatchLayout}
@@ -269,11 +273,13 @@ function TextBlockBody({
   isUser,
   highlight,
   matchAnchor,
+  activeMatch,
 }: {
   text: string
   isUser?: boolean
   highlight?: string
   matchAnchor?: MatchAnchor
+  activeMatch?: boolean
 }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -287,7 +293,14 @@ function TextBlockBody({
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
         ) : (
-          <TextContent key={i} text={part.text} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
+          <TextContent
+            key={i}
+            text={part.text}
+            isUser={isUser}
+            highlight={highlight}
+            matchAnchor={matchAnchor}
+            activeMatch={activeMatch}
+          />
         ),
       )}
     </View>
@@ -299,16 +312,26 @@ function ContentBlock({
   isUser,
   highlight,
   matchAnchor,
+  activeMatch,
 }: {
   block: MessageContent
   isUser?: boolean
   highlight?: string
   matchAnchor?: MatchAnchor
+  activeMatch?: boolean
 }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   if (block.type === 'text') {
-    return <TextBlockBody text={block.text} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
+    return (
+      <TextBlockBody
+        text={block.text}
+        isUser={isUser}
+        highlight={highlight}
+        matchAnchor={matchAnchor}
+        activeMatch={activeMatch}
+      />
+    )
   }
   if (block.type === 'tool_use') {
     return (
@@ -323,7 +346,7 @@ function ContentBlock({
 // Memoized: message objects are stable by reference for already-loaded pages
 // (adaptRawMessage output is reused between renders), so screen-level state
 // changes don't re-render — and re-highlight — every visible row.
-export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor, noOuterMargin }: Props) {
+export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor, activeMatch, noOuterMargin }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -335,7 +358,14 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
         {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
-          <ContentBlock key={i} block={block} isUser={isUser} highlight={highlight} matchAnchor={matchAnchor} />
+          <ContentBlock
+            key={i}
+            block={block}
+            isUser={isUser}
+            highlight={highlight}
+            matchAnchor={matchAnchor}
+            activeMatch={activeMatch}
+          />
         ))}
         {message.tokens ? (
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
@@ -387,6 +417,12 @@ function makeStyles(theme: Theme) {
     match: {
       backgroundColor: theme.text.highlight,
       color: theme.text.onHighlight,
+      borderRadius: 3,
+    },
+    // Every other match in view gets a wash rather than the solid fill, so the
+    // active one stays findable — the browser find-bar convention.
+    matchInactive: {
+      backgroundColor: `${theme.text.highlight}59`,
       borderRadius: 3,
     },
     codeBlock: {

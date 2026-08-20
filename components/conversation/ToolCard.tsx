@@ -58,14 +58,16 @@ interface Props {
   block: ToolUse | ToolResult
   /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
   recycleKey?: string
-  /** Search keyword — set only on the active search-target row. When it matches the
-   * card's body, the card force-opens and highlights the keyword. */
+  /** Search keyword, set on every row while a search is active. Tinted wherever the
+   * card is already open; only the active row force-opens a collapsed one. */
   highlight?: string
   /** Reports the highlighted match's y within the row, for anchored scrolling. */
   matchAnchor?: MatchAnchor
+  /** This row is the active match — force the card open and use the solid fill. */
+  activeMatch?: boolean
 }
 
-export function ToolCard({ block, recycleKey, highlight, matchAnchor }: Props) {
+export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatch }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -96,9 +98,11 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor }: Props) {
   // The search backend counts tool payloads as matches, so a message can be
   // the anchor purely because its keyword sits in this collapsed body. Open it
   // (overriding the recycled collapsed state) so the highlighted match shows.
+  // Only for the ACTIVE row: force-opening every card whose payload mentions
+  // the query would unfold most of the conversation on a common word.
   const needle = highlight?.trim()
   const matchesBody = !!needle && bodyText.toLowerCase().includes(needle.toLowerCase())
-  const isOpen = expanded || matchesBody
+  const isOpen = expanded || (matchesBody && !!activeMatch)
 
   // Once the body lays out (which only happens after the match force-opens it),
   // report the keyword's y within the row so the screen can aim the anchor
@@ -136,7 +140,7 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor }: Props) {
               ref={bodyRef}
               text={bodyText}
               searchWords={[needle]}
-              highlightStyle={styles.match}
+              highlightStyle={activeMatch ? styles.match : styles.matchInactive}
               style={[styles.code, isError && styles.errorText]}
               textProps={{ selectable: true }}
               onMatchesLayout={reportMatchLayout}
@@ -203,6 +207,11 @@ function makeStyles(theme: Theme) {
     match: {
       backgroundColor: theme.text.highlight,
       color: theme.text.onHighlight,
+      borderRadius: 3,
+    },
+    // Matches on non-active rows get a wash, so the active one stays findable.
+    matchInactive: {
+      backgroundColor: `${theme.text.highlight}59`,
       borderRadius: 3,
     },
     errorText: {
