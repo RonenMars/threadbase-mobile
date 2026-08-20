@@ -100,7 +100,7 @@ describe('ToolCard – expand / collapse', () => {
 describe('ToolCard – search highlight', () => {
   it('force-opens and highlights a match inside a collapsed tool_result body', async () => {
     // Collapsed by default; the needle only appears in the body.
-    const { getByText } = await render(<ToolCard block={bashResult} highlight="drwxr" />)
+    const { getByText } = await render(<ToolCard block={bashResult} highlight="drwxr" activeMatch />)
     const match = getByText('drwxr')
     expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: expect.any(String) }),
@@ -110,7 +110,7 @@ describe('ToolCard – search highlight', () => {
   })
 
   it('highlights a match inside a tool_use JSON body', async () => {
-    const { getByText } = await render(<ToolCard block={bashUse} highlight="ls -la" />)
+    const { getByText } = await render(<ToolCard block={bashUse} highlight="ls -la" activeMatch />)
     const match = getByText('ls -la')
     expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: expect.any(String) }),
@@ -118,7 +118,7 @@ describe('ToolCard – search highlight', () => {
   })
 
   it('stays collapsed when the needle is absent from the body', async () => {
-    const { queryByText } = await render(<ToolCard block={bashResult} highlight="nonexistent" />)
+    const { queryByText } = await render(<ToolCard block={bashResult} highlight="nonexistent" activeMatch />)
     expect(queryByText(/total 8/)).toBeNull()
     expect(queryByText('▼')).toBeTruthy()
   })

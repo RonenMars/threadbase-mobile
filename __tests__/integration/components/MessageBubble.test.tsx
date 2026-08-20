@@ -196,12 +196,14 @@ describe("MessageBubble – search highlight", () => {
       <MessageBubble
         message={makeMessage({ role: "user", content: [{ type: "text", text: "a wombat sighting" }] })}
         highlight="wombat"
+        activeMatch
       />,
     );
     const assistant = await render(
       <MessageBubble
         message={makeMessage({ role: "assistant", content: [{ type: "text", text: "a wombat sighting" }] })}
         highlight="wombat"
+        activeMatch
       />,
     );
     const userStyle = StyleSheet.flatten(user.getByText("wombat").props.style) as {
@@ -217,5 +219,21 @@ describe("MessageBubble – search highlight", () => {
     // A solid fill with a distinct text color, not a translucent tint.
     expect(userStyle.backgroundColor).toBe(dark.text.highlight);
     expect(userStyle.color).toBe(dark.text.onHighlight);
+  });
+
+  it("washes a match on a row that is not the active one", async () => {
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({ role: "assistant", content: [{ type: "text", text: "a wombat sighting" }] })}
+        highlight="wombat"
+      />,
+    );
+    const style = StyleSheet.flatten(getByText("wombat").props.style) as {
+      backgroundColor?: string;
+      color?: string;
+    };
+    expect(style.backgroundColor).not.toBe(dark.text.highlight);
+    expect(style.backgroundColor).toContain(dark.text.highlight);
+    expect(style.color).not.toBe(dark.text.onHighlight);
   });
 });

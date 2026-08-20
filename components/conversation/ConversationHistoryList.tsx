@@ -34,7 +34,7 @@ const ANIMATE_TAIL_WINDOW = 8
 export interface ConversationHistoryListProps {
   messages: Message[]
   lastMessageId: string | undefined
-  /** Search keyword to highlight, and the row it belongs to. Anchored view only. */
+  /** Search keyword to highlight. Tinted in every row; `highlightIndex` marks the active one. */
   highlight?: string
   highlightIndex?: number
   onMatchLayout?: (messageIndex: number, y: number) => void
@@ -149,7 +149,8 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
         <MessageItem
           message={item}
           isLast={item.id === lastMessageId}
-          highlight={highlight && item.messageIndex === highlightIndex ? highlight : undefined}
+          highlight={highlight}
+          isActiveMatch={Boolean(highlight) && item.messageIndex === highlightIndex}
           onMatchLayout={onMatchLayout}
           animateIn={animateIds.has(item.id)}
         />
