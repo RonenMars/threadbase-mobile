@@ -152,6 +152,48 @@ describe('useActiveQuestionReducer – phase', () => {
     expect(result.current.phase).toBeNull()
   })
 
+  // A cancellation names what it cancels. Clearing on any cancellation would
+  // take down a card that is still live — and these arrive with nothing on
+  // screen to tap, so the user's only signal would be the card vanishing.
+  it('ignores a question_cancelled naming a different question', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(question))
+    await act(() => result.current.onMessage({ type: 'question_cancelled', sessionId: 's1', toolUseId: 'OTHER' }))
+    expect(result.current.phase).toBe('active')
+  })
+
+  it('leaves a structured question up when a permission gate is cancelled', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(question))
+    await act(() => result.current.onMessage({ type: 'permission_cancelled', sessionId: 's1' }))
+    expect(result.current.phase).toBe('active')
+  })
+
+  it('leaves a permission gate up when a structured question is cancelled', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(gate))
+    await act(() => result.current.onMessage({ type: 'question_cancelled', sessionId: 's1', toolUseId: 't1' }))
+    expect(result.current.phase).toBe('active')
+    expect(result.current.question?.source).toBe('permission')
+  })
+
+  it('ignores a cancellation for another session', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(gate))
+    await act(() => result.current.onMessage({ type: 'permission_cancelled', sessionId: 'OTHER' }))
+    expect(result.current.phase).toBe('active')
+  })
+
+  it('survives a cancellation arriving with nothing on screen', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage({ type: 'permission_cancelled', sessionId: 's1' }))
+    await act(() => result.current.onMessage({ type: 'question_cancelled', sessionId: 's1', toolUseId: 't1' }))
+    expect(result.current.question).toBeNull()
+
+    await act(() => result.current.onMessage(gate))
+    expect(result.current.phase).toBe('active')
+  })
+
   it('clears an active structured question on question_cancelled', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(question))
