@@ -382,6 +382,7 @@ jest.mock('@sentry/react-native', () => {
 // no longer a direct dep). See app usage at components/servers/AddServerScreen.tsx.
 jest.mock('expo-router/react-navigation', () => ({
   useHeaderHeight: () => 44,
+  usePreventRemove: jest.fn(),
 }))
 
 // ─── expo-speech-recognition ─────────────────────────────────────────────────

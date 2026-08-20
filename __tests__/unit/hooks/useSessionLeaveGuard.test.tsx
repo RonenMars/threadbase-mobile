@@ -1,8 +1,8 @@
 import React from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import { useSessionLeaveGuard, type BeforeRemoveEvent } from '@/hooks/useSessionLeaveGuard'
-import { clearSessionLeaveInFlight } from '@/lib/sessionLeavePolicy'
+import { usePreventRemove } from 'expo-router/react-navigation'
+import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
 import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 
@@ -21,29 +21,20 @@ const live = {
 }
 
 function makeNav() {
-  let listener: ((e: BeforeRemoveEvent) => void) | undefined
   const dispatch = jest.fn()
   return {
     navigation: {
-      addListener: (_event: 'beforeRemove', cb: (e: BeforeRemoveEvent) => void) => {
-        listener = cb
-        return () => {
-          listener = undefined
-        }
-      },
       dispatch,
     },
-    fire: async (overrides?: Partial<BeforeRemoveEvent>) => {
-      const preventDefault = jest.fn()
-      const action = { type: 'GO_BACK' }
-      await act(() => {
-        listener?.({
-          preventDefault,
-          data: { action },
-          ...overrides,
+    fire: async (type = 'GO_BACK') => {
+      const [preventRemove, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1) ?? []
+      const action = { type }
+      if (preventRemove) {
+        await act(() => {
+          callback({ data: { action } })
         })
-      })
-      return { preventDefault, action, dispatch }
+      }
+      return { preventRemove, action, dispatch }
     },
     dispatch,
   }
@@ -55,19 +46,24 @@ function LeaveGuardProbe({
   navigation,
   session,
   isPending,
+  skipInitialReplace,
   stopSessionMutate,
 }: {
   navigation: ReturnType<typeof makeNav>['navigation']
   session: typeof live
   isPending: boolean
+  skipInitialReplace?: boolean
   stopSessionMutate: StopSessionMutate
 }) {
+  const [renderNonce, setRenderNonce] = React.useState(0)
   const { leaveModalVisible, cancelLeave, confirmLeave } = useSessionLeaveGuard({
-    navigation,
+    // A fresh object every render, exactly like app/session/[id].tsx passes.
+    navigation: { dispatch: (action) => navigation.dispatch(action) },
     serverId: 'srv1',
     sessionId: 'sess-live',
     session,
     isPending,
+    skipInitialReplace,
     stopSessionMutate,
   })
   return (
@@ -81,6 +77,7 @@ function LeaveGuardProbe({
         testID="leave-confirm-kill-remember"
         onPress={() => confirmLeave('kill', true)}
       />
+      <Pressable testID="force-rerender" onPress={() => setRenderNonce(renderNonce + 1)} />
     </View>
   )
 }
@@ -89,20 +86,21 @@ describe('useSessionLeaveGuard', () => {
   const stopSessionMutate = jest.fn()
 
   beforeEach(() => {
+    ;(usePreventRemove as jest.Mock).mockClear()
     stopSessionMutate.mockClear()
     ;(wsManager.send as jest.Mock).mockClear()
     ;(wsManager.status as jest.Mock).mockReturnValue('connected')
     useSettingsStore.setState({ sessionLeaveAction: 'ask' })
-    clearSessionLeaveInFlight('sess-live')
   })
 
-  async function setup(session = live, extra?: { isPending?: boolean }) {
+  async function setup(session = live, extra?: { isPending?: boolean; skipInitialReplace?: boolean }) {
     const nav = makeNav()
     const view = await render(
       <LeaveGuardProbe
         navigation={nav.navigation}
         session={session}
         isPending={extra?.isPending ?? false}
+        skipInitialReplace={extra?.skipInitialReplace}
         stopSessionMutate={stopSessionMutate}
       />,
     )
@@ -111,8 +109,8 @@ describe('useSessionLeaveGuard', () => {
 
   it('Always ask: back from live session shows the modal; Cancel stays', async () => {
     const { fire, dispatch } = await setup()
-    const { preventDefault } = await fire()
-    expect(preventDefault).toHaveBeenCalled()
+    const { preventRemove } = await fire()
+    expect(preventRemove).toBe(true)
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('yes')
     expect(dispatch).not.toHaveBeenCalled()
     expect(stopSessionMutate).not.toHaveBeenCalled()
@@ -142,6 +140,33 @@ describe('useSessionLeaveGuard', () => {
     expect(dispatch).toHaveBeenCalled()
   })
 
+  it('allows the automatic replacement that opens a starting session', async () => {
+    const { fire, dispatch } = await setup(live, { skipInitialReplace: true })
+    const { action } = await fire('REPLACE')
+
+    expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
+    expect(dispatch).toHaveBeenCalledWith(action)
+  })
+
+  it('dispatches the continued action once, not on every later render', async () => {
+    const { fire, dispatch } = await setup()
+    await fire()
+    await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
+    await fireEvent.press(screen.getByTestId('force-rerender'))
+
+    expect(dispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('turns off removal prevention before continuing a confirmed leave', async () => {
+    const { fire } = await setup()
+    await fire()
+
+    await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
+
+    const [preventRemove] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
+    expect(preventRemove).toBe(false)
+  })
+
   it('Confirm+Kill on idle sends hold_session then navigates', async () => {
     const { fire } = await setup()
     await fire()
@@ -168,13 +193,12 @@ describe('useSessionLeaveGuard', () => {
     await fireEvent.press(screen.getByTestId('leave-confirm-kill-remember'))
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill')
     await first.unmount()
-    clearSessionLeaveInFlight('sess-live')
 
     stopSessionMutate.mockClear()
     const second = await setup()
-    const { preventDefault } = await second.fire()
+    const { preventRemove } = await second.fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
-    expect(preventDefault).toHaveBeenCalled()
+    expect(preventRemove).toBe(true)
     expect(stopSessionMutate).toHaveBeenCalled()
     expect(second.dispatch).toHaveBeenCalled()
   })
@@ -195,7 +219,6 @@ describe('useSessionLeaveGuard', () => {
     expect(stopSessionMutate).not.toHaveBeenCalled()
     expect(wsManager.send).not.toHaveBeenCalled()
     await leaveRun.unmount()
-    clearSessionLeaveInFlight('sess-live')
 
     useSettingsStore.setState({ sessionLeaveAction: 'kill_on_idle' })
     const idleRun = await setup()
@@ -206,7 +229,6 @@ describe('useSessionLeaveGuard', () => {
       sessionId: 'sess-live',
     })
     await idleRun.unmount()
-    clearSessionLeaveInFlight('sess-live')
 
     useSettingsStore.setState({ sessionLeaveAction: 'kill' })
     const killRun = await setup()
@@ -217,9 +239,9 @@ describe('useSessionLeaveGuard', () => {
 
   it('Always ask: empty live session also shows the modal (no auto-stop)', async () => {
     const { fire, dispatch } = await setup(live)
-    const { preventDefault } = await fire()
+    const { preventRemove } = await fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('yes')
-    expect(preventDefault).toHaveBeenCalled()
+    expect(preventRemove).toBe(true)
     expect(stopSessionMutate).not.toHaveBeenCalled()
     expect(dispatch).not.toHaveBeenCalled()
   })
@@ -228,13 +250,13 @@ describe('useSessionLeaveGuard', () => {
     const idle = await setup({ ...live, status: 'idle', ptyAttached: false })
     const idleEvt = await idle.fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
-    expect(idleEvt.preventDefault).not.toHaveBeenCalled()
+    expect(idleEvt.preventRemove).toBe(false)
     await idle.unmount()
 
     const held = await setup({ ...live, status: 'on_hold', ptyAttached: false })
     const heldEvt = await held.fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
-    expect(heldEvt.preventDefault).not.toHaveBeenCalled()
+    expect(heldEvt.preventRemove).toBe(false)
     expect(stopSessionMutate).not.toHaveBeenCalled()
   })
 
@@ -243,6 +265,6 @@ describe('useSessionLeaveGuard', () => {
     await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
     const second = await fire()
-    expect(second.preventDefault).not.toHaveBeenCalled()
+    expect(second.preventRemove).toBe(false)
   })
 })

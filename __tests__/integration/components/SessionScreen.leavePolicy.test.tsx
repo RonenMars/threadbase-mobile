@@ -6,12 +6,12 @@
 import React from 'react'
 import { AppState } from 'react-native'
 import { render, screen, act } from '@testing-library/react-native'
+import { usePreventRemove } from 'expo-router/react-navigation'
 import { createWrapper } from '@/test-utils'
 import { useSettingsStore } from '@/stores/settings'
-import { clearSessionLeaveInFlight } from '@/lib/sessionLeavePolicy'
 
-let beforeRemoveListener: ((e: { preventDefault: () => void; data: { action: object } }) => void) | undefined
 let appStateListeners: ((s: string) => void)[] = []
+let mockStarting: string | undefined
 const fireAppState = (s: string) => appStateListeners.forEach((l) => l(s))
 
 const mockSend = jest.fn()
@@ -91,14 +91,10 @@ jest.mock('@/hooks/useSessionName', () => ({
   useRenameSession: () => ({ mutate: jest.fn() }),
 }))
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
+  useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1', starting: mockStarting }),
   useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
   useNavigation: () => ({
     setOptions: jest.fn(),
-    addListener: (_event: string, cb: typeof beforeRemoveListener) => {
-      beforeRemoveListener = cb
-      return jest.fn()
-    },
     dispatch: (...args: unknown[]) => mockDispatch(...args),
   }),
 }))
@@ -115,8 +111,9 @@ import SessionDetailScreen from '@/app/session/[id]'
 
 describe('SessionScreen — leave-session gate', () => {
   beforeEach(() => {
-    beforeRemoveListener = undefined
+    ;(usePreventRemove as jest.Mock).mockClear()
     appStateListeners = []
+    mockStarting = undefined
     mockSend.mockClear()
     mockStopMutate.mockClear()
     mockDispatch.mockClear()
@@ -132,7 +129,6 @@ describe('SessionScreen — leave-session gate', () => {
       resumedFromConversationId: null,
     }
     useSettingsStore.setState({ sessionLeaveAction: 'ask', sessionView: 'chat' })
-    clearSessionLeaveInFlight('sess-live')
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, cb) => {
       appStateListeners.push(cb as (s: string) => void)
       return { remove: jest.fn() } as ReturnType<typeof AppState.addEventListener>
@@ -145,14 +141,13 @@ describe('SessionScreen — leave-session gate', () => {
 
   it('Always ask: back from a live session shows the modal', async () => {
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    expect(beforeRemoveListener).toBeDefined()
+    const [preventRemove, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
+    expect(preventRemove).toBe(true)
 
-    const preventDefault = jest.fn()
     await act(() => {
-      beforeRemoveListener?.({ preventDefault, data: { action: { type: 'GO_BACK' } } })
+      callback({ data: { action: { type: 'GO_BACK' } } })
     })
 
-    expect(preventDefault).toHaveBeenCalled()
     expect(screen.getByTestId('leave-session-modal')).toBeTruthy()
     expect(mockStopMutate).not.toHaveBeenCalled()
   })
@@ -161,14 +156,26 @@ describe('SessionScreen — leave-session gate', () => {
     mockSession = { ...mockSession, promptCount: 0 }
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
-    const preventDefault = jest.fn()
+    const [, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
     await act(() => {
-      beforeRemoveListener?.({ preventDefault, data: { action: { type: 'GO_BACK' } } })
+      callback({ data: { action: { type: 'GO_BACK' } } })
     })
 
-    expect(preventDefault).toHaveBeenCalled()
     expect(screen.getByTestId('leave-session-modal')).toBeTruthy()
     expect(mockStopMutate).not.toHaveBeenCalled()
+  })
+
+  it('allows the automatic replacement that opens a resumed session', async () => {
+    mockStarting = '1'
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+
+    const [, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
+    await act(() => {
+      callback({ data: { action: { type: 'REPLACE' } } })
+    })
+
+    expect(screen.queryByTestId('leave-session-modal')).toBeNull()
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'REPLACE' })
   })
 
   it('backgrounding still sends hold_session and does not show the leave modal', async () => {

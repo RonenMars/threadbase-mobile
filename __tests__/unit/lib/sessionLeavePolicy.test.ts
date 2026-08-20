@@ -1,11 +1,8 @@
 import {
   applySessionLeaveAction,
-  clearSessionLeaveInFlight,
   coerceSessionLeaveAction,
   decideSessionLeave,
   isLiveAttachedPty,
-  isSessionLeaveInFlight,
-  markSessionLeaveInFlight,
   type LeaveSessionSnapshot,
 } from '@/lib/sessionLeavePolicy'
 
@@ -78,13 +75,5 @@ describe('sessionLeavePolicy', () => {
       applySessionLeaveAction({ action: 'kill_on_idle', stopSession, sendHold: () => false }),
     ).toBe('leave_fallback')
     expect(stopSession).not.toHaveBeenCalled()
-  })
-
-  it('treats stacked leave as one in-flight window', () => {
-    clearSessionLeaveInFlight('s1')
-    expect(isSessionLeaveInFlight('s1', 1_000)).toBe(false)
-    markSessionLeaveInFlight('s1', 1_000)
-    expect(isSessionLeaveInFlight('s1', 1_500)).toBe(true)
-    expect(isSessionLeaveInFlight('s1', 3_100)).toBe(false)
   })
 })

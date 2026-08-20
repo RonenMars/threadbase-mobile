@@ -62,25 +62,3 @@ export function applySessionLeaveAction(opts: {
   }
   return 'leave_fallback'
 }
-
-const LEAVE_IN_FLIGHT_TTL_MS = 2_000
-const leaveInFlight = new Map<string, number>()
-
-export function markSessionLeaveInFlight(sessionId: string, now = Date.now()): void {
-  if (!sessionId) return
-  leaveInFlight.set(sessionId, now)
-}
-
-export function isSessionLeaveInFlight(sessionId: string, now = Date.now()): boolean {
-  const started = leaveInFlight.get(sessionId)
-  if (started === undefined) return false
-  if (now - started > LEAVE_IN_FLIGHT_TTL_MS) {
-    leaveInFlight.delete(sessionId)
-    return false
-  }
-  return true
-}
-
-export function clearSessionLeaveInFlight(sessionId: string): void {
-  leaveInFlight.delete(sessionId)
-}
