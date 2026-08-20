@@ -8,8 +8,9 @@ import { useTranslation } from 'react-i18next'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { isQuestionClosedError } from '@/services/api-client'
+import { isPermissionClosedError, isQuestionClosedError } from '@/services/api-client'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
+import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -219,13 +220,54 @@ export function LiveConversationView({
   // Phase comes gated on `presentation.live` — never re-derive liveness here.
   const agentPhase = session ? deriveSessionPresentation(session).subStatus : null
 
-  const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion, clear: clearQuestion } = useActiveQuestion(serverId, sessionId)
+  const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion, markPending } = useActiveQuestion(serverId, sessionId)
 
   // A question arrives on the running → waiting_input edge, which is exactly the
   // edge that retires the thinking bubble. Mount on the question too, or a card
   // that lands a beat later has no host left to render in.
   const showThinkingFooter = activeQuestion !== null || thinkingState !== 'hidden'
+
+
+  // Await, then transition. The card stays exactly where it is until the server
+  // has taken the answer, so a tap on a gate that has already closed clears the
+  // card with a calm notice instead of leaving it up and tappable — the server
+  // has just said the gate is not open, so a second tap cannot succeed either.
+  //
+  // Classified by code, never by status class. Only the three closed reasons
+  // clear; anything else keeps the card so the user can try again. Two of those
+  // three arrive with no `permission_cancelled` alongside them, which makes this
+  // the only thing that takes the card down for them.
+  // `answered` is captured here, at tap time, and handed back to markPending so
+  // the confirmation binds to the gate it was given for. The POST is not
+  // instant — the server re-scrapes the screen before accepting — so a second
+  // gate can arrive while this is in flight, and confirming "whatever is active
+  // now" would ghost one the user never answered.
+  const handleAnswerPermission = useCallback(async (optionIndex: number) => {
+    const answered = activeQuestion
+    if (!answered) return
+    try {
+      await answerPermission.mutateAsync({
+        contentKey: answered.permissionContentKey,
+        optionIndex,
+        keys: permissionAnswerKeys(answered, optionIndex),
+      })
+      markPending(answered)
+    } catch (err) {
+      if (isPermissionClosedError(err instanceof Error ? err : null)) clearQuestion()
+    }
+  }, [activeQuestion, answerPermission, clearQuestion, markPending])
+
+  const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
+    const answered = activeQuestion
+    if (!answered) return
+    try {
+      await respondToQuestion.mutateAsync({ toolUseId, answers })
+      markPending(answered)
+    } catch (err) {
+      if (isQuestionClosedError(err instanceof Error ? err : null)) clearQuestion()
+    }
+  }, [activeQuestion, clearQuestion, markPending, respondToQuestion])
 
   const isConnected = () => wsManager.getClient(serverId)?.status() === 'connected'
 
@@ -282,13 +324,22 @@ export function LiveConversationView({
   // it also broadcasts question_cancelled, which dismisses the card), so that
   // case reads as a calm notice rather than a failure the user must act on.
   const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
-  const answerErrorMessage =
-    respondToQuestion.isError && !isQuestionGoneError
-      ? respondToQuestion.error instanceof Error
-        ? respondToQuestion.error.message
-        : tTerminal('answer.failed')
+  // Same split for the gate route, and the same reason: a gate the server says
+  // is closed is not a failure the user must act on, it is the prompt going
+  // away. Everything else is a real error and keeps the card up to retry.
+  const isGateClosedError = isPermissionClosedError(answerPermission.error)
+  const answerFailure = respondToQuestion.isError && !isQuestionGoneError
+    ? respondToQuestion.error
+    : answerPermission.isError && !isGateClosedError
+      ? answerPermission.error
       : null
-  const answerNoticeMessage = respondToQuestion.isError && isQuestionGoneError ? tTerminal('answer.questionClosed') : null
+  const answerErrorMessage = answerFailure
+    ? answerFailure instanceof Error
+      ? answerFailure.message
+      : tTerminal('answer.failed')
+    : null
+  const answerNoticeMessage =
+    (respondToQuestion.isError && isQuestionGoneError) || isGateClosedError ? tTerminal('answer.questionClosed') : null
   const sendInputErrorMessage = sendInput.isError
     ? sendInput.error instanceof Error
       ? sendInput.error.message
@@ -355,7 +406,8 @@ export function LiveConversationView({
             onSendKeys={(keys) => sendKeys.mutate(keys)}
             activeQuestion={activeQuestion}
             subStatus={agentPhase}
-            onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+            onAnswer={handleAnswerQuestion}
+            onAnswerPermission={handleAnswerPermission}
             onDismissQuestion={clearQuestion}
           />
         ) : null}

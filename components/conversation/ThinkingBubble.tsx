@@ -5,7 +5,6 @@ import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
-import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
@@ -51,6 +50,8 @@ interface Props {
   onSendKeys?: (keys: string) => void
   activeQuestion?: QuestionBlock | null
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Answer a permission gate by the option's position in the broadcast options array. */
+  onAnswerPermission?: (optionIndex: number) => void
   /** Drop the structured card locally — Esc closes the menu, but nothing on the
    *  server notices, so the card would otherwise linger and stay tappable. */
   onDismissQuestion?: () => void
@@ -58,7 +59,7 @@ interface Props {
   subStatus?: AgentPhase | null
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onDismissQuestion, subStatus }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onDismissQuestion, subStatus }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -86,26 +87,22 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     onSendKeys(arrow.repeat(Math.abs(delta)) + '\r')
   }, [onSendKeys, questionBlock])
 
+  // Answering hands the tap upward and stops. It does not dismiss the card and
+  // it does not choose keystrokes: the answer route owns both the validated
+  // POST and its keystroke fallback, and the card only moves once that has been
+  // taken. Dismissing here — which is what this did — is what let a tap on a
+  // gate that had already closed write stray bytes into the prompt with nothing
+  // on screen to say so.
   const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
     if (!activeQuestion) return
-    // Permission gate: answered over the keystroke route, never a POST. The
-    // detector's literal keys win over the on-screen number — see
-    // permissionAnswerKeys.
     if (activeQuestion.source === 'permission') {
-      const keys = permissionAnswerKeys(activeQuestion, optionIndex)
-      if (keys === null || !onSendKeys) return
-      onSendKeys(keys)
-      // The server closes a gate only once its PTY detector sees the box gone —
-      // the end of the turn, tens of seconds later. The tap is the user's own
-      // action, so the card goes on that, not on the echo.
-      onDismissQuestion?.()
+      onAnswerPermission?.(optionIndex)
       return
     }
     if (!activeQuestion.toolUseId || !onAnswer) return
     const q = activeQuestion.questions[questionIndex]
     onAnswer(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
-    onDismissQuestion?.()
-  }, [activeQuestion, onAnswer, onDismissQuestion, onSendKeys])
+  }, [activeQuestion, onAnswer, onAnswerPermission])
 
   useEffect(() => {
     if (!fadingOut || hasCard) return
