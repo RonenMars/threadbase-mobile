@@ -54,6 +54,7 @@ import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { EncryptionRefusalBanner } from '@/components/servers/EncryptionRefusalBanner'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
+import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -458,6 +459,8 @@ export default function ProjectsHub() {
         if (lowSeverityId) setCacheAlertModalServerId(lowSeverityId)
       }}
       />
+
+      <HostPressureBanner />
 
       <ServerStateMessage
         activeServerIds={activeServerIds}

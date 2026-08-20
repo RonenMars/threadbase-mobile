@@ -92,6 +92,38 @@
     "successToastNoBackup": "טופל.",
     "selectAtLeastOne": "בחר לפחות שיחה אחת למחיקה."
   },
+  "hostPressure": {
+    "banner": {
+      "memoryElevated": "{{server}} בלחץ זיכרון.",
+      "memoryCritical": "{{server}} חסר זיכרון.",
+      "loadElevated": "{{server}} בעומס.",
+      "loadCritical": "{{server}} רץ בעומס מלא.",
+      "eventLoopElevated": "{{server}} מגיב לאט.",
+      "eventLoopCritical": "{{server}} מעוכב מאוד.",
+      "agents": "{{server}} מריץ יותר מדי סוכנים.",
+      "fallbackElevated": "{{server}} בלחץ.",
+      "fallbackCritical": "{{server}} בלחץ כבד."
+    },
+    "modalLead": "סשנים חדשים עלולים להיות איטיים עד שייסגרו תוכניות במחשב.",
+    "detected": {
+      "memory": "במחשב חסר זיכרון פנוי.",
+      "event_loop": "שרת Threadbase עצמו מעוכב — עבודה אחרת במחשב דוחקת אותו.",
+      "load": "המעבד עסוק.",
+      "agents": "{{count}} סוכנים רצים במחשב הזה."
+    },
+    "whyFine": {
+      "memory": "המעבד עדיין יכול להיראות פנוי. מערכת ההפעלה מעבירה RAM לדיסק, ולכן המחשב מרגיש בסדר עד שמשהו חדש צריך זיכרון.",
+      "event_loop": "סשנים קיימים עדיין עובדים. חדשים ממתינים מאחורי העיכוב.",
+      "load": "עומס גבוה יכול להישאר גם כשהמסך שקט — קומפילציות ברקע, מכונות וירטואליות ואינדוקס מצטברים."
+    },
+    "whatToDo": {
+      "darwin": "ב-Mac הזה סגרו את Cursor, Chrome או מכונות וירטואליות שאינן נחוצות. Activity Monitor מראה מה צורך RAM ומעבד.",
+      "linux": "במחשב Linux הזה סגרו עורכים כבדים, דפדפנים או מכונות וירטואליות. System Monitor או top מראים מה צורך RAM ומעבד.",
+      "win32": "במחשב Windows הזה סגרו את Cursor, Chrome או מכונות וירטואליות שאינן נחוצות. Task Manager מראה מה צורך RAM ומעבד.",
+      "generic": "במחשב סגרו את Cursor, Chrome או מכונות וירטואליות שאינן נחוצות, ואז בדקו RAM ומעבד."
+    },
+    "dismiss": "סגור"
+  },
   "claudeFlags": {
     "title": "דגלי Claude CLI",
     "description": "חלים על כל סשן שהשרת הזה מפעיל. ייכנסו לתוקף בסשן הבא.",

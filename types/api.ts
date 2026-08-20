@@ -374,6 +374,12 @@ export interface ServerInfo {
    * the pinned bit, not to a field an intermediary can strip.
    */
   e2ee?: E2eeCapability
+  /**
+   * Additive: true when this server can emit `host_pressure` WS frames.
+   * Absent means an older server. Discovery only — the frames themselves
+   * are authoritative for showing the Hub banner.
+   */
+  hostPressure?: true
 }
 
 /**
@@ -607,6 +613,42 @@ export interface ServerConfig {
 
 export type CacheAlertSeverity = 'high' | 'low'
 export type CacheAlertResolveAction = 'prune_all' | 'prune_selected' | 'ignore' | 'reset_rescan'
+
+export type HostPressureLevel = 'elevated' | 'critical'
+export type HostPressureReason = 'memory' | 'event_loop' | 'load' | 'agents'
+export type HostPressureOs = 'darwin' | 'linux' | 'win32'
+
+export interface HostPressureAlert {
+  level: HostPressureLevel
+  reasons: HostPressureReason[]
+  liveAgents: number
+  updatedAt: string
+  /** Additive: host OS from the WS frame or GET /api/info. Absent on older streamers. */
+  os?: HostPressureOs
+}
+
+export function parseHostPressureReasons(reasons: string[]): HostPressureReason[] {
+  const parsed: HostPressureReason[] = []
+  for (const reason of reasons) {
+    if (reason === 'memory' || reason === 'event_loop' || reason === 'load' || reason === 'agents') {
+      parsed.push(reason)
+    }
+  }
+  return parsed
+}
+
+export function parseHostPressureOs(value: string | undefined): HostPressureOs | undefined {
+  if (!value) return undefined
+  const normalized = value.toLowerCase()
+  if (normalized === 'darwin' || normalized === 'macos' || normalized === 'osx') return 'darwin'
+  if (normalized === 'linux') return 'linux'
+  if (normalized === 'win32' || normalized === 'windows') return 'win32'
+  return undefined
+}
+
+export function isHostPressureLevel(level: string): level is HostPressureLevel {
+  return level === 'elevated' || level === 'critical'
+}
 
 /**
  * Pending cache-integrity alert. Same shape as the server's `GET /api/cache/alert`
