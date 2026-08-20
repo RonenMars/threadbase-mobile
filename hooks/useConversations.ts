@@ -388,8 +388,18 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
         .flatMap((m, i) => {
           const idx = m.message_index ?? (page.message_pagination?.from_index ?? 0) + i
           if (seenIndexes.has(idx)) return []
+          const adapted = adaptRawMessage(m, convId, idx)
+          // A message with no renderable block draws nothing — MessageItem
+          // returns null for it — so counting it as content is what turns a
+          // degraded page into a blank screen instead of the empty state.
+          // Seen against a streamer serving its cache tail for a conversation
+          // whose project folder had moved: every row carried a raw rollout
+          // envelope type as its role, no text and no content blocks.
+          // Not marked as seen, so a real message at the same index in a
+          // later page still wins.
+          if (adapted.content.length === 0) return []
           seenIndexes.add(idx)
-          return [adaptRawMessage(m, convId, idx)]
+          return [adapted]
         }),
     )
 
