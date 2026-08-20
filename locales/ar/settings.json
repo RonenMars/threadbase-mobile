@@ -19,7 +19,13 @@
   "session": {
     "chatView": "عرض الدردشة",
     "chatViewNote": "أظهر السيشنات المباشرة كفقاعات دردشة بدلًا من مخرجات طرفية RAW. بيتا — قد تحتوي على أخطاء ولا تعمل دائمًا.",
-    "betaBadge": "بيتا"
+    "betaBadge": "بيتا",
+    "leaveAction": "الإجراء عند مغادرة السيشن",
+    "leaveActionAsk": "اسأل دائمًا",
+    "leaveActionKill": "أوقفها",
+    "leaveActionLeave": "اتركها تعمل",
+    "leaveActionKillOnIdle": "أوقف عند الخمول",
+    "leaveActionNote": "يُطبَّق عند مغادرة شاشة السيشن المباشرة. وضع التطبيق في الخلفية لا يتغير."
   },
   "permissions": {
     "camera": "الكاميرا",

@@ -65,6 +65,17 @@
     "resumedHistoryLinkIn": " ב",
     "resumedHistoryLinkTail": "היסטוריית השיחה ←"
   },
+  "leaveSession": {
+    "title": "לעזוב את הסשן?",
+    "body": "הסוכן במחשב ממשיך לרוץ עד שתבחר.",
+    "kill": "עצור עכשיו",
+    "killHint": "עצור את הסשן עכשיו. ההיסטוריה נשמרת אם יש כזו.",
+    "leave": "השאר רץ",
+    "leaveHint": "השאר אותו פעיל כדי שתוכל לחזור.",
+    "kill_on_idle": "עצור במנוחה",
+    "kill_on_idleHint": "אל תחתוך תור פעיל; החזק כשהסשן במנוחה.",
+    "remember": "אל תשאל שוב"
+  },
   "history": {
     "header_one": "היסטוריה · הודעה אחת",
     "header_other": "היסטוריה · {{count}} הודעות",

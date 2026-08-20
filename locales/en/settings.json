@@ -19,7 +19,13 @@
   "session": {
     "chatView": "Chat view",
     "chatViewNote": "Show live sessions as chat bubbles instead of RAW terminal output. Beta — may be buggy and not always work.",
-    "betaBadge": "Beta"
+    "betaBadge": "Beta",
+    "leaveAction": "Action on session leave",
+    "leaveActionAsk": "Always ask",
+    "leaveActionKill": "Kill it",
+    "leaveActionLeave": "Leave it",
+    "leaveActionKillOnIdle": "Kill on idle",
+    "leaveActionNote": "Applies when you navigate away from a live session. Backgrounding the app is unchanged."
   },
   "permissions": {
     "camera": "Camera",

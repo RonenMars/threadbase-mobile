@@ -4,6 +4,10 @@ import type { NotificationPreferences } from '@/types/api'
 import type { SessionsLayout } from '@/types/ui'
 import { THEMES, appleGlassThemes } from '@/constants/theme'
 import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
+import {
+  coerceSessionLeaveAction,
+  type SessionLeaveAction,
+} from '@/lib/sessionLeavePolicy'
 
 const VALID_THEME_IDS = new Set<string>([...Object.keys(THEMES), 'system'])
 
@@ -18,6 +22,8 @@ function isValidGlassThemeVariant(v: unknown): v is GlassThemeVariant {
 }
 
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
+export type { SessionLeaveAction }
+
 const ASYNC_KEY_SETTINGS = 'threadbase_settings'
 
 export type RowPreviewMode = 'first' | 'last' | 'auto' | 'off'
@@ -36,6 +42,7 @@ interface SettingsStore {
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
+  sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
@@ -62,6 +69,7 @@ interface SettingsStore {
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
   setHistoryMessageDisplay: (v: 'first' | 'last') => void
   setAddServerAction: (v: AddServerAction) => void
+  setSessionLeaveAction: (v: SessionLeaveAction) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
   setLocale: (locale: string) => void
@@ -102,6 +110,7 @@ interface PersistedSettings {
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
+  sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
   locale: string
@@ -129,6 +138,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
+  sessionLeaveAction: 'ask',
   sessionsLayout: 'classic',
   mergeChats: true,
   locale: 'en',
@@ -159,6 +169,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     })),
   setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
   setAddServerAction: (addServerAction) => set({ addServerAction }),
+  setSessionLeaveAction: (sessionLeaveAction) => set({ sessionLeaveAction }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setMergeChats: (mergeChats) => set({ mergeChats }),
   setLocale: (locale) => set({ locale }),
@@ -193,6 +204,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           : state.notifications,
         historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
         addServerAction: parsed.addServerAction ?? state.addServerAction,
+        sessionLeaveAction: coerceSessionLeaveAction(
+          parsed.sessionLeaveAction ?? state.sessionLeaveAction,
+        ),
         sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
         mergeChats: parsed.mergeChats ?? state.mergeChats,
         locale: parsed.locale ?? state.locale,
@@ -226,6 +240,7 @@ useSettingsStore.subscribe((state) => {
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,
+    sessionLeaveAction: state.sessionLeaveAction,
     sessionsLayout: state.sessionsLayout,
     mergeChats: state.mergeChats,
     locale: state.locale,

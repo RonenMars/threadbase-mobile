@@ -19,7 +19,13 @@
   "session": {
     "chatView": "תצוגת צ'אט",
     "chatViewNote": "הצג סשנים חיים כבועות צ'אט במקום פלט טרמינל RAW. בטא — ייתכנו באגים והתכונה לא תמיד תעבוד.",
-    "betaBadge": "בטא"
+    "betaBadge": "בטא",
+    "leaveAction": "פעולה ביציאה מסשן",
+    "leaveActionAsk": "שאל תמיד",
+    "leaveActionKill": "עצור עכשיו",
+    "leaveActionLeave": "השאר רץ",
+    "leaveActionKillOnIdle": "עצור במנוחה",
+    "leaveActionNote": "חל כאשר עוברים ממסך הסשן החי. מעבר הרקע של האפליקציה לא משתנה."
   },
   "permissions": {
     "camera": "מצלמה",
