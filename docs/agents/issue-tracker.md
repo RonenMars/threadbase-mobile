@@ -17,7 +17,7 @@ Title:   P<N>: <what is wrong or what should exist>
 Labels:  <exactly one priority P0–P3> + <exactly one type> + <zero or more areas>
 ```
 
-The triage-state labels this repo's skills apply are **additive** to that taxonomy, not a replacement — see `triage-labels.md`.
+The triage-state labels this repo's skills apply are **additive** to that taxonomy, not a replacement — canonical in [`threadbase/docs/triage-labels.md`](https://github.com/RonenMars/threadbase/blob/main/docs/triage-labels.md), with this repo's adoption recorded in [`triage-labels.md`](./triage-labels.md).
 
 ## Commands
 
