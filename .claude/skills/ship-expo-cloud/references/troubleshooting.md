@@ -95,7 +95,7 @@ Apple processing usually takes 5-30 minutes but can occasionally take hours.
 
 ### "Missing Compliance" Warning
 
-The app has `ITSAppUsesNonExemptEncryption: false` in app.json, which should auto-fill the export compliance question. If TestFlight still shows a compliance warning:
+The app has `ITSAppUsesNonExemptEncryption: true` in app.json, so the build declares non-exempt encryption and TestFlight expects App Encryption Documentation on file in App Store Connect. Apple must approve that document before any build can carry it. If TestFlight still shows a compliance warning:
 
 1. Go to App Store Connect -> TestFlight -> select the build
 2. Click "Manage Missing Compliance"

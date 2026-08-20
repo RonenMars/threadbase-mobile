@@ -47,8 +47,20 @@ Collection" answers. The features add these data types (all optional / opt-in):
 - [ ] Update the **Privacy Policy URL** to the published policy
       (<https://threadbase.sh/privacy-policy>) once the proposed policy in
       `docs/privacy-policy/proposed-privacy-policy.md` is live.
-- [ ] `ITSAppUsesNonExemptEncryption` remains `false` (unchanged; HTTPS/standard
-      crypto only).
+- [ ] `ITSAppUsesNonExemptEncryption` is `true`. The app implements its own
+      cryptography — X25519, ChaCha20-Poly1305, SHA-256, HMAC and HKDF via
+      `@stablelib`, composed by the Noise handshake in `services/e2ee/*` — which
+      is not the platform TLS Apple exempts. It was `false` while TLS was the
+      only crypto; the E2EE pairing wiring made that answer wrong.
+- [ ] App Encryption Documentation is filed in App Store Connect. Every
+      algorithm is a published standard, so this is the French declaration only
+      and **not** a CCATS. Two waits in series: App Store Connect asks for the
+      French encryption declaration **approval form**, meaning ANSSI's response
+      rather than the declaration sent to them, and Apple then approves that
+      upload before any build can carry it. That gate binds at **TestFlight**,
+      not only at App Review. See
+      `threadbase-streamer:specs/end-to-end-encryption/plan.md`
+      § "App Store export compliance".
 
 ## Google Play Console — Data Safety
 
