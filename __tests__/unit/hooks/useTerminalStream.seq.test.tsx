@@ -36,6 +36,12 @@ jest.mock('@/services/ws-client', () => {
         statusListeners.add(l)
         return () => statusListeners.delete(l)
       },
+      acquireSession: jest.fn((_serverId: string, sessionId: string) => {
+        send({ type: 'subscribe_session', sessionId })
+      }),
+      releaseSession: jest.fn((_serverId: string, sessionId: string) => {
+        send({ type: 'unsubscribe_session', sessionId })
+      }),
     },
     __wsTest: {
       send,
@@ -124,5 +130,17 @@ describe('useTerminalStream – seq guard', () => {
 
     expect(result.current.lines.join('\n')).toContain('one')
     expect(result.current.lines.join('\n')).toContain('two')
+  })
+
+  it('unsubscribes the session stream when the view unmounts', async () => {
+    const { unmount } = await renderStream()
+    const { wsManager } = jest.requireMock('@/services/ws-client') as {
+      wsManager: { acquireSession: jest.Mock; releaseSession: jest.Mock }
+    }
+    expect(wsManager.acquireSession).toHaveBeenCalledWith('srv-1', 'sess-1')
+    await act(() => {
+      unmount()
+    })
+    expect(wsManager.releaseSession).toHaveBeenCalledWith('srv-1', 'sess-1')
   })
 })

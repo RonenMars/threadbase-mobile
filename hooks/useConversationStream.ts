@@ -1,5 +1,6 @@
 // hooks/useConversationStream.ts
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { useFocusEffect } from 'expo-router'
 import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
@@ -132,11 +133,32 @@ export function useConversationStream(
 ) {
   const [liveMessages, setLiveMessages] = useState<Message[]>([])
   const seenIds = useRef(new Set<string>())
+  const heldRef = useRef(false)
+
+  const holdStream = useCallback(() => {
+    if (!serverId || !sessionId || heldRef.current) return
+    heldRef.current = true
+    wsManager.acquireSession?.(serverId, sessionId)
+  }, [serverId, sessionId])
+
+  const dropStream = useCallback(() => {
+    if (!heldRef.current) return
+    heldRef.current = false
+    if (sessionId) wsManager.releaseSession?.(serverId, sessionId)
+  }, [serverId, sessionId])
+
+  useFocusEffect(
+    useCallback(() => {
+      holdStream()
+      return () => dropStream()
+    }, [holdStream, dropStream]),
+  )
 
   useEffect(() => {
     if (!serverId || !sessionId) return
 
     seenIds.current.clear()
+    holdStream()
 
     // Singular per-line frame. Old/codex servers send only this. Double-parse
     // with the plural frame below is accepted: on modern servers the plural
@@ -177,8 +199,9 @@ export function useConversationStream(
       unsubBatch?.()
       setLiveMessages([])
       seenIdsRef.clear()
+      dropStream()
     }
-  }, [serverId, sessionId, conversationId])
+  }, [serverId, sessionId, conversationId, holdStream, dropStream])
 
   return { liveMessages }
 }

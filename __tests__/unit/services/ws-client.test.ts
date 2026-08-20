@@ -1,4 +1,4 @@
-import { getConnectionLog, wsClient } from '@/services/ws-client'
+import { getConnectionLog, wsClient, wsManager } from '@/services/ws-client'
 import { authedFetch } from '@/services/authed-fetch'
 import { CleartextBlockedError } from '@/services/cleartext-policy'
 
@@ -37,6 +37,7 @@ global.WebSocket = MockWebSocket
 
 beforeEach(() => {
   wsClient.disconnect()
+  wsManager.disconnectAll()
   jest.clearAllMocks()
   jest.useFakeTimers()
 })
@@ -374,5 +375,48 @@ describe('cleartext policy', () => {
     await expect(
       authedFetch({ url: PUBLIC_HTTP, apiKey: 'key' }, '/api/profiles'),
     ).rejects.toBeInstanceOf(CleartextBlockedError)
+  })
+})
+
+describe('WSClientManager – session stream refcount', () => {
+  function openServer(serverId = 'srv-1') {
+    wsManager.connect(serverId, 'http://192.168.68.102:8766', 'key')
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+  }
+
+  it('subscribes on the first acquire and unsubscribes on the last release', () => {
+    openServer()
+    mockSocket.send.mockClear()
+
+    wsManager.acquireSession('srv-1', 'sess-a')
+    expect(mockSocket.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'subscribe_session', sessionId: 'sess-a' }),
+    )
+
+    mockSocket.send.mockClear()
+    wsManager.acquireSession('srv-1', 'sess-a')
+    expect(mockSocket.send).not.toHaveBeenCalled()
+
+    wsManager.releaseSession('srv-1', 'sess-a')
+    expect(mockSocket.send).not.toHaveBeenCalled()
+
+    wsManager.releaseSession('srv-1', 'sess-a')
+    expect(mockSocket.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'unsubscribe_session', sessionId: 'sess-a' }),
+    )
+  })
+
+  it('resubscribes held sessions when the socket reconnects', () => {
+    openServer()
+    wsManager.acquireSession('srv-1', 'sess-a')
+    wsManager.forceReconnect('srv-1')
+    mockSocket.readyState = 1
+    mockSocket.send.mockClear()
+    mockSocket.onopen!()
+
+    expect(mockSocket.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'subscribe_session', sessionId: 'sess-a' }),
+    )
   })
 })

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useFocusEffect } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
@@ -64,6 +65,26 @@ export function useTerminalStream(
   // seq (undefined when the streamer predates this field, or via the HTTP
   // fallback, which carries no seq — the guard then never rejects).
   const lastSeqRef = useRef(0)
+  const heldRef = useRef(false)
+
+  const holdStream = useCallback(() => {
+    if (skipLiveStream || !serverId || !sessionId || heldRef.current) return
+    heldRef.current = true
+    wsManager.acquireSession?.(serverId, sessionId)
+  }, [serverId, sessionId, skipLiveStream])
+
+  const dropStream = useCallback(() => {
+    if (!heldRef.current) return
+    heldRef.current = false
+    wsManager.releaseSession?.(serverId, sessionId)
+  }, [serverId, sessionId])
+
+  useFocusEffect(
+    useCallback(() => {
+      holdStream()
+      return () => dropStream()
+    }, [holdStream, dropStream]),
+  )
 
   // HTTP fallback query — disabled by default, enabled only when WS replay times out
   const [httpFallbackEnabled, setHttpFallbackEnabled] = useState(false)
@@ -256,6 +277,7 @@ export function useTerminalStream(
     subscribeUserMessage()
     subscribeWildcard()
     resetSilenceTimer()
+    holdStream()
 
     // Re-subscribe on reconnect. This handles two cases:
     //   1. Client didn't exist yet when this effect ran (React runs child
@@ -284,11 +306,12 @@ export function useTerminalStream(
       clearTimeout(idleTimer)
       if (fallbackTimer) clearTimeout(fallbackTimer)
       if (silenceTimer) clearTimeout(silenceTimer)
+      dropStream()
     }
     // feedHistory is a local closure that only reads refs + maxLines (already
     // in deps); excluding it avoids re-subscribing on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverId, sessionId, maxLines, skipLiveStream])
+  }, [serverId, sessionId, maxLines, skipLiveStream, holdStream, dropStream])
 
   const clear = useCallback(() => {
     vtRef.current!.reset()
