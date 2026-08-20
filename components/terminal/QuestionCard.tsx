@@ -20,10 +20,17 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
   const [selected, setSelected] = useState<number | null>(initialSelected)
 
-  // PTY blocks update in place as the terminal cursor moves — resync the highlight.
+  // PTY blocks update in place as the terminal cursor moves, so they resync
+  // instead of resetting. Every other source arrives unselected, and the next
+  // prompt re-renders this same mounted card rather than a fresh one, so the
+  // previous answer's highlight has to be dropped by hand. Keyed on the prompt's
+  // content, not on the block object: a repaint is a new object carrying the same
+  // prompt, and must not wipe a selection the user just made.
+  const promptKey = `${q.question} ${q.options.map(o => o.label).join(' ')}`
+  const ptyCursor = block.source === 'pty' ? block.selectedIndex ?? null : null
   useEffect(() => {
-    if (block.source === 'pty') setSelected(block.selectedIndex ?? null)
-  }, [block.source, block.selectedIndex])
+    setSelected(ptyCursor)
+  }, [promptKey, ptyCursor])
 
   const handlePress = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
