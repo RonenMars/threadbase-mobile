@@ -58,7 +58,7 @@ export function TerminalView({
   )
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion, clear: clearQuestion, markPending } = useActiveQuestion(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion, markPending, phase: answerPhase } = useActiveQuestion(serverId, sessionId)
 
   // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
   // not in SessionHistoryFeed itself, because entering it also has to hide
@@ -212,6 +212,8 @@ export function TerminalView({
           activeQuestion={activeQuestion}
           onAnswer={handleAnswerQuestion}
           onAnswerPermission={handleAnswerPermission}
+          answerPhase={answerPhase}
+          answerBusy={answerPermission.isPending || respondToQuestion.isPending}
           onDismissQuestion={clearQuestion}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
@@ -222,6 +224,12 @@ export function TerminalView({
         value={inputText}
         onChangeText={handleInputChange}
         onSend={handleSend}
+        // Send only, and only while the card is answerable. A pending ghost
+        // blocks nothing, so an answer the server never confirms cannot strand
+        // the composer — which is what makes the five exits from `active` a
+        // safety net rather than the only thing standing between the user and
+        // a locked app.
+        sendDisabled={answerPhase === 'active'}
         onAttach={handleAttach}
         attachments={attachments}
         onRemoveAttachment={removeAttachment}

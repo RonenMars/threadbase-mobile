@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 import { wsManager } from '@/services/ws-client'
 import { mapAskQuestionToBlock } from '@/utils/mapAskQuestionToBlock'
 import { mapPermissionToBlock } from '@/utils/mapPermissionToBlock'
@@ -252,6 +253,29 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
       unsubStatus()
     }
   }, [serverId, sessionId, onMessage, resetAndUnsuppress])
+
+  // A ghost only ever leaves by re-evaluation, never by a timer's own reckoning.
+  // Both of these are prompts to *look*: the timeout for a session that has gone
+  // quiet with nothing arriving, the resume for the case a backgrounded timer
+  // fires late or not at all. expireIfStale() decides against the stamp, so
+  // either prompt can be early or late without being wrong.
+  //
+  // This matters more than it looks. The failure it covers is an answer the
+  // server wrote but the gate did not recognise: the gate stays open, so nothing
+  // closes it and no cancellation arrives — and the resubscribe replays a gate
+  // that is genuinely still open, so it is no backstop there either. In that
+  // case this is the only thing that hands the card back.
+  useEffect(() => {
+    if (phase !== 'pending') return
+    const timer = setTimeout(expireIfStale, GHOST_TTL_MS)
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') expireIfStale()
+    })
+    return () => {
+      clearTimeout(timer)
+      sub.remove()
+    }
+  }, [phase, expireIfStale])
 
   return { question, phase, onMessage, clear, reset, markPending, expireIfStale }
 }

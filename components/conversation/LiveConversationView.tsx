@@ -221,7 +221,7 @@ export function LiveConversationView({
   const agentPhase = session ? deriveSessionPresentation(session).subStatus : null
 
   const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion, clear: clearQuestion, markPending } = useActiveQuestion(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion, markPending, phase: answerPhase } = useActiveQuestion(serverId, sessionId)
 
   // A question arrives on the running → waiting_input edge, which is exactly the
   // edge that retires the thinking bubble. Mount on the question too, or a card
@@ -408,6 +408,8 @@ export function LiveConversationView({
             subStatus={agentPhase}
             onAnswer={handleAnswerQuestion}
             onAnswerPermission={handleAnswerPermission}
+            answerPhase={answerPhase}
+            answerBusy={answerPermission.isPending || respondToQuestion.isPending}
             onDismissQuestion={clearQuestion}
           />
         ) : null}
@@ -427,6 +429,12 @@ export function LiveConversationView({
         value={inputText}
         onChangeText={handleInputChange}
         onSend={handleSend}
+        // Send only, and only while the card is answerable. A pending ghost
+        // blocks nothing, so an answer the server never confirms cannot strand
+        // the composer — which is what makes the five exits from `active` a
+        // safety net rather than the only thing standing between the user and
+        // a locked app.
+        sendDisabled={answerPhase === 'active'}
         onAttach={handleAttach}
         attachments={attachments}
         onRemoveAttachment={removeAttachment}

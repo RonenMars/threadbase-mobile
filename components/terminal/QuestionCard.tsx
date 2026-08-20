@@ -11,9 +11,17 @@ interface Props {
   onSelect: (questionIndex: number, optionIndex: number) => void
   /** Dismiss this prompt without answering (sends Esc, same as the stop-response action). */
   onCancel?: () => void
+  /** An answer is in flight. Locks the rows so a double-tap cannot send twice. */
+  busy?: boolean
+  /**
+   * The answer was taken but the gate has not been seen closing yet. The card
+   * stays on screen, dimmed and inert, showing what was chosen — it blocks
+   * nothing, so an answer the server never confirms costs the user nothing.
+   */
+  ghost?: boolean
 }
 
-export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel }: Props) {
+export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false }: Props) {
   const { t } = useTranslation('common')
   const q = block.questions[0]
   // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
@@ -32,15 +40,21 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
     setSelected(ptyCursor)
   }, [promptKey, ptyCursor])
 
+  const locked = busy || ghost
+
   const handlePress = (index: number) => {
+    // The rows disable themselves too; this is the guard that survives a row
+    // being rendered without that. See ChatComposer's second send button for
+    // why that is worth the line.
+    if (locked) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelected(index)
     onSelect(0, index)
   }
 
   return (
-    <View style={styles.container}>
-      {onCancel ? (
+    <View style={[styles.container, ghost && styles.ghost]} testID={ghost ? 'question-card-ghost' : 'question-card'}>
+      {onCancel && !ghost ? (
         <TouchableOpacity
           style={styles.closeButton}
           onPress={onCancel}
@@ -58,7 +72,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           key={index}
           style={[styles.option, index === selected && styles.optionSelected]}
           onPress={() => handlePress(index)}
+          disabled={locked}
           accessibilityRole="button"
+          accessibilityState={{ disabled: locked, selected: index === selected }}
           accessibilityLabel={option.label}
         >
           <View style={[styles.radioOuter, index === selected && styles.radioOuterSelected]}>
@@ -75,7 +91,8 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           </View>
         </TouchableOpacity>
       ))}
-      {onCancel ? (
+      {ghost ? <Text style={styles.ghostNote}>{t('question.answerSent')}</Text> : null}
+      {onCancel && !ghost ? (
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={onCancel}
@@ -90,6 +107,14 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
 })
 
 const styles = StyleSheet.create({
+  ghost: {
+    opacity: 0.55,
+  },
+  ghostNote: {
+    color: '#8b949e',
+    fontSize: 12,
+    marginTop: spacing.sm,
+  },
   container: {
     borderTopWidth: 1,
     borderTopColor: '#21262d',

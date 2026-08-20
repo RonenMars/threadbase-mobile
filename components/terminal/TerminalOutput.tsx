@@ -19,6 +19,7 @@ import { spacing } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
@@ -93,6 +94,10 @@ interface Props {
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
   /** Answer a permission gate by the option's position in the broadcast options array. */
   onAnswerPermission?: (optionIndex: number) => void
+  /** Lifecycle phase of `activeQuestion` — 'pending' renders it as an inert ghost. */
+  answerPhase?: QuestionPhase | null
+  /** An answer is in flight; locks the rows so a double-tap cannot send twice. */
+  answerBusy?: boolean
   /** Drop the structured card locally — Esc closes the menu, but nothing on the
    *  server notices, so the card would otherwise linger and stay tappable. */
   onDismissQuestion?: () => void
@@ -120,6 +125,8 @@ export function TerminalOutput({
   activeQuestion,
   onAnswer,
   onAnswerPermission,
+  answerPhase = null,
+  answerBusy = false,
   onDismissQuestion,
   onViewResumedConversation,
   onSearchResumedConversation,
@@ -364,6 +371,8 @@ export function TerminalOutput({
         <QuestionCard
           block={activeQuestion}
           onSelect={handleStructuredSelect}
+          busy={answerBusy}
+          ghost={answerPhase === 'pending'}
           onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
         />
       ) : questionBlock && onSendKeys ? (

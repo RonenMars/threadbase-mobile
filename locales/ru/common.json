@@ -7,9 +7,7 @@
     "close": "Закрыть",
     "retry": "Повторить",
     "apply": "Применить",
-    "openSettings": "Открыть настройки",
-    "settings": "Настройки",
-    "moreOptions": "Ещё"
+    "openSettings": "Открыть настройки"
   },
   "error": {
     "loadFailed": "Не удалось загрузить",
@@ -24,10 +22,6 @@
   },
   "search": {
     "placeholder": "Поиск…"
-  },
-  "favorite": {
-    "add": "Добавить в избранное",
-    "remove": "Удалить из избранного"
   },
   "nav": {
     "top": "↑ Вверх",
@@ -62,12 +56,7 @@
   "navLock": {
     "opening": "Открытие…"
   },
-  "composer": {
-    "attachTitle": "Прикрепить",
-    "takePhoto": "Сделать фото",
-    "chooseFromGallery": "Выбрать из галереи",
-    "chooseFiles": "Выбрать файлы",
-    "micAccessNeededTitle": "Нужен доступ к микрофону",
-    "micAccessNeededMessage": "Разрешите доступ к микрофону в настройках, чтобы использовать надиктовку."
+  "question": {
+    "answerSent": "Ответ отправлен — ждём, пока агент продолжит."
   }
 }

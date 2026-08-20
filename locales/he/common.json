@@ -7,9 +7,7 @@
     "close": "סגירה",
     "retry": "נסה שוב",
     "apply": "החל",
-    "openSettings": "פתח הגדרות",
-    "settings": "הגדרות",
-    "moreOptions": "אפשרויות נוספות"
+    "openSettings": "פתח הגדרות"
   },
   "error": {
     "loadFailed": "נכשל בטעינה",
@@ -24,10 +22,6 @@
   },
   "search": {
     "placeholder": "חיפוש…"
-  },
-  "favorite": {
-    "add": "הוסף למועדפים",
-    "remove": "הסר מהמועדפים"
   },
   "nav": {
     "top": "↑ למעלה",
@@ -62,12 +56,7 @@
   "navLock": {
     "opening": "פותח…"
   },
-  "composer": {
-    "attachTitle": "צירוף",
-    "takePhoto": "צילום תמונה",
-    "chooseFromGallery": "בחירה מהגלריה",
-    "chooseFiles": "בחירת קבצים",
-    "micAccessNeededTitle": "נדרשת גישה למיקרופון",
-    "micAccessNeededMessage": "אפשר גישה למיקרופון בהגדרות כדי להכתיב."
+  "question": {
+    "answerSent": "התשובה נשלחה — ממתינים שהסוכן ימשיך."
   }
 }

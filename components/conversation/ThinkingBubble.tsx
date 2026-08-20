@@ -5,6 +5,7 @@ import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
@@ -52,6 +53,10 @@ interface Props {
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
   /** Answer a permission gate by the option's position in the broadcast options array. */
   onAnswerPermission?: (optionIndex: number) => void
+  /** Lifecycle phase of `activeQuestion` — 'pending' renders it as an inert ghost. */
+  answerPhase?: QuestionPhase | null
+  /** An answer is in flight; locks the rows so a double-tap cannot send twice. */
+  answerBusy?: boolean
   /** Drop the structured card locally — Esc closes the menu, but nothing on the
    *  server notices, so the card would otherwise linger and stay tappable. */
   onDismissQuestion?: () => void
@@ -59,7 +64,7 @@ interface Props {
   subStatus?: AgentPhase | null
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onDismissQuestion, subStatus }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, answerPhase = null, answerBusy = false, onDismissQuestion, subStatus }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -129,6 +134,8 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
       <QuestionCard
         block={activeQuestion}
         onSelect={handleStructuredSelect}
+        busy={answerBusy}
+        ghost={answerPhase === 'pending'}
         onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
       />
     )
