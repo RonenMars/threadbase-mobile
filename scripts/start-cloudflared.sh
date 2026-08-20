@@ -129,8 +129,19 @@ echo
 # --- Launch Metro / native build ---
 
 if [[ "$NATIVE" == "1" ]]; then
-  echo "▸ Building and installing on device: $DEVICE_UDID"
-  EXPO_PACKAGER_PROXY_URL="$TUNNEL_URL" npx expo run:ios --device "$DEVICE_UDID"
+  # Delegate to dev-device.sh rather than calling `expo run:ios` here.
+  #
+  # A device build of this app cannot use Xcode's automatic signing: it generates
+  # an "iOS Team Provisioning Profile" that carries no App Groups, and both
+  # Threadbase and ExpoWidgetsTarget declare group.com.ronenmars.threadbase, so
+  # the build fails to sign with six errors and xcodebuild exits 65. The profile
+  # discovery that fixes it lives in dev-device.sh, and calling `expo run:ios`
+  # directly skips it entirely — which is what this line used to do.
+  #
+  # See docs/troubleshooting.md, "Provisioning Profile ... does not support the
+  # App Groups capability".
+  exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dev-device.sh" \
+    --udid "$DEVICE_UDID" --tunnel "$TUNNEL_URL"
 else
   # No --lan: with EXPO_PACKAGER_PROXY_URL set, Metro advertises the tunnel URL
   # as the manifest/bundle authority (matches the working scripts/dev-metro.js

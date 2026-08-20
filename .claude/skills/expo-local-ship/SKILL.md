@@ -142,7 +142,7 @@ or device — they are **not** invoked by `ship.sh`.
 # iOS — defaults to first available simulator
 npx expo run:ios
 npx expo run:ios --simulator "iPhone 16 Pro"
-npx expo run:ios --device                       # connected physical device
+DEVICE_UDID=<udid> npm run dev:device           # connected physical device (signing: see below)
 npx expo run:ios --configuration Release        # release build (no dev menu)
 
 # Android
@@ -156,6 +156,12 @@ npx expo start --dev-client
 # … then in the build terminal:
 npx expo run:ios --no-bundler
 ```
+
+**Physical-device builds cannot use `expo run:ios --device` on this project.** Automatic
+signing produces a profile without App Groups, which both `Threadbase` and
+`ExpoWidgetsTarget` require — the build fails to sign with six errors and `xcodebuild`
+exits 65. `npm run dev:device` (`scripts/dev-device.sh`) discovers a development profile
+per target and passes them via `XCODE_XCCONFIG_FILE`. Simulator builds are unaffected.
 
 Cleanup after testing:
 

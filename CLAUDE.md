@@ -180,6 +180,38 @@ default.
 
 ---
 
+## Device Builds — Always Through `dev-device.sh`
+
+Anything that builds and installs onto a **physical iOS device** must go through
+`scripts/dev-device.sh`. Never call `npx expo run:ios --device` directly, and never add a
+new entry point that does.
+
+The reason is signing, not preference. Xcode's *automatic* signing generates a profile
+named "iOS Team Provisioning Profile" that carries no App Groups capability, and both
+`Threadbase` and `ExpoWidgetsTarget` declare `group.com.ronenmars.threadbase`. Automatic
+signing also ignores hand-made profiles, so the only way through is manual signing with a
+different provisioning profile *per target* — which cannot be expressed on the `xcodebuild`
+command line, because command-line build settings apply to every target at once.
+
+`dev-device.sh` resolves that: it scans the profiles already installed on the machine,
+picks a development profile (one with `ProvisionedDevices`) whose app-id matches and which
+grants App Groups, and feeds them per target via `XCODE_XCCONFIG_FILE`. It needs no
+per-machine configuration.
+
+A path that skips it fails to sign with six errors and `xcodebuild` exits 65 — and the
+failure names App Groups, not signing, so it reads as a project misconfiguration rather
+than a wrong entry point. `npm run dev:tunnel:native` had exactly this bug: it called
+`expo run:ios` itself, so a device build over a tunnel failed while looking like a tunnel
+problem. It now delegates, and `dev:tunnel:native:reset` inherits that.
+
+Simulator builds are unaffected — Debug stays on `CODE_SIGN_STYLE = Automatic` in the
+committed project, and the profile specifier is inert until `dev-device.sh` supplies UUIDs.
+
+Full diagnosis, including how to create the profiles if none are installed, is in
+[`docs/troubleshooting.md`](./docs/troubleshooting.md).
+
+---
+
 ## Shipping / Release Pipeline
 
 **Default ship tool: `/expo-local-ship`**

@@ -82,11 +82,13 @@ fi
 
 ### `Provisioning Profile "iOS Team Provisioning Profile" does not support the App Groups capability`
 
-**When:** `npm run dev:device` (or a bare `npx expo run:ios --device`) fails during "Planning build" with six errors — the app and `ExpoWidgetsTarget` both rejecting `group.com.ronenmars.threadbase` — and `xcodebuild` exits 65. Release builds and TestFlight ships are unaffected.
+**When:** any on-device build fails during "Planning build" with six errors — the app and `ExpoWidgetsTarget` both rejecting `group.com.ronenmars.threadbase` — and `xcodebuild` exits 65. Release builds and TestFlight ships are unaffected.
 
 **Cause:** Xcode's *automatic* signing generates a profile named "iOS Team Provisioning Profile" that does not carry App Groups, and both targets require it. Enabling the capability on the App ID is not enough: automatic signing regenerates its own profile every build and ignores hand-made ones, so the fix has to be manual signing with an explicit profile per target.
 
 That in turn cannot be expressed on the `xcodebuild` command line, because command-line build settings apply to *every* target at once while the app and the widget need different profiles. The project therefore maps them per target via `IOS_PROVISION_PROFILE_UUID` / `IOS_WIDGET_PROVISION_PROFILE_UUID` (`plugins/withLiveActivityTarget.js`), for Debug as well as Release.
+
+**Every device path must go through `scripts/dev-device.sh`.** A bare `npx expo run:ios --device` uses automatic signing and fails this way by construction. `npm run dev:tunnel:native` used to call `expo run:ios` itself and so failed identically while looking like a tunnel problem; it now delegates to `dev-device.sh`, and `dev:tunnel:native:reset` inherits that. If a new entry point ever builds to a device, it delegates too — the discovery below is not worth a second copy.
 
 **Fix:** you need one development provisioning profile per target, each granting the App Group and including your device. `scripts/dev-device.sh` then discovers them automatically — it scans installed profiles for a development profile (one with `ProvisionedDevices`) whose app-id matches and which grants App Groups — and feeds them to the build through `XCODE_XCCONFIG_FILE`. No per-machine configuration.
 
