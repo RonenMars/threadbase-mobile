@@ -2,6 +2,7 @@ import React from 'react'
 import { StyleSheet } from 'react-native'
 import { fireEvent, render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
+import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 describe('TerminalOutput – rendering', () => {
   it('renders provided lines', async () => {
@@ -217,5 +218,89 @@ describe('TerminalOutput – resume first paint', () => {
     )
     expect(getByText('hello from pty')).toBeTruthy()
     expect(getByText('prompt ready')).toBeTruthy()
+  })
+})
+
+// The Terminal tab renders its own QuestionCard through a handler duplicated
+// from ThinkingBubble. Both were fixed together in #803 — the chat copy has
+// tests, this one did not, so deleting the local clear here used to leave the
+// whole suite green.
+describe('TerminalOutput – answering a question', () => {
+  const gate: QuestionBlock = {
+    source: 'permission',
+    questions: [{
+      question: 'Do you want to proceed?',
+      multiSelect: false,
+      options: [{ label: 'Yes' }, { label: 'No' }],
+    }],
+    permissionIndices: [1, 2],
+  }
+
+  const structured: QuestionBlock = {
+    source: 'structured',
+    toolUseId: 't1',
+    questions: [{
+      question: 'Which one?',
+      multiSelect: false,
+      options: [{ label: 'A' }, { label: 'B' }],
+    }],
+  }
+
+  it('sends the gate keys and drops the card as soon as an option is answered', async () => {
+    const onSendKeys = jest.fn()
+    const onDismissQuestion = jest.fn()
+    const { getByLabelText } = await render(
+      <TerminalOutput
+        lines={[]}
+        isStreaming={false}
+        activeQuestion={gate}
+        onSendKeys={onSendKeys}
+        onDismissQuestion={onDismissQuestion}
+      />
+    )
+
+    await fireEvent.press(getByLabelText('Yes'))
+    expect(onSendKeys).toHaveBeenCalledWith('1\r')
+    expect(onDismissQuestion).toHaveBeenCalled()
+  })
+
+  it('answers a structured question and drops the card', async () => {
+    const onAnswer = jest.fn()
+    const onDismissQuestion = jest.fn()
+    const { getByLabelText } = await render(
+      <TerminalOutput
+        lines={[]}
+        isStreaming={false}
+        activeQuestion={structured}
+        onSendKeys={jest.fn()}
+        onAnswer={onAnswer}
+        onDismissQuestion={onDismissQuestion}
+      />
+    )
+
+    await fireEvent.press(getByLabelText('B'))
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Which one?': 'B' })
+    expect(onDismissQuestion).toHaveBeenCalled()
+  })
+
+  // permissionAnswerKeys returns null when the block carries nothing for the
+  // tapped option. Nothing reaches the PTY, so the card must stay up rather
+  // than vanish on a tap that did nothing.
+  it('keeps the card when the gate carries no keys for the option', async () => {
+    const onSendKeys = jest.fn()
+    const onDismissQuestion = jest.fn()
+    const { getByLabelText } = await render(
+      <TerminalOutput
+        lines={[]}
+        isStreaming={false}
+        activeQuestion={{ ...gate, permissionIndices: undefined }}
+        onSendKeys={onSendKeys}
+        onDismissQuestion={onDismissQuestion}
+      />
+    )
+
+    await fireEvent.press(getByLabelText('Yes'))
+    expect(onSendKeys).not.toHaveBeenCalled()
+    expect(onDismissQuestion).not.toHaveBeenCalled()
   })
 })
