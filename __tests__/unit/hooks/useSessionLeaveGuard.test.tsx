@@ -3,7 +3,6 @@ import { Pressable, Text, View } from 'react-native'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
-import { clearSessionLeaveInFlight } from '@/lib/sessionLeavePolicy'
 import { useSettingsStore } from '@/stores/settings'
 import { wsManager } from '@/services/ws-client'
 
@@ -56,8 +55,10 @@ function LeaveGuardProbe({
   skipInitialReplace?: boolean
   stopSessionMutate: StopSessionMutate
 }) {
+  const [renderNonce, setRenderNonce] = React.useState(0)
   const { leaveModalVisible, cancelLeave, confirmLeave } = useSessionLeaveGuard({
-    navigation,
+    // A fresh object every render, exactly like app/session/[id].tsx passes.
+    navigation: { dispatch: (action) => navigation.dispatch(action) },
     serverId: 'srv1',
     sessionId: 'sess-live',
     session,
@@ -76,6 +77,7 @@ function LeaveGuardProbe({
         testID="leave-confirm-kill-remember"
         onPress={() => confirmLeave('kill', true)}
       />
+      <Pressable testID="force-rerender" onPress={() => setRenderNonce(renderNonce + 1)} />
     </View>
   )
 }
@@ -89,7 +91,6 @@ describe('useSessionLeaveGuard', () => {
     ;(wsManager.send as jest.Mock).mockClear()
     ;(wsManager.status as jest.Mock).mockReturnValue('connected')
     useSettingsStore.setState({ sessionLeaveAction: 'ask' })
-    clearSessionLeaveInFlight('sess-live')
   })
 
   async function setup(session = live, extra?: { isPending?: boolean; skipInitialReplace?: boolean }) {
@@ -147,6 +148,15 @@ describe('useSessionLeaveGuard', () => {
     expect(dispatch).toHaveBeenCalledWith(action)
   })
 
+  it('dispatches the continued action once, not on every later render', async () => {
+    const { fire, dispatch } = await setup()
+    await fire()
+    await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
+    await fireEvent.press(screen.getByTestId('force-rerender'))
+
+    expect(dispatch).toHaveBeenCalledTimes(1)
+  })
+
   it('turns off removal prevention before continuing a confirmed leave', async () => {
     const { fire } = await setup()
     await fire()
@@ -183,7 +193,6 @@ describe('useSessionLeaveGuard', () => {
     await fireEvent.press(screen.getByTestId('leave-confirm-kill-remember'))
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill')
     await first.unmount()
-    clearSessionLeaveInFlight('sess-live')
 
     stopSessionMutate.mockClear()
     const second = await setup()
@@ -210,7 +219,6 @@ describe('useSessionLeaveGuard', () => {
     expect(stopSessionMutate).not.toHaveBeenCalled()
     expect(wsManager.send).not.toHaveBeenCalled()
     await leaveRun.unmount()
-    clearSessionLeaveInFlight('sess-live')
 
     useSettingsStore.setState({ sessionLeaveAction: 'kill_on_idle' })
     const idleRun = await setup()
@@ -221,7 +229,6 @@ describe('useSessionLeaveGuard', () => {
       sessionId: 'sess-live',
     })
     await idleRun.unmount()
-    clearSessionLeaveInFlight('sess-live')
 
     useSettingsStore.setState({ sessionLeaveAction: 'kill' })
     const killRun = await setup()

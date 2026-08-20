@@ -59,10 +59,14 @@ export function useSessionLeaveGuard(opts: {
   const [leaveModalVisible, setLeaveModalVisible] = useState(false)
   const [continueAction, setContinueAction] = useState<{ type: string } | null>(null)
   const pendingActionRef = useRef<{ type: string } | null>(null)
+  // One-shot, armed at mount and disarmed by the first REPLACE — not on a timer:
+  // the automatic replacement lands whenever session_ready arrives, which can be
+  // long after the screen mounted.
   const skipInitialReplaceRef = useRef(skipInitialReplace)
   const modalVisibleRef = useRef(false)
   const sessionRef = useRef(session)
   const stopRef = useRef(stopSessionMutate)
+  const navRef = useRef(navigation)
   useEffect(() => {
     sessionRef.current = session
   }, [session])
@@ -70,12 +74,8 @@ export function useSessionLeaveGuard(opts: {
     stopRef.current = stopSessionMutate
   }, [stopSessionMutate])
   useEffect(() => {
-    if (!skipInitialReplace) return
-    const timer = setTimeout(() => {
-      skipInitialReplaceRef.current = false
-    }, 0)
-    return () => clearTimeout(timer)
-  }, [skipInitialReplace])
+    navRef.current = navigation
+  }, [navigation])
 
   const applyChoice = useCallback(
     (choice: AppliedSessionLeaveAction) => {
@@ -140,10 +140,13 @@ export function useSessionLeaveGuard(opts: {
     setLeaveModalVisible(true)
   })
 
+  // navRef, not navigation: the screen passes a fresh { dispatch } object every
+  // render, so depending on it here would re-dispatch the same action on every
+  // subsequent render until the screen unmounts.
   useEffect(() => {
     if (!continueAction) return
-    navigation.dispatch(continueAction)
-  }, [continueAction, navigation])
+    navRef.current.dispatch(continueAction)
+  }, [continueAction])
 
   const cancelLeave = useCallback(() => {
     modalVisibleRef.current = false

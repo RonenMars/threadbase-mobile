@@ -9,7 +9,6 @@ import { render, screen, act } from '@testing-library/react-native'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { createWrapper } from '@/test-utils'
 import { useSettingsStore } from '@/stores/settings'
-import { clearSessionLeaveInFlight } from '@/lib/sessionLeavePolicy'
 
 let appStateListeners: ((s: string) => void)[] = []
 let mockStarting: string | undefined
@@ -130,7 +129,6 @@ describe('SessionScreen — leave-session gate', () => {
       resumedFromConversationId: null,
     }
     useSettingsStore.setState({ sessionLeaveAction: 'ask', sessionView: 'chat' })
-    clearSessionLeaveInFlight('sess-live')
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, cb) => {
       appStateListeners.push(cb as (s: string) => void)
       return { remove: jest.fn() } as ReturnType<typeof AppState.addEventListener>
