@@ -20,7 +20,7 @@
     "labelOptional": "Label (optional)",
     "serverUrl": "Server URL",
     "apiKey": "API Key",
-    "hint": "Run cch serve --tunnel --qr on your Mac to get a QR-scannable URL."
+    "hint": "Run tb pair on your Mac for a QR, or tb serve --tunnel for a public URL."
   },
   "manage": {
     "addServer": "Add Server"

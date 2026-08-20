@@ -29,7 +29,7 @@ interface Props {
 export function AddServerScreen({ isAddingServer }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const { t } = useTranslation(['servers', 'shared', 'settings', 'common'])
+  const { t } = useTranslation(['servers', 'shared', 'settings', 'common', 'pair'])
   const router = useRouter()
   const navigation = useNavigation()
   const { addServer, displayedServerIds, setDisplayedServerIds } = useServersStore()
@@ -154,7 +154,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:8766) or run: tb serve --tunnel"
             )
           } else {
-            setError('Could not reach the server. Is cch serve running?')
+            setError(t('pair:scanner.errors.exchange.network'))
           }
         } else {
           setError('Connection failed. Check the server URL and try again.')

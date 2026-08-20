@@ -20,7 +20,7 @@
     "labelOptional": "תווית (אופציונלי)",
     "serverUrl": "כתובת שרת",
     "apiKey": "מפתח API",
-    "hint": "הרץ cch serve --tunnel --qr על ה-Mac שלך כדי לקבל URL הניתן לסריקת QR."
+    "hint": "הרץ tb pair על ה-Mac שלך לקבלת QR, או tb serve --tunnel לכתובת URL ציבורית."
   },
   "manage": {
     "addServer": "הוסף שרת"

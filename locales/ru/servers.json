@@ -20,7 +20,7 @@
     "labelOptional": "Метка (необязательно)",
     "serverUrl": "URL сервера",
     "apiKey": "API-ключ",
-    "hint": "Запустите cch serve --tunnel --qr на вашем Mac, чтобы получить URL с QR-кодом."
+    "hint": "Запустите tb pair на вашем Mac, чтобы получить QR-код, или tb serve --tunnel для публичного URL."
   },
   "manage": {
     "addServer": "Добавить сервер"
