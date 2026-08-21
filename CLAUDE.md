@@ -1,5 +1,7 @@
 # Threadbase Mobile — Claude Instructions
 
+Optional AI-assistant tooling this repo declares (plugins, MCP servers, and how to install them for Claude Code or Codex): [docs/agents/tooling.md](docs/agents/tooling.md)
+
 ## E2E Testing (Maestro)
 
 Maestro flows live in `e2e/`. Run the full mock suite with:
