@@ -56,6 +56,7 @@ import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
 import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
+import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -453,6 +454,8 @@ export default function ProjectsHub() {
       <ServerIndexingBanner />
 
       <EncryptionRefusalBanner />
+
+      <ToastViewport id="home" />
 
       <CacheAlertBanner onPress={() => {
         const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')

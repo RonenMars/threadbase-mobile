@@ -1,6 +1,8 @@
 import React from 'react'
 import { act, cleanup, fireEvent, waitFor } from '@testing-library/react-native'
 import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
+import { ToastViewport } from '@/components/ui/ToastViewport'
+import { useToastStore } from '@/stores/toasts'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 import type { HostPressureAlert, ServerConfig } from '@/types/api'
@@ -38,8 +40,18 @@ const elevated: HostPressureAlert = {
   os: 'darwin',
 }
 
+function renderBanner() {
+  return renderWithI18n(
+    <>
+      <HostPressureBanner />
+      <ToastViewport id="home" />
+    </>,
+  )
+}
+
 beforeEach(() => {
   cleanup()
+  useToastStore.getState().reset()
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
@@ -52,7 +64,7 @@ beforeEach(() => {
 describe('HostPressureBanner', () => {
   it('renders nothing when there is no host pressure', async () => {
     seedServer()
-    const { toJSON } = await renderWithI18n(<HostPressureBanner />)
+    const { toJSON } = await renderBanner()
     expect(toJSON()).toBeNull()
   })
 
@@ -60,14 +72,14 @@ describe('HostPressureBanner', () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
     useServersStore.getState().setHostPressure(server.id, null)
-    const { toJSON } = await renderWithI18n(<HostPressureBanner />)
+    const { toJSON } = await renderBanner()
     expect(toJSON()).toBeNull()
   })
 
   it('names the constraint and omits the agent count', async () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
-    const { getByTestId, getByText, queryByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByTestId, getByText, queryByText } = await renderBanner()
     expect(getByTestId('host-pressure-banner')).toBeTruthy()
     expect(getByText('My Server is under memory pressure.')).toBeTruthy()
     expect(getByText('Details')).toBeTruthy()
@@ -82,7 +94,7 @@ describe('HostPressureBanner', () => {
       level: 'critical',
       liveAgents: 9,
     })
-    const { getByText, queryByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByText, queryByText } = await renderBanner()
     expect(getByText('My Server is low on memory.')).toBeTruthy()
     expect(queryByText(/9 agents/)).toBeNull()
   })
@@ -98,7 +110,7 @@ describe('HostPressureBanner', () => {
       },
     })
     useServersStore.getState().setHostPressure(server.id, elevated)
-    const { getByText, queryByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByText, queryByText } = await renderBanner()
     expect(getByText('http://192.168.1.10:7070 is under memory pressure.')).toBeTruthy()
     expect(queryByText(/Home Mac/)).toBeNull()
   })
@@ -111,7 +123,7 @@ describe('HostPressureBanner', () => {
       liveAgents: 2,
       updatedAt: '2026-08-18T00:00:00.000Z',
     })
-    const { getByTestId, getByText, queryByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByTestId, getByText, queryByText } = await renderBanner()
     expect(getByTestId('host-pressure-banner')).toBeTruthy()
     expect(getByText('My Server is under pressure.')).toBeTruthy()
     expect(queryByText(/2 agents/)).toBeNull()
@@ -132,9 +144,9 @@ describe('HostPressureBanner', () => {
       liveAgents: 0,
       updatedAt: '2026-08-18T00:00:00.000Z',
     })
-    const { getByTestId, getByText, findByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByTestId, getByText, findByText } = await renderBanner()
     expect(getByText('My Server is responding slowly.')).toBeTruthy()
-    fireEvent.press(getByTestId('host-pressure-details'))
+    fireEvent.press(getByTestId('toast-action-host-pressure'))
     expect(await findByText(/The Threadbase server itself is delayed/)).toBeTruthy()
     expect(
       await findByText(/On the computer, quit Cursor, Chrome, or any VMs you don't need/),
@@ -144,9 +156,9 @@ describe('HostPressureBanner', () => {
   it('opens OS-specific advice from Details', async () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
-    const { getByTestId, findByText, queryByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByTestId, findByText, queryByText } = await renderBanner()
     expect(queryByText('The computer is low on free RAM.')).toBeNull()
-    fireEvent.press(getByTestId('host-pressure-details'))
+    fireEvent.press(getByTestId('toast-action-host-pressure'))
     expect(await findByText('The computer is low on free RAM.')).toBeTruthy()
     expect(
       await findByText(/The CPU can still look idle/),
@@ -164,9 +176,9 @@ describe('HostPressureBanner', () => {
       reasons: ['memory', 'agents'],
       liveAgents: 5,
     })
-    const { getByTestId, findByText, queryByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByTestId, findByText, queryByText } = await renderBanner()
     expect(queryByText(/5 agents/)).toBeNull()
-    fireEvent.press(getByTestId('host-pressure-details'))
+    fireEvent.press(getByTestId('toast-action-host-pressure'))
     expect(await findByText('5 agents are running on this computer.')).toBeTruthy()
   })
 
@@ -185,20 +197,46 @@ describe('HostPressureBanner', () => {
       liveAgents: 0,
       updatedAt: '2026-08-18T00:00:00.000Z',
     })
-    const { getByTestId, findByText, getByText } = await renderWithI18n(<HostPressureBanner />)
+    const { getByTestId, findByText, getByText } = await renderBanner()
     expect(getByText('My Server is under load.')).toBeTruthy()
-    fireEvent.press(getByTestId('host-pressure-details'))
+    fireEvent.press(getByTestId('toast-action-host-pressure'))
     expect(await findByText('The CPU is busy.')).toBeTruthy()
     expect(
       await findByText(/On this Windows PC, quit Cursor, Chrome, or any VMs/),
     ).toBeTruthy()
   })
 
+  // The row and the advice sheet share one dismissal gate. Splitting them let a
+  // level the user had already dismissed keep an open sheet on screen.
+  it('closes the advice sheet when the level flips back to a dismissed one', async () => {
+    const server = seedServer()
+    useServersStore.getState().setHostPressure(server.id, elevated)
+    const screen = await renderBanner()
+
+    fireEvent.press(screen.getByTestId('toast-action-host-pressure'))
+    fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
+    await waitFor(() => {
+      expect(screen.queryByTestId('host-pressure-banner')).toBeNull()
+    })
+
+    await act(async () => {
+      useServersStore.getState().setHostPressure(server.id, { ...elevated, level: 'critical' })
+    })
+    fireEvent.press(screen.getByTestId('toast-action-host-pressure'))
+    expect(await screen.findByTestId('host-pressure-sheet')).toBeTruthy()
+
+    await act(async () => {
+      useServersStore.getState().setHostPressure(server.id, elevated)
+    })
+    expect(screen.queryByTestId('host-pressure-sheet')).toBeNull()
+    screen.unmount()
+  })
+
   it('hides until the level changes after explicit dismiss', async () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
-    const screen = await renderWithI18n(<HostPressureBanner />)
-    fireEvent.press(screen.getByTestId('host-pressure-details'))
+    const screen = await renderBanner()
+    fireEvent.press(screen.getByTestId('toast-action-host-pressure'))
     fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
     await waitFor(() => {
       expect(screen.queryByTestId('host-pressure-banner')).toBeNull()
