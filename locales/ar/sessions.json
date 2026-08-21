@@ -139,5 +139,8 @@
     "running": "قيد التشغيل",
     "finished": "انتهى",
     "channelName": "السيشنات المباشرة"
+  },
+  "tree": {
+    "unknownPath": "(غير معروف)"
   }
 }

@@ -74,6 +74,40 @@ module.exports = defineConfig([
       "i18next/no-literal-string": "off",
     },
   },
+  // Internal identifiers, not copy: a TypeScript type-only import path
+  // (types.ts), wire-format sort keys (useSession.ts), a base64 alphabet
+  // constant (sentry.ts), and an http→ws URL scheme rewrite (ws-client.ts).
+  // None of these strings are ever rendered to a user.
+  {
+    files: [
+      "components/sessions/hub/types.ts",
+      "hooks/useSession.ts",
+      "services/sentry.ts",
+      "services/ws-client.ts",
+    ],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
+  // Both files build an Error subclass's `message` field, but the UI never
+  // reads it: a pairing failure's display text is picked by err.kind via
+  // resolvePairFailureMessage() (services/pair-failure-message.ts), and a
+  // restore conflict's message is set aside — app/backup-restore.tsx shows
+  // t('backup.conflict') instead. The literals here are dead for display.
+  {
+    files: ["services/pair-exchange.ts", "types/backup.ts"],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
+  // Build/codemod tooling run under Node, never shipped as app code — its
+  // strings (file paths, log output) aren't user-facing copy.
+  {
+    files: ["scripts/**/*.{js,ts}"],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
   {
     files: ["**/*.test.{js,ts,tsx}", "**/__mocks__/**/*.{js,ts,tsx}"],
     languageOptions: {
