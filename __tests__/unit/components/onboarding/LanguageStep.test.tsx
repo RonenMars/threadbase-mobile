@@ -117,10 +117,10 @@ describe('LanguageStep', () => {
     expect(queryByTestId('onboarding-language-flag-ar', { includeHiddenElements: true })).toBeNull()
     expect(queryByTestId('onboarding-language-flag-ru', { includeHiddenElements: true })).toBeNull()
     expect(StyleSheet.flatten(getByText('עברית').props.style)).toEqual(
-      expect.objectContaining({ paddingRight: 12 }),
+      expect.objectContaining({ paddingStart: 12 }),
     )
     expect(StyleSheet.flatten(getByText('العربية').props.style)).toEqual(
-      expect.objectContaining({ paddingRight: 12 }),
+      expect.objectContaining({ paddingStart: 12 }),
     )
     expect(getByTestId('onboarding-language-option-en').props.accessibilityState).toEqual(
       expect.objectContaining({ selected: true }),

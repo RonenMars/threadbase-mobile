@@ -980,8 +980,8 @@ function makeStyles(theme: Theme) {
     },
     unavailableBanner: {
       backgroundColor: theme.bg.card,
-      borderLeftWidth: 3,
-      borderLeftColor: '#f59e0b',
+      borderStartWidth: 3,
+      borderStartColor: '#f59e0b',
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
     },

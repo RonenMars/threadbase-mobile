@@ -1118,7 +1118,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.8,
-      marginLeft: spacing.xs,
+      marginStart: spacing.xs,
     },
     card: {
       backgroundColor: theme.bg.card,
@@ -1210,7 +1210,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
     permissionRowDesc: { color: theme.text.secondary, fontSize: font.xs },
     permissionRowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     permissionDot: { width: 8, height: 8, borderRadius: 4 },
-    permissionRowAction: { color: theme.text.accent, fontSize: font.sm, fontWeight: '500', marginLeft: spacing.xs },
+    permissionRowAction: { color: theme.text.accent, fontSize: font.sm, fontWeight: '500', marginStart: spacing.xs },
     themeGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',

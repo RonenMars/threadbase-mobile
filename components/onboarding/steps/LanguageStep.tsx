@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '500',
   },
-  optionLabelRtl: { paddingRight: 12 },
+  optionLabelRtl: { paddingStart: 12 },
   optionLabelSelected: { color: colors.fg0 },
   check: {
     width: 24,

@@ -160,7 +160,7 @@ export default function BrowseScreen() {
     navigation.setOptions({
       headerLeft: currentPath
         ? () => (
-            <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginLeft: 8, paddingRight: 16 }}>
+            <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginStart: 8, paddingEnd: 16 }}>
               <Text style={{ color: theme.text.accent, fontSize: font.base }}>{t('nav.back')}</Text>
             </TouchableOpacity>
           )
@@ -639,7 +639,7 @@ function makeStyles(theme: Theme) {
   },
   recentTextWrap: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginStart: spacing.md,
   },
   recentName: {
     color: theme.text.primary,
@@ -732,7 +732,7 @@ function makeStyles(theme: Theme) {
     borderBottomColor: theme.border,
   },
   rowIcon: {
-    marginRight: spacing.md,
+    marginEnd: spacing.md,
   },
   dirName: {
     flex: 1,
@@ -745,7 +745,7 @@ function makeStyles(theme: Theme) {
   chevron: {
     color: theme.text.secondary,
     fontSize: font.xl,
-    marginLeft: spacing.sm,
+    marginStart: spacing.sm,
   },
   newFolderInput: {
     flex: 1,

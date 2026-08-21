@@ -10,7 +10,7 @@ Scanned against `main` @ `00069a03` on 2026-08-21; completed on 2026-08-22.
 | 3 | Pre-commit hook on staged files | this PR |
 | 4 | Checks wired into `test:i18n` | #828 |
 | 5 | Locale freshness + identical-to-en | #824, wired in #828 |
-| 6 | RTL physical-property rule | this PR, at `warn` |
+| 6 | RTL physical-property rule | #837 at `warn`; promoted to `error` after the remaining sites were resolved |
 | 7 | Native permission strings | #828 |
 | 8 | `CLAUDE.md` / `AGENTS.md` amendments | this PR |
 
@@ -32,13 +32,13 @@ It **does** catch: function-scope `const` assignments, ternaries, `return` liter
 
 It does **not** catch a **module-scope** `const`. A literal parked at the top of a file is invisible to it, which is the shape `TimeBucketPills`' `BUCKETS` array had before #827. Put UI copy in a locale file rather than a module constant.
 
-## Layer 6 is at `warn`, not `error`
+## Layer 6 follow-up
 
-14 sites remain and they are not all mechanical:
+The 14 sites discovered after #822 were reviewed individually and resolved before the rule moved from `warn` to `error`:
 
-- `components/onboarding/steps/LanguageStep.tsx:152` — `optionLabelRtl: { paddingRight: 12 }` is an explicitly RTL-only style and must not be converted.
-- `components/shared/SlashCommandArgModal.tsx:145-146` and `SlashCommandBoard.tsx:132-133` — symmetric `borderLeftWidth` + `borderRightWidth` pairs, which mirror to a no-op.
-- The rest (`app/browse.tsx`, `app/conversation/[id].tsx`, `app/settings.tsx`) are ordinary margin and border renames.
+- The explicitly RTL-only language-label padding became `paddingStart`, which points inward in that row's own RTL writing direction.
+- Symmetric command-sheet borders became equivalent `borderStartWidth` + `borderEndWidth` pairs.
+- Ordinary margins and the warning banner border use their logical Start/End forms.
 
 `textAlign` is deliberately not restricted: React Native offers no logical value for it, and `'auto'` resolves to left in LTR, which would misalign the numeric columns that legitimately use `'right'`.
 

@@ -125,7 +125,7 @@ module.exports = defineConfig([
       // command surfaces mirror to a no-op. Each needs a per-site decision,
       // the way the i18n rule was burned down before it became an error.
       "no-restricted-syntax": [
-        "warn",
+        "error",
         {
           selector:
             "Property[key.name=/^(marginLeft|marginRight|paddingLeft|paddingRight|borderLeftWidth|borderRightWidth|borderLeftColor|borderRightColor)$/]",
