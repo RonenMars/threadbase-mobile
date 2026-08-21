@@ -7,7 +7,9 @@
     "close": "Close",
     "retry": "Retry",
     "apply": "Apply",
-    "openSettings": "Open Settings"
+    "openSettings": "Open Settings",
+    "settings": "Settings",
+    "moreOptions": "More options"
   },
   "error": {
     "loadFailed": "Unable to load",
@@ -22,6 +24,10 @@
   },
   "search": {
     "placeholder": "Search…"
+  },
+  "favorite": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
   },
   "nav": {
     "top": "↑ Top",
@@ -55,6 +61,14 @@
   },
   "navLock": {
     "opening": "Opening…"
+  },
+  "composer": {
+    "attachTitle": "Attach",
+    "takePhoto": "Take Photo",
+    "chooseFromGallery": "Choose from Gallery",
+    "chooseFiles": "Choose Files",
+    "micAccessNeededTitle": "Microphone access needed",
+    "micAccessNeededMessage": "Enable microphone access in Settings to dictate."
   },
   "question": {
     "answerSent": "Answer sent — waiting for the agent to move on."

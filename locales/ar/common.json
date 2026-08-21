@@ -7,7 +7,9 @@
     "close": "إغلاق",
     "retry": "إعادة المحاولة",
     "apply": "تطبيق",
-    "openSettings": "فتح الإعدادات"
+    "openSettings": "فتح الإعدادات",
+    "settings": "الإعدادات",
+    "moreOptions": "خيارات إضافية"
   },
   "error": {
     "loadFailed": "تعذّر التحميل",
@@ -22,6 +24,10 @@
   },
   "search": {
     "placeholder": "بحث…"
+  },
+  "favorite": {
+    "add": "إضافة إلى المفضلة",
+    "remove": "إزالة من المفضلة"
   },
   "nav": {
     "top": "↑ الأعلى",
@@ -55,6 +61,14 @@
   },
   "navLock": {
     "opening": "جارٍ الفتح…"
+  },
+  "composer": {
+    "attachTitle": "إرفاق",
+    "takePhoto": "التقاط صورة",
+    "chooseFromGallery": "الاختيار من المعرض",
+    "chooseFiles": "اختيار ملفات",
+    "micAccessNeededTitle": "الوصول إلى الميكروفون مطلوب",
+    "micAccessNeededMessage": "فعّل الوصول إلى الميكروفون من الإعدادات لاستخدام الإملاء."
   },
   "question": {
     "answerSent": "تم إرسال الإجابة — في انتظار متابعة الوكيل."
