@@ -55,7 +55,7 @@ describe('useToastStore', () => {
     expect(useToastStore.getState().toasts).toHaveLength(1)
   })
 
-  it('clears the sticky block on an explicit dismiss', () => {
+  it('clears the sticky block when the alert itself goes away', () => {
     const spec = {
       id: 'host-pressure',
       viewport: 'home',

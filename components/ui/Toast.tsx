@@ -13,7 +13,8 @@ import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { alertAppearance } from '@/lib/alertAppearance'
-import type { ToastEntry } from '@/stores/toasts'
+import { useToastStore, type ToastEntry } from '@/stores/toasts'
+import { alertFingerprint } from '@/types/alerts'
 
 const DISMISS_DURATION = 220
 const DOWN_MAX = 40
@@ -21,18 +22,18 @@ const DOWN_THRESHOLD = 20
 
 type Props = {
   toast: ToastEntry
-  onOpenDetails: () => void
-  onDismiss: () => void
 }
 
-export function Toast({ toast, onOpenDetails, onDismiss }: Props) {
+export function Toast({ toast }: Props) {
   const { t } = useTranslation('common')
+  const openDetails = useToastStore((s) => s.openDetails)
+  const stickyDismiss = useToastStore((s) => s.stickyDismiss)
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const appearance = alertAppearance(toast.level, theme, toast.accent)
   const Icon = appearance.Icon
   const closeLabel = t('button.close')
-  const hasDetails = Boolean(toast.details)
+  const hasDetails = Boolean(toast.details || toast.message)
   const showClose = toast.hideCloseButton !== true
 
   const translateY = useSharedValue(0)
@@ -49,17 +50,18 @@ export function Toast({ toast, onOpenDetails, onDismiss }: Props) {
 
   // A swiped-away toast whose copy then changes comes back, so the transform
   // has to be wound back before the new copy is drawn.
+  const fingerprint = alertFingerprint(toast)
   useEffect(() => {
     resetAnimation()
-  }, [toast.title, toast.level, resetAnimation])
+  }, [fingerprint, resetAnimation])
 
   const handleClose = useCallback(() => {
     toast.onClose?.()
-    onDismiss()
+    stickyDismiss(toast.id)
     // `toast` is replaced wholesale on every copy change; the store keeps the
     // callbacks fresh in place otherwise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast, onDismiss])
+  }, [toast, stickyDismiss])
 
   const pan = useMemo(() => Gesture.Pan()
     .activeOffsetY([-8, 8])
@@ -83,8 +85,8 @@ export function Toast({ toast, onOpenDetails, onDismiss }: Props) {
         // eslint-disable-next-line react-hooks/immutability
         translateY.value = withTiming(-80, { duration: DISMISS_DURATION, easing: Easing.out(Easing.quad) })
         // eslint-disable-next-line react-hooks/immutability
-        opacity.value = withTiming(0, { duration: DISMISS_DURATION }, () => {
-          runOnJS(handleClose)()
+        opacity.value = withTiming(0, { duration: DISMISS_DURATION }, (finished) => {
+          if (finished) runOnJS(handleClose)()
         })
       } else {
         // eslint-disable-next-line react-hooks/immutability
@@ -108,7 +110,7 @@ export function Toast({ toast, onOpenDetails, onDismiss }: Props) {
       toast.onPress()
       return
     }
-    if (hasDetails) onOpenDetails()
+    if (hasDetails) openDetails(toast.id)
   }
 
   const titleColor = toast.level === 'info' || toast.level === 'debug'
@@ -139,7 +141,7 @@ export function Toast({ toast, onOpenDetails, onDismiss }: Props) {
           {toast.buttonText ? (
             <TouchableOpacity
               style={[styles.actionBtn, actionBorder(theme, appearance.accent, toast.buttonVariant)]}
-              onPress={toast.buttonAction}
+              onPress={() => toast.buttonAction?.()}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               accessibilityRole="button"

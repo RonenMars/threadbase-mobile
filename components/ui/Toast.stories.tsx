@@ -7,10 +7,6 @@ const meta: Meta<typeof Toast> = {
   title: 'ui/Toast',
   component: Toast,
   decorators: [(Story) => <View style={{ minHeight: 120 }}><Story /></View>],
-  args: {
-    onOpenDetails: fn(),
-    onDismiss: fn(),
-  },
 }
 
 export default meta

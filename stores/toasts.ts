@@ -20,6 +20,22 @@ type ToastState = {
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
 const stickyFingerprints = new Map<string, string>()
 
+// `alertFingerprint` answers "is this the same alert?" and drives sticky
+// suppression, so it covers copy only. This answers "does the row need
+// repainting?", which also covers the non-copy props Toast renders. `icon` is a
+// ReactNode and can't be compared, so it rides along with the callbacks.
+function renderSignature(entry: ToastEntry): string {
+  return [
+    alertFingerprint(entry),
+    entry.viewport,
+    entry.buttonText ?? '',
+    entry.buttonVariant ?? '',
+    entry.hideCloseButton ? '1' : '',
+    entry.accent ?? '',
+    entry.testID ?? '',
+  ].join('\u0000')
+}
+
 function clearTimer(id: string) {
   const timer = timers.get(id)
   if (timer) clearTimeout(timer)
@@ -48,21 +64,18 @@ export const useToastStore = create<ToastState>((set, get) => ({
 
     const existing = get().toasts.find((toast) => toast.id === entry.id)
     if (existing) {
-      // Same copy: refresh the callbacks in place so the viewport keeps the
-      // live handlers without a re-render (and without restarting the timer).
-      if (alertFingerprint(existing) === fingerprint) {
+      // Nothing visible changed: refresh the callbacks in place so consumers
+      // keep live handlers without a re-render (and without restarting the
+      // timer). Toast reads them off this object at call time.
+      if (renderSignature(existing) === renderSignature(entry)) {
         existing.buttonAction = entry.buttonAction
         existing.onPress = entry.onPress
         existing.onClose = entry.onClose
         existing.icon = entry.icon
-        existing.buttonText = entry.buttonText
-        existing.buttonVariant = entry.buttonVariant
-        existing.hideCloseButton = entry.hideCloseButton
-        existing.timeout = entry.timeout
-        existing.accent = entry.accent
-        existing.testID = entry.testID
         return
       }
+      // New copy is a new alert, so it earns a fresh timeout.
+      scheduleTimeout(entry)
       set({
         toasts: get().toasts.map((toast) => (toast.id === entry.id ? entry : toast)),
       })

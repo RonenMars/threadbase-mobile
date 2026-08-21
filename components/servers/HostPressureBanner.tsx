@@ -80,7 +80,7 @@ export function HostPressureBanner() {
 
   useToastSync(TOAST_ID, spec, VIEWPORT)
 
-  if (!sheetOpen || !pressure || !alertServerId) return null
+  if (!sheetOpen || !pressure || !alertServerId || hiddenForLevel) return null
 
   const os = pressure.os ?? parseHostPressureOs(server?.serverInfo?.platform)
   const detectedLines = hostPressureDetectedKeys(pressure.reasons).map((key) => t(key))

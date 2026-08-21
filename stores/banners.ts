@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { alertFingerprint, type AlertSpec } from '@/types/alerts'
+import type { AlertSpec } from '@/types/alerts'
 
 export type BannerEntry = AlertSpec & {
   id: string
@@ -14,27 +14,20 @@ type BannerState = {
 
 export const useBannerStore = create<BannerState>((set, get) => ({
   banners: [],
+  // Always replaces rather than refreshing callbacks in place: BannerHost hands
+  // `buttonAction`/`onClose` to Banner as props, so a silent in-place swap would
+  // leave Banner rendering the closures it captured last time — a Retry button
+  // that retries an error already gone from the list.
   upsert: (entry) => {
-    const existing = get().banners.find((banner) => banner.id === entry.id)
-    if (existing) {
-      const same = alertFingerprint(existing) === alertFingerprint(entry)
-      existing.buttonAction = entry.buttonAction
-      existing.onPress = entry.onPress
-      existing.onClose = entry.onClose
-      existing.icon = entry.icon
-      existing.buttonText = entry.buttonText
-      existing.buttonVariant = entry.buttonVariant
-      existing.hideCloseButton = entry.hideCloseButton
-      existing.timeout = entry.timeout
-      existing.accent = entry.accent
-      existing.testID = entry.testID
-      if (same) return
-      set({
-        banners: get().banners.map((banner) => (banner.id === entry.id ? entry : banner)),
-      })
+    const banners = get().banners
+    const index = banners.findIndex((banner) => banner.id === entry.id)
+    if (index === -1) {
+      set({ banners: [...banners, entry] })
       return
     }
-    set({ banners: [...get().banners, entry] })
+    const next = banners.slice()
+    next[index] = entry
+    set({ banners: next })
   },
   dismiss: (id) => {
     if (!get().banners.some((banner) => banner.id === id)) return

@@ -15,7 +15,6 @@ export function TerminalRawModeToast({ visible }: { visible: boolean }) {
       level: 'warning',
       title: t('session.rawModeNote'),
       message: t('session.rawModeDetails'),
-      details: t('session.rawModeDetails'),
       timeout: null,
       hideCloseButton: true,
       testID: 'terminal-raw-mode-note',
