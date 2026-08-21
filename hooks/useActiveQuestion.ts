@@ -134,8 +134,9 @@ export function useActiveQuestionReducer(sessionId: string) {
   // from a field the old wire format does not carry. It looks more principled —
   // it is the server's own identity for the gate — and it is absent on every
   // streamer that predates the validated route, which is the only place this
-  // guard has to work. An identity that degrades to undefined degrades to
-  // comparing undefined with undefined, which matches everything.
+  // guard has to work. Absent, it carries no information: a bare comparison
+  // makes every gate match, and a guarded one falls back to the object identity
+  // this replaced. Both are wrong on exactly the servers deployed today.
   const markPending = useCallback((answeredKey: string | null) => {
     const live = cardRef.current
     if (live?.phase !== 'active' || live.key !== answeredKey) return

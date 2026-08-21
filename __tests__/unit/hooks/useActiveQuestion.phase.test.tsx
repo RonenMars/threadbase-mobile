@@ -9,6 +9,9 @@ const gate: PermissionWsMessage = {
   detail: 'Bash command',
   options: [{ index: 1, label: 'Yes' }, { index: 2, label: 'No' }],
   cursor: 1,
+  // Present by default so the no-contentKey test below is testing something
+  // different from every other test rather than repeating the same path.
+  contentKey: 'Do you want to proceed?::Bash command::1.Yes,2.No',
 }
 
 const question: QuestionWsMessage = {
