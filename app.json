@@ -91,6 +91,8 @@
       ],
       "./plugins/withAndroidReleaseSigning",
       "@sentry/react-native/expo",
+      "./plugins/withLiveActivityLogo",
+      "./plugins/withLiveActivityTarget",
       [
         "expo-widgets",
         {
@@ -98,8 +100,6 @@
           "groupIdentifier": "group.com.ronenmars.threadbase"
         }
       ],
-      "./plugins/withLiveActivityTarget",
-      "./plugins/withLiveActivityLogo",
       "./plugins/withLocalizedPermissionStrings"
     ],
     "experiments": {

@@ -12,6 +12,13 @@
 // depending on plugin resolution order it can run before expo-widgets' and
 // get wiped. `withXcodeProject` mods run after every dangerous mod completes,
 // so the file write happens there instead, right before the pbxproj wiring.
+//
+// Within the withXcodeProject chain, @expo/config-plugins runs the
+// *last*-registered mod *first* (each mod wraps the previously registered
+// one as `nextMod` and calls it after its own action). Registration order is
+// app.json array order, so to have expo-widgets create ExpoWidgetsTarget
+// before this plugin looks for it, this plugin must be listed BEFORE
+// expo-widgets in app.json's `plugins` array — not after.
 
 const fs = require('fs');
 const path = require('path');
