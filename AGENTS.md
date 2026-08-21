@@ -34,6 +34,10 @@ npx eslint <staged-files>
 
 Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx)$'`. If there are no JS/TS staged files, skip. Fix any errors before committing — warnings are allowed through.
 
+`i18next/no-literal-string` runs at **`error`**, so a hardcoded user-facing string fails the commit and the CI Lint job. `scripts/git-hooks/pre-commit` reports only that rule's findings on staged files, because an unfiltered run surfaces 266 pre-existing errors from unrelated rules and buries the one line that matters.
+
+If a flagged string is technical rather than copy — a URL fragment, a CLI flag, an enum discriminant — extract it to a const with an `eslint-disable-next-line` and a comment saying why. Do not translate it, and do not add a blanket file exclusion for a file that also holds real copy.
+
 ---
 
 ## Native Dependencies After Package Changes

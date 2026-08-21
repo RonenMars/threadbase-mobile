@@ -1,7 +1,46 @@
 # 09 — i18n guard-rails
 
-Status: proposed, nothing implemented.
-Scanned against `main` @ `00069a03` on 2026-08-21.
+Status: **landed.** All eight layers are in place and all five classes are closed.
+Scanned against `main` @ `00069a03` on 2026-08-21; completed on 2026-08-22.
+
+| Layer | What | Landed in |
+|---|---|---|
+| 1 | ESLint config uses the v6 option names | #821 |
+| 2 | Class 1 burn-down, 138 → 0 | #829, #830, #834, #835, #836 |
+| 3 | Pre-commit hook on staged files | this PR |
+| 4 | Checks wired into `test:i18n` | #828 |
+| 5 | Locale freshness + identical-to-en | #824, wired in #828 |
+| 6 | RTL physical-property rule | this PR, at `warn` |
+| 7 | Native permission strings | #828 |
+| 8 | `CLAUDE.md` / `AGENTS.md` amendments | this PR |
+
+| Class | Was | Now |
+|---|---:|---|
+| 1 — string literals in code | 138 | **0** |
+| 2 — locale values still English | 75 | **0** (#826) |
+| 3 — iOS permission prompts | 5 | **0** (#823) |
+| 4 — surfaces outside i18n | 9 | **0** (#827) |
+| 5 — RTL physical styles | 16 | **0** (#822); 14 further sites found later, tracked below |
+
+`i18next/no-literal-string` now runs at `error` with zero findings repo-wide.
+
+## What the rule still cannot see
+
+Verified by probe on 2026-08-22, so the next person does not have to rediscover it.
+
+It **does** catch: function-scope `const` assignments, ternaries, `return` literals, `Alert.alert` arguments, object properties, JSX attributes and JSX text.
+
+It does **not** catch a **module-scope** `const`. A literal parked at the top of a file is invisible to it, which is the shape `TimeBucketPills`' `BUCKETS` array had before #827. Put UI copy in a locale file rather than a module constant.
+
+## Layer 6 is at `warn`, not `error`
+
+14 sites remain and they are not all mechanical:
+
+- `components/onboarding/steps/LanguageStep.tsx:152` — `optionLabelRtl: { paddingRight: 12 }` is an explicitly RTL-only style and must not be converted.
+- `components/shared/SlashCommandArgModal.tsx:145-146` and `SlashCommandBoard.tsx:132-133` — symmetric `borderLeftWidth` + `borderRightWidth` pairs, which mirror to a no-op.
+- The rest (`app/browse.tsx`, `app/conversation/[id].tsx`, `app/settings.tsx`) are ordinary margin and border renames.
+
+`textAlign` is deliberately not restricted: React Native offers no logical value for it, and `'auto'` resolves to left in LTR, which would misalign the numeric columns that legitimately use `'right'`.
 
 ## Why this exists
 
@@ -43,7 +82,7 @@ Counts are from a tuned probe config; see "Reproducing" below.
 An untuned config reports 195 for Class 1, of which ~36% are false positives (i18n key strings such as `'hostPressure.banner.memoryCritical'`, style suffixes in `lib/rtl.ts`, internal `Error` names in `services/sanitize.ts`).
 Tuning is not optional — a rule that cries wolf at that rate gets disabled rather than obeyed.
 
-## Design — seven layers
+## Design — eight layers
 
 ### Layer 1 — fix the ESLint config
 

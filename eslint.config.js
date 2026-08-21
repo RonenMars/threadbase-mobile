@@ -26,7 +26,7 @@ module.exports = defineConfig([
       // AST-based i18n enforcement - prioritizes layout files
       // (v6.1.5 schema — see eslint-plugin-i18next/lib/options/defaults.js;
       // v5 option names like markupOnly/attributes/ignoreAttribute are silently ignored)
-      "i18next/no-literal-string": ["warn", {
+      "i18next/no-literal-string": ["error", {
         mode: "all",
         "jsx-attributes": { include: ["accessibilityLabel","accessibilityHint","placeholder","title","label","subtitle","description","message","cta","buttonText","confirmText","cancelText","emptyText"] },
         callees: { include: ["Alert.alert","Alert.prompt","toast","showToast","notify"] },
@@ -108,6 +108,33 @@ module.exports = defineConfig([
       "i18next/no-literal-string": "off",
     },
   },
+  // RTL: physical insets do not mirror. I18nManager flips marginStart/End and
+  // paddingStart/End under an RTL locale but leaves Left/Right anchored, so a
+  // physical inset stays on the wrong side in Hebrew and Arabic (#822).
+  //
+  // textAlign has no logical value in React Native — only auto/left/right/
+  // center/justify — so it is deliberately not restricted here. 'auto'
+  // resolves to left in LTR, which would misalign the numeric columns that
+  // legitimately use 'right'. Direction-aware text needs I18nManager.isRTL.
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    rules: {
+      // Deliberately `warn`, not `error`: 14 sites remain and they are not all
+      // mechanical. LanguageStep's `optionLabelRtl` is an explicitly RTL-only
+      // style, and the symmetric borderLeft+borderRight pairs in the slash-
+      // command surfaces mirror to a no-op. Each needs a per-site decision,
+      // the way the i18n rule was burned down before it became an error.
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector:
+            "Property[key.name=/^(marginLeft|marginRight|paddingLeft|paddingRight|borderLeftWidth|borderRightWidth|borderLeftColor|borderRightColor)$/]",
+          message:
+            "Physical insets do not mirror under RTL. Use marginStart/marginEnd, paddingStart/paddingEnd or borderStartWidth/borderEndWidth.",
+        },
+      ],
+    },
+  },
   {
     files: ["**/*.test.{js,ts,tsx}", "**/__mocks__/**/*.{js,ts,tsx}"],
     languageOptions: {
@@ -118,9 +145,9 @@ module.exports = defineConfig([
   },
   {
     files: [
-      "__tests__/**/*.{ts,tsx}",
-      "**/*.test.{ts,tsx}",
-      "test-utils/**/*.{ts,tsx}",
+      "__tests__/**/*.{js,ts,tsx}",
+      "**/*.test.{js,ts,tsx}",
+      "test-utils/**/*.{js,ts,tsx}",
     ],
     rules: {
       "i18next/no-literal-string": "off",

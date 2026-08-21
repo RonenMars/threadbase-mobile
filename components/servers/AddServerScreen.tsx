@@ -30,6 +30,10 @@ interface Props {
   isAddingServer: boolean
 }
 
+// An address the user retypes verbatim, not copy — translating it would make it wrong.
+// eslint-disable-next-line i18next/no-literal-string
+const URL_PLACEHOLDER = '192.168.x.x:8766'
+
 export function AddServerScreen({ isAddingServer }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -294,7 +298,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.urlInput]}
               value={serverUrl}
               onChangeText={setServerUrl}
-              placeholder="192.168.x.x:8766"
+              placeholder={URL_PLACEHOLDER}
               placeholderTextColor={theme.text.secondary}
               autoCapitalize="none"
               autoCorrect={false}
