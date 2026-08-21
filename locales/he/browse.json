@@ -7,8 +7,11 @@
     "searchRecentDirs": "חיפוש מיקומים",
     "noMatchingDirs": "אין מיקומים תואמים",
     "newFolder": "תיקייה חדשה",
+    "newFolderPlaceholder": "שם התיקייה",
     "create": "צור",
-    "startSession": "התחל סשן כאן"
+    "startSession": "התחל סשן כאן",
+    "hideRecentDirs": "הסתר תיקיות אחרונות",
+    "showRecentDirs": "הצג תיקיות אחרונות"
   },
   "starting": {
     "secondsLeft": "{{seconds}} שנ׳",
@@ -25,7 +28,17 @@
     "loadFailed": "נכשל לטעון שיחות",
     "retryHint": "משוך למטה כדי לנסות שוב",
     "startFailed": "הפעלת הסשן נכשלה",
-    "startTimeout": "השרת לא הגיב בזמן. הסשן עדיין עשוי להתחיל — בדוק ברשימת הסשנים שלך לפני שתנסה שוב."
+    "startTimeout": "השרת לא הגיב בזמן. הסשן עדיין עשוי להתחיל — בדוק ברשימת הסשנים שלך לפני שתנסה שוב.",
+    "notConfiguredTitle": "הגלישה בקבצים אינה מוגדרת",
+    "notConfiguredSubtitle": "הגדר browseRoot בשרת כדי לאפשר גלישה בקבצים.",
+    "unableToLoadTitle": "לא ניתן לטעון תיקיות",
+    "unknownError": "שגיאה לא ידועה",
+    "emptyTitle": "תיקייה ריקה",
+    "emptySubtitle": "אין כאן קבצים או תיקיות."
+  },
+  "slowBanner": {
+    "title": "זה עץ קבצים כבד…",
+    "message": "לא ציפינו שיהיה כל כך גדול. תן לנו רק עוד רגע."
   },
   "provider": {
     "unavailable": "ה־CLI של הספק אינו מותקן בשרת. בחר ספק אחר או התקן במארח.",

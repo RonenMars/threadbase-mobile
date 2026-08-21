@@ -8,6 +8,21 @@
     "placeholder": "ابحث في السيشنات والمحادثات…",
     "accessibilityLabel": "بحث"
   },
+  "nameSession": {
+    "createTitle": "تسمية هذه السيشن؟",
+    "exitTitle": "تسمية هذه السيشن قبل المغادرة؟",
+    "start": "بدء",
+    "placeholder": "مثلاً: إصلاح خلل المصادقة"
+  },
+  "slowLoading": {
+    "sessions": "يستغرق جلب السيشنات وقتاً أطول من المتوقع.\nانتظر قليلاً…",
+    "detailTitle": "تفاصيل السيشن تستغرق بعض الوقت…",
+    "detailMessage": "جارٍ جلب التفاصيل — لن يطول الأمر."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
+  },
   "filter": {
     "label": "تصفية وفرز",
     "all": "الكل"

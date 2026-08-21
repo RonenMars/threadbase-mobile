@@ -307,6 +307,9 @@ export default function BrowseScreen() {
     (error instanceof NetworkError && error.code === 'BROWSE_ROOT_NOT_SET') ||
     error?.message?.includes('not configured')
   )
+  const recentsToggleLabel = isRecentsOpen ? t('nav.hideRecentDirs') : t('nav.showRecentDirs')
+  const unableToLoadSubtitle =
+    error instanceof Error && error.message ? error.message : t('error.unknownError')
 
   return (
     <GestureDetector gesture={swipeBack}>
@@ -335,9 +338,7 @@ export default function BrowseScreen() {
             style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass]}
             onPress={() => setRecentsOpen(!isRecentsOpen)}
             accessibilityRole="button"
-            accessibilityLabel={
-              isRecentsOpen ? 'Hide recent directories' : 'Show recent directories'
-            }
+            accessibilityLabel={recentsToggleLabel}
           >
             <GlassFill />
             <Text style={styles.recentsHeaderText}>
@@ -404,8 +405,8 @@ export default function BrowseScreen() {
           </View>
         ) : isBrowseNotConfigured ? (
           <EmptyState
-            title="Browsing not configured"
-            subtitle="Set browseRoot on your server to enable file browsing."
+            title={t('error.notConfiguredTitle')}
+            subtitle={t('error.notConfiguredSubtitle')}
           />
         ) : isError ? (
           // Bug 23 — surface the actual failure (server name, status code,
@@ -413,11 +414,11 @@ export default function BrowseScreen() {
           // "server unreachable" copy, which also fires when the request
           // was routed to the wrong server.
           <EmptyState
-            title="Unable to load directories"
-            subtitle={error instanceof Error && error.message ? error.message : 'Unknown error'}
+            title={t('error.unableToLoadTitle')}
+            subtitle={unableToLoadSubtitle}
           />
         ) : rows.length === 0 ? (
-          <EmptyState title="Empty directory" subtitle="No files or folders here." />
+          <EmptyState title={t('error.emptyTitle')} subtitle={t('error.emptySubtitle')} />
         ) : (
           <FlashList
             data={rows}
@@ -440,7 +441,7 @@ export default function BrowseScreen() {
             style={[styles.newFolderInput, { flex: 1 }]}
             value={newFolderName}
             onChangeText={setNewFolderName}
-            placeholder="Folder name"
+            placeholder={t('nav.newFolderPlaceholder')}
             placeholderTextColor={theme.text.secondary}
             autoFocus
             onSubmitEditing={handleCreateFolder}

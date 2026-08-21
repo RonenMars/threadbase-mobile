@@ -7,7 +7,8 @@
     "close": "إغلاق",
     "retry": "إعادة المحاولة",
     "apply": "تطبيق",
-    "openSettings": "فتح الإعدادات"
+    "openSettings": "فتح الإعدادات",
+    "settings": "الإعدادات"
   },
   "error": {
     "loadFailed": "تعذّر التحميل",

@@ -7,8 +7,11 @@
     "searchRecentDirs": "Search locations",
     "noMatchingDirs": "No matching locations",
     "newFolder": "New Folder",
+    "newFolderPlaceholder": "Folder name",
     "create": "Create",
-    "startSession": "Start Session Here"
+    "startSession": "Start Session Here",
+    "hideRecentDirs": "Hide recent directories",
+    "showRecentDirs": "Show recent directories"
   },
   "starting": {
     "secondsLeft": "{{seconds}}s",
@@ -25,7 +28,17 @@
     "loadFailed": "Failed to load conversations",
     "retryHint": "Pull down to retry",
     "startFailed": "Failed to start session",
-    "startTimeout": "The server didn't respond in time. The session may still be starting — check your sessions list before trying again."
+    "startTimeout": "The server didn't respond in time. The session may still be starting — check your sessions list before trying again.",
+    "notConfiguredTitle": "Browsing not configured",
+    "notConfiguredSubtitle": "Set browseRoot on your server to enable file browsing.",
+    "unableToLoadTitle": "Unable to load directories",
+    "unknownError": "Unknown error",
+    "emptyTitle": "Empty directory",
+    "emptySubtitle": "No files or folders here."
+  },
+  "slowBanner": {
+    "title": "That's a heavy file tree…",
+    "message": "Didn't think it'd be this big. Give us just a moment."
   },
   "provider": {
     "unavailable": "This provider’s CLI is not installed on the server. Choose another provider or install it on the host.",

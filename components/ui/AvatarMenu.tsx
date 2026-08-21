@@ -2,9 +2,11 @@ import React from 'react'
 import { TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Gear } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export function AvatarMenu() {
+  const { t } = useTranslation('common')
   const router = useRouter()
   const theme = useTheme()
 
@@ -12,7 +14,7 @@ export function AvatarMenu() {
     <TouchableOpacity
       onPress={() => router.push('/settings')}
       className="w-8 h-8 items-center justify-center rounded-lg"
-      accessibilityLabel="Settings"
+      accessibilityLabel={t('button.settings')}
       accessibilityRole="button"
       hitSlop={8}
     >

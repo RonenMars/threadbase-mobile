@@ -8,6 +8,21 @@
     "placeholder": "Search sessions & conversations…",
     "accessibilityLabel": "Search"
   },
+  "nameSession": {
+    "createTitle": "Name this session?",
+    "exitTitle": "Name this session before you go?",
+    "start": "Start",
+    "placeholder": "e.g. Fix auth bug"
+  },
+  "slowLoading": {
+    "sessions": "Fetching sessions is taking longer than expected.\nHold still…",
+    "detailTitle": "Session details are taking their time…",
+    "detailMessage": "Fetching the details — shouldn't be long."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
+  },
   "filter": {
     "label": "Filter & Sort",
     "all": "All"

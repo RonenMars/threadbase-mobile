@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   visible: boolean
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function NameSessionModal({ visible, mode, currentName, onSave, onCancel }: Props) {
+  const { t } = useTranslation(['sessions', 'common'])
   const theme = useTheme()
   const styles = makeStyles(theme)
   const [name, setName] = useState('')
@@ -33,9 +35,8 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
     }
   }, [visible])
 
-  const title = mode === 'create' ? 'Name this session?' : 'Name this session before you go?'
-  const saveLabel = mode === 'create' ? 'Start' : 'Save'
-  const cancelLabel = 'Cancel'
+  const title = mode === 'create' ? t('nameSession.createTitle') : t('nameSession.exitTitle')
+  const saveLabel = mode === 'create' ? t('nameSession.start') : t('common:button.save')
 
   function handleSave() {
     const trimmed = name.trim()
@@ -58,7 +59,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
 
           <TextInput
             style={styles.input}
-            placeholder="e.g. Fix auth bug"
+            placeholder={t('nameSession.placeholder')}
             placeholderTextColor={theme.text.secondary}
             value={name}
             onChangeText={setName}
@@ -69,7 +70,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel} activeOpacity={0.75}>
-              <Text style={styles.cancelLabel}>{cancelLabel}</Text>
+              <Text style={styles.cancelLabel}>{t('common:button.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.75}>
               <Text style={styles.saveLabel}>{saveLabel}</Text>
