@@ -20,7 +20,7 @@
     "labelOptional": "التسمية (اختياري)",
     "serverUrl": "عنوان الخادم",
     "apiKey": "مفتاح API",
-    "hint": "شغّل tb pair على جهاز Mac للحصول على رمز QR، أو tb serve --tunnel للحصول على عنوان URL عام."
+    "hint": "شغّل tb-streamer pair على جهاز Mac للحصول على رمز QR، أو tb serve --tunnel للحصول على عنوان URL عام."
   },
   "manage": {
     "addServer": "إضافة خادم"

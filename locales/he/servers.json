@@ -20,7 +20,7 @@
     "labelOptional": "תווית (אופציונלי)",
     "serverUrl": "כתובת שרת",
     "apiKey": "מפתח API",
-    "hint": "הרץ tb pair על ה-Mac שלך לקבלת QR, או tb serve --tunnel לכתובת URL ציבורית."
+    "hint": "הרץ tb-streamer pair על ה-Mac שלך לקבלת QR, או tb serve --tunnel לכתובת URL ציבורית."
   },
   "manage": {
     "addServer": "הוסף שרת"
