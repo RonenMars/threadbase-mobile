@@ -78,7 +78,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
       <View style={styles.header}>
         <View style={[styles.statusDot, server.isConnected ? styles.dotConnected : styles.dotDisconnected]} />
         <Text style={styles.label} numberOfLines={1}>
-          {server.label || 'Server'}
+          {server.label || t('defaultLabel')}
         </Text>
         <View style={styles.iconGroup}>
           {server.connectionError ? (
@@ -86,7 +86,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
               style={styles.iconBtn}
               onPress={() => onViewError(server.id)}
               hitSlop={4}
-              accessibilityLabel="View connection error"
+              accessibilityLabel={t('card.viewError')}
             >
               <XCircle size={20} color={theme.text.danger} weight="fill" />
             </TouchableOpacity>
@@ -95,7 +95,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
             style={styles.iconBtn}
             onPress={handleRemove}
             hitSlop={4}
-            accessibilityLabel="Delete server"
+            accessibilityLabel={t('card.delete')}
           >
             <Trash size={20} color={theme.text.danger} />
           </TouchableOpacity>
@@ -103,7 +103,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
             style={styles.iconBtn}
             onPress={() => onEdit(server.id)}
             hitSlop={4}
-            accessibilityLabel="Edit server"
+            accessibilityLabel={t('card.edit')}
           >
             <PencilSimple size={20} color={theme.text.accent} />
           </TouchableOpacity>
@@ -111,7 +111,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
             style={[styles.iconBtn, isRefreshing && styles.iconBtnDisabled]}
             onPress={() => !isRefreshing && onRefresh(server.id)}
             hitSlop={4}
-            accessibilityLabel="Refresh server info"
+            accessibilityLabel={t('card.refresh')}
           >
             <ArrowsClockwise size={20} color={theme.text.secondary} />
           </TouchableOpacity>
@@ -235,13 +235,13 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.xs,
       fontFamily: 'monospace',
-      paddingLeft: 16,
+      paddingStart: 16,
       marginBottom: 2,
     },
     meta: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      paddingLeft: 16,
+      paddingStart: 16,
       paddingBottom: spacing.xs,
     },
   })

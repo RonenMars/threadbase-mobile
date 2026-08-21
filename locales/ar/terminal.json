@@ -62,6 +62,7 @@
     "viewModeChat": "محادثة",
     "ptyActiveFallbackBanner": "مخرجات الطرفية المباشرة نشطة قبل توفر رسائل المحادثة.",
     "rawModeNote": "وضع RAW — تم اكتشاف تسلسلات غير مدعومة؛ المخرجات غير مفلترة.",
+    "rawModeDetails": "بعض تسلسلات التحكم في هذا المخرج غير مدعومة، لذلك يعرض التطبيق التدفق دون تصفية. قد يختلف المظهر عن طرفية كاملة.",
     "resumedEmptyScrollback": "المخرجات السابقة غير متاحة لسيشن مُستأنف.",
     "resumedHistoryLinkView": "عرض",
     "resumedHistoryLinkOr": " أو ",

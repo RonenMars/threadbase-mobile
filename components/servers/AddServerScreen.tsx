@@ -62,6 +62,8 @@ export function AddServerScreen({ isAddingServer }: Props) {
   } | null>(null)
   const pendingScan = useRef<ExchangeResult | null>(null)
 
+  const showHideLabel = showApiKey ? t('form.hideApiKey') : t('form.showApiKey')
+
   useEffect(() => {
     navigation.setOptions({
       headerShown: isAddingServer,
@@ -248,7 +250,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
             <TouchableOpacity
               style={styles.scanQrBtn}
               onPress={() => setScannerOpen(true)}
-              accessibilityLabel="Scan pairing QR"
+              accessibilityLabel={t('form.scanQrLabel')}
             >
               <QrCode size={18} color={theme.text.accent} />
             </TouchableOpacity>
@@ -300,15 +302,14 @@ export function AddServerScreen({ isAddingServer }: Props) {
               returnKeyType="next"
             />
           </View>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <Text style={styles.urlHint}>LAN IP, hostname, or any URL (e.g. https://myserver.com)</Text>
+          <Text style={styles.urlHint}>{t('form.urlHint')}</Text>
 
           <Text style={styles.label}>{t('form.labelOptional')}</Text>
           <TextInput
             style={styles.input}
             value={label}
             onChangeText={setLabel}
-            placeholder="Work Mac, Home Server…"
+            placeholder={t('form.namePlaceholder')}
             placeholderTextColor={theme.text.secondary}
             autoCapitalize="words"
             autoCorrect={false}
@@ -322,7 +323,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={[styles.input, styles.passwordInput]}
               value={apiKey}
               onChangeText={setApiKey}
-              placeholder="Paste your API token here"
+              placeholder={t('form.apiKeyPlaceholder')}
               placeholderTextColor={theme.text.secondary}
               secureTextEntry={__DEV__ ? false : !showApiKey}
               textContentType={__DEV__ ? 'none' : 'password'}
@@ -335,7 +336,7 @@ export function AddServerScreen({ isAddingServer }: Props) {
               style={styles.showHideBtn}
               onPress={() => setShowApiKey((v) => !v)}
             >
-              <Text style={styles.showHideText}>{showApiKey ? 'Hide' : 'Show'}</Text>
+              <Text style={styles.showHideText}>{showHideLabel}</Text>
             </TouchableOpacity>
           </View>
 

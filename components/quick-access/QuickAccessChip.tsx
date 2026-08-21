@@ -109,7 +109,7 @@ function makeStyles(theme: Theme) {
     count: {
       color: theme.text.secondary,
       fontSize: 10,
-      marginLeft: 2,
+      marginStart: 2,
     },
     deleteBadge: {
       position: 'absolute',

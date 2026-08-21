@@ -42,7 +42,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
       testID={`tree-row-${node.fullPath}`}
       style={[
         styles.row,
-        { paddingLeft: spacing.md + indentLevels * 16 },
+        { paddingStart: spacing.md + indentLevels * 16 },
       ]}
       onPress={handlePress}
       activeOpacity={0.65}

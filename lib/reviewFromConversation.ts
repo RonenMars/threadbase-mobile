@@ -1,4 +1,5 @@
 import type { DiffHunk, DiffLine, Message, MessageContent } from '@/types/api'
+import i18n from '@/lib/i18n'
 
 export type ReviewFileKind = 'edited' | 'written' | 'diff' | 'unknown'
 
@@ -203,7 +204,7 @@ export function buildReviewFromMessages(messages: Message[]): ReviewSummary {
 
 export function formatReviewNote(summary: ReviewSummary, selectedPath?: string): string {
   const lines = [
-    'Mobile review note (conversation-derived, may be incomplete vs git status):',
+    i18n.t('conversation:review.noteHeader'),
     `Files: ${summary.files.length} · +${summary.totalAdded} / −${summary.totalRemoved}`,
   ]
   if (selectedPath) lines.push(`Focus: ${selectedPath}`)

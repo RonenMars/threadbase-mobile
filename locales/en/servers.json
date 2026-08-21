@@ -4,10 +4,15 @@
   },
   "status": {
     "connected": "Connected",
-    "disconnected": "Disconnected"
+    "disconnected": "Disconnected",
+    "unreachable": "Unreachable",
+    "fetchFailed": "Fetch failed",
+    "connecting": "Connecting…"
   },
+  "defaultLabel": "Server",
   "action": {
     "add": "Add Server",
+    "edit": "Edit Server",
     "connect": "Connect",
     "details": "Details"
   },
@@ -20,10 +25,38 @@
     "labelOptional": "Label (optional)",
     "serverUrl": "Server URL",
     "apiKey": "API Key",
-    "hint": "Run tb pair on your Mac for a QR, or tb serve --tunnel for a public URL."
+    "hint": "Run tb-streamer pair on your Mac for a QR, or tb serve --tunnel for a public URL.",
+    "scanQrLabel": "Scan pairing QR",
+    "namePlaceholder": "Work Mac, Home Server…",
+    "labelPlaceholder": "e.g. Work Mac, Home Server",
+    "apiKeyPlaceholder": "Paste your API token here",
+    "showApiKey": "Show",
+    "hideApiKey": "Hide",
+    "urlHint": "LAN IP, hostname, or any URL (e.g. https://myserver.com)"
   },
   "manage": {
     "addServer": "Add Server"
+  },
+  "card": {
+    "viewError": "View connection error",
+    "delete": "Delete server",
+    "edit": "Edit server",
+    "refresh": "Refresh server info"
+  },
+  "errorModal": {
+    "machine": "Machine",
+    "platform": "Platform",
+    "version": "Version"
+  },
+  "discardDialog": {
+    "title": "Discard changes?",
+    "message": "Your unsaved changes will be lost.",
+    "keepEditing": "Keep Editing",
+    "discard": "Discard"
+  },
+  "noServersWelcome": {
+    "repoLabel": "tb-streamer repository",
+    "addLabel": "Add Server"
   },
   "filter": {
     "title": "Filters",
@@ -59,7 +92,10 @@
     "close": "✕",
     "menuEdit": "Edit",
     "menuRefresh": "Refresh",
-    "menuDelete": "Delete"
+    "menuDelete": "Delete",
+    "optionsLabel": "Server options",
+    "titleSingle": "Server Status",
+    "titleMultiple": "Servers Status"
   },
   "error": {
     "label": "Server unreachable",
@@ -91,7 +127,10 @@
     "successToast": "Resolved. Backup saved at {{backupPath}}",
     "successToastNoBackup": "Resolved.",
     "selectAtLeastOne": "Select at least one conversation to prune.",
-    "resolveFailed": "Couldn't complete that action. Check the connection to this server and try again."
+    "resolveFailed": "Couldn't complete that action. Check the connection to this server and try again.",
+    "review": "Review",
+    "toastMessage": "Some conversation files on disk no longer match this server's cache.",
+    "toastDetails": "{{count}} of the cached histories are missing. Review the list to prune, ignore, or rescan."
   },
   "hostPressure": {
     "banner": {
@@ -249,5 +288,14 @@
     "forgetMessage": "This device's credentials for {{server}} are deleted. Scan its QR code again to pair from scratch.",
     "forgetCancel": "Cancel",
     "forgetConfirm": "Forget"
+  },
+  "state": {
+    "details": {
+      "unreachable": "This server did not respond. Sessions listed below may be incomplete until it comes back.",
+      "fetchFailed": "The app could not refresh the session list. Cached sessions are shown where available.",
+      "disconnected": "The live connection dropped. Cached sessions stay visible until reconnect.",
+      "connecting": "Establishing a connection to the server.",
+      "indexing": "The server is building its conversation index. History will appear when it is ready."
+    }
   }
 }

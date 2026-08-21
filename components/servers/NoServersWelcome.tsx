@@ -14,7 +14,7 @@ interface Props {
 export function NoServersWelcome({ onAddServer }: Props) {
   const theme = useTheme()
   const s = makeStyles(theme)
-  const { t } = useTranslation('sessions')
+  const { t } = useTranslation(['sessions', 'servers'])
   const router = useRouter()
 
   const handlePress = onAddServer ?? (() => router.push('/settings'))
@@ -29,7 +29,7 @@ export function NoServersWelcome({ onAddServer }: Props) {
         <Text style={s.desc}>{t('noServer.desc')}</Text>
         <TouchableOpacity
           onPress={() => Linking.openURL(t('noServer.repoUrl'))}
-          accessibilityLabel="tb-streamer repository"
+          accessibilityLabel={t('servers:noServersWelcome.repoLabel')}
           accessibilityRole="link"
         >
           <Text style={s.link}>{t('noServer.repoLink')}</Text>
@@ -38,7 +38,7 @@ export function NoServersWelcome({ onAddServer }: Props) {
           style={s.btn}
           onPress={handlePress}
           activeOpacity={0.8}
-          accessibilityLabel="Add Server"
+          accessibilityLabel={t('servers:noServersWelcome.addLabel')}
         >
           <Text style={s.btnText}>{t('noServer.cta')}</Text>
           <ArrowRight size={16} color="#fff" weight="bold" />

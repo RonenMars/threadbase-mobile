@@ -58,6 +58,7 @@
     "viewModeChat": "צ׳אט",
     "ptyActiveFallbackBanner": "פלט טרמינל חי פעיל לפני שזמינים הודעות שיחה.",
     "rawModeNote": "מצב RAW — זוהו רצפים שאינם נתמכים; הפלט אינו מסונן.",
+    "rawModeDetails": "חלק מרצפי הבקרה בפלט הזה אינם נתמכים, ולכן האפליקציה מציגה את הזרם בלי סינון. המראה עשוי להיות שונה מטרמינל מלא.",
     "resumedEmptyScrollback": "פלט קודם אינו זמין בסשן שחודש.",
     "resumedHistoryLinkView": "צפה",
     "resumedHistoryLinkOr": " או ",

@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications'
 
 import { decideActions, liveActivityKey, toLiveState, type TrackedActivity } from './live-activity'
+import i18n from '@/lib/i18n'
 import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import type { Session } from '@/types/api'
 import type { LiveSessionState } from '@/types/live-activity'
@@ -36,7 +37,7 @@ let channelReady: Promise<void> | null = null
 
 function ensureChannel(): Promise<void> {
   channelReady ??= Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: 'Live sessions',
+    name: i18n.t('sessions:liveActivity.channelName'),
     // Anything below DEFAULT forfeits promotion on API 36+ and can be collapsed
     // out of the shade entirely.
     importance: Notifications.AndroidImportance.DEFAULT,
@@ -52,7 +53,9 @@ function ensureChannel(): Promise<void> {
  * one — see the iOS module's `SessionLiveActivity.tsx` comment for why.
  */
 function body(state: LiveSessionState): string {
-  const status = state.status === 'waiting_input' ? 'Finished' : 'Running'
+  const status = state.status === 'waiting_input'
+    ? i18n.t('sessions:liveActivity.finished')
+    : i18n.t('sessions:liveActivity.running')
   return state.lastOutput ? `${status} — ${state.lastOutput}` : status
 }
 

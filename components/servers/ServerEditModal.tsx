@@ -90,9 +90,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
   function handleDismiss() {
     if (isDirty) {
-      Alert.alert('Discard changes?', 'Your unsaved changes will be lost.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: onClose },
+      Alert.alert(t('servers:discardDialog.title'), t('servers:discardDialog.message'), [
+        { text: t('servers:discardDialog.keepEditing'), style: 'cancel' },
+        { text: t('servers:discardDialog.discard'), style: 'destructive', onPress: onClose },
       ])
     } else {
       onClose()
@@ -157,6 +157,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     pendingScanMeta.current = undefined
   }
 
+  const modalTitle = isEditMode ? t('servers:action.edit') : t('servers:action.add')
+
   function handleScanSuccess(result: ExchangeResult) {
     setScannerOpen(false)
     const { protocol: p, host } = splitUrl(result.url)
@@ -196,7 +198,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
           <View style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>{isEditMode ? 'Edit Server' : 'Add Server'}</Text>
+              <Text style={styles.title}>{modalTitle}</Text>
               <TouchableOpacity onPress={handleDismiss} hitSlop={12} style={styles.closeBtn}>
                 <X size={20} color={theme.text.secondary} />
               </TouchableOpacity>
