@@ -76,7 +76,7 @@ describe('ghost expiry — timer lifecycle', () => {
     await act(() => { jest.advanceTimersByTime(20 * 60 * 1000) })
 
     await act(() => __wsTest.emit('permission', gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
     expect(result.current.phase).toBe('pending')
 
     await act(() => { jest.advanceTimersByTime(GHOST_TTL_MS) })
@@ -94,12 +94,12 @@ describe('ghost expiry — timer lifecycle', () => {
     const { result } = await renderHook(() => useActiveQuestion('srv-1', 's1'))
 
     await act(() => __wsTest.emit('permission', gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
     await act(() => __wsTest.emit('permission_cancelled', { type: 'permission_cancelled', sessionId: 's1' }))
 
     await act(() => { jest.advanceTimersByTime(2000) })
     await act(() => __wsTest.emit('permission', { ...gate, detail: 'Edit file' }))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     // The first ghost's timer would fire here. The second is 2s younger.
     await act(() => { jest.advanceTimersByTime(GHOST_TTL_MS - 2000) })
@@ -124,7 +124,7 @@ describe('ghost expiry — AppState listener lifecycle', () => {
 
     const { result } = await renderHook(() => useActiveQuestion('srv-1', 's1'))
     await act(() => __wsTest.emit('permission', gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     // Wall clock moves without the timer being given a chance to run, which is
     // what a suspended app looks like from here.
@@ -143,7 +143,7 @@ describe('ghost expiry — AppState listener lifecycle', () => {
 
     const { result } = await renderHook(() => useActiveQuestion('srv-1', 's1'))
     await act(() => __wsTest.emit('permission', gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(Date.now() + GHOST_TTL_MS - 1)
     await act(() => { listeners.forEach((l) => l('active')) })
@@ -161,7 +161,7 @@ describe('ghost expiry — AppState listener lifecycle', () => {
 
     const { result, unmount } = await renderHook(() => useActiveQuestion('srv-1', 's1'))
     await act(() => __wsTest.emit('permission', gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     expect(remove).not.toHaveBeenCalled()
     await act(() => { unmount() })
@@ -183,7 +183,7 @@ describe('ghost expiry — AppState listener lifecycle', () => {
     expect(result.current.phase).toBe('active')
     expect(addEventListener.mock.calls.length).toBe(baseline)
 
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
     expect(addEventListener.mock.calls.length).toBe(baseline + 1)
 
     await act(() => __wsTest.emit('permission_cancelled', { type: 'permission_cancelled', sessionId: 's1' }))

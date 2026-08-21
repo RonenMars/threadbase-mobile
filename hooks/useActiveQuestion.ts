@@ -54,8 +54,8 @@ export type QuestionPhase = 'active' | 'pending'
 // derived from this on the way out, so callers and their tests see two plain
 // fields that are incapable of drifting apart.
 type CardState =
-  | { prompt: QuestionBlock; phase: 'active' }
-  | { prompt: QuestionBlock; phase: 'pending'; pendingSince: number }
+  | { prompt: QuestionBlock; key: string | null; phase: 'active' }
+  | { prompt: QuestionBlock; key: string | null; phase: 'pending'; pendingSince: number }
 
 export function useActiveQuestionReducer(sessionId: string) {
   const [card, setCard] = useState<CardState | null>(null)
@@ -70,16 +70,11 @@ export function useActiveQuestionReducer(sessionId: string) {
   // the discipline that nothing bypasses it: one setCard() elsewhere and the
   // ref goes stale in precisely the case markPending's guard depends on, which
   // would reintroduce the confirm-the-wrong-gate bug with a guard now hiding it.
-  //
-  // That guard also relies on accept() building a fresh QuestionBlock per
-  // broadcast, since it compares by object identity. Reusing a block for two
-  // gates would make them indistinguishable to it.
   const commit = useCallback((next: CardState | null) => {
     cardRef.current = next
     setCard(next)
   }, [])
-  // Identity of whatever `question` currently holds, and of the last thing
-  // `clear()` took down.
+  // Identity of the last thing `clear()` took down.
   //
   // The rule, one rule with three sites: suppression is justified only while
   // there is reason to believe the answer landed. markPending() arms it,
@@ -93,7 +88,6 @@ export function useActiveQuestionReducer(sessionId: string) {
   // cleared on answer has to defend itself against repaints in the meantime.
   // ponytail: dropped on the next cancellation or different gate; an identical
   // gate that reopens with neither in between stays hidden.
-  const currentKey = useRef<string | null>(null)
   const dismissedKey = useRef<string | null>(null)
   // Last status this session was seen in. The teardown below is edge-triggered
   // off it: the gate broadcast and the status flip to `waiting_input` are two
@@ -106,9 +100,8 @@ export function useActiveQuestionReducer(sessionId: string) {
   const lastStatus = useRef<SessionStatus | null>(null)
 
   const accept = useCallback((key: string | null, block: QuestionBlock) => {
-    currentKey.current = key
     dismissedKey.current = null
-    commit({ prompt: block, phase: 'active' })
+    commit({ prompt: block, key, phase: 'active' })
   }, [commit])
 
   // The user answered and the server took it. The card stays up as a ghost —
@@ -116,19 +109,32 @@ export function useActiveQuestionReducer(sessionId: string) {
   // and arms the same suppression clear() does, because the streamer keeps
   // repainting an open gate until its detector sees the box gone and those
   // repaints must not drag the card back to active under the user's answer.
-  // `answered` is the prompt the user actually tapped, captured at tap time.
-  // Confirming without it would transition whatever card is active when the 200
-  // lands and arm suppression against whatever key is current then — so an
-  // answer to gate A arriving after gate B had replaced it would ghost B, which
-  // the user never answered, and suppress B's repaints. That is the client-side
-  // shape of exactly what contentKey closes on the server: an answer has to be
-  // bound to the gate it was given for. A confirmation for a gate that is gone
-  // does nothing, which is right — the decision it was about is gone with it.
-  const markPending = useCallback((answered: QuestionBlock) => {
+  // `answeredKey` is the identity of the gate the user tapped, captured at tap
+  // time. Confirming without it would transition whatever card is active when
+  // the 200 lands and arm suppression against whatever key is current then — so
+  // an answer to gate A arriving after gate B had replaced it would ghost B,
+  // which the user never answered, and suppress B's repaints. That is the
+  // client-side shape of what contentKey closes on the server: an answer has to
+  // be bound to the gate it was given for.
+  //
+  // Identity is the KEY, never the block object. The streamer's broadcast
+  // dedupe includes the cursor and gateKey deliberately does not, so a repaint
+  // that only moves the cursor is a fresh broadcast of the same gate: accept()
+  // runs and replaces the block. Comparing objects would reject a legitimate
+  // confirmation whenever a repaint landed between the tap and the reply, which
+  // strands the card in `active` — and since the ghost ttl only arms a timer
+  // for a `pending` card, that path has no expiry backstop and send stays
+  // disabled with nothing left to clear it.
+  //
+  // The card's key is the right identity for both sources and for every
+  // server: gateKey for a permission gate, toolUseId for a structured question,
+  // and it depends on no field an older streamer might not send. A fix leaning
+  // on contentKey would work only on servers new enough not to need it.
+  const markPending = useCallback((answeredKey: string | null) => {
     const live = cardRef.current
-    if (live?.phase !== 'active' || live.prompt !== answered) return
-    dismissedKey.current = currentKey.current
-    commit({ prompt: live.prompt, phase: 'pending', pendingSince: Date.now() })
+    if (live?.phase !== 'active' || live.key !== answeredKey) return
+    dismissedKey.current = live.key
+    commit({ prompt: live.prompt, key: live.key, phase: 'pending', pendingSince: Date.now() })
   }, [commit])
 
   // Evaluated against the stamp, never against a timer's own reckoning. A
@@ -157,7 +163,6 @@ export function useActiveQuestionReducer(sessionId: string) {
   // dismissedKey untouched keeps both halves right: an unanswered gate returns
   // on replay, an answered one stays suppressed.
   const reset = useCallback(() => {
-    currentKey.current = null
     commit(null)
   }, [commit])
 
@@ -199,12 +204,17 @@ export function useActiveQuestionReducer(sessionId: string) {
   }, [accept, commit, reset, sessionId])
 
   const clear = useCallback(() => {
-    dismissedKey.current = currentKey.current
+    dismissedKey.current = cardRef.current?.key ?? null
     commit(null)
   }, [commit])
 
   return {
     question: card?.prompt ?? null,
+    // Identity of the card on screen, for a caller to capture at tap time and
+    // hand back to markPending. It lives on the card rather than beside it for
+    // the same reason `phase` does: a key tracked in parallel can describe a
+    // card that is no longer there.
+    questionKey: card?.key ?? null,
     phase: card?.phase ?? null,
     onMessage,
     clear,
@@ -218,7 +228,7 @@ export function useActiveQuestionReducer(sessionId: string) {
 // Public hook: subscribe to the session WS and feed messages into the reducer.
 // Mirrors the subscription pattern in hooks/useConversationStream.ts (same socket source).
 export function useActiveQuestion(serverId: string, sessionId: string) {
-  const { question, phase, onMessage, clear, reset, resetAndUnsuppress, markPending, expireIfStale } =
+  const { question, questionKey, phase, onMessage, clear, reset, resetAndUnsuppress, markPending, expireIfStale } =
     useActiveQuestionReducer(sessionId)
 
   useEffect(() => {
@@ -277,5 +287,5 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
     }
   }, [phase, expireIfStale])
 
-  return { question, phase, onMessage, clear, reset, markPending, expireIfStale }
+  return { question, questionKey, phase, onMessage, clear, reset, markPending, expireIfStale }
 }

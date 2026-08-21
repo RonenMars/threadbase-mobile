@@ -58,7 +58,7 @@ export function TerminalView({
   )
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion, clear: clearQuestion, markPending, phase: answerPhase } = useActiveQuestion(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion, markPending, phase: answerPhase, questionKey } = useActiveQuestion(serverId, sessionId)
 
   // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
   // not in SessionHistoryFeed itself, because entering it also has to hide
@@ -98,13 +98,18 @@ export function TerminalView({
   // clear; anything else keeps the card so the user can try again. Two of those
   // three arrive with no `permission_cancelled` alongside them, which makes this
   // the only thing that takes the card down for them.
-  // `answered` is captured here, at tap time, and handed back to markPending so
-  // the confirmation binds to the gate it was given for. The POST is not
-  // instant — the server re-scrapes the screen before accepting — so a second
-  // gate can arrive while this is in flight, and confirming "whatever is active
-  // now" would ghost one the user never answered.
+  // The gate's identity is captured here, at tap time, and handed back to
+  // markPending so the confirmation binds to the gate it was given for. The
+  // POST is not instant — the server re-scrapes the screen before accepting —
+  // so a second gate can arrive while this is in flight, and confirming
+  // "whatever is active now" would ghost one the user never answered.
+  //
+  // The key, not the block: a repaint that only moves the cursor replaces the
+  // block while the gate stays the same one, and rejecting that confirmation
+  // strands the card in `active` with send disabled.
   const handleAnswerPermission = useCallback(async (optionIndex: number) => {
     const answered = activeQuestion
+    const answeredKey = questionKey
     if (!answered) return
     try {
       await answerPermission.mutateAsync({
@@ -112,22 +117,22 @@ export function TerminalView({
         optionIndex,
         keys: permissionAnswerKeys(answered, optionIndex),
       })
-      markPending(answered)
+      markPending(answeredKey)
     } catch (err) {
       if (isPermissionClosedError(err instanceof Error ? err : null)) clearQuestion()
     }
-  }, [activeQuestion, answerPermission, clearQuestion, markPending])
+  }, [activeQuestion, answerPermission, clearQuestion, markPending, questionKey])
 
   const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
-    const answered = activeQuestion
-    if (!answered) return
+    const answeredKey = questionKey
+    if (!activeQuestion) return
     try {
       await respondToQuestion.mutateAsync({ toolUseId, answers })
-      markPending(answered)
+      markPending(answeredKey)
     } catch (err) {
       if (isQuestionClosedError(err instanceof Error ? err : null)) clearQuestion()
     }
-  }, [activeQuestion, clearQuestion, markPending, respondToQuestion])
+  }, [activeQuestion, clearQuestion, markPending, questionKey, respondToQuestion])
 
   const onSend = async (payload: string) => {
     markSessionUsed(sessionId)

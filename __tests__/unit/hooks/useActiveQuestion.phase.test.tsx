@@ -59,7 +59,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('moves to the pending phase on answer, keeping the card on screen', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     expect(result.current.phase).toBe('pending')
     expect(result.current.question?.source).toBe('permission')
@@ -67,7 +67,7 @@ describe('useActiveQuestionReducer – phase', () => {
 
   it('ignores an answer when no card is up', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
     expect(result.current.question).toBeNull()
     expect(result.current.phase).toBeNull()
   })
@@ -78,7 +78,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('keeps a repaint of the answered gate from reviving it', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     await act(() => result.current.onMessage({ ...gate, cursor: 2 }))
     expect(result.current.phase).toBe('pending')
@@ -93,7 +93,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('ignores a confirmation for a gate that has already been replaced', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    const answered = result.current.question!
+    const answered = result.current.questionKey
 
     await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
     await act(() => result.current.markPending(answered))
@@ -109,7 +109,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('ignores a confirmation for a gate that has already been torn down', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    const answered = result.current.question!
+    const answered = result.current.questionKey
 
     await act(() => result.current.reset())
     await act(() => result.current.markPending(answered))
@@ -125,7 +125,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('goes back to active when a different gate arrives while pending', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
     expect(result.current.phase).toBe('active')
@@ -146,7 +146,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('clears a pending card on permission_cancelled', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
     await act(() => result.current.onMessage({ type: 'permission_cancelled', sessionId: 's1' }))
     expect(result.current.question).toBeNull()
     expect(result.current.phase).toBeNull()
@@ -204,7 +204,7 @@ describe('useActiveQuestionReducer – phase', () => {
   it('clears a pending structured question on question_cancelled', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(question))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
     await act(() => result.current.onMessage({ type: 'question_cancelled', sessionId: 's1', toolUseId: 't1' }))
     expect(result.current.phase).toBeNull()
   })
@@ -217,7 +217,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
   it('drops the ghost once it has stood longer than the ttl', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS)
     await act(() => result.current.expireIfStale())
@@ -228,7 +228,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
   it('keeps the ghost before the ttl has elapsed', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS - 1)
     await act(() => result.current.expireIfStale())
@@ -241,7 +241,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
   it('drops a ghost that was backgrounded well past the ttl', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + 20 * 60 * 1000)
     await act(() => result.current.expireIfStale())
@@ -260,11 +260,11 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
   it('restamps when a new gate is answered, so the clock is per-answer', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS - 1)
     await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS + 1)
     await act(() => result.current.expireIfStale())
@@ -279,7 +279,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
   it('stops suppressing a gate that is still repainting after the ghost expires', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS)
     await act(() => result.current.expireIfStale())
@@ -291,7 +291,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
   it('keeps suppressing while the ghost is still within its ttl', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.onMessage(gate))
-    await act(() => result.current.markPending(result.current.question!))
+    await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS - 1)
     await act(() => result.current.expireIfStale())
@@ -304,5 +304,66 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
     await act(() => result.current.expireIfStale())
     expect(result.current.question).toBeNull()
+  })
+})
+
+// The streamer's broadcast dedupe key includes the cursor; gateKey deliberately
+// does not. So a repaint that only moves the cursor is a fresh broadcast of the
+// SAME gate, accept() runs, and the block object is replaced — while the gate
+// the user tapped is still the gate that is open.
+//
+// A confirmation must survive that. Rejecting it strands the card in ACTIVE,
+// and the ghost ttl only arms a timer for a PENDING card, so the one exit that
+// covers a missed close event is not scheduled at all: send stays disabled with
+// nothing left to clear it.
+describe('useActiveQuestionReducer – confirmation survives a repaint', () => {
+  it('accepts the confirmation after a cursor-moved repaint of the same gate', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(gate))
+    const answered = result.current.questionKey
+
+    await act(() => result.current.onMessage({ ...gate, cursor: 2 }))
+    await act(() => result.current.markPending(answered))
+
+    expect(result.current.phase).toBe('pending')
+  })
+
+  // The field condition. Every server deployed today predates contentKey, so a
+  // fix that leans on it is a fix that works only where it is not needed.
+  it('accepts it for a gate carrying no contentKey', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    const noKey = { ...gate, contentKey: undefined }
+    await act(() => result.current.onMessage(noKey))
+    const answered = result.current.questionKey
+
+    await act(() => result.current.onMessage({ ...noKey, cursor: 2 }))
+    await act(() => result.current.markPending(answered))
+
+    expect(result.current.phase).toBe('pending')
+  })
+
+  it('accepts it for a structured question re-broadcast', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(question))
+    const answered = result.current.questionKey
+
+    await act(() => result.current.onMessage({ ...question }))
+    await act(() => result.current.markPending(answered))
+
+    expect(result.current.phase).toBe('pending')
+  })
+
+  // The half that must keep working: a genuinely different gate is not the one
+  // that was answered, whatever its object identity.
+  it('still rejects a confirmation once a different gate has replaced it', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    await act(() => result.current.onMessage(gate))
+    const answered = result.current.questionKey
+
+    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
+    await act(() => result.current.markPending(answered))
+
+    expect(result.current.phase).toBe('active')
+    expect(result.current.question?.questions[0].detail).toBe('Edit file')
   })
 })

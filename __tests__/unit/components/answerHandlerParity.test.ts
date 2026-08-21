@@ -31,7 +31,7 @@ const VIEWS = [
 ]
 
 const START = '  const handleAnswerPermission'
-const END = '  }, [activeQuestion, clearQuestion, markPending, respondToQuestion])'
+const END = '  }, [activeQuestion, clearQuestion, markPending, questionKey, respondToQuestion])'
 
 function answerHandlers(relative: string): string {
   const source = readFileSync(join(process.cwd(), relative), 'utf8')
