@@ -62,15 +62,15 @@
       <string>_expo._tcp</string>
     </array>
     <key>NSCameraUsageDescription</key>
-    <string>Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions.</string>
+    <string>Used for QR code scanning during server setup and for attaching photos to your coding sessions.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Threadbase uses Face ID to protect access to your conversations.</string>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Expo Dev Launcher uses the local network to discover and connect to development servers running on your computer.</string>
+    <string>Threadbase uses the local network to find and connect to your paired computer.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Threadbase needs the microphone to dictate prompts.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Used to attach photos from your library to your Claude Code sessions.</string>
+    <string>Used to attach photos from your library to your coding sessions.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Threadbase converts your speech to text on-device.</string>
     <key>NSSupportsLiveActivities</key>
