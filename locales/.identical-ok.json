@@ -1,0 +1,6 @@
+{
+  "servers.json:health.checks.providerClaude": "product name \"Claude Code CLI\"",
+  "servers.json:health.checks.providerCodex": "product name \"Codex CLI\"",
+  "feedback.json:form.emailPlaceholder": "example address you@example.com",
+  "onboarding.json:notifications.previewBrand": "brand wordmark THREADBASE"
+}
