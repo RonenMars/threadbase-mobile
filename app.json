@@ -99,7 +99,8 @@
         }
       ],
       "./plugins/withLiveActivityTarget",
-      "./plugins/withLiveActivityLogo"
+      "./plugins/withLiveActivityLogo",
+      "./plugins/withLocalizedPermissionStrings"
     ],
     "experiments": {
       "typedRoutes": true,
