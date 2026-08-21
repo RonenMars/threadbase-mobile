@@ -127,5 +127,17 @@
   "capability": {
     "observeOnly": "للمشاهدة فقط",
     "liveControl": "تحكم مباشر"
+  },
+  "timeBucket": {
+    "all": "الكل",
+    "today": "اليوم",
+    "7d": "7 أيام",
+    "30d": "30 يومًا",
+    "custom": "مخصص"
+  },
+  "liveActivity": {
+    "running": "قيد التشغيل",
+    "finished": "انتهى",
+    "channelName": "السيشنات المباشرة"
   }
 }

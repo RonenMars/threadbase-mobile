@@ -1,4 +1,5 @@
 import { ScrollView, Pressable, Text, View, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -14,13 +15,6 @@ export interface TimeBucketPillsProps {
   testID?: string
 }
 
-const BUCKETS: { key: TimeBucket; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'today', label: 'Today' },
-  { key: '7d', label: '7d' },
-  { key: '30d', label: '30d' },
-]
-
 /**
  * Horizontal scroll row used in hub-drill and global search. Brand-blue tint
  * on the active pill (matches design/preview/components-pills.html). Counts
@@ -34,9 +28,19 @@ export function TimeBucketPills({
   showCustom = true,
   testID,
 }: TimeBucketPillsProps) {
+  const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const buckets = showCustom ? [...BUCKETS, { key: 'custom' as const, label: 'Custom' }] : BUCKETS
+  // t() can't run at module scope, so the bucket list is built per render.
+  const timeBuckets: { key: TimeBucket; label: string }[] = [
+    { key: 'all', label: t('timeBucket.all') },
+    { key: 'today', label: t('timeBucket.today') },
+    { key: '7d', label: t('timeBucket.7d') },
+    { key: '30d', label: t('timeBucket.30d') },
+  ]
+  const buckets = showCustom
+    ? [...timeBuckets, { key: 'custom' as const, label: t('timeBucket.custom') }]
+    : timeBuckets
   return (
     <ScrollView
       horizontal
