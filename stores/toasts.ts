@@ -33,6 +33,8 @@ function renderSignature(entry: ToastEntry): string {
     entry.hideCloseButton ? '1' : '',
     entry.accent ?? '',
     entry.testID ?? '',
+    // Presence only: `onPress` decides whether the body is a button at all.
+    entry.onPress ? '1' : '',
   ].join('\u0000')
 }
 

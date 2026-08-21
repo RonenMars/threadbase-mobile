@@ -206,6 +206,32 @@ describe('HostPressureBanner', () => {
     ).toBeTruthy()
   })
 
+  // The row and the advice sheet share one dismissal gate. Splitting them let a
+  // level the user had already dismissed keep an open sheet on screen.
+  it('closes the advice sheet when the level flips back to a dismissed one', async () => {
+    const server = seedServer()
+    useServersStore.getState().setHostPressure(server.id, elevated)
+    const screen = await renderBanner()
+
+    fireEvent.press(screen.getByTestId('toast-action-host-pressure'))
+    fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
+    await waitFor(() => {
+      expect(screen.queryByTestId('host-pressure-banner')).toBeNull()
+    })
+
+    await act(async () => {
+      useServersStore.getState().setHostPressure(server.id, { ...elevated, level: 'critical' })
+    })
+    fireEvent.press(screen.getByTestId('toast-action-host-pressure'))
+    expect(await screen.findByTestId('host-pressure-sheet')).toBeTruthy()
+
+    await act(async () => {
+      useServersStore.getState().setHostPressure(server.id, elevated)
+    })
+    expect(screen.queryByTestId('host-pressure-sheet')).toBeNull()
+    screen.unmount()
+  })
+
   it('hides until the level changes after explicit dismiss', async () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
