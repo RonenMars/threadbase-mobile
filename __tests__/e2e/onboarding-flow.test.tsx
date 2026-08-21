@@ -9,6 +9,7 @@ import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import OnboardingScreen from '@/app/onboarding'
 import en from '@/locales/en/common.json'
+import onboardingEn from '@/locales/en/onboarding.json'
 
 const mockReplace = jest.fn()
 const mockSetOptions = jest.fn()
@@ -198,9 +199,14 @@ describe('Onboarding – error handling', () => {
 // ── First-launch flow ─────────────────────────────────────────────────────────
 
 describe('Onboarding – first-launch flow', () => {
-  it('TOTAL_STEPS is 4', () => {
+  it('TOTAL_STEPS is 5', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { TOTAL_STEPS } = require('@/components/onboarding/OnboardingNavigator')
-    expect(TOTAL_STEPS).toBe(4)
+    expect(TOTAL_STEPS).toBe(5)
+  })
+
+  it('numbers Connect as the third onboarding step', () => {
+    expect(onboardingEn.connect.eyebrow).toBe('> 03 / PAIR')
+    expect(onboardingEn.connect.qrEyebrow).toBe('> 03 / PAIR · QR')
   })
 })

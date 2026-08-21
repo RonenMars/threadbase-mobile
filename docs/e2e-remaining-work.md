@@ -104,7 +104,9 @@ splash / evaluating `onboarding-welcome-cta`, or `hideKeyboard` failing on the
 pair URL field. No `*Threadbase*` crash report appeared in
 `~/Library/Logs/DiagnosticReports`; the checked-in `crash-log.txt` is a
 **SpringBoard / XCTAutomationSupport** SIGSEGV (Maestro XCUITest driver), not
-an app JS/native frame in FilterSortSheet.
+an app JS/native frame in FilterSortSheet. The durable crash-signature and
+recovery guidance is in [`troubleshooting.md`](./troubleshooting.md) →
+"SpringBoard crashes in `XCTAutomationSupport` during Maestro".
 
 **Mitigations in this branch:** browse.yaml uses `extendedWaitUntil` for the
 sheet + asserts `fab-new-session`; FilterSortSheet adds layout/close testIDs and

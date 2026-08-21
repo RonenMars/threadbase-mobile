@@ -24,7 +24,7 @@ if (Platform.OS === 'android') {
 }
 
 export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
-  const { t } = useTranslation('sessions')
+  const { t, i18n } = useTranslation('sessions')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const router = useRouter()
@@ -97,14 +97,20 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
     ).length
     const todayCount = todaySessionCount + todayConvCount
     const lastActivity = group.latestActivityMs > 0
-      ? formatListTime(group.latestActivityMs)
+      ? formatListTime(group.latestActivityMs, {
+          locale: i18n.language,
+          labels: {
+            now: t('hub.timeNow'),
+            yesterday: t('hub.timeYesterday'),
+          },
+        })
       : null
     const pieces: string[] = []
-    if (liveCount > 0) pieces.push(`${liveCount} live`)
-    if (todayCount > 0) pieces.push(`${todayCount} today`)
-    if (lastActivity) pieces.push(`last ${lastActivity}`)
+    if (liveCount > 0) pieces.push(t('hub.activityLive', { count: liveCount }))
+    if (todayCount > 0) pieces.push(t('hub.activityToday', { count: todayCount }))
+    if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
-  }, [group.sessions, group.latestActivityMs, todaySessionCount, todayConvCount])
+  }, [group.sessions, group.latestActivityMs, todaySessionCount, todayConvCount, i18n.language, t])
 
   return (
     <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
@@ -185,7 +191,9 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
             <>
               {sessionCount > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>SESSIONS</Text>
+                  <Text style={styles.sectionLabel}>
+                    {t('loading.sessionsLabel').toLocaleUpperCase(i18n.language)}
+                  </Text>
                   {group.sessions.map((session) => (
                     <SessionRow
                       key={`${session.serverId}::${session.id}`}
@@ -198,7 +206,9 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
 
               {convCount > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>CONVERSATIONS</Text>
+                  <Text style={styles.sectionLabel}>
+                    {t('loading.conversationsLabel').toLocaleUpperCase(i18n.language)}
+                  </Text>
                   {isLoading ? (
                     <ActivityIndicator
                       style={styles.bodySpinner}

@@ -1,10 +1,12 @@
 {
   "header": {
     "title": "Sessions",
-    "history": "History"
+    "history": "History",
+    "serverStatus": "Server status"
   },
   "search": {
-    "placeholder": "Search sessions & conversations…"
+    "placeholder": "Search sessions & conversations…",
+    "accessibilityLabel": "Search"
   },
   "filter": {
     "label": "Filter & Sort",
@@ -12,7 +14,7 @@
   },
   "list": {
     "empty": "No sessions",
-    "emptySubtitle": "Start a Claude Code\nsession to see it here",
+    "emptySubtitle": "Start a Claude Code or Codex\nsession to see it here",
     "noResults": "No results",
     "noResultsSubtitle": "Nothing matched \"{{query}}\"",
     "serverEmpty": "No sessions on this server",
@@ -35,7 +37,12 @@
     "seeAll_one": "See all {{count}} conversation →",
     "seeAll_other": "See all {{count}} conversations →",
     "msgs_one": "{{count}} msg",
-    "msgs_other": "{{count}} msgs"
+    "msgs_other": "{{count}} msgs",
+    "activityLive": "{{count}} live",
+    "activityToday": "{{count}} today",
+    "activityLast": "last {{time}}",
+    "timeNow": "now",
+    "timeYesterday": "Yesterday"
   },
   "loading": {
     "title": "Loading sessions",

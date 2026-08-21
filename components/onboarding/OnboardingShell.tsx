@@ -3,12 +3,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { SlideInLeft, SlideInRight } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Path } from 'react-native-svg'
+import { ArrowLeft, ArrowRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { ParseKeys } from 'i18next'
 import { PagerDots } from './components/PagerDots'
 import { colors, fonts } from './theme'
-import { flexRow } from '@/lib/rtl'
 
 interface Props {
   index: number
@@ -36,7 +35,8 @@ export function OnboardingShell({
   children,
 }: Props) {
   const insets = useSafeAreaInsets()
-  const { t } = useTranslation('onboarding')
+  const { t, i18n } = useTranslation('onboarding')
+  const localeDirection = i18n.dir() === 'rtl' ? 'rtl' : 'ltr'
 
   const swipe = Gesture.Pan()
     .activeOffsetX([-20, 20])
@@ -50,30 +50,50 @@ export function OnboardingShell({
 
   const showBack = index > 0
   const showSkip = showSkipProp ?? index < total - 1
-  const Entering = direction === -1 ? SlideInLeft : SlideInRight
+  const isBackward = direction === -1
+  const entersFromLeft = localeDirection === 'rtl' ? !isBackward : isBackward
+  const Entering = entersFromLeft ? SlideInLeft : SlideInRight
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.chrome}>
+      <View
+        testID="onboarding-shell-chrome"
+        style={[styles.chrome, { direction: localeDirection }]}
+      >
         {showBack ? (
-          <Pressable onPress={onBack} style={styles.chromeBtn} hitSlop={10}>
-            <Svg width={18} height={18} viewBox="0 0 24 24">
-              <Path
-                d="M19 12H5M11 6l-6 6 6 6"
-                fill="none"
-                stroke={colors.fg2}
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <Pressable
+            testID="onboarding-shell-back"
+            onPress={onBack}
+            style={[styles.chromeBtn, { direction: localeDirection }]}
+            hitSlop={10}
+          >
+            {localeDirection === 'rtl' ? (
+              <ArrowRight
+                testID="onboarding-shell-back-arrow-right"
+                size={18}
+                weight="bold"
+                color={colors.fg2}
               />
-            </Svg>
+            ) : (
+              <ArrowLeft
+                testID="onboarding-shell-back-arrow-left"
+                size={18}
+                weight="bold"
+                color={colors.fg2}
+              />
+            )}
             <Text style={styles.chromeBack}>{t('shell.back')}</Text>
           </Pressable>
         ) : (
           <View />
         )}
         {showSkip ? (
-          <Pressable onPress={onSkip} style={styles.chromeBtn} hitSlop={10}>
+          <Pressable
+            testID="onboarding-shell-skip"
+            onPress={onSkip}
+            style={[styles.chromeBtn, { direction: localeDirection }]}
+            hitSlop={10}
+          >
             <Text style={styles.chromeSkip}>{t(skipLabelKey)}</Text>
           </Pressable>
         ) : (
@@ -104,7 +124,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink1,
   },
   chrome: {
-    flexDirection: flexRow(),
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
@@ -113,7 +133,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   chromeBtn: {
-    flexDirection: flexRow(),
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,

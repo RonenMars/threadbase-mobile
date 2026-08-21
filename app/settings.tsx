@@ -20,6 +20,7 @@ import * as Notifications from 'expo-notifications'
 import * as Updates from 'expo-updates'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
+import { isRTLLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction, type SessionLeaveAction } from '@/stores/settings'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -393,9 +394,9 @@ await refreshServerInfo(serverId)
   }
 
 
-  const handleLanguageChange = useCallback(async (newLocale: string) => {
+  const handleLanguageChange = useCallback(async (newLocale: SupportedLocale) => {
     const currentIsRTL = I18nManager.isRTL
-    const newIsRTL = newLocale === 'he' || newLocale === 'ar'
+    const newIsRTL = isRTLLocale(newLocale)
 
     // If RTL direction is changing, we need to restart the app
     if (currentIsRTL !== newIsRTL) {
@@ -550,38 +551,17 @@ await refreshServerInfo(serverId)
             <Text style={s.rowLabel}>{t('section.language')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
               <GlassFill />
-              <TouchableOpacity
-                style={[s.segmentBtn, locale === 'en' && s.segmentBtnActive]}
-                onPress={() => handleLanguageChange('en')}
-              >
-                <Text style={[s.segmentBtnText, locale === 'en' && s.segmentBtnTextActive]}>
-                  {t('language.english')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.segmentBtn, locale === 'he' && s.segmentBtnActive]}
-                onPress={() => handleLanguageChange('he')}
-              >
-                <Text style={[s.segmentBtnText, locale === 'he' && s.segmentBtnTextActive]}>
-                  {t('language.hebrew')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.segmentBtn, locale === 'ar' && s.segmentBtnActive]}
-                onPress={() => handleLanguageChange('ar')}
-              >
-                <Text style={[s.segmentBtnText, locale === 'ar' && s.segmentBtnTextActive]}>
-                  {t('language.arabic')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.segmentBtn, locale === 'ru' && s.segmentBtnActive]}
-                onPress={() => handleLanguageChange('ru')}
-              >
-                <Text style={[s.segmentBtnText, locale === 'ru' && s.segmentBtnTextActive]}>
-                  {t('language.russian')}
-                </Text>
-              </TouchableOpacity>
+              {SUPPORTED_LOCALES.map((supportedLocale) => (
+                <TouchableOpacity
+                  key={supportedLocale.code}
+                  style={[s.segmentBtn, locale === supportedLocale.code && s.segmentBtnActive]}
+                  onPress={() => handleLanguageChange(supportedLocale.code)}
+                >
+                  <Text style={[s.segmentBtnText, locale === supportedLocale.code && s.segmentBtnTextActive]}>
+                    {t(supportedLocale.labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
           <View style={s.row}>
@@ -1015,7 +995,7 @@ await refreshServerInfo(serverId)
             <Text style={s.rowLabel}>{i18n.t('feedback:screenTitle')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding')}>
+          <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding?mode=review')}>
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
             <Text style={s.rowValue}>›</Text>
           </TouchableOpacity>

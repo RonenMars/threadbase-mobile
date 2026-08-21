@@ -2,7 +2,7 @@ import 'intl-pluralrules';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { getLocales } from 'expo-localization';
-import { I18nManager } from 'react-native';
+import { resolveSupportedLocale } from './locale';
 
 import common_en from '../locales/en/common.json';
 import sessions_en from '../locales/en/sessions.json';
@@ -58,8 +58,7 @@ import feedback_ru from '../locales/ru/feedback.json';
 
 import './i18n.types';
 
-const locales = getLocales();
-const deviceLocale = locales[0]?.languageCode ?? 'en';
+const deviceLocale = resolveSupportedLocale(getLocales());
 
 i18n.use(initReactI18next).init({
   lng: deviceLocale,
@@ -74,12 +73,6 @@ i18n.use(initReactI18next).init({
   interpolation: {
     escapeValue: false,
   },
-});
-
-// Update RTL based on current language
-i18n.on('languageChanged', (lng) => {
-  const isRTL = lng === 'he' || lng === 'ar';
-  I18nManager.forceRTL(isRTL);
 });
 
 export default i18n;

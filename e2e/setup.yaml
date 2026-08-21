@@ -1,5 +1,5 @@
 # Reusable setup flow. On first run (no stored credentials) walks the
-# 7-step onboarding carousel; on subsequent runs the app lands on the hub
+# 5-step onboarding flow; on subsequent runs the app lands on the hub
 # directly because `expo-secure-store` survives `launchApp: clearState`.
 # Either way, the flow ends with hub-screen visible.
 # Requires: mock server running at E2E_MOCK_SERVER_URL (localhost:7071 by default;
@@ -58,14 +58,31 @@ appId: com.ronenmars.threadbase
     timeout: 30000
     optional: true
 
-# If the welcome step is visible, walk the onboarding carousel.
+# If the language step is visible, confirm the device-selected language. A
+# direction change reloads the app and resumes at Welcome; the wait handles both
+# that path and the same-direction transition.
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-language-cta"
+    commands:
+      # Step 1 / LANGUAGE — confirm the preselected device language
+      - tapOn:
+          id: "onboarding-language-cta"
+
+      - extendedWaitUntil:
+          visible:
+            id: "onboarding-welcome-cta"
+          timeout: 8000
+
+# If the Welcome step is visible, walk the remaining onboarding flow.
 # Otherwise the app already has credentials cached and is on the hub.
 - runFlow:
     when:
       visible:
         id: "onboarding-welcome-cta"
     commands:
-      # Step 1 / WELCOME — "Pull a thread. Watch it weave."
+      # Step 2 / WELCOME — "Pull a thread. Watch it weave."
       - tapOn:
           id: "onboarding-welcome-cta"
 
@@ -79,7 +96,7 @@ appId: com.ronenmars.threadbase
             id: "onboarding-connect-paste-card"
           timeout: 8000
 
-      # Step 2 / CONNECT — paste credentials, fill URL + token, handshake
+      # Step 3 / CONNECT — paste credentials, fill URL + token, handshake
       - tapOn:
           id: "onboarding-connect-paste-card"
 
@@ -121,8 +138,8 @@ appId: com.ronenmars.threadbase
           commands:
             - tapOn: "Not Now"
 
-      # Step 3 / NOTIFY — the handshake advances here (OnboardingNavigator's
-      # advanceAfterPair sets index 2), and tapping through keeps the flow off
+      # Step 4 / NOTIFY — the handshake advances here (OnboardingNavigator's
+      # advanceAfterPair sets index 3), and tapping through keeps the flow off
       # the OS permission prompt, which Maestro cannot dismiss.
       #
       # Both commands are optional because this is not reliably the screen we
@@ -170,7 +187,7 @@ appId: com.ronenmars.threadbase
                 id: "onboarding-notifications-cta"
                 optional: true
 
-      # Step 4 / DONE — enter the app
+      # Step 5 / DONE — enter the app
       - extendedWaitUntil:
           visible:
             id: "onboarding-done-cta"

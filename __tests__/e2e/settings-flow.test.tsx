@@ -147,6 +147,14 @@ describe('Settings – about section', () => {
     const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText('AI Agent Control Center')).toBeTruthy()
   })
+
+  it('opens onboarding in explicit review mode', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
+
+    await fireEvent.press(getByText('Restart onboarding'))
+
+    expect(mockPush).toHaveBeenCalledWith('/onboarding?mode=review')
+  })
 })
 
 // ── Remove server flow ───────────────────────────────────────────────────────

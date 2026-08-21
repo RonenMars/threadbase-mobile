@@ -10,6 +10,7 @@
   "promptQueue": {
     "title": "תור פרומפטים",
     "pending_one": "אחד ממתין",
+    "pending_two": "שניים ממתינים",
     "pending_other": "{{count}} ממתינים",
     "remove": "✕"
   }

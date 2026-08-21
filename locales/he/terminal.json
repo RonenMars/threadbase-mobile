@@ -53,6 +53,7 @@
     "alreadyRunningBody": "לסשן זה יש תהליך פעיל בשרת. חידוש כאן יעצור את התהליך ויתחיל סשן טרמינל חדש באפליקציה.",
     "overtake": "השתלט",
     "prompts_one": "פרומפט אחד",
+    "prompts_two": "שני פרומפטים",
     "prompts_other": "{{count}} פרומפטים",
     "viewModeTerminal": "טרמינל",
     "viewModeChat": "צ׳אט",
@@ -79,6 +80,7 @@
   },
   "history": {
     "header_one": "היסטוריה · הודעה אחת",
+    "header_two": "היסטוריה · שתי הודעות",
     "header_other": "היסטוריה · {{count}} הודעות",
     "expandLabel": "הרחב היסטוריית שיחה",
     "collapseLabel": "כווץ היסטוריית שיחה",

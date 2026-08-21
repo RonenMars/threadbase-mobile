@@ -1,10 +1,12 @@
 {
   "header": {
     "title": "Сессии",
-    "history": "История"
+    "history": "История",
+    "serverStatus": "Состояние сервера"
   },
   "search": {
-    "placeholder": "Поиск сессий и бесед…"
+    "placeholder": "Поиск сессий и бесед…",
+    "accessibilityLabel": "Поиск"
   },
   "filter": {
     "label": "Фильтр и сортировка",
@@ -12,7 +14,7 @@
   },
   "list": {
     "empty": "Нет сессий",
-    "emptySubtitle": "Запустите сессию Claude Code,\nчтобы увидеть её здесь",
+    "emptySubtitle": "Запустите сессию Claude Code или Codex,\nчтобы увидеть её здесь",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
     "serverEmpty": "На этом сервере нет сессий",
@@ -41,7 +43,12 @@
     "msgs_one": "{{count}} сообщение",
     "msgs_few": "{{count}} сообщения",
     "msgs_many": "{{count}} сообщений",
-    "msgs_other": "{{count}} сообщений"
+    "msgs_other": "{{count}} сообщений",
+    "activityLive": "Активных: {{count}}",
+    "activityToday": "Сегодня: {{count}}",
+    "activityLast": "последняя: {{time}}",
+    "timeNow": "сейчас",
+    "timeYesterday": "Вчера"
   },
   "loading": {
     "title": "Загрузка сессий",
