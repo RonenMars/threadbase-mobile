@@ -82,12 +82,12 @@ Local and fast; `--no-verify` bypasses it, which is acceptable because Layer 4 c
 
 ### Layer 4 — CI
 
+**Landed** (Wave 3, ci/wire-i18n-checks). `test:i18n` now runs `scripts/run-i18n-checks.js`, a Node runner that chains `check-locale-freshness.js`, `check-locale-untranslated.js` and `check-native-strings.js` ahead of the `__tests__/i18n` jest suite, exiting non-zero on the first failure. A Node runner replaces a shell `&&` chain because npm scripts here must stay Windows-`cmd.exe`-compatible.
 ESLint already runs in the `Lint` job, which is a required check, so Layer 1 is enforced in CI the moment the rule is `error`.
-Add the Layer 5 and Layer 7 checks to `npm run test:i18n` so every locale gate sits behind the one required `i18n` job in `.github/workflows/test.yml:186`.
 
 ### Layer 5 — locale value freshness
 
-Two checks sharing one walker. Neither can be expressed as key parity.
+**Landed** (checks written in #824, wired into `test:i18n` in Wave 3). Two checks sharing one walker. Neither can be expressed as key parity.
 
 1. **Source-hash freshness.** `locales/.source-hashes.json` records a hash of each `en` value at the time translations were last confirmed. If an `en` value changes and a locale is not re-confirmed, the check fails. `npm run i18n:bless` updates the file. This catches a term rename applied to some locales and not others — the `fingerprint` → `identity code` case below.
 2. **Identical-to-`en` detector.** Fails when a non-`en` value equals its `en` counterpart and reads as prose (three or more alphabetic words). Needs an allowlist for legitimate cases: `servers.json:health.checks.providerClaude`, `servers.json:health.checks.providerCodex`, `feedback.json:form.emailPlaceholder`, `onboarding.json:notifications.previewBrand`.
@@ -101,8 +101,7 @@ A lint rule banning `marginLeft`/`marginRight`/`paddingLeft`/`paddingRight`/`bor
 
 ### Layer 7 — native permission strings
 
-A script asserting every `*UsageDescription` and `*Permission` value in `app.json` has a matching key in `ios/<target>/<lang>.lproj/InfoPlist.strings` for each supported locale.
-Nothing else in the toolchain can see these strings.
+**Landed** (Wave 3, ci/wire-i18n-checks). `scripts/check-native-strings.js` asserts every `*UsageDescription` key shipped in `ios/Threadbase/Info.plist` has a matching key in each of the four `ios/Threadbase/<lang>.lproj/InfoPlist.strings` files, that `app.json`'s permission strings match `Info.plist`, and that the `LOCALIZED_INFO_PLIST_STRINGS` literal embedded in `plugins/withLocalizedPermissionStrings.js` hasn't drifted from the committed `.lproj` files it reproduces on a `--clean` prebuild. Wired into `test:i18n` alongside Layer 5. Complements, rather than duplicates, `__tests__/unit/scripts/ios-permission-strings.test.js`, which already checks `app.json` against `Info.plist` for the plugin-owned keys.
 
 ### Layer 8 — documentation
 
