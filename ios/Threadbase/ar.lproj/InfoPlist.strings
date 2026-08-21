@@ -1,0 +1,6 @@
+"NSFaceIDUsageDescription" = "يستخدم Threadbase تقنية Face ID لحماية الوصول إلى محادثاتك.";
+"NSCameraUsageDescription" = "يُستخدم لمسح رمز QR أثناء إعداد الخادم ولإرفاق الصور بجلسات الكود الخاصة بك.";
+"NSPhotoLibraryUsageDescription" = "يُستخدم لإرفاق صور من مكتبتك بجلسات الكود الخاصة بك.";
+"NSMicrophoneUsageDescription" = "يحتاج Threadbase إلى الميكروفون لإملاء البرومبتات.";
+"NSSpeechRecognitionUsageDescription" = "يحوّل Threadbase كلامك إلى نص مباشرة على الجهاز.";
+"NSLocalNetworkUsageDescription" = "يستخدم Threadbase الشبكة المحلية للعثور على الكمبيوتر المقترن بك والاتصال به.";
