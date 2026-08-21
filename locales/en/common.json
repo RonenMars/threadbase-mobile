@@ -8,7 +8,8 @@
     "retry": "Retry",
     "apply": "Apply",
     "openSettings": "Open Settings",
-    "settings": "Settings"
+    "settings": "Settings",
+    "moreOptions": "More options"
   },
   "error": {
     "loadFailed": "Unable to load",
@@ -23,6 +24,10 @@
   },
   "search": {
     "placeholder": "Search…"
+  },
+  "favorite": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
   },
   "nav": {
     "top": "↑ Top",

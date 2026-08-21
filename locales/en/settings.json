@@ -18,6 +18,7 @@
   },
   "session": {
     "chatView": "Chat view",
+    "mergeChats": "Merge sessions & history as Chats",
     "chatViewNote": "Show live sessions as chat bubbles instead of RAW terminal output. Beta — may be buggy and not always work.",
     "betaBadge": "Beta",
     "leaveAction": "Action on session leave",
@@ -68,7 +69,18 @@
   },
   "addServer": {
     "selectedAction": "Selected action on create",
-    "resetAction": "Reset to ask each time"
+    "resetAction": "Reset to ask each time",
+    "actionAsk": "Ask each time",
+    "actionAdd": "Add to displayed",
+    "actionReplace": "Display only new",
+    "actionKeep": "Keep current",
+    "optionAsk": "Ask",
+    "optionAdd": "Add",
+    "optionReplace": "Replace",
+    "optionKeep": "Keep"
+  },
+  "privacy": {
+    "biometricLock": "Require Face ID / Fingerprint"
   },
   "history": {
     "messagePreview": "Message Preview",

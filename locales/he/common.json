@@ -8,7 +8,8 @@
     "retry": "נסה שוב",
     "apply": "החל",
     "openSettings": "פתח הגדרות",
-    "settings": "הגדרות"
+    "settings": "הגדרות",
+    "moreOptions": "אפשרויות נוספות"
   },
   "error": {
     "loadFailed": "נכשל בטעינה",
@@ -23,6 +24,10 @@
   },
   "search": {
     "placeholder": "חיפוש…"
+  },
+  "favorite": {
+    "add": "הוסף למועדפים",
+    "remove": "הסר מהמועדפים"
   },
   "nav": {
     "top": "↑ למעלה",

@@ -42,12 +42,12 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
-function addServerActionLabel(action: AddServerAction): string {
+function addServerActionLabel(action: AddServerAction, t: (key: `addServer.action${'Ask' | 'Add' | 'Replace' | 'Keep'}`) => string): string {
   switch (action) {
-    case 'ask': return 'Ask each time'
-    case 'add': return 'Add to displayed'
-    case 'replace': return 'Display only new'
-    case 'keep': return 'Keep current'
+    case 'ask': return t('addServer.actionAsk')
+    case 'add': return t('addServer.actionAdd')
+    case 'replace': return t('addServer.actionReplace')
+    case 'keep': return t('addServer.actionKeep')
   }
 }
 
@@ -633,7 +633,7 @@ await refreshServerInfo(serverId)
             ) : null}
           </View>
           <SettingsRow
-            label="Merge sessions & history as Chats"
+            label={t('session.mergeChats')}
             value={mergeChats}
             onValueChange={setMergeChats}
             testID="settings-merge-chats-toggle"
@@ -648,7 +648,7 @@ await refreshServerInfo(serverId)
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
           >
             <Text style={s.rowLabel}>{t('addServer.selectedAction')}</Text>
-            <Text style={s.rowValue}>{addServerActionLabel(addServerAction)}</Text>
+            <Text style={s.rowValue}>{addServerActionLabel(addServerAction, t)}</Text>
           </TouchableOpacity>
           {isAddBehaviorOpen ? (
             <View style={s.accordionBody}>
@@ -864,7 +864,7 @@ await refreshServerInfo(serverId)
         <SectionHeader title={t('section.privacy')} />
         <View style={s.card}>
           <SettingsRow
-            label="Require Face ID / Fingerprint"
+            label={t('privacy.biometricLock')}
             value={biometricLock}
             onValueChange={setBiometricLock}
             testID="settings-biometric-lock-toggle"
@@ -1076,11 +1076,12 @@ function ActionSegment({
   const theme = useTheme()
   const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
+  const { t } = useTranslation('settings')
   const options: { id: AddServerAction; label: string }[] = [
-    { id: 'ask', label: 'Ask' },
-    { id: 'add', label: 'Add' },
-    { id: 'replace', label: 'Replace' },
-    { id: 'keep', label: 'Keep' },
+    { id: 'ask', label: t('addServer.optionAsk') },
+    { id: 'add', label: t('addServer.optionAdd') },
+    { id: 'replace', label: t('addServer.optionReplace') },
+    { id: 'keep', label: t('addServer.optionKeep') },
   ]
   return (
     <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
