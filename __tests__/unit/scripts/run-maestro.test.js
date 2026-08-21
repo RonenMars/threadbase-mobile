@@ -229,3 +229,18 @@ test('a header-only partial report is retried until its crash body is complete',
   expect(result.status).not.toBe(0);
   expect(result.stderr).toMatch(/Maestro result is invalid/i);
 });
+
+/**
+ * Every test above passes E2E_XCTEST_CRASH_GRACE_MS so it does not wait a real
+ * grace period, which means none of them would notice the default regressing.
+ * The default is the value that actually runs in CI and locally, and it is the
+ * only thing standing between a late .ips and a run that reports success while
+ * the simulator has already crashed.
+ */
+test('the default grace window covers the observed .ips write lag', () => {
+  const source = fs.readFileSync(SCRIPT, 'utf8');
+  const match = source.match(/^const DEFAULT_GRACE_MS = (\d+)$/m);
+
+  expect(match).not.toBeNull();
+  expect(Number(match[1])).toBeGreaterThanOrEqual(30000);
+});
