@@ -4,10 +4,15 @@
   },
   "status": {
     "connected": "מחובר",
-    "disconnected": "מנותק"
+    "disconnected": "מנותק",
+    "unreachable": "לא נגיש",
+    "fetchFailed": "אחזור נכשל",
+    "connecting": "מתחבר…"
   },
+  "defaultLabel": "שרת",
   "action": {
     "add": "הוסף שרת",
+    "edit": "ערוך שרת",
     "connect": "התחבר",
     "details": "פרטים"
   },
@@ -20,10 +25,38 @@
     "labelOptional": "תווית (אופציונלי)",
     "serverUrl": "כתובת שרת",
     "apiKey": "מפתח API",
-    "hint": "הרץ tb-streamer pair על ה-Mac שלך לקבלת QR, או tb serve --tunnel לכתובת URL ציבורית."
+    "hint": "הרץ tb-streamer pair על ה-Mac שלך לקבלת QR, או tb serve --tunnel לכתובת URL ציבורית.",
+    "scanQrLabel": "סרוק QR לזיווג",
+    "namePlaceholder": "Mac בעבודה, שרת בית…",
+    "labelPlaceholder": "לדוגמה: Mac בעבודה, שרת בית",
+    "apiKeyPlaceholder": "הדבק כאן את מפתח ה-API שלך",
+    "showApiKey": "הצג",
+    "hideApiKey": "הסתר",
+    "urlHint": "כתובת IP ברשת מקומית, שם מארח, או כל כתובת URL (למשל https://myserver.com)"
   },
   "manage": {
     "addServer": "הוסף שרת"
+  },
+  "card": {
+    "viewError": "הצג שגיאת חיבור",
+    "delete": "מחק שרת",
+    "edit": "ערוך שרת",
+    "refresh": "רענן פרטי שרת"
+  },
+  "errorModal": {
+    "machine": "מחשב",
+    "platform": "פלטפורמה",
+    "version": "גרסה"
+  },
+  "discardDialog": {
+    "title": "לבטל שינויים?",
+    "message": "השינויים שלא נשמרו יאבדו.",
+    "keepEditing": "המשך לערוך",
+    "discard": "בטל"
+  },
+  "noServersWelcome": {
+    "repoLabel": "מאגר tb-streamer",
+    "addLabel": "הוסף שרת"
   },
   "filter": {
     "title": "מסננים",
@@ -59,7 +92,10 @@
     "close": "✕",
     "menuEdit": "ערוך",
     "menuRefresh": "רענן",
-    "menuDelete": "מחק"
+    "menuDelete": "מחק",
+    "optionsLabel": "אפשרויות שרת",
+    "titleSingle": "סטטוס שרת",
+    "titleMultiple": "סטטוס שרתים"
   },
   "error": {
     "label": "השרת אינו זמין",
