@@ -2,17 +2,35 @@ import { renderHook, act } from '@testing-library/react-native'
 import { useActiveQuestionReducer, GHOST_TTL_MS } from '@/hooks/useActiveQuestion'
 import type { PermissionWsMessage, QuestionWsMessage } from '@/types/api'
 
-const gate: PermissionWsMessage = {
-  type: 'permission',
+// Gates are built rather than spread so a fixture cannot contradict itself.
+// The server derives contentKey FROM prompt/detail/options, so a hand-written
+// key on a spread that changed the detail describes a gate the server could not
+// produce — two visibly different gates sharing one identity. That fixture
+// makes a correct implementation look broken and a broken one look fine,
+// depending which way the reader leans.
+//
+// Deriving it here keeps the same property the real key has, which is also the
+// reason it cannot be the client's identity: it is a function of content, so an
+// older server that sends no content key sends no identity either.
+const GATE_BASE = {
+  type: 'permission' as const,
   sessionId: 's1',
   prompt: 'Do you want to proceed?',
   detail: 'Bash command',
   options: [{ index: 1, label: 'Yes' }, { index: 2, label: 'No' }],
   cursor: 1,
-  // Present by default so the no-contentKey test below is testing something
-  // different from every other test rather than repeating the same path.
-  contentKey: 'Do you want to proceed?::Bash command::1.Yes,2.No',
 }
+
+function makeGate(over: Partial<PermissionWsMessage> = {}): PermissionWsMessage {
+  const merged = { ...GATE_BASE, ...over }
+  // An explicit `contentKey` in the override wins — including `undefined`,
+  // which is the old-server case and the one test that has to differ.
+  if ('contentKey' in over) return merged
+  const options = merged.options.map((o) => `${o.index}.${o.label}`).join(',')
+  return { ...merged, contentKey: `${merged.prompt}::${merged.detail}::${options}` }
+}
+
+const gate = makeGate()
 
 const question: QuestionWsMessage = {
   type: 'question',
@@ -29,6 +47,24 @@ beforeEach(() => {
 })
 afterEach(() => {
   jest.useRealTimers()
+})
+
+// A positive control on the builder itself. Without this, a builder that
+// silently reused one key would leave every "different gate" test asserting
+// against two fixtures the server could never have produced, and they would
+// still be green.
+describe('gate fixtures', () => {
+  it('gives a gate with different content a different key', () => {
+    expect(makeGate({ detail: 'Edit file' }).contentKey).not.toBe(gate.contentKey)
+  })
+
+  it('gives a repaint of the same gate the same key', () => {
+    expect(makeGate({ cursor: 2 }).contentKey).toBe(gate.contentKey)
+  })
+
+  it('leaves the key off when asked, for the old-server case', () => {
+    expect(makeGate({ contentKey: undefined }).contentKey).toBeUndefined()
+  })
 })
 
 describe('useActiveQuestionReducer – phase', () => {
@@ -53,7 +89,7 @@ describe('useActiveQuestionReducer – phase', () => {
     expect(result.current.question).toBeNull()
     expect(result.current.phase).toBeNull()
 
-    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
+    await act(() => result.current.onMessage(makeGate({ detail: 'Edit file' })))
     await act(() => result.current.clear())
     expect(result.current.question).toBeNull()
     expect(result.current.phase).toBeNull()
@@ -83,7 +119,7 @@ describe('useActiveQuestionReducer – phase', () => {
     await act(() => result.current.onMessage(gate))
     await act(() => result.current.markPending(result.current.questionKey))
 
-    await act(() => result.current.onMessage({ ...gate, cursor: 2 }))
+    await act(() => result.current.onMessage(makeGate({ cursor: 2 })))
     expect(result.current.phase).toBe('pending')
   })
 
@@ -98,14 +134,14 @@ describe('useActiveQuestionReducer – phase', () => {
     await act(() => result.current.onMessage(gate))
     const answered = result.current.questionKey
 
-    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
+    await act(() => result.current.onMessage(makeGate({ detail: 'Edit file' })))
     await act(() => result.current.markPending(answered))
 
     expect(result.current.phase).toBe('active')
     expect(result.current.question?.questions[0].detail).toBe('Edit file')
 
     // And the replacement is not suppressed either: its own repaints still land.
-    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file', cursor: 2 }))
+    await act(() => result.current.onMessage(makeGate({ detail: 'Edit file', cursor: 2 })))
     expect(result.current.phase).toBe('active')
   })
 
@@ -130,7 +166,7 @@ describe('useActiveQuestionReducer – phase', () => {
     await act(() => result.current.onMessage(gate))
     await act(() => result.current.markPending(result.current.questionKey))
 
-    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
+    await act(() => result.current.onMessage(makeGate({ detail: 'Edit file' })))
     expect(result.current.phase).toBe('active')
     expect(result.current.question?.questions[0].detail).toBe('Edit file')
   })
@@ -266,7 +302,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
     await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS - 1)
-    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
+    await act(() => result.current.onMessage(makeGate({ detail: 'Edit file' })))
     await act(() => result.current.markPending(result.current.questionKey))
 
     jest.setSystemTime(T0 + GHOST_TTL_MS + 1)
@@ -286,7 +322,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
 
     jest.setSystemTime(T0 + GHOST_TTL_MS)
     await act(() => result.current.expireIfStale())
-    await act(() => result.current.onMessage({ ...gate, cursor: 2 }))
+    await act(() => result.current.onMessage(makeGate({ cursor: 2 })))
 
     expect(result.current.phase).toBe('active')
   })
@@ -298,7 +334,7 @@ describe('useActiveQuestionReducer – ghost expiry', () => {
 
     jest.setSystemTime(T0 + GHOST_TTL_MS - 1)
     await act(() => result.current.expireIfStale())
-    await act(() => result.current.onMessage({ ...gate, cursor: 2 }))
+    await act(() => result.current.onMessage(makeGate({ cursor: 2 })))
 
     expect(result.current.phase).toBe('pending')
   })
@@ -325,7 +361,7 @@ describe('useActiveQuestionReducer – confirmation survives a repaint', () => {
     await act(() => result.current.onMessage(gate))
     const answered = result.current.questionKey
 
-    await act(() => result.current.onMessage({ ...gate, cursor: 2 }))
+    await act(() => result.current.onMessage(makeGate({ cursor: 2 })))
     await act(() => result.current.markPending(answered))
 
     expect(result.current.phase).toBe('pending')
@@ -335,11 +371,11 @@ describe('useActiveQuestionReducer – confirmation survives a repaint', () => {
   // fix that leans on it is a fix that works only where it is not needed.
   it('accepts it for a gate carrying no contentKey', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
-    const noKey = { ...gate, contentKey: undefined }
+    const noKey = makeGate({ contentKey: undefined })
     await act(() => result.current.onMessage(noKey))
     const answered = result.current.questionKey
 
-    await act(() => result.current.onMessage({ ...noKey, cursor: 2 }))
+    await act(() => result.current.onMessage(makeGate({ contentKey: undefined, cursor: 2 })))
     await act(() => result.current.markPending(answered))
 
     expect(result.current.phase).toBe('pending')
@@ -363,7 +399,7 @@ describe('useActiveQuestionReducer – confirmation survives a repaint', () => {
     await act(() => result.current.onMessage(gate))
     const answered = result.current.questionKey
 
-    await act(() => result.current.onMessage({ ...gate, detail: 'Edit file' }))
+    await act(() => result.current.onMessage(makeGate({ detail: 'Edit file' })))
     await act(() => result.current.markPending(answered))
 
     expect(result.current.phase).toBe('active')
