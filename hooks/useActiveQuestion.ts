@@ -128,8 +128,14 @@ export function useActiveQuestionReducer(sessionId: string) {
   //
   // The card's key is the right identity for both sources and for every
   // server: gateKey for a permission gate, toolUseId for a structured question,
-  // and it depends on no field an older streamer might not send. A fix leaning
-  // on contentKey would work only on servers new enough not to need it.
+  // and it depends on no field an older streamer might not send.
+  //
+  // Do not "simplify" this to permissionContentKey, or to anything else derived
+  // from a field the old wire format does not carry. It looks more principled —
+  // it is the server's own identity for the gate — and it is absent on every
+  // streamer that predates the validated route, which is the only place this
+  // guard has to work. An identity that degrades to undefined degrades to
+  // comparing undefined with undefined, which matches everything.
   const markPending = useCallback((answeredKey: string | null) => {
     const live = cardRef.current
     if (live?.phase !== 'active' || live.key !== answeredKey) return
