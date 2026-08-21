@@ -243,7 +243,7 @@ function makeStyles(theme: Theme) {
     flexShrink: 1,
   },
   titleMeta: {
-    marginLeft: 'auto',
+    marginStart: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
