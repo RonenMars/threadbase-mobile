@@ -8,6 +8,21 @@
     "placeholder": "חפש סשנים ושיחות…",
     "accessibilityLabel": "חיפוש"
   },
+  "nameSession": {
+    "createTitle": "לתת שם לסשן?",
+    "exitTitle": "לתת שם לסשן לפני היציאה?",
+    "start": "התחל",
+    "placeholder": "למשל, תיקון באג באימות"
+  },
+  "slowLoading": {
+    "sessions": "אחזור הסשנים אורך יותר מהצפוי.\nרק עוד רגע…",
+    "detailTitle": "פרטי הסשן מתעכבים…",
+    "detailMessage": "מביאים את הפרטים — זה לא אמור לקחת עוד הרבה זמן."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
+  },
   "filter": {
     "label": "סנן ומיין",
     "all": "הכל"

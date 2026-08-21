@@ -1,6 +1,7 @@
 import React from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -9,6 +10,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 const NAV_BAR_HEIGHT = 44
 
 export function SlowQueryBanner() {
+  const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const isSlow = useLoadingStateStore((s) => s.slowCounts.sessions > 0 || s.slowCounts.other > 0)
@@ -20,7 +22,7 @@ export function SlowQueryBanner() {
     <View style={[styles.strip, { top: insets.top + NAV_BAR_HEIGHT }]}>
       <ActivityIndicator size="small" color={theme.text.warning} />
       <Text style={styles.text}>
-        {'Fetching sessions is taking longer than expected.\nHold still…'}
+        {t('slowLoading.sessions')}
       </Text>
     </View>
   )

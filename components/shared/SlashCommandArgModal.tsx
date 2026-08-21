@@ -76,7 +76,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={onDismiss} hitSlop={8} accessibilityLabel="Cancel">
+            <TouchableOpacity onPress={onDismiss} hitSlop={8} accessibilityLabel={t('common:button.cancel')}>
               <X size={20} color={theme.text.secondary} />
             </TouchableOpacity>
           </View>
@@ -104,7 +104,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
             <TouchableOpacity
               style={styles.cancelBtn}
               onPress={onDismiss}
-              accessibilityLabel="Cancel"
+              accessibilityLabel={t('common:button.cancel')}
             >
               <Text style={styles.cancelBtnText}>{t('common:button.cancel')}</Text>
             </TouchableOpacity>
