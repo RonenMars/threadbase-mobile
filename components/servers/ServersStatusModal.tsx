@@ -438,7 +438,7 @@ function makeStyles(theme: Theme) {
     refreshIcon: {
       width: 14,
       height: 14,
-      marginRight: spacing.md,
+      marginEnd: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
     },

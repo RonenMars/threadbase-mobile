@@ -72,7 +72,7 @@ function makeStyles(theme: Theme) {
     },
     menu: {
       marginTop: 52,
-      marginRight: spacing.sm,
+      marginEnd: spacing.sm,
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.md,
       borderWidth: 1,

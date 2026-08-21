@@ -220,7 +220,7 @@ function makeStyles(theme: Theme) {
     tabActive: { borderColor: theme.text.accent },
     tabLabel: { color: theme.text.secondary, fontSize: font.base },
     tabLabelActive: { color: theme.text.accent, fontWeight: '600' },
-    tabRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', paddingRight: spacing.sm },
+    tabRight: { marginStart: 'auto', flexDirection: 'row', alignItems: 'center', paddingEnd: spacing.sm },
     iconBtn: { padding: 6 },
     chipsContainer: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },

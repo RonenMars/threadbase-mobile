@@ -235,13 +235,13 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.xs,
       fontFamily: 'monospace',
-      paddingLeft: 16,
+      paddingStart: 16,
       marginBottom: 2,
     },
     meta: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      paddingLeft: 16,
+      paddingStart: 16,
       paddingBottom: spacing.xs,
     },
   })
