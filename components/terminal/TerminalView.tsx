@@ -7,9 +7,10 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { isQuestionClosedError } from '@/services/api-client'
+import { isPermissionClosedError, isQuestionClosedError } from '@/services/api-client'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
+import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
@@ -56,8 +57,8 @@ export function TerminalView({
     provider,
   )
   const confidence = parseConfidenceProp ?? parseConfidence
-  const { sendInput, sendKeys, respondToQuestion } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion, clear: clearQuestion } = useActiveQuestion(serverId, sessionId)
+  const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
+  const { question: activeQuestion, clear: clearQuestion, markPending, phase: answerPhase, questionKey } = useActiveQuestion(serverId, sessionId)
 
   // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
   // not in SessionHistoryFeed itself, because entering it also has to hide
@@ -86,6 +87,52 @@ export function TerminalView({
       }),
     )
   }, [resumedConversationId, router, serverId, sessionId])
+
+
+  // Await, then transition. The card stays exactly where it is until the server
+  // has taken the answer, so a tap on a gate that has already closed clears the
+  // card with a calm notice instead of leaving it up and tappable — the server
+  // has just said the gate is not open, so a second tap cannot succeed either.
+  //
+  // Classified by code, never by status class. Only the three closed reasons
+  // clear; anything else keeps the card so the user can try again. Two of those
+  // three arrive with no `permission_cancelled` alongside them, which makes this
+  // the only thing that takes the card down for them.
+  // The gate's identity is captured here, at tap time, and handed back to
+  // markPending so the confirmation binds to the gate it was given for. The
+  // POST is not instant — the server re-scrapes the screen before accepting —
+  // so a second gate can arrive while this is in flight, and confirming
+  // "whatever is active now" would ghost one the user never answered.
+  //
+  // The key, not the block: a repaint that only moves the cursor replaces the
+  // block while the gate stays the same one, and rejecting that confirmation
+  // strands the card in `active` with send disabled.
+  const handleAnswerPermission = useCallback(async (optionIndex: number) => {
+    const answered = activeQuestion
+    const answeredKey = questionKey
+    if (!answered) return
+    try {
+      await answerPermission.mutateAsync({
+        contentKey: answered.permissionContentKey,
+        optionIndex,
+        keys: permissionAnswerKeys(answered, optionIndex),
+      })
+      markPending(answeredKey)
+    } catch (err) {
+      if (isPermissionClosedError(err instanceof Error ? err : null)) clearQuestion()
+    }
+  }, [activeQuestion, answerPermission, clearQuestion, markPending, questionKey])
+
+  const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
+    const answeredKey = questionKey
+    if (!activeQuestion) return
+    try {
+      await respondToQuestion.mutateAsync({ toolUseId, answers })
+      markPending(answeredKey)
+    } catch (err) {
+      if (isQuestionClosedError(err instanceof Error ? err : null)) clearQuestion()
+    }
+  }, [activeQuestion, clearQuestion, markPending, questionKey, respondToQuestion])
 
   const onSend = async (payload: string) => {
     markSessionUsed(sessionId)
@@ -122,13 +169,22 @@ export function TerminalView({
   // it also broadcasts question_cancelled, which dismisses the card), so that
   // case reads as a calm notice rather than a failure the user must act on.
   const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
-  const answerErrorMessage =
-    respondToQuestion.isError && !isQuestionGoneError
-      ? respondToQuestion.error instanceof Error
-        ? respondToQuestion.error.message
-        : t('answer.failed')
+  // Same split for the gate route, and the same reason: a gate the server says
+  // is closed is not a failure the user must act on, it is the prompt going
+  // away. Everything else is a real error and keeps the card up to retry.
+  const isGateClosedError = isPermissionClosedError(answerPermission.error)
+  const answerFailure = respondToQuestion.isError && !isQuestionGoneError
+    ? respondToQuestion.error
+    : answerPermission.isError && !isGateClosedError
+      ? answerPermission.error
       : null
-  const answerNoticeMessage = respondToQuestion.isError && isQuestionGoneError ? t('answer.questionClosed') : null
+  const answerErrorMessage = answerFailure
+    ? answerFailure instanceof Error
+      ? answerFailure.message
+      : t('answer.failed')
+    : null
+  const answerNoticeMessage =
+    (respondToQuestion.isError && isQuestionGoneError) || isGateClosedError ? t('answer.questionClosed') : null
   const sendInputErrorMessage = sendInput.isError
     ? sendInput.error instanceof Error
       ? sendInput.error.message
@@ -159,7 +215,10 @@ export function TerminalView({
           onSendInput={(text) => sendInput.mutate(text)}
           onSendKeys={(keys) => sendKeys.mutate(keys)}
           activeQuestion={activeQuestion}
-          onAnswer={(toolUseId, answers) => respondToQuestion.mutate({ toolUseId, answers })}
+          onAnswer={handleAnswerQuestion}
+          onAnswerPermission={handleAnswerPermission}
+          answerPhase={answerPhase}
+          answerBusy={answerPermission.isPending || respondToQuestion.isPending}
           onDismissQuestion={clearQuestion}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
@@ -170,6 +229,12 @@ export function TerminalView({
         value={inputText}
         onChangeText={handleInputChange}
         onSend={handleSend}
+        // Send only, and only while the card is answerable. A pending ghost
+        // blocks nothing, so an answer the server never confirms cannot strand
+        // the composer — which is what makes the five exits from `active` a
+        // safety net rather than the only thing standing between the user and
+        // a locked app.
+        sendDisabled={answerPhase === 'active'}
         onAttach={handleAttach}
         attachments={attachments}
         onRemoveAttachment={removeAttachment}

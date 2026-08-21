@@ -88,8 +88,8 @@ describe('ThinkingBubble question lifecycle', () => {
   // The server closes a permission gate only when its PTY detector sees the box
   // gone — the end of the turn, tens of seconds after the tap. The answer is
   // the user's own action, so the card goes on their input, not on the echo.
-  it('drops the card locally as soon as a permission option is answered', async () => {
-    const onSendKeys = jest.fn()
+  it('hands a tapped gate option to the answer route by position, and does not dismiss the card', async () => {
+    const onAnswerPermission = jest.fn()
     const onDismissQuestion = jest.fn()
     const gate: QuestionBlock = {
       source: 'permission',
@@ -105,17 +105,23 @@ describe('ThinkingBubble question lifecycle', () => {
         lines={[]}
         isStreaming={false}
         activeQuestion={gate}
-        onSendKeys={onSendKeys}
+        onSendKeys={jest.fn()}
+        onAnswerPermission={onAnswerPermission}
         onDismissQuestion={onDismissQuestion}
       />,
     )
 
     await fireEvent.press(getByLabelText('Yes'))
-    expect(onSendKeys).toHaveBeenCalledWith('1\r')
-    expect(onDismissQuestion).toHaveBeenCalled()
+    // The position in the broadcast options array, not the on-screen number.
+    expect(onAnswerPermission).toHaveBeenCalledWith(0)
+    // The card outlives the tap: it moves only once the answer has been taken,
+    // so a tap on a gate that already closed can clear it with a notice rather
+    // than leave the user looking at nothing.
+    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(getByLabelText('Yes')).toBeTruthy()
   })
 
-  it('drops the card locally as soon as a structured question is answered', async () => {
+  it('answers a structured question without dismissing the card', async () => {
     const onAnswer = jest.fn()
     const onDismissQuestion = jest.fn()
     const { getByLabelText } = await render(
@@ -130,6 +136,6 @@ describe('ThinkingBubble question lifecycle', () => {
 
     await fireEvent.press(getByLabelText('B'))
     expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'B' })
-    expect(onDismissQuestion).toHaveBeenCalled()
+    expect(onDismissQuestion).not.toHaveBeenCalled()
   })
 })

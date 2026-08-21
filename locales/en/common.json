@@ -69,5 +69,8 @@
     "chooseFiles": "Choose Files",
     "micAccessNeededTitle": "Microphone access needed",
     "micAccessNeededMessage": "Enable microphone access in Settings to dictate."
+  },
+  "question": {
+    "answerSent": "Answer sent — waiting for the agent to move on."
   }
 }

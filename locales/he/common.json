@@ -69,5 +69,8 @@
     "chooseFiles": "בחירת קבצים",
     "micAccessNeededTitle": "נדרשת גישה למיקרופון",
     "micAccessNeededMessage": "אפשר גישה למיקרופון בהגדרות כדי להכתיב."
+  },
+  "question": {
+    "answerSent": "התשובה נשלחה — ממתינים שהסוכן ימשיך."
   }
 }
