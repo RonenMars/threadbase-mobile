@@ -4,10 +4,15 @@
   },
   "status": {
     "connected": "Connected",
-    "disconnected": "Disconnected"
+    "disconnected": "Disconnected",
+    "unreachable": "Unreachable",
+    "fetchFailed": "Fetch failed",
+    "connecting": "Connecting…"
   },
+  "defaultLabel": "Server",
   "action": {
     "add": "Add Server",
+    "edit": "Edit Server",
     "connect": "Connect",
     "details": "Details"
   },
@@ -20,10 +25,38 @@
     "labelOptional": "Label (optional)",
     "serverUrl": "Server URL",
     "apiKey": "API Key",
-    "hint": "Run tb-streamer pair on your Mac for a QR, or tb serve --tunnel for a public URL."
+    "hint": "Run tb-streamer pair on your Mac for a QR, or tb serve --tunnel for a public URL.",
+    "scanQrLabel": "Scan pairing QR",
+    "namePlaceholder": "Work Mac, Home Server…",
+    "labelPlaceholder": "e.g. Work Mac, Home Server",
+    "apiKeyPlaceholder": "Paste your API token here",
+    "showApiKey": "Show",
+    "hideApiKey": "Hide",
+    "urlHint": "LAN IP, hostname, or any URL (e.g. https://myserver.com)"
   },
   "manage": {
     "addServer": "Add Server"
+  },
+  "card": {
+    "viewError": "View connection error",
+    "delete": "Delete server",
+    "edit": "Edit server",
+    "refresh": "Refresh server info"
+  },
+  "errorModal": {
+    "machine": "Machine",
+    "platform": "Platform",
+    "version": "Version"
+  },
+  "discardDialog": {
+    "title": "Discard changes?",
+    "message": "Your unsaved changes will be lost.",
+    "keepEditing": "Keep Editing",
+    "discard": "Discard"
+  },
+  "noServersWelcome": {
+    "repoLabel": "tb-streamer repository",
+    "addLabel": "Add Server"
   },
   "filter": {
     "title": "Filters",
@@ -59,7 +92,10 @@
     "close": "✕",
     "menuEdit": "Edit",
     "menuRefresh": "Refresh",
-    "menuDelete": "Delete"
+    "menuDelete": "Delete",
+    "optionsLabel": "Server options",
+    "titleSingle": "Server Status",
+    "titleMultiple": "Servers Status"
   },
   "error": {
     "label": "Server unreachable",

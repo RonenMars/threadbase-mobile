@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
@@ -22,10 +23,13 @@ interface Props {
 
 const SNAP_POINTS = ['50%', '85%']
 
-function getStatusOptions(theme: Theme): { value: SessionStatus; label: string; color: string }[] {
+function getStatusOptions(
+  theme: Theme,
+  t: TFunction<['servers', 'common', 'sessions']>,
+): { value: SessionStatus; label: string; color: string }[] {
   return [
-    { value: 'running', label: 'Running', color: theme.status.running },
-    { value: 'idle', label: 'Idle', color: theme.status.idle },
+    { value: 'running', label: t('sessions:status.running'), color: theme.status.running },
+    { value: 'idle', label: t('sessions:status.idle'), color: theme.status.idle },
   ]
 }
 
@@ -52,8 +56,8 @@ export function ServerFilterSheet({
   const theme = useTheme()
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
-  const STATUS_OPTIONS = getStatusOptions(theme)
-  const { t } = useTranslation(['servers', 'common'])
+  const { t } = useTranslation(['servers', 'common', 'sessions'])
+  const STATUS_OPTIONS = getStatusOptions(theme, t)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)

@@ -4,10 +4,15 @@
   },
   "status": {
     "connected": "Подключено",
-    "disconnected": "Отключено"
+    "disconnected": "Отключено",
+    "unreachable": "Недоступен",
+    "fetchFailed": "Сбой загрузки",
+    "connecting": "Подключение…"
   },
+  "defaultLabel": "Сервер",
   "action": {
     "add": "Добавить сервер",
+    "edit": "Изменить сервер",
     "connect": "Подключить",
     "details": "Подробнее"
   },
@@ -20,10 +25,38 @@
     "labelOptional": "Метка (необязательно)",
     "serverUrl": "URL сервера",
     "apiKey": "API-ключ",
-    "hint": "Запустите tb-streamer pair на вашем Mac, чтобы получить QR-код, или tb serve --tunnel для публичного URL."
+    "hint": "Запустите tb-streamer pair на вашем Mac, чтобы получить QR-код, или tb serve --tunnel для публичного URL.",
+    "scanQrLabel": "Сканировать QR для сопряжения",
+    "namePlaceholder": "Рабочий Mac, домашний сервер…",
+    "labelPlaceholder": "например, Рабочий Mac, домашний сервер",
+    "apiKeyPlaceholder": "Вставьте сюда ваш API-ключ",
+    "showApiKey": "Показать",
+    "hideApiKey": "Скрыть",
+    "urlHint": "IP-адрес в локальной сети, имя хоста или любой URL (например, https://myserver.com)"
   },
   "manage": {
     "addServer": "Добавить сервер"
+  },
+  "card": {
+    "viewError": "Показать ошибку подключения",
+    "delete": "Удалить сервер",
+    "edit": "Изменить сервер",
+    "refresh": "Обновить информацию о сервере"
+  },
+  "errorModal": {
+    "machine": "Компьютер",
+    "platform": "Платформа",
+    "version": "Версия"
+  },
+  "discardDialog": {
+    "title": "Отменить изменения?",
+    "message": "Несохранённые изменения будут потеряны.",
+    "keepEditing": "Продолжить редактирование",
+    "discard": "Отменить"
+  },
+  "noServersWelcome": {
+    "repoLabel": "репозиторий tb-streamer",
+    "addLabel": "Добавить сервер"
   },
   "filter": {
     "title": "Фильтры",
@@ -59,7 +92,10 @@
     "close": "✕",
     "menuEdit": "Изменить",
     "menuRefresh": "Обновить",
-    "menuDelete": "Удалить"
+    "menuDelete": "Удалить",
+    "optionsLabel": "Параметры сервера",
+    "titleSingle": "Статус сервера",
+    "titleMultiple": "Статус серверов"
   },
   "error": {
     "label": "Сервер недоступен",
