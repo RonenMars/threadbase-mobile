@@ -6,7 +6,8 @@
   },
   "list": {
     "loadingMore": "جارٍ تحميل المزيد…",
-    "empty": "لا توجد رسائل في هذه المحادثة."
+    "empty": "لا توجد رسائل في هذه المحادثة.",
+    "searchPlaceholder": "البحث في المحادثات…"
   },
   "error": {
     "loadFailed": "تعذّر تحميل المحادثة",
@@ -64,7 +65,13 @@
   },
   "thinking": {
     "label": "الاستدلال",
-    "redacted": "تم حجب الاستدلال"
+    "redacted": "تم حجب الاستدلال",
+    "expand": "توسيع الاستدلال",
+    "collapse": "طي الاستدلال"
+  },
+  "connection": {
+    "notConnectedTitle": "غير متصل",
+    "notConnectedMessage": "في انتظار الاتصال — حاول مرة أخرى بعد لحظة."
   },
   "search": {
     "matchCount": "{{current}} من {{total}}",

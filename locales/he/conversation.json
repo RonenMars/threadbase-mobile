@@ -6,7 +6,8 @@
   },
   "list": {
     "loadingMore": "טוען עוד…",
-    "empty": "אין הודעות בשיחה זו."
+    "empty": "אין הודעות בשיחה זו.",
+    "searchPlaceholder": "חיפוש שיחות…"
   },
   "error": {
     "loadFailed": "לא ניתן לטעון שיחה",
@@ -64,7 +65,13 @@
   },
   "thinking": {
     "label": "חשיבה",
-    "redacted": "חשיבה נמחקה"
+    "redacted": "חשיבה נמחקה",
+    "expand": "הרחב חשיבה",
+    "collapse": "כווץ חשיבה"
+  },
+  "connection": {
+    "notConnectedTitle": "לא מחובר",
+    "notConnectedMessage": "ממתין לחיבור — נסה שוב בעוד רגע."
   },
   "search": {
     "matchCount": "{{current}} מתוך {{total}}",

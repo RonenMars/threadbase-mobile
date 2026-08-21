@@ -6,7 +6,8 @@
   },
   "list": {
     "loadingMore": "Загрузка…",
-    "empty": "В этой беседе нет сообщений."
+    "empty": "В этой беседе нет сообщений.",
+    "searchPlaceholder": "Поиск бесед…"
   },
   "error": {
     "loadFailed": "Не удалось загрузить беседу",
@@ -64,7 +65,13 @@
   },
   "thinking": {
     "label": "Рассуждение",
-    "redacted": "Рассуждение скрыто"
+    "redacted": "Рассуждение скрыто",
+    "expand": "Развернуть рассуждение",
+    "collapse": "Свернуть рассуждение"
+  },
+  "connection": {
+    "notConnectedTitle": "Нет подключения",
+    "notConnectedMessage": "Ожидаем подключения — попробуйте ещё раз через мгновение."
   },
   "search": {
     "matchCount": "{{current}} из {{total}}",

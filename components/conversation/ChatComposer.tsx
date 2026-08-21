@@ -134,7 +134,7 @@ export function ChatComposer({
       style={[styles.iconBtn, (isUploading || disabled) && styles.disabled]}
       onPress={onAttach}
       disabled={isUploading || disabled}
-      accessibilityLabel="Attach file"
+      accessibilityLabel={t('input.attachLabel')}
       hitSlop={8}
     >
       {isUploading ? (
@@ -203,7 +203,7 @@ export function ChatComposer({
             <TouchableOpacity
               testID="expand-input-button"
               accessibilityRole="button"
-              accessibilityLabel="Expand input"
+              accessibilityLabel={t('input.expandLabel')}
               style={styles.expandBtnAndroid}
               onPress={() => setExpanded(true)}
               disabled={disabled}
@@ -229,7 +229,7 @@ export function ChatComposer({
             <TouchableOpacity
               testID="expand-input-button"
               accessibilityRole="button"
-              accessibilityLabel="Expand input"
+              accessibilityLabel={t('input.expandLabel')}
               style={styles.expandBtn}
               onPress={() => setExpanded(true)}
               disabled={disabled}
@@ -274,7 +274,7 @@ export function ChatComposer({
                   testID="minimize-input-button"
                   style={styles.iconBtn}
                   onPress={() => setExpanded(false)}
-                  accessibilityLabel="Minimize input"
+                  accessibilityLabel={t('input.minimizeLabel')}
                   hitSlop={8}
                 >
                   <ArrowsIn size={22} color={theme.text.primary} />

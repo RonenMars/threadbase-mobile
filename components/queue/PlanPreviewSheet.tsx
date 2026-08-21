@@ -100,7 +100,7 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
             style={styles.editInput}
             value={editedPrompt}
             onChangeText={setEditedPrompt}
-            placeholder="Edit the prompt before proceeding..."
+            placeholder={t('planPreview.editPlaceholder')}
             placeholderTextColor={theme.text.secondary}
             multiline
             autoFocus

@@ -6,7 +6,8 @@
   },
   "list": {
     "loadingMore": "Loading more…",
-    "empty": "No messages in this conversation."
+    "empty": "No messages in this conversation.",
+    "searchPlaceholder": "Search conversations…"
   },
   "error": {
     "loadFailed": "Couldn't load conversation",
@@ -64,7 +65,13 @@
   },
   "thinking": {
     "label": "Reasoning",
-    "redacted": "Reasoning redacted"
+    "redacted": "Reasoning redacted",
+    "expand": "Expand reasoning",
+    "collapse": "Collapse reasoning"
+  },
+  "connection": {
+    "notConnectedTitle": "Not connected",
+    "notConnectedMessage": "Waiting for connection — try again in a moment."
   },
   "search": {
     "matchCount": "{{current}} of {{total}}",

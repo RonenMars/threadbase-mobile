@@ -55,5 +55,13 @@
   },
   "navLock": {
     "opening": "Открытие…"
+  },
+  "composer": {
+    "attachTitle": "Прикрепить",
+    "takePhoto": "Сделать фото",
+    "chooseFromGallery": "Выбрать из галереи",
+    "chooseFiles": "Выбрать файлы",
+    "micAccessNeededTitle": "Нужен доступ к микрофону",
+    "micAccessNeededMessage": "Разрешите доступ к микрофону в настройках, чтобы использовать надиктовку."
   }
 }
