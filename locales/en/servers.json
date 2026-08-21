@@ -91,7 +91,10 @@
     "successToast": "Resolved. Backup saved at {{backupPath}}",
     "successToastNoBackup": "Resolved.",
     "selectAtLeastOne": "Select at least one conversation to prune.",
-    "resolveFailed": "Couldn't complete that action. Check the connection to this server and try again."
+    "resolveFailed": "Couldn't complete that action. Check the connection to this server and try again.",
+    "review": "Review",
+    "toastMessage": "Some conversation files on disk no longer match this server's cache.",
+    "toastDetails": "{{count}} of the cached histories are missing. Review the list to prune, ignore, or rescan."
   },
   "hostPressure": {
     "banner": {
@@ -249,5 +252,14 @@
     "forgetMessage": "This device's credentials for {{server}} are deleted. Scan its QR code again to pair from scratch.",
     "forgetCancel": "Cancel",
     "forgetConfirm": "Forget"
+  },
+  "state": {
+    "details": {
+      "unreachable": "This server did not respond. Sessions listed below may be incomplete until it comes back.",
+      "fetchFailed": "The app could not refresh the session list. Cached sessions are shown where available.",
+      "disconnected": "The live connection dropped. Cached sessions stay visible until reconnect.",
+      "connecting": "Establishing a connection to the server.",
+      "indexing": "The server is building its conversation index. History will appear when it is ready."
+    }
   }
 }

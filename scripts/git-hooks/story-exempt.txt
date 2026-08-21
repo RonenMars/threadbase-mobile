@@ -1,3 +1,10 @@
 # Components exempt from the mandatory-story pre-commit check — one path per
 # line, exact match against the git-tracked path. See docs/storybook.md and
 # scripts/check-story-coverage.js. Add a reason as a trailing comment.
+
+# Store-driven host: renders nothing of its own, the visual is Toast (see Toast.stories.tsx).
+components/ui/ToastViewport.tsx
+# Store-driven host: renders nothing of its own, the visual is Banner (see Banner.stories.tsx).
+components/ui/BannerHost.tsx
+# Emits an AlertSpec into the toast store and renders null — no UI to story.
+components/terminal/TerminalRawModeToast.tsx
