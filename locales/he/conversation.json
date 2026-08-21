@@ -4,6 +4,10 @@
     "containsImage": "📎 מכיל תמונה",
     "titleFallback": "שיחה"
   },
+  "info": {
+    "title": "פרטי השיחה",
+    "open": "פרטי שיחה"
+  },
   "list": {
     "loadingMore": "טוען עוד…",
     "empty": "אין הודעות בשיחה זו.",

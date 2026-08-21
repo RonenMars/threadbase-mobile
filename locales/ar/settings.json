@@ -18,6 +18,7 @@
   },
   "session": {
     "chatView": "عرض الدردشة",
+    "mergeChats": "دمج السيشنات والسجل كدردشات",
     "chatViewNote": "أظهر السيشنات المباشرة كفقاعات دردشة بدلًا من مخرجات طرفية RAW. بيتا — قد تحتوي على أخطاء ولا تعمل دائمًا.",
     "betaBadge": "بيتا",
     "leaveAction": "الإجراء عند مغادرة السيشن",
@@ -68,7 +69,18 @@
   },
   "addServer": {
     "selectedAction": "الإجراء المحدد عند الإنشاء",
-    "resetAction": "إعادة التعيين للسؤال في كل مرة"
+    "resetAction": "إعادة التعيين للسؤال في كل مرة",
+    "actionAsk": "السؤال في كل مرة",
+    "actionAdd": "الإضافة إلى المعروضة",
+    "actionReplace": "عرض الجديد فقط",
+    "actionKeep": "الإبقاء على الحالي",
+    "optionAsk": "سؤال",
+    "optionAdd": "إضافة",
+    "optionReplace": "استبدال",
+    "optionKeep": "إبقاء"
+  },
+  "privacy": {
+    "biometricLock": "طلب Face ID / بصمة الإصبع"
   },
   "history": {
     "messagePreview": "معاينة الرسالة",

@@ -43,6 +43,8 @@
     "minimizeLabel": "מזער קלט"
   },
   "session": {
+    "infoTitle": "פרטי הסשן",
+    "renameLabel": "שנה את שם הסשן",
     "notFound": "סשן לא נמצא",
     "notFoundBody": "הסשן כבר לא קיים בשרת. ייתכן שהוא הסתיים או נוקה.",
     "backToHub": "חזרה למרכז",

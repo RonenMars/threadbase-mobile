@@ -4,6 +4,10 @@
     "containsImage": "📎 Contains image",
     "titleFallback": "Conversation"
   },
+  "info": {
+    "title": "Conversation Info",
+    "open": "Conversation info"
+  },
   "list": {
     "loadingMore": "Loading more…",
     "empty": "No messages in this conversation.",
