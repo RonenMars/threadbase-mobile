@@ -235,7 +235,7 @@ export function LiveConversationView({
   // a failed send must not wipe what the user typed.
   const send = async (payload: string, optimisticText: string) => {
     if (!isConnected()) {
-      Alert.alert('Not connected', 'Waiting for connection — try again in a moment.')
+      Alert.alert(t('connection.notConnectedTitle'), t('connection.notConnectedMessage'))
       throw new Error('not-connected')
     }
     markSessionUsed(sessionId)
@@ -252,7 +252,7 @@ export function LiveConversationView({
       if (optimisticId) {
         setPendingSends((prev) => prev.filter((m) => m.id !== optimisticId))
       }
-      Alert.alert('Send failed', err instanceof Error ? err.message : String(err))
+      Alert.alert(tTerminal('dialog.sendFailedTitle'), err instanceof Error ? err.message : String(err))
       throw err
     }
   }
@@ -292,7 +292,7 @@ export function LiveConversationView({
   const sendInputErrorMessage = sendInput.isError
     ? sendInput.error instanceof Error
       ? sendInput.error.message
-      : 'Failed to send'
+      : tTerminal('dialog.sendFailedGeneric')
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
 

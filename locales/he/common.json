@@ -55,5 +55,13 @@
   },
   "navLock": {
     "opening": "פותח…"
+  },
+  "composer": {
+    "attachTitle": "צירוף",
+    "takePhoto": "צילום תמונה",
+    "chooseFromGallery": "בחירה מהגלריה",
+    "chooseFiles": "בחירת קבצים",
+    "micAccessNeededTitle": "נדרשת גישה למיקרופון",
+    "micAccessNeededMessage": "אפשר גישה למיקרופון בהגדרות כדי להכתיב."
   }
 }

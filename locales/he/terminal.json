@@ -24,7 +24,9 @@
     "removeTitle": "הסר סשן",
     "removeConfirm": "הסר",
     "stopTitle": "עצור סשן",
-    "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב."
+    "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב.",
+    "sendFailedTitle": "השליחה נכשלה",
+    "sendFailedGeneric": "לא ניתן לשלוח"
   },
   "status": {
     "disconnected": "מנותק",
@@ -35,7 +37,10 @@
     "waitMore": "המתן עוד"
   },
   "input": {
-    "placeholder": "שלח הודעה…"
+    "placeholder": "שלח הודעה…",
+    "attachLabel": "צירוף קובץ",
+    "expandLabel": "הרחב קלט",
+    "minimizeLabel": "מזער קלט"
   },
   "session": {
     "notFound": "סשן לא נמצא",

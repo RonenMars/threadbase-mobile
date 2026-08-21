@@ -206,11 +206,11 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
 
   const handleAttach = () => {
     if (isUploading) return
-    Alert.alert('Attach', undefined, [
-      { text: 'Take Photo', onPress: () => runUpload('camera') },
-      { text: 'Choose from Gallery', onPress: () => runUpload('library') },
-      { text: 'Choose Files', onPress: () => runUpload('files') },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('composer.attachTitle'), undefined, [
+      { text: t('composer.takePhoto'), onPress: () => runUpload('camera') },
+      { text: t('composer.chooseFromGallery'), onPress: () => runUpload('library') },
+      { text: t('composer.chooseFiles'), onPress: () => runUpload('files') },
+      { text: t('button.cancel'), style: 'cancel' },
     ])
   }
 
@@ -226,9 +226,9 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     } catch (err) {
       if (err instanceof Error && err.message === 'PERMISSION_DENIED') {
         setMicGranted(false)
-        Alert.alert('Microphone access needed', 'Enable microphone access in Settings to dictate.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        Alert.alert(t('composer.micAccessNeededTitle'), t('composer.micAccessNeededMessage'), [
+          { text: t('button.cancel'), style: 'cancel' },
+          { text: t('button.openSettings'), onPress: () => Linking.openSettings() },
         ])
       }
     }

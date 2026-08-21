@@ -5,7 +5,8 @@
     "proceed": "▶ Продолжить",
     "editPrompt": "Изменить промпт",
     "sendEdit": "Отправить изменение",
-    "cancel": "✕ Отмена"
+    "cancel": "✕ Отмена",
+    "editPlaceholder": "Измените промпт перед продолжением…"
   },
   "promptQueue": {
     "title": "Очередь промптов",
@@ -13,6 +14,8 @@
     "pending_few": "{{count}} в ожидании",
     "pending_many": "{{count}} в ожидании",
     "pending_other": "{{count}} в ожидании",
-    "remove": "✕"
+    "remove": "✕",
+    "inputPlaceholder": "Добавить промпт в очередь…",
+    "addLabel": "Добавить промпт в очередь"
   }
 }

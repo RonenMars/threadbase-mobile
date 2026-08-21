@@ -55,5 +55,13 @@
   },
   "navLock": {
     "opening": "جارٍ الفتح…"
+  },
+  "composer": {
+    "attachTitle": "إرفاق",
+    "takePhoto": "التقاط صورة",
+    "chooseFromGallery": "الاختيار من المعرض",
+    "chooseFiles": "اختيار ملفات",
+    "micAccessNeededTitle": "الوصول إلى الميكروفون مطلوب",
+    "micAccessNeededMessage": "فعّل الوصول إلى الميكروفون من الإعدادات لاستخدام الإملاء."
   }
 }

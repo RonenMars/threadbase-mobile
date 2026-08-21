@@ -55,5 +55,13 @@
   },
   "navLock": {
     "opening": "Opening…"
+  },
+  "composer": {
+    "attachTitle": "Attach",
+    "takePhoto": "Take Photo",
+    "chooseFromGallery": "Choose from Gallery",
+    "chooseFiles": "Choose Files",
+    "micAccessNeededTitle": "Microphone access needed",
+    "micAccessNeededMessage": "Enable microphone access in Settings to dictate."
   }
 }

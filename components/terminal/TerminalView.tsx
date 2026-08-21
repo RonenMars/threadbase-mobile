@@ -92,7 +92,7 @@ export function TerminalView({
     try {
       await sendInput.mutateAsync(payload)
     } catch (err) {
-      Alert.alert('Send failed', err instanceof Error ? err.message : String(err))
+      Alert.alert(t('dialog.sendFailedTitle'), err instanceof Error ? err.message : String(err))
       throw err
     }
   }
@@ -132,7 +132,7 @@ export function TerminalView({
   const sendInputErrorMessage = sendInput.isError
     ? sendInput.error instanceof Error
       ? sendInput.error.message
-      : 'Failed to send'
+      : t('dialog.sendFailedGeneric')
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
 
