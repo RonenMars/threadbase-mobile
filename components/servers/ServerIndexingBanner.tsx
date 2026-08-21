@@ -103,7 +103,7 @@ function ScanBeam({ trackWidth }: { trackWidth: number }) {
 export function ServerIndexingBanner() {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const { t } = useTranslation('servers')
+  const { t, i18n } = useTranslation('servers')
   const { width: screenWidth } = useWindowDimensions()
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -160,8 +160,8 @@ export function ServerIndexingBanner() {
                 {validProgress && (
                   <Text style={styles.subtitle}>
                     {t('indexing.progress', {
-                      scanned: validProgress.scanned.toLocaleString(),
-                      total: validProgress.total.toLocaleString(),
+                      scanned: validProgress.scanned.toLocaleString(i18n.language),
+                      total: validProgress.total.toLocaleString(i18n.language),
                     })}
                   </Text>
                 )}

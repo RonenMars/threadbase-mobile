@@ -54,7 +54,9 @@ const SessionLiveActivity = createLiveActivity<LiveSessionState>(
         ? '#3fb950'
         : '#1a7f37'
     const statusSymbol = isFinished ? 'checkmark.circle.fill' : 'circle.dotted'
-    const statusLabel = isFinished ? 'Finished' : 'Running'
+    // Resolved with t() in services/live-activity.ts before this state ever
+    // reaches the widget extension's isolated bundle — see the file header.
+    const statusLabel = props.statusLabel
 
     // A live surface renders a self-ticking native timer counting up from the
     // session's start — never a per-second push. `Text(timerInterval:)` needs a

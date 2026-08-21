@@ -1,6 +1,7 @@
 import type { LiveActivity } from 'expo-widgets'
 
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
+import i18n from '@/lib/i18n'
 import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import { sessionOpensAsHistory, sessionPhase } from '@/lib/sessionPresentation'
 import type { Session } from '@/types/api'
@@ -58,6 +59,10 @@ export function toLiveState(session: Session, serverId: string): LiveSessionStat
     status: session.status,
     startedAt,
     lastOutput: truncateOutput(session.lastOutput ?? ''),
+    statusLabel:
+      session.status === 'waiting_input'
+        ? i18n.t('sessions:liveActivity.finished')
+        : i18n.t('sessions:liveActivity.running'),
   }
 }
 

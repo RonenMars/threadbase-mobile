@@ -107,5 +107,17 @@
   "capability": {
     "observeOnly": "Observe only",
     "liveControl": "Live control"
+  },
+  "timeBucket": {
+    "all": "All",
+    "today": "Today",
+    "7d": "7d",
+    "30d": "30d",
+    "custom": "Custom"
+  },
+  "liveActivity": {
+    "running": "Running",
+    "finished": "Finished",
+    "channelName": "Live sessions"
   }
 }
