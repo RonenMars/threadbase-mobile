@@ -102,3 +102,9 @@ expo-env.d.ts
 # Storybook build output and Vite cache
 storybook-static/
 .storybook/.cache/
+
+# Watchman probe files. Watchman drops one in the root of any watched tree,
+# waits for the filesystem event to travel back, then deletes it — a lifetime of
+# milliseconds. Harmless until a `git add -A` lands inside that window, which is
+# how one nearly reached a commit on 2026-08-21.
+.watchman-cookie-*

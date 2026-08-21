@@ -107,5 +107,20 @@
   "capability": {
     "observeOnly": "צפייה בלבד",
     "liveControl": "שליטה חיה"
+  },
+  "timeBucket": {
+    "all": "הכל",
+    "today": "היום",
+    "7d": "7 ימים",
+    "30d": "30 יום",
+    "custom": "מותאם אישית"
+  },
+  "liveActivity": {
+    "running": "רץ",
+    "finished": "הסתיים",
+    "channelName": "סשנים חיים"
+  },
+  "tree": {
+    "unknownPath": "(לא ידוע)"
   }
 }

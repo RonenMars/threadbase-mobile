@@ -7,7 +7,7 @@ export function makeStyles(theme: Theme) {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 11,
-    paddingRight: spacing.md,
+    paddingEnd: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.border,
     minHeight: 44,
@@ -24,7 +24,7 @@ export function makeStyles(theme: Theme) {
     width: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.xs,
+    marginEnd: spacing.xs,
     flexShrink: 0,
   },
   chevron: {
@@ -56,7 +56,7 @@ export function makeStyles(theme: Theme) {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginLeft: spacing.xs,
+    marginStart: spacing.xs,
     flexShrink: 0,
   },
   badge: {
@@ -78,7 +78,7 @@ export function makeStyles(theme: Theme) {
     fontVariant: ['tabular-nums'],
   },
   chatIcon: {
-    marginRight: 4,
+    marginEnd: 4,
   },
   })
 }

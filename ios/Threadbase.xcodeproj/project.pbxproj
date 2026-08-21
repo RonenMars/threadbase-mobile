@@ -18,6 +18,7 @@
 		E66ACBE987E0CC37E50EEEFB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F6B6DC06F95414F97F64646 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F4D5B8988F031F3EB4518080 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDA7BB4922E018248C329A2 /* ExpoModulesProvider.swift */; };
+		AFD318BD11414FE3ADDD5E21 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 18759380AD5A4D5C8754B5FC /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +67,10 @@
 		F11748442D0722820044C1D9 /* Threadbase-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Threadbase-Bridging-Header.h"; path = "Threadbase/Threadbase-Bridging-Header.h"; sourceTree = "<group>"; };
 		FD8066D9ED1C6EEA1C86D899 /* Pods-Threadbase.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Threadbase.debug.xcconfig"; path = "Target Support Files/Pods-Threadbase/Pods-Threadbase.debug.xcconfig"; sourceTree = "<group>"; };
 		FDF6BFA78F2D4C8786602C3E /* ExpoWidgetsTarget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = ExpoWidgetsTarget.appex; path = ExpoWidgetsTarget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1424C25E746C40249950091B /* en */ = {isa = PBXFileReference; name = en; path = "en.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		C84651B6475345A9A1FDAB87 /* he */ = {isa = PBXFileReference; name = he; path = "he.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		4890FFA1CD5D46238C3DDADE /* ar */ = {isa = PBXFileReference; name = ar; path = "ar.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		B9CFA2AB3D3C4C459E3BDFEF /* ru */ = {isa = PBXFileReference; name = ru; path = "ru.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +115,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				8FFA76FD314FD6F143DD98B2 /* PrivacyInfo.xcprivacy */,
+				18759380AD5A4D5C8754B5FC /* InfoPlist.strings */,
 			);
 			name = Threadbase;
 			sourceTree = "<group>";
@@ -272,6 +278,9 @@
 			knownRegions = (
 				en,
 				Base,
+				he,
+				ar,
+				ru,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
@@ -293,6 +302,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				1EB05872C62D9E64DA508E11 /* PrivacyInfo.xcprivacy in Resources */,
+				AFD318BD11414FE3ADDD5E21 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -881,6 +891,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin PBXVariantGroup section */
+		18759380AD5A4D5C8754B5FC /* InfoPlist.strings */ = {
+			isa = "PBXVariantGroup";
+			children = (
+				1424C25E746C40249950091B /* en */,
+				C84651B6475345A9A1FDAB87 /* he */,
+				4890FFA1CD5D46238C3DDADE /* ar */,
+				B9CFA2AB3D3C4C459E3BDFEF /* ru */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }

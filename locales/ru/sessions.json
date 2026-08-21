@@ -117,5 +117,20 @@
   "capability": {
     "observeOnly": "Только просмотр",
     "liveControl": "Управление"
+  },
+  "timeBucket": {
+    "all": "Все",
+    "today": "Сегодня",
+    "7d": "7 дней",
+    "30d": "30 дней",
+    "custom": "Другое"
+  },
+  "liveActivity": {
+    "running": "Работает",
+    "finished": "Завершено",
+    "channelName": "Активные сессии"
+  },
+  "tree": {
+    "unknownPath": "(неизвестно)"
   }
 }

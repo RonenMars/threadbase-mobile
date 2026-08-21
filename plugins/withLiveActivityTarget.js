@@ -14,6 +14,11 @@
 // Without this plugin the reorder is a hand edit to project.pbxproj that the
 // next prebuild silently reverts — and it breaks for whoever runs prebuild, not
 // whoever introduced it. See issue #424.
+//
+// This mod needs ExpoWidgetsTarget (and its embed phase) to already exist, and
+// @expo/config-plugins runs the *last*-registered withXcodeProject mod *first*
+// — so this plugin must be listed BEFORE expo-widgets in app.json's `plugins`
+// array, not after. See withLiveActivityLogo.js for the same constraint.
 
 // @expo/config-plugins is not a top-level dep; it lives under expo. Resolve
 // through expo so we always pick up the same copy expo prebuild itself uses.

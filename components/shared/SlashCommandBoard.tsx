@@ -216,7 +216,7 @@ function makeStyles(theme: Theme) {
     argsBadge: {
       color: theme.text.warning,
       fontSize: font.xs,
-      marginLeft: spacing.xs,
+      marginStart: spacing.xs,
       backgroundColor: `${theme.text.warning}18`,
       paddingHorizontal: spacing.xs,
       paddingVertical: 1,

@@ -1,7 +1,8 @@
 {
   "header": {
     "title": "Беседа",
-    "containsImage": "📎 Содержит изображение"
+    "containsImage": "📎 Содержит изображение",
+    "titleFallback": "Беседа"
   },
   "list": {
     "loadingMore": "Загрузка…",
@@ -58,7 +59,8 @@
   "message": {
     "code": "Код",
     "tokens": "{{count}} токенов",
-    "errorBadge": "Ошибка"
+    "errorBadge": "Ошибка",
+    "toolFallback": "Инструмент"
   },
   "thinking": {
     "label": "Рассуждение",
@@ -98,6 +100,7 @@
     "sendNoteBody": "Отправит краткий список файлов во вход живой сессии.",
     "cancel": "Отмена",
     "send": "Отправить",
-    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
+    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
+    "noteHeader": "Заметка обзора с телефона (получена из беседы, может быть неполной относительно git status):"
   }
 }

@@ -83,6 +83,7 @@ function StatusRow({
   onOpenMenu: () => void
   theme: Theme
 }) {
+  const { t } = useTranslation('servers')
   const styles = makeStyles(theme)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const animValue = useMemo(() => new Animated.Value(0), [])
@@ -123,11 +124,11 @@ function StatusRow({
       : theme.status.failed
 
   let statusLabel: string
-  if (fetchFailed && !isConnected) statusLabel = 'Unreachable'
-  else if (fetchFailed) statusLabel = 'Fetch failed'
-  else if (isConnected) statusLabel = 'Connected'
-  else if (isConnecting) statusLabel = 'Connecting…'
-  else statusLabel = 'Disconnected'
+  if (fetchFailed && !isConnected) statusLabel = t('status.unreachable')
+  else if (fetchFailed) statusLabel = t('status.fetchFailed')
+  else if (isConnected) statusLabel = t('status.connected')
+  else if (isConnecting) statusLabel = t('status.connecting')
+  else statusLabel = t('status.disconnected')
 
   return (
     <View style={styles.row}>
@@ -169,7 +170,7 @@ function StatusRow({
           onPress={onOpenMenu}
           hitSlop={8}
           style={[styles.dotsBtn, isMenuOpen && styles.dotsBtnActive]}
-          accessibilityLabel="Server options"
+          accessibilityLabel={t('statusModal.optionsLabel')}
           testID="server-row-dots-btn"
         >
           <DotsThreeVertical size={18} color={theme.text.secondary} weight="bold" />
@@ -241,6 +242,7 @@ export function ServersStatusModal({ visible, onClose }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   const menuServer = openMenuId ? servers[openMenuId] : null
+  const modalTitle = activeServerIds.length === 1 ? t('statusModal.titleSingle') : t('statusModal.titleMultiple')
 
   const handleRemove = (serverId: string) => {
     const server = servers[serverId]
@@ -290,7 +292,7 @@ export function ServersStatusModal({ visible, onClose }: Props) {
           <View style={styles.header}>
             <Cloud size={18} color={theme.text.secondary} weight="regular" />
             <Text style={styles.title}>
-              {activeServerIds.length === 1 ? 'Server Status' : 'Servers Status'}
+              {modalTitle}
             </Text>
             {activeServerIds.length > 3 ? (
               <View style={styles.counterBadge}>
@@ -438,7 +440,7 @@ function makeStyles(theme: Theme) {
     refreshIcon: {
       width: 14,
       height: 14,
-      marginRight: spacing.md,
+      marginEnd: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
     },

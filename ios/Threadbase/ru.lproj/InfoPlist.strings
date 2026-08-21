@@ -1,0 +1,6 @@
+"NSFaceIDUsageDescription" = "Threadbase использует Face ID для защиты доступа к вашим беседам.";
+"NSCameraUsageDescription" = "Используется для сканирования QR-кода при настройке сервера и для прикрепления фото к сессиям кодирования.";
+"NSPhotoLibraryUsageDescription" = "Используется для прикрепления фото из вашей библиотеки к сессиям кодирования.";
+"NSMicrophoneUsageDescription" = "Threadbase требуется микрофон для надиктовки промптов.";
+"NSSpeechRecognitionUsageDescription" = "Threadbase преобразует вашу речь в текст прямо на устройстве.";
+"NSLocalNetworkUsageDescription" = "Threadbase использует локальную сеть, чтобы найти ваш привязанный компьютер и подключиться к нему.";

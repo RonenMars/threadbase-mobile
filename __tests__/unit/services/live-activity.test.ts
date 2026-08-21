@@ -45,6 +45,7 @@ function makeState(overrides: Partial<LiveSessionState> = {}): LiveSessionState 
     status: 'running',
     startedAt: Date.parse(STARTED_AT),
     lastOutput: 'building the thing',
+    statusLabel: 'Running',
     ...overrides,
   }
 }

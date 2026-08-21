@@ -4,10 +4,15 @@
   },
   "status": {
     "connected": "متصل",
-    "disconnected": "غير متصل"
+    "disconnected": "غير متصل",
+    "unreachable": "غير متاح",
+    "fetchFailed": "فشل الجلب",
+    "connecting": "جارٍ الاتصال…"
   },
+  "defaultLabel": "خادم",
   "action": {
     "add": "إضافة خادم",
+    "edit": "تعديل الخادم",
     "connect": "اتصال",
     "details": "التفاصيل"
   },
@@ -20,10 +25,38 @@
     "labelOptional": "التسمية (اختياري)",
     "serverUrl": "عنوان الخادم",
     "apiKey": "مفتاح API",
-    "hint": "شغّل tb pair على جهاز Mac للحصول على رمز QR، أو tb serve --tunnel للحصول على عنوان URL عام."
+    "hint": "شغّل tb-streamer pair على جهاز Mac للحصول على رمز QR، أو tb serve --tunnel للحصول على عنوان URL عام.",
+    "scanQrLabel": "مسح رمز QR للإقران",
+    "namePlaceholder": "Mac في العمل، خادم منزلي…",
+    "labelPlaceholder": "مثال: Mac في العمل، خادم منزلي",
+    "apiKeyPlaceholder": "الصق مفتاح API هنا",
+    "showApiKey": "إظهار",
+    "hideApiKey": "إخفاء",
+    "urlHint": "عنوان IP على الشبكة المحلية أو اسم المضيف أو أي عنوان URL (مثل https://myserver.com)"
   },
   "manage": {
     "addServer": "إضافة خادم"
+  },
+  "card": {
+    "viewError": "عرض خطأ الاتصال",
+    "delete": "حذف الخادم",
+    "edit": "تعديل الخادم",
+    "refresh": "تحديث معلومات الخادم"
+  },
+  "errorModal": {
+    "machine": "الجهاز",
+    "platform": "المنصة",
+    "version": "الإصدار"
+  },
+  "discardDialog": {
+    "title": "تجاهل التغييرات؟",
+    "message": "ستُفقد التغييرات غير المحفوظة.",
+    "keepEditing": "متابعة التعديل",
+    "discard": "تجاهل"
+  },
+  "noServersWelcome": {
+    "repoLabel": "مستودع tb-streamer",
+    "addLabel": "إضافة خادم"
   },
   "filter": {
     "title": "عوامل التصفية",
@@ -59,7 +92,10 @@
     "close": "✕",
     "menuEdit": "تعديل",
     "menuRefresh": "تحديث",
-    "menuDelete": "حذف"
+    "menuDelete": "حذف",
+    "optionsLabel": "خيارات الخادم",
+    "titleSingle": "حالة الخادم",
+    "titleMultiple": "حالة الخوادم"
   },
   "error": {
     "label": "الخادم غير متاح",
@@ -91,7 +127,10 @@
     "successToast": "تم الحل. تم حفظ النسخة الاحتياطية في {{backupPath}}",
     "successToastNoBackup": "تم الحل.",
     "selectAtLeastOne": "حدد محادثة واحدة على الأقل للحذف.",
-    "resolveFailed": "تعذّر إكمال هذا الإجراء. تحقق من الاتصال بهذا الخادم ثم أعد المحاولة."
+    "resolveFailed": "تعذّر إكمال هذا الإجراء. تحقق من الاتصال بهذا الخادم ثم أعد المحاولة.",
+    "review": "مراجعة",
+    "toastMessage": "بعض ملفات المحادثة على القرص لم تعد تطابق ذاكرة هذا الخادم المؤقتة.",
+    "toastDetails": "{{count}} من السجلات المخزّنة مفقودة. راجع القائمة للحذف أو التجاهل أو إعادة الفحص."
   },
   "hostPressure": {
     "banner": {
@@ -249,5 +288,14 @@
     "forgetMessage": "ستُحذف بيانات اعتماد هذا الجهاز الخاصة بـ {{server}}. امسح رمز الاستجابة السريعة الخاص به مجددًا للاقتران من جديد.",
     "forgetCancel": "إلغاء",
     "forgetConfirm": "انسَ"
+  },
+  "state": {
+    "details": {
+      "unreachable": "هذا الخادم لم يستجب. قد تكون الجلسات أدناه غير مكتملة حتى يعود.",
+      "fetchFailed": "تعذّر تحديث قائمة الجلسات. تُعرض الجلسات المخزّنة إن وُجدت.",
+      "disconnected": "انقطع الاتصال المباشر. تبقى الجلسات المخزّنة ظاهرة حتى إعادة الاتصال.",
+      "connecting": "جارٍ إنشاء اتصال بالخادم.",
+      "indexing": "الخادم يبني فهرس المحادثات. سيظهر السجل عندما يصبح جاهزًا."
+    }
   }
 }

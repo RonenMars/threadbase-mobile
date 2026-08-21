@@ -71,7 +71,7 @@ describe('Onboarding – initial render', () => {
 
   it('shows the pairing hint text', async () => {
     const { getByText } = await render(<OnboardingScreen />)
-    expect(getByText(/tb pair/)).toBeTruthy()
+    expect(getByText(/tb-streamer pair/)).toBeTruthy()
   })
 
   it('shows optional Label field', async () => {

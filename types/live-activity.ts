@@ -15,6 +15,13 @@ export interface LiveSessionState {
   startedAt: number
   lastOutput: string
   serverLabel?: string
+  /**
+   * Pre-resolved i18n label for `status` ("Running" / "Finished"). The widget
+   * extension's `'widget'`-directive layout function runs in an isolated
+   * bundle with no closures over app modules, so `t()` cannot run there —
+   * this must be resolved before the state crosses into the activity.
+   */
+  statusLabel: string
 }
 
 /** Max concurrent activities. iOS allows 5; 3 leaves headroom. */

@@ -49,13 +49,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Used for QR code scanning during server setup and for attaching photos to your Claude Code sessions."
+          "cameraPermission": "Used for QR code scanning during server setup and for attaching photos to your coding sessions."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Used to attach photos from your library to your Claude Code sessions."
+          "photosPermission": "Used to attach photos from your library to your coding sessions."
         }
       ],
       "expo-secure-store",
@@ -91,6 +91,8 @@
       ],
       "./plugins/withAndroidReleaseSigning",
       "@sentry/react-native/expo",
+      "./plugins/withLiveActivityLogo",
+      "./plugins/withLiveActivityTarget",
       [
         "expo-widgets",
         {
@@ -98,8 +100,7 @@
           "groupIdentifier": "group.com.ronenmars.threadbase"
         }
       ],
-      "./plugins/withLiveActivityTarget",
-      "./plugins/withLiveActivityLogo"
+      "./plugins/withLocalizedPermissionStrings"
     ],
     "experiments": {
       "typedRoutes": true,
