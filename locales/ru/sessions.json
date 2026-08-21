@@ -129,5 +129,8 @@
     "running": "Работает",
     "finished": "Завершено",
     "channelName": "Активные сессии"
+  },
+  "tree": {
+    "unknownPath": "(неизвестно)"
   }
 }

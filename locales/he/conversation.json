@@ -1,7 +1,8 @@
 {
   "header": {
     "title": "שיחה",
-    "containsImage": "📎 מכיל תמונה"
+    "containsImage": "📎 מכיל תמונה",
+    "titleFallback": "שיחה"
   },
   "list": {
     "loadingMore": "טוען עוד…",
@@ -58,7 +59,8 @@
   "message": {
     "code": "קוד",
     "tokens": "{{count}} טוקנים",
-    "errorBadge": "שגיאה"
+    "errorBadge": "שגיאה",
+    "toolFallback": "כלי"
   },
   "thinking": {
     "label": "חשיבה",
@@ -98,6 +100,7 @@
     "sendNoteBody": "שולח רשימת קבצים מקוצרת לקלט הסשן החי.",
     "cancel": "ביטול",
     "send": "שלח",
-    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
+    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
+    "noteHeader": "הערת סקירה מהנייד (נגזרת מהשיחה, ייתכן שאינה מלאה מול git status):"
   }
 }

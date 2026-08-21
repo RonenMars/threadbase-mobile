@@ -53,7 +53,9 @@ function ensureChannel(): Promise<void> {
  * one — see the iOS module's `SessionLiveActivity.tsx` comment for why.
  */
 function body(state: LiveSessionState): string {
-  const status = state.status === 'waiting_input' ? 'Finished' : 'Running'
+  const status = state.status === 'waiting_input'
+    ? i18n.t('sessions:liveActivity.finished')
+    : i18n.t('sessions:liveActivity.running')
   return state.lastOutput ? `${status} — ${state.lastOutput}` : status
 }
 

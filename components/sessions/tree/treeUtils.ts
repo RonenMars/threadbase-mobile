@@ -2,6 +2,7 @@ import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import type { MultiSession } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { TreeNode, FlatNode } from './types'
+import i18n from '@/lib/i18n'
 
 // Brand palette for the tree leaf indicator. Live (running / waiting_input)
 // gets amber, the brand "now" colour. Idle gets blue, the brand "thread /
@@ -14,7 +15,9 @@ export const STATUS_COLOR: Record<string, string> = {
 }
 
 function splitPath(p: string | null | undefined): string[] {
-  if (!p) return ['(unknown)']
+  // Becomes a real tree node's name (TreeRow / DrillView render node.name), so
+  // it must be translated rather than treated as an internal placeholder.
+  if (!p) return [i18n.t('sessions:tree.unknownPath')]
   // Normalize Windows backslashes to forward slashes.
   // Keep the drive letter as the first segment (e.g. "C:" → ["C:", "Users", ...])
   // so Windows paths stay isolated from Unix /Users/... paths.
