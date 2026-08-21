@@ -24,73 +24,23 @@ module.exports = defineConfig([
       "import/no-duplicates": "off",
       "import/no-named-as-default-member": "off",
       // AST-based i18n enforcement - prioritizes layout files
-      "i18next/no-literal-string": [
-        "error",
-        {
-          markupOnly: true,
-          // AST parser checks these props across React Native components
-          attributes: {
-            Button: ["title"],
-            TextInput: ["placeholder", "label"],
-            Header: ["title", "subtitle"],
-            AppBar: ["title", "subtitle"],
-            TouchableOpacity: [], // No text props by default
-            TouchableHighlight: [],
-            View: [],
-            // Global wildcard - applies to all components
-            "*": ["accessibilityLabel", "accessibilityHint"],
-          },
-          // Ignore technical/layout string values (not user-facing text)
-          ignoreAttribute: [
-            "testID",
-            "accessibilityRole",
-            "style",
-            "className",
-            "color",
-            "size",
-            "weight",
-            "name",
-            "type",
-            "key",
-            "id",
-            "source",
-            "flex",
-            "flexDirection",
-            "justifyContent",
-            "alignItems",
-            "position",
-            "display",
-            "direction",
-            "textAlign",
-            "fontWeight",
-            "fontSize",
-            "lineHeight",
-            "resizeMode",
-            "contentFit",
-            "iconName", // Phosphor icon names
-            "icon",
-            "variant",
-            "theme",
-            "mode",
-          ],
-          ignoreCallee: [
-            "require",
-            "console.log",
-            "console.warn",
-            "console.error",
-            "console.info",
-            "console.debug",
-            "clsx",
-            "StyleSheet.create",
-            "Animated.timing",
-          ],
-          ignoredFiles: [
-            "**/*.test.{ts,tsx}",
-            "__tests__/**/*.{ts,tsx}",
-            "test-utils/**/*.{ts,tsx}",
-          ],
-        },
-      ],
+      // (v6.1.5 schema — see eslint-plugin-i18next/lib/options/defaults.js;
+      // v5 option names like markupOnly/attributes/ignoreAttribute are silently ignored)
+      "i18next/no-literal-string": ["warn", {
+        mode: "all",
+        "jsx-attributes": { include: ["accessibilityLabel","accessibilityHint","placeholder","title","label","subtitle","description","message","cta","buttonText","confirmText","cancelText","emptyText"] },
+        callees: { include: ["Alert.alert","Alert.prompt","toast","showToast","notify"] },
+        "object-properties": { include: ["text","title","message","label","body","subtitle","description","hint","placeholder","cta","buttonText"] },
+        words: { exclude: [
+          "^[^a-zA-Z]*$",
+          "^[a-z0-9_:/@-]+$",
+          "^[A-Z0-9_]+$",
+          "^[a-z][A-Za-z0-9]*(\\.[A-Za-z][A-Za-z0-9]*)+$",
+          "^#[0-9a-fA-F]{3,8}$",
+          // mode: "all" checks every Literal node, including the 'use strict' directive prologue
+          "^use strict$"
+        ] },
+      }],
       // Catch raw text children in <Text> nodes
       "react-native/no-raw-text": [
         "error",
@@ -98,6 +48,30 @@ module.exports = defineConfig([
           skip: ["CustomText"], // If you have custom text wrappers
         },
       ],
+    },
+  },
+  // These emit developer/diagnostic text (trace labels, sanitizer markers,
+  // log messages), not user-facing copy, so i18n literal-string checks don't apply.
+  {
+    files: [
+      "lib/openTrace.ts",
+      "services/diagnostics.ts",
+      "services/sanitize.ts",
+      "services/server-diagnostics.ts",
+      "lib/conversationHref.ts",
+      "lib/rtl.ts",
+    ],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
+  // design/ is reference material (mockups, UI kits, scratch) imported by nothing
+  // under app/ or components/, and demo/ is a standalone demo server — neither
+  // ships in the app, so their strings aren't user-facing copy to translate.
+  {
+    files: ["design/**/*.{js,jsx,ts,tsx}", "demo/**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "i18next/no-literal-string": "off",
     },
   },
   {
