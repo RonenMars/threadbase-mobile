@@ -137,3 +137,83 @@ test('accepts a Maestro newer than the pinned version', () => {
   expect(result.status).toBe(0);
   expect(result.stdout).toContain(`newer than the pinned ${PINNED}`);
 });
+
+/**
+ * iOS harness. Stubs `xcrun` so the script sees one booted simulator and every
+ * simctl invocation is recorded to a file, which is how the reboot is asserted
+ * without a real simulator.
+ */
+function runIosCheck({ env: extraEnv = {}, maestroVersion = PINNED } = {}) {
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'check-sim-ios-bin-'));
+  tmpDirs.push(bin);
+  const calls = path.join(bin, 'simctl-calls.txt');
+  const devices = JSON.stringify({
+    devices: {
+      'com.apple.CoreSimulator.SimRuntime.iOS-26-4': [
+        { name: 'Threadbase-Clean', udid: 'UDID-1', state: 'Booted' },
+      ],
+    },
+  });
+
+  fs.writeFileSync(
+    path.join(bin, 'maestro'),
+    `#!/bin/sh\nprintf '${maestroVersion}\\n'\n`,
+    { mode: 0o755 },
+  );
+  fs.writeFileSync(
+    path.join(bin, 'xcrun'),
+    `#!/bin/sh
+printf '%s\\n' "$*" >> '${calls}'
+case "$*" in
+  *'list devices --json'*) cat <<'JSON'
+${devices}
+JSON
+  ;;
+esac
+exit 0
+`,
+    { mode: 0o755 },
+  );
+
+  const result = spawnSync(process.execPath, [SCRIPT], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      E2E_PLATFORM: 'ios',
+      CI: '',
+      GITHUB_ACTIONS: '',
+      E2E_SKIP_SIM_REBOOT: '',
+      PATH: [bin, process.env.PATH].join(path.delimiter),
+      ...extraEnv,
+    },
+  });
+  result.simctlCalls = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8') : '';
+  return result;
+}
+
+test('reboots the booted simulator before handing off to Maestro', () => {
+  const result = runIosCheck();
+
+  expect(result.status).toBe(0);
+  expect(result.simctlCalls).toContain('simctl shutdown UDID-1');
+  expect(result.simctlCalls).toContain('simctl bootstatus UDID-1 -b');
+  // Shutdown must precede the boot-and-wait, or the run starts on the old session.
+  expect(result.simctlCalls.indexOf('shutdown UDID-1')).toBeLessThan(
+    result.simctlCalls.indexOf('bootstatus UDID-1'),
+  );
+});
+
+test('E2E_SKIP_SIM_REBOOT=1 leaves the simulator alone', () => {
+  const result = runIosCheck({ env: { E2E_SKIP_SIM_REBOOT: '1' } });
+
+  expect(result.status).toBe(0);
+  expect(result.simctlCalls).not.toContain('shutdown');
+  expect(result.stdout).toContain('Skipping the pre-run simulator reboot.');
+});
+
+test('CI skips the reboot because each job boots its own simulator', () => {
+  const result = runIosCheck({ env: { CI: 'true' } });
+
+  expect(result.status).toBe(0);
+  expect(result.simctlCalls).not.toContain('shutdown');
+});

@@ -12,6 +12,10 @@
 // prove XCTest teardown stayed healthy; e2e/run-maestro.js separately detects
 // the known XCTAutomationSupport teardown crash. Set E2E_ALLOW_UNSUPPORTED_IOS=1
 // to bypass for any runtime above the compatibility ceiling below.
+//
+// On iOS this also reboots the booted simulator before handing off, so each run
+// starts from a clean XCTest automation session (see rebootSimulators below).
+// Set E2E_SKIP_SIM_REBOOT=1 to opt out; CI skips it automatically.
 const { execFileSync } = require('child_process')
 
 const E2E_PLATFORM = process.env.E2E_PLATFORM || 'ios'
@@ -212,6 +216,45 @@ if (unsupported.length > 0 && allowUnsupported) {
     `Warning: running on iOS ${unsupported[0].major ?? '?'} with E2E_ALLOW_UNSUPPORTED_IOS=1 — ` +
       'above the verified ceiling; flows may fail if Maestro cannot drive this runtime.',
   )
+}
+
+// Apple's XCTAutomationSupport teardown crash (Maestro #3494) accumulates
+// across serial Maestro runs on iOS 26.x: SpringBoard and SafariViewService die
+// together inside `-[XCTAutomationSession initWithAccessibilityFramework:...]`
+// reading 0x20 off a nil object. On 2026-08-21 both died at the same
+// microsecond after five flows on one boot, and — because Maestro had already
+// reported success — the runs after that were quietly driving a crashed
+// simulator, producing a different failure than the same flow gave on a fresh
+// boot. Apple has no fix and Maestro has no workaround, so the only lever left
+// is exposure: hand every invocation a freshly booted simulator.
+//
+// CI boots a clean simulator per job, so this is local-only. A reboot that
+// fails is reported and skipped rather than failing the run, but it is never
+// silent: a dirty automation session is exactly what makes later results
+// untrustworthy.
+function rebootSimulators(sims) {
+  for (const sim of sims) {
+    console.log(`Rebooting ${sim.name} so Maestro starts from a clean automation session...`)
+    try {
+      execFileSync('xcrun', ['simctl', 'shutdown', sim.udid], { stdio: 'inherit' })
+      execFileSync('xcrun', ['simctl', 'bootstatus', sim.udid, '-b'], { stdio: 'inherit' })
+    } catch (error) {
+      console.warn(
+        `Warning: could not reboot ${sim.name} (${error.message}).\n` +
+          'Continuing on the simulator as it is — if it already crashed inside XCTest ' +
+          'teardown, this run and every run after it are untrustworthy.',
+      )
+    }
+  }
+}
+
+const skipReboot =
+  process.env.E2E_SKIP_SIM_REBOOT === '1' || !!process.env.CI || !!process.env.GITHUB_ACTIONS
+
+if (skipReboot) {
+  console.log('Skipping the pre-run simulator reboot.')
+} else {
+  rebootSimulators(booted)
 }
 
 console.log('iOS simulator is running.')

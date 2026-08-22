@@ -132,6 +132,11 @@ recording path therefore goes through `e2e/run-maestro.js`, which:
 6. copies matching reports to `e2e/_artifacts/xctest-crashes/`, which is git-ignored and is
    included in the CI failure artifact upload.
 
+`e2e/check-sim.js` reboots the booted simulator before every local iOS run, so each
+invocation starts from a clean XCTest automation session rather than inheriting one that
+may already have crashed. This lowers exposure; it does not fix the Apple defect. CI skips
+it (each job boots its own simulator), and `E2E_SKIP_SIM_REBOOT=1` opts out locally.
+
 When the guard reports this crash, stop further hierarchy-based acceptance testing: the
 current Maestro result and later evidence from that simulator session are not trustworthy.
 Keep the copied report, then manually shut down and reboot the affected simulator before a
