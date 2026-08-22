@@ -59,6 +59,27 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
   const [values, setValues] = useState<ClaudeFlagValues>({})
   const [extraArgs, setExtraArgs] = useState('')
 
+  // Every flag's copy is enumerated here rather than built as
+  // t(`…flags.${def.id}.label`), so each key is a literal a static analyser can
+  // see — `i18next-cli status --unused` cannot resolve a key assembled from a
+  // server value, and would report all twelve as dead.
+  //
+  // `def.id` is a plain string on the wire (types/api.ts:473) and the registry
+  // comes from the streamer, so this list is a snapshot of the ids we have copy
+  // for — the same snapshot locales/*/servers.json already encodes. An id that
+  // isn't here degrades to the raw CLI flag, which is what defaultValue did.
+  const flagCopy = useMemo<Record<string, { label: string; description: string }>>(
+    () => ({
+      permissionMode: { label: t('servers:claudeFlags.flags.permissionMode.label'), description: t('servers:claudeFlags.flags.permissionMode.description') },
+      addDir: { label: t('servers:claudeFlags.flags.addDir.label'), description: t('servers:claudeFlags.flags.addDir.description') },
+      allowedTools: { label: t('servers:claudeFlags.flags.allowedTools.label'), description: t('servers:claudeFlags.flags.allowedTools.description') },
+      disallowedTools: { label: t('servers:claudeFlags.flags.disallowedTools.label'), description: t('servers:claudeFlags.flags.disallowedTools.description') },
+      maxBudgetUsd: { label: t('servers:claudeFlags.flags.maxBudgetUsd.label'), description: t('servers:claudeFlags.flags.maxBudgetUsd.description') },
+      fallbackModel: { label: t('servers:claudeFlags.flags.fallbackModel.label'), description: t('servers:claudeFlags.flags.fallbackModel.description') },
+    }),
+    [t],
+  )
+
   // Seed the edit state from the server's copy by ADJUSTING STATE DURING RENDER
   // (https://react.dev/reference/react/useState#storing-information-from-previous-renders)
   // rather than in an effect, which would cost a second render pass on every load.
@@ -84,11 +105,6 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
 
   // null = server predates the feature. Render nothing rather than an error.
   if (!data) return null
-
-  const flagLabel = (def: ClaudeFlagDefinition) =>
-    t(`servers:claudeFlags.flags.${def.id}.label`, { defaultValue: def.flag })
-  const flagDescription = (def: ClaudeFlagDefinition) =>
-    t(`servers:claudeFlags.flags.${def.id}.description`, { defaultValue: '' })
 
   const apply = (def: ClaudeFlagDefinition, next: ClaudeFlagValue | undefined) => {
     setValues((prev) => {
@@ -129,15 +145,16 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
       {data.registry.map((def) => {
         const value = values[def.id]
         const dangerous = value !== undefined && claudeFlagValueRisk(def, value) === 'dangerous'
+        const copy = flagCopy[def.id] ?? { label: def.flag, description: '' }
 
         return (
           <View key={def.id} style={styles.row}>
             <View style={styles.rowText}>
               <Text style={[styles.rowLabel, dangerous && styles.rowLabelDangerous]}>
-                {flagLabel(def)}
+                {copy.label}
               </Text>
-              {flagDescription(def) ? (
-                <Text style={styles.rowDescription}>{flagDescription(def)}</Text>
+              {copy.description ? (
+                <Text style={styles.rowDescription}>{copy.description}</Text>
               ) : null}
             </View>
 

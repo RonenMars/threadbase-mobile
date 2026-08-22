@@ -145,6 +145,36 @@ describe('ServerClaudeFlagsSection', () => {
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
+  // The copy is enumerated in the component instead of being assembled as
+  // t(`…flags.${def.id}.label`), so a static analyser can see every key. That
+  // trades a build-time key for a runtime lookup, and the lookup has to keep
+  // degrading the way `defaultValue` did against a registry this build has
+  // never seen — the streamer may add a flag at any time.
+  it('renders translated copy for a known flag id', async () => {
+    seed()
+    const { getByText } = await renderSection()
+
+    expect(getByText('Permission mode')).toBeTruthy()
+    expect(getByText('How much Claude asks before acting. Bypass modes remove every confirmation.')).toBeTruthy()
+    expect(getByText('Budget limit (USD)')).toBeTruthy()
+  })
+
+  it('falls back to the raw CLI flag for an id it has no copy for', async () => {
+    seed({
+      registry: [
+        ...REGISTRY,
+        { id: 'futureFlagFromANewerServer', flag: '--future-flag', valueType: 'boolean', risk: 'low' },
+      ],
+    })
+    const { getByText, getByTestId, queryByText } = await renderSection()
+
+    // Degrades to the flag itself rather than leaking the i18n key.
+    expect(getByText('--future-flag')).toBeTruthy()
+    expect(queryByText('servers:claudeFlags.flags.futureFlagFromANewerServer.label')).toBeNull()
+    // …and still renders a working control for it.
+    expect(getByTestId('claude-flag-futureFlagFromANewerServer')).toBeTruthy()
+  })
+
   it('sends extra args when provided', async () => {
     seed()
     const { getByTestId } = await renderSection()

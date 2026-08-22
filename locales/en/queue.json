@@ -1,7 +1,7 @@
 {
   "planPreview": {
     "title": "Plan Preview",
-    "autoProceed": "Auto-proceed in {{count}}s",
+    "autoProceed": "Auto-proceed in {{seconds}}s",
     "proceed": "▶ Proceed",
     "editPrompt": "Edit Prompt",
     "sendEdit": "Send Edit",

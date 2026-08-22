@@ -226,7 +226,7 @@ function TokenCard({
 }) {
   const { t } = useTranslation('settings')
   const s = useMemo(() => styles(theme), [theme])
-  const stateLabel = stateLabelFor(t, token.state)
+  const stateLabel = t(STATE_LABEL_KEYS[token.state])
   let deliveryHint = t('notificationHealth.hintHealthy')
   if (token.state === 'never-delivered') deliveryHint = t('notificationHealth.hintNeverDelivered')
   else if (token.state === 'failing' || token.state === 'dead') {
@@ -260,28 +260,18 @@ function TokenCard({
   )
 }
 
-function stateLabelFor(
-  t: (key:
-    | 'notificationHealth.state.never-delivered'
-    | 'notificationHealth.state.healthy'
-    | 'notificationHealth.state.failing'
-    | 'notificationHealth.state.dead'
-    | 'notificationHealth.state.revoked') => string,
-  state: PushTokenState,
-): string {
-  switch (state) {
-    case 'never-delivered':
-      return t('notificationHealth.state.never-delivered')
-    case 'healthy':
-      return t('notificationHealth.state.healthy')
-    case 'failing':
-      return t('notificationHealth.state.failing')
-    case 'dead':
-      return t('notificationHealth.state.dead')
-    case 'revoked':
-      return t('notificationHealth.state.revoked')
-  }
-}
+// A key map indexed at the call site, rather than a helper taking `t` as a
+// parameter: i18next-cli cannot trace a parameter back to the caller's
+// useTranslation(), so it filed these under defaultNS and reported all five as
+// unused. It does follow a direct index into a const, and this keeps the
+// caller's single-namespace TFunction typing intact.
+const STATE_LABEL_KEYS = {
+  'never-delivered': 'notificationHealth.state.never-delivered',
+  healthy: 'notificationHealth.state.healthy',
+  failing: 'notificationHealth.state.failing',
+  dead: 'notificationHealth.state.dead',
+  revoked: 'notificationHealth.state.revoked',
+} as const satisfies Record<PushTokenState, string>
 
 function styles(theme: Theme) {
   return StyleSheet.create({

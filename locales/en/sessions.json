@@ -60,7 +60,7 @@
     "msgs_one": "{{count}} msg",
     "msgs_other": "{{count}} msgs",
     "activityLive": "{{count}} live",
-    "activityToday": "{{count}} today",
+    "activityToday": "{{total}} today",
     "activityLast": "last {{time}}",
     "timeNow": "now",
     "timeYesterday": "Yesterday"

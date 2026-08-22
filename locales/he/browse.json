@@ -1,7 +1,7 @@
 {
   "nav": {
     "back": "› חזרה",
-    "recentDirs": "תיקיות אחרונות ({{count}})",
+    "recentDirs": "תיקיות אחרונות ({{total}})",
     "displayAll": "הצג הכל",
     "allRecentDirs": "תיקיות אחרונות",
     "searchRecentDirs": "חיפוש מיקומים",
