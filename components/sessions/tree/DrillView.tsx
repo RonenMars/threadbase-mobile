@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { ActivityIndicator, View, Text, TouchableOpacity, FlatList, SectionList } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function DrillView({ node, serverId, onBack }: Props) {
+  const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const router = useRouter()
@@ -129,8 +131,8 @@ export function DrillView({ node, serverId, onBack }: Props) {
   // conversations, so the section doesn't pop in after the fetch resolves.
   const showHistorySection = conversationItems.length > 0 || node.conversationCount > 0
   const sections = [
-    ...(sessionItems.length > 0 ? [{ title: 'Sessions', data: sessionItems }] : []),
-    ...(showHistorySection ? [{ title: 'History', data: conversationItems }] : []),
+    ...(sessionItems.length > 0 ? [{ title: t('loading.sessionsLabel'), data: sessionItems }] : []),
+    ...(showHistorySection ? [{ title: t('header.history'), data: conversationItems }] : []),
   ]
 
   return (

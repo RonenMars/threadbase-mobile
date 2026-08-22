@@ -44,6 +44,10 @@ function textToValue(def: ClaudeFlagDefinition, text: string): ClaudeFlagValue |
  * knows about a newer flag needs no app update. Hidden entirely when the server
  * predates the feature (query resolves to null).
  */
+// CLI flags the user retypes verbatim, not copy — translating them would make them wrong.
+// eslint-disable-next-line i18next/no-literal-string
+const EXTRA_ARGS_PLACEHOLDER = '--bare --agent reviewer'
+
 export function ServerClaudeFlagsSection({ serverId }: Props) {
   const { t } = useTranslation(['servers', 'common'])
   const theme = useTheme()
@@ -189,7 +193,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
         onChangeText={setExtraArgs}
         autoCapitalize="none"
         autoCorrect={false}
-        placeholder="--bare --agent reviewer"
+        placeholder={EXTRA_ARGS_PLACEHOLDER}
         placeholderTextColor={theme.text.secondary}
         testID="claude-flag-extra-args"
       />

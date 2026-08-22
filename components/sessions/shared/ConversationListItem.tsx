@@ -315,7 +315,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
           {provider != null ? (
             <View style={provider === 'codex-cli' ? styles.codexBadge : styles.claudeBadge} testID="provider-badge">
               <Text style={provider === 'codex-cli' ? styles.codexBadgeText : styles.claudeBadgeText}>
-                {provider === 'codex-cli' ? 'Codex' : 'Claude'}
+                {provider === 'codex-cli' ? t('provider.codex') : t('provider.claude')}
               </Text>
             </View>
           ) : null}

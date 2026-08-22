@@ -1,5 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useSettingsStore } from '@/stores/settings'
+import { persistSettingsNow, useSettingsStore } from '@/stores/settings'
+
+jest.mock('expo-localization', () => ({
+  getLocales: jest.fn(() => [{ languageCode: 'he' }]),
+}))
+
+const MODULE_DEFAULT_LOCALE = useSettingsStore.getState().locale
 
 const DEFAULT_NOTIFICATIONS = {
   waitingInput: true,
@@ -24,6 +30,45 @@ beforeEach(() => {
     crashReportingEnabled: false,
     crashReportingNoticeDismissed: false,
     sessionLeaveAction: 'ask',
+    locale: 'he',
+  })
+})
+
+describe('SettingsStore – locale', () => {
+  it('defaults to the resolved device locale', () => {
+    expect(MODULE_DEFAULT_LOCALE).toBe('he')
+  })
+
+  it('persists a supported locale', async () => {
+    useSettingsStore.getState().setLocale('ar')
+    await persistSettingsNow()
+
+    const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
+    expect(JSON.parse(raw[1]).locale).toBe('ar')
+  })
+
+  it('coerces an invalid persisted locale to the resolved device locale', async () => {
+    useSettingsStore.setState({ locale: 'ar' })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify({ locale: 'ja' }))
+
+    await useSettingsStore.getState().hydrate()
+
+    expect(useSettingsStore.getState().locale).toBe('he')
+  })
+
+  it('awaits the AsyncStorage write in persistSettingsNow', async () => {
+    let complete = false
+    ;(AsyncStorage.setItem as jest.Mock).mockImplementationOnce(
+      () => new Promise<void>((resolve) => setTimeout(() => {
+        complete = true
+        resolve()
+      }, 0)),
+    )
+
+    const persistence = persistSettingsNow()
+    expect(complete).toBe(false)
+    await persistence
+    expect(complete).toBe(true)
   })
 })
 

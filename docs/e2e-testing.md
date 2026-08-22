@@ -32,7 +32,7 @@ run the retained macOS/iOS workflow.
 
 2. **iOS Simulator:** Must be booted before running tests
    ```bash
-   xcrun simctl list | grep Booted
+   xcrun simctl list devices booted
    ```
 
 3. **Build the app:** `npm run ios` skips the Expo Dev Launcher screen (via `launchMode: "most-recent"` in `app.json`) and boots straight into the app
@@ -49,7 +49,7 @@ run the retained macOS/iOS workflow.
 **Purpose:** Tests the complete onboarding and session creation flow using the public demo server.
 
 **What it tests:**
-1. ✅ Onboarding flow (4 steps: Welcome → Connect → Notifications → Done)
+1. ✅ Onboarding flow (5 steps: Language → Welcome → Connect → Notifications → Done)
 2. ✅ Manual credential entry (clearing pre-filled values)
 3. ✅ Demo server connection (URL from `DEMO_SERVER_URL` env var)
 4. ✅ Session creation via Browse modal
@@ -188,12 +188,17 @@ appId: ${APP_BUNDLE_ID}
    - waitForAnimationToEnd
    ```
 
-3. **Hide keyboard when needed**
+3. **Scroll past the keyboard on iOS 26.x**
    ```yaml
    - inputText: "text"
-   - hideKeyboard
+   - swipe:
+       start: 50%, 45%
+       end: 50%, 25%
+       duration: 300
    - waitForAnimationToEnd
    ```
+
+   Maestro's `hideKeyboard` can fail in the iOS 26.x XCTest accessibility path and can coincide with a simulator SpringBoard crash. See [`troubleshooting.md`](./troubleshooting.md) → "SpringBoard crashes in `XCTAutomationSupport` during Maestro". Use `pressKey: Enter` only for a single-line input whose return behavior is safe; it inserts a newline in multiline inputs.
 
 4. **Handle conditional UI (modals, dialogs)**
    ```yaml
@@ -286,7 +291,10 @@ Then pass the prop from the parent:
 ### Keyboard covering elements
 
 ```yaml
-- hideKeyboard
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
 - waitForAnimationToEnd
 - tapOn:
     id: "button-under-keyboard"
@@ -383,8 +391,6 @@ The HTML report and debug artifacts can be uploaded as CI artifacts for review.
 - tapOn:
     id: "message-input"
 - inputText: "What is 2+2?"
-- hideKeyboard
-- waitForAnimationToEnd
 - tapOn:
     id: "send-message-button"
 ```

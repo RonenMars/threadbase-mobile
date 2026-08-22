@@ -4,10 +4,15 @@
   },
   "status": {
     "connected": "Подключено",
-    "disconnected": "Отключено"
+    "disconnected": "Отключено",
+    "unreachable": "Недоступен",
+    "fetchFailed": "Ошибка обновления",
+    "connecting": "Подключение…"
   },
+  "defaultLabel": "Сервер",
   "action": {
     "add": "Добавить сервер",
+    "edit": "Изменить сервер",
     "connect": "Подключить",
     "details": "Подробнее"
   },
@@ -20,10 +25,40 @@
     "labelOptional": "Метка (необязательно)",
     "serverUrl": "URL сервера",
     "apiKey": "API-ключ",
-    "hint": "Запустите tb-streamer pair на вашем Mac, чтобы получить QR-код, или tb serve --tunnel для публичного URL."
+    "hint": "Запустите tb-streamer pair на вашем Mac, чтобы получить QR-код, или tb serve --tunnel для публичного URL.",
+    "scanQrLabel": "Сканировать QR для сопряжения",
+    "namePlaceholder": "Рабочий Mac, домашний сервер…",
+    "labelPlaceholder": "например, Рабочий Mac, домашний сервер",
+    "apiKeyPlaceholder": "Вставьте сюда ваш API-ключ",
+    "showApiKey": "Показать",
+    "hideApiKey": "Скрыть",
+    "urlHint": "IP-адрес в локальной сети, имя хоста или любой URL (например, https://myserver.com)",
+    "urlRequired": "Укажите адрес сервера.",
+    "apiKeyRequired": "Укажите API-ключ."
   },
   "manage": {
     "addServer": "Добавить сервер"
+  },
+  "card": {
+    "viewError": "Показать ошибку подключения",
+    "delete": "Удалить сервер",
+    "edit": "Изменить сервер",
+    "refresh": "Обновить информацию о сервере"
+  },
+  "errorModal": {
+    "machine": "Компьютер",
+    "platform": "Платформа",
+    "version": "Версия"
+  },
+  "discardDialog": {
+    "title": "Отменить изменения?",
+    "message": "Несохранённые изменения будут потеряны.",
+    "keepEditing": "Продолжить редактирование",
+    "discard": "Отменить"
+  },
+  "noServersWelcome": {
+    "repoLabel": "репозиторий tb-streamer",
+    "addLabel": "Добавить сервер"
   },
   "filter": {
     "title": "Фильтры",
@@ -40,7 +75,31 @@
     "resetDefaults": "Сбросить к умолчаниям",
     "close": "✕",
     "editOrder": "Изменить порядок",
-    "lockOrder": "Зафиксировать порядок"
+    "lockOrder": "Зафиксировать порядок",
+    "sortLastMessage": "Последнее сообщение",
+    "sortProjectName": "Название проекта",
+    "sortCreatedDate": "Дата создания",
+    "newestFirst": "Сначала новые",
+    "oldestFirst": "Сначала старые",
+    "statusRunning": "Работает",
+    "statusActive": "Активен",
+    "statusIdle": "Неактивен"
+  },
+  "stateMessage": {
+    "buildingHistoryNamed": "{{server}} формирует историю сессий…",
+    "buildingHistory": "Формируется история сессий…",
+    "unreachableNamed": "Не удаётся связаться с {{server}}. Проверьте подключение или адрес сервера.",
+    "unreachableAll": "Не удаётся связаться ни с одним сервером. Проверьте подключение или адрес сервера.",
+    "refreshFailedNamed": "Не удалось обновить сессии с {{server}}.",
+    "refreshFailedAll": "Не удалось обновить сессии ни с одного сервера.",
+    "refreshFailedSome": "Не удалось обновить сессии с некоторых серверов.",
+    "disconnectedNamed": "Соединение с {{server}} потеряно. Показаны сессии из кеша.",
+    "disconnectedAll": "Соединение со всеми серверами потеряно. Показаны сессии из кеша.",
+    "disconnectedSome": "Соединение с некоторыми серверами потеряно. Показаны сессии из кеша.",
+    "connectingNamed": "Подключение к {{server}}…",
+    "connectingAll": "Подключение к серверам…",
+    "partialUnreachableNamed": "{{server}} недоступен. Некоторые сессии могут отсутствовать.",
+    "partialUnreachableSome": "Некоторые серверы недоступны. Часть сессий может отсутствовать."
   },
   "displayedServers": {
     "all": "Все",
@@ -59,13 +118,18 @@
     "close": "✕",
     "menuEdit": "Изменить",
     "menuRefresh": "Обновить",
-    "menuDelete": "Удалить"
+    "menuDelete": "Удалить",
+    "optionsLabel": "Параметры сервера",
+    "titleSingle": "Состояние сервера",
+    "titleMultiple": "Состояние серверов"
   },
   "error": {
     "label": "Сервер недоступен",
     "subtitle": "Не удалось подключиться к {{server}}. Убедитесь, что сервер запущен и сеть доступна.",
     "expand": "Показать детали ошибки",
-    "collapse": "Скрыть детали ошибки"
+    "collapse": "Скрыть детали ошибки",
+    "localhostUnreachable": "Не удаётся подключиться к 'localhost' с физического устройства. Используйте локальный IP-адрес вашего Mac (например, http://192.168.x.x:8766) или запустите: tb serve --tunnel",
+    "connectionFailed": "Не удалось подключиться. Проверьте адрес сервера и повторите попытку."
   },
   "indexing": {
     "label": "Сканирование и индексирование бесед…",

@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useServersStore } from '@/stores/servers'
 import type { ProjectGroup } from '@/components/sessions/hub/useProjectGroups'
 import type { MultiConversation, MultiSession } from '@/types/api'
+import i18n from '@/test-utils/i18n-setup'
 
 jest.mock('@/components/sessions/hub/SessionRow', () => {
   const React = require('react')
@@ -81,7 +82,8 @@ function renderCard() {
 }
 
 describe('ProjectHubCard', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en')
     useSettingsStore.setState({ mergeChats: true })
     useServersStore.setState({
       servers: {
@@ -112,5 +114,19 @@ describe('ProjectHubCard', () => {
       errorSpy.mockRestore()
       expect(duplicateKeyWarning).toBeUndefined()
     }
+  })
+
+  it('localizes the unmerged home-card section labels', async () => {
+    useSettingsStore.setState({ mergeChats: false })
+    await i18n.changeLanguage('he')
+
+    const { getByText, queryByText } = await renderCard()
+
+    expect(getByText('סשנים')).toBeTruthy()
+    expect(getByText('שיחות')).toBeTruthy()
+    expect(getByText(/1 פעילים · אחרון:/)).toBeTruthy()
+    expect(queryByText('SESSIONS')).toBeNull()
+    expect(queryByText('CONVERSATIONS')).toBeNull()
+    expect(queryByText(/1 live · last/)).toBeNull()
   })
 })

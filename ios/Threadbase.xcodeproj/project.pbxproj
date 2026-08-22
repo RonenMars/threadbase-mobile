@@ -67,10 +67,10 @@
 		F11748442D0722820044C1D9 /* Threadbase-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Threadbase-Bridging-Header.h"; path = "Threadbase/Threadbase-Bridging-Header.h"; sourceTree = "<group>"; };
 		FD8066D9ED1C6EEA1C86D899 /* Pods-Threadbase.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Threadbase.debug.xcconfig"; path = "Target Support Files/Pods-Threadbase/Pods-Threadbase.debug.xcconfig"; sourceTree = "<group>"; };
 		FDF6BFA78F2D4C8786602C3E /* ExpoWidgetsTarget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = ExpoWidgetsTarget.appex; path = ExpoWidgetsTarget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		1424C25E746C40249950091B /* en */ = {isa = PBXFileReference; name = en; path = "en.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
-		C84651B6475345A9A1FDAB87 /* he */ = {isa = PBXFileReference; name = he; path = "he.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
-		4890FFA1CD5D46238C3DDADE /* ar */ = {isa = PBXFileReference; name = ar; path = "ar.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
-		B9CFA2AB3D3C4C459E3BDFEF /* ru */ = {isa = PBXFileReference; name = ru; path = "ru.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		1424C25E746C40249950091B /* en */ = {isa = PBXFileReference; name = en; path = "Threadbase/en.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		C84651B6475345A9A1FDAB87 /* he */ = {isa = PBXFileReference; name = he; path = "Threadbase/he.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		4890FFA1CD5D46238C3DDADE /* ar */ = {isa = PBXFileReference; name = ar; path = "Threadbase/ar.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		B9CFA2AB3D3C4C459E3BDFEF /* ru */ = {isa = PBXFileReference; name = ru; path = "Threadbase/ru.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

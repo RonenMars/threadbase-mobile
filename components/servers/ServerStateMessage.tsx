@@ -77,8 +77,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
         severity: 'info',
         detailKey: 'indexing',
         message: indexingLabel
-          ? `${indexingLabel} is building history…`
-          : 'Building session history…',
+          ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
+          : t('stateMessage.buildingHistory'),
       }
     }
 
@@ -88,8 +88,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
           severity: 'error',
           detailKey: 'unreachable',
           message: single
-            ? `Can't reach ${label}. Check your connection or server address.`
-            : "Can't reach any server. Check your connection or server address.",
+            ? t('stateMessage.unreachableNamed', { server: label })
+            : t('stateMessage.unreachableAll'),
         }
       }
       if (fetchFailed.length > 0) {
@@ -97,8 +97,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
           severity: 'error',
           detailKey: 'fetchFailed',
           message: single
-            ? `Couldn't refresh sessions from ${label}.`
-            : "Couldn't refresh sessions from any server.",
+            ? t('stateMessage.refreshFailedNamed', { server: label })
+            : t('stateMessage.refreshFailedAll'),
         }
       }
       if (disconnected.length > 0) {
@@ -106,15 +106,17 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
           severity: 'warning',
           detailKey: 'disconnected',
           message: single
-            ? `Disconnected from ${label}. Showing cached sessions.`
-            : 'Disconnected from all servers. Showing cached sessions.',
+            ? t('stateMessage.disconnectedNamed', { server: label })
+            : t('stateMessage.disconnectedAll'),
         }
       }
       if (connecting.length > 0) {
         return {
           severity: 'info',
           detailKey: 'connecting',
-          message: single ? `Connecting to ${label}…` : 'Connecting to servers…',
+          message: single
+            ? t('stateMessage.connectingNamed', { server: label })
+            : t('stateMessage.connectingAll'),
         }
       }
       return { severity: null, message: '', detailKey: null }
@@ -128,8 +130,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
         severity: 'info',
         detailKey: 'indexing',
         message: indexingLabel
-          ? `${indexingLabel} is building history…`
-          : 'Building session history…',
+          ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
+          : t('stateMessage.buildingHistory'),
       }
     }
     if (unreachable.length > 0) {
@@ -138,8 +140,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
         severity: 'warning',
         detailKey: 'unreachable',
         message: badLabel
-          ? `${badLabel} is unreachable. Some sessions may be missing.`
-          : 'Some servers are unreachable. Some sessions may be missing.',
+          ? t('stateMessage.partialUnreachableNamed', { server: badLabel })
+          : t('stateMessage.partialUnreachableSome'),
       }
     }
     if (fetchFailed.length > 0) {
@@ -148,8 +150,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
         severity: 'warning',
         detailKey: 'fetchFailed',
         message: badLabel
-          ? `Couldn't refresh sessions from ${badLabel}.`
-          : "Couldn't refresh sessions from some servers.",
+          ? t('stateMessage.refreshFailedNamed', { server: badLabel })
+          : t('stateMessage.refreshFailedSome'),
       }
     }
     if (disconnected.length > 0) {
@@ -158,8 +160,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
         severity: 'warning',
         detailKey: 'disconnected',
         message: badLabel
-          ? `Disconnected from ${badLabel}. Showing cached sessions.`
-          : 'Disconnected from some servers. Showing cached sessions.',
+          ? t('stateMessage.disconnectedNamed', { server: badLabel })
+          : t('stateMessage.disconnectedSome'),
       }
     }
     if (connecting.length > 0) {
@@ -167,14 +169,16 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       return {
         severity: 'info',
         detailKey: 'connecting',
-        message: connectingLabel ? `Connecting to ${connectingLabel}…` : 'Connecting to servers…',
+        message: connectingLabel
+          ? t('stateMessage.connectingNamed', { server: connectingLabel })
+          : t('stateMessage.connectingAll'),
       }
     }
 
     return { severity: null, message: '', detailKey: null }
     // wsConnectedCount triggers recompute when WS state flips
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeServerIds, fetchStatuses, wsConnectedCount, servers])
+  }, [activeServerIds, fetchStatuses, wsConnectedCount, servers, t])
 
   useEffect(() => {
     if (severity === 'info') {

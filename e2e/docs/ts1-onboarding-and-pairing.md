@@ -19,12 +19,13 @@
 
 **Steps:**
 1. Launch the app.
-2. Navigate through onboarding to the connection step.
-3. Choose QR pairing.
-4. Grant camera permission.
-5. Scan the QR code from `tb-streamer pair`.
-6. Finish onboarding and enter the hub.
-7. Kill and relaunch the app.
+2. Confirm the device-selected language.
+3. Continue through Welcome to the connection step.
+4. Choose QR pairing.
+5. Grant camera permission.
+6. Scan the QR code from `tb-streamer pair`.
+7. Continue through Notifications and Done to enter the hub.
+8. Kill and relaunch the app.
 
 **Expected results:**
 - The QR scanner opens and accepts the streamer QR code.
@@ -44,11 +45,12 @@
 
 **Steps:**
 1. Launch the app.
-2. Select manual connection.
-3. Enter the streamer URL.
-4. Enter the API key/token.
-5. Submit the connection.
-6. Finish onboarding and open the hub.
+2. Confirm the device-selected language.
+3. Continue through Welcome and select manual connection.
+4. Enter the streamer URL.
+5. Enter the API key/token.
+6. Submit the connection.
+7. Continue through Notifications and Done to open the hub.
 
 **Expected results:**
 - Valid credentials are accepted.
@@ -66,11 +68,12 @@
 **Preconditions:** Clean app install; one invalid API key; one unreachable URL.
 
 **Steps:**
-1. Attempt manual pairing with an invalid API key.
-2. Observe the error.
-3. Replace with a valid key but unreachable URL.
-4. Observe the error.
-5. Correct both values and retry.
+1. Confirm the device-selected language and continue through Welcome to manual pairing.
+2. Attempt manual pairing with an invalid API key.
+3. Observe the error.
+4. Replace with a valid key but unreachable URL.
+5. Observe the error.
+6. Correct both values and retry.
 
 **Expected results:**
 - Invalid token and unreachable URL fail without completing onboarding.

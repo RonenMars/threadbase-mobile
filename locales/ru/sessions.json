@@ -1,10 +1,27 @@
 {
   "header": {
     "title": "Сессии",
-    "history": "История"
+    "history": "История",
+    "serverStatus": "Состояние сервера"
   },
   "search": {
-    "placeholder": "Поиск сессий и бесед…"
+    "placeholder": "Поиск сессий и бесед…",
+    "accessibilityLabel": "Поиск"
+  },
+  "nameSession": {
+    "createTitle": "Назвать эту сессию?",
+    "exitTitle": "Назвать эту сессию перед выходом?",
+    "start": "Начать",
+    "placeholder": "напр., Исправить ошибку авторизации"
+  },
+  "slowLoading": {
+    "sessions": "Загрузка сессий занимает больше времени, чем ожидалось.\nЕщё мгновение…",
+    "detailTitle": "Детали сессии загружаются дольше обычного…",
+    "detailMessage": "Загружаем детали — это не должно занять много времени."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
   },
   "filter": {
     "label": "Фильтр и сортировка",
@@ -12,7 +29,7 @@
   },
   "list": {
     "empty": "Нет сессий",
-    "emptySubtitle": "Запустите сессию Claude Code,\nчтобы увидеть её здесь",
+    "emptySubtitle": "Запустите сессию Claude Code или Codex,\nчтобы увидеть её здесь",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
     "serverEmpty": "На этом сервере нет сессий",
@@ -31,7 +48,13 @@
     "prompts_one": "{{count}} промпт",
     "prompts_few": "{{count}} промпта",
     "prompts_many": "{{count}} промптов",
-    "prompts_other": "{{count}} промптов"
+    "prompts_other": "{{count}} промптов",
+    "actionsTitle": "Действия сессии",
+    "dismiss": "Закрыть",
+    "cancelConfirm": "Вы уверены?",
+    "confirmYes": "Да",
+    "confirmNo": "Нет",
+    "noBranch": "без git"
   },
   "hub": {
     "seeAll_one": "Показать {{count}} беседу →",
@@ -41,7 +64,12 @@
     "msgs_one": "{{count}} сообщение",
     "msgs_few": "{{count}} сообщения",
     "msgs_many": "{{count}} сообщений",
-    "msgs_other": "{{count}} сообщений"
+    "msgs_other": "{{count}} сообщений",
+    "activityLive": "Активных: {{count}}",
+    "activityToday": "Сегодня: {{count}}",
+    "activityLast": "последняя: {{time}}",
+    "timeNow": "сейчас",
+    "timeYesterday": "Вчера"
   },
   "loading": {
     "title": "Загрузка сессий",
@@ -129,5 +157,8 @@
     "running": "Работает",
     "finished": "Завершено",
     "channelName": "Активные сессии"
+  },
+  "tree": {
+    "unknownPath": "(неизвестно)"
   }
 }

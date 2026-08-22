@@ -22,6 +22,7 @@ export function ThinkingCard({ block, recycleKey }: Props) {
   const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
   const isRedacted = !block.thinking && !!block.signature
+  const toggleLabel = expanded ? t('thinking.collapse') : t('thinking.expand')
 
   return (
     <View style={[styles.container, isGlass && styles.containerGlass]}>
@@ -29,7 +30,7 @@ export function ThinkingCard({ block, recycleKey }: Props) {
       <TouchableOpacity
         style={styles.header}
         onPress={() => setExpanded((v) => !v)}
-        accessibilityLabel={expanded ? 'Collapse reasoning' : 'Expand reasoning'}
+        accessibilityLabel={toggleLabel}
       >
         <Text style={styles.label}>{t('thinking.label')}</Text>
         <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>

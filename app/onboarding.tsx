@@ -19,6 +19,9 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <OnboardingNavigator onDone={() => router.replace('/')} />
+    <OnboardingNavigator
+      onDone={() => router.replace('/')}
+      mode={mode === 'review' ? 'review' : undefined}
+    />
   )
 }

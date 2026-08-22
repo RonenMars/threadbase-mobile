@@ -24,7 +24,9 @@
     "removeTitle": "הסר סשן",
     "removeConfirm": "הסר",
     "stopTitle": "עצור סשן",
-    "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב."
+    "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב.",
+    "sendFailedTitle": "השליחה נכשלה",
+    "sendFailedGeneric": "לא ניתן לשלוח"
   },
   "status": {
     "disconnected": "מנותק",
@@ -35,9 +37,14 @@
     "waitMore": "המתן עוד"
   },
   "input": {
-    "placeholder": "שלח הודעה…"
+    "placeholder": "שלח הודעה…",
+    "attachLabel": "צירוף קובץ",
+    "expandLabel": "הרחב קלט",
+    "minimizeLabel": "מזער קלט"
   },
   "session": {
+    "infoTitle": "פרטי הסשן",
+    "renameLabel": "שנה את שם הסשן",
     "notFound": "סשן לא נמצא",
     "notFoundBody": "הסשן כבר לא קיים בשרת. ייתכן שהוא הסתיים או נוקה.",
     "backToHub": "חזרה למרכז",
@@ -53,6 +60,7 @@
     "alreadyRunningBody": "לסשן זה יש תהליך פעיל בשרת. חידוש כאן יעצור את התהליך ויתחיל סשן טרמינל חדש באפליקציה.",
     "overtake": "השתלט",
     "prompts_one": "פרומפט אחד",
+    "prompts_two": "שני פרומפטים",
     "prompts_other": "{{count}} פרומפטים",
     "viewModeTerminal": "טרמינל",
     "viewModeChat": "צ׳אט",
@@ -79,6 +87,7 @@
   },
   "history": {
     "header_one": "היסטוריה · הודעה אחת",
+    "header_two": "היסטוריה · שתי הודעות",
     "header_other": "היסטוריה · {{count}} הודעות",
     "expandLabel": "הרחב היסטוריית שיחה",
     "collapseLabel": "כווץ היסטוריית שיחה",

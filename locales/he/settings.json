@@ -18,6 +18,7 @@
   },
   "session": {
     "chatView": "תצוגת צ'אט",
+    "mergeChats": "מזג סשנים והיסטוריה כצ'אטים",
     "chatViewNote": "הצג סשנים חיים כבועות צ'אט במקום פלט טרמינל RAW. בטא — ייתכנו באגים והתכונה לא תמיד תעבוד.",
     "betaBadge": "בטא",
     "leaveAction": "פעולה ביציאה מסשן",
@@ -68,7 +69,18 @@
   },
   "addServer": {
     "selectedAction": "פעולה נבחרת ביצירה",
-    "resetAction": "אפס לשאול בכל פעם"
+    "resetAction": "אפס לשאול בכל פעם",
+    "actionAsk": "שאל בכל פעם",
+    "actionAdd": "הוסף למוצגים",
+    "actionReplace": "הצג רק את החדש",
+    "actionKeep": "שמור את הקיים",
+    "optionAsk": "שאל",
+    "optionAdd": "הוסף",
+    "optionReplace": "החלף",
+    "optionKeep": "שמור"
+  },
+  "privacy": {
+    "biometricLock": "דרוש Face ID / טביעת אצבע"
   },
   "history": {
     "messagePreview": "תצוגה מקדימה של הודעה",

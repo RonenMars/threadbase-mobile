@@ -24,7 +24,9 @@
     "removeTitle": "Remove Session",
     "removeConfirm": "Remove",
     "stopTitle": "Stop session",
-    "stopFailed": "Couldn't stop the session. Check your connection and try again."
+    "stopFailed": "Couldn't stop the session. Check your connection and try again.",
+    "sendFailedTitle": "Send failed",
+    "sendFailedGeneric": "Failed to send"
   },
   "status": {
     "disconnected": "Disconnected",
@@ -35,9 +37,14 @@
     "waitMore": "Wait more"
   },
   "input": {
-    "placeholder": "Send a message…"
+    "placeholder": "Send a message…",
+    "attachLabel": "Attach file",
+    "expandLabel": "Expand input",
+    "minimizeLabel": "Minimize input"
   },
   "session": {
+    "infoTitle": "Session Info",
+    "renameLabel": "Rename session",
     "notFound": "Session not found",
     "notFoundBody": "This session is no longer on the server. It may have ended or been cleaned up.",
     "backToHub": "Back to hub",

@@ -105,7 +105,7 @@ export function ServerFormFields({
             style={styles.input}
             value={label}
             onChangeText={onLabelChange}
-            placeholder="e.g. Work Mac, Home Server"
+            placeholder={t('form.labelPlaceholder')}
             placeholderTextColor={theme.text.secondary}
             autoCapitalize="words"
             autoCorrect={false}
@@ -180,7 +180,7 @@ export function ServerFormFields({
           style={[styles.input, styles.apiKeyInput]}
           value={apiKey}
           onChangeText={onApiKeyChange}
-          placeholder="Paste your API token here"
+          placeholder={t('form.apiKeyPlaceholder')}
           placeholderTextColor={theme.text.secondary}
           secureTextEntry={!showApiKey}
           autoCapitalize="none"

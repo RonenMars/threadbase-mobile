@@ -43,7 +43,7 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <View style={[styles.dot, server.isConnected ? styles.dotConnected : styles.dotDisconnected]} />
-              <Text style={styles.serverName}>{server.label || 'Server'}</Text>
+              <Text style={styles.serverName}>{server.label || t('defaultLabel')}</Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
               <X size={20} color={theme.text.secondary} />
@@ -53,10 +53,10 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
           {/* Server details */}
           <View style={styles.detailRows}>
             <DetailRow label="URL" value={server.url} mono />
-            <DetailRow label="API Key" value={maskApiKey(server.apiKey)} mono />
-            <DetailRow label="Machine" value={server.serverInfo?.machineName ?? '—'} />
-            <DetailRow label="Platform" value={server.serverInfo?.platform ?? '—'} />
-            <DetailRow label="Version" value={server.serverInfo ? `v${server.serverInfo.version}` : '—'} />
+            <DetailRow label={t('form.apiKey')} value={maskApiKey(server.apiKey)} mono />
+            <DetailRow label={t('errorModal.machine')} value={server.serverInfo?.machineName ?? '—'} />
+            <DetailRow label={t('errorModal.platform')} value={server.serverInfo?.platform ?? '—'} />
+            <DetailRow label={t('errorModal.version')} value={server.serverInfo ? `v${server.serverInfo.version}` : '—'} />
           </View>
 
           {/* Error box */}

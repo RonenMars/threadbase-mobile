@@ -1,5 +1,6 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -8,14 +9,15 @@ interface Props {
 }
 
 export function SessionDetailSlowBanner({ onAbort }: Props) {
+  const { t } = useTranslation(['sessions', 'common'])
   const theme = useTheme()
   return (
     <Banner
-      title="Session details are taking their time…"
-      message="Fetching the details — shouldn't be long."
+      title={t('slowLoading.detailTitle')}
+      message={t('slowLoading.detailMessage')}
       accent={theme.text.warning}
       icon={<ActivityIndicator color={theme.text.warning} />}
-      action={{ label: 'Cancel', onPress: onAbort, variant: 'destructive' }}
+      action={{ label: t('common:button.cancel'), onPress: onAbort, variant: 'destructive' }}
     />
   )
 }

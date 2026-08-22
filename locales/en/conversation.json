@@ -1,11 +1,17 @@
 {
   "header": {
     "title": "Conversation",
-    "containsImage": "📎 Contains image"
+    "containsImage": "📎 Contains image",
+    "titleFallback": "Conversation"
+  },
+  "info": {
+    "title": "Conversation Info",
+    "open": "Conversation info"
   },
   "list": {
     "loadingMore": "Loading more…",
-    "empty": "No messages in this conversation."
+    "empty": "No messages in this conversation.",
+    "searchPlaceholder": "Search conversations…"
   },
   "error": {
     "loadFailed": "Couldn't load conversation",
@@ -58,11 +64,18 @@
   "message": {
     "code": "Code",
     "tokens": "{{count}} tokens",
-    "errorBadge": "Error"
+    "errorBadge": "Error",
+    "toolFallback": "Tool"
   },
   "thinking": {
     "label": "Reasoning",
-    "redacted": "Reasoning redacted"
+    "redacted": "Reasoning redacted",
+    "expand": "Expand reasoning",
+    "collapse": "Collapse reasoning"
+  },
+  "connection": {
+    "notConnectedTitle": "Not connected",
+    "notConnectedMessage": "Waiting for connection — try again in a moment."
   },
   "search": {
     "matchCount": "{{current}} of {{total}}",
@@ -98,6 +111,15 @@
     "sendNoteBody": "Posts a compact file list into the live session input.",
     "cancel": "Cancel",
     "send": "Send",
-    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
+    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
+    "noteHeader": "Mobile review note (conversation-derived, may be incomplete vs git status):"
+  },
+  "favorites": {
+    "errorTitle": "Favorites error",
+    "updateFailed": "Failed to update favorites"
+  },
+  "share": {
+    "roleUser": "User",
+    "roleAssistant": "Assistant"
   }
 }

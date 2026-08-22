@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { Platform, Alert, ActionSheetIOS } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import * as Haptics from 'expo-haptics'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
@@ -17,6 +18,7 @@ import type { SessionRowProps } from './types'
 
 export function SessionRow({ session, forceServerChip = false }: SessionRowProps) {
   const router = useRouter()
+  const { t } = useTranslation(['sessions', 'common'])
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
@@ -43,13 +45,13 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Cancel Session', 'Cancel'], destructiveButtonIndex: 0, cancelButtonIndex: 1 },
+        { options: [t('card.cancel'), t('common:button.cancel')], destructiveButtonIndex: 0, cancelButtonIndex: 1 },
         (index) => {
           if (index === 0) {
-            Alert.alert('Cancel Session', 'Are you sure?', [
-              { text: 'No', style: 'cancel' },
+            Alert.alert(t('card.cancel'), t('card.cancelConfirm'), [
+              { text: t('card.confirmNo'), style: 'cancel' },
               {
-                text: 'Yes',
+                text: t('card.confirmYes'),
                 style: 'destructive',
                 onPress: () => {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
@@ -61,19 +63,19 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
         },
       )
     } else {
-      Alert.alert('Session Actions', session.projectName, [
-        { text: 'Cancel Session', style: 'destructive', onPress: () => cancelSession.mutate() },
-        { text: 'Dismiss', style: 'cancel' },
+      Alert.alert(t('card.actionsTitle'), session.projectName, [
+        { text: t('card.cancel'), style: 'destructive', onPress: () => cancelSession.mutate() },
+        { text: t('card.dismiss'), style: 'cancel' },
       ])
     }
-  }, [session, presentation.capabilities.canCancel, cancelSession])
+  }, [session, presentation.capabilities.canCancel, cancelSession, t])
 
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
 
-  const branchAndElapsed = [session.branch || 'no git', formatElapsed(session.elapsedMs)].join(' · ')
+  const branchAndElapsed = [session.branch || t('card.noBranch'), formatElapsed(session.elapsedMs)].join(' · ')
   const titleSuffix = sessionName?.trim() || branchAndElapsed
-  const promptCountLabel = `${session.promptCount} prompt${session.promptCount === 1 ? '' : 's'}`
+  const promptCountLabel = t('card.prompts', { count: session.promptCount })
   const activityTimestamp = presentation.activityAt ?? session.completedAt ?? session.startedAt
 
   return (

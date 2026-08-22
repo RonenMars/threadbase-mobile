@@ -106,4 +106,58 @@ describe('i18next/no-literal-string config', () => {
     const code = `'use strict';\nconst dir = 'rtl'`
     expect(fires(code, 'scripts/lint-fixture.js')).toBe(false)
   })
+
+  // `callees: { include: [...] }` means "check ONLY these calls" — the plugin
+  // skips the whole subtree of every other call, so a literal nested in any
+  // callback goes unreported. These four pin that the config uses `exclude`.
+  it('fires on a literal inside a callback argument', () => {
+    const code = `
+      import { Alert } from 'react-native'
+      onRetry(() => { Alert.alert('Restart failed', 'The session did not come back.') })
+    `
+    expect(fires(code)).toBe(true)
+  })
+
+  it('fires on a literal inside useMemo', () => {
+    const code = `const spec = useMemo(() => ({ label: 'Save changes now' }), [])`
+    expect(fires(code)).toBe(true)
+  })
+
+  it('fires on a literal inside .map', () => {
+    const code = `const rows = items.map(() => ({ text: 'Cancel Session' }))`
+    expect(fires(code)).toBe(true)
+  })
+
+  it('fires on a literal inside setTimeout', () => {
+    const code = `
+      import { Alert } from 'react-native'
+      setTimeout(() => { Alert.alert('Error', 'Something went wrong') }, 10)
+    `
+    expect(fires(code)).toBe(true)
+  })
+
+  it('stays silent on a clientLog message', () => {
+    const code = `clientLog.info('browse', 'start session pressed', { serverId })`
+    expect(fires(code)).toBe(false)
+  })
+
+  it('stays silent on a console call', () => {
+    const code = `console.log('[sentry] consent sync fired, enabled =', enabled)`
+    expect(fires(code)).toBe(false)
+  })
+
+  it('stays silent on an Error message', () => {
+    const code = `throw new Error('Server returned an unrecognized backup payload')`
+    expect(fires(code)).toBe(false)
+  })
+
+  it('stays silent on a colon-namespaced wire discriminant', () => {
+    const code = `goReady(id, 'session_update:ptyAttached')`
+    expect(fires(code)).toBe(false)
+  })
+
+  it('stays silent on an ANSI escape sequence', () => {
+    const code = `const key = delta > 0 ? '\\x1b[B' : '\\x1b[A'`
+    expect(fires(code)).toBe(false)
+  })
 })

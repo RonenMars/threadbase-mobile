@@ -61,3 +61,17 @@ export const PtyCursorSelected: Story = {
     block: { ...structured, source: 'pty', toolUseId: undefined, selectedIndex: 2 },
   },
 }
+
+// The window between the tap and the server taking the answer. The rows lock so
+// a double-tap cannot send twice; nothing else about the card changes yet.
+export const AnswerInFlight: Story = {
+  args: { block: permission, busy: true, onCancel: () => {} },
+}
+
+// Answered, but the gate has not been seen closing. The card stays up so the
+// user can see what they chose, dimmed and inert — it blocks nothing, which is
+// what makes an unconfirmed answer cost them nothing. Cancel is gone: there is
+// nothing left to cancel.
+export const Ghost: Story = {
+  args: { block: permission, ghost: true, onCancel: () => {} },
+}

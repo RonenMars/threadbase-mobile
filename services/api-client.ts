@@ -142,6 +142,36 @@ export function isQuestionClosedError(err: Error | null): boolean {
   return err instanceof NetworkError && err.code !== undefined && QUESTION_CLOSED_CODES.includes(err.code)
 }
 
+/**
+ * Every reason POST /api/sessions/:id/permission/answer gives for "this gate can
+ * no longer be answered": no gate is open (`gate_closed`), one is open but its
+ * contentKey differs (`gate_mismatch`), or the index is out of range for the
+ * open gate (`unknown_option`). Sent as `reason`, folded into `code` by
+ * request(), exactly like the /answer route above.
+ *
+ * Membership in this list is the whole classification — never the status class,
+ * and never merely that a `reason` came back. The 400 the route sends for a
+ * malformed body carries a free-text `reason` rather than one of these, so it
+ * falls through to retryable by construction. That is the safe direction: the
+ * expensive mistake is dismissing a card whose gate is genuinely still open,
+ * not leaving up a card whose gate has closed. An unrecognised code keeps the
+ * card.
+ *
+ * Only `gate_closed` is accompanied by a `permission_cancelled` broadcast — the
+ * other two leave a live gate on screen for every other client watching the
+ * session, so the server deliberately says nothing. That makes this list the
+ * only thing that clears the card for those two.
+ */
+const PERMISSION_CLOSED_CODES: readonly string[] = [
+  'gate_closed',
+  'gate_mismatch',
+  'unknown_option',
+]
+
+export function isPermissionClosedError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code !== undefined && PERMISSION_CLOSED_CODES.includes(err.code)
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.

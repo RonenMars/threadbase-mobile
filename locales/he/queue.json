@@ -5,12 +5,16 @@
     "proceed": "▶ המשך",
     "editPrompt": "ערוך פרומפט",
     "sendEdit": "שלח עריכה",
-    "cancel": "✕ ביטול"
+    "cancel": "✕ ביטול",
+    "editPlaceholder": "עריכת הפרומפט לפני ההמשך…"
   },
   "promptQueue": {
     "title": "תור פרומפטים",
     "pending_one": "אחד ממתין",
+    "pending_two": "שניים ממתינים",
     "pending_other": "{{count}} ממתינים",
-    "remove": "✕"
+    "remove": "✕",
+    "inputPlaceholder": "הוספת פרומפט לתור…",
+    "addLabel": "הוסף פרומפט לתור"
   }
 }

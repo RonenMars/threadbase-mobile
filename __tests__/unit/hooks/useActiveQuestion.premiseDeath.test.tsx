@@ -102,13 +102,31 @@ describe('useActiveQuestion – teardown when the card\'s premise dies', () => {
     expect(result.current.question?.source).toBe('permission')
   })
 
-  // The other half of the same rule: a disconnect must not disarm a
-  // suppression the user's own answer armed.
-  it('keeps an answered gate suppressed across a disconnect', async () => {
+  // Suppression is only justified while there is reason to believe the answer
+  // landed, and a disconnect destroys that reason. What arrives after a
+  // reconnect is not a stale repaint of a gate we already acted on — it is the
+  // server's fresh statement of what is open right now, and if the answer did
+  // land, nothing replays at all. So the card comes back only when a gate
+  // genuinely is still open, which is exactly when the user needs to see it.
+  it('shows an answered gate again when the reconnect says it is still open', async () => {
     const { result } = await setup()
     await act(() => __wsTest.emit('permission', gate))
     await act(() => result.current.clear())
     await act(() => __wsTest.emitStatus('srv-1', 'disconnected'))
+
+    await act(() => __wsTest.emit('permission', gate))
+    expect(result.current.question?.source).toBe('permission')
+  })
+
+  // The other two sites of that rule leave suppression alone. Leaving
+  // `waiting_input` is the gate demonstrably closing, so the reason to believe
+  // the answer landed is intact and a repaint must still be suppressed.
+  it('keeps an answered gate suppressed across a status teardown', async () => {
+    const { result } = await setup()
+    await act(() => __wsTest.emit('permission', gate))
+    await act(() => __wsTest.emit('session_update', sessionUpdate('waiting_input')))
+    await act(() => result.current.clear())
+    await act(() => __wsTest.emit('session_update', sessionUpdate('running')))
 
     await act(() => __wsTest.emit('permission', gate))
     expect(result.current.question).toBeNull()

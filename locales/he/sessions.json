@@ -1,10 +1,27 @@
 {
   "header": {
     "title": "סשנים",
-    "history": "היסטוריה"
+    "history": "היסטוריה",
+    "serverStatus": "מצב השרת"
   },
   "search": {
-    "placeholder": "חפש סשנים ושיחות…"
+    "placeholder": "חפש סשנים ושיחות…",
+    "accessibilityLabel": "חיפוש"
+  },
+  "nameSession": {
+    "createTitle": "לתת שם לסשן?",
+    "exitTitle": "לתת שם לסשן לפני היציאה?",
+    "start": "התחל",
+    "placeholder": "למשל, תיקון באג באימות"
+  },
+  "slowLoading": {
+    "sessions": "אחזור הסשנים אורך יותר מהצפוי.\nרק עוד רגע…",
+    "detailTitle": "פרטי הסשן מתעכבים…",
+    "detailMessage": "מביאים את הפרטים — זה לא אמור לקחת עוד הרבה זמן."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
   },
   "filter": {
     "label": "סנן ומיין",
@@ -12,7 +29,7 @@
   },
   "list": {
     "empty": "אין סשנים",
-    "emptySubtitle": "התחל סשן Claude Code\nכדי לראות אותו כאן",
+    "emptySubtitle": "התחילו סשן Claude Code או Codex\nכדי לראות אותו כאן",
     "noResults": "אין תוצאות",
     "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
     "serverEmpty": "אין סשנים בשרת זה",
@@ -29,13 +46,27 @@
     "sendInput": "שלח קלט",
     "cancel": "בטל סשן",
     "prompts_one": "פרומפט אחד",
-    "prompts_other": "{{count}} פרומפטים"
+    "prompts_two": "שני פרומפטים",
+    "prompts_other": "{{count}} פרומפטים",
+    "actionsTitle": "פעולות סשן",
+    "dismiss": "סגור",
+    "cancelConfirm": "האם אתם בטוחים?",
+    "confirmYes": "כן",
+    "confirmNo": "לא",
+    "noBranch": "ללא git"
   },
   "hub": {
     "seeAll_one": "ראה את כל השיחה →",
+    "seeAll_two": "ראה את שתי השיחות →",
     "seeAll_other": "ראה את כל {{count}} השיחות →",
     "msgs_one": "הודעה אחת",
-    "msgs_other": "{{count}} הודעות"
+    "msgs_two": "שתי הודעות",
+    "msgs_other": "{{count}} הודעות",
+    "activityLive": "{{count}} פעילים",
+    "activityToday": "{{count}} היום",
+    "activityLast": "אחרון: {{time}}",
+    "timeNow": "עכשיו",
+    "timeYesterday": "אתמול"
   },
   "loading": {
     "title": "טוען סשנים",
@@ -48,8 +79,10 @@
   },
   "live": {
     "headerLive_one": "חי · {{count}}",
+    "headerLive_two": "חי · {{count}}",
     "headerLive_other": "חי · {{count}}",
     "headerIdle_one": "סרק · {{count}}",
+    "headerIdle_two": "סרק · {{count}}",
     "headerIdle_other": "סרק · {{count}}"
   },
   "preview": {
@@ -119,5 +152,8 @@
     "running": "רץ",
     "finished": "הסתיים",
     "channelName": "סשנים חיים"
+  },
+  "tree": {
+    "unknownPath": "(לא ידוע)"
   }
 }

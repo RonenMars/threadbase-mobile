@@ -10,6 +10,7 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, DiffHunk, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 import { mark as traceMark, count as traceCount } from '@/lib/openTrace'
+import i18n from '@/lib/i18n'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
 import {
   deriveCursor,
@@ -70,7 +71,7 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
   }
   const conversations: Conversation[] = raw.filter((s): s is RawSessionMeta => s != null).map((s) => ({
     id: s.id,
-    title: s.session_name?.trim() || s.project_name || 'Conversation',
+    title: s.session_name?.trim() || s.project_name || i18n.t('conversation:header.titleFallback'),
     sessionName: s.session_name,
     projectPath: s.project_path ?? '',
     branch: s.git_branch,
@@ -270,9 +271,9 @@ export interface RawConversationDetail {
 
 // Resolve a tool name from tool_use_id by looking at sibling content blocks.
 function resolveToolName(toolUseId: string | undefined, blocks: RawContentBlock[] | undefined): string {
-  if (!toolUseId || !blocks) return 'Tool'
+  if (!toolUseId || !blocks) return i18n.t('conversation:message.toolFallback')
   const match = blocks.find((b) => b.type === 'tool_use' && b.id === toolUseId)
-  return match?.name ?? 'Tool'
+  return match?.name ?? i18n.t('conversation:message.toolFallback')
 }
 
 function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): Message {
@@ -405,7 +406,7 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
 
   return {
     id: convId,
-    title: first.meta.session_name?.trim() || first.meta.project_name || 'Conversation',
+    title: first.meta.session_name?.trim() || first.meta.project_name || i18n.t('conversation:header.titleFallback'),
     projectPath: first.meta.project_path ?? '',
     branch: first.meta.git_branch,
     messageCount: first.meta.message_count ?? messages.length,

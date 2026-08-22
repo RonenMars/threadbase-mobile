@@ -7,7 +7,9 @@
     "close": "Close",
     "retry": "Retry",
     "apply": "Apply",
-    "openSettings": "Open Settings"
+    "openSettings": "Open Settings",
+    "settings": "Settings",
+    "moreOptions": "More options"
   },
   "error": {
     "loadFailed": "Unable to load",
@@ -18,10 +20,15 @@
     "cameraAccessNeededTitle": "Camera access needed",
     "cameraAccessNeededMessage": "Enable camera access in Settings to take photos.",
     "attachFailed": "Couldn't attach the file. Please try again.",
-    "cleartextBlocked": "That address is plain HTTP and is not on your local network. Use an https:// address, or run tb serve --tunnel."
+    "cleartextBlocked": "That address is plain HTTP and is not on your local network. Use an https:// address, or run tb serve --tunnel.",
+    "unexpected": "An unexpected error occurred"
   },
   "search": {
     "placeholder": "Search…"
+  },
+  "favorite": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
   },
   "nav": {
     "top": "↑ Top",
@@ -55,5 +62,31 @@
   },
   "navLock": {
     "opening": "Opening…"
+  },
+  "composer": {
+    "attachTitle": "Attach",
+    "takePhoto": "Take Photo",
+    "chooseFromGallery": "Choose from Gallery",
+    "chooseFiles": "Choose Files",
+    "micAccessNeededTitle": "Microphone access needed",
+    "micAccessNeededMessage": "Enable microphone access in Settings to dictate."
+  },
+  "question": {
+    "answerSent": "Answer sent — waiting for the agent to move on."
+  },
+  "errorBanner": {
+    "titleSessions": "Sessions failed to load",
+    "titleConversations": "History failed to load",
+    "titleMessages": "Messages failed to load",
+    "titleSessionDetail": "Session details failed to load",
+    "titleBrowse": "File tree failed to load",
+    "titleOther": "Something went wrong",
+    "countSuffix": "{{title}} (1 of {{total}})",
+    "messageSessions": "Sessions refused to load. Worth a retry.",
+    "messageConversations": "History didn't come through. Retry usually fixes it.",
+    "messageMessages": "Messages hit a wall. Tap Retry to try again.",
+    "messageSessionDetail": "Session details didn't come through. Retry usually fixes it.",
+    "messageBrowse": "File tree failed to fetch. Check the connection or retry.",
+    "messageOther": "Something went wrong on our end. Retry or close and carry on."
   }
 }

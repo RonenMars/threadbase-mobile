@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { X, Copy, Check, type IconProps } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
+import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function InfoModal({ visible, onClose, title, fields, action }: Props) {
+  const { t } = useTranslation('common')
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
@@ -64,7 +66,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
                 <action.icon size={22} color={theme.text.secondary} />
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity testID="info-modal-close-button" onPress={onClose} hitSlop={8} accessibilityLabel="Close">
+            <TouchableOpacity testID="info-modal-close-button" onPress={onClose} hitSlop={8} accessibilityLabel={t('button.close')}>
               <X size={22} color={theme.text.secondary} />
             </TouchableOpacity>
           </View>

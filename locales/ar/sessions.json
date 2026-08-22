@@ -1,10 +1,27 @@
 {
   "header": {
     "title": "السيشنات",
-    "history": "السجل"
+    "history": "السجل",
+    "serverStatus": "حالة الخادم"
   },
   "search": {
-    "placeholder": "ابحث في السيشنات والمحادثات…"
+    "placeholder": "ابحث في السيشنات والمحادثات…",
+    "accessibilityLabel": "بحث"
+  },
+  "nameSession": {
+    "createTitle": "تسمية هذه السيشن؟",
+    "exitTitle": "تسمية هذه السيشن قبل المغادرة؟",
+    "start": "بدء",
+    "placeholder": "مثلاً: إصلاح خلل المصادقة"
+  },
+  "slowLoading": {
+    "sessions": "يستغرق جلب السيشنات وقتاً أطول من المتوقع.\nانتظر قليلاً…",
+    "detailTitle": "تفاصيل السيشن تستغرق بعض الوقت…",
+    "detailMessage": "جارٍ جلب التفاصيل — لن يطول الأمر."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
   },
   "filter": {
     "label": "تصفية وفرز",
@@ -12,7 +29,7 @@
   },
   "list": {
     "empty": "لا توجد سيشنات",
-    "emptySubtitle": "ابدأ سيشن Claude Code\nلرؤيته هنا",
+    "emptySubtitle": "ابدؤوا سيشن Claude Code أو Codex\nلرؤيته هنا",
     "noResults": "لا توجد نتائج",
     "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
     "serverEmpty": "لا توجد سيشنات على هذا الخادم",
@@ -33,7 +50,13 @@
     "prompts_two": "برومبتان",
     "prompts_few": "{{count}} برومبتات",
     "prompts_many": "{{count}} برومبتًا",
-    "prompts_other": "{{count}} برومبت"
+    "prompts_other": "{{count}} برومبت",
+    "actionsTitle": "إجراءات السيشن",
+    "dismiss": "إغلاق",
+    "cancelConfirm": "هل أنت متأكد؟",
+    "confirmYes": "نعم",
+    "confirmNo": "لا",
+    "noBranch": "بدون git"
   },
   "hub": {
     "seeAll_zero": "لا محادثات →",
@@ -47,7 +70,12 @@
     "msgs_two": "رسالتان",
     "msgs_few": "{{count}} رسائل",
     "msgs_many": "{{count}} رسالة",
-    "msgs_other": "{{count}} رسالة"
+    "msgs_other": "{{count}} رسالة",
+    "activityLive": "{{count}} مباشر",
+    "activityToday": "{{count}} اليوم",
+    "activityLast": "الأخير: {{time}}",
+    "timeNow": "الآن",
+    "timeYesterday": "أمس"
   },
   "loading": {
     "title": "جارٍ تحميل السيشنات",
@@ -139,5 +167,8 @@
     "running": "قيد التشغيل",
     "finished": "انتهى",
     "channelName": "السيشنات المباشرة"
+  },
+  "tree": {
+    "unknownPath": "(غير معروف)"
   }
 }

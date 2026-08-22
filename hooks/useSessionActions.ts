@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, isQuestionClosedError, NetworkError, stopSession } from '@/services/api-client'
+import { createApiForServer, isPermissionClosedError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
@@ -97,6 +97,48 @@ export function useSessionActions(serverId: string, sessionId: string) {
       api.post(`/api/sessions/${sessionId}/answer`, vars),
   })
 
+  // Permission gates answer over a validated route that binds the answer to the
+  // gate's *content*, so a stale tap cannot land on a different gate that merely
+  // shares a shape. Content, not instance: two runs of the identical command are
+  // indistinguishable to it, the same way they already are to the client's own
+  // gateKey suppression.
+  //
+  // The client sends a position and never keystrokes. The server derives the
+  // bytes from its own copy of the gate, which is what keeps the two
+  // key-derivations from drifting apart.
+  //
+  // `keys` is the fallback payload, computed by the caller from the same block.
+  // It is reached on exactly two triggers: the gate carried no contentKey (a
+  // streamer too old to have the route, so there is no point spending a round
+  // trip to find that out), or the route 404s (the same conclusion, one round
+  // trip later). Every other failure is thrown for the caller to classify.
+  const answerPermission = useMutation({
+    ...retryOnNetwork,
+    // Same rule as respondToQuestion: never retry a gate the server says is
+    // closed. A retry cannot succeed, and it would overwrite the settled reason
+    // the call sites read to tell a benign close from a real failure.
+    retry: (count: number, err: Error) =>
+      err instanceof NetworkError && !isPermissionClosedError(err) && count < 2,
+    mutationFn: async (vars: { contentKey?: string; optionIndex: number; keys: string | null }) => {
+      const sendKeysFallback = () => {
+        if (vars.keys === null) {
+          throw new NetworkError('This option carries no keystrokes to send', 'no_answer_keys')
+        }
+        return api.post(`/api/sessions/${sessionId}/input`, { keys: vars.keys })
+      }
+      if (vars.contentKey === undefined) return sendKeysFallback()
+      try {
+        return await api.post(`/api/sessions/${sessionId}/permission/answer`, {
+          contentKey: vars.contentKey,
+          optionIndex: vars.optionIndex,
+        })
+      } catch (err) {
+        if (!(err instanceof NotFoundError)) throw err
+        return sendKeysFallback()
+      }
+    },
+  })
+
   const adoptSession = useMutation({
     mutationFn: () =>
       api.post<{ sessionId: string }>(`/api/sessions/${sessionId}/adopt`),
@@ -176,5 +218,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

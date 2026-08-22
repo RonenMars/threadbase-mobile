@@ -1,11 +1,17 @@
 {
   "header": {
     "title": "שיחה",
-    "containsImage": "📎 מכיל תמונה"
+    "containsImage": "📎 מכיל תמונה",
+    "titleFallback": "שיחה"
+  },
+  "info": {
+    "title": "פרטי השיחה",
+    "open": "פרטי שיחה"
   },
   "list": {
     "loadingMore": "טוען עוד…",
-    "empty": "אין הודעות בשיחה זו."
+    "empty": "אין הודעות בשיחה זו.",
+    "searchPlaceholder": "חיפוש שיחות…"
   },
   "error": {
     "loadFailed": "לא ניתן לטעון שיחה",
@@ -58,11 +64,18 @@
   "message": {
     "code": "קוד",
     "tokens": "{{count}} טוקנים",
-    "errorBadge": "שגיאה"
+    "errorBadge": "שגיאה",
+    "toolFallback": "כלי"
   },
   "thinking": {
     "label": "חשיבה",
-    "redacted": "חשיבה נמחקה"
+    "redacted": "חשיבה נמחקה",
+    "expand": "הרחב חשיבה",
+    "collapse": "כווץ חשיבה"
+  },
+  "connection": {
+    "notConnectedTitle": "לא מחובר",
+    "notConnectedMessage": "ממתין לחיבור — נסה שוב בעוד רגע."
   },
   "search": {
     "matchCount": "{{current}} מתוך {{total}}",
@@ -98,6 +111,15 @@
     "sendNoteBody": "שולח רשימת קבצים מקוצרת לקלט הסשן החי.",
     "cancel": "ביטול",
     "send": "שלח",
-    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}"
+    "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
+    "noteHeader": "הערת סקירה מהנייד (נגזרת מהשיחה, ייתכן שאינה מלאה מול git status):"
+  },
+  "favorites": {
+    "errorTitle": "שגיאת מועדפים",
+    "updateFailed": "עדכון המועדפים נכשל"
+  },
+  "share": {
+    "roleUser": "משתמש",
+    "roleAssistant": "עוזר"
   }
 }

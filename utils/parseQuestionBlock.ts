@@ -36,6 +36,12 @@ export interface QuestionBlock {
    * back to the index.
    */
   permissionAnswerKeys?: (string | undefined)[]
+  /**
+   * Permission-gate only: the server's opaque content key for this gate, echoed
+   * back on the validated answer route. Absent when the streamer is too old to
+   * send one, which is also the signal that the route does not exist.
+   */
+  permissionContentKey?: string
 }
 
 const QUESTION_RE = /^\?\s+(.+)$/

@@ -1,9 +1,17 @@
 {
+  "language": {
+    "eyebrow": "> 01 / LANGUAGE",
+    "headline": "Choose your language.",
+    "body": "You can change this later in Settings.",
+    "continue": "Continue",
+    "persistRetry": "Couldn’t save your language choice. Try again.",
+    "reloadRetry": "Couldn’t reload the app to apply your language. Try again."
+  },
   "welcome": {
     "eyebrow": "// AMBIENT CODING",
     "headline": "Pull a thread.",
     "headlineAccent": "Watch it weave.",
-    "body": "A remote control for Claude Code, on the device you actually carry.",
+    "body": "A remote control for Claude Code and Codex, on the device you actually carry.",
     "cta": "Get started"
   },
   "shell": {
@@ -11,8 +19,11 @@
     "skip": "Skip",
     "pairLater": "Pair later"
   },
+  "tooltip": {
+    "dismiss": "Got it"
+  },
   "connect": {
-    "eyebrow": "> 02 / PAIR",
+    "eyebrow": "> 03 / PAIR",
     "headline": "Connect a runtime.",
     "modeBlurb": "Pick how you want to hand the server its keys.",
     "connectivityHint": "Your phone reaches your computer over the same Wi‑Fi, a VPN (for example Tailscale), or a public tunnel URL.",
@@ -21,7 +32,7 @@
     "recommended": "Recommended",
     "pasteCredentials": "Type / paste manually",
     "pasteCredentialsBody": "Run tb-streamer pair on your server, then paste the URL + token — or the full threadbase:// link.",
-    "qrEyebrow": "> 02 / PAIR · QR",
+    "qrEyebrow": "> 03 / PAIR · QR",
     "qrHeadline": "Scan to pair.",
     "openCamera": "Open camera",
     "ready": "✓ ready",
@@ -29,6 +40,12 @@
     "manualSectionHint": "Open Terminal and run:",
     "manualSectionPasteHint": "It prints a URL + token (or a threadbase:// link) — paste below.",
     "manualToken": "Token",
+    "copy": "copy",
+    "copied": "copied",
+    "networkingGuide": "Networking guide",
+    "networkingTooltip": "Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.",
+    "pairingDocs": "Pairing docs",
+    "pairingTooltip": "A short-lived pt_ token or the full threadbase:// link from tb-streamer pair. Valid for 3 minutes — run tb-streamer pair again if it expires. Long-lived tb_ API keys also work.",
     "manualScanInstead": "Scan a QR instead →",
     "manualEnterInstead": "Use manual entry instead",
     "invalidUrl": "Enter a full http:// or https:// server address.",
@@ -56,6 +73,13 @@
     "ctaUnpaired": "Continue — I'll pair later"
   },
   "notifications": {
+    "eyebrow": "> 04 / NOTIFY",
+    "headline": "Wake me only when it counts.",
+    "subhead": "Push fires on plan-ready, tool-confirms, and run failures. That’s it.",
+    "previewBrand": "THREADBASE",
+    "previewTime": "now",
+    "previewTitle": "Plan ready · feat/queue",
+    "previewMessage": "3 files queued for edit. Tap to review.",
     "allowTitle": "Push notifications",
     "body": "Threadbase taps you when a session needs a decision, finishes a run, or hits an error — the things worth knowing without watching a terminal.",
     "continue": "Continue",

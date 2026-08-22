@@ -1,7 +1,9 @@
 import React from 'react'
+import { StyleSheet } from 'react-native'
 import { fireEvent, render, waitFor } from '@testing-library/react-native'
 import { ConnectStep } from '@/components/onboarding/steps/ConnectStep'
 import { useTBPair } from '@/hooks/useTBPair'
+import i18n from '@/test-utils/i18n-setup'
 
 jest.mock('expo-clipboard', () => ({
   setStringAsync: jest.fn(),
@@ -16,7 +18,8 @@ const mockReset = jest.fn()
 const mockedUseTBPair = jest.mocked(useTBPair)
 
 describe('ConnectStep – manual mode', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en')
     mockPair.mockReset()
     mockReset.mockReset()
     mockedUseTBPair.mockReturnValue({
@@ -26,6 +29,10 @@ describe('ConnectStep – manual mode', () => {
       pair: mockPair,
       reset: mockReset,
     })
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
   })
 
   it('shows "Type / paste manually" card in choose mode', async () => {
@@ -49,6 +56,21 @@ describe('ConnectStep – manual mode', () => {
     )
     await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText(/tb-streamer pair/)).toBeTruthy()
+  })
+
+  it('renders copied status text with a separate Phosphor check icon', async () => {
+    jest.useFakeTimers()
+    const { getByTestId, getByText, queryByTestId, queryByText } = await render(
+      <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
+    )
+    await fireEvent.press(getByText('Type / paste manually'))
+
+    expect(queryByTestId('copy-command-copied-icon')).toBeNull()
+    await fireEvent.press(getByTestId('copy-command-btn'))
+
+    expect(getByText('copied')).toBeTruthy()
+    expect(getByTestId('copy-command-copied-icon')).toBeTruthy()
+    expect(queryByText(/✓/)).toBeNull()
   })
 
   it('shows "Server URL" and "Token" field labels (not faux-shell labels)', async () => {
@@ -123,5 +145,54 @@ describe('ConnectStep – manual mode', () => {
       expect(onAdvance).not.toHaveBeenCalled()
       expect(mockReset).toHaveBeenCalledTimes(1)
     })
+  })
+
+  it('uses natural right-directed Hebrew connection copy', async () => {
+    await i18n.changeLanguage('he')
+    const { getByTestId, getByText } = await render(
+      <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
+    )
+
+    expect(StyleSheet.flatten(getByTestId('onboarding-connect-root').props.style)).toEqual(
+      expect.objectContaining({ direction: 'rtl' }),
+    )
+    for (const text of [
+      '> 03 / חיבור',
+      'חברו את המחשב.',
+      'בחרו איך לחבר את Threadbase למחשב.',
+      'הטלפון והמחשב צריכים להיות נגישים זה לזה — דרך אותה רשת Wi‑Fi, VPN כמו Tailscale או כתובת ציבורית.',
+      'סריקת קוד QR',
+      'הריצו tb-streamer pair במחשב וסרקו את הקוד. זו הדרך המהירה ביותר.',
+      'הזנה ידנית',
+    ]) {
+      expect(StyleSheet.flatten(getByText(text).props.style)).toEqual(
+        expect.objectContaining({
+          direction: 'rtl',
+          textAlign: 'auto',
+          writingDirection: 'rtl',
+        }),
+      )
+    }
+  })
+
+  it('uses natural Hebrew QR instructions and a right-pointing logical Back link', async () => {
+    await i18n.changeLanguage('he')
+    const { getByTestId, getByText, queryByTestId } = await render(
+      <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
+    )
+
+    await fireEvent.press(getByText('סריקת קוד QR'))
+
+    expect(getByText('> 03 / חיבור · QR')).toBeTruthy()
+    expect(getByText('סרקו את קוד ה־QR.')).toBeTruthy()
+    expect(getByText('1. במחשב, הריצו tb-streamer pair. קוד QR יופיע בטרמינל.')).toBeTruthy()
+    expect(getByText('2. לחצו על ״פתחו מצלמה״. Threadbase תבקש גישה למצלמה רק כדי לסרוק את הקוד.')).toBeTruthy()
+    expect(getByText('3. כוונו את הטלפון לקוד. הטוקן תקף ל־3 דקות; אם פג תוקפו, הריצו שוב tb-streamer pair.')).toBeTruthy()
+    expect(getByText('פתחו מצלמה')).toBeTruthy()
+    expect(StyleSheet.flatten(getByTestId('onboarding-connect-back-to-choose').props.style)).toEqual(
+      expect.objectContaining({ alignSelf: 'flex-start', direction: 'rtl' }),
+    )
+    expect(getByTestId('onboarding-connect-back-arrow-right')).toBeTruthy()
+    expect(queryByTestId('onboarding-connect-back-arrow-left')).toBeNull()
   })
 })

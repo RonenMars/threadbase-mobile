@@ -104,7 +104,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Add a prompt to queue..."
+            placeholder={t('promptQueue.inputPlaceholder')}
             placeholderTextColor={theme.text.secondary}
             multiline
             returnKeyType="done"
@@ -113,7 +113,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             style={[styles.addBtn, !input.trim() && styles.addBtnDisabled]}
             onPress={handleAddToQueue}
             disabled={!input.trim()}
-            accessibilityLabel="Add prompt to queue"
+            accessibilityLabel={t('promptQueue.addLabel')}
           >
             <PaperPlaneRight size={22} color={theme.text.onAccent} />
           </TouchableOpacity>

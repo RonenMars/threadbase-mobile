@@ -44,7 +44,7 @@ export default function BrowseScreen() {
   const styles = useMemo(() => {
     return makeStyles(theme)
   }, [theme])
-  const { t } = useTranslation(['browse', 'common'])
+  const { t } = useTranslation(['browse', 'common', 'sessions'])
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
   // Pre-fill cwd when the caller passes ?path=... (TreeView drill → FAB).
@@ -160,7 +160,7 @@ export default function BrowseScreen() {
     navigation.setOptions({
       headerLeft: currentPath
         ? () => (
-            <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginLeft: 8, paddingRight: 16 }}>
+            <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginStart: 8, paddingEnd: 16 }}>
               <Text style={{ color: theme.text.accent, fontSize: font.base }}>{t('nav.back')}</Text>
             </TouchableOpacity>
           )
@@ -307,6 +307,9 @@ export default function BrowseScreen() {
     (error instanceof NetworkError && error.code === 'BROWSE_ROOT_NOT_SET') ||
     error?.message?.includes('not configured')
   )
+  const recentsToggleLabel = isRecentsOpen ? t('nav.hideRecentDirs') : t('nav.showRecentDirs')
+  const unableToLoadSubtitle =
+    error instanceof Error && error.message ? error.message : t('error.unknownError')
 
   return (
     <GestureDetector gesture={swipeBack}>
@@ -335,9 +338,7 @@ export default function BrowseScreen() {
             style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass]}
             onPress={() => setRecentsOpen(!isRecentsOpen)}
             accessibilityRole="button"
-            accessibilityLabel={
-              isRecentsOpen ? 'Hide recent directories' : 'Show recent directories'
-            }
+            accessibilityLabel={recentsToggleLabel}
           >
             <GlassFill />
             <Text style={styles.recentsHeaderText}>
@@ -404,8 +405,8 @@ export default function BrowseScreen() {
           </View>
         ) : isBrowseNotConfigured ? (
           <EmptyState
-            title="Browsing not configured"
-            subtitle="Set browseRoot on your server to enable file browsing."
+            title={t('error.notConfiguredTitle')}
+            subtitle={t('error.notConfiguredSubtitle')}
           />
         ) : isError ? (
           // Bug 23 — surface the actual failure (server name, status code,
@@ -413,11 +414,11 @@ export default function BrowseScreen() {
           // "server unreachable" copy, which also fires when the request
           // was routed to the wrong server.
           <EmptyState
-            title="Unable to load directories"
-            subtitle={error instanceof Error && error.message ? error.message : 'Unknown error'}
+            title={t('error.unableToLoadTitle')}
+            subtitle={unableToLoadSubtitle}
           />
         ) : rows.length === 0 ? (
-          <EmptyState title="Empty directory" subtitle="No files or folders here." />
+          <EmptyState title={t('error.emptyTitle')} subtitle={t('error.emptySubtitle')} />
         ) : (
           <FlashList
             data={rows}
@@ -440,7 +441,7 @@ export default function BrowseScreen() {
             style={[styles.newFolderInput, { flex: 1 }]}
             value={newFolderName}
             onChangeText={setNewFolderName}
-            placeholder="Folder name"
+            placeholder={t('nav.newFolderPlaceholder')}
             placeholderTextColor={theme.text.secondary}
             autoFocus
             onSubmitEditing={handleCreateFolder}
@@ -479,8 +480,8 @@ export default function BrowseScreen() {
                 </View>
               ))
             : ([
-            { value: CLAUDE_CODE_PROVIDER, label: 'Claude', color: brand.claude },
-            { value: CODEX_CLI_PROVIDER, label: 'Codex', color: brand.codex },
+            { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: brand.claude },
+            { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: brand.codex },
           ]).map((option) => {
             const selected = selectedProvider === option.value
             const health = findProviderHealth(providerHealth?.providers, option.value)
@@ -638,7 +639,7 @@ function makeStyles(theme: Theme) {
   },
   recentTextWrap: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginStart: spacing.md,
   },
   recentName: {
     color: theme.text.primary,
@@ -731,7 +732,7 @@ function makeStyles(theme: Theme) {
     borderBottomColor: theme.border,
   },
   rowIcon: {
-    marginRight: spacing.md,
+    marginEnd: spacing.md,
   },
   dirName: {
     flex: 1,
@@ -744,7 +745,7 @@ function makeStyles(theme: Theme) {
   chevron: {
     color: theme.text.secondary,
     fontSize: font.xl,
-    marginLeft: spacing.sm,
+    marginStart: spacing.sm,
   },
   newFolderInput: {
     flex: 1,

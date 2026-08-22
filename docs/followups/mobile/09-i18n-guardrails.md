@@ -1,7 +1,59 @@
 # 09 — i18n guard-rails
 
-Status: proposed, nothing implemented.
-Scanned against `main` @ `00069a03` on 2026-08-21.
+Status: **landed.** All eight layers are in place and all five classes are closed.
+Scanned against `main` @ `00069a03` on 2026-08-21; completed on 2026-08-22.
+
+| Layer | What | Landed in |
+|---|---|---|
+| 1 | ESLint config uses the v6 option names | #821 |
+| 2 | Class 1 burn-down, 138 → 0 | #829, #830, #834, #835, #836 |
+| 3 | Pre-commit hook on staged files | this PR |
+| 4 | Checks wired into `test:i18n` | #828 |
+| 5 | Locale freshness + identical-to-en | #824, wired in #828 |
+| 6 | RTL physical-property rule | #837 at `warn`; promoted to `error` after the remaining sites were resolved |
+| 7 | Native permission strings | #828 |
+| 8 | `CLAUDE.md` / `AGENTS.md` amendments | this PR |
+
+| Class | Was | Now |
+|---|---:|---|
+| 1 — string literals in code | 138 | **0** |
+| 2 — locale values still English | 75 | **0** (#826) |
+| 3 — iOS permission prompts | 5 | **0** (#823) |
+| 4 — surfaces outside i18n | 9 | **0** (#827) |
+| 5 — RTL physical styles | 16 | **0** (#822); 14 further sites found later, tracked below |
+
+`i18next/no-literal-string` now runs at `error` with zero findings repo-wide.
+
+## The `include` trap
+
+`callees`, `jsx-attributes` and `object-properties` each take `include` and `exclude`.
+`include` does **not** mean "also check these" — `shouldSkip()` returns "skip" for anything the include list does not match, and the skip is pushed onto the rule's `indicatorStack`, so the **entire subtree** of the non-matching node is dropped.
+
+`eslint.config.js:32` carried `callees: { include: ["Alert.alert", …] }` from #821, which meant every literal inside every other call — `useMemo`, `useCallback`, `.map()`, `setTimeout`, a mutation's `onError` — was unreachable. The rule reported **0 findings repo-wide** while `SessionRow`'s cancel dialog shipped in English.
+
+Removing that one line took the repo from 0 to 218 findings. Triage put 190 of them behind exclusions that name their reason (developer logging, trace instrumentation, route paths, `Error` messages, Expo config plugins, the Maestro harness, the support-report body) and translated the remaining 28.
+
+`__tests__/unit/lint/i18n-literal-rule.test.ts` now pins four callback shapes, so re-introducing an include list on `callees` fails a test rather than silently switching the rule off.
+
+**`jsx-attributes` and `object-properties` still carry include lists**, and they have the same blind spot — `onPress={() => Alert.alert('Delete server', 'This cannot be undone.')}` is reported clean today, because `onPress` is not on the attribute list. Removing both lists surfaces ~50 further user-facing strings (every `Stack.Screen` title, both info modals' field labels, the biometric unlock prompt) alongside a large tail of `rgba()` and SVG path noise. Tracked as the next step rather than folded into the `callees` fix.
+
+## What the rule still cannot see
+
+Verified by probe on 2026-08-22, so the next person does not have to rediscover it.
+
+It **does** catch: function-scope `const` assignments, ternaries, `return` literals, `Alert.alert` arguments, listed object properties, listed JSX attributes and JSX text.
+
+It does **not** catch a **module-scope** `const`. A literal parked at the top of a file is invisible to it, which is the shape `TimeBucketPills`' `BUCKETS` array had before #827. `ErrorBanner.tsx`'s `TITLES` and `MESSAGES` maps held twelve English strings in exactly that shape until they were moved to `common:errorBanner.*`. Put UI copy in a locale file rather than a module constant.
+
+## Layer 6 follow-up
+
+The 14 sites discovered after #822 were reviewed individually and resolved before the rule moved from `warn` to `error`:
+
+- The explicitly RTL-only language-label padding became `paddingStart`, which points inward in that row's own RTL writing direction.
+- Symmetric command-sheet borders became equivalent `borderStartWidth` + `borderEndWidth` pairs.
+- Ordinary margins and the warning banner border use their logical Start/End forms.
+
+`textAlign` is deliberately not restricted: React Native offers no logical value for it, and `'auto'` resolves to left in LTR, which would misalign the numeric columns that legitimately use `'right'`.
 
 ## Why this exists
 
@@ -43,7 +95,7 @@ Counts are from a tuned probe config; see "Reproducing" below.
 An untuned config reports 195 for Class 1, of which ~36% are false positives (i18n key strings such as `'hostPressure.banner.memoryCritical'`, style suffixes in `lib/rtl.ts`, internal `Error` names in `services/sanitize.ts`).
 Tuning is not optional — a rule that cries wolf at that rate gets disabled rather than obeyed.
 
-## Design — seven layers
+## Design — eight layers
 
 ### Layer 1 — fix the ESLint config
 
@@ -82,12 +134,12 @@ Local and fast; `--no-verify` bypasses it, which is acceptable because Layer 4 c
 
 ### Layer 4 — CI
 
+**Landed** (Wave 3, ci/wire-i18n-checks). `test:i18n` now runs `scripts/run-i18n-checks.js`, a Node runner that chains `check-locale-freshness.js`, `check-locale-untranslated.js` and `check-native-strings.js` ahead of the `__tests__/i18n` jest suite, exiting non-zero on the first failure. A Node runner replaces a shell `&&` chain because npm scripts here must stay Windows-`cmd.exe`-compatible.
 ESLint already runs in the `Lint` job, which is a required check, so Layer 1 is enforced in CI the moment the rule is `error`.
-Add the Layer 5 and Layer 7 checks to `npm run test:i18n` so every locale gate sits behind the one required `i18n` job in `.github/workflows/test.yml:186`.
 
 ### Layer 5 — locale value freshness
 
-Two checks sharing one walker. Neither can be expressed as key parity.
+**Landed** (checks written in #824, wired into `test:i18n` in Wave 3). Two checks sharing one walker. Neither can be expressed as key parity.
 
 1. **Source-hash freshness.** `locales/.source-hashes.json` records a hash of each `en` value at the time translations were last confirmed. If an `en` value changes and a locale is not re-confirmed, the check fails. `npm run i18n:bless` updates the file. This catches a term rename applied to some locales and not others — the `fingerprint` → `identity code` case below.
 2. **Identical-to-`en` detector.** Fails when a non-`en` value equals its `en` counterpart and reads as prose (three or more alphabetic words). Needs an allowlist for legitimate cases: `servers.json:health.checks.providerClaude`, `servers.json:health.checks.providerCodex`, `feedback.json:form.emailPlaceholder`, `onboarding.json:notifications.previewBrand`.
@@ -101,8 +153,7 @@ A lint rule banning `marginLeft`/`marginRight`/`paddingLeft`/`paddingRight`/`bor
 
 ### Layer 7 — native permission strings
 
-A script asserting every `*UsageDescription` and `*Permission` value in `app.json` has a matching key in `ios/<target>/<lang>.lproj/InfoPlist.strings` for each supported locale.
-Nothing else in the toolchain can see these strings.
+**Landed** (Wave 3, ci/wire-i18n-checks). `scripts/check-native-strings.js` asserts every `*UsageDescription` key shipped in `ios/Threadbase/Info.plist` has a matching key in each of the four `ios/Threadbase/<lang>.lproj/InfoPlist.strings` files, that `app.json`'s permission strings match `Info.plist`, and that the `LOCALIZED_INFO_PLIST_STRINGS` literal embedded in `plugins/withLocalizedPermissionStrings.js` hasn't drifted from the committed `.lproj` files it reproduces on a `--clean` prebuild. Wired into `test:i18n` alongside Layer 5. Complements, rather than duplicates, `__tests__/unit/scripts/ios-permission-strings.test.js`, which already checks `app.json` against `Info.plist` for the plugin-owned keys.
 
 ### Layer 8 — documentation
 

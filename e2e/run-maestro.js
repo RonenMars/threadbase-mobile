@@ -6,7 +6,16 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 
-const DEFAULT_GRACE_MS = 5000
+// macOS writes the .ips well after the crashing process dies, so this window
+// is what decides whether the guard sees a crash at all. 5s was too short on
+// an M2 Pro: a promo run whose Maestro exited at 00:21:46 had its
+// SafariViewService report written at 00:22:10 and SpringBoard's at 00:22:16 —
+// 24s and 30s later. Both were missed, the run reported success, and the two
+// Maestro runs after it were quietly executed against a crashed simulator.
+// The grace is paid once per `run-maestro.js` invocation, not per flow (the
+// mock suite passes all 15 flows to a single call), so a minute here costs a
+// minute per suite run.
+const DEFAULT_GRACE_MS = 60000
 const DEFAULT_POLL_MS = 250
 const XCTEST_CRASH_EXIT_CODE = 86
 const FAULTING_SYMBOL = 'XCTAutomationSession initWithAccessibilityFramework:dataSource:'

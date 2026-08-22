@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { NestableScrollContainer } from 'react-native-draggable-flatlist'
-import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen, Gear } from 'phosphor-react-native'
+import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen, Gear, ArrowDown, ArrowUp } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -32,23 +32,31 @@ interface Props {
 
 const SNAP_POINTS = ['65%', '90%']
 
-const LAYOUT_OPTIONS: { value: SessionsLayout; label: string; Icon: React.ComponentType<{ size: number; color: string }> }[] = [
-  { value: 'tree', label: 'Tree', Icon: Tree },
-  { value: 'hub', label: 'Hub', Icon: SquaresFour },
-  { value: 'classic', label: 'Classic', Icon: List },
-]
+const LAYOUT_OPTIONS = [
+  { value: 'tree', labelKey: 'settings:appearance.layoutTree', Icon: Tree },
+  { value: 'hub', labelKey: 'settings:appearance.layoutHub', Icon: SquaresFour },
+  { value: 'classic', labelKey: 'settings:appearance.layoutClassic', Icon: List },
+] as const satisfies readonly {
+  value: SessionsLayout
+  labelKey: string
+  Icon: React.ComponentType<{ size: number; color: string }>
+}[]
 
-const SORT_BY_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'lastActivity', label: 'Last message' },
-  { value: 'projectName', label: 'Project name' },
-  { value: 'startedAt', label: 'Created date' },
-  { value: 'status', label: 'Status' },
-]
+const SORT_BY_OPTIONS = [
+  { value: 'lastActivity', labelKey: 'filter.sortLastMessage' },
+  { value: 'projectName', labelKey: 'filter.sortProjectName' },
+  { value: 'startedAt', labelKey: 'filter.sortCreatedDate' },
+  { value: 'status', labelKey: 'filter.status' },
+] as const satisfies readonly { value: SortBy; labelKey: string }[]
 
-const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
-  { value: 'desc', label: '↓ Newest first' },
-  { value: 'asc', label: '↑ Oldest first' },
-]
+const SORT_ORDER_OPTIONS = [
+  { value: 'desc', labelKey: 'filter.newestFirst', Icon: ArrowDown },
+  { value: 'asc', labelKey: 'filter.oldestFirst', Icon: ArrowUp },
+] as const satisfies readonly {
+  value: SortOrder
+  labelKey: string
+  Icon: React.ComponentType<{ size: number; color: string }>
+}[]
 
 export const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
 
@@ -104,7 +112,9 @@ export function FilterSortSheet({
   const theme = useTheme()
   const router = useRouter()
   const glassBackground = useGlassSheetBackground()
-  const styles = makeStyles(theme)
+  const { t, i18n } = useTranslation(['servers', 'settings', 'sessions'])
+  const localeDirection = i18n.dir()
+  const styles = makeStyles(theme, localeDirection)
 
   const openSettings = () => {
     onClose()
@@ -112,12 +122,11 @@ export function FilterSortSheet({
   }
 
   const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
-    { value: 'running', label: 'Running', color: theme.status.running },
-    { value: 'waiting_input', label: 'Active', color: theme.status.waiting },
-    { value: 'idle', label: 'Idle', color: theme.status.idle },
+    { value: 'running', label: t('filter.statusRunning'), color: theme.status.running },
+    { value: 'waiting_input', label: t('filter.statusActive'), color: theme.status.waiting },
+    { value: 'idle', label: t('filter.statusIdle'), color: theme.status.idle },
   ]
 
-  const { t } = useTranslation(['servers', 'settings'])
   const showServerFilter = activeServerIds.length > 1
 
   const atDefault = isDefault(sortBy, sortOrder, selectedStatuses, displayedServerIds, activeServerIds, sessionsLayout, providerFilter)
@@ -170,10 +179,11 @@ export function FilterSortSheet({
 
       {/* View */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('filter.view')}</Text>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.view')}</Text>
         <View style={styles.chipRow}>
-          {LAYOUT_OPTIONS.map(({ value, label, Icon }) => {
+          {LAYOUT_OPTIONS.map(({ value, labelKey, Icon }) => {
             const selected = sessionsLayout === value
+            const label = t(labelKey)
             return (
               <TouchableOpacity
                 key={value}
@@ -197,7 +207,7 @@ export function FilterSortSheet({
       {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
       {sessionsLayout !== 'tree' ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
+          <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.sortBy')}</Text>
           <View style={styles.chipRow}>
             {SORT_BY_OPTIONS.map((opt) => {
               const selected = sortBy === opt.value
@@ -211,7 +221,7 @@ export function FilterSortSheet({
                   testID={`sort-option-${opt.value}`}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </Text>
                 </TouchableOpacity>
               )
@@ -223,7 +233,7 @@ export function FilterSortSheet({
       {/* Order — hidden for Tree layout */}
       {sessionsLayout !== 'tree' ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
+          <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.order')}</Text>
           <View style={styles.chipRow}>
             {SORT_ORDER_OPTIONS.map((opt) => {
               const selected = sortOrder === opt.value
@@ -236,8 +246,9 @@ export function FilterSortSheet({
                   accessibilityState={{ selected }}
                   testID={`sort-order-${opt.value}`}
                 >
+                  <opt.Icon size={14} color={selected ? theme.text.primary : theme.text.secondary} />
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </Text>
                 </TouchableOpacity>
               )
@@ -283,12 +294,12 @@ export function FilterSortSheet({
 
       {/* Provider */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('filter.provider')}</Text>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.provider')}</Text>
         <View style={styles.chipRow}>
           {([
-            { value: undefined, label: 'All' },
-            { value: 'claude-code' as const, label: 'Claude', color: brand.claude },
-            { value: 'codex-cli' as const, label: 'Codex', color: brand.codex },
+            { value: undefined, label: t('filter.all') },
+            { value: 'claude-code' as const, label: t('sessions:provider.claude'), color: brand.claude },
+            { value: 'codex-cli' as const, label: t('sessions:provider.codex'), color: brand.codex },
           ]).map((opt) => {
             const selected = providerFilter === opt.value
             return (
@@ -379,7 +390,7 @@ export function FilterSortSheet({
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
   return StyleSheet.create({
     sheetBg: { backgroundColor: theme.bg.secondary },
     handle: { backgroundColor: theme.border },
@@ -393,6 +404,12 @@ function makeStyles(theme: Theme) {
     section: { gap: spacing.sm },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
+    standaloneSectionTitle: {
+      width: '100%',
+      direction: localeDirection,
+      writingDirection: localeDirection,
+      textAlign: 'auto',
+    },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     chip: {
       flexDirection: 'row',

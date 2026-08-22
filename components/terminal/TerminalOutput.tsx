@@ -19,7 +19,7 @@ import { spacing } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
-import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
+import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
@@ -90,8 +90,14 @@ interface Props {
   onSendKeys?: (keys: string) => void
   /** Structured question / permission gate from the WS stream (takes precedence over PTY scrape). */
   activeQuestion?: QuestionBlock | null
-  /** Answer a structured AskUserQuestion (POST). Permission gates answer via onSendKeys. */
+  /** Answer a structured AskUserQuestion (POST). */
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Answer a permission gate by the option's position in the broadcast options array. */
+  onAnswerPermission?: (optionIndex: number) => void
+  /** Lifecycle phase of `activeQuestion` — 'pending' renders it as an inert ghost. */
+  answerPhase?: QuestionPhase | null
+  /** An answer is in flight; locks the rows so a double-tap cannot send twice. */
+  answerBusy?: boolean
   /** Drop the structured card locally — Esc closes the menu, but nothing on the
    *  server notices, so the card would otherwise linger and stay tappable. */
   onDismissQuestion?: () => void
@@ -118,6 +124,9 @@ export function TerminalOutput({
   onSendKeys,
   activeQuestion,
   onAnswer,
+  onAnswerPermission,
+  answerPhase = null,
+  answerBusy = false,
   onDismissQuestion,
   onViewResumedConversation,
   onSearchResumedConversation,
@@ -267,23 +276,22 @@ export function TerminalOutput({
     onSendKeys(keys)
   }, [onSendKeys, questionBlock])
 
+  // Answering hands the tap upward and stops. It does not dismiss the card and
+  // it does not choose keystrokes: the answer route owns both the validated
+  // POST and its keystroke fallback, and the card only moves once that has been
+  // taken. Dismissing here — which is what this did — is what let a tap on a
+  // gate that had already closed write stray bytes into the prompt with nothing
+  // on screen to say so.
   const handleStructuredSelect = useCallback((questionIndex: number, optionIndex: number) => {
     if (!activeQuestion) return
     if (activeQuestion.source === 'permission') {
-      const keys = permissionAnswerKeys(activeQuestion, optionIndex)
-      if (keys === null || !onSendKeys) return
-      onSendKeys(keys)
-      // The server closes a gate only once its PTY detector sees the box gone —
-      // the end of the turn, tens of seconds later. The tap is the user's own
-      // action, so the card goes on that, not on the echo.
-      onDismissQuestion?.()
+      onAnswerPermission?.(optionIndex)
       return
     }
     if (!activeQuestion.toolUseId || !onAnswer) return
     const q = activeQuestion.questions[questionIndex]
     onAnswer(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
-    onDismissQuestion?.()
-  }, [activeQuestion, onAnswer, onDismissQuestion, onSendKeys])
+  }, [activeQuestion, onAnswer, onAnswerPermission])
 
   const listHeader = useMemo(() => {
     if (!onViewResumedConversation) return null
@@ -363,6 +371,8 @@ export function TerminalOutput({
         <QuestionCard
           block={activeQuestion}
           onSelect={handleStructuredSelect}
+          busy={answerBusy}
+          ghost={answerPhase === 'pending'}
           onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
         />
       ) : questionBlock && onSendKeys ? (
