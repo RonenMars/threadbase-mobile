@@ -1,7 +1,7 @@
 {
   "nav": {
     "back": "‹ Back",
-    "recentDirs": "Recent directories ({{count}})",
+    "recentDirs": "Recent directories ({{total}})",
     "displayAll": "Display all",
     "allRecentDirs": "Recent directories",
     "searchRecentDirs": "Search locations",

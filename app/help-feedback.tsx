@@ -50,6 +50,14 @@ const MIN_DESCRIPTION = 10
 type View3 = 'landing' | 'form' | 'success' | 'copyFallback'
 
 /** Generate a client-side report id without Date.now (deterministic-safe). */
+// Written out rather than assembled as t(`category.${cat}`) so the keys stay
+// visible to `i18next-cli status --unused`. Exhaustive over FeedbackCategory.
+const CATEGORY_KEYS = {
+  bug: 'category.bug',
+  feature: 'category.feature',
+  general: 'category.general',
+} as const satisfies Record<FeedbackCategory, string>
+
 function makeReportId(): string {
   const rand = Math.floor(Math.random() * 1e9).toString(36)
   return `rep_${rand}`
@@ -335,11 +343,11 @@ export default function HelpFeedbackScreen() {
               style={[s.segmentBtn, category === cat && s.segmentBtnActive]}
               onPress={() => setCategory(cat)}
               accessibilityRole="button"
-              accessibilityLabel={t(`category.${cat}`)}
+              accessibilityLabel={t(CATEGORY_KEYS[cat])}
               testID={`feedback-category-${cat}`}
             >
               <Text style={[s.segmentText, category === cat && s.segmentTextActive]}>
-                {t(`category.${cat}`)}
+                {t(CATEGORY_KEYS[cat])}
               </Text>
             </TouchableOpacity>
           ))}

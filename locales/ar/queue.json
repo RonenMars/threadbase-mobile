@@ -1,7 +1,7 @@
 {
   "planPreview": {
     "title": "معاينة الخطة",
-    "autoProceed": "متابعة تلقائية خلال {{count}} ث",
+    "autoProceed": "متابعة تلقائية خلال {{seconds}} ث",
     "proceed": "▶ متابعة",
     "editPrompt": "تعديل البرومبت",
     "sendEdit": "إرسال التعديل",

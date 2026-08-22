@@ -1,7 +1,7 @@
 {
   "planPreview": {
     "title": "תצוגה מקדימה של תוכנית",
-    "autoProceed": "המשך אוטומטי בעוד {{count}}s",
+    "autoProceed": "המשך אוטומטי בעוד {{seconds}}s",
     "proceed": "▶ המשך",
     "editPrompt": "ערוך פרומפט",
     "sendEdit": "שלח עריכה",

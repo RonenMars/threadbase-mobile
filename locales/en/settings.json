@@ -246,7 +246,7 @@
     "manifestTitle": "Export summary",
     "manifestHost": "Host: {{host}}",
     "manifestVersion": "Streamer: {{version}}",
-    "manifestProjects": "Projects: {{count}}",
+    "manifestProjects": "Projects: {{total}}",
     "manifestCreated": "Created: {{at}}",
     "pasteHint": "Paste an archive JSON below, then dry-run before applying.",
     "pastePlaceholder": "{ \"manifest\": …, \"projects\": […] }",

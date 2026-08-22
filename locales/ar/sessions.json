@@ -72,7 +72,7 @@
     "msgs_many": "{{count}} رسالة",
     "msgs_other": "{{count}} رسالة",
     "activityLive": "{{count}} مباشر",
-    "activityToday": "{{count}} اليوم",
+    "activityToday": "{{total}} اليوم",
     "activityLast": "الأخير: {{time}}",
     "timeNow": "الآن",
     "timeYesterday": "أمس"

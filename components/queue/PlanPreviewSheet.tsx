@@ -88,7 +88,7 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>{t('planPreview.title')}</Text>
-          <Text style={styles.timer}>{t('planPreview.autoProceed', { count: secondsLeft })}</Text>
+          <Text style={styles.timer}>{t('planPreview.autoProceed', { seconds: secondsLeft })}</Text>
         </View>
 
         <View style={styles.planBox}>

@@ -42,32 +42,24 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
-function addServerActionLabel(action: AddServerAction, t: (key: `addServer.action${'Ask' | 'Add' | 'Replace' | 'Keep'}`) => string): string {
-  switch (action) {
-    case 'ask': return t('addServer.actionAsk')
-    case 'add': return t('addServer.actionAdd')
-    case 'replace': return t('addServer.actionReplace')
-    case 'keep': return t('addServer.actionKeep')
-  }
-}
+// Key maps indexed at the call site rather than helpers taking `t` as a
+// parameter. i18next-cli cannot trace a parameter back to the caller's
+// useTranslation(), so it filed all eight keys under defaultNS ('common'),
+// where they do not exist — reporting them simultaneously as missing from `en`
+// and as unused in `settings`. A direct index into a const is traced fine.
+const ADD_SERVER_ACTION_KEYS = {
+  ask: 'addServer.actionAsk',
+  add: 'addServer.actionAdd',
+  replace: 'addServer.actionReplace',
+  keep: 'addServer.actionKeep',
+} as const satisfies Record<AddServerAction, string>
 
-function sessionLeaveActionLabel(
-  action: SessionLeaveAction,
-  t: (
-    key:
-      | 'session.leaveActionAsk'
-      | 'session.leaveActionKill'
-      | 'session.leaveActionLeave'
-      | 'session.leaveActionKillOnIdle',
-  ) => string,
-): string {
-  switch (action) {
-    case 'ask': return t('session.leaveActionAsk')
-    case 'kill': return t('session.leaveActionKill')
-    case 'leave': return t('session.leaveActionLeave')
-    case 'kill_on_idle': return t('session.leaveActionKillOnIdle')
-  }
-}
+const SESSION_LEAVE_ACTION_KEYS = {
+  ask: 'session.leaveActionAsk',
+  kill: 'session.leaveActionKill',
+  leave: 'session.leaveActionLeave',
+  kill_on_idle: 'session.leaveActionKillOnIdle',
+} as const satisfies Record<SessionLeaveAction, string>
 
 function SectionHeader({ title, badge }: { title: string; badge?: string }) {
   const theme = useTheme()
@@ -648,7 +640,7 @@ await refreshServerInfo(serverId)
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
           >
             <Text style={s.rowLabel}>{t('addServer.selectedAction')}</Text>
-            <Text style={s.rowValue}>{addServerActionLabel(addServerAction, t)}</Text>
+            <Text style={s.rowValue}>{t(ADD_SERVER_ACTION_KEYS[addServerAction])}</Text>
           </TouchableOpacity>
           {isAddBehaviorOpen ? (
             <View style={s.accordionBody}>
@@ -702,7 +694,7 @@ await refreshServerInfo(serverId)
             accessibilityLabel={t('session.leaveAction')}
           >
             <Text style={s.rowLabel}>{t('session.leaveAction')}</Text>
-            <Text style={s.rowValue}>{sessionLeaveActionLabel(sessionLeaveAction, t)}</Text>
+            <Text style={s.rowValue}>{t(SESSION_LEAVE_ACTION_KEYS[sessionLeaveAction])}</Text>
           </TouchableOpacity>
           {isLeaveActionOpen ? (
             <View style={s.accordionBody}>
@@ -1057,7 +1049,7 @@ function SessionLeaveActionList({
             testID={`settings-session-leave-${id}`}
           >
             <Text style={[s.leaveOptionLabel, selected && s.leaveOptionLabelActive]}>
-              {sessionLeaveActionLabel(id, t)}
+              {t(SESSION_LEAVE_ACTION_KEYS[id])}
             </Text>
           </TouchableOpacity>
         )

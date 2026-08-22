@@ -246,7 +246,7 @@
     "manifestTitle": "Export summary",
     "manifestHost": "Host: {{host}}",
     "manifestVersion": "Streamer: {{version}}",
-    "manifestProjects": "Projects: {{count}}",
+    "manifestProjects": "Проекты: {{total}}",
     "manifestCreated": "Created: {{at}}",
     "pasteHint": "Вставьте JSON архива ниже, затем выполните пробный запуск перед применением.",
     "pastePlaceholder": "{ \"manifest\": …, \"projects\": […] }",

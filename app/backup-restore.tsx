@@ -306,7 +306,7 @@ export default function BackupRestoreScreen() {
               {t('backup.manifestVersion', { version: exported.manifest.streamerVersion })}
             </Text>
             <Text style={s.meta}>
-              {t('backup.manifestProjects', { count: exported.manifest.counts.projects })}
+              {t('backup.manifestProjects', { total: exported.manifest.counts.projects })}
             </Text>
             <Text style={s.meta}>
               {t('backup.manifestCreated', { at: exported.manifest.createdAt })}

@@ -1,7 +1,7 @@
 {
   "nav": {
     "back": "‹ Назад",
-    "recentDirs": "Недавние директории ({{count}})",
+    "recentDirs": "Недавние директории ({{total}})",
     "displayAll": "Показать все",
     "allRecentDirs": "Недавние директории",
     "searchRecentDirs": "Поиск расположений",

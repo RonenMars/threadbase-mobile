@@ -1,7 +1,7 @@
 {
   "planPreview": {
     "title": "Предпросмотр плана",
-    "autoProceed": "Автопродолжение через {{count}}с",
+    "autoProceed": "Автопродолжение через {{seconds}}с",
     "proceed": "▶ Продолжить",
     "editPrompt": "Изменить промпт",
     "sendEdit": "Отправить изменение",
