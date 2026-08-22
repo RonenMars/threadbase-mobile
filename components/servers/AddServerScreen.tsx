@@ -71,12 +71,12 @@ export function AddServerScreen({ isAddingServer }: Props) {
   useEffect(() => {
     navigation.setOptions({
       headerShown: isAddingServer,
-      title: 'Add Server',
-      headerBackTitle: 'Settings',
+      title: t('servers:action.add'),
+      headerBackTitle: t('common:button.settings'),
       gestureEnabled: isAddingServer,
       fullScreenGestureEnabled: isAddingServer,
     })
-  }, [isAddingServer, navigation])
+  }, [isAddingServer, navigation, t])
 
   const applyAddAction = useCallback(
     (
@@ -174,14 +174,12 @@ export function AddServerScreen({ isAddingServer }: Props) {
         } else if (err instanceof NetworkError || err instanceof TypeError) {
           const usesLocalhost = /localhost|127\.0\.0\.1/.test(url)
           if (usesLocalhost) {
-            setError(
-              "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:8766) or run: tb serve --tunnel"
-            )
+            setError(t('servers:error.localhostUnreachable'))
           } else {
             setError(t('pair:scanner.errors.exchange.network'))
           }
         } else {
-          setError('Connection failed. Check the server URL and try again.')
+          setError(t('servers:error.connectionFailed'))
         }
       } finally {
         setLoading(false)

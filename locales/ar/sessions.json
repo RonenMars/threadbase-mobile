@@ -50,7 +50,13 @@
     "prompts_two": "برومبتان",
     "prompts_few": "{{count}} برومبتات",
     "prompts_many": "{{count}} برومبتًا",
-    "prompts_other": "{{count}} برومبت"
+    "prompts_other": "{{count}} برومبت",
+    "actionsTitle": "إجراءات السيشن",
+    "dismiss": "إغلاق",
+    "cancelConfirm": "هل أنت متأكد؟",
+    "confirmYes": "نعم",
+    "confirmNo": "لا",
+    "noBranch": "بدون git"
   },
   "hub": {
     "seeAll_zero": "لا محادثات →",

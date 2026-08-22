@@ -783,7 +783,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
           {item.provider != null ? (
             <View style={item.provider === 'codex-cli' ? styles.convCardCodexBadge : styles.convCardClaudeBadge}>
               <Text style={item.provider === 'codex-cli' ? styles.convCardCodexBadgeText : styles.convCardClaudeBadgeText}>
-                {item.provider === 'codex-cli' ? 'Codex' : 'Claude'}
+                {item.provider === 'codex-cli' ? t('provider.codex') : t('provider.claude')}
               </Text>
             </View>
           ) : null}

@@ -113,5 +113,13 @@
     "send": "Отправить",
     "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
     "noteHeader": "Заметка обзора с телефона (получена из беседы, может быть неполной относительно git status):"
+  },
+  "favorites": {
+    "errorTitle": "Ошибка избранного",
+    "updateFailed": "Не удалось обновить избранное"
+  },
+  "share": {
+    "roleUser": "Пользователь",
+    "roleAssistant": "Ассистент"
   }
 }

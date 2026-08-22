@@ -3,6 +3,7 @@ import NetInfo from '@react-native-community/netinfo'
 import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { AppState, type AppStateStatus } from 'react-native'
+import i18n from '@/lib/i18n'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -175,7 +176,7 @@ queryClient.getQueryCache().subscribe((event) => {
 
     if (query.state.status === 'error') {
       const err = query.state.error
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+      const message = err instanceof Error ? err.message : i18n.t('common:error.unexpected')
       const status =
         err && 'status' in (err as object) ? (err as { status: number }).status : undefined
       setTimeout(() => store.pushError({ category, message, status }), 0)

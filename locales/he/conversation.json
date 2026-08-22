@@ -113,5 +113,13 @@
     "send": "שלח",
     "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
     "noteHeader": "הערת סקירה מהנייד (נגזרת מהשיחה, ייתכן שאינה מלאה מול git status):"
+  },
+  "favorites": {
+    "errorTitle": "שגיאת מועדפים",
+    "updateFailed": "עדכון המועדפים נכשל"
+  },
+  "share": {
+    "roleUser": "משתמש",
+    "roleAssistant": "עוזר"
   }
 }

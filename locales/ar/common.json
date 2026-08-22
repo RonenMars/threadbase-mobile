@@ -20,7 +20,8 @@
     "cameraAccessNeededTitle": "الوصول إلى الكاميرا مطلوب",
     "cameraAccessNeededMessage": "فعّل الوصول إلى الكاميرا من الإعدادات لالتقاط الصور.",
     "attachFailed": "تعذّر إرفاق الملف. حاول مجدداً.",
-    "cleartextBlocked": "هذا العنوان هو HTTP عادي وليس على شبكتك المحلية. استخدم عنوان https:// أو شغّل tb serve --tunnel."
+    "cleartextBlocked": "هذا العنوان هو HTTP عادي وليس على شبكتك المحلية. استخدم عنوان https:// أو شغّل tb serve --tunnel.",
+    "unexpected": "حدث خطأ غير متوقع"
   },
   "search": {
     "placeholder": "بحث…"
@@ -72,5 +73,20 @@
   },
   "question": {
     "answerSent": "تم إرسال الإجابة — في انتظار متابعة الوكيل."
+  },
+  "errorBanner": {
+    "titleSessions": "تعذّر تحميل السيشنات",
+    "titleConversations": "تعذّر تحميل السجل",
+    "titleMessages": "تعذّر تحميل الرسائل",
+    "titleSessionDetail": "تعذّر تحميل تفاصيل السيشن",
+    "titleBrowse": "تعذّر تحميل شجرة الملفات",
+    "titleOther": "حدث خطأ ما",
+    "countSuffix": "{{title}} (1 من {{total}})",
+    "messageSessions": "تعذّر تحميل السيشنات. تستحق إعادة المحاولة.",
+    "messageConversations": "لم يصل السجل. عادةً ما تحلّ إعادة المحاولة المشكلة.",
+    "messageMessages": "تعثّرت الرسائل. اضغط \"إعادة المحاولة\" للمحاولة مجدداً.",
+    "messageSessionDetail": "لم تصل تفاصيل السيشن. عادةً ما تحلّ إعادة المحاولة المشكلة.",
+    "messageBrowse": "تعذّر جلب شجرة الملفات. تحقّق من الاتصال أو أعد المحاولة.",
+    "messageOther": "حدث خطأ من جانبنا. أعد المحاولة أو أغلق وتابع."
   }
 }

@@ -44,7 +44,7 @@ export default function BrowseScreen() {
   const styles = useMemo(() => {
     return makeStyles(theme)
   }, [theme])
-  const { t } = useTranslation(['browse', 'common'])
+  const { t } = useTranslation(['browse', 'common', 'sessions'])
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
   // Pre-fill cwd when the caller passes ?path=... (TreeView drill → FAB).
@@ -480,8 +480,8 @@ export default function BrowseScreen() {
                 </View>
               ))
             : ([
-            { value: CLAUDE_CODE_PROVIDER, label: 'Claude', color: brand.claude },
-            { value: CODEX_CLI_PROVIDER, label: 'Codex', color: brand.codex },
+            { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: brand.claude },
+            { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: brand.codex },
           ]).map((option) => {
             const selected = selectedProvider === option.value
             const health = findProviderHealth(providerHealth?.providers, option.value)

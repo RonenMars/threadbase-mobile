@@ -32,7 +32,9 @@
     "apiKeyPlaceholder": "הדבק כאן את מפתח ה-API שלך",
     "showApiKey": "הצג",
     "hideApiKey": "הסתר",
-    "urlHint": "כתובת IP ברשת מקומית, שם מארח, או כל כתובת URL (למשל https://myserver.com)"
+    "urlHint": "כתובת IP ברשת מקומית, שם מארח, או כל כתובת URL (למשל https://myserver.com)",
+    "urlRequired": "נדרשת כתובת שרת.",
+    "apiKeyRequired": "נדרש מפתח API."
   },
   "manage": {
     "addServer": "הוסף שרת"
@@ -125,7 +127,9 @@
     "label": "השרת אינו זמין",
     "subtitle": "לא ניתן להתחבר אל {{server}}. ודא שהשרת פועל והרשת זמינה.",
     "expand": "הצג פרטי שגיאה",
-    "collapse": "הסתר פרטי שגיאה"
+    "collapse": "הסתר פרטי שגיאה",
+    "localhostUnreachable": "לא ניתן להגיע ל-'localhost' ממכשיר פיזי. השתמשו בכתובת ה-IP המקומית של ה-Mac (למשל http://192.168.x.x:8766) או הריצו: tb serve --tunnel",
+    "connectionFailed": "החיבור נכשל. בדקו את כתובת השרת ונסו שוב."
   },
   "indexing": {
     "label": "סורק ומאנדקס שיחות…",

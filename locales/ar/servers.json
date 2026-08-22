@@ -32,7 +32,9 @@
     "apiKeyPlaceholder": "الصق مفتاح API هنا",
     "showApiKey": "إظهار",
     "hideApiKey": "إخفاء",
-    "urlHint": "عنوان IP على الشبكة المحلية أو اسم المضيف أو أي عنوان URL (مثل https://myserver.com)"
+    "urlHint": "عنوان IP على الشبكة المحلية أو اسم المضيف أو أي عنوان URL (مثل https://myserver.com)",
+    "urlRequired": "عنوان الخادم مطلوب.",
+    "apiKeyRequired": "مفتاح API مطلوب."
   },
   "manage": {
     "addServer": "إضافة خادم"
@@ -125,7 +127,9 @@
     "label": "الخادم غير متاح",
     "subtitle": "تعذّر الاتصال بـ {{server}}. تحقق من أن الخادم يعمل وأن الشبكة متاحة.",
     "expand": "عرض تفاصيل الخطأ",
-    "collapse": "إخفاء تفاصيل الخطأ"
+    "collapse": "إخفاء تفاصيل الخطأ",
+    "localhostUnreachable": "تعذّر الوصول إلى 'localhost' من جهاز فعلي. استخدم عنوان IP المحلي لجهاز Mac (مثل http://192.168.x.x:8766) أو شغّل: tb serve --tunnel",
+    "connectionFailed": "فشل الاتصال. تحقّق من عنوان الخادم وحاول مجدداً."
   },
   "indexing": {
     "label": "جارٍ فحص وفهرسة المحادثات…",

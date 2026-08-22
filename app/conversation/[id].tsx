@@ -406,9 +406,9 @@ export default function ConversationDetailScreen() {
       animateStar()
     } catch (err) {
       useQuickAccessStore.setState({ favorites: previousFavorites })
-      Alert.alert('Favorites error', err instanceof Error ? err.message : 'Failed to update favorites')
+      Alert.alert(t('favorites.errorTitle'), err instanceof Error ? err.message : t('favorites.updateFailed'))
     }
-  }, [animateStar, conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId])
+  }, [animateStar, conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId, t])
 
   // Skeleton stays up until the fetch lands AND FlashList has drawn its items
   // (onLoad → listDrawn). The 400ms useMinDisplayTime floor is the anti-flicker
@@ -607,16 +607,16 @@ export default function ConversationDetailScreen() {
     if (!conversation) return
     const md = conversation.messages
       .map((m) => {
-        const role = m.role === 'user' ? '**User**' : '**Assistant**'
+        const role = m.role === 'user' ? t('share.roleUser') : t('share.roleAssistant')
         const text = m.content
           .filter((b) => b.type === 'text')
           .map((b) => (b as { text: string }).text)
           .join('\n')
-        return `${role}\n\n${text}`
+        return `**${role}**\n\n${text}`
       })
       .join('\n\n---\n\n')
     await Share.share({ message: md })
-  }, [conversation])
+  }, [conversation, t])
 
   const lastMessageId = conversation?.messages[conversation.messages.length - 1]?.id
 

@@ -46,7 +46,13 @@
     "sendInput": "Send Input",
     "cancel": "Cancel Session",
     "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts"
+    "prompts_other": "{{count}} prompts",
+    "actionsTitle": "Session Actions",
+    "dismiss": "Dismiss",
+    "cancelConfirm": "Are you sure?",
+    "confirmYes": "Yes",
+    "confirmNo": "No",
+    "noBranch": "no git"
   },
   "hub": {
     "seeAll_one": "See all {{count}} conversation →",

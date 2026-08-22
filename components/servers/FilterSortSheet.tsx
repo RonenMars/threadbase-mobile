@@ -112,7 +112,7 @@ export function FilterSortSheet({
   const theme = useTheme()
   const router = useRouter()
   const glassBackground = useGlassSheetBackground()
-  const { t, i18n } = useTranslation(['servers', 'settings'])
+  const { t, i18n } = useTranslation(['servers', 'settings', 'sessions'])
   const localeDirection = i18n.dir()
   const styles = makeStyles(theme, localeDirection)
 
@@ -298,8 +298,8 @@ export function FilterSortSheet({
         <View style={styles.chipRow}>
           {([
             { value: undefined, label: t('filter.all') },
-            { value: 'claude-code' as const, label: 'Claude', color: brand.claude },
-            { value: 'codex-cli' as const, label: 'Codex', color: brand.codex },
+            { value: 'claude-code' as const, label: t('sessions:provider.claude'), color: brand.claude },
+            { value: 'codex-cli' as const, label: t('sessions:provider.codex'), color: brand.codex },
           ]).map((opt) => {
             const selected = providerFilter === opt.value
             return (
