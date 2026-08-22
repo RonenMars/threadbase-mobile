@@ -7,10 +7,8 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { isPermissionClosedError, isQuestionClosedError } from '@/services/api-client'
 import { useComposerState } from '@/hooks/useComposerState'
-import { useActiveQuestion } from '@/hooks/useActiveQuestion'
-import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
+import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
@@ -58,7 +56,16 @@ export function TerminalView({
   )
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
-  const { question: activeQuestion, clear: clearQuestion, markPending, phase: answerPhase, questionKey } = useActiveQuestion(serverId, sessionId)
+  const {
+    activeQuestion,
+    answerPhase,
+    answerBusy,
+    clearQuestion,
+    handleAnswerPermission,
+    handleAnswerQuestion,
+    answerErrorMessage,
+    answerNoticeMessage,
+  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission })
 
   // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
   // not in SessionHistoryFeed itself, because entering it also has to hide
@@ -98,41 +105,6 @@ export function TerminalView({
   // clear; anything else keeps the card so the user can try again. Two of those
   // three arrive with no `permission_cancelled` alongside them, which makes this
   // the only thing that takes the card down for them.
-  // The gate's identity is captured here, at tap time, and handed back to
-  // markPending so the confirmation binds to the gate it was given for. The
-  // POST is not instant — the server re-scrapes the screen before accepting —
-  // so a second gate can arrive while this is in flight, and confirming
-  // "whatever is active now" would ghost one the user never answered.
-  //
-  // The key, not the block: a repaint that only moves the cursor replaces the
-  // block while the gate stays the same one, and rejecting that confirmation
-  // strands the card in `active` with send disabled.
-  const handleAnswerPermission = useCallback(async (optionIndex: number) => {
-    const answered = activeQuestion
-    const answeredKey = questionKey
-    if (!answered) return
-    try {
-      await answerPermission.mutateAsync({
-        contentKey: answered.permissionContentKey,
-        optionIndex,
-        keys: permissionAnswerKeys(answered, optionIndex),
-      })
-      markPending(answeredKey)
-    } catch (err) {
-      if (isPermissionClosedError(err instanceof Error ? err : null)) clearQuestion()
-    }
-  }, [activeQuestion, answerPermission, clearQuestion, markPending, questionKey])
-
-  const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
-    const answeredKey = questionKey
-    if (!activeQuestion) return
-    try {
-      await respondToQuestion.mutateAsync({ toolUseId, answers })
-      markPending(answeredKey)
-    } catch (err) {
-      if (isQuestionClosedError(err instanceof Error ? err : null)) clearQuestion()
-    }
-  }, [activeQuestion, clearQuestion, markPending, questionKey, respondToQuestion])
 
   const onSend = async (payload: string) => {
     markSessionUsed(sessionId)
@@ -168,23 +140,6 @@ export function TerminalView({
   // The server closes the question's menu on its own (common, self-healing —
   // it also broadcasts question_cancelled, which dismisses the card), so that
   // case reads as a calm notice rather than a failure the user must act on.
-  const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
-  // Same split for the gate route, and the same reason: a gate the server says
-  // is closed is not a failure the user must act on, it is the prompt going
-  // away. Everything else is a real error and keeps the card up to retry.
-  const isGateClosedError = isPermissionClosedError(answerPermission.error)
-  const answerFailure = respondToQuestion.isError && !isQuestionGoneError
-    ? respondToQuestion.error
-    : answerPermission.isError && !isGateClosedError
-      ? answerPermission.error
-      : null
-  const answerErrorMessage = answerFailure
-    ? answerFailure instanceof Error
-      ? answerFailure.message
-      : t('answer.failed')
-    : null
-  const answerNoticeMessage =
-    (respondToQuestion.isError && isQuestionGoneError) || isGateClosedError ? t('answer.questionClosed') : null
   const sendInputErrorMessage = sendInput.isError
     ? sendInput.error instanceof Error
       ? sendInput.error.message
@@ -218,7 +173,7 @@ export function TerminalView({
           onAnswer={handleAnswerQuestion}
           onAnswerPermission={handleAnswerPermission}
           answerPhase={answerPhase}
-          answerBusy={answerPermission.isPending || respondToQuestion.isPending}
+          answerBusy={answerBusy}
           onDismissQuestion={clearQuestion}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
