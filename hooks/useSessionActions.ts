@@ -122,7 +122,11 @@ export function useSessionActions(serverId: string, sessionId: string) {
     mutationFn: async (vars: { contentKey?: string; optionIndex: number; keys: string | null }) => {
       const sendKeysFallback = () => {
         if (vars.keys === null) {
-          throw new NetworkError('This option carries no keystrokes to send', 'no_answer_keys')
+          // A plain Error, not NetworkError: this never touched the network, so the
+          // retry predicate's `instanceof NetworkError` check must be false, not just
+          // its closed-code list — retrying a deterministic client-side throw is pure
+          // wasted time and keeps the card's rows locked for nothing.
+          throw new Error('This option carries no keystrokes to send')
         }
         return api.post(`/api/sessions/${sessionId}/input`, { keys: vars.keys })
       }

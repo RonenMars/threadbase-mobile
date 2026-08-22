@@ -130,6 +130,9 @@ describe('answerPermission – fallback to /input', () => {
     await waitFor(() => expect(result.current.answerPermission.isError).toBe(true), { timeout: 10000 })
     expect(mockPost).not.toHaveBeenCalled()
     expect(isPermissionClosedError(result.current.answerPermission.error)).toBe(false)
+    // This throw never touched the network, so it must settle on the first
+    // attempt — failureCount stays 1 rather than the 3 a retried mutation reaches.
+    expect(result.current.answerPermission.failureCount).toBe(1)
   }, 15000)
 })
 
