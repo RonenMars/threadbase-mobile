@@ -2,5 +2,12 @@
   "servers.json:health.checks.providerClaude": "product name \"Claude Code CLI\"",
   "servers.json:health.checks.providerCodex": "product name \"Codex CLI\"",
   "feedback.json:form.emailPlaceholder": "example address you@example.com",
-  "onboarding.json:notifications.previewBrand": "brand wordmark THREADBASE"
+  "onboarding.json:notifications.previewBrand": "brand wordmark THREADBASE",
+  "shared.json:app.title": "brand name \"Threadbase\"",
+  "sessions.json:provider.claude": "product name \"Claude\"",
+  "sessions.json:provider.codex": "product name \"Codex\"",
+  "sessions.json:noServer.repoLink": "repository URL",
+  "settings.json:backup.pastePlaceholder": "JSON shape sample, not prose",
+  "settings.json:language.english": "language names are endonyms — every locale lists English as \"English\"",
+  "conversation.json:review.kindDiff": "technical term used verbatim in he/ar/ru prose (\"ה-diff\")"
 }
