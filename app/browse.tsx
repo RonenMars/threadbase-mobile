@@ -342,7 +342,7 @@ export default function BrowseScreen() {
           >
             <GlassFill />
             <Text style={styles.recentsHeaderText}>
-              {t('nav.recentDirs', { count: recentDirs.length })}
+              {t('nav.recentDirs', { total: recentDirs.length })}
             </Text>
             {isRecentsOpen ? (
               <CaretDown size={14} color={theme.text.secondary} weight="bold" />

@@ -56,6 +56,18 @@ const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`
 // a 3s tick converges without a ?refresh=1 or over-fetching.
 const LIVE_POLL_INTERVAL_MS = 3000
 
+// The streamer names how it detected an active writer. Written out rather than
+// assembled as t(`resume.reason.${d}`) so the keys stay visible to
+// `i18next-cli status --unused`; `detectedBy` is a string[] off the wire, so a
+// method this build doesn't know falls back to the generic sentence.
+const RESUME_REASON_KEYS = {
+  file_handle: 'resume.reason.file_handle',
+  jsonl_mtime: 'resume.reason.jsonl_mtime',
+  process_argv: 'resume.reason.process_argv',
+  process_cwd: 'resume.reason.process_cwd',
+  unknown: 'resume.reason.unknown',
+} as const
+
 interface SearchTargetResponse {
   query: string
   message_index: number
@@ -555,7 +567,7 @@ export default function ConversationDetailScreen() {
               const reasons = Array.from(
                 new Set(
                   entries.map((d) =>
-                    t(`resume.reason.${d}`, { defaultValue: t('resume.reason.unknown') }),
+                    t(RESUME_REASON_KEYS[d as keyof typeof RESUME_REASON_KEYS] ?? RESUME_REASON_KEYS.unknown),
                   ),
                 ),
               ).join('; ')

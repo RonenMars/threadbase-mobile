@@ -246,7 +246,7 @@
     "manifestTitle": "Export summary",
     "manifestHost": "Host: {{host}}",
     "manifestVersion": "Streamer: {{version}}",
-    "manifestProjects": "Projects: {{count}}",
+    "manifestProjects": "المشاريع: {{total}}",
     "manifestCreated": "Created: {{at}}",
     "pasteHint": "الصق أرشيف JSON أدناه، ثم شغّله تجريبيًا قبل التطبيق.",
     "pastePlaceholder": "{ \"manifest\": …, \"projects\": […] }",

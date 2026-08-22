@@ -1,7 +1,7 @@
 {
   "nav": {
     "back": "‹ رجوع",
-    "recentDirs": "المجلدات الأخيرة ({{count}})",
+    "recentDirs": "المجلدات الأخيرة ({{total}})",
     "displayAll": "عرض الكل",
     "allRecentDirs": "المجلدات الأخيرة",
     "searchRecentDirs": "البحث في المواقع",

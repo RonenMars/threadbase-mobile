@@ -63,7 +63,7 @@
     "msgs_two": "שתי הודעות",
     "msgs_other": "{{count}} הודעות",
     "activityLive": "{{count}} פעילים",
-    "activityToday": "{{count}} היום",
+    "activityToday": "{{total}} היום",
     "activityLast": "אחרון: {{time}}",
     "timeNow": "עכשיו",
     "timeYesterday": "אתמול"

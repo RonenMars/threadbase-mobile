@@ -107,7 +107,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
       : null
     const pieces: string[] = []
     if (liveCount > 0) pieces.push(t('hub.activityLive', { count: liveCount }))
-    if (todayCount > 0) pieces.push(t('hub.activityToday', { count: todayCount }))
+    if (todayCount > 0) pieces.push(t('hub.activityToday', { total: todayCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
   }, [group.sessions, group.latestActivityMs, todaySessionCount, todayConvCount, i18n.language, t])
