@@ -56,14 +56,18 @@
   "action": {
     "export": "ייצוא",
     "copyPatch": "העתק תיקון",
-    "showAllLines": "הצג את כל {{count}} השורות",
+    "showAllLines_one": "הצג שורה אחת",
+    "showAllLines_two": "הצג שתי שורות",
+    "showAllLines_other": "הצג את כל {{count}} השורות",
     "copyCode": "העתק",
     "copiedCode": "הועתק",
     "scrollToBottom": "גלול למטה"
   },
   "message": {
     "code": "קוד",
-    "tokens": "{{count}} טוקנים",
+    "tokens_one": "טוקן אחד",
+    "tokens_two": "שני טוקנים",
+    "tokens_other": "{{count}} טוקנים",
     "errorBadge": "שגיאה",
     "toolFallback": "כלי"
   },

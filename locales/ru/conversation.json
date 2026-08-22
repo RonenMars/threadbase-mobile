@@ -56,14 +56,20 @@
   "action": {
     "export": "Экспорт",
     "copyPatch": "Копировать патч",
-    "showAllLines": "Показать все {{count}} строк",
+    "showAllLines_one": "Показать {{count}} строку",
+    "showAllLines_few": "Показать все {{count}} строки",
+    "showAllLines_many": "Показать все {{count}} строк",
+    "showAllLines_other": "Показать все {{count}} строк",
     "copyCode": "Копировать",
     "copiedCode": "Скопировано",
     "scrollToBottom": "Прокрутить вниз"
   },
   "message": {
     "code": "Код",
-    "tokens": "{{count}} токенов",
+    "tokens_one": "{{count}} токен",
+    "tokens_few": "{{count}} токена",
+    "tokens_many": "{{count}} токенов",
+    "tokens_other": "{{count}} токенов",
     "errorBadge": "Ошибка",
     "toolFallback": "Инструмент"
   },

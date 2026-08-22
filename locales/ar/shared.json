@@ -18,7 +18,12 @@
     "unpinFromFavorites": "إلغاء التثبيت من المفضلة",
     "pinToFavorites": "تثبيت في المفضلة",
     "cancel": "إلغاء",
-    "loadMore": "+ {{count}} إضافية",
+    "loadMore_zero": "+ لا مزيد",
+    "loadMore_one": "+ واحد إضافي",
+    "loadMore_two": "+ اثنان إضافيان",
+    "loadMore_few": "+ {{count}} إضافية",
+    "loadMore_many": "+ {{count}} إضافيًا",
+    "loadMore_other": "+ {{count}} إضافي",
     "emptyFavorites": "لا توجد مفضلة بعد — اضغط مطوّلًا على عنصر لتثبيته."
   }
 }

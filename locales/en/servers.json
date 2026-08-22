@@ -137,7 +137,8 @@
     "progress": "{{scanned}} / {{total}} files"
   },
   "cacheAlert": {
-    "bannerTitle": "{{count}} conversation histories are missing on {{server}}",
+    "bannerTitle_one": "{{count}} conversation history is missing on {{server}}",
+    "bannerTitle_other": "{{count}} conversation histories are missing on {{server}}",
     "title": "{{missing}} of {{total}} conversation histories are missing on {{server}}",
     "backupHint": "Consider checking a Time Machine (or equivalent) backup before doing anything destructive.",
     "actionPruneAll": "Prune All",
@@ -145,8 +146,10 @@
     "actionIgnore": "Ignore",
     "actionResetRescan": "Reset & Rescan",
     "confirmTitle": "Are you sure?",
-    "confirmPruneAll": "This permanently removes all {{count}} missing conversations from the cache. This cannot be undone.",
-    "confirmPruneSelected": "This permanently removes {{count}} selected conversations from the cache. This cannot be undone.",
+    "confirmPruneAll_one": "This permanently removes the {{count}} missing conversation from the cache. This cannot be undone.",
+    "confirmPruneAll_other": "This permanently removes all {{count}} missing conversations from the cache. This cannot be undone.",
+    "confirmPruneSelected_one": "This permanently removes {{count}} selected conversation from the cache. This cannot be undone.",
+    "confirmPruneSelected_other": "This permanently removes {{count}} selected conversations from the cache. This cannot be undone.",
     "confirmResetRescan": "This resets the cache and rescans from disk. This cannot be undone.",
     "confirmCancel": "Cancel",
     "confirmProceed": "Proceed",
@@ -158,7 +161,8 @@
     "resolveFailed": "Couldn't complete that action. Check the connection to this server and try again.",
     "review": "Review",
     "toastMessage": "Some conversation files on disk no longer match this server's cache.",
-    "toastDetails": "{{count}} of the cached histories are missing. Review the list to prune, ignore, or rescan."
+    "toastDetails_one": "{{count}} of the cached histories is missing. Review the list to prune, ignore, or rescan.",
+    "toastDetails_other": "{{count}} of the cached histories are missing. Review the list to prune, ignore, or rescan."
   },
   "hostPressure": {
     "banner": {
@@ -177,7 +181,8 @@
       "memory": "The computer is low on free RAM.",
       "event_loop": "The Threadbase server itself is delayed. Other work on the computer is crowding it.",
       "load": "The CPU is busy.",
-      "agents": "{{count}} agents are running on this computer."
+      "agents_one": "{{count}} agent is running on this computer.",
+      "agents_other": "{{count}} agents are running on this computer."
     },
     "whyFine": {
       "memory": "The CPU can still look idle. The OS will swap RAM to disk, so the machine feels fine until something new needs memory.",

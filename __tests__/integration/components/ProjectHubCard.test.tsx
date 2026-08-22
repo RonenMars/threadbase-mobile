@@ -124,7 +124,9 @@ describe('ProjectHubCard', () => {
 
     expect(getByText('סשנים')).toBeTruthy()
     expect(getByText('שיחות')).toBeTruthy()
-    expect(getByText(/1 פעילים · אחרון:/)).toBeTruthy()
+    // Hebrew _one replaces the digit with a word ("אחד פעיל" = "one active"),
+    // matching sessions:card.prompts — see docs on the plural-forms PR.
+    expect(getByText(/אחד פעיל · אחרון:/)).toBeTruthy()
     expect(queryByText('SESSIONS')).toBeNull()
     expect(queryByText('CONVERSATIONS')).toBeNull()
     expect(queryByText(/1 live · last/)).toBeNull()

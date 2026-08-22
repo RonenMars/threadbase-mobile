@@ -56,14 +56,16 @@
   "action": {
     "export": "Export",
     "copyPatch": "Copy patch",
-    "showAllLines": "Show all {{count}} lines",
+    "showAllLines_one": "Show {{count}} line",
+    "showAllLines_other": "Show all {{count}} lines",
     "copyCode": "Copy",
     "copiedCode": "Copied",
     "scrollToBottom": "Scroll to bottom"
   },
   "message": {
     "code": "Code",
-    "tokens": "{{count}} tokens",
+    "tokens_one": "{{count}} token",
+    "tokens_other": "{{count}} tokens",
     "errorBadge": "Error",
     "toolFallback": "Tool"
   },
