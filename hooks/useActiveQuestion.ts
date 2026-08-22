@@ -54,8 +54,8 @@ export type QuestionPhase = 'active' | 'pending'
 // derived from this on the way out, so callers and their tests see two plain
 // fields that are incapable of drifting apart.
 type CardState =
-  | { prompt: QuestionBlock; key: string | null; phase: 'active' }
-  | { prompt: QuestionBlock; key: string | null; phase: 'pending'; pendingSince: number }
+  | { prompt: QuestionBlock; key: string; phase: 'active' }
+  | { prompt: QuestionBlock; key: string; phase: 'pending'; pendingSince: number }
 
 export function useActiveQuestionReducer(sessionId: string) {
   const [card, setCard] = useState<CardState | null>(null)
@@ -99,7 +99,9 @@ export function useActiveQuestionReducer(sessionId: string) {
   // that covers that window.
   const lastStatus = useRef<SessionStatus | null>(null)
 
-  const accept = useCallback((key: string | null, block: QuestionBlock) => {
+  // Both callers pass a definite key (toolUseId, or gateKey's template literal) —
+  // a null here would mean a card whose identity matches every other null-keyed card.
+  const accept = useCallback((key: string, block: QuestionBlock) => {
     dismissedKey.current = null
     commit({ prompt: block, key, phase: 'active' })
   }, [commit])
@@ -137,6 +139,10 @@ export function useActiveQuestionReducer(sessionId: string) {
   // guard has to work. Absent, it carries no information: a bare comparison
   // makes every gate match, and a guarded one falls back to the object identity
   // this replaced. Both are wrong on exactly the servers deployed today.
+  //
+  // The asymmetry with CardState.key is deliberate, not an oversight to tidy
+  // away: a card always has a key, but a tap might not have one — the view
+  // passes questionKey, which is null when no card is up.
   const markPending = useCallback((answeredKey: string | null) => {
     const live = cardRef.current
     if (live?.phase !== 'active' || live.key !== answeredKey) return
