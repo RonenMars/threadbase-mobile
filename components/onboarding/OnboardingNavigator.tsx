@@ -1,13 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { reloadAppAsync } from 'expo'
-import { I18nManager } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import * as SecureStore from '@/services/secure-store'
-import { isRTLLocale } from '@/lib/locale'
 import { ONBOARDING_RESUME_KEY, parseOnboardingResume } from '@/lib/onboarding-resume'
 import { useServersStore } from '@/stores/servers'
-import { persistSettingsNow, useSettingsStore } from '@/stores/settings'
+import { persistSettingsNow } from '@/stores/settings'
 import type { PairResult } from '@/hooks/useTBPair'
 import { OnboardingShell } from './OnboardingShell'
 import { ConnectStep } from './steps/ConnectStep'
@@ -62,7 +59,7 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
   const [direction, setDirection] = useState<1 | -1 | 0>(0)
   const [paired, setPaired] = useState<PairResult | null>(null)
   const [languageBusy, setLanguageBusy] = useState(false)
-  const [languageError, setLanguageError] = useState<'persist' | 'reload' | null>(null)
+  const [languageError, setLanguageError] = useState<'persist' | null>(null)
   const languageInProgress = useRef(false)
   const addServer = useServersStore((s) => s.addServer)
 
@@ -112,33 +109,13 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
       return
     }
 
-    const selectedLocale = useSettingsStore.getState().locale
-    const nextIsRTL = isRTLLocale(selectedLocale)
-    const currentIsRTL = I18nManager.isRTL
-    if (nextIsRTL === currentIsRTL) {
-      goto(1)
-      languageInProgress.current = false
-      setLanguageBusy(false)
-      return
-    }
-
-    let directionForced = false
-    try {
-      await AsyncStorage.setItem(
-        ONBOARDING_RESUME_KEY,
-        JSON.stringify({ step: 'welcome', ...(mode === 'review' ? { mode } : {}) }),
-      )
-      I18nManager.forceRTL(nextIsRTL)
-      directionForced = true
-      await reloadAppAsync('onboarding-language-direction')
-    } catch {
-      if (directionForced) I18nManager.forceRTL(currentIsRTL)
-      await AsyncStorage.removeItem(ONBOARDING_RESUME_KEY).catch(() => {})
-      setLanguageError('reload')
-      languageInProgress.current = false
-      setLanguageBusy(false)
-    }
-  }, [goto, mode])
+    // An LTR↔RTL change needs no reload: direction comes from i18next and is
+    // painted as a Yoga `direction` style at the app root, so the next step
+    // renders in the new direction on the same React tree.
+    goto(1)
+    languageInProgress.current = false
+    setLanguageBusy(false)
+  }, [goto])
 
   const onNext = useCallback(() => {
     if (index === 0) {
@@ -221,11 +198,7 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
           onContinue={continueFromLanguage}
           busy={languageBusy}
           error={
-            languageError === 'persist'
-              ? t('language.persistRetry')
-              : languageError === 'reload'
-                ? t('language.reloadRetry')
-                : null
+            languageError === 'persist' ? t('language.persistRetry') : null
           }
         />
       )}

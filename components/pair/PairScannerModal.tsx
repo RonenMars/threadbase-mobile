@@ -24,6 +24,7 @@ import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -36,6 +37,7 @@ type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const styles = makeStyles(theme)
   const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
@@ -204,7 +206,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <View style={styles.root} testID="pair-scanner-modal">
+      <View style={[styles.root, directionStyle]} testID="pair-scanner-modal">
         {body}
         <TouchableOpacity
           testID="pair-scanner-close-btn"

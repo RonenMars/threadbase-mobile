@@ -12,6 +12,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
 import { isolateLtr } from '@/components/pair/ltr-isolate'
+import { useDirectionStyle } from '@/lib/rtl'
 
 /**
  * A deep link or a pasted credential has no out-of-band channel — a camera
@@ -49,6 +50,7 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
   const { t } = useTranslation('pair')
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
 
   if (!target) return null
 
@@ -87,7 +89,7 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
       statusBarTranslucent
     >
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID="pair-confirm-screen">
+        <SafeAreaView style={[styles.screen, directionStyle]} edges={['top', 'bottom']} testID="pair-confirm-screen">
           <ScreenHeader title={t('screenTitle')} onBack={onCancel} />
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.heading}>

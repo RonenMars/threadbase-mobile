@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { alertAppearance } from '@/lib/alertAppearance'
 import type { AlertLevel } from '@/types/alerts'
+import { useDirectionStyle } from '@/lib/rtl'
 
 type Props = {
   title: string
@@ -19,6 +20,7 @@ type Props = {
 export function AlertDetailsModal({ title, message, details, level, accent, onClose }: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const appearance = alertAppearance(level, theme, accent)
   const Icon = appearance.Icon
@@ -26,7 +28,7 @@ export function AlertDetailsModal({ title, message, details, level, accent, onCl
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={[styles.backdrop, directionStyle]} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}} testID="alert-details-sheet">
           <GlassFill />
           <View style={styles.header}>

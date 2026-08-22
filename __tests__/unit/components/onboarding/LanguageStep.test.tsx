@@ -48,6 +48,34 @@ describe('LanguageStep', () => {
     },
   )
 
+  it.each(['en', 'he', 'ar', 'ru'] as const)(
+    'keeps each row in its own direction while the app itself runs in %s',
+    async (appLocale) => {
+      // Per-option direction is a property of the language being offered, so it
+      // must not follow the app's own direction — and must not follow the stale
+      // native RTL state either.
+      Object.defineProperty(I18nManager, 'isRTL', {
+        configurable: true,
+        value: appLocale === 'ru',
+      })
+      await i18n.changeLanguage(appLocale)
+      useSettingsStore.setState({ locale: appLocale })
+
+      const { getByTestId } = await render(<LanguageStep onContinue={jest.fn()} />)
+
+      for (const [code, direction] of [
+        ['en', 'ltr'],
+        ['he', 'rtl'],
+        ['ar', 'rtl'],
+        ['ru', 'ltr'],
+      ] as const) {
+        expect(
+          StyleSheet.flatten(getByTestId(`onboarding-language-option-${code}`).props.style),
+        ).toEqual(expect.objectContaining({ direction, flexDirection: 'row' }))
+      }
+    },
+  )
+
   it.each([
     ['en', 'ltr'],
     ['he', 'rtl'],

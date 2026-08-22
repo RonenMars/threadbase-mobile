@@ -1,16 +1,17 @@
+import { localeDirection } from './rtl'
+
 export type SupportedLocale = 'en' | 'he' | 'ar' | 'ru'
 
 type SupportedLocaleMetadata = {
   code: SupportedLocale
   labelKey: 'language.english' | 'language.hebrew' | 'language.arabic' | 'language.russian'
-  direction: 'ltr' | 'rtl'
 }
 
 export const SUPPORTED_LOCALES: readonly SupportedLocaleMetadata[] = [
-  { code: 'en', labelKey: 'language.english', direction: 'ltr' },
-  { code: 'he', labelKey: 'language.hebrew', direction: 'rtl' },
-  { code: 'ar', labelKey: 'language.arabic', direction: 'rtl' },
-  { code: 'ru', labelKey: 'language.russian', direction: 'ltr' },
+  { code: 'en', labelKey: 'language.english' },
+  { code: 'he', labelKey: 'language.hebrew' },
+  { code: 'ar', labelKey: 'language.arabic' },
+  { code: 'ru', labelKey: 'language.russian' },
 ]
 
 export function resolveSupportedLocale(
@@ -24,5 +25,5 @@ export function resolveSupportedLocale(
 }
 
 export function isRTLLocale(locale: SupportedLocale): boolean {
-  return SUPPORTED_LOCALES.find(({ code }) => code === locale)?.direction === 'rtl'
+  return localeDirection(locale) === 'rtl'
 }

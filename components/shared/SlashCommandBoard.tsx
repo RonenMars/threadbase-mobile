@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   /** Whether the board is visible */
@@ -29,6 +30,7 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
   const { t } = useTranslation('shared')
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return SLASH_COMMANDS
@@ -50,7 +52,7 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
     >
       {/* Tapping outside dismisses without sending */}
       <Pressable style={styles.backdrop} onPress={onDismiss} />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, directionStyle]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Terminal size={15} color={theme.text.accent} />

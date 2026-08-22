@@ -6,7 +6,8 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { ChipItem } from './QuickAccessChip'
-import { flexRow } from '@/lib/rtl'
+import { flexRow, useAppDirection } from '@/lib/rtl'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   item: ChipItem | null
@@ -24,13 +25,15 @@ export function QuickAccessActionSheet({
   const { t } = useTranslation('shared')
   const theme = useTheme()
   const isGlass = useIsGlass()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
+  const directionStyle = useDirectionStyle()
   if (!item) return null
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, isGlass && styles.sheetGlass]}>
+      <View style={[styles.sheet, isGlass && styles.sheetGlass, directionStyle]}>
         <GlassFill />
         <Text style={styles.title} numberOfLines={1}>{item.label}</Text>
 
@@ -66,7 +69,7 @@ export function QuickAccessActionSheet({
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, isRTL: boolean) {
   return StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
     sheet: {
@@ -90,7 +93,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
     },
     row: {
-      flexDirection: flexRow(),
+      flexDirection: flexRow(isRTL),
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.md,

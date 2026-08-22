@@ -9,6 +9,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { clearServerConversationAndSessionState, queryClient } from '@/services/query-client'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -22,6 +23,7 @@ const DESTRUCTIVE_ACTIONS: CacheAlertResolveAction[] = ['prune_all', 'prune_sele
 export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const servers = useServersStore((s) => s.servers)
@@ -124,7 +126,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={submitting ? undefined : onClose}>
+      <Pressable style={[styles.backdrop, directionStyle]} onPress={submitting ? undefined : onClose}>
         <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
           <GlassFill />
           <View style={styles.header}>

@@ -13,6 +13,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { AppliedSessionLeaveAction } from '@/lib/sessionLeavePolicy'
 import { DEFAULT_LEAVE_MODAL_CHOICE } from '@/lib/sessionLeavePolicy'
+import { useDirectionStyle } from '@/lib/rtl'
 
 const OPTIONS: AppliedSessionLeaveAction[] = ['kill', 'leave', 'kill_on_idle']
 
@@ -44,12 +45,13 @@ function LeaveSessionForm({
 }: Omit<Props, 'visible'>) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const { t } = useTranslation(['terminal', 'common'])
   const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
   const [remember, setRemember] = useState(false)
 
   return (
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, directionStyle]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onCancel}

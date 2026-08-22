@@ -1,0 +1,57 @@
+# Maestro E2E — reload-free LTR↔RTL language switching.
+#
+# Switching to Hebrew used to force native RTL and reload the app, which sent
+# the user back through splash/onboarding. Direction now comes from i18next and
+# is painted as a Yoga `direction` style at the app root, so the switch happens
+# on the mounted tree: Settings stays on screen, translated RTL copy appears,
+# and switching back restores LTR.
+#
+# Requires: mock server running on localhost:7071
+# Usage: node e2e/run-maestro.js test e2e/language_direction.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# 1. Launched in an LTR language, on the hub.
+- assertVisible:
+    id: "hub-screen"
+
+# 2. Navigate to language settings.
+- tapOn:
+    id: "hub-settings-btn"
+- extendedWaitUntil:
+    visible:
+      id: "settings-language-he"
+    timeout: 4000
+- takeScreenshot: e2e/_artifacts/screenshots/language-direction-ltr
+
+# 3. Switch to Hebrew.
+- tapOn:
+    id: "settings-language-he"
+
+# 4. Translated RTL content is on screen — the Hebrew "Appearance" section
+#    header renders without a relaunch.
+- extendedWaitUntil:
+    visible: "מראה"
+    timeout: 4000
+- takeScreenshot: e2e/_artifacts/screenshots/language-direction-rtl
+
+# 5. The app did not return to splash/onboarding: the settings screen is still
+#    mounted, with the same language control on it.
+- assertVisible:
+    id: "settings-language-en"
+- assertNotVisible:
+    id: "onboarding-language-cta"
+
+# 6. Switch back to an LTR language.
+- tapOn:
+    id: "settings-language-en"
+
+# 7. Layout returns to LTR — English copy is back on the same screen.
+- extendedWaitUntil:
+    visible: "Appearance"
+    timeout: 4000
+- assertVisible:
+    id: "settings-language-he"
+- takeScreenshot: e2e/_artifacts/screenshots/language-direction-back-to-ltr

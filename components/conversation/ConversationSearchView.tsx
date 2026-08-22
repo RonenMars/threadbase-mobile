@@ -8,7 +8,7 @@ import { ConversationHistoryList } from '@/components/conversation/ConversationH
 import type { Message } from '@/types/api'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { flexRow } from '@/lib/rtl'
+import { flexRow, useAppDirection } from '@/lib/rtl'
 
 // The anchored search view: given a resolved match set, it renders the shared
 // history list with native bottom-anchoring OFF and drives scrolling itself —
@@ -59,7 +59,8 @@ export function ConversationSearchView({
 }: ConversationSearchViewProps) {
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
-  const styles = useMemo(() => makeStyles(theme), [theme])
+  const { isRTL } = useAppDirection()
+  const styles = useMemo(() => makeStyles(theme, isRTL), [theme, isRTL])
   const router = useRouter()
 
   const listRef = useRef<FlashListRef<Message>>(null)
@@ -244,10 +245,10 @@ export function ConversationSearchView({
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, isRTL: boolean) {
   return StyleSheet.create({
     matchNavBar: {
-      flexDirection: flexRow(),
+      flexDirection: flexRow(isRTL),
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
@@ -257,7 +258,7 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.border,
     },
     matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
-    matchNavActions: { flexDirection: flexRow(), alignItems: 'center', gap: spacing.sm },
+    matchNavActions: { flexDirection: flexRow(isRTL), alignItems: 'center', gap: spacing.sm },
     matchNavBtn: { minWidth: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   })
 }

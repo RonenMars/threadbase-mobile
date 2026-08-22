@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { useDirectionStyle } from '@/lib/rtl'
 
 export interface InfoField {
   label: string
@@ -40,6 +41,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
 
   const handleCopy = async (label: string, value: string) => {
@@ -51,7 +53,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, isGlass && styles.sheetGlass]}>
+      <View style={[styles.sheet, isGlass && styles.sheetGlass, directionStyle]}>
         <GlassFill />
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{title}</Text>

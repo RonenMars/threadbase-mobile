@@ -5,6 +5,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -20,6 +21,7 @@ interface Props {
 export function PairCameraIdentityCard({ visible, fingerprint, onDone }: Props) {
   const { t } = useTranslation('pair')
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
 
@@ -29,7 +31,7 @@ export function PairCameraIdentityCard({ visible, fingerprint, onDone }: Props) 
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDone} statusBarTranslucent>
-      <View style={styles.backdrop} testID="pair-camera-identity-card">
+      <View style={[styles.backdrop, directionStyle]} testID="pair-camera-identity-card">
         <View style={[styles.sheet, isGlass && styles.sheetGlass]}>
           <GlassFill />
           <IdentityFingerprintBlock fingerprint={fingerprint} variant="camera" />

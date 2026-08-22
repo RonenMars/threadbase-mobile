@@ -14,7 +14,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
-import { flexRow } from '@/lib/rtl'
+import { flexRow, useAppDirection } from '@/lib/rtl'
 
 interface Props {
   message: Message
@@ -61,7 +61,8 @@ function TextContent({
   activeMatch?: boolean
 }) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   const textRef = useRef<Text>(null)
   const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
   const needle = highlight?.trim()
@@ -103,7 +104,8 @@ const CODE_THEME = themes.oneDark
 
 function DiffLines({ code }: { code: string }) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   const lines = code.split('\n')
   return (
     <>
@@ -126,7 +128,8 @@ function DiffLines({ code }: { code: string }) {
 // flag) and parent re-renders don't re-tokenize the same code.
 const HighlightedCode = React.memo(function HighlightedCode({ code, language }: { code: string; language: Language }) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   return (
     <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
       {language === 'diff' ? (
@@ -165,7 +168,8 @@ const HighlightedCode = React.memo(function HighlightedCode({ code, language }: 
 function CodeBlock({ code, language }: { code: string; language: Language }) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => {
@@ -282,7 +286,8 @@ function TextBlockBody({
   activeMatch?: boolean
 }) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   // The fence split + per-block parse runs on every render otherwise —
   // memoized so re-renders of the bubble don't redo string work.
   const parts = useMemo(() => parseTextParts(text), [text])
@@ -321,7 +326,8 @@ function ContentBlock({
   activeMatch?: boolean
 }) {
   const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   if (block.type === 'text') {
     return (
       <TextBlockBody
@@ -350,7 +356,8 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const isGlass = useIsGlass()
-  const styles = makeStyles(theme)
+  const { isRTL } = useAppDirection()
+  const styles = makeStyles(theme, isRTL)
   const isUser = message.role === 'user'
 
   return (
@@ -375,7 +382,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
   )
 })
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, isRTL: boolean) {
   return StyleSheet.create({
     container: {
       paddingHorizontal: spacing.md,
@@ -432,7 +439,7 @@ function makeStyles(theme: Theme) {
       marginVertical: spacing.xs,
     },
     codeHeader: {
-      flexDirection: flexRow(),
+      flexDirection: flexRow(isRTL),
       justifyContent: 'space-between',
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
@@ -456,7 +463,7 @@ function makeStyles(theme: Theme) {
       paddingVertical: 6,
     },
     codeLine: {
-      flexDirection: flexRow(),
+      flexDirection: flexRow(isRTL),
       flexWrap: 'wrap',
     },
     codeToken: {
