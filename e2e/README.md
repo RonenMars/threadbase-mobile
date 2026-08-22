@@ -219,6 +219,45 @@ node e2e/run-maestro.js test e2e/launch.yaml
 kill %1
 ```
 
+## Making a question card appear
+
+A permission gate is drawn by Claude and scraped from the PTY by the streamer, so nothing a flow can *do* produces one — there is no tap that makes the agent ask for permission. The mock therefore has test-only routes that broadcast the frames directly.
+
+They sit behind the same bearer check as every other route, so pass the key the flow already paired with.
+
+```bash
+# a permission gate, on the default session
+curl -sX POST localhost:7071/__test__/gate \
+  -H 'Authorization: Bearer test-key' -H 'Content-Type: application/json' -d '{}'
+
+# a gate from a streamer too old to send contentKey — drives the keystroke fallback
+curl -sX POST localhost:7071/__test__/gate \
+  -H 'Authorization: Bearer test-key' -H 'Content-Type: application/json' \
+  -d '{"contentKey": null}'
+
+# a structured question
+curl -sX POST localhost:7071/__test__/question \
+  -H 'Authorization: Bearer test-key' -H 'Content-Type: application/json' -d '{}'
+
+# close either one from the server side
+curl -sX POST localhost:7071/__test__/gate     -H 'Authorization: Bearer test-key' \
+  -H 'Content-Type: application/json' -d '{"cancel": true}'
+curl -sX POST localhost:7071/__test__/question -H 'Authorization: Bearer test-key' \
+  -H 'Content-Type: application/json' -d '{"cancel": true}'
+```
+
+`/__test__/gate` accepts `sessionId`, `prompt`, `detail`, `options`, `cursor` and `contentKey`. `contentKey` is derived from the content when omitted, so two gates that differ visibly also differ in identity — pinning one by hand while changing the detail describes a gate the real server could not produce.
+
+To drive the answer route's failure branches, arm the next reply first. It is one-shot: a sticky rejection would make every later tap in the flow fail for a reason the flow never asked for.
+
+```bash
+curl -sX POST localhost:7071/__test__/answer-reply \
+  -H 'Authorization: Bearer test-key' -H 'Content-Type: application/json' \
+  -d '{"status": 409, "reason": "gate_mismatch"}'
+```
+
+Valid reasons are `gate_closed`, `gate_mismatch` and `unknown_option`. Only `gate_closed` also broadcasts `permission_cancelled`, which mirrors the real server: the other two leave a live gate on screen for every other client watching that session, so the reason code is the only thing that clears the card.
+
 ## Known limits
 
 - **Session-detail navigation isn't tested.** The hub's project group rows are React Native `TouchableOpacity` components whose `testID` does not surface to iOS accessibility — iOS auto-aggregates the row's nested `<Text>` children into a single a11y element and drops the testID. We tried `accessible={true}` on the TouchableOpacity; no change. Three workarounds for future iteration:
