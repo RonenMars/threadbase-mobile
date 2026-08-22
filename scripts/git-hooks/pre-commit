@@ -24,3 +24,18 @@ fi
 # Mandatory Storybook coverage: a new components/*.tsx file must ship with a
 # matching *.stories.tsx (see docs/storybook.md). Modified components only warn.
 node "$REPO_ROOT/scripts/check-story-coverage.js"
+
+# i18n: block a commit that introduces a hardcoded user-facing string.
+#
+# `i18next/no-literal-string` runs at `error` in eslint.config.js, so CI's Lint
+# job already catches these. Doing it here too turns a red pipeline into a
+# message before the commit exists. Only staged .ts/.tsx files are linted, and
+# only this rule's findings are reported: a full `npx eslint .` takes minutes
+# and surfaces 266 pre-existing errors from unrelated rules, which would bury
+# the one line that matters.
+#
+# `--no-verify` bypasses this. The same rule in CI cannot be bypassed.
+STAGED_TS="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' || true)"
+if [ -n "$STAGED_TS" ]; then
+  node "$REPO_ROOT/scripts/check-staged-i18n.js" $STAGED_TS
+fi

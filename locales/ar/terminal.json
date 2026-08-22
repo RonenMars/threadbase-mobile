@@ -24,7 +24,9 @@
     "removeTitle": "إزالة السيشن",
     "removeConfirm": "إزالة",
     "stopTitle": "إيقاف السيشن",
-    "stopFailed": "تعذّر إيقاف السيشن. تحقق من الاتصال وحاول مرة أخرى."
+    "stopFailed": "تعذّر إيقاف السيشن. تحقق من الاتصال وحاول مرة أخرى.",
+    "sendFailedTitle": "فشل الإرسال",
+    "sendFailedGeneric": "تعذّر الإرسال"
   },
   "status": {
     "disconnected": "غير متصل",
@@ -35,9 +37,14 @@
     "waitMore": "الانتظار أكثر"
   },
   "input": {
-    "placeholder": "أرسل رسالة…"
+    "placeholder": "أرسل رسالة…",
+    "attachLabel": "إرفاق ملف",
+    "expandLabel": "توسيع حقل الإدخال",
+    "minimizeLabel": "تصغير حقل الإدخال"
   },
   "session": {
+    "infoTitle": "معلومات السيشن",
+    "renameLabel": "إعادة تسمية السيشن",
     "notFound": "السيشن غير موجود",
     "notFoundBody": "لم يعد هذا السيشن موجودًا على الخادم. ربما انتهى أو تمت إزالته.",
     "backToHub": "العودة إلى المركز",

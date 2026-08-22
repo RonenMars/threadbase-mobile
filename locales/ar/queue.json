@@ -5,7 +5,8 @@
     "proceed": "▶ متابعة",
     "editPrompt": "تعديل البرومبت",
     "sendEdit": "إرسال التعديل",
-    "cancel": "✕ إلغاء"
+    "cancel": "✕ إلغاء",
+    "editPlaceholder": "عدّل البرومبت قبل المتابعة…"
   },
   "promptQueue": {
     "title": "قائمة انتظار البرومبتات",
@@ -15,6 +16,8 @@
     "pending_few": "{{count}} قيد الانتظار",
     "pending_many": "{{count}} قيد الانتظار",
     "pending_other": "{{count}} قيد الانتظار",
-    "remove": "✕"
+    "remove": "✕",
+    "inputPlaceholder": "إضافة برومبت إلى قائمة الانتظار…",
+    "addLabel": "إضافة برومبت إلى قائمة الانتظار"
   }
 }

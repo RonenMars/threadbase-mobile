@@ -88,6 +88,9 @@ jest.mock('@/components/conversation/MessageItem', () => ({
   },
 }))
 
+const mockAnswerPermissionMutate = jest.fn()
+const mockAnswerPermissionState: { isError: boolean; error: Error | null } = { isError: false, error: null }
+
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
     sendInput: {
@@ -99,8 +102,15 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendKeys: { mutate: mockSendKeysMutate },
     respondToQuestion: {
       mutate: mockRespondToQuestionMutate,
+      mutateAsync: mockRespondToQuestionMutate,
       isError: mockRespondToQuestionState.isError,
       error: mockRespondToQuestionState.error,
+    },
+    answerPermission: {
+      mutate: mockAnswerPermissionMutate,
+      mutateAsync: mockAnswerPermissionMutate,
+      isError: mockAnswerPermissionState.isError,
+      error: mockAnswerPermissionState.error,
     },
   }),
 }))

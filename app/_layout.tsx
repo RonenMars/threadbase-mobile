@@ -1,6 +1,7 @@
 import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
@@ -57,6 +58,7 @@ import { CacheAlertSync } from '@/components/servers/CacheAlertSync'
 import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
 import { wrap as sentryWrap } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
+import { ONBOARDING_RESUME_KEY, parseOnboardingResume } from '@/lib/onboarding-resume'
 
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
@@ -84,7 +86,20 @@ export function shouldRedirectToOnboarding(
   return firstSegment !== 'onboarding' && firstSegment !== 'pair'
 }
 
-function AuthGate({ children }: { children: React.ReactNode }) {
+export function shouldRedirectPairedUserHome(
+  firstSegment: string | undefined,
+  hasServers: boolean,
+  mode: string | undefined,
+): boolean {
+  return (
+    hasServers &&
+    firstSegment === 'onboarding' &&
+    mode !== 'add' &&
+    mode !== 'review'
+  )
+}
+
+export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const segments = useSegments()
   const { mode } = useGlobalSearchParams<{ mode?: string }>()
@@ -120,17 +135,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return
     if (!navState?.key) return
-    const inOnboarding = segments[0] === 'onboarding'
-    const addingServer = inOnboarding && mode === 'add'
     const hasServers = activeServerIds.length > 0
+    let cancelled = false
     const handle = requestAnimationFrame(() => {
-      if (shouldRedirectToOnboarding(segments[0], hasServers)) {
-        router.replace('/onboarding')
-      } else if (hasServers && inOnboarding && !addingServer) {
-        router.replace('/')
-      }
+      void (async () => {
+        const resume = await AsyncStorage.getItem(ONBOARDING_RESUME_KEY)
+          .then(parseOnboardingResume)
+          .catch(() => null)
+        if (cancelled) return
+        if (hasServers && resume?.mode === 'review') {
+          router.replace('/onboarding?mode=review')
+        } else if (shouldRedirectToOnboarding(segments[0], hasServers)) {
+          router.replace('/onboarding')
+        } else if (shouldRedirectPairedUserHome(segments[0], hasServers, mode)) {
+          router.replace('/')
+        }
+      })()
     })
-    return () => cancelAnimationFrame(handle)
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(handle)
+    }
     // segments/router intentionally omitted: effect should only fire on
     // auth-state changes (activeServerIds/isLoading), not on every tab switch.
     // Reading from the closure is correct here.
@@ -385,6 +410,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         headerTintColor: theme.text.primary,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },
+        animation: i18n.dir() === 'rtl' ? 'slide_from_left' : undefined,
         headerLeft: ({ tintColor }) => (
           <Pressable
             onPress={() => goBackOrHub(router)}
@@ -407,6 +433,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         name="browse"
         options={{
           presentation: 'modal',
+          animation: 'default',
           title: 'Browse',
           headerBackTitle: 'Cancel',
         }}

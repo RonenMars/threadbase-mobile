@@ -9,6 +9,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import * as Clipboard from 'expo-clipboard'
+import { ArrowLeft, ArrowRight, Check } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
@@ -41,6 +42,7 @@ function colorForKind(k: PairLogKind): string {
 }
 
 function CopyableCommand({ command }: { command: string }) {
+  const { t } = useTranslation('onboarding')
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -57,8 +59,19 @@ function CopyableCommand({ command }: { command: string }) {
       activeOpacity={0.7}
     >
       <Text style={copyStyles.command}>$ {command}</Text>
-      {/* eslint-disable-next-line i18next/no-literal-string */}
-      <Text style={copyStyles.badge}>{copied ? '✓ copied' : 'copy'}</Text>
+      <View style={copyStyles.badge}>
+        {copied ? (
+          <Check
+            testID="copy-command-copied-icon"
+            size={12}
+            weight="bold"
+            color={colors.blue400}
+          />
+        ) : null}
+        <Text style={copyStyles.badgeText}>
+          {copied ? t('connect.copied') : t('connect.copy')}
+        </Text>
+      </View>
     </TouchableOpacity>
   )
 }
@@ -83,6 +96,11 @@ const copyStyles = StyleSheet.create({
     fontWeight: '500',
   },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  badgeText: {
     color: colors.blue400,
     fontFamily: fonts.mono,
     fontSize: 10.5,
@@ -92,7 +110,9 @@ const copyStyles = StyleSheet.create({
 })
 
 export function ConnectStep({ onPaired, onAdvance }: Props) {
-  const { t } = useTranslation(['onboarding', 'pair'])
+  const { t, i18n } = useTranslation(['onboarding', 'pair'])
+  const localeDirection = i18n.dir() === 'rtl' ? 'rtl' : 'ltr'
+  const textDirectionStyle = localeDirection === 'rtl' ? styles.textRtl : styles.textLtr
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
   const [urlHost, setUrlHost] = useState('')
   const [token, setToken] = useState('')
@@ -178,13 +198,41 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     if (result) commitScan(result)
   }
 
+  const backToOptionsControl = (
+    <TouchableOpacity
+      testID="onboarding-connect-back-to-choose"
+      onPress={() => setMode('choose')}
+      style={[styles.linkBtnTop, { direction: localeDirection }]}
+    >
+      {localeDirection === 'rtl' ? (
+        <ArrowRight
+          testID="onboarding-connect-back-arrow-right"
+          size={16}
+          weight="bold"
+          color={colors.blue400}
+        />
+      ) : (
+        <ArrowLeft
+          testID="onboarding-connect-back-arrow-left"
+          size={16}
+          weight="bold"
+          color={colors.blue400}
+        />
+      )}
+      <Text style={[styles.linkText, textDirectionStyle]}>{t('connect.backToOptions')}</Text>
+    </TouchableOpacity>
+  )
+
   if (mode === 'choose') {
     return (
-      <View style={styles.root}>
-        <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
-        <Text style={styles.headline}>{t('connect.headline')}</Text>
-        <Text style={styles.modeBlurb}>{t('connect.modeBlurb')}</Text>
-        <Text style={styles.connectivityHint}>{t('connect.connectivityHint')}</Text>
+      <View
+        testID="onboarding-connect-root"
+        style={[styles.root, { direction: localeDirection }]}
+      >
+        <Text style={[styles.eyebrow, textDirectionStyle]}>{t('connect.eyebrow')}</Text>
+        <Text style={[styles.headline, textDirectionStyle]}>{t('connect.headline')}</Text>
+        <Text style={[styles.modeBlurb, textDirectionStyle]}>{t('connect.modeBlurb')}</Text>
+        <Text style={[styles.connectivityHint, textDirectionStyle]}>{t('connect.connectivityHint')}</Text>
 
         <TouchableOpacity
           testID="onboarding-connect-qr-card"
@@ -194,11 +242,11 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           accessibilityRole="button"
           accessibilityLabel={t('connect.scanQr')}
         >
-          <View style={styles.modeCardHeader}>
-            <Text style={styles.modeCardTitle}>{t('connect.scanQr')}</Text>
-            <Text style={styles.recommendedBadge}>{t('connect.recommended')}</Text>
+          <View style={[styles.modeCardHeader, { direction: localeDirection }]}>
+            <Text style={[styles.modeCardTitle, textDirectionStyle]}>{t('connect.scanQr')}</Text>
+            <Text style={[styles.recommendedBadge, textDirectionStyle]}>{t('connect.recommended')}</Text>
           </View>
-          <Text style={styles.modeCardBody}>{t('connect.scanQrBody')}</Text>
+          <Text style={[styles.modeCardBody, textDirectionStyle]}>{t('connect.scanQrBody')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -209,8 +257,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           accessibilityRole="button"
           accessibilityLabel={t('connect.pasteCredentials')}
         >
-          <Text style={styles.modeCardTitle}>{t('connect.pasteCredentials')}</Text>
-          <Text style={styles.modeCardBody}>{t('connect.pasteCredentialsBody')}</Text>
+          <Text style={[styles.modeCardTitle, textDirectionStyle]}>{t('connect.pasteCredentials')}</Text>
+          <Text style={[styles.modeCardBody, textDirectionStyle]}>{t('connect.pasteCredentialsBody')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -218,28 +266,25 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 
   if (mode === 'qr-explain') {
     return (
-      <View style={styles.root}>
-        <TouchableOpacity
-          testID="onboarding-connect-back-to-choose"
-          onPress={() => setMode('choose')}
-          style={styles.linkBtnTop}
-        >
-          <Text style={styles.linkText}>{t('connect.backToOptions')}</Text>
-        </TouchableOpacity>
-        <Text style={styles.eyebrow}>{t('connect.qrEyebrow')}</Text>
-        <Text style={styles.headline}>{t('connect.qrHeadline')}</Text>
+      <View
+        testID="onboarding-connect-root"
+        style={[styles.root, { direction: localeDirection }]}
+      >
+        {backToOptionsControl}
+        <Text style={[styles.eyebrow, textDirectionStyle]}>{t('connect.qrEyebrow')}</Text>
+        <Text style={[styles.headline, textDirectionStyle]}>{t('connect.qrHeadline')}</Text>
 
         <TerminalCard>
-          <Text style={styles.explainStep}>{t('connect.step1')}</Text>
-          <Text style={[styles.explainStep, { marginTop: 10 }]}>{t('connect.step2')}</Text>
-          <Text style={[styles.explainStep, { marginTop: 10 }]}>{t('connect.step3')}</Text>
+          <Text style={[styles.explainStep, textDirectionStyle]}>{t('connect.step1')}</Text>
+          <Text style={[styles.explainStep, textDirectionStyle, { marginTop: 10 }]}>{t('connect.step2')}</Text>
+          <Text style={[styles.explainStep, textDirectionStyle, { marginTop: 10 }]}>{t('connect.step3')}</Text>
         </TerminalCard>
 
         <View style={styles.flex} />
 
         <PrimaryButton onPress={() => setScannerOpen(true)}>{t('connect.openCamera')}</PrimaryButton>
         <TouchableOpacity onPress={() => setMode('manual')} style={styles.linkBtn}>
-          <Text style={styles.linkText}>{t('connect.manualEnterInstead')}</Text>
+          <Text style={[styles.linkText, textDirectionStyle]}>{t('connect.manualEnterInstead')}</Text>
         </TouchableOpacity>
         <View style={{ height: 14 }} />
 
@@ -260,30 +305,25 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   return (
     <View style={styles.root}>
     <KeyboardAwareScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.rootContent}
+      testID="onboarding-connect-root"
+      style={[styles.flex, { direction: localeDirection }]}
+      contentContainerStyle={[styles.rootContent, { direction: localeDirection }]}
       keyboardShouldPersistTaps="handled"
       bottomOffset={16}
     >
-      <TouchableOpacity
-        testID="onboarding-connect-back-to-choose"
-        onPress={() => setMode('choose')}
-        style={styles.linkBtnTop}
-      >
-        <Text style={styles.linkText}>{t('connect.backToOptions')}</Text>
-      </TouchableOpacity>
-      <Text style={styles.eyebrow}>{t('connect.eyebrow')}</Text>
-      <Text style={styles.headline}>{t('connect.headline')}</Text>
+      {backToOptionsControl}
+      <Text style={[styles.eyebrow, textDirectionStyle]}>{t('connect.eyebrow')}</Text>
+      <Text style={[styles.headline, textDirectionStyle]}>{t('connect.headline')}</Text>
 
       <TouchableOpacity onPress={() => setMode('qr-explain')} style={styles.linkBtnTop}>
-        <Text style={styles.linkText}>{t('connect.manualScanInstead')}</Text>
+        <Text style={[styles.linkText, textDirectionStyle]}>{t('connect.manualScanInstead')}</Text>
       </TouchableOpacity>
 
       <TerminalCard>
-        <Text style={styles.sectionLabel}>{t('connect.manualSectionLabel')}</Text>
-        <Text style={styles.sectionHint}>{t('connect.manualSectionHint')}</Text>
+        <Text style={[styles.sectionLabel, textDirectionStyle]}>{t('connect.manualSectionLabel')}</Text>
+        <Text style={[styles.sectionHint, textDirectionStyle]}>{t('connect.manualSectionHint')}</Text>
         <CopyableCommand command="tb-streamer pair" />
-        <Text style={[styles.sectionHint, { marginTop: 6 }]}>{t('connect.manualSectionPasteHint')}</Text>
+        <Text style={[styles.sectionHint, textDirectionStyle, { marginTop: 6 }]}>{t('connect.manualSectionPasteHint')}</Text>
       </TerminalCard>
 
       <View style={styles.form}>
@@ -302,20 +342,18 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           keyFieldLabel={t('connect.manualToken')}
           urlAccessory={
             <InfoTooltip
-              linkLabel="Networking guide"
+              linkLabel={t('connect.networkingGuide')}
               linkUrl="https://github.com/RonenMars/threadbase-streamer#networking"
             >
-              {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-              <Text>Any reachable address — LAN IP, hostname, Tailscale IP, or a public URL. Must start with http:// or https://.</Text>
+              {t('connect.networkingTooltip')}
             </InfoTooltip>
           }
           keyAccessory={
             <InfoTooltip
-              linkLabel="Pairing docs"
+              linkLabel={t('connect.pairingDocs')}
               linkUrl="https://github.com/RonenMars/threadbase-streamer#mobile-pairing"
             >
-              {/* eslint-disable-next-line i18next/no-literal-string, react-native/no-raw-text */}
-              <Text>A short-lived pt_ token or the full threadbase:// link from tb-streamer pair. Valid for 3 minutes — run tb-streamer pair again if it expires. Long-lived tb_ API keys also work.</Text>
+              {t('connect.pairingTooltip')}
             </InfoTooltip>
           }
           editable={!busy}
@@ -419,6 +457,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 22, paddingTop: 4 },
   rootContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 4 },
+  textLtr: { direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto' },
+  textRtl: { direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' },
   eyebrow: {
     color: colors.amber400,
     fontFamily: fonts.mono,
@@ -548,7 +588,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   linkBtnTop: {
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: 4,
     marginBottom: 4,
   },

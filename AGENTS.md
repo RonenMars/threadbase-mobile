@@ -20,6 +20,8 @@ When adding new Maestro flows:
 - Add new flows to the relevant `test:e2e:*` script in `package.json`
 - Fixtures are in `e2e/fixtures/` — extend them if the new flow needs additional data
 
+On iOS 26.x, do not use Maestro's `hideKeyboard`: it can fail in the simulator's XCTest accessibility path. A crash report naming `SpringBoard`, `launchd_sim`, a `com.apple.CoreSimulator.SimDevice.<UDID>` coalition, and `XCTAutomationSupport` is a simulator-automation crash—not a Threadbase app crash or a crash on a connected physical device. Scroll to reveal the next control instead; use `pressKey: Enter` only for single-line inputs whose return behavior is safe. See [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "SpringBoard crashes in `XCTAutomationSupport` during Maestro".
+
 ---
 
 ## Lint Before Commit
@@ -31,6 +33,10 @@ npx eslint <staged-files>
 ```
 
 Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx)$'`. If there are no JS/TS staged files, skip. Fix any errors before committing — warnings are allowed through.
+
+`i18next/no-literal-string` runs at **`error`**, so a hardcoded user-facing string fails the commit and the CI Lint job. `scripts/git-hooks/pre-commit` reports only that rule's findings on staged files, because an unfiltered run surfaces 266 pre-existing errors from unrelated rules and buries the one line that matters.
+
+If a flagged string is technical rather than copy — a URL fragment, a CLI flag, an enum discriminant — extract it to a const with an `eslint-disable-next-line` and a comment saying why. Do not translate it, and do not add a blanket file exclusion for a file that also holds real copy.
 
 ---
 

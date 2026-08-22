@@ -43,6 +43,13 @@ export interface ChatComposerProps {
    *  question that closed itself) — not styled as a failure. */
   sendNotice?: string | null
   disabled: boolean
+  /**
+   * Send only. Typing, the mic and attachments stay live on purpose: a question
+   * card is up and the answer belongs on the card, but blocking the rest buys
+   * nothing, punishes someone drafting their next message, and widens the
+   * lockout surface if anything about the card goes wrong.
+   */
+  sendDisabled?: boolean
   voice: { listening: boolean; start: () => Promise<void>; stop: () => void }
   micGranted: boolean
   onToggleMic: () => void
@@ -60,6 +67,7 @@ export function ChatComposer({
   sendError,
   sendNotice = null,
   disabled,
+  sendDisabled = false,
   voice,
   micGranted,
   onToggleMic,
@@ -81,8 +89,11 @@ export function ChatComposer({
 
   const hasContent = value.trim().length > 0 || attachments.length > 0
 
+  // Both send buttons funnel through here — the inline one and the one in the
+  // full-screen modal. They each disable themselves as well; this is the guard
+  // that survives someone adding a third.
   const handleSend = () => {
-    if (disabled || !hasContent) return
+    if (disabled || sendDisabled || !hasContent) return
     Keyboard.dismiss()
     onSend()
   }
@@ -134,7 +145,7 @@ export function ChatComposer({
       style={[styles.iconBtn, (isUploading || disabled) && styles.disabled]}
       onPress={onAttach}
       disabled={isUploading || disabled}
-      accessibilityLabel="Attach file"
+      accessibilityLabel={t('input.attachLabel')}
       hitSlop={8}
     >
       {isUploading ? (
@@ -148,9 +159,9 @@ export function ChatComposer({
   const trailingButton = hasContent ? (
     <TouchableOpacity
       testID="chat-send-button"
-      style={[styles.sendBtn, disabled && styles.disabled]}
+      style={[styles.sendBtn, (disabled || sendDisabled) && styles.disabled]}
       onPress={handleSend}
-      disabled={disabled}
+      disabled={disabled || sendDisabled}
       accessibilityLabel={t('action.sendInput')}
     >
       <PaperPlaneRight size={24} color={theme.text.onAccent} />
@@ -203,7 +214,7 @@ export function ChatComposer({
             <TouchableOpacity
               testID="expand-input-button"
               accessibilityRole="button"
-              accessibilityLabel="Expand input"
+              accessibilityLabel={t('input.expandLabel')}
               style={styles.expandBtnAndroid}
               onPress={() => setExpanded(true)}
               disabled={disabled}
@@ -229,7 +240,7 @@ export function ChatComposer({
             <TouchableOpacity
               testID="expand-input-button"
               accessibilityRole="button"
-              accessibilityLabel="Expand input"
+              accessibilityLabel={t('input.expandLabel')}
               style={styles.expandBtn}
               onPress={() => setExpanded(true)}
               disabled={disabled}
@@ -274,7 +285,7 @@ export function ChatComposer({
                   testID="minimize-input-button"
                   style={styles.iconBtn}
                   onPress={() => setExpanded(false)}
-                  accessibilityLabel="Minimize input"
+                  accessibilityLabel={t('input.minimizeLabel')}
                   hitSlop={8}
                 >
                   <ArrowsIn size={22} color={theme.text.primary} />
@@ -294,12 +305,12 @@ export function ChatComposer({
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.sendBtn, (!hasContent || disabled) && styles.disabled]}
+                  style={[styles.sendBtn, (!hasContent || disabled || sendDisabled) && styles.disabled]}
                   onPress={() => {
                     handleSend()
                     setExpanded(false)
                   }}
-                  disabled={!hasContent || disabled}
+                  disabled={!hasContent || disabled || sendDisabled}
                   accessibilityLabel={t('action.sendInput')}
                 >
                   <PaperPlaneRight size={26} color={theme.text.onAccent} />

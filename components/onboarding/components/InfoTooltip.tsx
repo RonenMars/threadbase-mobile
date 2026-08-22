@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { colors, fonts } from '../theme'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function InfoTooltip({ children, linkLabel, linkUrl }: Props) {
+  const { t } = useTranslation('onboarding')
   const [visible, setVisible] = useState(false)
 
   return (
@@ -34,8 +36,7 @@ export function InfoTooltip({ children, linkLabel, linkUrl }: Props) {
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={() => setVisible(false)} hitSlop={8} style={styles.dismissRow}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.dismiss}>Got it</Text>
+            <Text style={styles.dismiss}>{t('tooltip.dismiss')}</Text>
           </TouchableOpacity>
         </View>
       )}

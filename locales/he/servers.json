@@ -5,8 +5,8 @@
   "status": {
     "connected": "מחובר",
     "disconnected": "מנותק",
-    "unreachable": "לא נגיש",
-    "fetchFailed": "אחזור נכשל",
+    "unreachable": "לא זמין",
+    "fetchFailed": "הרענון נכשל",
     "connecting": "מתחבר…"
   },
   "defaultLabel": "שרת",
@@ -32,7 +32,9 @@
     "apiKeyPlaceholder": "הדבק כאן את מפתח ה-API שלך",
     "showApiKey": "הצג",
     "hideApiKey": "הסתר",
-    "urlHint": "כתובת IP ברשת מקומית, שם מארח, או כל כתובת URL (למשל https://myserver.com)"
+    "urlHint": "כתובת IP ברשת מקומית, שם מארח, או כל כתובת URL (למשל https://myserver.com)",
+    "urlRequired": "נדרשת כתובת שרת.",
+    "apiKeyRequired": "נדרש מפתח API."
   },
   "manage": {
     "addServer": "הוסף שרת"
@@ -73,7 +75,31 @@
     "resetDefaults": "אפס לברירת מחדל",
     "close": "✕",
     "editOrder": "ערוך סדר",
-    "lockOrder": "נעל סדר"
+    "lockOrder": "נעל סדר",
+    "sortLastMessage": "הודעה אחרונה",
+    "sortProjectName": "שם הפרויקט",
+    "sortCreatedDate": "תאריך יצירה",
+    "newestFirst": "מהחדש לישן",
+    "oldestFirst": "מהישן לחדש",
+    "statusRunning": "רץ",
+    "statusActive": "פעיל",
+    "statusIdle": "לא פעיל"
+  },
+  "stateMessage": {
+    "buildingHistoryNamed": "{{server}} בונה את היסטוריית הסשנים…",
+    "buildingHistory": "בונה את היסטוריית הסשנים…",
+    "unreachableNamed": "לא ניתן להגיע אל {{server}}. בדקו את החיבור או את כתובת השרת.",
+    "unreachableAll": "לא ניתן להגיע לאף שרת. בדקו את החיבור או את כתובת השרת.",
+    "refreshFailedNamed": "לא ניתן לרענן סשנים מ־{{server}}.",
+    "refreshFailedAll": "לא ניתן לרענן סשנים מאף שרת.",
+    "refreshFailedSome": "לא ניתן לרענן סשנים מחלק מהשרתים.",
+    "disconnectedNamed": "החיבור אל {{server}} נותק. מוצגים סשנים מהמטמון.",
+    "disconnectedAll": "החיבור לכל השרתים נותק. מוצגים סשנים מהמטמון.",
+    "disconnectedSome": "החיבור לחלק מהשרתים נותק. מוצגים סשנים מהמטמון.",
+    "connectingNamed": "מתחבר אל {{server}}…",
+    "connectingAll": "מתחבר לשרתים…",
+    "partialUnreachableNamed": "לא ניתן להגיע אל {{server}}. ייתכן שחלק מהסשנים חסרים.",
+    "partialUnreachableSome": "לא ניתן להגיע לחלק מהשרתים. ייתכן שחלק מהסשנים חסרים."
   },
   "displayedServers": {
     "all": "הכל",
@@ -94,14 +120,16 @@
     "menuRefresh": "רענן",
     "menuDelete": "מחק",
     "optionsLabel": "אפשרויות שרת",
-    "titleSingle": "סטטוס שרת",
-    "titleMultiple": "סטטוס שרתים"
+    "titleSingle": "מצב השרת",
+    "titleMultiple": "מצב השרתים"
   },
   "error": {
     "label": "השרת אינו זמין",
     "subtitle": "לא ניתן להתחבר אל {{server}}. ודא שהשרת פועל והרשת זמינה.",
     "expand": "הצג פרטי שגיאה",
-    "collapse": "הסתר פרטי שגיאה"
+    "collapse": "הסתר פרטי שגיאה",
+    "localhostUnreachable": "לא ניתן להגיע ל-'localhost' ממכשיר פיזי. השתמשו בכתובת ה-IP המקומית של ה-Mac (למשל http://192.168.x.x:8766) או הריצו: tb serve --tunnel",
+    "connectionFailed": "החיבור נכשל. בדקו את כתובת השרת ונסו שוב."
   },
   "indexing": {
     "label": "סורק ומאנדקס שיחות…",

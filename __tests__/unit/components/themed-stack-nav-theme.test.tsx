@@ -19,6 +19,7 @@ import { fireEvent, render } from '@testing-library/react-native'
 import type { NativeStackNavigationOptions } from 'expo-router'
 
 import { ThemedStack } from '@/app/_layout'
+import i18n from '@/lib/i18n'
 import {
   dark,
   light,
@@ -41,7 +42,8 @@ const mockThemeState: { theme: Theme; isGlass: boolean } = {
 const mockCapture: {
   navTheme?: NavTheme
   screenOptions?: NativeStackNavigationOptions
-} = {}
+  screenOptionsByName: Record<string, NativeStackNavigationOptions | undefined>
+} = { screenOptionsByName: {} }
 
 const mockStackRouter = {
   push: jest.fn(),
@@ -81,7 +83,16 @@ jest.mock('expo-router', () => {
     mockCapture.screenOptions = screenOptions
     return ReactActual.createElement(View, null, children)
   }
-  Stack.Screen = () => null
+  Stack.Screen = ({
+    name,
+    options,
+  }: {
+    name: string
+    options?: NativeStackNavigationOptions
+  }) => {
+    mockCapture.screenOptionsByName[name] = options
+    return null
+  }
   return {
     Stack,
     ThemeProvider: ({
@@ -152,11 +163,13 @@ async function renderThemedStack(theme: Theme, isGlass: boolean) {
   mockThemeState.isGlass = isGlass
   mockCapture.navTheme = undefined
   mockCapture.screenOptions = undefined
+  mockCapture.screenOptionsByName = {}
   await render(<Harness />)
 }
 
 describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en')
     mockStackRouter.push.mockReset()
     mockStackRouter.replace.mockReset()
     mockStackRouter.back.mockReset()
@@ -214,5 +227,21 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
 
     expect(mockStackRouter.back).not.toHaveBeenCalled()
     expect(mockStackRouter.replace).toHaveBeenCalledWith('/')
+  })
+
+  it('keeps the platform-default card transition in LTR', async () => {
+    await renderThemedStack(dark, false)
+
+    expect(mockCapture.screenOptions?.animation).toBeUndefined()
+  })
+
+  it('mirrors RTL card transitions without changing modal or gesture motion', async () => {
+    await i18n.changeLanguage('he')
+    await renderThemedStack(dark, false)
+
+    expect(mockCapture.screenOptions?.animation).toBe('slide_from_left')
+    expect(mockCapture.screenOptions?.gestureDirection).toBeUndefined()
+    expect(mockCapture.screenOptions?.animationMatchesGesture).toBeUndefined()
+    expect(mockCapture.screenOptionsByName.browse?.animation).toBe('default')
   })
 })

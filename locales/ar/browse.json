@@ -7,8 +7,11 @@
     "searchRecentDirs": "البحث في المواقع",
     "noMatchingDirs": "لا توجد مواقع مطابقة",
     "newFolder": "مجلد جديد",
+    "newFolderPlaceholder": "اسم المجلد",
     "create": "إنشاء",
-    "startSession": "ابدأ سيشن هنا"
+    "startSession": "ابدأ سيشن هنا",
+    "hideRecentDirs": "إخفاء المجلدات الأخيرة",
+    "showRecentDirs": "عرض المجلدات الأخيرة"
   },
   "starting": {
     "secondsLeft": "{{seconds}} ث",
@@ -25,7 +28,17 @@
     "loadFailed": "فشل تحميل المحادثات",
     "retryHint": "اسحب للأسفل لإعادة المحاولة",
     "startFailed": "فشل بدء السيشن",
-    "startTimeout": "لم يستجب الخادم في الوقت المحدد. قد يكون السيشن لا يزال قيد البدء — تحقق من قائمة السيشنات قبل المحاولة مرة أخرى."
+    "startTimeout": "لم يستجب الخادم في الوقت المحدد. قد يكون السيشن لا يزال قيد البدء — تحقق من قائمة السيشنات قبل المحاولة مرة أخرى.",
+    "notConfiguredTitle": "تصفح الملفات غير معدّ",
+    "notConfiguredSubtitle": "عيّن browseRoot على الخادم لتمكين تصفح الملفات.",
+    "unableToLoadTitle": "تعذّر تحميل المجلدات",
+    "unknownError": "خطأ غير معروف",
+    "emptyTitle": "مجلد فارغ",
+    "emptySubtitle": "لا توجد ملفات أو مجلدات هنا."
+  },
+  "slowBanner": {
+    "title": "هذه شجرة ملفات ضخمة…",
+    "message": "لم نتوقع أن تكون بهذا الحجم. أمهلنا لحظة فقط."
   },
   "provider": {
     "unavailable": "CLI المزوّد غير مثبت على الخادم. اختر مزوّدًا آخر أو ثبّته على المضيف.",

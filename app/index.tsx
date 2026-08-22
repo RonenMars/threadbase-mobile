@@ -417,7 +417,7 @@ export default function ProjectsHub() {
             onPress={() => setStatusModalOpen(true)}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel="Server status"
+            accessibilityLabel={t('header.serverStatus')}
             testID="header-server-status-btn"
           >
             <Cloud size={20} color={theme.text.secondary} />
@@ -429,7 +429,7 @@ export default function ProjectsHub() {
             onPress={() => setSearchOpen((v) => !v)}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, searchOpen && styles.headerButtonActive, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel="Search"
+            accessibilityLabel={t('search.accessibilityLabel')}
             testID="header-search-btn"
           >
             <MagnifyingGlass size={20} color={searchOpen ? theme.text.primary : theme.text.secondary} />
@@ -783,7 +783,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
           {item.provider != null ? (
             <View style={item.provider === 'codex-cli' ? styles.convCardCodexBadge : styles.convCardClaudeBadge}>
               <Text style={item.provider === 'codex-cli' ? styles.convCardCodexBadgeText : styles.convCardClaudeBadgeText}>
-                {item.provider === 'codex-cli' ? 'Codex' : 'Claude'}
+                {item.provider === 'codex-cli' ? t('provider.codex') : t('provider.claude')}
               </Text>
             </View>
           ) : null}
@@ -1122,4 +1122,3 @@ function makeStyles(theme: Theme) {
     fontSize: font.sm,
   },
 })}
-

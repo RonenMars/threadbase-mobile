@@ -6,7 +6,7 @@
     "connected": "Подключено",
     "disconnected": "Отключено",
     "unreachable": "Недоступен",
-    "fetchFailed": "Сбой загрузки",
+    "fetchFailed": "Ошибка обновления",
     "connecting": "Подключение…"
   },
   "defaultLabel": "Сервер",
@@ -32,7 +32,9 @@
     "apiKeyPlaceholder": "Вставьте сюда ваш API-ключ",
     "showApiKey": "Показать",
     "hideApiKey": "Скрыть",
-    "urlHint": "IP-адрес в локальной сети, имя хоста или любой URL (например, https://myserver.com)"
+    "urlHint": "IP-адрес в локальной сети, имя хоста или любой URL (например, https://myserver.com)",
+    "urlRequired": "Укажите адрес сервера.",
+    "apiKeyRequired": "Укажите API-ключ."
   },
   "manage": {
     "addServer": "Добавить сервер"
@@ -73,7 +75,31 @@
     "resetDefaults": "Сбросить к умолчаниям",
     "close": "✕",
     "editOrder": "Изменить порядок",
-    "lockOrder": "Зафиксировать порядок"
+    "lockOrder": "Зафиксировать порядок",
+    "sortLastMessage": "Последнее сообщение",
+    "sortProjectName": "Название проекта",
+    "sortCreatedDate": "Дата создания",
+    "newestFirst": "Сначала новые",
+    "oldestFirst": "Сначала старые",
+    "statusRunning": "Работает",
+    "statusActive": "Активен",
+    "statusIdle": "Неактивен"
+  },
+  "stateMessage": {
+    "buildingHistoryNamed": "{{server}} формирует историю сессий…",
+    "buildingHistory": "Формируется история сессий…",
+    "unreachableNamed": "Не удаётся связаться с {{server}}. Проверьте подключение или адрес сервера.",
+    "unreachableAll": "Не удаётся связаться ни с одним сервером. Проверьте подключение или адрес сервера.",
+    "refreshFailedNamed": "Не удалось обновить сессии с {{server}}.",
+    "refreshFailedAll": "Не удалось обновить сессии ни с одного сервера.",
+    "refreshFailedSome": "Не удалось обновить сессии с некоторых серверов.",
+    "disconnectedNamed": "Соединение с {{server}} потеряно. Показаны сессии из кеша.",
+    "disconnectedAll": "Соединение со всеми серверами потеряно. Показаны сессии из кеша.",
+    "disconnectedSome": "Соединение с некоторыми серверами потеряно. Показаны сессии из кеша.",
+    "connectingNamed": "Подключение к {{server}}…",
+    "connectingAll": "Подключение к серверам…",
+    "partialUnreachableNamed": "{{server}} недоступен. Некоторые сессии могут отсутствовать.",
+    "partialUnreachableSome": "Некоторые серверы недоступны. Часть сессий может отсутствовать."
   },
   "displayedServers": {
     "all": "Все",
@@ -94,14 +120,16 @@
     "menuRefresh": "Обновить",
     "menuDelete": "Удалить",
     "optionsLabel": "Параметры сервера",
-    "titleSingle": "Статус сервера",
-    "titleMultiple": "Статус серверов"
+    "titleSingle": "Состояние сервера",
+    "titleMultiple": "Состояние серверов"
   },
   "error": {
     "label": "Сервер недоступен",
     "subtitle": "Не удалось подключиться к {{server}}. Убедитесь, что сервер запущен и сеть доступна.",
     "expand": "Показать детали ошибки",
-    "collapse": "Скрыть детали ошибки"
+    "collapse": "Скрыть детали ошибки",
+    "localhostUnreachable": "Не удаётся подключиться к 'localhost' с физического устройства. Используйте локальный IP-адрес вашего Mac (например, http://192.168.x.x:8766) или запустите: tb serve --tunnel",
+    "connectionFailed": "Не удалось подключиться. Проверьте адрес сервера и повторите попытку."
   },
   "indexing": {
     "label": "Сканирование и индексирование бесед…",

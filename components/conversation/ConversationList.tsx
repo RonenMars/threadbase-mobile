@@ -201,7 +201,7 @@ export function ConversationList({
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={onSearchChange}
-            placeholder="Search conversations…"
+            placeholder={t('list.searchPlaceholder')}
             placeholderTextColor={theme.text.secondary}
             autoFocus
             returnKeyType="search"

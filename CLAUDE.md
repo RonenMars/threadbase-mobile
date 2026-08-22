@@ -20,6 +20,8 @@ When adding new Maestro flows:
 - Add new flows to the relevant `test:e2e:*` script in `package.json`
 - Fixtures are in `e2e/fixtures/` — extend them if the new flow needs additional data
 
+On iOS 26.x, do not use Maestro's `hideKeyboard`: it can fail in the simulator's XCTest accessibility path. A crash report naming `SpringBoard`, `launchd_sim`, a `com.apple.CoreSimulator.SimDevice.<UDID>` coalition, and `XCTAutomationSupport` is a simulator-automation crash—not a Threadbase app crash or a crash on a connected physical device. Scroll to reveal the next control instead; use `pressKey: Enter` only for single-line inputs whose return behavior is safe. See [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "SpringBoard crashes in `XCTAutomationSupport` during Maestro".
+
 ---
 
 ## Jest — Confirm Suite Failures in Isolation
@@ -71,17 +73,24 @@ const count = items.length // get the length of items
 
 Extract multi-branch string expressions from JSX props into a named `const` above the return. Inline ternaries that produce UI strings are hard to read and harder to translate.
 
+**The extracted const must hold `t()` calls, not literals.** Extracting a literal only moves it; it does not translate it, and for a long time it also hid the string from `i18next/no-literal-string`, which used to inspect JSX and nothing else. That is how 138 hardcoded strings accumulated behind a rule that reported none of them — see [`docs/followups/mobile/09-i18n-guardrails.md`](./docs/followups/mobile/09-i18n-guardrails.md).
+
 ```tsx
-// bad
+// bad — inline, and untranslated
 placeholder={isWakingUp ? (isResume ? 'Picking up…' : 'Starting up…') : 'Send input…'}
+
+// also bad — extracted, still untranslated
+const inputPlaceholder = isWakingUp ? 'Starting up…' : 'Send input…'
 
 // good
 const inputPlaceholder = isWakingUp
-  ? (isResume ? 'Picking up…' : 'Starting up…')
-  : 'Send input…'
+  ? (isResume ? t('composer.resuming') : t('composer.starting'))
+  : t('composer.sendInput')
 // ...
 placeholder={inputPlaceholder}
 ```
+
+One gap the rule still has: a **module-scope** `const` is not inspected, only function-scope ones. A literal parked at the top of a file stays invisible, so put UI copy in a locale file rather than a module constant.
 
 ---
 
@@ -105,6 +114,10 @@ npx eslint <staged-files>
 ```
 
 Get the staged file list with `git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx)$'`. If there are no JS/TS staged files, skip. Fix any errors before committing — warnings are allowed through.
+
+`i18next/no-literal-string` runs at **`error`**, so a hardcoded user-facing string fails the commit and the CI Lint job. `scripts/git-hooks/pre-commit` reports only that rule's findings on staged files, because an unfiltered run surfaces 266 pre-existing errors from unrelated rules and buries the one line that matters.
+
+If a flagged string is technical rather than copy — a URL fragment, a CLI flag, an enum discriminant — extract it to a const with an `eslint-disable-next-line` and a comment saying why. Do not translate it, and do not add a blanket file exclusion for a file that also holds real copy.
 
 ---
 

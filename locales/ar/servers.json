@@ -6,7 +6,7 @@
     "connected": "متصل",
     "disconnected": "غير متصل",
     "unreachable": "غير متاح",
-    "fetchFailed": "فشل الجلب",
+    "fetchFailed": "فشل التحديث",
     "connecting": "جارٍ الاتصال…"
   },
   "defaultLabel": "خادم",
@@ -32,7 +32,9 @@
     "apiKeyPlaceholder": "الصق مفتاح API هنا",
     "showApiKey": "إظهار",
     "hideApiKey": "إخفاء",
-    "urlHint": "عنوان IP على الشبكة المحلية أو اسم المضيف أو أي عنوان URL (مثل https://myserver.com)"
+    "urlHint": "عنوان IP على الشبكة المحلية أو اسم المضيف أو أي عنوان URL (مثل https://myserver.com)",
+    "urlRequired": "عنوان الخادم مطلوب.",
+    "apiKeyRequired": "مفتاح API مطلوب."
   },
   "manage": {
     "addServer": "إضافة خادم"
@@ -73,7 +75,31 @@
     "close": "✕",
     "editOrder": "تعديل الترتيب",
     "lockOrder": "قفل الترتيب",
-    "provider": "المزوّد"
+    "provider": "المزوّد",
+    "sortLastMessage": "آخر رسالة",
+    "sortProjectName": "اسم المشروع",
+    "sortCreatedDate": "تاريخ الإنشاء",
+    "newestFirst": "الأحدث أولًا",
+    "oldestFirst": "الأقدم أولًا",
+    "statusRunning": "قيد التشغيل",
+    "statusActive": "نشط",
+    "statusIdle": "خامل"
+  },
+  "stateMessage": {
+    "buildingHistoryNamed": "يبني {{server}} سجل السيشنات…",
+    "buildingHistory": "جارٍ بناء سجل السيشنات…",
+    "unreachableNamed": "يتعذر الوصول إلى {{server}}. تحققوا من الاتصال أو عنوان الخادم.",
+    "unreachableAll": "يتعذر الوصول إلى أي خادم. تحققوا من الاتصال أو عنوان الخادم.",
+    "refreshFailedNamed": "تعذر تحديث السيشنات من {{server}}.",
+    "refreshFailedAll": "تعذر تحديث السيشنات من أي خادم.",
+    "refreshFailedSome": "تعذر تحديث السيشنات من بعض الخوادم.",
+    "disconnectedNamed": "انقطع الاتصال بـ {{server}}. تُعرض السيشنات المحفوظة مؤقتًا.",
+    "disconnectedAll": "انقطع الاتصال بجميع الخوادم. تُعرض السيشنات المحفوظة مؤقتًا.",
+    "disconnectedSome": "انقطع الاتصال ببعض الخوادم. تُعرض السيشنات المحفوظة مؤقتًا.",
+    "connectingNamed": "جارٍ الاتصال بـ {{server}}…",
+    "connectingAll": "جارٍ الاتصال بالخوادم…",
+    "partialUnreachableNamed": "يتعذر الوصول إلى {{server}}. قد تكون بعض السيشنات مفقودة.",
+    "partialUnreachableSome": "يتعذر الوصول إلى بعض الخوادم. قد تكون بعض السيشنات مفقودة."
   },
   "displayedServers": {
     "all": "الكل",
@@ -101,7 +127,9 @@
     "label": "الخادم غير متاح",
     "subtitle": "تعذّر الاتصال بـ {{server}}. تحقق من أن الخادم يعمل وأن الشبكة متاحة.",
     "expand": "عرض تفاصيل الخطأ",
-    "collapse": "إخفاء تفاصيل الخطأ"
+    "collapse": "إخفاء تفاصيل الخطأ",
+    "localhostUnreachable": "تعذّر الوصول إلى 'localhost' من جهاز فعلي. استخدم عنوان IP المحلي لجهاز Mac (مثل http://192.168.x.x:8766) أو شغّل: tb serve --tunnel",
+    "connectionFailed": "فشل الاتصال. تحقّق من عنوان الخادم وحاول مجدداً."
   },
   "indexing": {
     "label": "جارٍ فحص وفهرسة المحادثات…",

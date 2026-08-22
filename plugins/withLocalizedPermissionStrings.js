@@ -152,7 +152,7 @@ function ensureResourcesBuildFile(project, variantGroupKey) {
 
 function ensureLocaleFileReference(project, variantGroupKey, locale) {
   const variantGroup = project.getPBXVariantGroupByKey(variantGroupKey);
-  const relativePath = `${locale}.lproj/InfoPlist.strings`;
+  const relativePath = `${APP_TARGET_DIR}/${locale}.lproj/InfoPlist.strings`;
   const alreadyPresent = variantGroup.children.some((child) => {
     const fileRef = project.pbxFileReferenceSection()[child.value];
     return fileRef && unquote(fileRef.path) === relativePath;

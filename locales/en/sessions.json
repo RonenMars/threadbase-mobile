@@ -1,10 +1,27 @@
 {
   "header": {
     "title": "Sessions",
-    "history": "History"
+    "history": "History",
+    "serverStatus": "Server status"
   },
   "search": {
-    "placeholder": "Search sessions & conversations…"
+    "placeholder": "Search sessions & conversations…",
+    "accessibilityLabel": "Search"
+  },
+  "nameSession": {
+    "createTitle": "Name this session?",
+    "exitTitle": "Name this session before you go?",
+    "start": "Start",
+    "placeholder": "e.g. Fix auth bug"
+  },
+  "slowLoading": {
+    "sessions": "Fetching sessions is taking longer than expected.\nHold still…",
+    "detailTitle": "Session details are taking their time…",
+    "detailMessage": "Fetching the details — shouldn't be long."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude"
   },
   "filter": {
     "label": "Filter & Sort",
@@ -12,7 +29,7 @@
   },
   "list": {
     "empty": "No sessions",
-    "emptySubtitle": "Start a Claude Code\nsession to see it here",
+    "emptySubtitle": "Start a Claude Code or Codex\nsession to see it here",
     "noResults": "No results",
     "noResultsSubtitle": "Nothing matched \"{{query}}\"",
     "serverEmpty": "No sessions on this server",
@@ -29,13 +46,24 @@
     "sendInput": "Send Input",
     "cancel": "Cancel Session",
     "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts"
+    "prompts_other": "{{count}} prompts",
+    "actionsTitle": "Session Actions",
+    "dismiss": "Dismiss",
+    "cancelConfirm": "Are you sure?",
+    "confirmYes": "Yes",
+    "confirmNo": "No",
+    "noBranch": "no git"
   },
   "hub": {
     "seeAll_one": "See all {{count}} conversation →",
     "seeAll_other": "See all {{count}} conversations →",
     "msgs_one": "{{count}} msg",
-    "msgs_other": "{{count}} msgs"
+    "msgs_other": "{{count}} msgs",
+    "activityLive": "{{count}} live",
+    "activityToday": "{{count}} today",
+    "activityLast": "last {{time}}",
+    "timeNow": "now",
+    "timeYesterday": "Yesterday"
   },
   "loading": {
     "title": "Loading sessions",

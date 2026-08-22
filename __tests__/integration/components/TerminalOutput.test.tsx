@@ -246,25 +246,31 @@ describe('TerminalOutput – answering a question', () => {
     }],
   }
 
-  it('sends the gate keys and drops the card as soon as an option is answered', async () => {
-    const onSendKeys = jest.fn()
+  it('hands a tapped gate option to the answer route by position, and does not dismiss the card', async () => {
+    const onAnswerPermission = jest.fn()
     const onDismissQuestion = jest.fn()
     const { getByLabelText } = await render(
       <TerminalOutput
         lines={[]}
         isStreaming={false}
         activeQuestion={gate}
-        onSendKeys={onSendKeys}
+        onSendKeys={jest.fn()}
+        onAnswerPermission={onAnswerPermission}
         onDismissQuestion={onDismissQuestion}
       />
     )
 
     await fireEvent.press(getByLabelText('Yes'))
-    expect(onSendKeys).toHaveBeenCalledWith('1\r')
-    expect(onDismissQuestion).toHaveBeenCalled()
+    // Position in the options array, not the on-screen number — the server owns
+    // that mapping now, and getting it wrong writes the wrong bytes AND stops
+    // the gate recognising the answer, so nothing ever closes it.
+    expect(onAnswerPermission).toHaveBeenCalledWith(0)
+    // The card outlives the tap: it moves only once the answer has been taken.
+    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(getByLabelText('Yes')).toBeTruthy()
   })
 
-  it('answers a structured question and drops the card', async () => {
+  it('answers a structured question without dismissing the card', async () => {
     const onAnswer = jest.fn()
     const onDismissQuestion = jest.fn()
     const { getByLabelText } = await render(
@@ -280,27 +286,29 @@ describe('TerminalOutput – answering a question', () => {
 
     await fireEvent.press(getByLabelText('B'))
     expect(onAnswer).toHaveBeenCalledWith('t1', { 'Which one?': 'B' })
-    expect(onDismissQuestion).toHaveBeenCalled()
+    expect(onDismissQuestion).not.toHaveBeenCalled()
   })
 
-  // permissionAnswerKeys returns null when the block carries nothing for the
-  // tapped option. Nothing reaches the PTY, so the card must stay up rather
-  // than vanish on a tap that did nothing.
-  it('keeps the card when the gate carries no keys for the option', async () => {
+  // The block carrying nothing for the tapped option used to be decided here,
+  // by permissionAnswerKeys returning null. The position is still well defined,
+  // so the component reports it and the answer route decides there is nothing
+  // to send — see useSessionActions.answerPermission.
+  it('still reports the tapped position when the gate carries no keys', async () => {
+    const onAnswerPermission = jest.fn()
     const onSendKeys = jest.fn()
-    const onDismissQuestion = jest.fn()
     const { getByLabelText } = await render(
       <TerminalOutput
         lines={[]}
         isStreaming={false}
         activeQuestion={{ ...gate, permissionIndices: undefined }}
         onSendKeys={onSendKeys}
-        onDismissQuestion={onDismissQuestion}
+        onAnswerPermission={onAnswerPermission}
       />
     )
 
     await fireEvent.press(getByLabelText('Yes'))
+    expect(onAnswerPermission).toHaveBeenCalledWith(0)
     expect(onSendKeys).not.toHaveBeenCalled()
-    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(getByLabelText('Yes')).toBeTruthy()
   })
 })

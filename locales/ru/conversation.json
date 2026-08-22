@@ -4,9 +4,14 @@
     "containsImage": "📎 Содержит изображение",
     "titleFallback": "Беседа"
   },
+  "info": {
+    "title": "Информация о беседе",
+    "open": "Информация о беседе"
+  },
   "list": {
     "loadingMore": "Загрузка…",
-    "empty": "В этой беседе нет сообщений."
+    "empty": "В этой беседе нет сообщений.",
+    "searchPlaceholder": "Поиск бесед…"
   },
   "error": {
     "loadFailed": "Не удалось загрузить беседу",
@@ -64,7 +69,13 @@
   },
   "thinking": {
     "label": "Рассуждение",
-    "redacted": "Рассуждение скрыто"
+    "redacted": "Рассуждение скрыто",
+    "expand": "Развернуть рассуждение",
+    "collapse": "Свернуть рассуждение"
+  },
+  "connection": {
+    "notConnectedTitle": "Нет подключения",
+    "notConnectedMessage": "Ожидаем подключения — попробуйте ещё раз через мгновение."
   },
   "search": {
     "matchCount": "{{current}} из {{total}}",
@@ -102,5 +113,13 @@
     "send": "Отправить",
     "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
     "noteHeader": "Заметка обзора с телефона (получена из беседы, может быть неполной относительно git status):"
+  },
+  "favorites": {
+    "errorTitle": "Ошибка избранного",
+    "updateFailed": "Не удалось обновить избранное"
+  },
+  "share": {
+    "roleUser": "Пользователь",
+    "roleAssistant": "Ассистент"
   }
 }

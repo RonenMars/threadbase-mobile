@@ -4,9 +4,14 @@
     "containsImage": "📎 تحتوي على صورة",
     "titleFallback": "المحادثة"
   },
+  "info": {
+    "title": "معلومات المحادثة",
+    "open": "معلومات المحادثة"
+  },
   "list": {
     "loadingMore": "جارٍ تحميل المزيد…",
-    "empty": "لا توجد رسائل في هذه المحادثة."
+    "empty": "لا توجد رسائل في هذه المحادثة.",
+    "searchPlaceholder": "البحث في المحادثات…"
   },
   "error": {
     "loadFailed": "تعذّر تحميل المحادثة",
@@ -64,7 +69,13 @@
   },
   "thinking": {
     "label": "الاستدلال",
-    "redacted": "تم حجب الاستدلال"
+    "redacted": "تم حجب الاستدلال",
+    "expand": "توسيع الاستدلال",
+    "collapse": "طي الاستدلال"
+  },
+  "connection": {
+    "notConnectedTitle": "غير متصل",
+    "notConnectedMessage": "في انتظار الاتصال — حاول مرة أخرى بعد لحظة."
   },
   "search": {
     "matchCount": "{{current}} من {{total}}",
@@ -102,5 +113,13 @@
     "send": "إرسال",
     "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
     "noteHeader": "ملاحظة مراجعة من الجوال (مشتقة من المحادثة، قد تكون غير مكتملة مقارنة بـ git status):"
+  },
+  "favorites": {
+    "errorTitle": "خطأ في المفضلة",
+    "updateFailed": "تعذّر تحديث المفضلة"
+  },
+  "share": {
+    "roleUser": "المستخدم",
+    "roleAssistant": "المساعد"
   }
 }

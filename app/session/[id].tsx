@@ -738,7 +738,7 @@ export default function SessionDetailScreen() {
     <InfoModal
       visible={infoVisible}
       onClose={() => setInfoVisible(false)}
-      title="Session Info"
+      title={t('session.infoTitle')}
       fields={[
         { label: 'ID', value: session?.id ?? id },
         { label: 'Server', value: serverId },
@@ -835,14 +835,14 @@ export default function SessionDetailScreen() {
           }
         }}
         hitSlop={8}
-        accessibilityLabel={isSessionFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        accessibilityLabel={isSessionFavorite ? t('common:favorite.remove') : t('common:favorite.add')}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
       >
         <Star size={22} color={isSessionFavorite ? theme.text.accent : theme.text.secondary} weight={isSessionFavorite ? 'fill' : 'regular'} />
       </Pressable>
       <HeaderOverflowMenu
         testID="session-overflow-menu"
-        accessibilityLabel="More options"
+        accessibilityLabel={t('common:button.moreOptions')}
         items={[
           {
             key: 'info',
@@ -876,7 +876,7 @@ export default function SessionDetailScreen() {
     <Pressable
       onPress={() => setRenameSheetVisible(true)}
       hitSlop={8}
-      accessibilityLabel="Rename session"
+      accessibilityLabel={t('session.renameLabel')}
       style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
     >
       <PencilSimple size={18} color={theme.text.secondary} />
@@ -943,7 +943,7 @@ export default function SessionDetailScreen() {
             <SessionStatusBadge session={session} isRefetching={false} />
             {session.provider ? (
               <Text style={styles.metaChip} testID="session-provider-chip">
-                {session.provider === 'codex-cli' ? 'Codex' : 'Claude'}
+                {session.provider === 'codex-cli' ? t('sessions:provider.codex') : t('sessions:provider.claude')}
               </Text>
             ) : null}
             {capabilityLabel ? (
