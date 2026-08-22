@@ -105,11 +105,11 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
     const trimmedKey = apiKey.trim()
 
     if (!trimmedUrl) {
-      setError('Server URL is required.')
+      setError(t('servers:form.urlRequired'))
       return
     }
     if (!trimmedKey) {
-      setError('API key is required.')
+      setError(t('servers:form.apiKeyRequired'))
       return
     }
 

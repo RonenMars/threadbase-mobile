@@ -113,5 +113,13 @@
     "send": "Send",
     "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
     "noteHeader": "Mobile review note (conversation-derived, may be incomplete vs git status):"
+  },
+  "favorites": {
+    "errorTitle": "Favorites error",
+    "updateFailed": "Failed to update favorites"
+  },
+  "share": {
+    "roleUser": "User",
+    "roleAssistant": "Assistant"
   }
 }

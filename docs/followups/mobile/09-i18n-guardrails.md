@@ -24,13 +24,26 @@ Scanned against `main` @ `00069a03` on 2026-08-21; completed on 2026-08-22.
 
 `i18next/no-literal-string` now runs at `error` with zero findings repo-wide.
 
+## The `include` trap
+
+`callees`, `jsx-attributes` and `object-properties` each take `include` and `exclude`.
+`include` does **not** mean "also check these" — `shouldSkip()` returns "skip" for anything the include list does not match, and the skip is pushed onto the rule's `indicatorStack`, so the **entire subtree** of the non-matching node is dropped.
+
+`eslint.config.js:32` carried `callees: { include: ["Alert.alert", …] }` from #821, which meant every literal inside every other call — `useMemo`, `useCallback`, `.map()`, `setTimeout`, a mutation's `onError` — was unreachable. The rule reported **0 findings repo-wide** while `SessionRow`'s cancel dialog shipped in English.
+
+Removing that one line took the repo from 0 to 218 findings. Triage put 190 of them behind exclusions that name their reason (developer logging, trace instrumentation, route paths, `Error` messages, Expo config plugins, the Maestro harness, the support-report body) and translated the remaining 28.
+
+`__tests__/unit/lint/i18n-literal-rule.test.ts` now pins four callback shapes, so re-introducing an include list on `callees` fails a test rather than silently switching the rule off.
+
+**`jsx-attributes` and `object-properties` still carry include lists**, and they have the same blind spot — `onPress={() => Alert.alert('Delete server', 'This cannot be undone.')}` is reported clean today, because `onPress` is not on the attribute list. Removing both lists surfaces ~50 further user-facing strings (every `Stack.Screen` title, both info modals' field labels, the biometric unlock prompt) alongside a large tail of `rgba()` and SVG path noise. Tracked as the next step rather than folded into the `callees` fix.
+
 ## What the rule still cannot see
 
 Verified by probe on 2026-08-22, so the next person does not have to rediscover it.
 
-It **does** catch: function-scope `const` assignments, ternaries, `return` literals, `Alert.alert` arguments, object properties, JSX attributes and JSX text.
+It **does** catch: function-scope `const` assignments, ternaries, `return` literals, `Alert.alert` arguments, listed object properties, listed JSX attributes and JSX text.
 
-It does **not** catch a **module-scope** `const`. A literal parked at the top of a file is invisible to it, which is the shape `TimeBucketPills`' `BUCKETS` array had before #827. Put UI copy in a locale file rather than a module constant.
+It does **not** catch a **module-scope** `const`. A literal parked at the top of a file is invisible to it, which is the shape `TimeBucketPills`' `BUCKETS` array had before #827. `ErrorBanner.tsx`'s `TITLES` and `MESSAGES` maps held twelve English strings in exactly that shape until they were moved to `common:errorBanner.*`. Put UI copy in a locale file rather than a module constant.
 
 ## Layer 6 follow-up
 

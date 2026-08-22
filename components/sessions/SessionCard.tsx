@@ -130,11 +130,11 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
         }
       )
     } else {
-      Alert.alert('Session Actions', session.projectName, [
+      Alert.alert(i18n.t('sessions:card.actionsTitle'), session.projectName, [
         { text: i18n.t('sessions:card.copyId'), onPress: () => {} },
         { text: i18n.t('sessions:card.sendInput'), onPress: () => router.push(`/session/${session.id}?server=${session.serverId}`) },
         { text: i18n.t('sessions:card.cancel'), style: 'destructive', onPress: () => cancelSession.mutate() },
-        { text: 'Dismiss', style: 'cancel' },
+        { text: i18n.t('sessions:card.dismiss'), style: 'cancel' },
       ])
     }
   }, [session, isExternal, cancelSession, router])

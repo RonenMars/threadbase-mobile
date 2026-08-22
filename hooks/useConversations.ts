@@ -71,7 +71,7 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
   }
   const conversations: Conversation[] = raw.filter((s): s is RawSessionMeta => s != null).map((s) => ({
     id: s.id,
-    title: s.session_name?.trim() || s.project_name || 'Conversation',
+    title: s.session_name?.trim() || s.project_name || i18n.t('conversation:header.titleFallback'),
     sessionName: s.session_name,
     projectPath: s.project_path ?? '',
     branch: s.git_branch,

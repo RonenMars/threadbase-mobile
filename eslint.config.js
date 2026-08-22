@@ -29,13 +29,37 @@ module.exports = defineConfig([
       "i18next/no-literal-string": ["error", {
         mode: "all",
         "jsx-attributes": { include: ["accessibilityLabel","accessibilityHint","placeholder","title","label","subtitle","description","message","cta","buttonText","confirmText","cancelText","emptyText"] },
-        callees: { include: ["Alert.alert","Alert.prompt","toast","showToast","notify"] },
+        // `include` here would mean "check ONLY these" — the plugin skips the whole
+        // subtree of every call not on the list, so a literal inside any callback
+        // (useMemo, .map, mutation onError) becomes invisible. Only `exclude` is safe.
+        // Listing `exclude` replaces the plugin's defaults wholesale, so they are repeated.
+        callees: { exclude: [
+          // plugin defaults (lib/options/defaults.js)
+          "i18n(ext)?","t","require","addEventListener","removeEventListener",
+          "postMessage","getElementById","dispatch","commit","includes",
+          "indexOf","endsWith","startsWith",
+          // developer diagnostics and instrumentation — never rendered
+          "clientLog\\.\\w+","console\\.\\w+",
+          "traceMark","traceCount","finishOpenTrace","useLiveInstanceCount",
+          // Route paths, not copy.
+          "router\\.(push|replace|navigate)",
+          // Error messages carry developer detail; the UI picks its display text
+          // from the error's kind/category, never from `message`. Same reasoning as
+          // the services/pair-exchange.ts exemption below.
+          "(?:[A-Z]\\w*)?Error","super",
+          // Live Activity registration name, matched by the native widget target.
+          "createLiveActivity",
+        ] },
         "object-properties": { include: ["text","title","message","label","body","subtitle","description","hint","placeholder","cta","buttonText"] },
         words: { exclude: [
           "^[^a-zA-Z]*$",
           "^[a-z0-9_:/@-]+$",
           "^[A-Z0-9_]+$",
-          "^[a-z][A-Za-z0-9]*(\\.[A-Za-z][A-Za-z0-9]*)+$",
+          // Internal identifiers: camelCase state/enum values, dotted i18n keys
+          // and colon-namespaced wire discriminants. Copy always has a space.
+          "^[a-z][A-Za-z0-9_]*([.:][A-Za-z0-9_]+)*$",
+          // ANSI escape sequences (arrow keys sent to the pty)
+          "^\\u001b\\[[0-9;]*[A-Za-z]$",
           "^#[0-9a-fA-F]{3,8}$",
           // mode: "all" checks every Literal node, including the 'use strict' directive prologue
           "^use strict$"
@@ -101,9 +125,25 @@ module.exports = defineConfig([
     },
   },
   // Build/codemod tooling run under Node, never shipped as app code — its
-  // strings (file paths, log output) aren't user-facing copy.
+  // strings (file paths, log output) aren't user-facing copy. e2e/ is the
+  // Maestro harness and its mock servers; plugins/ are @expo/config-plugins
+  // that rewrite native project files at prebuild time.
   {
-    files: ["scripts/**/*.{js,ts}"],
+    files: [
+      "scripts/**/*.{js,ts}",
+      "e2e/**/*.{js,ts}",
+      "plugins/**/*.{js,ts}",
+      "jest.setup.js",
+    ],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
+  // The support report is composed on the device and sent to the maintainers
+  // by email or Sentry — its field labels are read by whoever triages it, not
+  // by the user, so they stay in English.
+  {
+    files: ["services/feedback-transport.ts"],
     rules: {
       "i18next/no-literal-string": "off",
     },

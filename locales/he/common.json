@@ -20,7 +20,8 @@
     "cameraAccessNeededTitle": "נדרשת גישה למצלמה",
     "cameraAccessNeededMessage": "אפשר גישה למצלמה בהגדרות כדי לצלם תמונות.",
     "attachFailed": "צירוף הקובץ נכשל. נסו שוב.",
-    "cleartextBlocked": "הכתובת הזו היא HTTP רגיל ואינה נמצאת ברשת המקומית שלכם. השתמשו בכתובת https:// או הריצו tb serve --tunnel."
+    "cleartextBlocked": "הכתובת הזו היא HTTP רגיל ואינה נמצאת ברשת המקומית שלכם. השתמשו בכתובת https:// או הריצו tb serve --tunnel.",
+    "unexpected": "אירעה שגיאה בלתי צפויה"
   },
   "search": {
     "placeholder": "חיפוש…"
@@ -72,5 +73,20 @@
   },
   "question": {
     "answerSent": "התשובה נשלחה — ממתינים שהסוכן ימשיך."
+  },
+  "errorBanner": {
+    "titleSessions": "טעינת הסשנים נכשלה",
+    "titleConversations": "טעינת ההיסטוריה נכשלה",
+    "titleMessages": "טעינת ההודעות נכשלה",
+    "titleSessionDetail": "טעינת פרטי הסשן נכשלה",
+    "titleBrowse": "טעינת עץ הקבצים נכשלה",
+    "titleOther": "משהו השתבש",
+    "countSuffix": "{{title}} (1 מתוך {{total}})",
+    "messageSessions": "הסשנים סירבו להיטען. שווה לנסות שוב.",
+    "messageConversations": "ההיסטוריה לא הגיעה. ניסיון נוסף בדרך כלל פותר זאת.",
+    "messageMessages": "ההודעות נתקעו. הקישו \"נסה שוב\" כדי לנסות שנית.",
+    "messageSessionDetail": "פרטי הסשן לא הגיעו. ניסיון נוסף בדרך כלל פותר זאת.",
+    "messageBrowse": "עץ הקבצים לא נטען. בדקו את החיבור או נסו שוב.",
+    "messageOther": "משהו השתבש אצלנו. נסו שוב או סגרו והמשיכו."
   }
 }
