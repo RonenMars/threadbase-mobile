@@ -183,7 +183,20 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={handleDismiss}>
+      {/*
+        PairConfirmGate and PairScannerModal are siblings that each render their
+        own RN Modal, and iOS presents only one modal per window: asking either
+        to appear while this one is still up silently drops it. That is what made
+        Save look dead — handleSave sets confirmTarget and returns without saving,
+        so with the gate unable to present the form just sat there with no gate,
+        no server added and no error. Yield to whichever child needs the window.
+      */}
+      <Modal
+        visible={visible && confirmTarget === null && !scannerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={handleDismiss}
+      >
         <TouchableWithoutFeedback onPress={handleDismiss}>
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
