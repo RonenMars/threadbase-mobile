@@ -56,14 +56,24 @@
   "action": {
     "export": "تصدير",
     "copyPatch": "نسخ الرقعة",
-    "showAllLines": "عرض كل الأسطر ({{count}})",
+    "showAllLines_zero": "لا أسطر لعرضها",
+    "showAllLines_one": "عرض سطر واحد",
+    "showAllLines_two": "عرض سطرين",
+    "showAllLines_few": "عرض كل الأسطر ({{count}})",
+    "showAllLines_many": "عرض كل الأسطر ({{count}})",
+    "showAllLines_other": "عرض كل الأسطر ({{count}})",
     "copyCode": "نسخ",
     "copiedCode": "تم النسخ",
     "scrollToBottom": "التمرير للأسفل"
   },
   "message": {
     "code": "كود",
-    "tokens": "{{count}} توكن",
+    "tokens_zero": "لا توكنات",
+    "tokens_one": "توكن واحد",
+    "tokens_two": "توكنان",
+    "tokens_few": "{{count}} توكنات",
+    "tokens_many": "{{count}} توكنًا",
+    "tokens_other": "{{count}} توكن",
     "errorBadge": "خطأ",
     "toolFallback": "أداة"
   },

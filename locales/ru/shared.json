@@ -18,7 +18,10 @@
     "unpinFromFavorites": "Открепить из избранного",
     "pinToFavorites": "Закрепить в избранном",
     "cancel": "Отмена",
-    "loadMore": "+ ещё {{count}}",
+    "loadMore_one": "+ ещё {{count}}",
+    "loadMore_few": "+ ещё {{count}}",
+    "loadMore_many": "+ ещё {{count}}",
+    "loadMore_other": "+ ещё {{count}}",
     "emptyFavorites": "Избранное пусто — долгое нажатие на элемент, чтобы закрепить его."
   }
 }

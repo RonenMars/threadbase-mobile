@@ -18,7 +18,9 @@
     "unpinFromFavorites": "בטל נעיצה ממועדפים",
     "pinToFavorites": "נעץ למועדפים",
     "cancel": "ביטול",
-    "loadMore": "+ {{count}} נוספים",
+    "loadMore_one": "+ אחד נוסף",
+    "loadMore_two": "+ שניים נוספים",
+    "loadMore_other": "+ {{count}} נוספים",
     "emptyFavorites": "עדיין אין מועדפים — לחץ לחיצה ארוכה על פריט כדי לנעוץ אותו."
   }
 }

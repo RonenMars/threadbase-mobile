@@ -18,7 +18,8 @@
     "unpinFromFavorites": "Unpin from Favorites",
     "pinToFavorites": "Pin to Favorites",
     "cancel": "Cancel",
-    "loadMore": "+ {{count}} more",
+    "loadMore_one": "+ {{count}} more",
+    "loadMore_other": "+ {{count}} more",
     "emptyFavorites": "No favorites yet — long-press an item to pin it."
   }
 }
