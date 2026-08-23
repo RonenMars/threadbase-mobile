@@ -60,6 +60,32 @@ function makeHandler() {
 // upgrade handler below need it.
 const liveSockets = new Set()
 
+// Reply the next POST /permission/answer should give. Set by the test-control
+// route below so a flow can drive the closed-gate and retryable branches, which
+// are otherwise unreachable against a mock that always succeeds.
+let nextAnswerReply = { status: 200, reason: null }
+
+function broadcast(frame) {
+  for (const ws of liveSockets) {
+    try {
+      ws.send(JSON.stringify(frame))
+    } catch { /* socket closed mid-flight */ }
+  }
+}
+
+// The streamer derives contentKey from the gate's content, so deriving it here
+// too keeps a fixture from describing a gate the real server could not produce —
+// a key that says one thing while the prompt and detail say another.
+function gateContentKey({ prompt, detail, options }) {
+  return `${prompt ?? ''}::${detail ?? ''}::${options.map((o) => `${o.index}.${o.label}`).join(',')}`
+}
+
+const DEFAULT_GATE_OPTIONS = [
+  { index: 1, label: 'Yes' },
+  { index: 2, label: "Yes, and don't ask again" },
+  { index: 3, label: 'No' },
+]
+
 async function handleRequest(req, res) {
   const method = req.method
   const host = req.headers.host ?? 'localhost'
@@ -363,6 +389,116 @@ async function handleRequest(req, res) {
       }
     }, 100)
     return
+  }
+
+  // ── test controls ──────────────────────────────────────────────────────────
+  // Only the mock has these. A permission gate is drawn by Claude and scraped
+  // from the PTY by the streamer, so nothing an e2e flow can do makes one
+  // appear — without a trigger the whole question-card lifecycle is
+  // unreachable from Maestro.
+
+  if (method === 'POST' && p === '/__test__/gate') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const sessionId = body?.sessionId ?? 'sess-1'
+    if (body?.cancel) {
+      broadcast({ type: 'permission_cancelled', sessionId })
+      return json(res, 200, { ok: true, cancelled: true })
+    }
+    const gate = {
+      prompt: body?.prompt ?? 'Do you want to proceed?',
+      detail: body?.detail ?? 'Bash command\nrm -rf ./build',
+      options: Array.isArray(body?.options) ? body.options : DEFAULT_GATE_OPTIONS,
+    }
+    // `contentKey: null` in the body asks for an old streamer that never sends
+    // one, which is what drives the client onto its keystroke fallback.
+    const contentKey = body?.contentKey === null ? undefined : (body?.contentKey ?? gateContentKey(gate))
+    broadcast({ type: 'permission', sessionId, ...gate, cursor: body?.cursor, ...(contentKey === undefined ? {} : { contentKey }) })
+    return json(res, 200, { ok: true, contentKey: contentKey ?? null })
+  }
+
+  if (method === 'POST' && p === '/__test__/question') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const sessionId = body?.sessionId ?? 'sess-1'
+    const toolUseId = body?.toolUseId ?? 'tool-1'
+    if (body?.cancel) {
+      broadcast({ type: 'question_cancelled', sessionId, toolUseId })
+      return json(res, 200, { ok: true, cancelled: true })
+    }
+    broadcast({
+      type: 'question',
+      sessionId,
+      toolUseId,
+      questions: body?.questions ?? [{
+        question: 'Which approach should I take?',
+        header: 'Approach',
+        multiSelect: false,
+        options: [
+          { label: 'Refactor first', description: 'Slower, safer' },
+          { label: 'Patch in place', description: 'Faster, riskier' },
+        ],
+      }],
+    })
+    return json(res, 200, { ok: true, toolUseId })
+  }
+
+  // Arms the next /permission/answer reply, e.g. { status: 409, reason: 'gate_mismatch' }.
+  if (method === 'POST' && p === '/__test__/answer-reply') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    nextAnswerReply = { status: body?.status ?? 200, reason: body?.reason ?? null }
+    return json(res, 200, { ok: true, ...nextAnswerReply })
+  }
+
+  // ── the validated answer route ─────────────────────────────────────────────
+  const permissionAnswerMatch = p.match(/^\/api\/sessions\/([^/]+)\/permission\/answer$/)
+  if (method === 'POST' && permissionAnswerMatch) {
+    const sessionId = permissionAnswerMatch[1]
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { ok: false, reason: 'Invalid JSON body' })
+    }
+    if (typeof body?.contentKey !== 'string' || !Number.isInteger(body?.optionIndex)) {
+      return json(res, 400, { ok: false, reason: 'Expected { contentKey: string, optionIndex: number }' })
+    }
+    const { status, reason } = nextAnswerReply
+    nextAnswerReply = { status: 200, reason: null }
+    if (status === 200) return json(res, 200, { ok: true })
+    // Only gate_closed is accompanied by a broadcast on the real server: the
+    // other two leave a live gate on screen for every other client watching the
+    // session, so it deliberately says nothing and the reason code is the only
+    // thing that clears the card.
+    if (reason === 'gate_closed') broadcast({ type: 'permission_cancelled', sessionId })
+    return json(res, status, { ok: false, reason })
+  }
+
+  const answerMatch = p.match(/^\/api\/sessions\/([^/]+)\/answer$/)
+  if (method === 'POST' && answerMatch) {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    if (typeof body?.toolUseId !== 'string') {
+      return json(res, 400, { error: 'Expected { toolUseId, answers }' })
+    }
+    return json(res, 200, { ok: true })
   }
 
   json(res, 404, { error: 'Not found' })
