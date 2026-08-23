@@ -136,6 +136,8 @@ Whenever `package.json` or `package-lock.json` changes:
 
 **Never hand-revert the lockfile with `git checkout -- ios/Podfile.lock`.** `pod install` writes the same bytes to `ios/Podfile.lock` and to `ios/Pods/Manifest.lock` (gitignored), and Xcode's `[CP] Check Pods Manifest.lock` phase diffs the two on every build — restoring one without the other fails the archive with `error: The sandbox is not in sync with the Podfile.lock` even though the installed pods are correct. That is what broke deploy runs [31430505715](https://github.com/RonenMars/threadbase-mobile/actions/runs/31430505715) and [31436408481](https://github.com/RonenMars/threadbase-mobile/actions/runs/31436408481) on 2026-08-10. The script keeps both files in step; use it instead.
 
+**`ios/Threadbase.xcodeproj/project.pbxproj` is the opposite case — commit it.** `pod install` re-serialises the whole project file through the `xcodeproj` gem, so any entry written by another tool (`expo prebuild`, a hand-edit, an Xcode UI change) comes back rewritten into the gem's canonical form: sections in its own order, dict keys reordered, `isa = "Foo"` unquoted to `isa = Foo`, object IDs sorted within a section. The diff looks alarming and is usually semantically empty — but it is **not** path-dependent noise, and reverting it only means the next person's `pod install` regenerates the same diff. Commit it once and it stops: re-running `pod install` against an already-canonical file is a byte-for-byte no-op. Before committing one, confirm that — run `pod install` a second time and check the file's checksum is unchanged. If the second run keeps moving it, something real changed and the reordering is not the whole story.
+
 ---
 
 ## Keep `ci-paths.txt` in Sync
