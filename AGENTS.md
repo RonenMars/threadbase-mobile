@@ -46,10 +46,6 @@ The mobile client absorbs streamer evolution: a newer server may degrade a scree
 - Before squash-merging with `--delete-branch`, verify no open PR uses that branch as its base; preserve a non-leaf branch until dependents are retargeted or merged.
 - GitHub issue and triage conventions are delegated to [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) and [docs/agents/triage-labels.md](docs/agents/triage-labels.md). Domain documentation uses one root `CONTEXT.md` plus `docs/adr/`; see [docs/agents/domain.md](docs/agents/domain.md).
 
-## Local Expo tooling
-
-The global `expo-local` MCP attaches to a local Metro server at `http://127.0.0.1:8081`. Use it for simulator/emulator screenshots, app logs, and UI verification. Do not use remote MCP tunneling unless explicitly requested.
-
 ## Headless Linux agents
 
 Headless Linux cannot run native builds, CocoaPods, shipping scripts, Maestro, or device/simulator tooling. It can run the JS checks and Expo Web.

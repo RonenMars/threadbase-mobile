@@ -20,9 +20,7 @@ registering anything. Do not add a skill to `AGENTS.md` just to make it visible;
 | [`expo-local-ship`](expo-local-ship/SKILL.md) | **The default ship path.** Building and shipping iOS locally on macOS with native CLI tooling — every release operation unless another is named explicitly |
 | [`ship-expo-cloud`](ship-expo-cloud/SKILL.md) | EAS cloud build and submit — **only** when the user types `/ship-expo-cloud` |
 | [`ship-fastlane`](ship-fastlane/SKILL.md) | Vanilla fastlane TestFlight pipeline — **only** when the user types `/ship-fastlane` |
-| [`ship`](ship/SKILL.md) | Pushing a committed branch, opening a PR, watching CI, merging on confirmation — the git-side ship, not a release |
 | [`setup-cloudflared`](setup-cloudflared/SKILL.md) | Exposing Metro over HTTPS through a Cloudflare tunnel for remote dev |
-| [`integration-branch`](integration-branch/SKILL.md) | Staging a set of open PRs on one disposable branch to test them together, with a merge log and summary |
 | `_shared` | Not a skill — shared fragments the ship skills include |
 
 The three release skills overlap deliberately and their descriptions carry the routing rules, because
