@@ -100,7 +100,7 @@ describe('check-locale-untranslated', () => {
     expect(result.status).toBe(0)
   })
 
-  it('passes for a two-word identical value', () => {
+  it('fails for a two-word identical value', () => {
     writeFixture({
       'test.json': {
         en: { title: 'Hello world' },
@@ -109,7 +109,21 @@ describe('check-locale-untranslated', () => {
     })
 
     const result = run(UNTRANSLATED_SCRIPT)
-    expect(result.status).toBe(0)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('xx/test.json:title')
+  })
+
+  it('fails for a single-word identical value', () => {
+    writeFixture({
+      'test.json': {
+        en: { action: 'Export' },
+        xx: { action: 'Export' },
+      },
+    })
+
+    const result = run(UNTRANSLATED_SCRIPT)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('xx/test.json:action')
   })
 
   it('passes for an interpolation-only identical value', () => {

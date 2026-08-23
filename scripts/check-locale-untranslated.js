@@ -6,7 +6,9 @@
 // from en" (see the settings.backup.* group and notificationHealth.hint*
 // keys, which are verbatim English in he/ar/ru). A short brand name or
 // placeholder can legitimately be identical across locales — allowlist it in
-// locales/.identical-ok.json instead of relaxing the prose heuristic.
+// locales/.identical-ok.json instead of relaxing the prose heuristic. A single
+// translatable word counts — "Export" and "Failure code" are copy, and a
+// three-word floor is what hid 34 English values in he/ar/ru.
 //
 // Usage: node scripts/check-locale-untranslated.js
 
@@ -39,7 +41,7 @@ function looksLikeProse(value) {
   if (stripped.includes('@') || stripped.includes('://')) return false
   if (!/[a-z]/.test(stripped)) return false // all-caps / digits / punctuation only
   const wordTokens = stripped.split(/\s+/).filter((token) => WORD_TOKEN.test(token))
-  return wordTokens.length >= 3
+  return wordTokens.length >= 1
 }
 
 function findUntranslated() {

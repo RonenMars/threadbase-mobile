@@ -142,7 +142,7 @@ ESLint already runs in the `Lint` job, which is a required check, so Layer 1 is 
 **Landed** (checks written in #824, wired into `test:i18n` in Wave 3). Two checks sharing one walker. Neither can be expressed as key parity.
 
 1. **Source-hash freshness.** `locales/.source-hashes.json` records a hash of each `en` value at the time translations were last confirmed. If an `en` value changes and a locale is not re-confirmed, the check fails. `npm run i18n:bless` updates the file. This catches a term rename applied to some locales and not others — the `fingerprint` → `identity code` case below.
-2. **Identical-to-`en` detector.** Fails when a non-`en` value equals its `en` counterpart and reads as prose (three or more alphabetic words). Needs an allowlist for legitimate cases: `servers.json:health.checks.providerClaude`, `servers.json:health.checks.providerCodex`, `feedback.json:form.emailPlaceholder`, `onboarding.json:notifications.previewBrand`.
+2. **Identical-to-`en` detector.** Fails when a non-`en` value equals its `en` counterpart and reads as prose (at least one alphabetic word). It shipped with a three-word floor, which hid 34 keys — every `settings:notificationHealth.state.*` label and most of `settings:backup.*` were one- or two-word English in `he`/`ar`/`ru` and the check reported none of them. Legitimate cases go in `locales/.identical-ok.json`, each with a reason: product and brand names (`servers.json:health.checks.providerClaude`, `servers.json:health.checks.providerCodex`, `sessions.json:provider.claude`, `sessions.json:provider.codex`, `shared.json:app.title`), samples and addresses (`feedback.json:form.emailPlaceholder`, `onboarding.json:notifications.previewBrand`, `sessions.json:noServer.repoLink`, `settings.json:backup.pastePlaceholder`), and two conventions — `settings.json:language.english`, because language names are endonyms and every locale lists English as "English", and `conversation.json:review.kindDiff`, because "diff" is already used verbatim inside the same locales' prose.
 
 Source-hash alone is not sufficient: for a key that was never translated, the recorded hash matches `en` correctly from day one and the check stays green forever. That is the entire `settings.backup.*` class.
 
@@ -448,4 +448,4 @@ npx eslint --no-config-lookup -c ./probe.eslint.config.js \
   -f json -o /tmp/i18n.json
 ```
 
-Class 2 is reproduced by walking `locales/en/*.json` and comparing each value with the same key in `he`/`ar`/`ru`, keeping matches with three or more alphabetic words.
+Class 2 is reproduced by walking `locales/en/*.json` and comparing each value with the same key in `he`/`ar`/`ru`, keeping every match that contains an alphabetic word.
