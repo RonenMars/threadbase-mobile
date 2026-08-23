@@ -36,19 +36,51 @@ const ALLOW_STALE = process.env.E2E_ALLOW_STALE_BUILD === '1'
 // `expo run:ios --configuration Release` may emit the .app either into a
 // project-local `ios/build/...` dir or (Expo's default) a hashed Xcode
 // DerivedData dir. Probe both so the fast "reuse existing build" path can fire
-// instead of always rebuilding from scratch. Returns the first match, or null.
+// instead of always rebuilding from scratch. Returns the most recently built
+// DerivedData match — see pickNewestBuild() — or null.
 function findReleaseBuild() {
   const localPath = path.join(__dirname, '../ios/build/Build/Products/Release-iphonesimulator', APP_NAME)
   if (existsSync(localPath)) return localPath
 
   const derivedRoot = path.join(os.homedir(), 'Library/Developer/Xcode/DerivedData')
   if (!existsSync(derivedRoot)) return null
+  const candidates = []
   for (const dir of readdirSync(derivedRoot)) {
     if (!dir.startsWith('Threadbase-')) continue
     const candidate = path.join(derivedRoot, dir, 'Build/Products/Release-iphonesimulator', APP_NAME)
-    if (existsSync(candidate)) return candidate
+    if (existsSync(candidate)) candidates.push({ path: candidate, stamp: readStamp(candidate) })
   }
-  return null
+  return pickNewestBuild(candidates)
+}
+
+// Pure decision function — no I/O — so candidate selection is unit-testable
+// without a simulator or a real DerivedData directory, mirroring
+// checkBuildFreshness() below.
+//
+// Every checkout that has ever run a Release build leaves its own
+// `Threadbase-<hash>` folder under the single, machine-wide DerivedData
+// directory, and `readdirSync` order is filesystem order, not recency — so
+// picking the first match can silently return a stale build shadowed ahead of
+// a fresh one from a different worktree. An unstamped candidate predates the
+// stamping mechanism itself, so its actual build time is unknown; it is
+// treated as older than any stamped candidate rather than falling back to
+// filesystem mtime, for the same mtimes-get-touched-by-unrelated-operations
+// reason documented above checkBuildFreshness().
+function pickNewestBuild(candidates) {
+  if (candidates.length === 0) return null
+  let best = candidates[0]
+  for (const candidate of candidates.slice(1)) {
+    if (isNewerBuild(candidate, best)) best = candidate
+  }
+  return best.path
+}
+
+function isNewerBuild(candidate, current) {
+  const candidateTime = candidate.stamp ? Date.parse(candidate.stamp.builtAt) : NaN
+  const currentTime = current.stamp ? Date.parse(current.stamp.builtAt) : NaN
+  if (Number.isNaN(candidateTime)) return false
+  if (Number.isNaN(currentTime)) return true
+  return candidateTime > currentTime
 }
 
 // A Release build bakes the compiled JS bundle and the native binary into one
@@ -227,4 +259,6 @@ function grantSpeechRecognition() {
   }
 }
 
-main()
+if (require.main === module) main()
+
+module.exports = { pickNewestBuild }
