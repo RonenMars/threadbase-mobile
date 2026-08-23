@@ -13,12 +13,12 @@
 		24BE5313A7B844BE92DE92A0 /* index.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912F6584987D4F4CB7A6F135 /* index.swift */; };
 		32FC9C28861D555857FED5F0 /* libPods-ExpoWidgetsTarget.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 354CE2A40BEA210C0543A6D6 /* libPods-ExpoWidgetsTarget.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		AFD318BD11414FE3ADDD5E21 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 18759380AD5A4D5C8754B5FC /* InfoPlist.strings */; };
 		B417D6B9B0A2480BA133BC9D /* ExpoWidgetsTarget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FDF6BFA78F2D4C8786602C3E /* ExpoWidgetsTarget.appex */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		E66ACBE987E0CC37E50EEEFB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F6B6DC06F95414F97F64646 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F4D5B8988F031F3EB4518080 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDA7BB4922E018248C329A2 /* ExpoModulesProvider.swift */; };
-		AFD318BD11414FE3ADDD5E21 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 18759380AD5A4D5C8754B5FC /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,9 +50,11 @@
 		13B07F961A680F5B00A75B9A /* Threadbase.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Threadbase.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Threadbase/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Threadbase/Info.plist; sourceTree = "<group>"; };
+		1424C25E746C40249950091B /* en */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = en; path = Threadbase/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1F6B6DC06F95414F97F64646 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-ExpoWidgetsTarget/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		29834E7211F24434BCF478EE /* ExpoWidgetsTarget.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = ExpoWidgetsTarget.entitlements; path = ExpoWidgetsTarget.entitlements; sourceTree = "<group>"; };
 		354CE2A40BEA210C0543A6D6 /* libPods-ExpoWidgetsTarget.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ExpoWidgetsTarget.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4890FFA1CD5D46238C3DDADE /* ar */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = ar; path = Threadbase/ar.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		4DDA7BB4922E018248C329A2 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Threadbase/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		5205CEE12DF047BF8513D3F1 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		8FFA76FD314FD6F143DD98B2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Threadbase/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -60,17 +62,15 @@
 		9A473C37B78D07EC53770405 /* libPods-Threadbase.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Threadbase.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Threadbase/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B689F4876398C60B07CA383E /* Pods-ExpoWidgetsTarget.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.debug.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.debug.xcconfig"; sourceTree = "<group>"; };
+		B9CFA2AB3D3C4C459E3BDFEF /* ru */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = ru; path = Threadbase/ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C1EA67F3CDB0582F2E48E07D /* Pods-ExpoWidgetsTarget.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.release.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.release.xcconfig"; sourceTree = "<group>"; };
+		C84651B6475345A9A1FDAB87 /* he */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = he; path = Threadbase/he.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Threadbase/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Threadbase-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Threadbase-Bridging-Header.h"; path = "Threadbase/Threadbase-Bridging-Header.h"; sourceTree = "<group>"; };
 		FD8066D9ED1C6EEA1C86D899 /* Pods-Threadbase.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Threadbase.debug.xcconfig"; path = "Target Support Files/Pods-Threadbase/Pods-Threadbase.debug.xcconfig"; sourceTree = "<group>"; };
 		FDF6BFA78F2D4C8786602C3E /* ExpoWidgetsTarget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = ExpoWidgetsTarget.appex; path = ExpoWidgetsTarget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		1424C25E746C40249950091B /* en */ = {isa = PBXFileReference; name = en; path = "Threadbase/en.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
-		C84651B6475345A9A1FDAB87 /* he */ = {isa = PBXFileReference; name = he; path = "Threadbase/he.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
-		4890FFA1CD5D46238C3DDADE /* ar */ = {isa = PBXFileReference; name = ar; path = "Threadbase/ar.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
-		B9CFA2AB3D3C4C459E3BDFEF /* ru */ = {isa = PBXFileReference; name = ru; path = "Threadbase/ru.lproj/InfoPlist.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -598,6 +598,20 @@
 		};
 /* End PBXTargetDependency section */
 
+/* Begin PBXVariantGroup section */
+		18759380AD5A4D5C8754B5FC /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1424C25E746C40249950091B /* en */,
+				C84651B6475345A9A1FDAB87 /* he */,
+				4890FFA1CD5D46238C3DDADE /* ar */,
+				B9CFA2AB3D3C4C459E3BDFEF /* ru */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -891,20 +905,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin PBXVariantGroup section */
-		18759380AD5A4D5C8754B5FC /* InfoPlist.strings */ = {
-			isa = "PBXVariantGroup";
-			children = (
-				1424C25E746C40249950091B /* en */,
-				C84651B6475345A9A1FDAB87 /* he */,
-				4890FFA1CD5D46238C3DDADE /* ar */,
-				B9CFA2AB3D3C4C459E3BDFEF /* ru */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }
