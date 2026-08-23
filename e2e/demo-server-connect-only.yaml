@@ -102,6 +102,40 @@ appId: ${APP_BUNDLE_ID}
           text: "Not Now"
       - waitForAnimationToEnd
 
+# A pasted key can't be verified against the server, so pairing now routes
+# through the confirm gate (components/pair/PairConfirmGate.tsx) before the
+# server is added. Wait for it, then accept.
+- extendedWaitUntil:
+    visible:
+      id: "pair-confirm-add-btn"
+    timeout: 10000
+
+# The password dialog races the confirm gate: when it wins, it sits on top and
+# swallows the tap below, leaving the flow parked on the gate. Clear it first.
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
+- tapOn:
+    id: "pair-confirm-add-btn"
+
+- waitForAnimationToEnd
+
+# The password dialog can also land on top of the confirm gate's result.
+- runFlow:
+    when:
+      visible:
+        text: "Save Password?"
+    commands:
+      - tapOn:
+          text: "Not Now"
+      - waitForAnimationToEnd
+
 # After successful connection, app advances to Notifications step (step 3/4)
 # Wait for navigation
 - waitForAnimationToEnd:
@@ -161,6 +195,18 @@ appId: ${APP_BUNDLE_ID}
 # Wait for session to be created and screen to load
 - waitForAnimationToEnd:
     timeout: 15000
+
+# The leave-session modal traps accessibility — while it is up, nothing behind
+# it appears in the hierarchy at all, so every assertion below reads as "not
+# visible" rather than "obscured". Dismiss it before asserting on the screen.
+- runFlow:
+    when:
+      visible:
+        id: "leave-session-modal"
+    commands:
+      - tapOn:
+          id: "leave-session-cancel"
+      - waitForAnimationToEnd
 
 # Should now be in a live session screen
 - assertVisible:
@@ -225,14 +271,31 @@ appId: ${APP_BUNDLE_ID}
 # Wait for navigation animation
 - waitForAnimationToEnd
 
+# Leaving a live session asks what to do with the agent still running on the
+# computer. Keep it alive so the session is still there to re-enter below.
+- runFlow:
+    when:
+      visible:
+        id: "leave-session-modal"
+    commands:
+      - tapOn:
+          id: "leave-session-option-leave"
+      - tapOn:
+          id: "leave-session-confirm"
+      - waitForAnimationToEnd
+
 # Should now be back on projects hub with session list
 # Wait for the list to load
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Verify we're back on the hub by checking for FAB
-- assertVisible:
-    id: "fab-new-session"
+# Confirming the leave modal tears the session down before it pops, so the hub
+# can take longer to appear than an animation settle — wait for it rather than
+# asserting the instant the previous wait returns.
+- extendedWaitUntil:
+    visible:
+      id: "fab-new-session"
+    timeout: 15000
 
 # With classic layout and mergeChats=false, we should be on Sessions tab by default
 # Verify sessions are visible in the list

@@ -1,5 +1,5 @@
 # Reusable setup flow. On first run (no stored credentials) walks the
-# 5-step onboarding flow; on subsequent runs the app lands on the hub
+# 7-step onboarding carousel; on subsequent runs the app lands on the hub
 # directly because `expo-secure-store` survives `launchApp: clearState`.
 # Either way, the flow ends with hub-screen visible.
 # Requires: mock server running at E2E_MOCK_SERVER_URL (localhost:7071 by default;
@@ -58,31 +58,14 @@ appId: com.ronenmars.threadbase
     timeout: 30000
     optional: true
 
-# If the language step is visible, confirm the device-selected language. A
-# direction change reloads the app and resumes at Welcome; the wait handles both
-# that path and the same-direction transition.
-- runFlow:
-    when:
-      visible:
-        id: "onboarding-language-cta"
-    commands:
-      # Step 1 / LANGUAGE — confirm the preselected device language
-      - tapOn:
-          id: "onboarding-language-cta"
-
-      - extendedWaitUntil:
-          visible:
-            id: "onboarding-welcome-cta"
-          timeout: 8000
-
-# If the Welcome step is visible, walk the remaining onboarding flow.
+# If the welcome step is visible, walk the onboarding carousel.
 # Otherwise the app already has credentials cached and is on the hub.
 - runFlow:
     when:
       visible:
         id: "onboarding-welcome-cta"
     commands:
-      # Step 2 / WELCOME — "Pull a thread. Watch it weave."
+      # Step 1 / WELCOME — "Pull a thread. Watch it weave."
       - tapOn:
           id: "onboarding-welcome-cta"
 
@@ -96,7 +79,7 @@ appId: com.ronenmars.threadbase
             id: "onboarding-connect-paste-card"
           timeout: 8000
 
-      # Step 3 / CONNECT — paste credentials, fill URL + token, handshake
+      # Step 2 / CONNECT — paste credentials, fill URL + token, handshake
       - tapOn:
           id: "onboarding-connect-paste-card"
 
@@ -127,6 +110,34 @@ appId: com.ronenmars.threadbase
           id: "onboarding-connect-handshake-cta"
           optional: true
 
+      # A typed or pasted key is never exchanged with the server, so it cannot
+      # be tied to a device or verified. Pairing therefore stops on
+      # components/pair/PairConfirmGate.tsx before the server is added (#782,
+      # #804). Every flow that pairs through this file inherits that gate, so
+      # without this block setup parks on it and the caller's first assertion
+      # reads as a missing screen rather than as unfinished pairing.
+      #
+      # Optional throughout: a server already paired from a previous run never
+      # reaches the gate, and setup must stay idempotent.
+      - extendedWaitUntil:
+          visible:
+            id: "pair-confirm-add-btn"
+          timeout: 10000
+          optional: true
+
+      # The save-password dialog races the gate; when it wins it covers the
+      # button and swallows the tap meant for it.
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+            - waitForAnimationToEnd
+
+      - tapOn:
+          id: "pair-confirm-add-btn"
+          optional: true
+
       # iOS may show a "Save Password?" dialog after secureTextEntry input.
       # The sheet is async: on iOS CI run 32110237753 the first probe skipped,
       # then the sheet covered NOTIFY so the done-cta wait failed and the rest
@@ -138,8 +149,8 @@ appId: com.ronenmars.threadbase
           commands:
             - tapOn: "Not Now"
 
-      # Step 4 / NOTIFY — the handshake advances here (OnboardingNavigator's
-      # advanceAfterPair sets index 3), and tapping through keeps the flow off
+      # Step 3 / NOTIFY — the handshake advances here (OnboardingNavigator's
+      # advanceAfterPair sets index 2), and tapping through keeps the flow off
       # the OS permission prompt, which Maestro cannot dismiss.
       #
       # Both commands are optional because this is not reliably the screen we
@@ -187,7 +198,7 @@ appId: com.ronenmars.threadbase
                 id: "onboarding-notifications-cta"
                 optional: true
 
-      # Step 5 / DONE — enter the app
+      # Step 4 / DONE — enter the app
       - extendedWaitUntil:
           visible:
             id: "onboarding-done-cta"

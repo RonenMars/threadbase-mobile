@@ -123,6 +123,32 @@ appId: com.ronenmars.threadbase
     commands:
       - tapOn: "Not Now"
 
+# --- Pairing — confirm gate ------------------------------------------------
+# A typed or pasted key is never exchanged with the server, so it cannot be
+# tied to a device or verified. Pairing therefore stops on
+# components/pair/PairConfirmGate.tsx before the server is added (#782, #804).
+# Without this the flow parks on the gate and every step below reads as
+# missing: the run above ended with only pair-confirm-* ids in the hierarchy.
+- extendedWaitUntil:
+    visible:
+      id: "pair-confirm-add-btn"
+    timeout: 10000
+
+# The save-password dialog races the gate. When it wins it sits on top and
+# swallows the tap meant for the button below, so clear it first — the guard
+# above this block only fires if the dialog had already landed by then.
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd
+
+- tapOn:
+    id: "pair-confirm-add-btn"
+
+- waitForAnimationToEnd
+
 # --- Onboarding — Notifications --------------------------------------------
 # `onboarding-notifications-cta` calls onNext only; the OS permission prompt
 # is behind a separate tap-to-allow control we never touch.
