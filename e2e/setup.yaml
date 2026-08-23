@@ -127,6 +127,34 @@ appId: com.ronenmars.threadbase
           id: "onboarding-connect-handshake-cta"
           optional: true
 
+      # A typed or pasted key is never exchanged with the server, so it cannot
+      # be tied to a device or verified. Pairing therefore stops on
+      # components/pair/PairConfirmGate.tsx before the server is added (#782,
+      # #804). Every flow that pairs through this file inherits that gate, so
+      # without this block setup parks on it and the caller's first assertion
+      # reads as a missing screen rather than as unfinished pairing.
+      #
+      # Optional throughout: a server already paired from a previous run never
+      # reaches the gate, and setup must stay idempotent.
+      - extendedWaitUntil:
+          visible:
+            id: "pair-confirm-add-btn"
+          timeout: 10000
+          optional: true
+
+      # The save-password dialog races the gate; when it wins it covers the
+      # button and swallows the tap meant for it.
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+            - waitForAnimationToEnd
+
+      - tapOn:
+          id: "pair-confirm-add-btn"
+          optional: true
+
       # iOS may show a "Save Password?" dialog after secureTextEntry input.
       # The sheet is async: on iOS CI run 32110237753 the first probe skipped,
       # then the sheet covered NOTIFY so the done-cta wait failed and the rest

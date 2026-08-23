@@ -45,6 +45,24 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "hub-settings-btn"
 
+# The gear is a 32pt target that mounts with the hub, and the first tap on it
+# can be swallowed while the list is still settling: in run 2026-08-21_082424
+# Maestro reported the tap COMPLETED against the right bounds
+# ([137,74][169,106]) and the hierarchy was still hub-screen for the whole
+# wait that followed. Probe first, then re-tap once rather than failing.
+- extendedWaitUntil:
+    visible: ".*Add Server"
+    timeout: 8000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible: ".*Add Server"
+    commands:
+      - tapOn:
+          id: "hub-settings-btn"
+      - waitForAnimationToEnd
+
 - extendedWaitUntil:
     visible: ".*Add Server"
     timeout: 8000
@@ -68,10 +86,11 @@ appId: com.ronenmars.threadbase
 
       - waitForAnimationToEnd
 
-      # The key field can sit behind the keyboard. Without this scroll the tap
-      # misses, focus stays in the URL field, and the key is appended to the
-      # URL ("localhost:7072mock-key-123") — a silent failure: every step still
-      # reports COMPLETED and only a screenshot shows the damage.
+      # Restored after 2026-08-21_205x: advancing focus with Enter does NOT
+      # reach the key field here — the simulator showed API Key still holding
+      # its placeholder and Save greyed out, so inputText went nowhere. The
+      # scroll-then-tap below is what actually fills it (runs _082806/_083137
+      # showed the field masked, i.e. populated).
       - scrollUntilVisible:
           element:
             id: "server-edit-key-input"
@@ -84,8 +103,76 @@ appId: com.ronenmars.threadbase
 
       - waitForAnimationToEnd
 
-      # returnKeyType="done" + onSubmitEditing={handleSave} — Enter saves.
+      # The key field is returnKeyType="done" wired to handleSave
+      # (ServerFormFields:188, ServerEditModal:228), so Enter submits when a
+      # field still holds focus.
       - pressKey: Enter
+
+      - waitForAnimationToEnd
+
+      # It often does not: `inputText` commits and drops the keyboard, so no
+      # field holds focus and Enter has nothing to submit. Only tap Save in
+      # that keyboard-down state — with the keyboard up the first tap is spent
+      # dismissing it while Maestro still reports COMPLETED, which is what made
+      # an unconditional `tapOn: "Save"` look like the app ignoring the button.
+      - runFlow:
+          when:
+            visible:
+              id: "server-edit-url-input"
+          commands:
+            - tapOn: "Save"
+            - waitForAnimationToEnd
+
+      # iOS's Keychain "Save Password?" sheet appears immediately after Save
+      # submits the form — in practice before the gate's assert below ever
+      # gets to run — and while it's up it occludes the whole window, so
+      # Maestro's XCUITest snapshot can't see the app underneath it at all
+      # (verified via screen-hierarchy dump: zero app content, only
+      # status-bar elements). Dismiss it here, right after submission,
+      # instead of only after the pair-confirm-add-btn assert below —
+      # otherwise that assert times out for its full window with the sheet
+      # sitting on top the entire time.
+      - extendedWaitUntil:
+          visible: "Not Now"
+          timeout: 3000
+          optional: true
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+            - waitForAnimationToEnd
+
+      # A typed or pasted key is never exchanged with the server, so saving
+      # stops on PairConfirmGate (ServerEditModal.tsx:263) before the server is
+      # committed.
+      #
+      # Required, not optional. The gate could not present here at all until
+      # ServerEditModal's own Modal learned to yield the window: both it and the
+      # gate are RN Modals, iOS presents one per window, and the loser is
+      # dropped in silence — handleSave had already returned without saving, so
+      # the form just sat there with no gate, no server and no error. An
+      # optional probe would let exactly that regression pass unnoticed, since
+      # every command still reports COMPLETED.
+      - extendedWaitUntil:
+          visible:
+            id: "pair-confirm-add-btn"
+          timeout: 10000
+
+      # Safety net: the save-password dialog can still race the gate and
+      # appear here instead, swallowing the tap below.
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+            - waitForAnimationToEnd
+
+      - tapOn:
+          id: "pair-confirm-add-btn"
+
+      - waitForAnimationToEnd
 
       - runFlow:
           when:
@@ -98,9 +185,15 @@ appId: com.ronenmars.threadbase
 
 # Proof the pair actually landed — the add block above can "succeed" with the
 # key typed into the URL field, and only this catches it.
+#
+# 8000ms timed out here on 2026-08-22 even though the server had actually
+# landed (Settings showed both localhost:7071 and localhost:7072 as
+# "Connected" in the very next screenshot) — the accessibility tree hadn't
+# caught up with the just-completed pairing re-render inside the window.
+# 15000ms gives the Settings list time to settle before asserting.
 - extendedWaitUntil:
     visible: "http://localhost:7072"
-    timeout: 8000
+    timeout: 15000
 
 # --- Switch to the Tree layout ---------------------------------------------
 # Tree is the only layout that shows the machine hierarchy (server root rows).
