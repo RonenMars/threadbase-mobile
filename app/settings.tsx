@@ -10,17 +10,14 @@ import {
   Platform,
   RefreshControl,
   Linking,
-  I18nManager,
-  InteractionManager,
 } from 'react-native'
 import Constants from 'expo-constants'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
-import * as Updates from 'expo-updates'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { isRTLLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
+import { SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction, type SessionLeaveAction } from '@/stores/settings'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -386,54 +383,11 @@ await refreshServerInfo(serverId)
   }
 
 
+  // Direction follows i18next, applied as a Yoga `direction` style at the app
+  // root, so an LTR↔RTL switch re-renders in place — no forceRTL, no reload.
   const handleLanguageChange = useCallback(async (newLocale: SupportedLocale) => {
-    const currentIsRTL = I18nManager.isRTL
-    const newIsRTL = isRTLLocale(newLocale)
-
-    // If RTL direction is changing, we need to restart the app
-    if (currentIsRTL !== newIsRTL) {
-      Alert.alert(
-        i18n.t('settings:language.restartRequired'),
-        i18n.t('settings:language.restartMessage'),
-        [
-          {
-            text: i18n.t('common:button.cancel'),
-            style: 'cancel',
-          },
-          {
-            text: i18n.t('settings:language.restartNow'),
-            onPress: async () => {
-              setLocale(newLocale)
-              await i18n.changeLanguage(newLocale)
-              I18nManager.forceRTL(newIsRTL)
-              // New-Arch reload deadlock mitigation: let in-flight native-driven
-              // animations (FAB glow, skeletons, spinners) drain and yield real
-              // frames before tearing down the bridge, so RCTNativeAnimatedTurboModule
-              // has no pending ops when invalidate runs during the reload.
-              InteractionManager.runAfterInteractions(() => {
-                setTimeout(async () => {
-                  try {
-                    await Updates.reloadAsync()
-                  } catch {
-                    // forceRTL is already applied; if programmatic reload is
-                    // unavailable (dev/Expo Go) ask the user to relaunch manually.
-                    Alert.alert(
-                      i18n.t('settings:language.restartRequired'),
-                      i18n.t('settings:language.restartMessage')
-                    )
-                  }
-                }, 350)
-              })
-            },
-          },
-        ],
-        { cancelable: false }
-      )
-    } else {
-      // Same direction, just change language without restart
-      setLocale(newLocale)
-      await i18n.changeLanguage(newLocale)
-    }
+    setLocale(newLocale)
+    await i18n.changeLanguage(newLocale)
   }, [setLocale])
 
   // A camera scan needs no confirmation gate — pointing a camera at a screen is
@@ -546,6 +500,7 @@ await refreshServerInfo(serverId)
               {SUPPORTED_LOCALES.map((supportedLocale) => (
                 <TouchableOpacity
                   key={supportedLocale.code}
+                  testID={`settings-language-${supportedLocale.code}`}
                   style={[s.segmentBtn, locale === supportedLocale.code && s.segmentBtnActive]}
                   onPress={() => handleLanguageChange(supportedLocale.code)}
                 >

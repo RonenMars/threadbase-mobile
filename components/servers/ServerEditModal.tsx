@@ -25,6 +25,7 @@ import { wsManager } from '@/services/ws-client'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import type { ExchangeResult } from '@/services/pair-exchange'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -53,6 +54,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const pendingScanMeta = useRef<AddServerMeta | undefined>(undefined)
 
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
 
   // Pre-fill fields when opening. Read the server fresh from the store rather than
   // depending on the `server` reference — background polling replaces that object on
@@ -202,7 +204,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         </TouchableWithoutFeedback>
 
         <KeyboardAwareScrollView
-          style={styles.avoidingView}
+          style={[styles.avoidingView, directionStyle]}
           contentContainerStyle={styles.avoidingViewContent}
           keyboardShouldPersistTaps="handled"
           bottomOffset={16}

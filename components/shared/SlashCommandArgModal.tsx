@@ -15,6 +15,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { SlashCommand } from '@/constants/slashCommands'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   command: SlashCommand | null
@@ -27,6 +28,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const [arg, setArg] = useState('')
 
   // Reset arg whenever a new command is shown
@@ -55,7 +57,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
       onRequestClose={onDismiss}
     >
       <KeyboardAwareScrollView
-        style={styles.outer}
+        style={[styles.outer, directionStyle]}
         contentContainerStyle={styles.outerContent}
         keyboardShouldPersistTaps="handled"
         bottomOffset={8}

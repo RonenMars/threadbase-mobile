@@ -25,6 +25,7 @@ import { AddServerButton } from '@/components/servers/AddServerButton'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -192,6 +193,7 @@ interface ServerMenuModalProps {
 function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onDelete }: ServerMenuModalProps) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const { t } = useTranslation('servers')
 
   return (
@@ -202,7 +204,7 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={styles.dropBackdrop} onPress={onClose}>
+      <Pressable style={[styles.dropBackdrop, directionStyle]} onPress={onClose}>
         <Pressable style={styles.dropSheet} onPress={() => {}}>
           <Text style={styles.dropTitle} numberOfLines={1}>{serverLabel}</Text>
           <View style={styles.dropDivider} />
@@ -231,6 +233,7 @@ export function ServersStatusModal({ visible, onClose }: Props) {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const router = useRouter()
   const { servers, activeServerIds, removeServer, refreshServerInfo } = useServersStore()
   const statuses = useServerStatuses(activeServerIds)
@@ -286,7 +289,7 @@ export function ServersStatusModal({ visible, onClose }: Props) {
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={[styles.backdrop, directionStyle]} onPress={onClose}>
         <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
           <GlassFill />
           <View style={styles.header}>

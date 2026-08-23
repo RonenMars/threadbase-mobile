@@ -155,44 +155,38 @@ describe('OnboardingNavigator', () => {
     ).toBe(true)
   })
 
-  it('persists and reloads once when the selected language changes direction', async () => {
+  it('advances without a reload when the selected language changes direction', async () => {
     const screen = await render(<OnboardingNavigator onDone={jest.fn()} />)
 
     await fireEvent.press(screen.getByTestId('onboarding-language-option-he'))
     await fireEvent.press(screen.getByTestId('onboarding-language-cta'))
 
-    await waitFor(() => expect(mockReloadAppAsync).toHaveBeenCalledTimes(1))
-    expect(I18nManager.forceRTL).toHaveBeenCalledWith(true)
-    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+    expect(await screen.findByTestId('step-welcome')).toBeTruthy()
+    expect(mockReloadAppAsync).not.toHaveBeenCalled()
+    expect(I18nManager.forceRTL).not.toHaveBeenCalled()
+    expect(AsyncStorage.setItem).not.toHaveBeenCalledWith(
       'threadbase_onboarding_resume',
-      JSON.stringify({ step: 'welcome' }),
+      expect.anything(),
     )
-    expect(screen.queryByTestId('step-welcome')).toBeNull()
     expect(
-      screen.getByTestId('onboarding-language-option-he').props.accessibilityState.disabled,
+      (AsyncStorage.setItem as jest.Mock).mock.calls.some(
+        ([key, value]) => key === 'threadbase_settings' && JSON.parse(value).locale === 'he',
+      ),
     ).toBe(true)
-
-    const settingsWrite = (AsyncStorage.setItem as jest.Mock).mock.calls.findIndex(
-      ([key, value]) => key === 'threadbase_settings' && JSON.parse(value).locale === 'he',
-    )
-    const markerWrite = (AsyncStorage.setItem as jest.Mock).mock.calls.findIndex(
-      ([key]) => key === 'threadbase_onboarding_resume',
-    )
-    expect(settingsWrite).toBeGreaterThanOrEqual(0)
-    expect(markerWrite).toBeGreaterThan(settingsWrite)
+    expect(i18n.dir()).toBe('rtl')
   })
 
-  it('persists review context in the reload resume record', async () => {
-    const screen = await render(<OnboardingNavigator onDone={jest.fn()} mode="review" />)
+  it('keeps advancing in RTL even when the native layout state is stale LTR', async () => {
+    Object.defineProperty(I18nManager, 'isRTL', { configurable: true, value: false })
+    const screen = await render(<OnboardingNavigator onDone={jest.fn()} />)
 
-    await fireEvent.press(screen.getByTestId('onboarding-language-option-he'))
+    await fireEvent.press(screen.getByTestId('onboarding-language-option-ar'))
     await fireEvent.press(screen.getByTestId('onboarding-language-cta'))
 
-    await waitFor(() => expect(mockReloadAppAsync).toHaveBeenCalledTimes(1))
-    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-      'threadbase_onboarding_resume',
-      JSON.stringify({ step: 'welcome', mode: 'review' }),
-    )
+    expect(await screen.findByTestId('step-welcome')).toBeTruthy()
+    expect(I18nManager.isRTL).toBe(false)
+    expect(i18n.dir()).toBe('rtl')
+    expect(mockReloadAppAsync).not.toHaveBeenCalled()
   })
 
   it('consumes the one-shot resume marker before rendering at Welcome', async () => {
@@ -233,31 +227,6 @@ describe('OnboardingNavigator', () => {
     await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalledTimes(2))
     expect(await screen.findByTestId('step-welcome')).toBeTruthy()
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('threadbase_onboarding_resume')
-  })
-
-  it('clears the marker and offers retry when reload fails', async () => {
-    mockReloadAppAsync.mockRejectedValueOnce(new Error('reload unavailable'))
-    const screen = await render(<OnboardingNavigator onDone={jest.fn()} />)
-
-    await fireEvent.press(screen.getByTestId('onboarding-language-option-he'))
-    await fireEvent.press(screen.getByTestId('onboarding-language-cta'))
-
-    expect(await screen.findByTestId('onboarding-language-error')).toHaveTextContent(
-      'לא הצלחנו לטעון מחדש את האפליקציה כדי להחיל את השפה. נסו שוב.',
-    )
-    expect(AsyncStorage.removeItem).toHaveBeenCalledWith('threadbase_onboarding_resume')
-    expect(I18nManager.forceRTL).toHaveBeenNthCalledWith(1, true)
-    expect(I18nManager.forceRTL).toHaveBeenNthCalledWith(2, false)
-    expect(screen.queryByTestId('step-welcome')).toBeNull()
-    expect(
-      screen.getByTestId('onboarding-language-option-en').props.accessibilityState.disabled,
-    ).toBe(false)
-
-    await fireEvent.press(screen.getByTestId('onboarding-language-option-en'))
-    await fireEvent.press(screen.getByTestId('onboarding-language-cta'))
-
-    expect(await screen.findByTestId('step-welcome')).toBeTruthy()
-    expect(I18nManager.forceRTL).toHaveBeenCalledTimes(2)
   })
 
   it('clears the marker and shows persistence retry guidance when saving fails', async () => {

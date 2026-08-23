@@ -59,6 +59,7 @@ import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
 import { wrap as sentryWrap } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { ONBOARDING_RESUME_KEY, parseOnboardingResume } from '@/lib/onboarding-resume'
+import { useAppDirection } from '@/lib/rtl'
 
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
@@ -384,9 +385,22 @@ const lockStyles = StyleSheet.create({
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 })
 
+/**
+ * Paints the whole app with the i18next-derived direction. Yoga inherits
+ * `direction` down the subtree, so every logical inset (`paddingStart`,
+ * `marginEnd`, `start`/`end`) and every `flexDirection: 'row'` resolves against
+ * the selected language — without touching native `I18nManager` state, which
+ * only changes across a restart.
+ */
+export function DirectionRoot({ children }: { children: React.ReactNode }) {
+  const { direction } = useAppDirection()
+  return <View style={[styles.flex, { direction }]}>{children}</View>
+}
+
 export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }) {
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const { isRTL } = useAppDirection()
   // expo-router 57.0.4 paints the native screen container with the
   // react-navigation theme's `colors.background`. Its default is opaque light
   // grey, which covers our glass gradient backdrop. Feed it a transparent
@@ -410,7 +424,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         headerTintColor: theme.text.primary,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },
-        animation: i18n.dir() === 'rtl' ? 'slide_from_left' : undefined,
+        animation: isRTL ? 'slide_from_left' : undefined,
         headerLeft: ({ tintColor }) => (
           <Pressable
             onPress={() => goBackOrHub(router)}
@@ -550,6 +564,7 @@ function RootLayout() {
     <ThemeProvider>
       <RootErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
+      <DirectionRoot>
         <KeyboardProvider>
         <SafeAreaProvider>
           {!splashDone && <SplashAnimation onComplete={handleSplashComplete} />}
@@ -579,6 +594,7 @@ function RootLayout() {
           </PersistQueryClientProvider>
         </SafeAreaProvider>
         </KeyboardProvider>
+      </DirectionRoot>
       </GestureHandlerRootView>
       </RootErrorBoundary>
     </ThemeProvider>

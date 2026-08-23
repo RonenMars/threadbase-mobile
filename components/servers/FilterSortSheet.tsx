@@ -13,6 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
+import { useAppDirection } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -112,8 +113,10 @@ export function FilterSortSheet({
   const theme = useTheme()
   const router = useRouter()
   const glassBackground = useGlassSheetBackground()
-  const { t, i18n } = useTranslation(['servers', 'settings', 'sessions'])
-  const localeDirection = i18n.dir()
+  const { t } = useTranslation(['servers', 'settings', 'sessions'])
+  // Same i18next-derived direction as the rest of the app; this sheet renders
+  // inline (not in an RN Modal), so it also inherits the app root's direction.
+  const { direction: localeDirection } = useAppDirection()
   const styles = makeStyles(theme, localeDirection)
 
   const openSettings = () => {

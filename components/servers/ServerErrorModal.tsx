@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { ServerConfig } from '@/types/api'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -28,6 +29,7 @@ function maskApiKey(key: string): string {
 export function ServerErrorModal({ visible, server, onClose }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const { t } = useTranslation(['servers', 'common'])
   if (!server) return null
 
@@ -37,7 +39,7 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
-      <View style={styles.container} pointerEvents="box-none">
+      <View style={[styles.container, directionStyle]} pointerEvents="box-none">
         <View style={styles.modal}>
           {/* Header */}
           <View style={styles.header}>

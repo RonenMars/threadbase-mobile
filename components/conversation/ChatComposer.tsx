@@ -28,6 +28,7 @@ import {
 import type { UploadedFile } from '@/services/uploads'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
+import { useDirectionStyle } from '@/lib/rtl'
 
 export interface ChatComposerProps {
   value: string
@@ -75,6 +76,7 @@ export function ChatComposer({
   const { t } = useTranslation('terminal')
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const insets = useSafeAreaInsets()
   // When the keyboard is up, behavior="padding" already lifts the composer above
   // it — the home indicator is covered, so any resting safe-area padding would
@@ -255,7 +257,7 @@ export function ChatComposer({
 
       <Modal visible={expanded} animationType="slide" onRequestClose={() => setExpanded(false)}>
         <KeyboardAvoidingView
-          style={styles.modalContainer}
+          style={[styles.modalContainer, directionStyle]}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <SafeAreaView style={styles.flex} edges={['top']}>

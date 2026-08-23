@@ -24,6 +24,7 @@ import type { Message } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { MIN_TOUCH_TARGET } from '@/constants/a11y'
+import { useDirectionStyle } from '@/lib/rtl'
 
 type FilterKind = 'all' | ReviewFileKind
 
@@ -48,6 +49,7 @@ export function ReviewSheet({
 }: Props) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const styles = makeStyles(theme)
   const [filter, setFilter] = useState<FilterKind>('all')
   const [query, setQuery] = useState('')
@@ -96,7 +98,7 @@ export function ReviewSheet({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.root} testID="review-sheet">
+      <View style={[styles.root, directionStyle]} testID="review-sheet">
         <View style={styles.header}>
           <Text style={styles.title}>{t('review.title')}</Text>
           <TouchableOpacity onPress={onClose} accessibilityRole="button" hitSlop={8} style={{ minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center' }}>

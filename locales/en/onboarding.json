@@ -4,8 +4,7 @@
     "headline": "Choose your language.",
     "body": "You can change this later in Settings.",
     "continue": "Continue",
-    "persistRetry": "Couldn’t save your language choice. Try again.",
-    "reloadRetry": "Couldn’t reload the app to apply your language. Try again."
+    "persistRetry": "Couldn’t save your language choice. Try again."
   },
   "welcome": {
     "eyebrow": "// AMBIENT CODING",

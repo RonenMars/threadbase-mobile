@@ -16,12 +16,14 @@ import {
   hostPressureWhatToDoKey,
   hostPressureWhyFineKeys,
 } from '@/utils/hostPressureCopy'
+import { useDirectionStyle } from '@/lib/rtl'
 
 const VIEWPORT = 'home'
 const TOAST_ID = 'host-pressure'
 
 export function HostPressureBanner() {
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const styles = makeStyles(theme)
   const { t } = useTranslation('servers')
   const servers = useServersStore((s) => s.servers)
@@ -100,7 +102,7 @@ export function HostPressureBanner() {
       onRequestClose={() => setSheetOpen(false)}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={() => setSheetOpen(false)}>
+      <Pressable style={[styles.backdrop, directionStyle]} onPress={() => setSheetOpen(false)}>
         <Pressable style={styles.sheet} onPress={() => {}} testID="host-pressure-sheet">
           <GlassFill />
           <View style={styles.header}>

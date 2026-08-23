@@ -12,6 +12,7 @@ import {
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -25,6 +26,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
   const { t } = useTranslation(['sessions', 'common'])
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
   const [name, setName] = useState('')
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
       <KeyboardAvoidingView
-        style={styles.overlay}
+        style={[styles.overlay, directionStyle]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.card}>

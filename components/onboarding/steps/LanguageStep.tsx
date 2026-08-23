@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Check } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { isRTLLocale, SUPPORTED_LOCALES } from '@/lib/locale'
+import { localeDirection } from '@/lib/rtl'
 import type { SupportedLocale } from '@/lib/locale'
 import { useSettingsStore } from '@/stores/settings'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -36,6 +37,10 @@ export function LanguageStep({ onContinue, busy = false, error }: Props) {
       <View accessibilityRole="radiogroup" style={styles.options}>
         {SUPPORTED_LOCALES.map((option) => {
           const selected = locale === option.code
+          // Each row renders in the direction of the language it offers, not
+          // the app's — Yoga inherits it, so `paddingStart` on the label
+          // resolves per option.
+          const optionDirection = localeDirection(option.code)
           return (
             <Pressable
               key={option.code}
@@ -48,7 +53,7 @@ export function LanguageStep({ onContinue, busy = false, error }: Props) {
               onBlur={() => setFocusedLocale((focused) => focused === option.code ? null : focused)}
               style={[
                 styles.option,
-                { direction: option.direction },
+                { direction: optionDirection },
                 selected && styles.optionSelected,
                 focusedLocale === option.code && styles.optionFocused,
               ]}
@@ -57,9 +62,9 @@ export function LanguageStep({ onContinue, busy = false, error }: Props) {
                 style={[
                   styles.optionLabel,
                   selected && styles.optionLabelSelected,
-                  option.direction === 'rtl' && styles.optionLabelRtl,
+                  optionDirection === 'rtl' && styles.optionLabelRtl,
                   {
-                    writingDirection: option.direction,
+                    writingDirection: optionDirection,
                     textAlign: 'auto',
                   },
                 ]}

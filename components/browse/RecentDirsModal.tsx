@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { MIN_TOUCH_TARGET } from '@/constants/a11y'
+import { useDirectionStyle } from '@/lib/rtl'
 
 export interface RecentDir {
   path: string
@@ -31,6 +32,7 @@ interface Props {
 
 export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: Props) {
   const theme = useTheme()
+  const directionStyle = useDirectionStyle()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const { t } = useTranslation(['browse', 'common'])
   const [query, setQuery] = useState('')
@@ -56,7 +58,7 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.root} edges={['bottom']} testID="recent-dirs-modal">
+      <SafeAreaView style={[styles.root, directionStyle]} edges={['bottom']} testID="recent-dirs-modal">
         <View style={styles.header}>
           <Text style={styles.title}>{t('nav.allRecentDirs')}</Text>
           <TouchableOpacity
