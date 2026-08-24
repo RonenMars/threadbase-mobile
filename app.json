@@ -19,7 +19,7 @@
       "appleTeamId": "GUW6BN8X57",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Threadbase uses Face ID to protect access to your conversations.",
-        "ITSAppUsesNonExemptEncryption": true
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
