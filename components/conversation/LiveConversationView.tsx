@@ -9,6 +9,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
+import { isPromptPendingError } from '@/services/api-client'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -270,6 +271,15 @@ export function LiveConversationView({
     } catch (err) {
       if (optimisticId) {
         setPendingSends((prev) => prev.filter((m) => m.id !== optimisticId))
+      }
+      // A prompt is open and the server refused the text. The card is the
+      // list footer, so jump back to it (the composer already dropped the
+      // keyboard on send); the server's message shows inline via sendError.
+      // No alert: a modal would take the focus this is trying to hand to the
+      // card. The rethrow keeps the draft.
+      if (isPromptPendingError(err instanceof Error ? err : null)) {
+        jumpToLatest()
+        throw err
       }
       Alert.alert(tTerminal('dialog.sendFailedTitle'), err instanceof Error ? err.message : String(err))
       throw err

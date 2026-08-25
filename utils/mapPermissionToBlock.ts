@@ -11,7 +11,8 @@ export function mapPermissionToBlock(
   options: PermissionOption[],
   cursor: number | undefined,
   detail?: string,
-  contentKey?: string
+  contentKey?: string,
+  gateId?: string
 ): QuestionBlock {
   const selectedIndex = cursor !== undefined ? options.findIndex(o => o.index === cursor) : -1
   return {
@@ -27,6 +28,7 @@ export function mapPermissionToBlock(
     permissionIndices: options.map(o => o.index),
     permissionAnswerKeys: options.map(o => o.answerKeys),
     ...(contentKey !== undefined ? { permissionContentKey: contentKey } : {}),
+    ...(gateId !== undefined ? { permissionGateId: gateId } : {}),
     ...(selectedIndex >= 0 ? { selectedIndex } : {}),
   }
 }

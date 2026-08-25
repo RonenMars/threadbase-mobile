@@ -9,6 +9,7 @@ import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
+import { isPromptPendingError } from '@/services/api-client'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
@@ -111,6 +112,13 @@ export function TerminalView({
     try {
       await sendInput.mutateAsync(payload)
     } catch (err) {
+      // A prompt is open and the server refused the text. The card sits right
+      // above the composer here and the composer already dropped the keyboard
+      // on send, so it is in view; the server's message shows inline via
+      // sendError. No alert: a modal would take the focus this is trying to
+      // hand to the card. The rethrow is what keeps the draft — sendAndReset
+      // only clears on success.
+      if (isPromptPendingError(err instanceof Error ? err : null)) throw err
       Alert.alert(t('dialog.sendFailedTitle'), err instanceof Error ? err.message : String(err))
       throw err
     }

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, isPermissionClosedError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
+import { createApiForServer, isAnswerRefusedError, isPermissionClosedError, isPromptPendingError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
@@ -30,6 +30,11 @@ export function useSessionActions(serverId: string, sessionId: string) {
 
   const sendInput = useMutation({
     ...retryOnNetwork,
+    // A 409 prompt_pending is the server refusing text while a card is open.
+    // Deterministic until the card is answered, so retrying only holds the
+    // refusal back from the user for the backoff window.
+    retry: (count: number, err: Error) =>
+      err instanceof NetworkError && !isPromptPendingError(err) && count < 2,
     mutationFn: (input: string) =>
       api.post(`/api/sessions/${sessionId}/input`, { input }),
     onSuccess: () => {
@@ -91,8 +96,10 @@ export function useSessionActions(serverId: string, sessionId: string) {
     // closed: a retry cannot succeed, and it overwrites the settled error with
     // `no_pending_question` (the 409 path drops the pending entry), which is
     // what the call sites read to tell a benign close from a real failure.
+    // A refused answer shape is deterministic too, but the question is still
+    // open: it is not retried, and it is not classified as closed either.
     retry: (count: number, err: Error) =>
-      err instanceof NetworkError && !isQuestionClosedError(err) && count < 2,
+      err instanceof NetworkError && !isQuestionClosedError(err) && !isAnswerRefusedError(err) && count < 2,
     mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) =>
       api.post(`/api/sessions/${sessionId}/answer`, vars),
   })
@@ -119,7 +126,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
     // the call sites read to tell a benign close from a real failure.
     retry: (count: number, err: Error) =>
       err instanceof NetworkError && !isPermissionClosedError(err) && count < 2,
-    mutationFn: async (vars: { contentKey?: string; optionIndex: number; keys: string | null }) => {
+    mutationFn: async (vars: { contentKey?: string; gateId?: string; optionIndex: number; keys: string | null }) => {
       const sendKeysFallback = () => {
         if (vars.keys === null) {
           // A plain Error, not NetworkError: this never touched the network, so the
@@ -132,9 +139,14 @@ export function useSessionActions(serverId: string, sessionId: string) {
       }
       if (vars.contentKey === undefined) return sendKeysFallback()
       try {
+        // gateId is the server's per-instance identity for the gate; contentKey
+        // stays because a streamer that predates gateId answers on it alone.
+        // Omitted rather than sent as undefined so the body is byte-identical
+        // to the old one when the gate carried none.
         return await api.post(`/api/sessions/${sessionId}/permission/answer`, {
           contentKey: vars.contentKey,
           optionIndex: vars.optionIndex,
+          ...(vars.gateId !== undefined ? { gateId: vars.gateId } : {}),
         })
       } catch (err) {
         if (!(err instanceof NotFoundError)) throw err

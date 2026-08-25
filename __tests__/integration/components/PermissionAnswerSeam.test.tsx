@@ -15,6 +15,7 @@
  * path is the only thing that takes the card down.
  */
 import React from 'react'
+import { Alert } from 'react-native'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 import { NetworkError } from '@/services/api-client'
@@ -89,9 +90,10 @@ jest.mock('@/hooks/useTerminalStream', () => ({
 // reply is what is under test.
 const mockAnswerPermission = jest.fn()
 const mockRespondToQuestion = jest.fn()
+const mockSendInput = jest.fn()
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
-    sendInput: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
+    sendInput: { mutate: jest.fn(), mutateAsync: mockSendInput, isError: false, error: null },
     sendKeys: { mutate: jest.fn() },
     respondToQuestion: { mutate: jest.fn(), mutateAsync: mockRespondToQuestion, isError: false, error: null },
     answerPermission: { mutate: jest.fn(), mutateAsync: mockAnswerPermission, isError: false, error: null },
@@ -131,6 +133,8 @@ beforeEach(() => {
   mockAnswerPermission.mockReset()
   mockAnswerPermission.mockResolvedValue({ ok: true })
   mockRespondToQuestion.mockReset()
+  mockSendInput.mockReset()
+  mockSendInput.mockResolvedValue({})
 })
 
 describe('permission answer seam — the view between the card and the route', () => {
@@ -233,5 +237,80 @@ describe('permission answer seam — the view between the card and the route', (
 
     expect(screen.queryByTestId('question-card-ghost')).toBeNull()
     expect(screen.queryByLabelText('Yes')).toBeNull()
+  })
+})
+
+describe('permission answer seam — gate identity', () => {
+  // The gateId on the WS frame is the one the answer carries, next to the
+  // contentKey — through the real reducer, the real card, and the real
+  // handler, not a hand-built block.
+  it('echoes the gateId the frame arrived with, next to the content key', async () => {
+    const Wrapper = createWrapper()
+    await render(
+      <Wrapper>
+        <TerminalView serverId="srv-1" sessionId="sess-1" />
+      </Wrapper>,
+    )
+    await act(async () => { __wsTest.emit('permission', { ...gate, gateId: 'gate-instance-7' }) })
+    await act(async () => { fireEvent.press(screen.getByLabelText('Yes')) })
+
+    await waitFor(() => expect(mockAnswerPermission).toHaveBeenCalledWith({
+      contentKey: gate.contentKey,
+      gateId: 'gate-instance-7',
+      optionIndex: 0,
+      keys: '1\r',
+    }))
+  })
+})
+
+// POST /input answered 409 prompt_pending: a card is open on the host and the
+// text was refused before any byte was written. Reached here in the window
+// before the card's own WS frame lands (once it has, send is disabled locally).
+// The composer keeps the draft and no alert takes the focus from the card,
+// which sits right above the composer in this view (the composer itself drops
+// the keyboard on every send).
+describe('composer text refused while a prompt is open (TerminalView)', () => {
+  const PROMPT_PENDING_MESSAGE = 'A prompt is waiting for an answer; answer or dismiss it before sending text'
+  let alertSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    alertSpy.mockRestore()
+  })
+
+  async function typeAndSend(text: string) {
+    const Wrapper = createWrapper()
+    await render(
+      <Wrapper>
+        <TerminalView serverId="srv-1" sessionId="sess-1" />
+      </Wrapper>,
+    )
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent.changeText(input, text)
+    await act(async () => { fireEvent.press(screen.getByTestId('chat-send-button')) })
+    return input
+  }
+
+  it('keeps the draft and raises no alert on prompt_pending', async () => {
+    mockSendInput.mockRejectedValueOnce(new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending'))
+
+    const input = await typeAndSend('keep me')
+
+    expect(mockSendInput).toHaveBeenCalledWith('keep me')
+    expect(input.props.value).toBe('keep me')
+    expect(alertSpy).not.toHaveBeenCalled()
+  })
+
+  // Positive control: any other failure still alerts, so the case above passes
+  // because of the code, not because this view never alerts.
+  it('still alerts on an ordinary send failure', async () => {
+    mockSendInput.mockRejectedValueOnce(new NetworkError('Failed to reach server'))
+
+    const input = await typeAndSend('keep me')
+
+    expect(input.props.value).toBe('keep me')
+    expect(alertSpy).toHaveBeenCalledWith(expect.any(String), 'Failed to reach server')
   })
 })

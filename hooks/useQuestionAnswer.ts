@@ -60,6 +60,7 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
     try {
       await answerPermission.mutateAsync({
         contentKey: answered.permissionContentKey,
+        gateId: answered.permissionGateId,
         optionIndex,
         keys: permissionAnswerKeys(answered, optionIndex),
       })
