@@ -45,7 +45,7 @@
     <key>ExpoWidgets_EnablePushNotifications</key>
     <false/>
     <key>ITSAppUsesNonExemptEncryption</key>
-    <true/>
+    <false/>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>

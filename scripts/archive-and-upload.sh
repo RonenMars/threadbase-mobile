@@ -92,6 +92,8 @@ xcrun altool --upload-app \
   --apiIssuer "${ASC_ISSUER_ID}" \
   --show-progress 2>&1 | tee build/upload.log
 
+"$SCRIPT_DIR/validate-altool-upload.sh" build/upload.log
+
 echo
 echo "Uploaded. Poll processing state with the App Store Connect API"
 echo "(see Step 6 of the expo-local-build skill)."

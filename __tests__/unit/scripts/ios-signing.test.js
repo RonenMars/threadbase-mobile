@@ -15,6 +15,7 @@ const REPO_ROOT = path.resolve(__dirname, '../../..');
 const BOOTSTRAP = path.join(REPO_ROOT, 'scripts/bootstrap-ios-signing.sh');
 const EXPORT_TEMPLATE = path.join(REPO_ROOT, 'scripts/ExportOptions.template.plist');
 const ARCHIVE = path.join(REPO_ROOT, 'scripts/archive-and-upload.sh');
+const VALIDATE_UPLOAD = path.join(REPO_ROOT, 'scripts/validate-altool-upload.sh');
 const BASH = '/bin/bash';
 
 /**
@@ -25,9 +26,9 @@ const BASH = '/bin/bash';
 const PROFILE_FIXTURE = (marker) =>
   `<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>marker</key><string>${marker}</string></dict></plist>\n`;
 
-function run(script, cwd, env) {
+function run(script, cwd, env, args = []) {
   try {
-    const stdout = execFileSync(BASH, [script], {
+    const stdout = execFileSync(BASH, [script, ...args], {
       cwd,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -202,5 +203,63 @@ describe('archive-and-upload.sh', () => {
     expect(args).toContain('IOS_WIDGET_PROVISION_PROFILE_UUID=widget-profile-uuid');
     expect(args.some((arg) => arg.startsWith('PROVISIONING_PROFILE_SPECIFIER=')))
       .toBe(false);
+  });
+});
+
+describe('validate-altool-upload.sh', () => {
+  let root;
+
+  afterEach(() => {
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  function validate(logContents) {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'ios-upload-log-'));
+    const uploadLog = path.join(root, 'upload.log');
+    fs.writeFileSync(uploadLog, logContents);
+    return run(VALIDATE_UPLOAD, root, { UPLOAD_LOG: uploadLog });
+  }
+
+  it('accepts altool output only when Apple reports an error-free upload', () => {
+    const result = validate([
+      'Uploaded package is processing.',
+      'Upload succeeded.',
+      'UPLOAD SUCCEEDED with no errors',
+      'Delivery UUID: e1b809b9-d661-4e40-9189-ebb01b9f6e45',
+    ].join('\n'));
+
+    expect(result.code).toBe(0);
+  });
+
+  it('rejects a validation failure even when altool itself exits zero', () => {
+    const result = validate([
+      'Upload failed.',
+      'Validation failed',
+      'Invalid Export Compliance Code.',
+      'UPLOAD FAILED with 1 error',
+    ].join('\n'));
+
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain('Apple did not accept the upload');
+  });
+
+  it('rejects ambiguous altool output without a success marker', () => {
+    const result = validate('Contacting Apple Services…\n');
+
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain('Apple did not accept the upload');
+  });
+
+  it('validates the explicit current log instead of an inherited stale log', () => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'ios-upload-log-'));
+    const staleLog = path.join(root, 'stale-success.log');
+    const currentLog = path.join(root, 'current-failure.log');
+    fs.writeFileSync(staleLog, 'UPLOAD SUCCEEDED with no errors\n');
+    fs.writeFileSync(currentLog, 'Validation failed\nUPLOAD FAILED with 1 error\n');
+
+    const result = run(VALIDATE_UPLOAD, root, { UPLOAD_LOG: staleLog }, [currentLog]);
+
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain('Apple did not accept the upload');
   });
 });

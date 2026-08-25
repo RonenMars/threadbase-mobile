@@ -119,7 +119,7 @@ After approval:
    rm -rf $TMPDIR/metro-* $TMPDIR/haste-map-*
    ```
 6. Verify `package.json` diff is sensible. No silent removals.
-7. Verify nothing in `ios/Threadbase/Info.plist` got reset (especially `RCTNewArchEnabled=true`, your custom `NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription` / `ITSAppUsesNonExemptEncryption=true`).
+7. Verify nothing in `ios/Threadbase/Info.plist` got reset (especially `RCTNewArchEnabled=true`, your custom `NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription` / `ITSAppUsesNonExemptEncryption=false`).
 8. Verify `ios/Podfile.properties.json` still has `expo.jsEngine: hermes`.
 
 Commit: `chore(expo): bump SDK 55 → 56 via expo install --fix`
