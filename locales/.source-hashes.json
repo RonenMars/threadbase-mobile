@@ -607,8 +607,6 @@
   "servers.json:health.remediation.CLOCK_SKEWED.action": "9c91c3c4541a",
   "servers.json:health.remediation.FS_SCOPE_MISSING.title": "322554a0958b",
   "servers.json:health.remediation.FS_SCOPE_MISSING.action": "899e6b5d0117",
-  "servers.json:health.remediation.NONE.title": "18bbcd989758",
-  "servers.json:health.remediation.NONE.action": "da39a3ee5e6b",
   "servers.json:encryption.requireLabel": "7c327ef448b9",
   "servers.json:encryption.requireHint": "245782796e0f",
   "servers.json:encryption.clearTitle": "b18239ea17ca",

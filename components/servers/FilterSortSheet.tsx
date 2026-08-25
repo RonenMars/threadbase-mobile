@@ -14,6 +14,11 @@ import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
 import { useAppDirection } from '@/lib/rtl'
+import {
+  getSessionsLayoutLabel,
+  getSortByLabel,
+  getSortOrderLabel,
+} from './filterSortLabels'
 
 interface Props {
   visible: boolean
@@ -34,28 +39,26 @@ interface Props {
 const SNAP_POINTS = ['65%', '90%']
 
 const LAYOUT_OPTIONS = [
-  { value: 'tree', labelKey: 'settings:appearance.layoutTree', Icon: Tree },
-  { value: 'hub', labelKey: 'settings:appearance.layoutHub', Icon: SquaresFour },
-  { value: 'classic', labelKey: 'settings:appearance.layoutClassic', Icon: List },
+  { value: 'tree', Icon: Tree },
+  { value: 'hub', Icon: SquaresFour },
+  { value: 'classic', Icon: List },
 ] as const satisfies readonly {
   value: SessionsLayout
-  labelKey: string
   Icon: React.ComponentType<{ size: number; color: string }>
 }[]
 
-const SORT_BY_OPTIONS = [
-  { value: 'lastActivity', labelKey: 'filter.sortLastMessage' },
-  { value: 'projectName', labelKey: 'filter.sortProjectName' },
-  { value: 'startedAt', labelKey: 'filter.sortCreatedDate' },
-  { value: 'status', labelKey: 'filter.status' },
-] as const satisfies readonly { value: SortBy; labelKey: string }[]
+const SORT_BY_OPTIONS: readonly SortBy[] = [
+  'lastActivity',
+  'projectName',
+  'startedAt',
+  'status',
+]
 
 const SORT_ORDER_OPTIONS = [
-  { value: 'desc', labelKey: 'filter.newestFirst', Icon: ArrowDown },
-  { value: 'asc', labelKey: 'filter.oldestFirst', Icon: ArrowUp },
+  { value: 'desc', Icon: ArrowDown },
+  { value: 'asc', Icon: ArrowUp },
 ] as const satisfies readonly {
   value: SortOrder
-  labelKey: string
   Icon: React.ComponentType<{ size: number; color: string }>
 }[]
 
@@ -184,9 +187,9 @@ export function FilterSortSheet({
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.view')}</Text>
         <View style={styles.chipRow}>
-          {LAYOUT_OPTIONS.map(({ value, labelKey, Icon }) => {
+          {LAYOUT_OPTIONS.map(({ value, Icon }) => {
             const selected = sessionsLayout === value
-            const label = t(labelKey)
+            const label = getSessionsLayoutLabel(value, t)
             return (
               <TouchableOpacity
                 key={value}
@@ -212,19 +215,19 @@ export function FilterSortSheet({
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.sortBy')}</Text>
           <View style={styles.chipRow}>
-            {SORT_BY_OPTIONS.map((opt) => {
-              const selected = sortBy === opt.value
+            {SORT_BY_OPTIONS.map((option) => {
+              const selected = sortBy === option
               return (
                 <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => onChangeSortBy(opt.value)}
+                  key={option}
+                  onPress={() => onChangeSortBy(option)}
                   style={[styles.chip, selected && styles.chipSelected]}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  testID={`sort-option-${opt.value}`}
+                  testID={`sort-option-${option}`}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {t(opt.labelKey)}
+                    {getSortByLabel(option, t)}
                   </Text>
                 </TouchableOpacity>
               )
@@ -251,7 +254,7 @@ export function FilterSortSheet({
                 >
                   <opt.Icon size={14} color={selected ? theme.text.primary : theme.text.secondary} />
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {t(opt.labelKey)}
+                    {getSortOrderLabel(opt.value, t)}
                   </Text>
                 </TouchableOpacity>
               )

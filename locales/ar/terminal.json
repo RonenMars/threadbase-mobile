@@ -21,15 +21,12 @@
     "cancelTitle": "إلغاء السيشن",
     "cancelMessage": "هل أنت متأكد أنك تريد إلغاء هذا السيشن؟",
     "cancelConfirm": "إلغاء السيشن",
-    "removeTitle": "إزالة السيشن",
-    "removeConfirm": "إزالة",
     "stopTitle": "إيقاف السيشن",
     "stopFailed": "تعذّر إيقاف السيشن. تحقق من الاتصال وحاول مرة أخرى.",
     "sendFailedTitle": "فشل الإرسال",
     "sendFailedGeneric": "تعذّر الإرسال"
   },
   "status": {
-    "disconnected": "غير متصل",
     "starting": "جارٍ بدء السيشن…",
     "stuckTitle": "لا يزال قيد البدء…",
     "stuckBody": "لم يصل السيشن إلى نقطة الاستعداد بعد. يمكنك مشاهدة مخرجات الطرفية له مباشرة بدلاً من الانتظار.",

@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft, ArrowRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import type { ParseKeys } from 'i18next'
+import type { TFunction } from 'i18next'
 import { PagerDots } from './components/PagerDots'
 import { colors, fonts } from './theme'
 
@@ -18,9 +18,18 @@ interface Props {
   onSkip: () => void
   /** When false, the Skip chrome control is hidden (Welcome). Default: index < total - 1. */
   showSkip?: boolean
-  /** i18n key under `onboarding` for the skip label. Default: shell.skip */
-  skipLabelKey?: ParseKeys<'onboarding'>
+  /** Semantic skip action. Default: skip. */
+  skipLabel?: 'skip' | 'pairLater'
   children: React.ReactNode
+}
+
+function getSkipLabel(label: 'skip' | 'pairLater', t: TFunction<'onboarding'>): string {
+  switch (label) {
+    case 'skip':
+      return t('shell.skip')
+    case 'pairLater':
+      return t('shell.pairLater')
+  }
 }
 
 export function OnboardingShell({
@@ -31,7 +40,7 @@ export function OnboardingShell({
   onBack,
   onSkip,
   showSkip: showSkipProp,
-  skipLabelKey = 'shell.skip',
+  skipLabel = 'skip',
   children,
 }: Props) {
   const insets = useSafeAreaInsets()
@@ -94,7 +103,7 @@ export function OnboardingShell({
             style={[styles.chromeBtn, { direction: localeDirection }]}
             hitSlop={10}
           >
-            <Text style={styles.chromeSkip}>{t(skipLabelKey)}</Text>
+            <Text style={styles.chromeSkip}>{getSkipLabel(skipLabel, t)}</Text>
           </Pressable>
         ) : (
           <View />

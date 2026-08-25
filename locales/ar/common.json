@@ -12,7 +12,6 @@
     "moreOptions": "خيارات إضافية"
   },
   "error": {
-    "loadFailed": "تعذّر التحميل",
     "authDeviceRevoked": "لم يعُد هذا الجهاز مُصرّحًا له. أعد إقرانه بالخادم.",
     "authKeyRejected": "رفض الخادم مفتاح API. حدِّث مفتاح API وأعد المحاولة.",
     "authKeyRejectedOnConnect": "رفض الخادم مفتاح API هذا. تحقّق من THREADBASE_API_KEY على خادمك والصقه مجددًا.",
@@ -22,9 +21,6 @@
     "attachFailed": "تعذّر إرفاق الملف. حاول مجدداً.",
     "cleartextBlocked": "هذا العنوان هو HTTP عادي وليس على شبكتك المحلية. استخدم عنوان https:// أو شغّل tb serve --tunnel.",
     "unexpected": "حدث خطأ غير متوقع"
-  },
-  "search": {
-    "placeholder": "بحث…"
   },
   "favorite": {
     "add": "إضافة إلى المفضلة",

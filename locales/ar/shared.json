@@ -12,6 +12,9 @@
     "title": "Threadbase"
   },
   "quickAccess": {
+    "tabs": {
+      "favorites": "المفضلة"
+    },
     "newSessionHere": "سيشن جديد هنا",
     "browseDirectory": "تصفّح المجلد",
     "openSession": "فتح السيشن",

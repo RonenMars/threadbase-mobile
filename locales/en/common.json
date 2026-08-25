@@ -12,7 +12,6 @@
     "moreOptions": "More options"
   },
   "error": {
-    "loadFailed": "Unable to load",
     "authDeviceRevoked": "This device is no longer authorized. Pair it with the server again.",
     "authKeyRejected": "The server rejected the API key. Update the API key and try again.",
     "authKeyRejectedOnConnect": "The server rejected this API key. Check THREADBASE_API_KEY on your server and paste it again.",
@@ -22,9 +21,6 @@
     "attachFailed": "Couldn't attach the file. Please try again.",
     "cleartextBlocked": "That address is plain HTTP and is not on your local network. Use an https:// address, or run tb serve --tunnel.",
     "unexpected": "An unexpected error occurred"
-  },
-  "search": {
-    "placeholder": "Search…"
   },
   "favorite": {
     "add": "Add to favorites",

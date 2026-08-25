@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Bell, ArrowsClockwise } from 'phosphor-react-native'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -226,7 +227,7 @@ function TokenCard({
 }) {
   const { t } = useTranslation('settings')
   const s = useMemo(() => styles(theme), [theme])
-  const stateLabel = t(STATE_LABEL_KEYS[token.state])
+  const stateLabel = getPushTokenStateLabel(token.state, t)
   let deliveryHint = t('notificationHealth.hintHealthy')
   if (token.state === 'never-delivered') deliveryHint = t('notificationHealth.hintNeverDelivered')
   else if (token.state === 'failing' || token.state === 'dead') {
@@ -260,18 +261,20 @@ function TokenCard({
   )
 }
 
-// A key map indexed at the call site, rather than a helper taking `t` as a
-// parameter: i18next-cli cannot trace a parameter back to the caller's
-// useTranslation(), so it filed these under defaultNS and reported all five as
-// unused. It does follow a direct index into a const, and this keeps the
-// caller's single-namespace TFunction typing intact.
-const STATE_LABEL_KEYS = {
-  'never-delivered': 'notificationHealth.state.never-delivered',
-  healthy: 'notificationHealth.state.healthy',
-  failing: 'notificationHealth.state.failing',
-  dead: 'notificationHealth.state.dead',
-  revoked: 'notificationHealth.state.revoked',
-} as const satisfies Record<PushTokenState, string>
+function getPushTokenStateLabel(state: PushTokenState, t: TFunction<'settings'>): string {
+  switch (state) {
+    case 'never-delivered':
+      return t('notificationHealth.state.never-delivered')
+    case 'healthy':
+      return t('notificationHealth.state.healthy')
+    case 'failing':
+      return t('notificationHealth.state.failing')
+    case 'dead':
+      return t('notificationHealth.state.dead')
+    case 'revoked':
+      return t('notificationHealth.state.revoked')
+  }
+}
 
 function styles(theme: Theme) {
   return StyleSheet.create({
