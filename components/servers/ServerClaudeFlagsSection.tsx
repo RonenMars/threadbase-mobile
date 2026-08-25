@@ -59,15 +59,6 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
   const [values, setValues] = useState<ClaudeFlagValues>({})
   const [extraArgs, setExtraArgs] = useState('')
 
-  // Every flag's copy is enumerated here rather than built as
-  // t(`…flags.${def.id}.label`), so each key is a literal a static analyser can
-  // see — `i18next-cli status --unused` cannot resolve a key assembled from a
-  // server value, and would report all twelve as dead.
-  //
-  // `def.id` is a plain string on the wire (types/api.ts:473) and the registry
-  // comes from the streamer, so this list is a snapshot of the ids we have copy
-  // for — the same snapshot locales/*/servers.json already encodes. An id that
-  // isn't here degrades to the raw CLI flag, which is what defaultValue did.
   const flagCopy = useMemo<Record<string, { label: string; description: string }>>(
     () => ({
       permissionMode: { label: t('servers:claudeFlags.flags.permissionMode.label'), description: t('servers:claudeFlags.flags.permissionMode.description') },

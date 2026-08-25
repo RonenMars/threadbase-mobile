@@ -7,6 +7,7 @@ Keep this file to repository-specific behavior and safeguards. Agent tooling is 
 - Standard checks are `npm run lint`, `npm run typecheck`, `npm run test:ci`, and `npm run test:scripts`.
 - Before committing JavaScript or TypeScript, run `npx eslint` on the staged JS/TS files. Errors block; warnings do not.
 - `i18next/no-literal-string` is an error. Put user-facing copy in translations. For technical literals, use a narrowly scoped disable with a reason; never exclude a mixed-copy file.
+- Keep finite translation choices statically visible: state, props, helpers, and option metadata carry semantic values, while the nearest presentation boundary maps them through literal `t('namespace:key')` calls. Do not pass translation keys as application data or hide them with `preservePatterns` or artificial usage manifests; `npm run test:i18n` uses `i18next-cli status` and `status --unused` to reject missing, incomplete, and stale keys.
 
 ## E2E testing
 

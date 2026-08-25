@@ -94,6 +94,33 @@ One gap the rule still has: a **module-scope** `const` is not inspected, only fu
 
 ---
 
+## Keep Translation Keys at the Presentation Boundary
+
+For a finite domain, application state and data carry semantic values, not i18next keys. Resolve the semantic value with an exhaustive switch whose branches call literal `t('namespace:key')` expressions at the nearest presentation boundary.
+
+```tsx
+// bad — the analyzer loses the real usage across metadata, state, and props
+const options = [{ value: 'newest', labelKey: 'servers:filter.newestFirst' }] as const
+const [selected] = useState(options[0])
+return <Text>{t(selected.labelKey)}</Text>
+
+// good — state remains semantic and every real key is visible in the AST
+function getSortOrderLabel(order: 'newest' | 'oldest', t: TFunction<'servers'>) {
+  switch (order) {
+    case 'newest':
+      return t('filter.newestFirst')
+    case 'oldest':
+      return t('filter.oldestFirst')
+  }
+}
+```
+
+Apply the same rule to helper return values, component props, arrays, and generic option records. Keep localization out of domain/business helpers; put the exhaustive translation resolver in the nearest UI utility or component and call it during render so language changes remain reactive.
+
+Do not use `preservePatterns`, wildcard preservation, fake or unreachable `t()` calls, comment-only extraction, or a static-usage manifest to compensate for finite-key indirection. Those mechanisms can make stale keys look used. `npm run test:i18n` runs both `i18next-cli status` and `status --unused`, so missing, incomplete, and genuinely unused locale entries must continue to fail CI. See [`docs/followups/mobile/09-i18n-guardrails.md`](./docs/followups/mobile/09-i18n-guardrails.md).
+
+---
+
 ## No `unknown` or `any` Without Explicit Permission
 
 Never introduce `unknown` or `any` in new code without the user's explicit approval. If a type boundary genuinely requires one, stop and ask — don't default to it as a workaround for a type error.

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Check } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { isRTLLocale, SUPPORTED_LOCALES } from '@/lib/locale'
+import { getSupportedLocaleLabel, isRTLLocale, SUPPORTED_LOCALES } from '@/lib/locale'
 import { localeDirection } from '@/lib/rtl'
 import type { SupportedLocale } from '@/lib/locale'
 import { useSettingsStore } from '@/stores/settings'
@@ -17,6 +17,7 @@ interface Props {
 
 export function LanguageStep({ onContinue, busy = false, error }: Props) {
   const { t, i18n } = useTranslation(['onboarding', 'settings'])
+  const { t: tSettings } = useTranslation('settings')
   const locale = useSettingsStore((state) => state.locale)
   const setLocale = useSettingsStore((state) => state.setLocale)
   const [focusedLocale, setFocusedLocale] = useState<SupportedLocale | null>(null)
@@ -69,7 +70,7 @@ export function LanguageStep({ onContinue, busy = false, error }: Props) {
                   },
                 ]}
               >
-                {t(option.labelKey, { ns: 'settings' })}
+                {getSupportedLocaleLabel(option.code, tSettings)}
               </Text>
               <View style={[styles.check, selected && styles.checkSelected]}>
                 {selected ? <Check size={16} weight="bold" color={colors.ink1} /> : null}

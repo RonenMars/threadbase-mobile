@@ -8,7 +8,7 @@ Scanned against `main` @ `00069a03` on 2026-08-21; completed on 2026-08-22.
 | 1 | ESLint config uses the v6 option names | #821 |
 | 2 | Class 1 burn-down, 138 → 0 | #829, #830, #834, #835, #836 |
 | 3 | Pre-commit hook on staged files | this PR |
-| 4 | Checks wired into `test:i18n` | #828 |
+| 4 | Checks, including strict missing/incomplete/unused-key analysis, wired into `test:i18n` | #828 + follow-up |
 | 5 | Locale freshness + identical-to-en | #824, wired in #828 |
 | 6 | RTL physical-property rule | #837 at `warn`; promoted to `error` after the remaining sites were resolved |
 | 7 | Native permission strings | #828 |
@@ -44,6 +44,29 @@ Verified by probe on 2026-08-22, so the next person does not have to rediscover 
 It **does** catch: function-scope `const` assignments, ternaries, `return` literals, `Alert.alert` arguments, listed object properties, listed JSX attributes and JSX text.
 
 It does **not** catch a **module-scope** `const`. A literal parked at the top of a file is invisible to it, which is the shape `TimeBucketPills`' `BUCKETS` array had before #827. `ErrorBanner.tsx`'s `TITLES` and `MESSAGES` maps held twelve English strings in exactly that shape until they were moved to `common:errorBanner.*`. Put UI copy in a locale file rather than a module constant.
+
+## Static ownership of translation keys
+
+`i18next-cli status --unused` can distinguish live keys from stale locale entries only when each finite translation choice is visible as a literal call in source. TypeScript literal unions and `as const` do not preserve that visibility once a key travels through an import, helper return, object property, array, React state, or component prop.
+
+The architectural boundary is:
+
+```text
+domain/helper/state/props
+→ semantic values
+→ presentation resolver
+→ literal t('namespace:key')
+```
+
+For example, store `status: 'completed'` and translate it with an exhaustive `switch` that calls `t('status.completed')` using `TFunction<'sessions'>`. Do not store or return `labelKey: 'sessions:status.completed'` and later call `t(labelKey)`. Keep the resolver in a component or presentation utility, call it during render, and let TypeScript make a new semantic variant a compile-time exhaustiveness error.
+
+This rule applies equally to option metadata, rotating labels, explanation arrays, and props. It does not require low-level domain code to accept `TFunction`; domain code should return semantic reasons or statuses, and the UI owns their localized presentation.
+
+Do not compensate with `preservePatterns`, wildcards, unreachable or fake calls, comment extraction, or a static-usage manifest. Those techniques protect declared keys even after the corresponding runtime behavior disappears, weakening dead-key detection. `scripts/run-i18n-checks.js` runs both `i18next-cli status` and `status --unused` as part of `npm run test:i18n`: missing or incomplete translations and temporary unreferenced locale entries must make that command fail.
+
+The migration that established this rule removed 33 unique false positives reported once in each of four locales (132 occurrences): session statuses, language names, server sorting, host-pressure explanations, slow-loading titles, and onboarding skip labels. The same-pattern audit also converted finite agent phases, resume reasons, feedback categories, notification states, settings actions, progress/state/error copy, leave-session choices, and pairing failures.
+
+The former false missing key `servers:session` came from `.map((key) => t(key))` in the host-pressure UI. The extractor inferred the callback parameter as a key and associated it with an unrelated `session` token. Returning semantic `HostPressureReason` values and translating them through literal calls removed both that false missing report and the associated unused-key false positives without an ignore rule.
 
 ## Layer 6 follow-up
 
@@ -134,7 +157,7 @@ Local and fast; `--no-verify` bypasses it, which is acceptable because Layer 4 c
 
 ### Layer 4 — CI
 
-**Landed** (Wave 3, ci/wire-i18n-checks). `test:i18n` now runs `scripts/run-i18n-checks.js`, a Node runner that chains `check-locale-freshness.js`, `check-locale-untranslated.js` and `check-native-strings.js` ahead of the `__tests__/i18n` jest suite, exiting non-zero on the first failure. A Node runner replaces a shell `&&` chain because npm scripts here must stay Windows-`cmd.exe`-compatible.
+**Landed** (Wave 3, ci/wire-i18n-checks, plus the static-analysis follow-up). `test:i18n` now runs `scripts/run-i18n-checks.js`, a Node runner that chains `i18next-cli status`, `i18next-cli status --unused`, `check-locale-freshness.js`, `check-locale-untranslated.js`, and `check-native-strings.js` ahead of the `__tests__/i18n` jest suite, exiting non-zero on the first failure. A Node runner replaces a shell `&&` chain because npm scripts here must stay Windows-`cmd.exe`-compatible.
 ESLint already runs in the `Lint` job, which is a required check, so Layer 1 is enforced in CI the moment the rule is `error`.
 
 ### Layer 5 — locale value freshness

@@ -3,21 +3,25 @@ import { ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/contexts/ThemeContext'
+import {
+  getSlowLoadingTitle,
+  type SlowLoadingTitleVariant,
+} from './slowLoadingTitle'
 
 interface Props {
   onAbort: () => void
 }
 
-const TITLE_KEYS = ['slowLoading.title1', 'slowLoading.title2', 'slowLoading.title3'] as const
-
 export function SlowLoadingBanner({ onAbort }: Props) {
   const theme = useTheme()
   const { t } = useTranslation(['conversation', 'common'])
   // Pick once per mount so the title doesn't change on re-renders
-  const [titleKey] = React.useState(() => TITLE_KEYS[Math.floor(Math.random() * TITLE_KEYS.length)])
+  const [titleVariant] = React.useState<SlowLoadingTitleVariant>(
+    () => Math.floor(Math.random() * 3) as SlowLoadingTitleVariant,
+  )
   return (
     <Banner
-      title={t(titleKey)}
+      title={getSlowLoadingTitle(titleVariant, t)}
       message={t('slowLoading.message')}
       accent={theme.text.warning}
       icon={<ActivityIndicator color={theme.text.warning} />}

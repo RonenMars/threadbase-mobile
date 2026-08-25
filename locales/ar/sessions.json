@@ -24,8 +24,7 @@
     "claude": "Claude"
   },
   "filter": {
-    "label": "تصفية وفرز",
-    "all": "الكل"
+    "label": "تصفية وفرز"
   },
   "list": {
     "empty": "لا توجد سيشنات",

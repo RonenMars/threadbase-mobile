@@ -24,8 +24,7 @@
     "claude": "Claude"
   },
   "filter": {
-    "label": "סנן ומיין",
-    "all": "הכל"
+    "label": "סנן ומיין"
   },
   "list": {
     "empty": "אין סשנים",

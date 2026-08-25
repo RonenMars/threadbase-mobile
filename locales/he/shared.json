@@ -12,6 +12,9 @@
     "title": "Threadbase"
   },
   "quickAccess": {
+    "tabs": {
+      "favorites": "מועדפים"
+    },
     "newSessionHere": "סשן חדש כאן",
     "browseDirectory": "עיין בתיקייה",
     "openSession": "פתח סשן",

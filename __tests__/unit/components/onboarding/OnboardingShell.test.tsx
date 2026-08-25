@@ -13,7 +13,7 @@ const renderShell = (direction: 1 | -1 | 0 = 0) => render(
     onNext={jest.fn()}
     onBack={jest.fn()}
     onSkip={jest.fn()}
-    skipLabelKey="shell.pairLater"
+    skipLabel="pairLater"
   >
     <Text>Step</Text>
   </OnboardingShell>,
@@ -27,6 +27,13 @@ function getEnteringAnimation(result: Awaited<ReturnType<typeof renderShell>>) {
 }
 
 describe('OnboardingShell RTL navigation', () => {
+  it('renders the semantic pair-later label', async () => {
+    await i18n.changeLanguage('en')
+    const { getByText } = await renderShell()
+
+    expect(getByText('Pair later')).toBeTruthy()
+  })
+
   it('keeps Back at the LTR start edge with a left-pointing arrow', async () => {
     await i18n.changeLanguage('en')
     const { getByTestId, queryByTestId } = await renderShell()

@@ -12,6 +12,9 @@
     "title": "Threadbase"
   },
   "quickAccess": {
+    "tabs": {
+      "favorites": "Избранное"
+    },
     "newSessionHere": "Новая сессия здесь",
     "browseDirectory": "Просмотреть директорию",
     "openSession": "Открыть сессию",

@@ -53,26 +53,26 @@ export interface SessionCapabilities {
   isObserveOnly: boolean
 }
 
-export type SessionStatusLabelKey =
-  | 'status.running'
-  | 'status.waiting'
-  | 'status.idle'
-  | 'status.externalLive'
-  | 'status.historical'
-  | 'status.interrupted'
-  | 'status.interruptedWaiting'
-  | 'status.resumed'
-  | 'status.onHold'
-  | 'status.completed'
-  | 'status.failed'
-  | 'status.unavailablePath'
-  | 'status.unavailableWorktree'
-  | 'status.stale'
-  | 'status.starting'
+export type SessionStatusLabel =
+  | 'running'
+  | 'waiting'
+  | 'idle'
+  | 'externalLive'
+  | 'historical'
+  | 'interrupted'
+  | 'interruptedWaiting'
+  | 'resumed'
+  | 'onHold'
+  | 'completed'
+  | 'failed'
+  | 'unavailablePath'
+  | 'unavailableWorktree'
+  | 'stale'
+  | 'starting'
 
 export interface SessionPresentation {
   kind: SessionKind
-  labelKey: SessionStatusLabelKey
+  statusLabel: SessionStatusLabel
   live: boolean
   externalLive: boolean
   colorToken: SessionColorToken
@@ -194,7 +194,7 @@ function classifySession(
   if (session.lifecycle === 'starting') {
     return {
       kind: 'starting',
-      labelKey: 'status.starting',
+      statusLabel: 'starting',
       live: false,
       externalLive: false,
       colorToken: 'running',
@@ -207,7 +207,7 @@ function classifySession(
   if (status === 'on_hold') {
     return {
       kind: 'on_hold',
-      labelKey: 'status.onHold',
+      statusLabel: 'onHold',
       live: false,
       externalLive: false,
       colorToken: 'waiting',
@@ -222,10 +222,10 @@ function classifySession(
   if (session.lifecycle === 'completed' || session.lifecycle === 'failed') {
     return {
       kind: 'completed',
-      labelKey:
+      statusLabel:
         session.lifecycle === 'failed' || session.failureReason
-          ? 'status.failed'
-          : 'status.completed',
+          ? 'failed'
+          : 'completed',
       live: false,
       externalLive: false,
       colorToken:
@@ -240,7 +240,7 @@ function classifySession(
     if (status === 'failed' || session.failureReason) {
       return {
         kind: 'completed',
-        labelKey: 'status.failed',
+        statusLabel: 'failed',
         live: false,
         externalLive: false,
         colorToken: 'failed',
@@ -251,7 +251,7 @@ function classifySession(
     }
     return {
       kind: 'completed',
-      labelKey: 'status.completed',
+      statusLabel: 'completed',
       live: false,
       externalLive: false,
       colorToken: 'completed',
@@ -264,7 +264,7 @@ function classifySession(
   if (externalAlive) {
     return {
       kind: 'external_live',
-      labelKey: 'status.externalLive',
+      statusLabel: 'externalLive',
       live: true,
       externalLive: true,
       colorToken: 'completed',
@@ -277,7 +277,7 @@ function classifySession(
   if (external && session.processLiveness === 'gone') {
     return {
       kind: 'stale',
-      labelKey: 'status.stale',
+      statusLabel: 'stale',
       live: false,
       externalLive: false,
       colorToken: 'idle',
@@ -299,15 +299,15 @@ function classifySession(
     // is the streamer telling us what it was actually doing when it stopped it.
     // Label only — kind, colour and capabilities stay put, so the row is still
     // idle and still needs a resume tap.
-    const historicalLabelKey: SessionStatusLabelKey =
+    const historicalStatusLabel: SessionStatusLabel =
       session.interruptedStatus === 'running'
-        ? 'status.interrupted'
+        ? 'interrupted'
         : session.interruptedStatus === 'waiting_input'
-          ? 'status.interruptedWaiting'
-          : 'status.historical'
+          ? 'interruptedWaiting'
+          : 'historical'
     return {
       kind: 'historical',
-      labelKey: historicalLabelKey,
+      statusLabel: historicalStatusLabel,
       live: false,
       externalLive: false,
       colorToken: 'idle',
@@ -324,7 +324,7 @@ function classifySession(
     if (resumed) {
       return {
         kind: 'resumed',
-        labelKey: 'status.resumed',
+        statusLabel: 'resumed',
         live: true,
         externalLive: false,
         colorToken: status === 'waiting_input' ? 'waiting' : 'running',
@@ -335,7 +335,7 @@ function classifySession(
     }
     return {
       kind: 'managed_live',
-      labelKey: status === 'waiting_input' ? 'status.waiting' : 'status.running',
+      statusLabel: status === 'waiting_input' ? 'waiting' : 'running',
       live: true,
       externalLive: false,
       colorToken: status === 'waiting_input' ? 'waiting' : 'running',
@@ -347,7 +347,7 @@ function classifySession(
 
   return {
     kind: 'idle',
-    labelKey: 'status.idle',
+    statusLabel: 'idle',
     live: false,
     externalLive: false,
     colorToken: 'idle',
@@ -363,10 +363,10 @@ export function deriveConversationPresentation(
   if (conversation.resumable === false && conversation.unavailableReason) {
     return {
       kind: 'unavailable',
-      labelKey:
+      statusLabel:
         conversation.unavailableReason === 'worktree_removed'
-          ? 'status.unavailableWorktree'
-          : 'status.unavailablePath',
+          ? 'unavailableWorktree'
+          : 'unavailablePath',
       live: false,
       externalLive: false,
       colorToken: 'failed',

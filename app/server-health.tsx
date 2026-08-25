@@ -266,7 +266,7 @@ function CheckCard({
 }) {
   const { t } = useTranslation('servers')
   const s = useMemo(() => styles(theme), [theme])
-  const showRemediation = needsRemediation(check.remediation)
+  const remediation = check.remediation
 
   const checkTitle = (() => {
     switch (check.id) {
@@ -287,51 +287,52 @@ function CheckCard({
     }
   })()
 
-  const remediationTitle = (() => {
-    switch (check.remediation) {
-      case 'PROVIDER_NOT_INSTALLED':
-        return t('health.remediation.PROVIDER_NOT_INSTALLED.title')
-      case 'PROVIDER_VERSION_UNVERIFIED':
-        return t('health.remediation.PROVIDER_VERSION_UNVERIFIED.title')
-      case 'DB_UNAVAILABLE':
-        return t('health.remediation.DB_UNAVAILABLE.title')
-      case 'DB_MIGRATION_PENDING':
-        return t('health.remediation.DB_MIGRATION_PENDING.title')
-      case 'PTY_UNAVAILABLE':
-        return t('health.remediation.PTY_UNAVAILABLE.title')
-      case 'CACHE_DEGRADED':
-        return t('health.remediation.CACHE_DEGRADED.title')
-      case 'CLOCK_SKEWED':
-        return t('health.remediation.CLOCK_SKEWED.title')
-      case 'FS_SCOPE_MISSING':
-        return t('health.remediation.FS_SCOPE_MISSING.title')
-      case 'NONE':
-        return t('health.remediation.NONE.title')
-    }
-  })()
-
-  const remediationAction = (() => {
-    switch (check.remediation) {
-      case 'PROVIDER_NOT_INSTALLED':
-        return t('health.remediation.PROVIDER_NOT_INSTALLED.action')
-      case 'PROVIDER_VERSION_UNVERIFIED':
-        return t('health.remediation.PROVIDER_VERSION_UNVERIFIED.action')
-      case 'DB_UNAVAILABLE':
-        return t('health.remediation.DB_UNAVAILABLE.action')
-      case 'DB_MIGRATION_PENDING':
-        return t('health.remediation.DB_MIGRATION_PENDING.action')
-      case 'PTY_UNAVAILABLE':
-        return t('health.remediation.PTY_UNAVAILABLE.action')
-      case 'CACHE_DEGRADED':
-        return t('health.remediation.CACHE_DEGRADED.action')
-      case 'CLOCK_SKEWED':
-        return t('health.remediation.CLOCK_SKEWED.action')
-      case 'FS_SCOPE_MISSING':
-        return t('health.remediation.FS_SCOPE_MISSING.action')
-      case 'NONE':
-        return t('health.remediation.NONE.action')
-    }
-  })()
+  const remediationCopy = needsRemediation(remediation)
+    ? (() => {
+        switch (remediation) {
+          case 'PROVIDER_NOT_INSTALLED':
+            return {
+              title: t('health.remediation.PROVIDER_NOT_INSTALLED.title'),
+              action: t('health.remediation.PROVIDER_NOT_INSTALLED.action'),
+            }
+          case 'PROVIDER_VERSION_UNVERIFIED':
+            return {
+              title: t('health.remediation.PROVIDER_VERSION_UNVERIFIED.title'),
+              action: t('health.remediation.PROVIDER_VERSION_UNVERIFIED.action'),
+            }
+          case 'DB_UNAVAILABLE':
+            return {
+              title: t('health.remediation.DB_UNAVAILABLE.title'),
+              action: t('health.remediation.DB_UNAVAILABLE.action'),
+            }
+          case 'DB_MIGRATION_PENDING':
+            return {
+              title: t('health.remediation.DB_MIGRATION_PENDING.title'),
+              action: t('health.remediation.DB_MIGRATION_PENDING.action'),
+            }
+          case 'PTY_UNAVAILABLE':
+            return {
+              title: t('health.remediation.PTY_UNAVAILABLE.title'),
+              action: t('health.remediation.PTY_UNAVAILABLE.action'),
+            }
+          case 'CACHE_DEGRADED':
+            return {
+              title: t('health.remediation.CACHE_DEGRADED.title'),
+              action: t('health.remediation.CACHE_DEGRADED.action'),
+            }
+          case 'CLOCK_SKEWED':
+            return {
+              title: t('health.remediation.CLOCK_SKEWED.title'),
+              action: t('health.remediation.CLOCK_SKEWED.action'),
+            }
+          case 'FS_SCOPE_MISSING':
+            return {
+              title: t('health.remediation.FS_SCOPE_MISSING.title'),
+              action: t('health.remediation.FS_SCOPE_MISSING.action'),
+            }
+        }
+      })()
+    : null
 
   const statusLabel = (() => {
     switch (check.status) {
@@ -364,11 +365,11 @@ function CheckCard({
             </Text>
           ))
         : null}
-      {showRemediation ? (
-        <View style={s.remediationBox} testID={`server-health-remediation-${check.remediation}`}>
-          <Text style={s.remediationCode}>{check.remediation}</Text>
-          <Text style={s.remediationTitle}>{remediationTitle}</Text>
-          <Text style={s.remediationAction}>{remediationAction}</Text>
+      {remediationCopy ? (
+        <View style={s.remediationBox} testID={`server-health-remediation-${remediation}`}>
+          <Text style={s.remediationCode}>{remediation}</Text>
+          <Text style={s.remediationTitle}>{remediationCopy.title}</Text>
+          <Text style={s.remediationAction}>{remediationCopy.action}</Text>
         </View>
       ) : null}
     </View>

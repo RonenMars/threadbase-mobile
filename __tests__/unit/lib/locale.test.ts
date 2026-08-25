@@ -1,11 +1,20 @@
 import i18next from 'i18next'
 import {
+  getSupportedLocaleLabel,
   isRTLLocale,
   resolveSupportedLocale,
   SUPPORTED_LOCALES,
 } from '@/lib/locale'
 
 describe('locale', () => {
+  it('resolves every locale code to its translated display label', () => {
+    const t = i18next.getFixedT('en', 'settings')
+    expect(getSupportedLocaleLabel('en', t)).toBe('English')
+    expect(getSupportedLocaleLabel('he', t)).toBe('עברית')
+    expect(getSupportedLocaleLabel('ar', t)).toBe('العربية')
+    expect(getSupportedLocaleLabel('ru', t)).toBe('Русский')
+  })
+
   it('selects the first supported device preference', () => {
     expect(
       resolveSupportedLocale([
@@ -25,10 +34,10 @@ describe('locale', () => {
   // silently disagree with the one the UI actually renders from.
   it('lists every supported locale without duplicating its direction', () => {
     expect(SUPPORTED_LOCALES).toEqual([
-      { code: 'en', labelKey: 'language.english' },
-      { code: 'he', labelKey: 'language.hebrew' },
-      { code: 'ar', labelKey: 'language.arabic' },
-      { code: 'ru', labelKey: 'language.russian' },
+      { code: 'en' },
+      { code: 'he' },
+      { code: 'ar' },
+      { code: 'ru' },
     ])
   })
 

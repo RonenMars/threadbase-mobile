@@ -24,8 +24,7 @@
     "claude": "Claude"
   },
   "filter": {
-    "label": "Filter & Sort",
-    "all": "All"
+    "label": "Filter & Sort"
   },
   "list": {
     "empty": "No sessions",

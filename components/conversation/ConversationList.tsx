@@ -216,7 +216,7 @@ export function ConversationList({
         loaded={loadingProgress?.loaded ?? 0}
         total={loadingProgress?.total ?? 0}
         done={!loadingProgress}
-        labelKey="loading.conversationsLabel"
+        progressLabel="conversations"
       />
 
       <Animated.FlatList

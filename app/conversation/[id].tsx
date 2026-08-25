@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   View,
   Text,
@@ -56,17 +57,20 @@ const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`
 // a 3s tick converges without a ?refresh=1 or over-fetching.
 const LIVE_POLL_INTERVAL_MS = 3000
 
-// The streamer names how it detected an active writer. Written out rather than
-// assembled as t(`resume.reason.${d}`) so the keys stay visible to
-// `i18next-cli status --unused`; `detectedBy` is a string[] off the wire, so a
-// method this build doesn't know falls back to the generic sentence.
-const RESUME_REASON_KEYS = {
-  file_handle: 'resume.reason.file_handle',
-  jsonl_mtime: 'resume.reason.jsonl_mtime',
-  process_argv: 'resume.reason.process_argv',
-  process_cwd: 'resume.reason.process_cwd',
-  unknown: 'resume.reason.unknown',
-} as const
+function getResumeReasonLabel(reason: string, t: TFunction<['conversation', 'common']>): string {
+  switch (reason) {
+    case 'file_handle':
+      return t('conversation:resume.reason.file_handle')
+    case 'jsonl_mtime':
+      return t('conversation:resume.reason.jsonl_mtime')
+    case 'process_argv':
+      return t('conversation:resume.reason.process_argv')
+    case 'process_cwd':
+      return t('conversation:resume.reason.process_cwd')
+    default:
+      return t('conversation:resume.reason.unknown')
+  }
+}
 
 interface SearchTargetResponse {
   query: string
@@ -566,9 +570,7 @@ export default function ConversationDetailScreen() {
               const entries = err.detectedBy.length > 0 ? err.detectedBy : ['unknown']
               const reasons = Array.from(
                 new Set(
-                  entries.map((d) =>
-                    t(RESUME_REASON_KEYS[d as keyof typeof RESUME_REASON_KEYS] ?? RESUME_REASON_KEYS.unknown),
-                  ),
+                  entries.map((reason) => getResumeReasonLabel(reason, t)),
                 ),
               ).join('; ')
               // Codex enforces its own single-writer lock, so a confirmed Codex

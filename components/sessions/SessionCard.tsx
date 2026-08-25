@@ -25,6 +25,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
+import { getSessionStatusLabel } from './sessionStatusLabel'
 
 interface Props {
   session: MultiSession
@@ -72,7 +73,10 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const presentedSession: SessionPresentationInput = legacyDiscovered
     ? { ...session, ownership: 'external', processLiveness: 'alive' }
     : session
-  const statusLabel = t(deriveSessionPresentation(presentedSession).labelKey)
+  const statusLabel = getSessionStatusLabel(
+    deriveSessionPresentation(presentedSession).statusLabel,
+    t,
+  )
   // Brand thread spine: amber for live (running / waiting_input), blue for an
   // alive external (observed) session, then the server's assigned identity
   // color when multi-server (so you can see at a glance which server the card

@@ -1,18 +1,27 @@
+import type { TFunction } from 'i18next'
 import { localeDirection } from './rtl'
 
 export type SupportedLocale = 'en' | 'he' | 'ar' | 'ru'
 
-type SupportedLocaleMetadata = {
-  code: SupportedLocale
-  labelKey: 'language.english' | 'language.hebrew' | 'language.arabic' | 'language.russian'
-}
+export const SUPPORTED_LOCALES = [
+  { code: 'en' },
+  { code: 'he' },
+  { code: 'ar' },
+  { code: 'ru' },
+] as const satisfies readonly { code: SupportedLocale }[]
 
-export const SUPPORTED_LOCALES: readonly SupportedLocaleMetadata[] = [
-  { code: 'en', labelKey: 'language.english' },
-  { code: 'he', labelKey: 'language.hebrew' },
-  { code: 'ar', labelKey: 'language.arabic' },
-  { code: 'ru', labelKey: 'language.russian' },
-]
+export function getSupportedLocaleLabel(locale: SupportedLocale, t: TFunction<'settings'>): string {
+  switch (locale) {
+    case 'en':
+      return t('language.english')
+    case 'he':
+      return t('language.hebrew')
+    case 'ar':
+      return t('language.arabic')
+    case 'ru':
+      return t('language.russian')
+  }
+}
 
 export function resolveSupportedLocale(
   deviceLocales: readonly { languageCode?: string | null }[],
