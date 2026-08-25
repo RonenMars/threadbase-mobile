@@ -227,6 +227,7 @@ export function SplashAnimation({ onComplete }: Props) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    direction: 'ltr',
     backgroundColor: COLORS.bg,
     justifyContent: 'center',
     zIndex: 9999,
