@@ -6,6 +6,9 @@ import {
   AuthError,
   NotFoundError,
   QUESTION_GONE_CODE,
+  PROMPT_PENDING_CODE,
+  isAnswerRefusedError,
+  isPromptPendingError,
 } from '@/services/api-client'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
@@ -441,5 +444,69 @@ describe('a 401 is an AuthError at every entry point, never a retried network fa
       resolveCacheAlert('srv_test', { fingerprint: 'fp', action: 'ignore' }),
     ).rejects.toBeInstanceOf(AuthError)
     expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+})
+
+// The fallback above is not a 409 rule. POST /answer refuses an answer shape it
+// cannot write with a 400 that carries `reason` the same way, and POST /input
+// refuses composer text over an open card with a 409 `prompt_pending`. Both
+// carry a human-readable `error`, which is what the client shows; if either
+// were dropped here, the caller would see a generic failure and retry a
+// deterministic refusal.
+describe('api.post – reason fallback on the prompt-safety refusals', () => {
+  it('maps a 400 unsupported_prompt_shape to code, keeping the server guidance as the message', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: jest.fn().mockResolvedValue({
+        ok: false,
+        reason: 'unsupported_prompt_shape',
+        error: 'This question has more than one part; answer it in the terminal',
+      }),
+    })
+
+    const err = await api.post('/api/sessions/sess1/answer', { toolUseId: 't1', answers: {} }).catch((e: Error) => e)
+    expect(err).toBeInstanceOf(NetworkError)
+    expect((err as NetworkError).code).toBe('unsupported_prompt_shape')
+    expect((err as NetworkError).message).toBe('This question has more than one part; answer it in the terminal')
+    expect(isAnswerRefusedError(err as Error)).toBe(true)
+  })
+
+  it('maps a 400 incomplete_answer the same way', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: jest.fn().mockResolvedValue({ ok: false, reason: 'incomplete_answer', error: 'Pick an option' }),
+    })
+
+    const err = await api.post('/api/sessions/sess1/answer', { toolUseId: 't1', answers: {} }).catch((e: Error) => e)
+    expect(isAnswerRefusedError(err as Error)).toBe(true)
+    expect((err as NetworkError).message).toBe('Pick an option')
+  })
+
+  it('maps a 409 prompt_pending to code, keeping the server message', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({
+        ok: false,
+        reason: 'prompt_pending',
+        promptKind: 'permission',
+        error: 'A prompt is waiting for an answer; answer or dismiss it before sending text',
+      }),
+    })
+
+    const err = await api.post('/api/sessions/sess1/input', { input: 'hello' }).catch((e: Error) => e)
+    expect((err as NetworkError).code).toBe(PROMPT_PENDING_CODE)
+    expect((err as NetworkError).message).toBe('A prompt is waiting for an answer; answer or dismiss it before sending text')
+    expect(isPromptPendingError(err as Error)).toBe(true)
+  })
+
+  // Negative controls: the classifiers key on the code, not on the status class.
+  it('does not classify other 400/409 reasons as a refusal or a pending prompt', () => {
+    expect(isAnswerRefusedError(new NetworkError('Server returned 400', 'no_pending_question'))).toBe(false)
+    expect(isPromptPendingError(new NetworkError('Server returned 409', 'gate_closed'))).toBe(false)
+    expect(isAnswerRefusedError(new NetworkError('Server returned 400'))).toBe(false)
+    expect(isPromptPendingError(null)).toBe(false)
   })
 })

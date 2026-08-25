@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { isQuestionClosedError, NetworkError, QUESTION_GONE_CODE } from '@/services/api-client'
+import { isAnswerRefusedError, isQuestionClosedError, NetworkError, QUESTION_GONE_CODE } from '@/services/api-client'
 
 const mockPost = jest.fn().mockResolvedValue({})
 jest.mock('@/services/api-client', () => {
@@ -82,6 +82,29 @@ describe('respondToQuestion', () => {
       await waitFor(() => expect(result.current.respondToQuestion.isError).toBe(true), { timeout: 10000 })
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(isQuestionClosedError(result.current.respondToQuestion.error)).toBe(true)
+    },
+    15000,
+  )
+
+  // A 400 for an answer shape the server will not write (multi-question form,
+  // multi-select, missing answer). Deterministic, so no retry — but the
+  // question is still open and answerable in the terminal, so it must NOT read
+  // as closed: the card stays up, and `message` is the server's guidance.
+  it.each(['unsupported_prompt_shape', 'incomplete_answer'])(
+    'settles %s on the first reply, neither retried nor classified as closed',
+    async (code) => {
+      mockPost.mockRejectedValue(new NetworkError('Answer this one in the terminal', code))
+      const { result } = await renderHook(() => useSessionActions('srv1', 'sess1'), { wrapper })
+
+      await act(async () => {
+        result.current.respondToQuestion.mutate({ toolUseId: 't1', answers: { 'Q?': 'A' } })
+      })
+
+      await waitFor(() => expect(result.current.respondToQuestion.isError).toBe(true), { timeout: 10000 })
+      expect(mockPost).toHaveBeenCalledTimes(1)
+      expect(isQuestionClosedError(result.current.respondToQuestion.error)).toBe(false)
+      expect(isAnswerRefusedError(result.current.respondToQuestion.error)).toBe(true)
+      expect((result.current.respondToQuestion.error as NetworkError).message).toBe('Answer this one in the terminal')
     },
     15000,
   )

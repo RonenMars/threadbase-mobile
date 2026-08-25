@@ -209,7 +209,7 @@ export function useActiveQuestionReducer(sessionId: string) {
     } else if (msg.type === 'permission') {
       const key = gateKey(msg)
       if (dismissedKey.current === key) return
-      accept(key, mapPermissionToBlock(msg.prompt, msg.options, msg.cursor, msg.detail, msg.contentKey))
+      accept(key, mapPermissionToBlock(msg.prompt, msg.options, msg.cursor, msg.detail, msg.contentKey, msg.gateId))
     } else if (msg.type === 'permission_cancelled') {
       dismissedKey.current = null
       if (cardRef.current?.prompt.source === 'permission') commit(null)

@@ -325,6 +325,13 @@ export interface PermissionWsMessage {
    * too old to have the validated route at all.
    */
   contentKey?: string
+  /**
+   * Server-owned identity of this gate *instance*. The same contentKey recurs
+   * when an identical gate reopens; gateId never does. Opaque, echoed back on
+   * POST /permission/answer next to contentKey. Additive: absent on streamers
+   * that predate it, which answer on contentKey alone.
+   */
+  gateId?: string
 }
 
 export interface PermissionCancelledWsMessage {

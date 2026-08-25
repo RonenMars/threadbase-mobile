@@ -42,6 +42,11 @@ export interface QuestionBlock {
    * send one, which is also the signal that the route does not exist.
    */
   permissionContentKey?: string
+  /**
+   * Permission-gate only: the server's per-instance id for this gate, echoed
+   * back next to permissionContentKey. Absent on streamers that predate it.
+   */
+  permissionGateId?: string
 }
 
 const QUESTION_RE = /^\?\s+(.+)$/
