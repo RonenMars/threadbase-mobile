@@ -1,6 +1,12 @@
 import type { TFunction } from 'i18next'
 import { PairExchangeError, PairUriError } from '@/services/pair-exchange'
 
+function resolveUnknownPairFailure(value: never, t: TFunction<'pair'>): string {
+  // Runtime payloads can be ahead of this client even though known local variants are exhaustive.
+  void value
+  return t('scanner.errors.generic')
+}
+
 /** User-facing copy for a pairing failure. Same sentences on scan, deep link, and paste. */
 export function resolvePairFailureMessage(err: Error, t: TFunction<'pair'>): string {
   // A streamer ahead of this build can send a code this app has never heard of;
@@ -16,7 +22,7 @@ export function resolvePairFailureMessage(err: Error, t: TFunction<'pair'>): str
       case 'bad-server-key':
         return t('scanner.errors.uri.bad-server-key')
       default:
-        return t('scanner.errors.generic')
+        return resolveUnknownPairFailure(err.code, t)
     }
   }
   if (err instanceof PairExchangeError) {
@@ -44,7 +50,7 @@ export function resolvePairFailureMessage(err: Error, t: TFunction<'pair'>): str
       case 'e2ee-web-unsupported':
         return t('scanner.errors.exchange.e2ee-web-unsupported')
       default:
-        return t('scanner.errors.generic')
+        return resolveUnknownPairFailure(err.kind, t)
     }
   }
   return t('scanner.errors.generic')
