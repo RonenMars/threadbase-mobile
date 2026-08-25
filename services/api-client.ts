@@ -172,6 +172,37 @@ export function isPermissionClosedError(err: Error | null): boolean {
   return err instanceof NetworkError && err.code !== undefined && PERMISSION_CLOSED_CODES.includes(err.code)
 }
 
+/**
+ * Reason POST /api/sessions/:id/input gives on a 409 when composer text was
+ * refused because a permission gate or AskUserQuestion is open: the PTY's
+ * cursor is on the picker, so the text would have committed the highlighted
+ * option. Zero bytes were written. Retrying cannot help — the card has to be
+ * answered or dismissed first — and the draft must stay in the composer.
+ */
+export const PROMPT_PENDING_CODE = 'prompt_pending'
+
+export function isPromptPendingError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code === PROMPT_PENDING_CODE
+}
+
+/**
+ * Reasons POST /answer gives on a 400 for an answer this client cannot give in
+ * a shape the server will write: a multi-question form or multi-select
+ * question (`unsupported_prompt_shape`), or a missing answer
+ * (`incomplete_answer`). The question is still open — it can be answered in the
+ * terminal — so these are deliberately NOT closed codes: the card stays up and
+ * `message` carries the server's guidance. They are deterministic, so a retry
+ * only delays the message.
+ */
+const ANSWER_REFUSED_CODES: readonly string[] = [
+  'unsupported_prompt_shape',
+  'incomplete_answer',
+]
+
+export function isAnswerRefusedError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code !== undefined && ANSWER_REFUSED_CODES.includes(err.code)
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.

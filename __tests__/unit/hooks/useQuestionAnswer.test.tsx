@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
 import { NetworkError } from '@/services/api-client'
-import type { PermissionWsMessage } from '@/types/api'
+import type { PermissionWsMessage, QuestionWsMessage } from '@/types/api'
 
 type ClientHandler = (msg: unknown) => void
 
@@ -130,4 +130,96 @@ describe('useQuestionAnswer – the mutations it was given', () => {
     expect(result.current.answerErrorMessage).toBe('Server returned 500')
     expect(result.current.answerNoticeMessage).toBeNull()
   })
+})
+
+describe('useQuestionAnswer – gate identity on the answer', () => {
+  // The server's per-instance id travels from the WS frame, through the card,
+  // into the answer next to contentKey. contentKey stays: a streamer that
+  // predates gateId answers on it alone, and the fallback keys are unchanged.
+  it('echoes the gateId the gate arrived with', async () => {
+    const { result, answerPermission } = await setup()
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-instance-7' }))
+    await act(async () => { await result.current.handleAnswerPermission(1) })
+
+    expect(answerPermission.mutateAsync).toHaveBeenCalledWith({
+      contentKey: gate.contentKey,
+      gateId: 'gate-instance-7',
+      optionIndex: 1,
+      keys: '2\r',
+    })
+  })
+
+  // Old streamer: no gateId on the wire, none on the answer.
+  it('sends no gateId when the gate carried none', async () => {
+    const { result, answerPermission } = await setup()
+    await act(() => __wsTest.emit('permission', gate))
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+
+    expect(answerPermission.mutateAsync.mock.calls[0][0].gateId).toBeUndefined()
+  })
+})
+
+const question: QuestionWsMessage = {
+  type: 'question',
+  sessionId: 's1',
+  toolUseId: 'tool-1',
+  questions: [
+    { question: 'Which language?', header: 'Language', multiSelect: false, options: [
+      { label: 'TypeScript', description: '' },
+      { label: 'Go', description: '' },
+    ] },
+  ],
+}
+
+describe('useQuestionAnswer – an answer the server refuses to write', () => {
+  // 400 unsupported_prompt_shape / incomplete_answer: the question is still
+  // open on the host and can be answered in the terminal. Clearing the card
+  // here would hide the one thing that tells the user that.
+  it.each(['unsupported_prompt_shape', 'incomplete_answer'])(
+    'keeps the card up on %s',
+    async (code) => {
+      const refused = mutation({
+        mutateAsync: jest.fn().mockRejectedValue(new NetworkError('Answer this one in the terminal', code)),
+      })
+      const { result } = await setup({ respondToQuestion: refused })
+      await act(() => __wsTest.emit('question', question))
+      expect(result.current.activeQuestion).not.toBeNull()
+
+      await act(async () => {
+        await result.current.handleAnswerQuestion('tool-1', { 'Which language?': 'TypeScript' })
+      })
+
+      expect(refused.mutateAsync).toHaveBeenCalledTimes(1)
+      expect(result.current.activeQuestion).not.toBeNull()
+      expect(result.current.answerPhase).toBe('active')
+    },
+  )
+
+  // Negative control: a closed question DOES clear the card through the same
+  // handler — so the case above passes because of the code, not because the
+  // handler never clears anything.
+  it('clears the card on question_gone through the same handler', async () => {
+    const closed = mutation({
+      mutateAsync: jest.fn().mockRejectedValue(new NetworkError('Server returned 409', 'question_gone')),
+    })
+    const { result } = await setup({ respondToQuestion: closed })
+    await act(() => __wsTest.emit('question', question))
+    expect(result.current.activeQuestion).not.toBeNull()
+
+    await act(async () => {
+      await result.current.handleAnswerQuestion('tool-1', { 'Which language?': 'TypeScript' })
+    })
+
+    expect(result.current.activeQuestion).toBeNull()
+  })
+
+  it.each(['unsupported_prompt_shape', 'incomplete_answer'])(
+    'shows the server guidance for %s as the error, not the closed notice',
+    async (code) => {
+      const refused = mutation({ isError: true, error: new NetworkError('Answer this one in the terminal', code) })
+      const { result } = await setup({ respondToQuestion: refused })
+      expect(result.current.answerErrorMessage).toBe('Answer this one in the terminal')
+      expect(result.current.answerNoticeMessage).toBeNull()
+    },
+  )
 })

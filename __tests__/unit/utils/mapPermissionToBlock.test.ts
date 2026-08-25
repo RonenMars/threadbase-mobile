@@ -52,4 +52,28 @@ describe('mapPermissionToBlock', () => {
     )
     expect(block.questions[0].detail).toBeUndefined()
   })
+
+  it('carries the server gateId alongside the content key', () => {
+    const block = mapPermissionToBlock(
+      'Do you want to proceed?',
+      [{ index: 1, label: 'Yes' }],
+      undefined,
+      undefined,
+      'Do you want to proceed?::::1.Yes',
+      'gate-instance-7'
+    )
+    expect(block.permissionContentKey).toBe('Do you want to proceed?::::1.Yes')
+    expect(block.permissionGateId).toBe('gate-instance-7')
+  })
+
+  it('omits permissionGateId when the streamer sent none', () => {
+    const block = mapPermissionToBlock(
+      'Do you want to proceed?',
+      [{ index: 1, label: 'Yes' }],
+      undefined,
+      undefined,
+      'Do you want to proceed?::::1.Yes'
+    )
+    expect(block).not.toHaveProperty('permissionGateId')
+  })
 })

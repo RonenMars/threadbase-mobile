@@ -7,7 +7,9 @@
  *    back over the WebSocket.
  */
 import React from 'react'
+import { Alert } from 'react-native'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
+import { NetworkError } from '@/services/api-client'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { createWrapper } from '@/test-utils'
 import type { Message } from '@/types/api'
@@ -16,6 +18,9 @@ const mockMutate = jest.fn()
 const mockMutateAsync = jest.fn(async (payload: string) => {
   mockMutate(payload, {})
 })
+// Settled state of the send mutation, read during render for the inline
+// composer error. Mutable so a test can stand in for "the last send failed".
+let mockSendInputState: { isError: boolean; error: Error | null } = { isError: false, error: null }
 
 // MessageItem has no stable per-message testID exposing its text (only row-level
 // testIDs for the last/search-anchor rows), so render order can't be asserted
@@ -51,8 +56,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendInput: {
       mutate: mockMutate,
       mutateAsync: mockMutateAsync,
-      isError: false,
-      error: null,
+      ...mockSendInputState,
     },
     sendKeys: { mutate: jest.fn() },
     respondToQuestion: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
@@ -250,5 +254,77 @@ describe('LiveConversationView — optimistic sent message', () => {
 
     const texts = screen.getAllByTestId('message-text').map((n) => n.props.children)
     expect(texts).toEqual(['first', 'second', 'live-third'])
+  })
+})
+
+// POST /input answered 409 prompt_pending: a card is open on the host and the
+// text was refused before any byte was written. Reached in the window before
+// the card's own WS frame lands (once it has, send is disabled locally). The
+// draft stays, no alert takes the focus, and the list jumps back to its tail —
+// the card is the list footer in this view — with the server's message shown
+// inline under the composer. (The composer itself drops the keyboard on send.)
+describe('LiveConversationView — text refused while a prompt is open', () => {
+  const PROMPT_PENDING_MESSAGE = 'A prompt is waiting for an answer; answer or dismiss it before sending text'
+  let alertSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    mockMutate.mockClear()
+    mockMutateAsync.mockClear()
+    mockSendInputState = { isError: false, error: null }
+    mockHistorical = [
+      { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    mockLive = []
+    mockPtyLines = []
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    alertSpy.mockRestore()
+  })
+
+  // Drag first so the view has stopped following the tail: that is the state
+  // in which "jump back to the card" is observable (the jump button is only
+  // rendered while not following).
+  async function dragThenSend(text: string) {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScrollBeginDrag())
+    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent.changeText(input, text)
+    await act(async () => { fireEvent.press(screen.getByTestId('chat-send-button')) })
+    return input
+  }
+
+  it('keeps the draft, jumps to the tail, and raises no alert', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending'))
+
+    const input = await dragThenSend('keep me')
+
+    expect(mockMutateAsync).toHaveBeenCalledWith('keep me')
+    expect(input.props.value).toBe('keep me')
+    // No optimistic bubble is left behind for the refused text.
+    expect(screen.queryByText('keep me')).toBeNull()
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
+  })
+
+  // Positive control: an ordinary failure still alerts and leaves the scroll
+  // position alone.
+  it('still alerts and stays put on an ordinary send failure', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new NetworkError('Failed to reach server'))
+
+    const input = await dragThenSend('keep me')
+
+    expect(input.props.value).toBe('keep me')
+    expect(alertSpy).toHaveBeenCalledWith(expect.any(String), 'Failed to reach server')
+    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+  })
+
+  it('shows the server message inline under the composer once the send has settled', async () => {
+    mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
+    await renderView()
+    expect(screen.getByText(PROMPT_PENDING_MESSAGE)).toBeTruthy()
   })
 })

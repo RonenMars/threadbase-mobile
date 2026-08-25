@@ -20,7 +20,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 // a contract break the day permissionContentKey is rewritten.
 const CONTENT_KEY = 'Do you want to proceed?::Bash command::1.Yes,2.No'
 
-const answer = (over: Partial<{ contentKey?: string; optionIndex: number; keys: string | null }> = {}) => ({
+const answer = (over: Partial<{ contentKey?: string; gateId?: string; optionIndex: number; keys: string | null }> = {}) => ({
   contentKey: CONTENT_KEY,
   optionIndex: 0,
   keys: '1\r',
@@ -63,6 +63,41 @@ describe('answerPermission – validated route', () => {
       '/api/sessions/sess1/permission/answer',
       { contentKey: CONTENT_KEY, optionIndex: 0 },
     ))
+  })
+})
+
+describe('answerPermission – gate identity', () => {
+  beforeEach(() => {
+    mockPost.mockReset()
+    mockPost.mockResolvedValue({})
+  })
+
+  // The server's per-instance id goes next to contentKey, not instead of it:
+  // an identical gate reopening shares the contentKey, and the gateId is what
+  // stops an answer to the first from landing on the second.
+  it('POSTs the gateId next to the content key', async () => {
+    const { result } = await setup()
+    await act(async () => {
+      result.current.answerPermission.mutate(answer({ gateId: 'gate-instance-7', optionIndex: 1 }))
+    })
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledWith(
+      '/api/sessions/sess1/permission/answer',
+      { contentKey: CONTENT_KEY, gateId: 'gate-instance-7', optionIndex: 1 },
+    ))
+  })
+
+  // Old streamer: the wire body is byte-identical to before gateId existed.
+  // toStrictEqual, because toHaveBeenCalledWith would accept `gateId: undefined`
+  // as equal to no key at all, and the whole point is that no key is sent.
+  it('sends no gateId key at all when the gate carried none', async () => {
+    const { result } = await setup()
+    await act(async () => {
+      result.current.answerPermission.mutate(answer({ gateId: undefined }))
+    })
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+    expect(mockPost.mock.calls[0][1]).toStrictEqual({ contentKey: CONTENT_KEY, optionIndex: 0 })
   })
 })
 
