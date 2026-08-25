@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   Bug,
   Lightbulb,
@@ -50,13 +51,16 @@ const MIN_DESCRIPTION = 10
 type View3 = 'landing' | 'form' | 'success' | 'copyFallback'
 
 /** Generate a client-side report id without Date.now (deterministic-safe). */
-// Written out rather than assembled as t(`category.${cat}`) so the keys stay
-// visible to `i18next-cli status --unused`. Exhaustive over FeedbackCategory.
-const CATEGORY_KEYS = {
-  bug: 'category.bug',
-  feature: 'category.feature',
-  general: 'category.general',
-} as const satisfies Record<FeedbackCategory, string>
+function getFeedbackCategoryLabel(category: FeedbackCategory, t: TFunction<'feedback'>): string {
+  switch (category) {
+    case 'bug':
+      return t('category.bug')
+    case 'feature':
+      return t('category.feature')
+    case 'general':
+      return t('category.general')
+  }
+}
 
 function makeReportId(): string {
   const rand = Math.floor(Math.random() * 1e9).toString(36)
@@ -337,20 +341,23 @@ export default function HelpFeedbackScreen() {
         {/* Category selector */}
         <Text style={s.fieldLabel}>{t('category.label')}</Text>
         <View style={s.segmented}>
-          {(['bug', 'feature', 'general'] as const).map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[s.segmentBtn, category === cat && s.segmentBtnActive]}
-              onPress={() => setCategory(cat)}
-              accessibilityRole="button"
-              accessibilityLabel={t(CATEGORY_KEYS[cat])}
-              testID={`feedback-category-${cat}`}
-            >
-              <Text style={[s.segmentText, category === cat && s.segmentTextActive]}>
-                {t(CATEGORY_KEYS[cat])}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(['bug', 'feature', 'general'] as const).map((cat) => {
+            const label = getFeedbackCategoryLabel(cat, t)
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[s.segmentBtn, category === cat && s.segmentBtnActive]}
+                onPress={() => setCategory(cat)}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                testID={`feedback-category-${cat}`}
+              >
+                <Text style={[s.segmentText, category === cat && s.segmentTextActive]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
         </View>
 
         {/* Description */}

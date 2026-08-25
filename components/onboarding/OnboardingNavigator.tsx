@@ -191,7 +191,7 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
       onBack={onBack}
       onSkip={onSkip}
       showSkip={index === 2}
-      skipLabelKey="shell.pairLater"
+      skipLabel="pairLater"
     >
       {index === 0 && (
         <LanguageStep

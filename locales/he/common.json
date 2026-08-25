@@ -12,7 +12,6 @@
     "moreOptions": "אפשרויות נוספות"
   },
   "error": {
-    "loadFailed": "נכשל בטעינה",
     "authDeviceRevoked": "המכשיר הזה כבר אינו מורשה. בצע זיווג מחדש מול השרת.",
     "authKeyRejected": "השרת דחה את מפתח ה-API. עדכן את מפתח ה-API ונסה שוב.",
     "authKeyRejectedOnConnect": "השרת דחה את מפתח ה-API הזה. בדוק את THREADBASE_API_KEY בשרת שלך והדבק אותו שוב.",
@@ -22,9 +21,6 @@
     "attachFailed": "צירוף הקובץ נכשל. נסו שוב.",
     "cleartextBlocked": "הכתובת הזו היא HTTP רגיל ואינה נמצאת ברשת המקומית שלכם. השתמשו בכתובת https:// או הריצו tb serve --tunnel.",
     "unexpected": "אירעה שגיאה בלתי צפויה"
-  },
-  "search": {
-    "placeholder": "חיפוש…"
   },
   "favorite": {
     "add": "הוסף למועדפים",

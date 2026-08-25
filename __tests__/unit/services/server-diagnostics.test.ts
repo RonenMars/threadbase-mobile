@@ -1,6 +1,7 @@
 import {
   parseServerDiagnosticsReport,
   SERVER_DIAGNOSTICS_CONTRACT_VERSION,
+  type RemediationCode,
 } from '@/types/server-diagnostics'
 import {
   isSupportedDiagnosticsContract,
@@ -53,6 +54,10 @@ describe('parseServerDiagnosticsReport', () => {
 })
 
 describe('serverDiagnostics helpers', () => {
+  function actionableRemediation(code: RemediationCode): Exclude<RemediationCode, 'NONE'> | null {
+    return needsRemediation(code) ? code : null
+  }
+
   const report = parseServerDiagnosticsReport({
     contractVersion: 1,
     generatedAt: '2026-07-24T12:00:00.000Z',
@@ -75,6 +80,8 @@ describe('serverDiagnostics helpers', () => {
   it('needsRemediation ignores NONE', () => {
     expect(needsRemediation('NONE')).toBe(false)
     expect(needsRemediation('PTY_UNAVAILABLE')).toBe(true)
+    expect(actionableRemediation('NONE')).toBeNull()
+    expect(actionableRemediation('PTY_UNAVAILABLE')).toBe('PTY_UNAVAILABLE')
   })
 
   it('formats a sanitized plain-text report', () => {

@@ -22,8 +22,8 @@ describe('deriveSessionPresentation', () => {
       live: true,
       capabilities: { canSendInput: true, canCancel: true, isObserveOnly: false },
     })
-    expect(deriveSessionPresentation(base({ status: 'waiting_input' })).labelKey).toBe(
-      'status.waiting',
+    expect(deriveSessionPresentation(base({ status: 'waiting_input' })).statusLabel).toBe(
+      'waiting',
     )
   })
 
@@ -60,7 +60,7 @@ describe('deriveSessionPresentation', () => {
   it('marks on_hold and completed/failed from runtime status strings', () => {
     expect(deriveSessionPresentation(base({ status: 'on_hold' })).kind).toBe('on_hold')
     expect(deriveSessionPresentation(base({ status: 'completed' })).kind).toBe('completed')
-    expect(deriveSessionPresentation(base({ status: 'failed' })).labelKey).toBe('status.failed')
+    expect(deriveSessionPresentation(base({ status: 'failed' })).statusLabel).toBe('failed')
   })
 
   it('marks gone external processes as stale', () => {
@@ -87,7 +87,7 @@ describe('deriveSessionPresentation', () => {
       ),
     ).toMatchObject({
       kind: 'historical',
-      labelKey: 'status.historical',
+      statusLabel: 'historical',
       capabilities: { canResume: true, isObserveOnly: true },
     })
   })
@@ -95,12 +95,12 @@ describe('deriveSessionPresentation', () => {
   it('labels an interrupted historical session by what it was doing', () => {
     const historical = { status: 'idle', ownership: 'historical' as const, ptyAttached: false }
     expect(
-      deriveSessionPresentation(base({ ...historical, interruptedStatus: 'running' })).labelKey,
-    ).toBe('status.interrupted')
+      deriveSessionPresentation(base({ ...historical, interruptedStatus: 'running' })).statusLabel,
+    ).toBe('interrupted')
     expect(
       deriveSessionPresentation(base({ ...historical, interruptedStatus: 'waiting_input' }))
-        .labelKey,
-    ).toBe('status.interruptedWaiting')
+        .statusLabel,
+    ).toBe('interruptedWaiting')
   })
 
   it('keeps an interrupted session idle, resumable and grey', () => {
@@ -136,8 +136,8 @@ describe('deriveSessionPresentation', () => {
           lifecycle: 'failed',
           failureReason: 'boom',
         }),
-      ).labelKey,
-    ).toBe('status.failed')
+      ).statusLabel,
+    ).toBe('failed')
   })
 
   it('treats lifecycle resumable as historical (resume, observe-only)', () => {
@@ -159,7 +159,7 @@ describe('deriveSessionPresentation', () => {
       ),
     ).toMatchObject({
       kind: 'starting',
-      labelKey: 'status.starting',
+      statusLabel: 'starting',
       live: false,
     })
   })
@@ -170,7 +170,7 @@ describe('deriveSessionPresentation', () => {
         // @ts-expect-error — a newer streamer can emit a lifecycle this build has never heard of
         base({ status: 'idle', ptyAttached: false, lifecycle: 'quarantined' }),
       ),
-    ).toMatchObject({ kind: 'idle', labelKey: 'status.idle' })
+    ).toMatchObject({ kind: 'idle', statusLabel: 'idle' })
   })
 })
 
@@ -291,7 +291,7 @@ describe('deriveConversationPresentation', () => {
       }),
     ).toMatchObject({
       kind: 'unavailable',
-      labelKey: 'status.unavailablePath',
+      statusLabel: 'unavailablePath',
       capabilities: { canResume: false },
     })
   })

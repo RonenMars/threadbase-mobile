@@ -1,7 +1,4 @@
 {
-  "header": {
-    "title": "Servers"
-  },
   "status": {
     "connected": "Connected",
     "disconnected": "Disconnected",
@@ -299,10 +296,6 @@
       "FS_SCOPE_MISSING": {
         "title": "History folder missing",
         "action": "Ensure the provider has created its projects/history directory on the host, then retry."
-      },
-      "NONE": {
-        "title": "No action needed",
-        "action": ""
       }
     }
   },

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Animated, Easing, StyleSheet, View, Text } from 'react-native'
 import { CircleNotch } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -18,7 +19,7 @@ function DotsIndicator({ color }: { color: string }) {
 
 interface Props {
   visible: boolean
-  // One progress row, captioned by `labelKey`. It used to be two — a sessions
+  // One progress row, captioned by `progressLabel`. It used to be two — a sessions
   // row and a conversations row — but conversations load lazily now and a lazy
   // list has no total to report, so the Hub shows sessions and ConversationList
   // shows its own drain. Omit loaded/total to hide the row entirely.
@@ -26,8 +27,17 @@ interface Props {
   loaded?: number
   total?: number
   inFlightCount?: number
-  /** Caption key in the `sessions` namespace. */
-  labelKey?: 'loading.sessionsLabel' | 'loading.conversationsLabel'
+  /** Semantic owner of the progress being displayed. */
+  progressLabel?: 'sessions' | 'conversations'
+}
+
+function getProgressLabel(label: 'sessions' | 'conversations', t: TFunction<'sessions'>): string {
+  switch (label) {
+    case 'sessions':
+      return t('loading.sessionsLabel')
+    case 'conversations':
+      return t('loading.conversationsLabel')
+  }
 }
 
 const SPIN_DURATION_MS = 900
@@ -38,7 +48,7 @@ export function LoadingOverlay({
   loaded,
   total,
   inFlightCount,
-  labelKey = 'loading.sessionsLabel',
+  progressLabel = 'sessions',
 }: Props) {
   const showProgress = loaded !== undefined && total !== undefined
   const theme = useTheme()
@@ -88,7 +98,7 @@ export function LoadingOverlay({
         {showProgress ? (
           <View style={styles.row}>
             <View style={styles.rowLabels}>
-              <Text style={styles.rowTitle}>{t(labelKey)}</Text>
+              <Text style={styles.rowTitle}>{getProgressLabel(progressLabel, t)}</Text>
               {done
                 ? <Text style={styles.rowCount}>{t('loading.done')}</Text>
                 : sessShowRatio

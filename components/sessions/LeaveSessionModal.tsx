@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { CircleIcon, RadioButtonIcon, SquareIcon, CheckSquareIcon } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { AppliedSessionLeaveAction } from '@/lib/sessionLeavePolicy'
@@ -16,6 +17,34 @@ import { DEFAULT_LEAVE_MODAL_CHOICE } from '@/lib/sessionLeavePolicy'
 import { useDirectionStyle } from '@/lib/rtl'
 
 const OPTIONS: AppliedSessionLeaveAction[] = ['kill', 'leave', 'kill_on_idle']
+
+function getLeaveActionTitle(
+  action: AppliedSessionLeaveAction,
+  t: TFunction<['terminal', 'common']>,
+): string {
+  switch (action) {
+    case 'kill':
+      return t('terminal:leaveSession.kill')
+    case 'leave':
+      return t('terminal:leaveSession.leave')
+    case 'kill_on_idle':
+      return t('terminal:leaveSession.kill_on_idle')
+  }
+}
+
+function getLeaveActionHint(
+  action: AppliedSessionLeaveAction,
+  t: TFunction<['terminal', 'common']>,
+): string {
+  switch (action) {
+    case 'kill':
+      return t('terminal:leaveSession.killHint')
+    case 'leave':
+      return t('terminal:leaveSession.leaveHint')
+    case 'kill_on_idle':
+      return t('terminal:leaveSession.kill_on_idleHint')
+  }
+}
 
 interface Props {
   visible: boolean
@@ -84,8 +113,8 @@ function LeaveSessionForm({
                     <CircleIcon size={22} color={theme.text.secondary} />
                   )}
                   <View style={styles.optionCopy}>
-                    <Text style={styles.optionTitle}>{t(`terminal:leaveSession.${id}`)}</Text>
-                    <Text style={styles.optionHint}>{t(`terminal:leaveSession.${id}Hint`)}</Text>
+                    <Text style={styles.optionTitle}>{getLeaveActionTitle(id, t)}</Text>
+                    <Text style={styles.optionHint}>{getLeaveActionHint(id, t)}</Text>
                   </View>
                 </TouchableOpacity>
               )

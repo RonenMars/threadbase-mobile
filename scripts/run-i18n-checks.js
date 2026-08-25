@@ -13,8 +13,11 @@ const path = require('path')
 
 const ROOT = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 const JEST_BIN = path.join(ROOT, 'node_modules/jest/bin/jest.js')
+const I18NEXT_CLI_BIN = path.join(ROOT, 'node_modules/i18next-cli/dist/cjs/cli.js')
 
 const steps = [
+  [process.execPath, [I18NEXT_CLI_BIN, 'status']],
+  [process.execPath, [I18NEXT_CLI_BIN, 'status', '--unused']],
   [process.execPath, [path.join(ROOT, 'scripts/check-locale-freshness.js')]],
   [process.execPath, [path.join(ROOT, 'scripts/check-locale-untranslated.js')]],
   [process.execPath, [path.join(ROOT, 'scripts/check-native-strings.js')]],

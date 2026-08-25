@@ -21,15 +21,12 @@
     "cancelTitle": "בטל סשן",
     "cancelMessage": "האם אתה בטוח שברצונך לבטל את הסשן הזה?",
     "cancelConfirm": "בטל סשן",
-    "removeTitle": "הסר סשן",
-    "removeConfirm": "הסר",
     "stopTitle": "עצור סשן",
     "stopFailed": "לא ניתן לעצור את הסשן. בדוק את החיבור ונסה שוב.",
     "sendFailedTitle": "השליחה נכשלה",
     "sendFailedGeneric": "לא ניתן לשלוח"
   },
   "status": {
-    "disconnected": "מנותק",
     "starting": "מתחיל סשן…",
     "stuckTitle": "עדיין מתחיל…",
     "stuckBody": "הסשן עדיין לא הגיע למצב מוכן. אפשר לראות את פלט הקונסולה שלו בזמן אמת במקום להמשיך לחכות.",

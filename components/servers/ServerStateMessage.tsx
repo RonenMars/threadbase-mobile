@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useToastSync } from '@/hooks/useToastSync'
 import { wsManager } from '@/services/ws-client'
 import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
@@ -22,14 +23,22 @@ function serverLabel(id: string, servers: Record<string, ServerConfig>): string 
 
 type Severity = 'error' | 'warning' | 'info' | null
 
-const DETAIL_COPY = {
-  unreachable: 'state.details.unreachable',
-  fetchFailed: 'state.details.fetchFailed',
-  disconnected: 'state.details.disconnected',
-  connecting: 'state.details.connecting',
-  indexing: 'state.details.indexing',
-} as const
-type DetailKey = keyof typeof DETAIL_COPY
+type DetailKind = 'unreachable' | 'fetchFailed' | 'disconnected' | 'connecting' | 'indexing'
+
+function getDetailMessage(detail: DetailKind, t: TFunction<'servers'>): string {
+  switch (detail) {
+    case 'unreachable':
+      return t('state.details.unreachable')
+    case 'fetchFailed':
+      return t('state.details.fetchFailed')
+    case 'disconnected':
+      return t('state.details.disconnected')
+    case 'connecting':
+      return t('state.details.connecting')
+    case 'indexing':
+      return t('state.details.indexing')
+  }
+}
 
 const VIEWPORT = 'home'
 const TOAST_ID = 'server-state'
@@ -45,8 +54,8 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
   const [showInfo, setShowInfo] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { severity, message, detailKey } = useMemo((): { severity: Severity; message: string; detailKey: DetailKey | null } => {
-    if (activeServerIds.length === 0) return { severity: null, message: '', detailKey: null }
+  const { severity, message, detailKind } = useMemo((): { severity: Severity; message: string; detailKind: DetailKind | null } => {
+    if (activeServerIds.length === 0) return { severity: null, message: '', detailKind: null }
 
     const healthy: string[] = []
     const unreachable: string[] = []
@@ -75,7 +84,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
       return {
         severity: 'info',
-        detailKey: 'indexing',
+        detailKind: 'indexing',
         message: indexingLabel
           ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
           : t('stateMessage.buildingHistory'),
@@ -86,7 +95,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       if (unreachable.length > 0) {
         return {
           severity: 'error',
-          detailKey: 'unreachable',
+          detailKind: 'unreachable',
           message: single
             ? t('stateMessage.unreachableNamed', { server: label })
             : t('stateMessage.unreachableAll'),
@@ -95,7 +104,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       if (fetchFailed.length > 0) {
         return {
           severity: 'error',
-          detailKey: 'fetchFailed',
+          detailKind: 'fetchFailed',
           message: single
             ? t('stateMessage.refreshFailedNamed', { server: label })
             : t('stateMessage.refreshFailedAll'),
@@ -104,7 +113,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       if (disconnected.length > 0) {
         return {
           severity: 'warning',
-          detailKey: 'disconnected',
+          detailKind: 'disconnected',
           message: single
             ? t('stateMessage.disconnectedNamed', { server: label })
             : t('stateMessage.disconnectedAll'),
@@ -113,13 +122,13 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       if (connecting.length > 0) {
         return {
           severity: 'info',
-          detailKey: 'connecting',
+          detailKind: 'connecting',
           message: single
             ? t('stateMessage.connectingNamed', { server: label })
             : t('stateMessage.connectingAll'),
         }
       }
-      return { severity: null, message: '', detailKey: null }
+      return { severity: null, message: '', detailKind: null }
     }
 
     // Some healthy, some degraded
@@ -128,7 +137,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
       return {
         severity: 'info',
-        detailKey: 'indexing',
+        detailKind: 'indexing',
         message: indexingLabel
           ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
           : t('stateMessage.buildingHistory'),
@@ -138,7 +147,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const badLabel = unreachable.length === 1 ? serverLabel(unreachable[0], servers) : null
       return {
         severity: 'warning',
-        detailKey: 'unreachable',
+        detailKind: 'unreachable',
         message: badLabel
           ? t('stateMessage.partialUnreachableNamed', { server: badLabel })
           : t('stateMessage.partialUnreachableSome'),
@@ -148,7 +157,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const badLabel = fetchFailed.length === 1 ? serverLabel(fetchFailed[0], servers) : null
       return {
         severity: 'warning',
-        detailKey: 'fetchFailed',
+        detailKind: 'fetchFailed',
         message: badLabel
           ? t('stateMessage.refreshFailedNamed', { server: badLabel })
           : t('stateMessage.refreshFailedSome'),
@@ -158,7 +167,7 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const badLabel = bad.length === 1 ? serverLabel(bad[0], servers) : null
       return {
         severity: 'warning',
-        detailKey: 'disconnected',
+        detailKind: 'disconnected',
         message: badLabel
           ? t('stateMessage.disconnectedNamed', { server: badLabel })
           : t('stateMessage.disconnectedSome'),
@@ -168,14 +177,14 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       const connectingLabel = connecting.length === 1 ? serverLabel(connecting[0], servers) : null
       return {
         severity: 'info',
-        detailKey: 'connecting',
+        detailKind: 'connecting',
         message: connectingLabel
           ? t('stateMessage.connectingNamed', { server: connectingLabel })
           : t('stateMessage.connectingAll'),
       }
     }
 
-    return { severity: null, message: '', detailKey: null }
+    return { severity: null, message: '', detailKind: null }
     // wsConnectedCount triggers recompute when WS state flips
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, fetchStatuses, wsConnectedCount, servers, t])
@@ -196,16 +205,16 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
   const showAction = severity === 'error' || severity === 'warning'
 
   const spec = useMemo((): AlertSpec | null => {
-    if (!visible || !severity || !detailKey) return null
+    if (!visible || !severity || !detailKind) return null
     const base = {
       level: toLevel(severity),
       title: message,
-      message: t(DETAIL_COPY[detailKey]),
+      message: getDetailMessage(detailKind, t),
       timeout: null,
     }
     if (!showAction) return base
     return { ...base, buttonText: t('action.details'), buttonAction: onViewDetails }
-  }, [visible, severity, detailKey, message, showAction, onViewDetails, t])
+  }, [visible, severity, detailKind, message, showAction, onViewDetails, t])
 
   useToastSync(TOAST_ID, spec, VIEWPORT)
   return null

@@ -29,7 +29,9 @@ export function isSupportedDiagnosticsContract(report: ServerDiagnosticsReport):
 }
 
 /** Remediation codes that warrant a user-facing action card (not NONE). */
-export function needsRemediation(code: RemediationCode): boolean {
+export function needsRemediation(
+  code: RemediationCode,
+): code is Exclude<RemediationCode, 'NONE'> {
   return code !== 'NONE'
 }
 

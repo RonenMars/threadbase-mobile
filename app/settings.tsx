@@ -16,8 +16,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as Notifications from 'expo-notifications'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import i18n from '@/lib/i18n'
-import { SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
+import { getSupportedLocaleLabel, SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction, type SessionLeaveAction } from '@/stores/settings'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -39,24 +40,31 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 
-// Key maps indexed at the call site rather than helpers taking `t` as a
-// parameter. i18next-cli cannot trace a parameter back to the caller's
-// useTranslation(), so it filed all eight keys under defaultNS ('common'),
-// where they do not exist — reporting them simultaneously as missing from `en`
-// and as unused in `settings`. A direct index into a const is traced fine.
-const ADD_SERVER_ACTION_KEYS = {
-  ask: 'addServer.actionAsk',
-  add: 'addServer.actionAdd',
-  replace: 'addServer.actionReplace',
-  keep: 'addServer.actionKeep',
-} as const satisfies Record<AddServerAction, string>
+function getAddServerActionLabel(action: AddServerAction, t: TFunction<'settings'>): string {
+  switch (action) {
+    case 'ask':
+      return t('addServer.actionAsk')
+    case 'add':
+      return t('addServer.actionAdd')
+    case 'replace':
+      return t('addServer.actionReplace')
+    case 'keep':
+      return t('addServer.actionKeep')
+  }
+}
 
-const SESSION_LEAVE_ACTION_KEYS = {
-  ask: 'session.leaveActionAsk',
-  kill: 'session.leaveActionKill',
-  leave: 'session.leaveActionLeave',
-  kill_on_idle: 'session.leaveActionKillOnIdle',
-} as const satisfies Record<SessionLeaveAction, string>
+function getSessionLeaveActionLabel(action: SessionLeaveAction, t: TFunction<'settings'>): string {
+  switch (action) {
+    case 'ask':
+      return t('session.leaveActionAsk')
+    case 'kill':
+      return t('session.leaveActionKill')
+    case 'leave':
+      return t('session.leaveActionLeave')
+    case 'kill_on_idle':
+      return t('session.leaveActionKillOnIdle')
+  }
+}
 
 function SectionHeader({ title, badge }: { title: string; badge?: string }) {
   const theme = useTheme()
@@ -505,7 +513,7 @@ await refreshServerInfo(serverId)
                   onPress={() => handleLanguageChange(supportedLocale.code)}
                 >
                   <Text style={[s.segmentBtnText, locale === supportedLocale.code && s.segmentBtnTextActive]}>
-                    {t(supportedLocale.labelKey)}
+                    {getSupportedLocaleLabel(supportedLocale.code, t)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -595,7 +603,7 @@ await refreshServerInfo(serverId)
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
           >
             <Text style={s.rowLabel}>{t('addServer.selectedAction')}</Text>
-            <Text style={s.rowValue}>{t(ADD_SERVER_ACTION_KEYS[addServerAction])}</Text>
+            <Text style={s.rowValue}>{getAddServerActionLabel(addServerAction, t)}</Text>
           </TouchableOpacity>
           {isAddBehaviorOpen ? (
             <View style={s.accordionBody}>
@@ -649,7 +657,7 @@ await refreshServerInfo(serverId)
             accessibilityLabel={t('session.leaveAction')}
           >
             <Text style={s.rowLabel}>{t('session.leaveAction')}</Text>
-            <Text style={s.rowValue}>{t(SESSION_LEAVE_ACTION_KEYS[sessionLeaveAction])}</Text>
+            <Text style={s.rowValue}>{getSessionLeaveActionLabel(sessionLeaveAction, t)}</Text>
           </TouchableOpacity>
           {isLeaveActionOpen ? (
             <View style={s.accordionBody}>
@@ -1004,7 +1012,7 @@ function SessionLeaveActionList({
             testID={`settings-session-leave-${id}`}
           >
             <Text style={[s.leaveOptionLabel, selected && s.leaveOptionLabelActive]}>
-              {t(SESSION_LEAVE_ACTION_KEYS[id])}
+              {getSessionLeaveActionLabel(id, t)}
             </Text>
           </TouchableOpacity>
         )

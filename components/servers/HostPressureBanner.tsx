@@ -10,13 +10,18 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { parseHostPressureOs, type HostPressureLevel } from '@/types/api'
 import type { AlertSpec } from '@/types/alerts'
 import {
-  hostPressureBannerKey,
-  hostPressureDetectedKeys,
+  hostPressureDetectedReasons,
   hostPressureServerName,
-  hostPressureWhatToDoKey,
-  hostPressureWhyFineKeys,
+  hostPressureWhyFineReasons,
+  primaryHostConstraint,
 } from '@/utils/hostPressureCopy'
 import { useDirectionStyle } from '@/lib/rtl'
+import {
+  getHostPressureBannerLabel,
+  getHostPressureDetectedLabel,
+  getHostPressureWhatToDoLabel,
+  getHostPressureWhyFineLabel,
+} from './hostPressureLabels'
 
 const VIEWPORT = 'home'
 const TOAST_ID = 'host-pressure'
@@ -57,7 +62,12 @@ export function HostPressureBanner() {
   const server = alertServerId ? servers[alertServerId] : undefined
   const serverLabel = hostPressureServerName(server)
   const bannerText = pressure
-    ? t(hostPressureBannerKey(pressure.level, pressure.reasons), { server: serverLabel ?? '' })
+    ? getHostPressureBannerLabel(
+        pressure.level,
+        primaryHostConstraint(pressure.reasons),
+        serverLabel ?? '',
+        t,
+      )
     : ''
   const detailsLabel = t('action.details')
   const modalLead = t('hostPressure.modalLead')
@@ -85,13 +95,17 @@ export function HostPressureBanner() {
   if (!sheetOpen || !pressure || !alertServerId || hiddenForLevel) return null
 
   const os = pressure.os ?? parseHostPressureOs(server?.serverInfo?.platform)
-  const detectedLines = hostPressureDetectedKeys(pressure.reasons).map((key) => t(key))
-  const whyFineLines = hostPressureWhyFineKeys(pressure.reasons).map((key) => t(key))
+  const detectedLines = hostPressureDetectedReasons(pressure.reasons).map((reason) =>
+    getHostPressureDetectedLabel(reason, t),
+  )
+  const whyFineLines = hostPressureWhyFineReasons(pressure.reasons).map((reason) =>
+    getHostPressureWhyFineLabel(reason, t),
+  )
   const showAgents = pressure.reasons.includes('agents')
   const agentsLine = showAgents
     ? t('hostPressure.detected.agents', { count: pressure.liveAgents })
     : ''
-  const whatToDo = t(hostPressureWhatToDoKey(os))
+  const whatToDo = getHostPressureWhatToDoLabel(os, t)
   const accentColor = theme.status.waiting
 
   return (

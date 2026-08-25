@@ -1,27 +1,44 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 import { queryClient } from '@/services/query-client'
 import { useBannerSync } from '@/hooks/useBannerSync'
 import type { AlertSpec } from '@/types/alerts'
 
-const TITLE_KEYS = {
-  sessions: 'errorBanner.titleSessions',
-  conversations: 'errorBanner.titleConversations',
-  messages: 'errorBanner.titleMessages',
-  'session-detail': 'errorBanner.titleSessionDetail',
-  browse: 'errorBanner.titleBrowse',
-  other: 'errorBanner.titleOther',
-} as const satisfies Record<QueryCategory, string>
+function getCategoryTitle(category: QueryCategory, t: TFunction<'common'>): string {
+  switch (category) {
+    case 'sessions':
+      return t('errorBanner.titleSessions')
+    case 'conversations':
+      return t('errorBanner.titleConversations')
+    case 'messages':
+      return t('errorBanner.titleMessages')
+    case 'session-detail':
+      return t('errorBanner.titleSessionDetail')
+    case 'browse':
+      return t('errorBanner.titleBrowse')
+    case 'other':
+      return t('errorBanner.titleOther')
+  }
+}
 
-const MESSAGE_KEYS = {
-  sessions: 'errorBanner.messageSessions',
-  conversations: 'errorBanner.messageConversations',
-  messages: 'errorBanner.messageMessages',
-  'session-detail': 'errorBanner.messageSessionDetail',
-  browse: 'errorBanner.messageBrowse',
-  other: 'errorBanner.messageOther',
-} as const satisfies Record<QueryCategory, string>
+function getCategoryMessage(category: QueryCategory, t: TFunction<'common'>): string {
+  switch (category) {
+    case 'sessions':
+      return t('errorBanner.messageSessions')
+    case 'conversations':
+      return t('errorBanner.messageConversations')
+    case 'messages':
+      return t('errorBanner.messageMessages')
+    case 'session-detail':
+      return t('errorBanner.messageSessionDetail')
+    case 'browse':
+      return t('errorBanner.messageBrowse')
+    case 'other':
+      return t('errorBanner.messageOther')
+  }
+}
 
 function formatDetails(status?: number, message?: string): string | undefined {
   const parts: string[] = []
@@ -50,12 +67,12 @@ export function ErrorBanner() {
 
   const spec = useMemo((): AlertSpec | null => {
     if (!current) return null
-    const categoryTitle = t(TITLE_KEYS[current.category])
+    const categoryTitle = getCategoryTitle(current.category, t)
     const title = count > 1 ? t('errorBanner.countSuffix', { title: categoryTitle, total: count }) : categoryTitle
     return {
       level: 'error',
       title,
-      message: t(MESSAGE_KEYS[current.category]),
+      message: getCategoryMessage(current.category, t),
       details: formatDetails(current.status, current.message),
       buttonText: t('button.retry'),
       buttonAction: () => {

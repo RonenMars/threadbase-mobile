@@ -8,6 +8,7 @@ import {
   type SessionColorToken,
   type SessionPresentationInput,
 } from '@/lib/sessionPresentation'
+import { getSessionStatusLabel } from './sessionStatusLabel'
 
 interface Props {
   /** Kind, label and colour all come from the shared presentation helper. */
@@ -38,7 +39,7 @@ export function SessionStatusBadge({ session, isRefetching }: Props) {
 
   const presentation = deriveSessionPresentation(session)
   const color = colorForToken(theme, presentation.colorToken)
-  const label = t(presentation.labelKey)
+  const label = getSessionStatusLabel(presentation.statusLabel, t)
 
   return (
     <View style={styles.row} testID={`session-status-${presentation.kind}`}>
