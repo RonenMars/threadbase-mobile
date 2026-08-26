@@ -121,7 +121,7 @@
     "react-i18next": "^17.0.6",
     "react-native": "0.86.0",
     "react-native-draggable-flatlist": "^4.0.3",
-    "react-native-gesture-handler": "~2.32.0",
+    "react-native-gesture-handler": "~3.2.1",
     "react-native-get-random-values": "~2.0.0",
     "react-native-keyboard-controller": "1.21.9",
     "react-native-pager-view": "8.0.4",
@@ -202,6 +202,7 @@
       "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/async-storage.js",
       "^react-native-reanimated$": "<rootDir>/node_modules/react-native-reanimated/mock",
       "^react-native-worklets$": "<rootDir>/node_modules/react-native-worklets/src/mock",
+      "useEnsureGestureHandlerRootView$": "<rootDir>/__mocks__/useEnsureGestureHandlerRootView.js",
       "\\.css$": "<rootDir>/__mocks__/style-mock.js"
     }
   },
