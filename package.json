@@ -202,6 +202,7 @@
       "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/async-storage.js",
       "^react-native-reanimated$": "<rootDir>/node_modules/react-native-reanimated/mock",
       "^react-native-worklets$": "<rootDir>/node_modules/react-native-worklets/src/mock",
+      "useEnsureGestureHandlerRootView$": "<rootDir>/__mocks__/useEnsureGestureHandlerRootView.js",
       "\\.css$": "<rootDir>/__mocks__/style-mock.js"
     }
   },
