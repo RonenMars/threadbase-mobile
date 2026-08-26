@@ -7,6 +7,7 @@ import { SessionCard } from '@/components/sessions/SessionCard'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { makeStyles } from './ClassicSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
@@ -33,7 +34,8 @@ export const ClassicSessionsList = memo(function ClassicSessionsList({ sessions,
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(insets.bottom)
-  const searchStyles = makeSearchStyles(theme)
+  const { direction } = useAppDirection()
+  const searchStyles = makeSearchStyles(theme, direction)
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)

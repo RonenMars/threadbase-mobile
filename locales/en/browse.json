@@ -1,4 +1,5 @@
 {
+  "screenTitle": "Browse",
   "nav": {
     "back": "‹ Back",
     "recentDirs": "Recent directories ({{total}})",

@@ -59,6 +59,33 @@ export function useDirectionStyle(): { direction: Direction } {
   return useMemo(() => ({ direction }), [direction]);
 }
 
+export type TextDirectionStyle = {
+  direction: Direction;
+  writingDirection: Direction;
+  textAlign: 'auto';
+};
+
+/** Runtime text/input direction. Apply at the presentation boundary. */
+export function textDirectionStyle(direction: Direction): TextDirectionStyle {
+  return { direction, writingDirection: direction, textAlign: 'auto' };
+}
+
+/** Full-width variant so `textAlign: 'auto'` has a box to align inside. */
+export function blockTextDirectionStyle(direction: Direction): TextDirectionStyle & { width: '100%' } {
+  return { ...textDirectionStyle(direction), width: '100%' };
+}
+
+/**
+ * Technical tokens that must stay LTR inside an RTL layout: paths, URLs,
+ * hostnames, server names, API keys, breadcrumbs, and numeric identifiers.
+ */
+export const ltrContentStyle: TextDirectionStyle = textDirectionStyle('ltr');
+
+export function useTextDirectionStyle(): TextDirectionStyle {
+  const { direction } = useAppDirection();
+  return useMemo(() => textDirectionStyle(direction), [direction]);
+}
+
 /**
  * Returns the appropriate flex direction based on RTL setting.
  * Use this for horizontal layouts that should flip in RTL.

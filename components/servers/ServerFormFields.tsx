@@ -5,6 +5,7 @@ import { Eye, EyeSlash, CaretDown, ClipboardText } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 export function splitUrl(full: string): { protocol: 'http' | 'https'; host: string } {
   if (full.startsWith('https://')) return { protocol: 'https', host: full.slice(8).replace(/\/+$/, '') }
@@ -56,6 +57,8 @@ export function ServerFormFields({
   const { t } = useTranslation('servers')
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const { direction } = useAppDirection()
+  const labelDirection = textDirectionStyle(direction)
 
   const [showApiKey, setShowApiKey] = useState(false)
   const [showProtocolPicker, setShowProtocolPicker] = useState(false)
@@ -98,11 +101,11 @@ export function ServerFormFields({
       {onLabelChange && (
         <>
           <View style={styles.fieldLabelRow}>
-            <Text style={styles.fieldLabel}>{t('form.labelOptional')}</Text>
+            <Text style={[styles.fieldLabel, labelDirection]}>{t('form.labelOptional')}</Text>
             {labelAccessory}
           </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, labelDirection]}
             value={label}
             onChangeText={onLabelChange}
             placeholder={t('form.labelPlaceholder')}
@@ -117,7 +120,7 @@ export function ServerFormFields({
 
       <View style={styles.fieldLabelRow}>
         <View style={styles.fieldLabelGroup}>
-          <Text style={styles.fieldLabel}>{t('form.serverUrl')}</Text>
+          <Text style={[styles.fieldLabel, labelDirection]}>{t('form.serverUrl')}</Text>
           {urlAccessory}
         </View>
         <TouchableOpacity testID="server-form-paste-url" onPress={pasteUrl} hitSlop={8} disabled={!editable}>
@@ -131,7 +134,7 @@ export function ServerFormFields({
             onPress={() => setShowProtocolPicker((v) => !v)}
             disabled={!editable}
           >
-            <Text style={styles.protocolText}>{protocol}://</Text>
+            <Text style={[styles.protocolText, ltrContentStyle]}>{protocol}://</Text>
             <CaretDown size={10} color={theme.text.secondary} weight="bold" />
           </TouchableOpacity>
           {showProtocolPicker && (
@@ -142,7 +145,7 @@ export function ServerFormFields({
                   style={styles.protocolOption}
                   onPress={() => { onProtocolChange(opt); setShowProtocolPicker(false) }}
                 >
-                  <Text style={[styles.protocolOptionText, protocol === opt && styles.protocolOptionSelected]}>
+                  <Text style={[styles.protocolOptionText, ltrContentStyle, protocol === opt && styles.protocolOptionSelected]}>
                     {opt}://
                   </Text>
                 </TouchableOpacity>
@@ -152,7 +155,7 @@ export function ServerFormFields({
         </View>
         <TextInput
           testID={urlInputTestID}
-          style={[styles.input, styles.urlInput]}
+          style={[styles.input, styles.urlInput, ltrContentStyle]}
           value={urlHost}
           onChangeText={handleUrlHostChange}
           placeholder="192.168.1.10:8766"
@@ -167,7 +170,7 @@ export function ServerFormFields({
 
       <View style={styles.fieldLabelRow}>
         <View style={styles.fieldLabelGroup}>
-          <Text style={styles.fieldLabel}>{apiKeyTitle}</Text>
+          <Text style={[styles.fieldLabel, labelDirection]}>{apiKeyTitle}</Text>
           {keyAccessory}
         </View>
         <TouchableOpacity testID="server-form-paste-key" onPress={pasteApiKey} hitSlop={8} disabled={!editable}>
@@ -177,7 +180,7 @@ export function ServerFormFields({
       <View style={styles.apiKeyRow}>
         <TextInput
           testID={keyInputTestID}
-          style={[styles.input, styles.apiKeyInput]}
+          style={[styles.input, styles.apiKeyInput, ltrContentStyle]}
           value={apiKey}
           onChangeText={onApiKeyChange}
           placeholder={t('form.apiKeyPlaceholder')}
@@ -237,6 +240,7 @@ function makeStyles(theme: Theme) {
     },
     urlRow: {
       flexDirection: 'row',
+      direction: 'ltr',
       alignItems: 'flex-start',
       gap: spacing.sm,
       zIndex: 1,
@@ -285,6 +289,7 @@ function makeStyles(theme: Theme) {
     },
     apiKeyRow: {
       flexDirection: 'row',
+      direction: 'ltr',
       alignItems: 'center',
       gap: spacing.sm,
     },

@@ -1,4 +1,5 @@
 {
+  "screenTitle": "Обзор",
   "nav": {
     "back": "‹ Назад",
     "recentDirs": "Недавние директории ({{total}})",

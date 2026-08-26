@@ -28,7 +28,7 @@ import {
 import type { UploadedFile } from '@/services/uploads'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 export interface ChatComposerProps {
   value: string
@@ -77,6 +77,8 @@ export function ChatComposer({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction, isRTL } = useAppDirection()
+  const inputDirection = textDirectionStyle(direction)
   const insets = useSafeAreaInsets()
   // When the keyboard is up, behavior="padding" already lifts the composer above
   // it — the home indicator is covered, so any resting safe-area padding would
@@ -106,7 +108,7 @@ export function ChatComposer({
         {attachments.map((a) => (
           <View key={a.id} style={styles.chip}>
             <PhosphorImage size={14} color={theme.text.primary} />
-            <Text style={styles.chipText} numberOfLines={1}>
+            <Text style={[styles.chipText, ltrContentStyle]} numberOfLines={1}>
               {a.originalName}
             </Text>
             <TouchableOpacity
@@ -166,7 +168,7 @@ export function ChatComposer({
       disabled={disabled || sendDisabled}
       accessibilityLabel={t('action.sendInput')}
     >
-      <PaperPlaneRight size={24} color={theme.text.onAccent} />
+      <PaperPlaneRight size={24} color={theme.text.onAccent} mirrored={isRTL} />
     </TouchableOpacity>
   ) : micGranted ? (
     <TouchableOpacity
@@ -189,7 +191,7 @@ export function ChatComposer({
       disabled
       accessibilityLabel={t('action.sendInput')}
     >
-      <PaperPlaneRight size={24} color={theme.text.onAccent} />
+      <PaperPlaneRight size={24} color={theme.text.onAccent} mirrored={isRTL} />
     </TouchableOpacity>
   )
 
@@ -203,7 +205,7 @@ export function ChatComposer({
           <View style={styles.inputWrapper}>
             <TextInput
               testID="chat-message-input"
-              style={[styles.input, disabled && styles.disabled]}
+              style={[styles.input, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
@@ -229,7 +231,7 @@ export function ChatComposer({
           <>
             <TextInput
               testID="chat-message-input"
-              style={[styles.input, disabled && styles.disabled]}
+              style={[styles.input, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
@@ -272,7 +274,7 @@ export function ChatComposer({
               {chips}
               <TextInput
                 testID="message-input-expanded"
-                style={[styles.inputExpandedField, disabled && styles.disabled]}
+                style={[styles.inputExpandedField, inputDirection, disabled && styles.disabled]}
                 value={disabled ? '' : value}
                 onChangeText={disabled ? undefined : onChangeText}
                 placeholder={disabled ? t('status.starting') : t('input.placeholder')}
@@ -315,7 +317,7 @@ export function ChatComposer({
                   disabled={!hasContent || disabled || sendDisabled}
                   accessibilityLabel={t('action.sendInput')}
                 >
-                  <PaperPlaneRight size={26} color={theme.text.onAccent} />
+                  <PaperPlaneRight size={26} color={theme.text.onAccent} mirrored={isRTL} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -365,7 +367,7 @@ function makeStyles(theme: Theme) {
     },
     expandBtn: { justifyContent: 'flex-end', alignSelf: 'flex-end', paddingBottom: spacing.sm, paddingHorizontal: spacing.xs },
     inputWrapper: { flex: 1, position: 'relative' },
-    expandBtnAndroid: { position: 'absolute', top: 4, right: 4 },
+    expandBtnAndroid: { position: 'absolute', top: 4, end: 4 },
     expandedToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs },
     iconBtn: {
       width: 52,
@@ -385,7 +387,7 @@ function makeStyles(theme: Theme) {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    chipsRow: { flexDirection: 'row', gap: spacing.xs, paddingVertical: spacing.xs },
+    chipsRow: { flexDirection: 'row', direction: 'ltr', gap: spacing.xs, paddingVertical: spacing.xs },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',

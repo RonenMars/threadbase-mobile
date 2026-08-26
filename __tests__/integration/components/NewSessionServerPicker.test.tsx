@@ -1,7 +1,9 @@
 import React from 'react'
+import { StyleSheet, type ViewStyle } from 'react-native'
 import { render, fireEvent } from '@testing-library/react-native'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import type { ServerConfig } from '@/types/api'
+import i18n from '@/test-utils/i18n-setup'
 
 function makeServer(id: string, overrides: Partial<ServerConfig> = {}): ServerConfig {
   return {
@@ -22,6 +24,9 @@ const servers: Record<string, ServerConfig> = {
 }
 
 describe('NewSessionServerPicker', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en')
+  })
   it('renders nothing when not visible', async () => {
     const { queryByText } = await render(
       <NewSessionServerPicker
@@ -100,5 +105,41 @@ describe('NewSessionServerPicker', () => {
     await fireEvent.press(getByText('Cancel'))
     expect(onClose).toHaveBeenCalledTimes(1)
     expect(onPick).not.toHaveBeenCalled()
+  })
+
+  it('right-aligns the translated title in RTL and keeps server identifiers LTR', async () => {
+    function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
+      const style = StyleSheet.flatten(element.props.style)
+      const transform = style.transform
+      if (!Array.isArray(transform)) return false
+      return transform.some((entry) => 'scaleX' in entry && entry.scaleX === -1)
+    }
+
+    await i18n.changeLanguage('he')
+    const { getByText, getByTestId } = await render(
+      <NewSessionServerPicker
+        visible
+        serverIds={['alpha']}
+        servers={servers}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    )
+
+    expect(StyleSheet.flatten(getByText('התחל סשן על').props.style)).toEqual(
+      expect.objectContaining({
+        direction: 'rtl',
+        writingDirection: 'rtl',
+        textAlign: 'auto',
+        width: '100%',
+      }),
+    )
+    expect(StyleSheet.flatten(getByText('Alpha Box').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
+    )
+    expect(StyleSheet.flatten(getByText('http://alpha.local:7070').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
+    )
+    expect(isMirrored(getByTestId('phosphor-react-native-caret-right-undefined'))).toBe(true)
   })
 })

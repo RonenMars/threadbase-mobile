@@ -16,6 +16,7 @@ import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 import { makeStyles } from './TreeSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
 import type { FlatItem, ServerTree, TreeNode, TreeSessionsListProps } from './types'
@@ -31,7 +32,8 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(insets.bottom)
-  const searchStyles = makeSearchStyles(theme)
+  const { direction } = useAppDirection()
+  const searchStyles = makeSearchStyles(theme, direction)
   const router = useRouter()
   const { t } = useTranslation('sessions')
   const [searchQuery, setSearchQuery] = useState('')

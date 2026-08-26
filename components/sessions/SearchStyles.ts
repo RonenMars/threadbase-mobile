@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
+import { textDirectionStyle, type Direction } from '@/lib/rtl'
 
-export function makeStyles(theme: Theme) {
+export function makeStyles(theme: Theme, direction: Direction) {
   return StyleSheet.create({
   searchBar: {
     paddingHorizontal: spacing.lg,
@@ -18,6 +19,7 @@ export function makeStyles(theme: Theme) {
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.border,
+    ...textDirectionStyle(direction),
   },
   listContent: {
     padding: spacing.sm,

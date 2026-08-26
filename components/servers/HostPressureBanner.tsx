@@ -15,7 +15,7 @@ import {
   hostPressureWhyFineReasons,
   primaryHostConstraint,
 } from '@/utils/hostPressureCopy'
-import { useDirectionStyle } from '@/lib/rtl'
+import { blockTextDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 import {
   getHostPressureBannerLabel,
   getHostPressureDetectedLabel,
@@ -29,6 +29,9 @@ const TOAST_ID = 'host-pressure'
 export function HostPressureBanner() {
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = blockTextDirectionStyle(direction)
+  const bodyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme)
   const { t } = useTranslation('servers')
   const servers = useServersStore((s) => s.servers)
@@ -121,26 +124,26 @@ export function HostPressureBanner() {
           <GlassFill />
           <View style={styles.header}>
             <Warning size={20} color={accentColor} weight="regular" />
-            <Text style={styles.sheetTitle}>{bannerText}</Text>
+            <Text style={[styles.sheetTitle, copyStyle]}>{bannerText}</Text>
           </View>
-          <Text style={styles.body}>{modalLead}</Text>
+          <Text style={[styles.body, bodyStyle]}>{modalLead}</Text>
           {detectedLines.map((line) => (
-            <Text key={line} style={styles.body}>{line}</Text>
+            <Text key={line} style={[styles.body, bodyStyle]}>{line}</Text>
           ))}
           {whyFineLines.map((line) => (
-            <Text key={line} style={styles.body}>{line}</Text>
+            <Text key={line} style={[styles.body, bodyStyle]}>{line}</Text>
           ))}
           {showAgents ? (
-            <Text style={styles.body}>{agentsLine}</Text>
+            <Text style={[styles.body, bodyStyle]}>{agentsLine}</Text>
           ) : null}
-          <Text style={styles.body}>{whatToDo}</Text>
+          <Text style={[styles.body, bodyStyle]}>{whatToDo}</Text>
           <TouchableOpacity
             style={styles.dismissBtn}
             onPress={handleDismiss}
             accessibilityRole="button"
             testID="host-pressure-dismiss"
           >
-            <Text style={styles.dismissText}>{t('hostPressure.dismiss')}</Text>
+            <Text style={[styles.dismissText, bodyStyle]}>{t('hostPressure.dismiss')}</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>

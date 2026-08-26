@@ -43,6 +43,7 @@ import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { LivePauseControl } from '@/components/conversation/LivePauseControl'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
@@ -85,8 +86,9 @@ export default function ConversationDetailScreen() {
   useLiveInstanceCount('ConversationDetail')
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
+  const { direction } = useAppDirection()
   const styles = useMemo(() => makeStyles(theme), [theme])
-  const searchStyles = useMemo(() => makeSearchStyles(theme), [theme])
+  const searchStyles = useMemo(() => makeSearchStyles(theme, direction), [theme, direction])
   const { id, server, search, anchor_index, fromSession: fromSessionParam, openSearch: openSearchParam } = useLocalSearchParams<{
     id: string
     server?: string

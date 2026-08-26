@@ -1,7 +1,9 @@
 import React from 'react'
+import { StyleSheet } from 'react-native'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import * as Clipboard from 'expo-clipboard'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
+import i18n from '@/test-utils/i18n-setup'
 
 const getStringAsync = Clipboard.getStringAsync as jest.Mock
 
@@ -28,6 +30,10 @@ async function renderFields(overrides: Partial<React.ComponentProps<typeof Serve
 describe('ServerFormFields', () => {
   beforeEach(() => {
     getStringAsync.mockReset().mockResolvedValue('')
+  })
+
+  afterEach(async () => {
+    await i18n.changeLanguage('en')
   })
 
   describe('paste URL', () => {
@@ -93,6 +99,24 @@ describe('ServerFormFields', () => {
   it('shows the label field when onLabelChange is provided', async () => {
     const { getByText } = await renderFields({ onLabelChange: jest.fn() })
     expect(getByText('Label (optional)')).toBeTruthy()
+  })
+
+  it('keeps translated labels in the locale direction and URL/API-key fields LTR', async () => {
+    await i18n.changeLanguage('he')
+    const { getByText, getByTestId } = await renderFields({
+      onLabelChange: jest.fn(),
+      label: 'Work Mac',
+    })
+
+    expect(StyleSheet.flatten(getByText('תווית (אופציונלי)').props.style)).toEqual(
+      expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),
+    )
+    expect(StyleSheet.flatten(getByTestId('url-input').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
+    )
+    expect(StyleSheet.flatten(getByTestId('key-input').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
+    )
   })
 })
 

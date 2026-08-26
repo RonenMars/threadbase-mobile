@@ -2,9 +2,17 @@ import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
+import { CaretRight } from 'phosphor-react-native'
 import type { ServerConfig } from '@/types/api'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import {
+  blockTextDirectionStyle,
+  ltrContentStyle,
+  textDirectionStyle,
+  useAppDirection,
+  useDirectionStyle,
+} from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -20,6 +28,10 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
+  const { direction, isRTL } = useAppDirection()
+  const directionStyle = useDirectionStyle()
+  const titleStyle = blockTextDirectionStyle(direction)
+  const actionTextStyle = textDirectionStyle(direction)
   if (!visible) return null
 
   return (
@@ -31,8 +43,8 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
       backgroundStyle={styles.sheetBg}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetView style={styles.content}>
-        <Text style={styles.title}>{t('newSessionPicker.title')}</Text>
+      <BottomSheetView style={[styles.content, directionStyle]}>
+        <Text style={[styles.title, titleStyle]}>{t('newSessionPicker.title')}</Text>
         <View style={styles.list}>
           {serverIds.map((id) => {
             const server = servers[id]
@@ -40,23 +52,23 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
             return (
               <TouchableOpacity key={id} style={styles.row} onPress={() => onPick(id)}>
                 <View style={styles.serverInfo}>
-                  <Text style={styles.serverLabel} numberOfLines={1}>
+                  <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>
                     {server.label || server.url}
                   </Text>
                   {server.label ? (
-                    <Text style={styles.serverUrl} numberOfLines={1}>
+                    <Text style={[styles.serverUrl, ltrContentStyle]} numberOfLines={1}>
                       {server.url}
                     </Text>
                   ) : null}
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <CaretRight size={18} color={theme.text.secondary} mirrored={isRTL} />
               </TouchableOpacity>
             )
           })}
         </View>
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
+            <Text style={[styles.cancelText, actionTextStyle]}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>
@@ -96,11 +108,6 @@ function makeStyles(theme: Theme) {
     serverUrl: {
       color: theme.text.secondary,
       fontSize: font.xs,
-    },
-    chevron: {
-      color: theme.text.secondary,
-      fontSize: font.xl,
-      fontWeight: '300',
     },
     actions: {
       flexDirection: 'row',

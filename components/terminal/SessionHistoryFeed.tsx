@@ -13,6 +13,7 @@ import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { createApiForServer } from '@/services/api-client'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 import { font, spacing, type Theme } from '@/constants/theme'
 import type { Message } from '@/types/api'
 
@@ -88,7 +89,8 @@ function historyItemType(item: Message): string {
 export function SessionHistoryFeed({ serverId, conversationId, isFull, onToggleFull }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const searchStyles = useMemo(() => makeSearchStyles(theme), [theme])
+  const { direction } = useAppDirection()
+  const searchStyles = useMemo(() => makeSearchStyles(theme, direction), [theme, direction])
   const { t } = useTranslation('terminal')
   const { t: tSearch } = useTranslation('conversation')
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, totalMessages } = useConversation(

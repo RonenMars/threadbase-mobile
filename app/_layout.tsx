@@ -401,6 +401,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
   const theme = useTheme()
   const isGlass = useIsGlass()
   const { isRTL } = useAppDirection()
+  const { t } = useTranslation(['common', 'browse'])
   // expo-router 57.0.4 paints the native screen container with the
   // react-navigation theme's `colors.background`. Its default is opaque light
   // grey, which covers our glass gradient backdrop. Feed it a transparent
@@ -425,15 +426,22 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         headerShadowVisible: false,
         contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },
         animation: isRTL ? 'slide_from_left' : undefined,
+        // Native stack headerLeft stays on the I18nManager leading edge;
+        // Yoga direction cannot move it. Mirror the caret so the icon at
+        // least points toward the stack start in RTL.
         headerLeft: ({ tintColor }) => (
           <Pressable
             onPress={() => goBackOrHub(router)}
             hitSlop={16}
             style={({ pressed }) => ({ paddingHorizontal: 4, opacity: pressed ? 0.5 : 1 })}
-            accessibilityLabel="Back"
+            accessibilityLabel={t('common:button.back')}
             testID="header-back"
           >
-            <CaretLeft size={28} color={(typeof tintColor === 'string' ? tintColor : undefined) ?? theme.text.primary} />
+            <CaretLeft
+              size={28}
+              color={(typeof tintColor === 'string' ? tintColor : undefined) ?? theme.text.primary}
+              mirrored={isRTL}
+            />
           </Pressable>
         ),
       }}
@@ -448,8 +456,8 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={{
           presentation: 'modal',
           animation: 'default',
-          title: 'Browse',
-          headerBackTitle: 'Cancel',
+          title: t('browse:screenTitle'),
+          headerBackTitle: t('common:button.cancel'),
         }}
       />
       <Stack.Screen

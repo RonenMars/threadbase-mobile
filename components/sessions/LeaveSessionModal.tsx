@@ -14,7 +14,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { AppliedSessionLeaveAction } from '@/lib/sessionLeavePolicy'
 import { DEFAULT_LEAVE_MODAL_CHOICE } from '@/lib/sessionLeavePolicy'
-import { useDirectionStyle } from '@/lib/rtl'
+import { blockTextDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 const OPTIONS: AppliedSessionLeaveAction[] = ['kill', 'leave', 'kill_on_idle']
 
@@ -75,6 +75,9 @@ function LeaveSessionForm({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = blockTextDirectionStyle(direction)
+  const optionTextStyle = textDirectionStyle(direction)
   const { t } = useTranslation(['terminal', 'common'])
   const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
   const [remember, setRemember] = useState(false)
@@ -92,8 +95,8 @@ function LeaveSessionForm({
           accessibilityViewIsModal
           testID="leave-session-modal"
         >
-          <Text style={styles.title}>{t('terminal:leaveSession.title')}</Text>
-          <Text style={styles.body}>{t('terminal:leaveSession.body')}</Text>
+          <Text style={[styles.title, copyStyle]}>{t('terminal:leaveSession.title')}</Text>
+          <Text style={[styles.body, copyStyle]}>{t('terminal:leaveSession.body')}</Text>
 
           <View accessibilityRole="radiogroup" style={styles.options}>
             {OPTIONS.map((id) => {
@@ -113,8 +116,8 @@ function LeaveSessionForm({
                     <CircleIcon size={22} color={theme.text.secondary} />
                   )}
                   <View style={styles.optionCopy}>
-                    <Text style={styles.optionTitle}>{getLeaveActionTitle(id, t)}</Text>
-                    <Text style={styles.optionHint}>{getLeaveActionHint(id, t)}</Text>
+                    <Text style={[styles.optionTitle, optionTextStyle]}>{getLeaveActionTitle(id, t)}</Text>
+                    <Text style={[styles.optionHint, optionTextStyle]}>{getLeaveActionHint(id, t)}</Text>
                   </View>
                 </TouchableOpacity>
               )
@@ -133,7 +136,7 @@ function LeaveSessionForm({
             ) : (
               <SquareIcon size={22} color={theme.text.secondary} />
             )}
-            <Text style={styles.rememberLabel}>{t('terminal:leaveSession.remember')}</Text>
+            <Text style={[styles.rememberLabel, optionTextStyle]}>{t('terminal:leaveSession.remember')}</Text>
           </TouchableOpacity>
 
           <View style={styles.buttonRow}>
@@ -144,7 +147,7 @@ function LeaveSessionForm({
               accessibilityRole="button"
               accessibilityLabel={t('common:button.cancel')}
             >
-              <Text style={styles.cancelLabel}>{t('common:button.cancel')}</Text>
+              <Text style={[styles.cancelLabel, optionTextStyle]}>{t('common:button.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.confirmButton}
@@ -153,7 +156,7 @@ function LeaveSessionForm({
               accessibilityRole="button"
               accessibilityLabel={t('common:button.confirm')}
             >
-              <Text style={styles.confirmLabel}>{t('common:button.confirm')}</Text>
+              <Text style={[styles.confirmLabel, optionTextStyle]}>{t('common:button.confirm')}</Text>
             </TouchableOpacity>
           </View>
         </View>
