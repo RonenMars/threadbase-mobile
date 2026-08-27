@@ -17,6 +17,7 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
+import { ltrContentStyle } from '@/lib/rtl'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import type { QuestionPhase } from '@/hooks/useActiveQuestion'
@@ -346,7 +347,7 @@ export function TerminalOutput({
   }, [onSearchResumedConversation, onViewResumedConversation, tTerminal])
 
   return (
-    <View style={styles.container} onLayout={handleContainerLayout}>
+    <View style={styles.container} onLayout={handleContainerLayout} testID="terminal-output">
       <FlashList
         ref={listRef}
         data={collapsedLines}
@@ -408,6 +409,11 @@ export function TerminalOutput({
 
 const styles = StyleSheet.create({
   container: {
+    // Terminal bytes are technical content: column alignment, box drawing and
+    // ❯ prompts only read correctly left-to-right. Yoga would otherwise inherit
+    // the app root's RTL direction here. Children inherit this, so the rows and
+    // their text stay LTR too.
+    direction: 'ltr',
     flex: 1,
     backgroundColor: '#0d1117',
     borderRadius: 12,
@@ -458,6 +464,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   lineText: {
+    ...ltrContentStyle,
     color: '#e6edf3',
     fontSize: 12,
     fontFamily: 'monospace',

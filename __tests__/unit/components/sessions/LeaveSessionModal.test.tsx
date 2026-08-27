@@ -1,8 +1,13 @@
 import React from 'react'
+import { StyleSheet } from 'react-native'
 import { render, fireEvent, screen } from '@testing-library/react-native'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
+import i18n from '@/test-utils/i18n-setup'
 
 describe('LeaveSessionModal', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en')
+  })
   it('shows three radios without a dropdown and defaults to Leave it', async () => {
     const onConfirm = jest.fn()
     const onCancel = jest.fn()
@@ -53,5 +58,24 @@ describe('LeaveSessionModal', () => {
     await rerender(<LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />)
     await fireEvent.press(screen.getByTestId('leave-session-confirm'))
     expect(onConfirm).toHaveBeenCalledWith('leave', false)
+  })
+
+  it('aligns translated copy to the locale writing direction', async () => {
+    await i18n.changeLanguage('he')
+    await render(
+      <LeaveSessionModal visible onCancel={jest.fn()} onConfirm={jest.fn()} />,
+    )
+
+    expect(StyleSheet.flatten(screen.getByText('Leave this session?').props.style)).toEqual(
+      expect.objectContaining({
+        direction: 'rtl',
+        writingDirection: 'rtl',
+        textAlign: 'auto',
+        width: '100%',
+      }),
+    )
+    expect(StyleSheet.flatten(screen.getByText('Leave it').props.style)).toEqual(
+      expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),
+    )
   })
 })

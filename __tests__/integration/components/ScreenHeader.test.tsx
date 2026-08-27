@@ -1,9 +1,22 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { StyleSheet, type ViewStyle } from 'react-native'
+import { render, fireEvent, cleanup } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
+import i18n from '@/test-utils/i18n-setup'
+
+function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
+  const style = StyleSheet.flatten(element.props.style)
+  const transform = style.transform
+  if (!Array.isArray(transform)) return false
+  return transform.some((entry) => 'scaleX' in entry && entry.scaleX === -1)
+}
 
 describe('ScreenHeader – back button', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en')
+  })
+
   it('pops the stack when there is a screen to go back to', async () => {
     const back = jest.fn()
     const replace = jest.fn()
@@ -52,5 +65,27 @@ describe('ScreenHeader – back button', () => {
 
     expect(onBack).toHaveBeenCalled()
     expect(back).not.toHaveBeenCalled()
+  })
+
+  it('leaves the back caret unmirrored in LTR and mirrors it in RTL', async () => {
+    ;(useRouter as jest.Mock).mockReturnValue({
+      back: jest.fn(),
+      replace: jest.fn(),
+      canGoBack: () => true,
+    })
+
+    const ltr = await render(<ScreenHeader title="Test" />)
+    expect(isMirrored(ltr.getByTestId('phosphor-react-native-caret-left-undefined'))).toBe(false)
+    expect(StyleSheet.flatten(ltr.getByText('Test').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto' }),
+    )
+
+    cleanup()
+    await i18n.changeLanguage('he')
+    const rtl = await render(<ScreenHeader title="Test" />)
+    expect(isMirrored(rtl.getByTestId('phosphor-react-native-caret-left-undefined'))).toBe(true)
+    expect(StyleSheet.flatten(rtl.getByText('Test').props.style)).toEqual(
+      expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),
+    )
   })
 })

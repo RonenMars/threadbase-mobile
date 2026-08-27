@@ -32,6 +32,7 @@ import { clientLog } from '@/lib/clientLog'
 import { useProviderHealth } from '@/hooks/useProviderHealth'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { findProviderHealth } from '@/types/provider-health'
+import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 const MAX_RECENT_DIRS = 8
 const PREVIEW_RECENT_DIRS = 3
@@ -45,6 +46,8 @@ export default function BrowseScreen() {
     return makeStyles(theme)
   }, [theme])
   const { t } = useTranslation(['browse', 'common', 'sessions'])
+  const { direction, isRTL } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
   // Pre-fill cwd when the caller passes ?path=... (TreeView drill → FAB).
@@ -269,7 +272,7 @@ export default function BrowseScreen() {
         return (
           <View style={styles.row} testID={`browse-file-${item.name}`}>
             <File size={20} color={theme.text.secondary} style={styles.rowIcon} />
-            <Text style={[styles.dirName, styles.fileName]} numberOfLines={1}>
+            <Text style={[styles.dirName, styles.fileName, ltrContentStyle]} numberOfLines={1}>
               {item.name}
             </Text>
           </View>
@@ -285,14 +288,14 @@ export default function BrowseScreen() {
           testID={index === 0 ? "browse-first-directory" : undefined}
         >
           <Folder size={20} color={theme.text.accent} weight="fill" style={styles.rowIcon} />
-          <Text style={styles.dirName} numberOfLines={1}>
+          <Text style={[styles.dirName, ltrContentStyle]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.chevron}>›</Text>
+          <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
         </TouchableOpacity>
       )
     },
-    [currentPath, navigateTo, styles, theme],
+    [currentPath, navigateTo, styles, theme, isRTL],
   )
 
   // Directories first (navigable), then files (view-only). Both arrive
@@ -315,7 +318,7 @@ export default function BrowseScreen() {
     <GestureDetector gesture={swipeBack}>
     <SafeAreaView style={styles.container} edges={['bottom']} testID="browse-screen">
       {/* Breadcrumbs */}
-      <View style={styles.breadcrumbs} testID={`browse-cwd-${currentPath || '~'}`}>
+      <View style={[styles.breadcrumbs, ltrContentStyle]} testID={`browse-cwd-${currentPath || '~'}`}>
         <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)}>
           <Text style={[styles.crumb, currentPath === '' && styles.crumbActive]}>~</Text>
         </TouchableOpacity>
@@ -341,13 +344,13 @@ export default function BrowseScreen() {
             accessibilityLabel={recentsToggleLabel}
           >
             <GlassFill />
-            <Text style={styles.recentsHeaderText}>
+            <Text style={[styles.recentsHeaderText, copyStyle]}>
               {t('nav.recentDirs', { total: recentDirs.length })}
             </Text>
             {isRecentsOpen ? (
               <CaretDown size={14} color={theme.text.secondary} weight="bold" />
             ) : (
-              <CaretRight size={14} color={theme.text.secondary} weight="bold" />
+              <CaretRight size={14} color={theme.text.secondary} weight="bold" mirrored={isRTL} />
             )}
           </TouchableOpacity>
           {isRecentsOpen ? (
@@ -362,14 +365,14 @@ export default function BrowseScreen() {
                 >
                   <ClockCounterClockwise size={18} color={theme.text.secondary} />
                   <View style={styles.recentTextWrap}>
-                    <Text style={styles.recentName} numberOfLines={1}>
+                    <Text style={[styles.recentName, ltrContentStyle]} numberOfLines={1}>
                       {dir.name}
                     </Text>
-                    <Text style={styles.recentPath} numberOfLines={1}>
+                    <Text style={[styles.recentPath, ltrContentStyle]} numberOfLines={1}>
                       {dir.path}
                     </Text>
                   </View>
-                  <CaretRight size={16} color={theme.text.secondary} />
+                  <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
                 </TouchableOpacity>
               ))}
               {hasMoreRecents ? (
@@ -379,7 +382,7 @@ export default function BrowseScreen() {
                   accessibilityRole="button"
                   testID="recent-dirs-display-all"
                 >
-                  <Text style={styles.displayAllText}>{t('nav.displayAll')}</Text>
+                  <Text style={[styles.displayAllText, copyStyle]}>{t('nav.displayAll')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -438,7 +441,7 @@ export default function BrowseScreen() {
             <Text style={styles.newFolderToggleText}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TextInput
-            style={[styles.newFolderInput, { flex: 1 }]}
+            style={[styles.newFolderInput, copyStyle, { flex: 1 }]}
             value={newFolderName}
             onChangeText={setNewFolderName}
             placeholder={t('nav.newFolderPlaceholder')}
@@ -741,11 +744,6 @@ function makeStyles(theme: Theme) {
   },
   fileName: {
     color: theme.text.secondary,
-  },
-  chevron: {
-    color: theme.text.secondary,
-    fontSize: font.xl,
-    marginStart: spacing.sm,
   },
   newFolderInput: {
     flex: 1,

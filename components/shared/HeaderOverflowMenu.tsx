@@ -3,7 +3,7 @@ import { Modal, View, Text, Pressable, StyleSheet } from 'react-native'
 import { DotsThreeVertical, type IconProps } from 'phosphor-react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 export interface HeaderOverflowMenuItem {
   key: string
@@ -23,6 +23,8 @@ interface Props {
 export function HeaderOverflowMenu({ items, accessibilityLabel = 'More options', testID }: Props) {
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme)
   const [open, setOpen] = useState(false)
 
@@ -55,7 +57,7 @@ export function HeaderOverflowMenu({ items, accessibilityLabel = 'More options',
                 ]}
               >
                 <item.icon size={20} color={theme.text.secondary} />
-                <Text style={styles.itemText}>{item.label}</Text>
+                <Text style={[styles.itemText, copyStyle]}>{item.label}</Text>
               </Pressable>
             ))}
           </View>

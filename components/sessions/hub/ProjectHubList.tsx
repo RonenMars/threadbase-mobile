@@ -24,6 +24,7 @@ import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessAct
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
+import { useTextDirectionStyle } from '@/lib/rtl'
 import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 import {
   collidingProjectPaths,
@@ -49,6 +50,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const styles = makeStyles(theme, insets.bottom)
   const router = useRouter()
   const { t } = useTranslation('sessions')
+  const searchDirection = useTextDirectionStyle()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   // Tracks which groups are expanded, keyed by projectId (with projectPath
@@ -267,7 +269,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           <View style={styles.searchRow}>
             <TextInput
               ref={inputRef}
-              style={styles.searchInput}
+              style={[styles.searchInput, searchDirection]}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder={t('search.placeholder')}

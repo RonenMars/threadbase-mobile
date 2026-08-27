@@ -1,4 +1,5 @@
 {
+  "screenTitle": "تصفح",
   "nav": {
     "back": "‹ رجوع",
     "recentDirs": "المجلدات الأخيرة ({{total}})",

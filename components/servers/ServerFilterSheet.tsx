@@ -9,6 +9,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 export type SortType = 'lastActivity' | 'startedAt'
 
@@ -57,6 +58,8 @@ export function ServerFilterSheet({
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common', 'sessions'])
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const STATUS_OPTIONS = getStatusOptions(theme, t)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -104,17 +107,17 @@ export function ServerFilterSheet({
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetView style={styles.content}>
+      <BottomSheetView style={[styles.content, { direction }]}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{t('filter.title')}</Text>
+          <Text style={[styles.title, copyStyle]}>{t('filter.title')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
+            <Text style={[styles.closeButtonText, copyStyle]}>{t('filter.close')}</Text>
           </TouchableOpacity>
         </View>
 
         {showSortFilter ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
+            <Text style={[styles.sectionTitle, copyStyle]}>{t('filter.sortBy')}</Text>
             <View style={styles.chipRow}>
               {SORT_OPTIONS.map((opt) => {
                 const selected = draftSort === opt.value
@@ -126,7 +129,7 @@ export function ServerFilterSheet({
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    <Text style={[styles.chipText, copyStyle, selected && styles.chipTextSelected]}>
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -139,19 +142,19 @@ export function ServerFilterSheet({
         {showStatusFilter ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
+              <Text style={[styles.sectionTitle, copyStyle]}>{t('filter.status')}</Text>
               <View style={styles.quickRow}>
                 <TouchableOpacity
                   style={styles.quickButton}
                   onPress={() => setDraftStatuses(ALL_STATUSES)}
                 >
-                  <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
+                  <Text style={[styles.quickButtonText, copyStyle]}>{t('filter.all')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickButton}
                   onPress={() => setDraftStatuses([])}
                 >
-                  <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
+                  <Text style={[styles.quickButtonText, copyStyle]}>{t('filter.none')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -167,7 +170,7 @@ export function ServerFilterSheet({
                     accessibilityState={{ selected }}
                   >
                     <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    <Text style={[styles.chipText, copyStyle, selected && styles.chipTextSelected]}>
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -179,7 +182,7 @@ export function ServerFilterSheet({
 
         {showServerFilter ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
+            <Text style={[styles.sectionTitle, copyStyle]}>{t('filter.servers')}</Text>
             <DisplayedServersList
               activeServerIds={activeServerIds}
               servers={servers}
@@ -191,7 +194,7 @@ export function ServerFilterSheet({
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
+            <Text style={[styles.cancelText, copyStyle]}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}
@@ -202,7 +205,7 @@ export function ServerFilterSheet({
               onClose()
             }}
           >
-            <Text style={styles.applyText}>{t('common:button.apply')}</Text>
+            <Text style={[styles.applyText, copyStyle]}>{t('common:button.apply')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

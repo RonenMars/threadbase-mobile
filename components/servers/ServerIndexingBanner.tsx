@@ -15,6 +15,7 @@ import { type Theme, font, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { blockTextDirectionStyle, ltrContentStyle, useAppDirection } from '@/lib/rtl'
 
 const BEAM_WIDTH = 72
 const TRACK_HEIGHT = 3
@@ -54,7 +55,7 @@ function PulseDot({ index }: { index: number }) {
 }
 
 // Sweeping beam that bounces left ↔ right along the track.
-function ScanBeam({ trackWidth }: { trackWidth: number }) {
+function ScanBeam({ trackWidth, isRTL }: { trackWidth: number; isRTL: boolean }) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const position = useSharedValue(0)
@@ -91,7 +92,7 @@ function ScanBeam({ trackWidth }: { trackWidth: number }) {
       ['#58a6ff', '#79c0ff', '#58a6ff'],
     )
     return {
-      transform: [{ translateX: position.value }],
+      transform: [{ translateX: isRTL ? -position.value : position.value }],
       backgroundColor,
       shadowColor: backgroundColor,
     }
@@ -104,6 +105,8 @@ export function ServerIndexingBanner() {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t, i18n } = useTranslation('servers')
+  const { direction, isRTL } = useAppDirection()
+  const titleStyle = blockTextDirectionStyle(direction)
   const { width: screenWidth } = useWindowDimensions()
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -131,8 +134,8 @@ export function ServerIndexingBanner() {
     >
       {/* Text */}
       <View style={styles.textBlock}>
-        <Text style={styles.title}>{t('indexing.label')}</Text>
-        {!hasProgress && <Text style={styles.subtitle}>{t('indexing.subtitle')}</Text>}
+        <Text style={[styles.title, titleStyle]}>{t('indexing.label')}</Text>
+        {!hasProgress && <Text style={[styles.subtitle, titleStyle]}>{t('indexing.subtitle')}</Text>}
       </View>
 
       {/* Pulse dots */}
@@ -154,11 +157,11 @@ export function ServerIndexingBanner() {
           return (
             <View key={serverId} style={styles.serverProgress}>
               <View style={styles.serverHeader}>
-                <Text style={styles.serverLabel} numberOfLines={1}>
+                <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>
                   {serverLabel}
                 </Text>
                 {validProgress && (
-                  <Text style={styles.subtitle}>
+                  <Text style={[styles.subtitle, ltrContentStyle]}>
                     {t('indexing.progress', {
                       scanned: validProgress.scanned.toLocaleString(i18n.language),
                       total: validProgress.total.toLocaleString(i18n.language),
@@ -170,9 +173,9 @@ export function ServerIndexingBanner() {
               {/* Determinate fill when progress is known, indeterminate beam otherwise. */}
               <View style={[styles.track, { width: trackWidth }]}>
                 {validProgress ? (
-                  <View style={[styles.fill, { width: fillWidth }]} />
+                  <View testID="indexing-progress-fill" style={[styles.fill, { width: fillWidth }]} />
                 ) : (
-                  <ScanBeam trackWidth={trackWidth} />
+                  <ScanBeam trackWidth={trackWidth} isRTL={isRTL} />
                 )}
               </View>
             </View>
@@ -246,7 +249,7 @@ function makeStyles(theme: Theme) {
     fill: {
       position: 'absolute',
       top: 0,
-      left: 0,
+      start: 0,
       height: TRACK_HEIGHT,
       borderRadius: TRACK_HEIGHT,
       backgroundColor: theme.text.accent,
@@ -254,7 +257,7 @@ function makeStyles(theme: Theme) {
     beam: {
       position: 'absolute',
       top: 0,
-      left: 0,
+      start: 0,
       width: BEAM_WIDTH,
       height: TRACK_HEIGHT,
       borderRadius: TRACK_HEIGHT,

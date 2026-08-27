@@ -5,9 +5,11 @@
  * full-screen expand modal: text input, send, attach, mic, and expand/minimize.
  */
 import React from 'react'
-import { fireEvent, screen } from '@testing-library/react-native'
+import { StyleSheet, type ViewStyle } from 'react-native'
+import { fireEvent, screen, cleanup } from '@testing-library/react-native'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
 import { renderWithI18n } from '@/test-utils/render'
+import i18n from '@/test-utils/i18n-setup'
 
 function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProps {
   return {
@@ -34,6 +36,9 @@ async function renderComposer(overrides?: Partial<ChatComposerProps>) {
 }
 
 describe('ChatComposer', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en')
+  })
   it('renders the text input and forwards typing', async () => {
     const { props } = await renderComposer()
     const input = screen.getByTestId('chat-message-input')
@@ -82,5 +87,30 @@ describe('ChatComposer', () => {
   it('does not render a sendNotice element when null', async () => {
     await renderComposer({ sendNotice: null })
     expect(screen.queryByText('That question isn\'t open anymore.')).toBeNull()
+  })
+
+  it('mirrors the send plane and follows locale writing direction on the input', async () => {
+    function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
+      const style = StyleSheet.flatten(element.props.style)
+      const transform = style.transform
+      if (!Array.isArray(transform)) return false
+      return transform.some((entry) => 'scaleX' in entry && entry.scaleX === -1)
+    }
+
+    await renderComposer({ value: 'hello' })
+    const ltrPlane = screen.getByTestId('phosphor-react-native-paper-plane-right-undefined')
+    expect(isMirrored(ltrPlane)).toBe(false)
+    expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto' }),
+    )
+
+    cleanup()
+    await i18n.changeLanguage('he')
+    await renderComposer({ value: 'שלום' })
+    const rtlPlane = screen.getByTestId('phosphor-react-native-paper-plane-right-undefined')
+    expect(isMirrored(rtlPlane)).toBe(true)
+    expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style)).toEqual(
+      expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),
+    )
   })
 })

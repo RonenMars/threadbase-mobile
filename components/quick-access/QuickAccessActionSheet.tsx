@@ -6,7 +6,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { ChipItem } from './QuickAccessChip'
-import { flexRow, useAppDirection } from '@/lib/rtl'
+import { flexRow, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 import { useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
@@ -25,7 +25,8 @@ export function QuickAccessActionSheet({
   const { t } = useTranslation('shared')
   const theme = useTheme()
   const isGlass = useIsGlass()
-  const { isRTL } = useAppDirection()
+  const { direction, isRTL } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme, isRTL)
   const directionStyle = useDirectionStyle()
   if (!item) return null
@@ -35,34 +36,34 @@ export function QuickAccessActionSheet({
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, isGlass && styles.sheetGlass, directionStyle]}>
         <GlassFill />
-        <Text style={styles.title} numberOfLines={1}>{item.label}</Text>
+        <Text style={[styles.title, copyStyle]} numberOfLines={1}>{item.label}</Text>
 
         {item.type === 'dir' ? (
           <>
             <Pressable style={styles.row} onPress={onNewSession}>
-              <ArrowRight size={18} color={theme.text.accent} />
-              <Text style={[styles.rowText, styles.rowTextPrimary]}>{t('quickAccess.newSessionHere')}</Text>
+              <ArrowRight size={18} color={theme.text.accent} mirrored={isRTL} />
+              <Text style={[styles.rowText, copyStyle, styles.rowTextPrimary]}>{t('quickAccess.newSessionHere')}</Text>
             </Pressable>
             <Pressable style={styles.row} onPress={onBrowse}>
               <FolderOpen size={18} color={theme.text.secondary} />
-              <Text style={styles.rowText}>{t('quickAccess.browseDirectory')}</Text>
+              <Text style={[styles.rowText, copyStyle]}>{t('quickAccess.browseDirectory')}</Text>
             </Pressable>
           </>
         ) : (
           <Pressable style={styles.row} onPress={onOpenSession}>
-            <ArrowRight size={18} color={theme.text.accent} />
-            <Text style={[styles.rowText, styles.rowTextPrimary]}>{t('quickAccess.openSession')}</Text>
+            <ArrowRight size={18} color={theme.text.accent} mirrored={isRTL} />
+            <Text style={[styles.rowText, copyStyle, styles.rowTextPrimary]}>{t('quickAccess.openSession')}</Text>
           </Pressable>
         )}
 
         <Pressable style={styles.row} onPress={onTogglePin}>
           <Star size={18} color={theme.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />
-          <Text style={styles.rowText}>{isFavorite ? t('quickAccess.unpinFromFavorites') : t('quickAccess.pinToFavorites')}</Text>
+          <Text style={[styles.rowText, copyStyle]}>{isFavorite ? t('quickAccess.unpinFromFavorites') : t('quickAccess.pinToFavorites')}</Text>
         </Pressable>
 
         <Pressable style={[styles.row, styles.rowCancel]} onPress={onClose}>
           <X size={18} color={theme.status.failed} />
-          <Text style={[styles.rowText, styles.rowTextCancel]}>{t('quickAccess.cancel')}</Text>
+          <Text style={[styles.rowText, copyStyle, styles.rowTextCancel]}>{t('quickAccess.cancel')}</Text>
         </Pressable>
       </View>
     </Modal>

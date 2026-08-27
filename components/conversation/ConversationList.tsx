@@ -27,6 +27,7 @@ import { useNavLockStore } from '@/stores/navLock'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MultiConversation } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
+import { useTextDirectionStyle } from '@/lib/rtl'
 
 const CONV_SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `conv-sk-${i}`)
 
@@ -130,6 +131,7 @@ export function ConversationList({
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const searchDirection = useTextDirectionStyle()
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const skeletonMode = isLoadingInitial
   const listData: (MultiConversation | string)[] = skeletonMode ? [...CONV_SKELETON_KEYS] : conversations
@@ -198,7 +200,7 @@ export function ConversationList({
       {searchOpen ? (
         <View style={styles.searchBar}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, searchDirection]}
             value={searchQuery}
             onChangeText={onSearchChange}
             placeholder={t('list.searchPlaceholder')}

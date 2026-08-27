@@ -59,6 +59,7 @@ import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
@@ -663,8 +664,9 @@ const MergedClassicList = React.memo(function MergedClassicList({
 }) {
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const { direction } = useAppDirection()
   const styles = useMemo(() => makeStyles(theme), [theme])
-  const searchStyles = makeSearchStyles(theme)
+  const searchStyles = makeSearchStyles(theme, direction)
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { MIN_TOUCH_TARGET } from '@/constants/a11y'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 export interface RecentDir {
   path: string
@@ -33,6 +33,8 @@ interface Props {
 export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: Props) {
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction, isRTL } = useAppDirection()
+  const searchDirection = textDirectionStyle(direction)
   const styles = useMemo(() => makeStyles(theme), [theme])
   const { t } = useTranslation(['browse', 'common'])
   const [query, setQuery] = useState('')
@@ -60,7 +62,7 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
     >
       <SafeAreaView style={[styles.root, directionStyle]} edges={['bottom']} testID="recent-dirs-modal">
         <View style={styles.header}>
-          <Text style={styles.title}>{t('nav.allRecentDirs')}</Text>
+          <Text style={[styles.title, searchDirection]}>{t('nav.allRecentDirs')}</Text>
           <TouchableOpacity
             onPress={onClose}
             accessibilityRole="button"
@@ -80,7 +82,7 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
             onChangeText={setQuery}
             placeholder={t('nav.searchRecentDirs')}
             placeholderTextColor={theme.text.secondary}
-            style={styles.search}
+            style={[styles.search, searchDirection]}
             autoCapitalize="none"
             autoCorrect={false}
             clearButtonMode="while-editing"
@@ -93,7 +95,7 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
           keyExtractor={(item) => item.path}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text style={styles.empty}>{t('nav.noMatchingDirs')}</Text>
+            <Text style={[styles.empty, searchDirection]}>{t('nav.noMatchingDirs')}</Text>
           }
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -104,14 +106,14 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
             >
               <ClockCounterClockwise size={18} color={theme.text.secondary} />
               <View style={styles.textWrap}>
-                <Text style={styles.name} numberOfLines={1}>
+                <Text style={[styles.name, ltrContentStyle]} numberOfLines={1}>
                   {item.name}
                 </Text>
-                <Text style={styles.path} numberOfLines={1}>
+                <Text style={[styles.path, ltrContentStyle]} numberOfLines={1}>
                   {item.path}
                 </Text>
               </View>
-              <CaretRight size={16} color={theme.text.secondary} />
+              <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
             </TouchableOpacity>
           )}
         />

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { goBackOrHub } from '@/lib/goBackOrHub'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 interface Props {
   title?: string
@@ -18,7 +19,9 @@ export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
   const router = useRouter()
   const { t } = useTranslation('common')
   const theme = useTheme()
+  const { direction, isRTL } = useAppDirection()
   const styles = makeStyles(theme)
+  const titleDirection = textDirectionStyle(direction)
   return (
     <View style={styles.bar}>
       <Pressable
@@ -28,10 +31,10 @@ export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}
         accessibilityLabel={t('button.back')}
       >
-        <CaretLeft size={28} color={theme.text.primary} />
+        <CaretLeft size={28} color={theme.text.primary} mirrored={isRTL} />
       </Pressable>
       <View style={styles.titleRow}>
-        <Text style={styles.title} numberOfLines={1}>{title ?? ''}</Text>
+        <Text style={[styles.title, titleDirection]} numberOfLines={1}>{title ?? ''}</Text>
         {titleRight ?? null}
       </View>
       <View style={styles.side}>{right ?? null}</View>

@@ -25,7 +25,7 @@ import { wsManager } from '@/services/ws-client'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import type { ExchangeResult } from '@/services/pair-exchange'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -55,6 +55,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
 
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
 
   // Pre-fill fields when opening. Read the server fresh from the store rather than
   // depending on the `server` reference — background polling replaces that object on
@@ -213,7 +215,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
           <View style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>{modalTitle}</Text>
+              <Text style={[styles.title, copyStyle]}>{modalTitle}</Text>
               <TouchableOpacity onPress={handleDismiss} hitSlop={12} style={styles.closeBtn}>
                 <X size={20} color={theme.text.secondary} />
               </TouchableOpacity>
@@ -248,7 +250,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               {error ? (
                 <View style={styles.errorBox}>
                   <XCircle size={14} color={theme.text.danger} weight="fill" />
-                  <Text style={styles.errorText}>{error}</Text>
+                  <Text style={[styles.errorText, copyStyle]}>{error}</Text>
                 </View>
               ) : null}
 
@@ -257,7 +259,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 onPress={handleSave}
                 disabled={!urlHost.trim() || !apiKey.trim()}
               >
-                <Text style={styles.saveBtnText}>{t('button.save')}</Text>
+                <Text style={[styles.saveBtnText, copyStyle]}>{t('button.save')}</Text>
               </TouchableOpacity>
 
               {/* Only in edit mode: the pin is written onto a server record, and

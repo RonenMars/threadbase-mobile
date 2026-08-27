@@ -10,6 +10,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { useSettingsStore } from '@/stores/settings'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { ConversationListItem } from './ConversationListItem'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 interface Props {
   /** Pass null/undefined to hide. The sheet opens when this is set. */
@@ -36,6 +37,8 @@ const SNAP_POINTS = ['60%', '90%']
 
 export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: Props) {
   const { t } = useTranslation('sessions')
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const theme = useTheme()
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
@@ -83,7 +86,7 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
       backgroundComponent={glassBackground}
       handleIndicatorStyle={{ backgroundColor: theme.border }}
     >
-      <View style={styles.pinned}>
+      <View style={[styles.pinned, { direction }]}>
         <ConversationListItem
           testID={`preview-row-${target.kind}-${target.id ?? 'unknown'}`}
           title={target.title ?? undefined}
@@ -99,29 +102,29 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.messages}>
+      <ScrollView contentContainerStyle={[styles.messages, { direction }]}>
         {target.kind === 'session' ? (
-          <Text style={styles.placeholder}>{t('preview.liveUnavailable')}</Text>
+          <Text style={[styles.placeholder, copyStyle]}>{t('preview.liveUnavailable')}</Text>
         ) : isLoading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={theme.text.secondary} />
           </View>
         ) : lastMessages.length === 0 ? (
-          <Text style={styles.placeholder}>{t('preview.noMessages')}</Text>
+          <Text style={[styles.placeholder, copyStyle]}>{t('preview.noMessages')}</Text>
         ) : (
           lastMessages.map((m) => <MessageBubble key={m.id} message={m} />)
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { direction }]}>
         <TouchableOpacity style={styles.primary} onPress={handleOpen} activeOpacity={0.75}>
-          <Text style={styles.primaryLabel}>
+          <Text style={[styles.primaryLabel, copyStyle]}>
             {target.kind === 'session' ? t('preview.openSession') : t('preview.openConversation')}
           </Text>
         </TouchableOpacity>
         {onPin ? (
           <TouchableOpacity style={styles.ghost} onPress={onPin} activeOpacity={0.75}>
-            <Text style={styles.ghostLabel}>{isPinned ? t('preview.unpin') : t('preview.pin')}</Text>
+            <Text style={[styles.ghostLabel, copyStyle]}>{isPinned ? t('preview.unpin') : t('preview.pin')}</Text>
           </TouchableOpacity>
         ) : null}
       </View>

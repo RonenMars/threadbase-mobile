@@ -24,7 +24,7 @@ import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -38,6 +38,8 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme)
   const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
@@ -114,8 +116,8 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   } else if (!permission.granted) {
     body = (
       <View style={styles.permissionWrap}>
-        <Text style={styles.permissionTitle}>{t('scanner.permissionTitle')}</Text>
-        <Text style={styles.permissionBody}>{t('scanner.permissionBody')}</Text>
+        <Text style={[styles.permissionTitle, copyStyle]}>{t('scanner.permissionTitle')}</Text>
+        <Text style={[styles.permissionBody, copyStyle]}>{t('scanner.permissionBody')}</Text>
         {permission.canAskAgain ? (
           <TouchableOpacity
             testID="pair-scanner-allow-camera"
@@ -125,7 +127,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
               if (next.granted) reset()
             }}
           >
-            <Text style={styles.primaryBtnText}>{t('scanner.allowCamera')}</Text>
+            <Text style={[styles.primaryBtnText, copyStyle]}>{t('scanner.allowCamera')}</Text>
           </TouchableOpacity>
         ) : (
           <>

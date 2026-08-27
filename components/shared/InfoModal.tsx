@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 export interface InfoField {
   label: string
@@ -42,6 +42,8 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
 
   const handleCopy = async (label: string, value: string) => {
@@ -56,7 +58,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
       <View style={[styles.sheet, isGlass && styles.sheetGlass, directionStyle]}>
         <GlassFill />
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{title}</Text>
+          <Text style={[styles.headerTitle, copyStyle]}>{title}</Text>
           <View style={styles.headerActions}>
             {action ? (
               <TouchableOpacity
@@ -80,8 +82,8 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
             return (
               <View key={label} style={styles.row}>
                 <View style={styles.rowLeft}>
-                  <Text style={styles.label}>{label}</Text>
-                  <Text style={styles.value} selectable>
+                  <Text style={[styles.label, copyStyle]}>{label}</Text>
+                  <Text style={[styles.value, ltrContentStyle]} selectable>
                     {value}
                   </Text>
                 </View>

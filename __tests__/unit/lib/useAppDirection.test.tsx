@@ -11,7 +11,7 @@ import { I18nManager, StyleSheet, Text, View } from 'react-native'
 import { act, render } from '@testing-library/react-native'
 import * as Updates from 'expo-updates'
 import i18n from '@/test-utils/i18n-setup'
-import { localeDirection, useAppDirection, flexRow } from '@/lib/rtl'
+import { localeDirection, useAppDirection, flexRow, textDirectionStyle, ltrContentStyle, blockTextDirectionStyle } from '@/lib/rtl'
 import { isRTLLocale, SUPPORTED_LOCALES } from '@/lib/locale'
 
 function setNativeRTL(value: boolean) {
@@ -158,4 +158,25 @@ describe('useAppDirection', () => {
       )
     },
   )
+})
+
+describe('text direction helpers', () => {
+  it('builds the runtime text/input triple from the resolved direction', () => {
+    expect(textDirectionStyle('rtl')).toEqual({
+      direction: 'rtl',
+      writingDirection: 'rtl',
+      textAlign: 'auto',
+    })
+    expect(blockTextDirectionStyle('ltr')).toEqual({
+      direction: 'ltr',
+      writingDirection: 'ltr',
+      textAlign: 'auto',
+      width: '100%',
+    })
+    expect(ltrContentStyle).toEqual({
+      direction: 'ltr',
+      writingDirection: 'ltr',
+      textAlign: 'auto',
+    })
+  })
 })

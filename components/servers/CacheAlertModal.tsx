@@ -9,7 +9,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { clearServerConversationAndSessionState, queryClient } from '@/services/query-client'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -24,6 +24,8 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
   const { t } = useTranslation('servers')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const servers = useServersStore((s) => s.servers)
@@ -131,7 +133,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
           <GlassFill />
           <View style={styles.header}>
             <WarningCircle size={20} color={theme.status.failed} weight="fill" />
-            <Text style={styles.title}>
+            <Text style={[styles.title, copyStyle]}>
               {t('cacheAlert.title', {
                 missing: alert.missingCount,
                 total: alert.totalRows,
@@ -141,13 +143,13 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
           </View>
 
           {alert.severity === 'high' ? (
-            <Text style={styles.backupHint}>{t('cacheAlert.backupHint')}</Text>
+            <Text style={[styles.backupHint, copyStyle]}>{t('cacheAlert.backupHint')}</Text>
           ) : null}
 
           {pendingAction ? (
             <View style={styles.confirmBlock}>
-              <Text style={styles.confirmTitle}>{t('cacheAlert.confirmTitle')}</Text>
-              <Text style={styles.confirmMessage}>{confirmMessage}</Text>
+              <Text style={[styles.confirmTitle, copyStyle]}>{t('cacheAlert.confirmTitle')}</Text>
+              <Text style={[styles.confirmMessage, ltrContentStyle]}>{confirmMessage}</Text>
               {actionError ? (
                 <Text style={styles.selectErrorText}>{actionError}</Text>
               ) : null}
@@ -157,14 +159,14 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                   onPress={() => setPendingAction(null)}
                   disabled={submitting}
                 >
-                  <Text style={styles.confirmBtnText}>{t('cacheAlert.confirmCancel')}</Text>
+                  <Text style={[styles.confirmBtnText, copyStyle]}>{t('cacheAlert.confirmCancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.confirmBtn, styles.confirmBtnDestructive]}
                   onPress={() => submit(pendingAction)}
                   disabled={submitting}
                 >
-                  <Text style={[styles.confirmBtnText, { color: theme.text.danger }]}>
+                  <Text style={[styles.confirmBtnText, copyStyle, { color: theme.text.danger }]}>
                     {t('cacheAlert.confirmProceed')}
                   </Text>
                 </TouchableOpacity>
@@ -176,10 +178,10 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                 <>
                   <View style={styles.selectRow}>
                     <TouchableOpacity onPress={() => setSelectedIds(new Set(missing.map((m) => m.id)))}>
-                      <Text style={styles.selectLink}>{t('cacheAlert.selectAll')}</Text>
+                      <Text style={[styles.selectLink, copyStyle]}>{t('cacheAlert.selectAll')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setSelectedIds(new Set())}>
-                      <Text style={styles.selectLink}>{t('cacheAlert.selectNone')}</Text>
+                      <Text style={[styles.selectLink, copyStyle]}>{t('cacheAlert.selectNone')}</Text>
                     </TouchableOpacity>
                   </View>
                   <ScrollView style={styles.list}>
@@ -196,7 +198,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                           {selected
                             ? <CheckCircle size={18} color={theme.text.accent} weight="fill" />
                             : <CircleIcon size={18} color={theme.text.secondary} />}
-                          <Text style={styles.listItemText} numberOfLines={1}>
+                          <Text style={[styles.listItemText, ltrContentStyle]} numberOfLines={1}>
                             {item.title || item.filePath}
                           </Text>
                         </TouchableOpacity>
@@ -204,13 +206,13 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                     })}
                   </ScrollView>
                   {selectError ? (
-                    <Text style={styles.selectErrorText}>{t('cacheAlert.selectAtLeastOne')}</Text>
+                    <Text style={[styles.selectErrorText, copyStyle]}>{t('cacheAlert.selectAtLeastOne')}</Text>
                   ) : null}
                 </>
               ) : null}
 
               {actionError ? (
-                <Text style={styles.selectErrorText}>{actionError}</Text>
+                <Text style={[styles.selectErrorText, copyStyle]}>{actionError}</Text>
               ) : null}
 
               <View style={styles.actions}>
@@ -219,7 +221,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                   onPress={() => handleActionPress('prune_all')}
                   disabled={submitting}
                 >
-                  <Text style={styles.actionText}>{t('cacheAlert.actionPruneAll')}</Text>
+                  <Text style={[styles.actionText, copyStyle]}>{t('cacheAlert.actionPruneAll')}</Text>
                 </TouchableOpacity>
                 {missing.length > 0 ? (
                   <TouchableOpacity
@@ -227,7 +229,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                     onPress={() => handleActionPress('prune_selected')}
                     disabled={submitting}
                   >
-                    <Text style={styles.actionText}>{t('cacheAlert.actionPruneSelected')}</Text>
+                    <Text style={[styles.actionText, copyStyle]}>{t('cacheAlert.actionPruneSelected')}</Text>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity
@@ -235,14 +237,14 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                   onPress={() => handleActionPress('reset_rescan')}
                   disabled={submitting}
                 >
-                  <Text style={styles.actionText}>{t('cacheAlert.actionResetRescan')}</Text>
+                    <Text style={[styles.actionText, copyStyle]}>{t('cacheAlert.actionResetRescan')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.actionBtn}
                   onPress={() => handleActionPress('ignore')}
                   disabled={submitting}
                 >
-                  <Text style={styles.actionText}>{t('cacheAlert.actionIgnore')}</Text>
+                    <Text style={[styles.actionText, copyStyle]}>{t('cacheAlert.actionIgnore')}</Text>
                 </TouchableOpacity>
               </View>
             </>

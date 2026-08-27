@@ -129,7 +129,17 @@ jest.mock('expo-linear-gradient', () => {
       ReactActual.createElement(View, null, children),
   }
 })
-jest.mock('phosphor-react-native', () => ({ CaretLeft: () => null }))
+jest.mock('phosphor-react-native', () => {
+  const ReactActual = require('react') as typeof React
+  const { View } = require('react-native')
+  return {
+    CaretLeft: (props: { mirrored?: boolean }) =>
+      ReactActual.createElement(View, {
+        testID: 'header-back-caret',
+        mirrored: props.mirrored ?? false,
+      }),
+  }
+})
 jest.mock('@/hooks/useBiometricLock', () => ({
   useBiometricLock: () => ({ locked: false, authenticate: jest.fn() }),
 }))
@@ -243,5 +253,28 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
     expect(mockCapture.screenOptions?.gestureDirection).toBeUndefined()
     expect(mockCapture.screenOptions?.animationMatchesGesture).toBeUndefined()
     expect(mockCapture.screenOptionsByName.browse?.animation).toBe('default')
+  })
+
+  it('mirrors the native back caret in RTL and leaves it unmirrored in LTR', async () => {
+    await renderThemedStack(dark, false)
+    const HeaderLeftLtr = mockCapture.screenOptions?.headerLeft
+    const ltr = await render(
+      <>{HeaderLeftLtr?.({ tintColor: '#fff', canGoBack: true })}</>,
+    )
+    expect(ltr.getByTestId('header-back-caret').props.mirrored).toBe(false)
+
+    await i18n.changeLanguage('he')
+    await renderThemedStack(dark, false)
+    const HeaderLeftRtl = mockCapture.screenOptions?.headerLeft
+    const rtl = await render(
+      <>{HeaderLeftRtl?.({ tintColor: '#fff', canGoBack: true })}</>,
+    )
+    expect(rtl.getByTestId('header-back-caret').props.mirrored).toBe(true)
+  })
+
+  it('translates the browse native title', async () => {
+    await renderThemedStack(dark, false)
+    expect(mockCapture.screenOptionsByName.browse?.title).toBe('Browse')
+    expect(mockCapture.screenOptionsByName.browse?.headerBackTitle).toBe('Cancel')
   })
 })

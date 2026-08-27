@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { alertAppearance } from '@/lib/alertAppearance'
 import type { AlertLevel } from '@/types/alerts'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 type Props = {
   title: string
@@ -21,6 +21,8 @@ export function AlertDetailsModal({ title, message, details, level, accent, onCl
   const { t } = useTranslation('common')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const styles = useMemo(() => makeStyles(theme), [theme])
   const appearance = alertAppearance(level, theme, accent)
   const Icon = appearance.Icon
@@ -33,17 +35,17 @@ export function AlertDetailsModal({ title, message, details, level, accent, onCl
           <GlassFill />
           <View style={styles.header}>
             <Icon size={20} color={appearance.accent} weight={appearance.iconWeight} />
-            <Text style={styles.title}>{title}</Text>
+            <Text style={[styles.title, copyStyle]}>{title}</Text>
           </View>
-          <Text style={[styles.message, { color: appearance.accent }]}>{message}</Text>
-          {details ? <Text style={styles.details}>{details}</Text> : null}
+          <Text style={[styles.message, copyStyle, { color: appearance.accent }]}>{message}</Text>
+          {details ? <Text style={[styles.details, ltrContentStyle]}>{details}</Text> : null}
           <TouchableOpacity
             style={styles.dismissBtn}
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel={closeLabel}
           >
-            <Text style={styles.dismissText}>{closeLabel}</Text>
+            <Text style={[styles.dismissText, copyStyle]}>{closeLabel}</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>

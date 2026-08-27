@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native'
 import { fireEvent, render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
+import i18n from '@/test-utils/i18n-setup'
 
 describe('TerminalOutput – rendering', () => {
   it('renders provided lines', async () => {
@@ -15,6 +16,20 @@ describe('TerminalOutput – rendering', () => {
 
   it('renders empty state without crash', async () => {
     await render(<TerminalOutput lines={[]} isStreaming={false} />)
+  })
+
+  it('pins the terminal surface to LTR even under an RTL app language', async () => {
+    await i18n.changeLanguage('he')
+    const { getByText, getByTestId } = await render(
+      <TerminalOutput lines={['❯ npm run build']} isStreaming={false} />
+    )
+    expect(StyleSheet.flatten(getByTestId('terminal-output').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr' }),
+    )
+    expect(StyleSheet.flatten(getByText('❯ npm run build').props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
+    )
+    await i18n.changeLanguage('en')
   })
 
   it('styles user transcript lines (❯-prefixed) with the accent colour', async () => {

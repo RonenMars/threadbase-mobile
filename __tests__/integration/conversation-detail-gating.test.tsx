@@ -12,11 +12,13 @@
  */
 import React from 'react'
 import { render, act, fireEvent, type RenderResult } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
 import { NotFoundError } from '@/services/api-client'
+import i18n from '@/test-utils/i18n-setup'
 
 function makeDetail(messageCount: number) {
   const messages = Array.from({ length: messageCount }, (_, i) => ({
@@ -180,9 +182,12 @@ describe('conversation detail — resumability gating', () => {
     seedServer()
     ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'conv-gating', server: 'srv1' })
   })
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllTimers()
     jest.useRealTimers()
+    await act(async () => {
+      await i18n.changeLanguage('en')
+    })
   })
 
   it('shows the worktree banner and disables Resume when resumable is false', async () => {
@@ -225,6 +230,22 @@ describe('conversation detail — resumability gating', () => {
     const text = allText(root)
     expect(text).toContain('Resume Session')
     expect(text).not.toContain("Can't resume")
+  })
+
+  it('keeps the resume icon trailing while mirroring it in RTL', async () => {
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, provider: 'codex-cli', resumable: true },
+    }
+    await i18n.changeLanguage('he')
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    const style = StyleSheet.flatten(root.getByTestId('phosphor-react-native-play-fill').props.style)
+    expect(style.transform).toEqual([{ scaleX: -1 }])
+    expect(root.getByTestId('resume-button').children[0].props.testID).toBe(
+      'phosphor-react-native-play-fill',
+    )
   })
 
   it('non-resumable codex conversation shows the path-based reason, not a blanket codex message', async () => {
