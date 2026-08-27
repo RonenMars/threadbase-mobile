@@ -1,3 +1,18 @@
+import * as SecureStore from '@/services/secure-store'
+import nacl from 'tweetnacl'
+import naclUtil from 'tweetnacl-util'
+import {
+  classifyPairCredential,
+  exchangeToken,
+  parsePairUri,
+  PairExchangeError,
+  PairUriError,
+} from '@/services/pair-exchange'
+import { serverIdFromUrl } from '@/types/api'
+import { PAIR_PROLOGUE, derivePairPsk } from '@/services/e2ee/pair-handshake'
+import { createNoiseResponder } from '@/test-utils/noise-responder'
+import vectors from '@/__tests__/fixtures/noise-ikpsk1-vectors.json'
+
 // Through `services/secure-store`, never `expo-secure-store` directly: the web
 // build swaps that module for a localStorage shim by Metro platform extension,
 // so a test that reaches past it is testing a file the app does not always use.
@@ -17,21 +32,6 @@ jest.mock('@/services/secure-store', () => ({
     mockKeychain.delete(key)
   }),
 }))
-
-import * as SecureStore from '@/services/secure-store'
-import nacl from 'tweetnacl'
-import naclUtil from 'tweetnacl-util'
-import {
-  classifyPairCredential,
-  exchangeToken,
-  parsePairUri,
-  PairExchangeError,
-  PairUriError,
-} from '@/services/pair-exchange'
-import { serverIdFromUrl } from '@/types/api'
-import { PAIR_PROLOGUE, derivePairPsk } from '@/services/e2ee/pair-handshake'
-import { createNoiseResponder } from '@/test-utils/noise-responder'
-import vectors from '@/__tests__/fixtures/noise-ikpsk1-vectors.json'
 
 describe('classifyPairCredential', () => {
   it('detects threadbase:// pair URIs', () => {

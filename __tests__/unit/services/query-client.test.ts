@@ -1,4 +1,7 @@
 import type { NetInfoState } from '@react-native-community/netinfo'
+import { onlineManager } from '@tanstack/react-query'
+import { shouldPersistQuery, queryClient } from '@/services/query-client'
+import { useLoadingStateStore } from '@/stores/loading-state'
 
 // jest.mock is hoisted above imports and its factory runs during the
 // query-client import (before any top-level const initializes), so the captured
@@ -23,10 +26,6 @@ function emit(partial: Partial<NetInfoState>) {
   }
   mod.__holder.listener?.(partial)
 }
-
-import { onlineManager } from '@tanstack/react-query'
-import { shouldPersistQuery, queryClient } from '@/services/query-client'
-import { useLoadingStateStore } from '@/stores/loading-state'
 
 function q(queryKey: readonly unknown[], meta?: unknown) {
   return { queryKey, meta }

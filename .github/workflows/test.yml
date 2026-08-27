@@ -174,7 +174,7 @@ jobs:
         if: needs.gate.outputs.skip != 'true'
         uses: ./.github/actions/run-ci
         with:
-          run: npm run lint
+          run: npm run lint -- --max-warnings=0
 
   # ── i18n ─────────────────────────────────────────────────────────────────────
   # The locale gates (`i18n-completeness`, `i18n-unused-keys`, `i18n`) live at the
