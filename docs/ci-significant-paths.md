@@ -84,6 +84,7 @@ Build / lint / type config (any change can flip CI):
 - `react-native.config.js` — RN autolinking fix
 - `global.css` — Tailwind global import
 - `nativewind-env.d.ts` — NativeWind type decls
+- `postcss.config.mjs` — Tailwind v4 PostCSS plugin (NativeWind v5)
 
 Storybook (laptop Vite catalog):
 
