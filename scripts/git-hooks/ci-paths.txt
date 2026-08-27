@@ -43,6 +43,7 @@ tailwind.config.js
 react-native.config.js
 global.css
 nativewind-env.d.ts
+postcss.config.mjs
 
 # storybook (laptop Vite catalog — feeds lint/type/test via story files)
 .storybook/
