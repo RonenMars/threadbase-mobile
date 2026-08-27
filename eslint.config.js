@@ -3,6 +3,7 @@ const expoConfig = require("eslint-config-expo/flat");
 const globals = require("globals");
 const i18next = require("eslint-plugin-i18next");
 const reactNative = require("eslint-plugin-react-native");
+const reactVersion = require("react/package.json").version;
 
 module.exports = defineConfig([
   {
@@ -13,6 +14,13 @@ module.exports = defineConfig([
   },
   ...expoConfig,
   {
+    // ESLint 10 removed context.getFilename(); eslint-plugin-react still calls
+    // it when settings.react.version is "detect" (eslint-config-expo default).
+    settings: {
+      react: {
+        version: reactVersion,
+      },
+    },
     linterOptions: {
       reportUnusedDisableDirectives: "off",
     },
