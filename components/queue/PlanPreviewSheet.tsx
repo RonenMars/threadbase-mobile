@@ -6,6 +6,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 const AUTO_PROCEED_TIMEOUT_MS = 60000
 
@@ -22,6 +23,8 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const { t } = useTranslation('queue')
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const sheetRef = useRef<BottomSheet>(null)
   const { respondToPlan } = useSessionActions(serverId, sessionId)
   const [editMode, setEditMode] = useState(false)
@@ -85,19 +88,19 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
       keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
     >
-      <BottomSheetScrollView contentContainerStyle={styles.content}>
+      <BottomSheetScrollView contentContainerStyle={[styles.content, { direction }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>{t('planPreview.title')}</Text>
-          <Text style={styles.timer}>{t('planPreview.autoProceed', { seconds: secondsLeft })}</Text>
+          <Text style={[styles.title, copyStyle]}>{t('planPreview.title')}</Text>
+          <Text style={[styles.timer, copyStyle]}>{t('planPreview.autoProceed', { seconds: secondsLeft })}</Text>
         </View>
 
         <View style={styles.planBox}>
-          <Text style={styles.planText} selectable>{plan}</Text>
+          <Text style={[styles.planText, ltrContentStyle]} selectable>{plan}</Text>
         </View>
 
         {editMode ? (
           <BottomSheetTextInput
-            style={styles.editInput}
+            style={[styles.editInput, copyStyle]}
             value={editedPrompt}
             onChangeText={setEditedPrompt}
             placeholder={t('planPreview.editPlaceholder')}
@@ -109,13 +112,13 @@ export function PlanPreviewSheet({ serverId, sessionId, plan, visible, onClose }
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.btnProceed} onPress={handleProceed}>
-            <Text style={styles.btnProceedText}>{t('planPreview.proceed')}</Text>
+            <Text style={[styles.btnProceedText, copyStyle]}>{t('planPreview.proceed')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnEdit} onPress={handleEdit}>
-            <Text style={styles.btnEditText}>{editMode ? t('planPreview.sendEdit') : t('planPreview.editPrompt')}</Text>
+            <Text style={[styles.btnEditText, copyStyle]}>{editMode ? t('planPreview.sendEdit') : t('planPreview.editPrompt')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnCancel} onPress={handleCancel}>
-            <Text style={styles.btnCancelText}>{t('planPreview.cancel')}</Text>
+            <Text style={[styles.btnCancelText, copyStyle]}>{t('planPreview.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetScrollView>

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { ServerConfig } from '@/types/api'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -30,6 +30,8 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const { t } = useTranslation(['servers', 'common'])
   if (!server) return null
 
@@ -45,7 +47,7 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <View style={[styles.dot, server.isConnected ? styles.dotConnected : styles.dotDisconnected]} />
-              <Text style={styles.serverName}>{server.label || t('defaultLabel')}</Text>
+              <Text style={[styles.serverName, copyStyle]}>{server.label || t('defaultLabel')}</Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
               <X size={20} color={theme.text.secondary} />
@@ -66,14 +68,14 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
             <ScrollView style={styles.errorBox} nestedScrollEnabled>
               <View style={styles.errorInner}>
                 <XCircle size={14} color={theme.text.danger} weight="fill" style={styles.errorIcon} />
-                <Text style={styles.errorText}>{server.connectionError}</Text>
+                <Text style={[styles.errorText, ltrContentStyle]}>{server.connectionError}</Text>
               </View>
             </ScrollView>
           ) : null}
 
           {/* Close button */}
           <TouchableOpacity style={styles.closeFooterBtn} onPress={onClose}>
-            <Text style={styles.closeFooterText}>{t('common:button.close')}</Text>
+            <Text style={[styles.closeFooterText, copyStyle]}>{t('common:button.close')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -87,7 +89,7 @@ function DetailRow({ label, value, mono }: { label: string; value: string; mono?
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, mono && styles.mono]} numberOfLines={1}>{value}</Text>
+      <Text style={[styles.detailValue, ltrContentStyle, mono && styles.mono]} numberOfLines={1}>{value}</Text>
     </View>
   )
 }

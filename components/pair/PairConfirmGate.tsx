@@ -12,7 +12,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
 import { isolateLtr } from '@/components/pair/ltr-isolate'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 /**
  * A deep link or a pasted credential has no out-of-band channel — a camera
@@ -51,6 +51,8 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
 
   if (!target) return null
 
@@ -94,7 +96,7 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.heading}>
               {icon}
-              <Text style={styles.title}>{title}</Text>
+              <Text style={[styles.title, copyStyle]}>{title}</Text>
             </View>
 
             <View style={styles.detailRows}>
@@ -114,7 +116,7 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
               <IdentityFingerprintBlock fingerprint={target.fingerprint} variant="deep-link" />
             ) : null}
 
-            <Text style={[styles.body, ctaWarning && styles.bodyWarning]}>{bodyText}</Text>
+            <Text style={[styles.body, copyStyle, ctaWarning && styles.bodyWarning]}>{bodyText}</Text>
           </ScrollView>
 
           <View style={styles.actions}>
@@ -124,7 +126,7 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
               testID="pair-confirm-cancel-btn"
               accessibilityRole="button"
             >
-              <Text style={styles.cancelText}>{t('confirm.cancelButton')}</Text>
+              <Text style={[styles.cancelText, copyStyle]}>{t('confirm.cancelButton')}</Text>
             </Pressable>
             <Pressable
               style={[styles.confirmBtn, ctaWarning && styles.confirmBtnWarning]}
@@ -132,7 +134,7 @@ export function PairConfirmGate({ visible, target, onConfirm, onCancel }: Props)
               testID="pair-confirm-add-btn"
               accessibilityRole="button"
             >
-              <Text style={[styles.confirmText, ctaWarning && styles.confirmTextWarning]}>
+              <Text style={[styles.confirmText, copyStyle, ctaWarning && styles.confirmTextWarning]}>
                 {t('confirm.addButton')}
               </Text>
             </Pressable>

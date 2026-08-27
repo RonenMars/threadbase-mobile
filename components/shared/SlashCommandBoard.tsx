@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   /** Whether the board is visible */
@@ -31,6 +31,8 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction, isRTL } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return SLASH_COMMANDS
@@ -56,23 +58,23 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Terminal size={15} color={theme.text.accent} />
-            <Text style={styles.headerTitle}>{t('commands.title')}</Text>
+            <Text style={[styles.headerTitle, copyStyle]}>{t('commands.title')}</Text>
           </View>
           {query.length > 0 && (
-            <Text style={styles.queryBadge}>/{query}</Text>
+            <Text style={[styles.queryBadge, ltrContentStyle]}>/{query}</Text>
           )}
         </View>
 
         {filtered.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>{t('commands.empty', { query })}</Text>
+            <Text style={[styles.emptyText, copyStyle]}>{t('commands.empty', { query })}</Text>
           </View>
         ) : (
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <CommandRow command={item} onPress={() => onSelect(item)} theme={theme} styles={styles} />
+              <CommandRow command={item} onPress={() => onSelect(item)} theme={theme} styles={styles} isRTL={isRTL} copyStyle={copyStyle} />
             )}
             style={styles.list}
             keyboardShouldPersistTaps="always"
@@ -89,9 +91,11 @@ interface RowProps {
   onPress: () => void
   theme: Theme
   styles: ReturnType<typeof makeStyles>
+  isRTL: boolean
+  copyStyle: ReturnType<typeof textDirectionStyle>
 }
 
-function CommandRow({ command, onPress, theme, styles }: RowProps) {
+function CommandRow({ command, onPress, theme, styles, isRTL, copyStyle }: RowProps) {
   const { t } = useTranslation('shared')
   return (
     <TouchableOpacity
@@ -106,16 +110,16 @@ function CommandRow({ command, onPress, theme, styles }: RowProps) {
       <View style={styles.rowBody}>
         <View style={styles.rowTitleRow}>
           <Text style={styles.commandSlash}>/</Text>
-          <Text style={styles.commandTitle}>{command.id}</Text>
+          <Text style={[styles.commandTitle, ltrContentStyle]}>{command.id}</Text>
           {command.needsArgs && (
             <Text style={styles.argsBadge}>{t('commands.argsBadge')}</Text>
           )}
         </View>
-        <Text style={styles.commandDesc} numberOfLines={1}>
+        <Text style={[styles.commandDesc, copyStyle]} numberOfLines={1}>
           {command.description}
         </Text>
       </View>
-      <CaretRight size={14} color={theme.text.secondary} />
+      <CaretRight size={14} color={theme.text.secondary} mirrored={isRTL} />
     </TouchableOpacity>
   )
 }

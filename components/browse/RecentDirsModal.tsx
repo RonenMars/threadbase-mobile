@@ -62,7 +62,7 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
     >
       <SafeAreaView style={[styles.root, directionStyle]} edges={['bottom']} testID="recent-dirs-modal">
         <View style={styles.header}>
-          <Text style={styles.title}>{t('nav.allRecentDirs')}</Text>
+          <Text style={[styles.title, searchDirection]}>{t('nav.allRecentDirs')}</Text>
           <TouchableOpacity
             onPress={onClose}
             accessibilityRole="button"

@@ -15,7 +15,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { SlashCommand } from '@/constants/slashCommands'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   command: SlashCommand | null
@@ -29,6 +29,8 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction, isRTL } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const [arg, setArg] = useState('')
 
   // Reset arg whenever a new command is shown
@@ -72,8 +74,8 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
                 <command.icon size={18} color={theme.text.accent} />
               </View>
               <View>
-                <Text style={styles.commandName}>/{command.id}</Text>
-                <Text style={styles.commandDesc} numberOfLines={1}>
+                <Text style={[styles.commandName, ltrContentStyle]}>/{command.id}</Text>
+                <Text style={[styles.commandDesc, copyStyle]} numberOfLines={1}>
                   {command.description}
                 </Text>
               </View>
@@ -85,11 +87,11 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
 
           {/* Arg input */}
           <View style={styles.body}>
-            <Text style={styles.inputLabel}>
+            <Text style={[styles.inputLabel, copyStyle]}>
               {command.argLabel ?? command.title}
             </Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, copyStyle]}
               value={arg}
               onChangeText={setArg}
               placeholder={command.argPlaceholder ?? ''}
@@ -108,7 +110,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               onPress={onDismiss}
               accessibilityLabel={t('common:button.cancel')}
             >
-              <Text style={styles.cancelBtnText}>{t('common:button.cancel')}</Text>
+              <Text style={[styles.cancelBtnText, copyStyle]}>{t('common:button.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.confirmBtn, !canConfirm && styles.confirmBtnDisabled]}
@@ -116,8 +118,8 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               disabled={!canConfirm}
               accessibilityLabel={`Run /${command.id}`}
             >
-              <PaperPlaneRight size={15} color="#fff" />
-              <Text style={styles.confirmBtnText}>{t('commands.run', { command: command.id })}</Text>
+              <PaperPlaneRight size={15} color="#fff" mirrored={isRTL} />
+              <Text style={[styles.confirmBtnText, copyStyle]}>{t('commands.run', { command: command.id })}</Text>
             </TouchableOpacity>
           </View>
         </View>

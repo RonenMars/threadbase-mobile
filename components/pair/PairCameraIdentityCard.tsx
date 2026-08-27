@@ -5,7 +5,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -22,6 +22,8 @@ export function PairCameraIdentityCard({ visible, fingerprint, onDone }: Props) 
   const { t } = useTranslation('pair')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
 
@@ -42,7 +44,7 @@ export function PairCameraIdentityCard({ visible, fingerprint, onDone }: Props) 
             accessibilityRole="button"
             accessibilityLabel={doneLabel}
           >
-            <Text style={styles.doneText}>{doneLabel}</Text>
+            <Text style={[styles.doneText, copyStyle]}>{doneLabel}</Text>
           </Pressable>
         </View>
       </View>

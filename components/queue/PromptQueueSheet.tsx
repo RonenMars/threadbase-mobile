@@ -10,6 +10,7 @@ import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useSessionsStore } from '@/stores/sessions'
 import type { QueuedPrompt } from '@/types/api'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 function statusColors(theme: Theme): Record<QueuedPrompt['status'], string> {
   return {
@@ -35,6 +36,8 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
   const styles = useMemo(() => makeStyles(theme), [theme])
   const STATUS_COLORS = useMemo(() => statusColors(theme), [theme])
   const { t } = useTranslation('queue')
+  const { direction, isRTL } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
   const queueKey = `${serverId}::${sessionId}`
@@ -64,7 +67,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
           <Text style={[styles.queueStatus, { color: STATUS_COLORS[item.status] }]}>
             {item.status === 'pending' ? '●' : item.status === 'running' ? '▶' : item.status === 'completed' ? '✓' : '✕'}
           </Text>
-          <Text style={styles.queueText} numberOfLines={2}>{item.text}</Text>
+          <Text style={[styles.queueText, copyStyle]} numberOfLines={2}>{item.text}</Text>
         </View>
         {item.status === 'pending' ? (
           <TouchableOpacity
@@ -76,7 +79,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
         ) : null}
       </TouchableOpacity>
     ),
-    [removeFromQueue, t, styles, STATUS_COLORS]
+    [removeFromQueue, t, styles, STATUS_COLORS, copyStyle]
   )
 
   if (!visible) return null
@@ -93,15 +96,15 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
       keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
     >
-      <BottomSheetView style={styles.content}>
+      <BottomSheetView style={[styles.content, { direction }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>{t('promptQueue.title')}</Text>
-          <Text style={styles.subtitle}>{t('promptQueue.pending', { count: queue.filter((p) => p.status === 'pending').length })}</Text>
+          <Text style={[styles.title, copyStyle]}>{t('promptQueue.title')}</Text>
+          <Text style={[styles.subtitle, copyStyle]}>{t('promptQueue.pending', { count: queue.filter((p) => p.status === 'pending').length })}</Text>
         </View>
 
         <View style={styles.inputRow}>
           <BottomSheetTextInput
-            style={styles.input}
+            style={[styles.input, copyStyle]}
             value={input}
             onChangeText={setInput}
             placeholder={t('promptQueue.inputPlaceholder')}
@@ -115,7 +118,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             disabled={!input.trim()}
             accessibilityLabel={t('promptQueue.addLabel')}
           >
-            <PaperPlaneRight size={22} color={theme.text.onAccent} />
+            <PaperPlaneRight size={22} color={theme.text.onAccent} mirrored={isRTL} />
           </TouchableOpacity>
         </View>
 

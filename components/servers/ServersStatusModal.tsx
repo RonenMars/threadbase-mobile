@@ -25,7 +25,7 @@ import { AddServerButton } from '@/components/servers/AddServerButton'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -134,14 +134,14 @@ function StatusRow({
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
-        <Text style={styles.serverLabel} numberOfLines={1}>{label}</Text>
-        <Text style={styles.serverUrl} numberOfLines={1}>{url}</Text>
+        <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>{label}</Text>
+        <Text style={[styles.serverUrl, ltrContentStyle]} numberOfLines={1}>{url}</Text>
         {fetchFailed && fetchStatus?.error ? (
           isRefreshing
             ? <View style={[styles.skeletonBar, { width: '80%', marginTop: 2, height: errorHeight ?? 14 }]} />
             : (
               <Text
-                style={styles.errorDetail}
+                style={[styles.errorDetail, ltrContentStyle]}
                 numberOfLines={2}
                 onLayout={(e) => setErrorHeight(e.nativeEvent.layout.height)}
               >
@@ -194,6 +194,8 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const { t } = useTranslation('servers')
 
   return (
@@ -206,21 +208,21 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
     >
       <Pressable style={[styles.dropBackdrop, directionStyle]} onPress={onClose}>
         <Pressable style={styles.dropSheet} onPress={() => {}}>
-          <Text style={styles.dropTitle} numberOfLines={1}>{serverLabel}</Text>
+          <Text style={[styles.dropTitle, ltrContentStyle]} numberOfLines={1}>{serverLabel}</Text>
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onEdit}>
             <PencilSimple size={16} color={theme.text.accent} />
-            <Text style={[styles.dropItemText, { color: theme.text.accent }]}>{t('statusModal.menuEdit')}</Text>
+            <Text style={[styles.dropItemText, copyStyle, { color: theme.text.accent }]}>{t('statusModal.menuEdit')}</Text>
           </TouchableOpacity>
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onRefresh}>
             <ArrowsClockwise size={16} color={theme.text.secondary} />
-            <Text style={styles.dropItemText}>{t('statusModal.menuRefresh')}</Text>
+            <Text style={[styles.dropItemText, copyStyle]}>{t('statusModal.menuRefresh')}</Text>
           </TouchableOpacity>
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onDelete}>
             <Trash size={16} color={theme.text.danger} />
-            <Text style={[styles.dropItemText, { color: theme.text.danger }]}>{t('statusModal.menuDelete')}</Text>
+            <Text style={[styles.dropItemText, copyStyle, { color: theme.text.danger }]}>{t('statusModal.menuDelete')}</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>
@@ -234,6 +236,8 @@ export function ServersStatusModal({ visible, onClose }: Props) {
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const router = useRouter()
   const { servers, activeServerIds, removeServer, refreshServerInfo } = useServersStore()
   const statuses = useServerStatuses(activeServerIds)
@@ -294,16 +298,16 @@ export function ServersStatusModal({ visible, onClose }: Props) {
           <GlassFill />
           <View style={styles.header}>
             <Cloud size={18} color={theme.text.secondary} weight="regular" />
-            <Text style={styles.title}>
+          <Text style={[styles.title, copyStyle]}>
               {modalTitle}
             </Text>
             {activeServerIds.length > 3 ? (
               <View style={styles.counterBadge}>
-                <Text style={styles.counterText}>{activeServerIds.length}</Text>
+                <Text style={[styles.counterText, ltrContentStyle]}>{activeServerIds.length}</Text>
               </View>
             ) : null}
             <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.iconBtn}>
-              <Text style={styles.closeText}>{t('statusModal.close')}</Text>
+              <Text style={[styles.closeText, copyStyle]}>{t('statusModal.close')}</Text>
             </TouchableOpacity>
           </View>
 

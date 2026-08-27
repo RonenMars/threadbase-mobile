@@ -12,7 +12,7 @@ import {
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useTranslation } from 'react-i18next'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -27,6 +27,8 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const [name, setName] = useState('')
 
   useEffect(() => {
@@ -53,14 +55,14 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, copyStyle]}>{title}</Text>
 
           {mode === 'exit' && currentName ? (
-            <Text style={styles.hint}>{`Current: "${currentName}"`}</Text>
+            <Text style={[styles.hint, copyStyle]}>{`Current: "${currentName}"`}</Text>
           ) : null}
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, copyStyle]}
             placeholder={t('nameSession.placeholder')}
             placeholderTextColor={theme.text.secondary}
             value={name}
@@ -72,10 +74,10 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel} activeOpacity={0.75}>
-              <Text style={styles.cancelLabel}>{t('common:button.cancel')}</Text>
+              <Text style={[styles.cancelLabel, copyStyle]}>{t('common:button.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.75}>
-              <Text style={styles.saveLabel}>{saveLabel}</Text>
+              <Text style={[styles.saveLabel, copyStyle]}>{saveLabel}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -6,6 +6,7 @@ import type { AddServerAction } from '@/stores/settings'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 type Choice = Exclude<AddServerAction, 'ask'>
 
@@ -37,6 +38,8 @@ const OPTIONS: { id: Choice; label: string; description: string }[] = [
 
 export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
   const { t } = useTranslation(['servers', 'common'])
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const theme = useTheme()
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
@@ -54,9 +57,9 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetView style={styles.content}>
-        <Text style={styles.title}>{t('addAction.title')}</Text>
-        <Text style={styles.subtitle}>{t('addAction.subtitle')}</Text>
+      <BottomSheetView style={[styles.content, { direction }]}>
+        <Text style={[styles.title, copyStyle]}>{t('addAction.title')}</Text>
+        <Text style={[styles.subtitle, copyStyle]}>{t('addAction.subtitle')}</Text>
 
         <View style={styles.options}>
           {OPTIONS.map((option) => {
@@ -67,17 +70,17 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
                 style={[styles.option, selected && styles.optionActive]}
                 onPress={() => setChoice(option.id)}
               >
-                <Text style={[styles.optionLabel, selected && styles.optionLabelActive]}>
+                <Text style={[styles.optionLabel, copyStyle, selected && styles.optionLabelActive]}>
                   {option.label}
                 </Text>
-                <Text style={styles.optionDescription}>{option.description}</Text>
+                <Text style={[styles.optionDescription, copyStyle]}>{option.description}</Text>
               </TouchableOpacity>
             )
           })}
         </View>
 
         <View style={styles.rememberRow}>
-          <Text style={styles.rememberLabel}>{t('addAction.rememberChoice')}</Text>
+          <Text style={[styles.rememberLabel, copyStyle]}>{t('addAction.rememberChoice')}</Text>
           <Switch
             value={rememberChoice}
             onValueChange={setRememberChoice}
@@ -88,13 +91,13 @@ export function AddServerActionSheet({ visible, onClose, onConfirm }: Props) {
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
+            <Text style={[styles.cancelText, copyStyle]}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}
             onPress={() => onConfirm(choice, rememberChoice)}
           >
-            <Text style={styles.applyText}>{t('common:button.confirm')}</Text>
+            <Text style={[styles.applyText, copyStyle]}>{t('common:button.confirm')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>

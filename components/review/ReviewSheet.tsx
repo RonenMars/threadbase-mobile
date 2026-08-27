@@ -24,7 +24,7 @@ import type { Message } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { MIN_TOUCH_TARGET } from '@/constants/a11y'
-import { useDirectionStyle } from '@/lib/rtl'
+import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 type FilterKind = 'all' | ReviewFileKind
 
@@ -50,6 +50,8 @@ export function ReviewSheet({
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme)
   const [filter, setFilter] = useState<FilterKind>('all')
   const [query, setQuery] = useState('')
@@ -100,13 +102,13 @@ export function ReviewSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, directionStyle]} testID="review-sheet">
         <View style={styles.header}>
-          <Text style={styles.title}>{t('review.title')}</Text>
+          <Text style={[styles.title, copyStyle]}>{t('review.title')}</Text>
           <TouchableOpacity onPress={onClose} accessibilityRole="button" hitSlop={8} style={{ minWidth: MIN_TOUCH_TARGET, minHeight: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center' }}>
             <X size={22} color={theme.text.secondary} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.summary}>
+        <Text style={[styles.summary, copyStyle]}>
           {t('review.summary', {
             files: summary.files.length,
             added: summary.totalAdded,
@@ -115,12 +117,12 @@ export function ReviewSheet({
         </Text>
 
         {summary.incomplete ? (
-          <Text style={styles.warning} testID="review-incomplete-warning">
+          <Text style={[styles.warning, copyStyle]} testID="review-incomplete-warning">
             {t('review.incompleteWarning')}
           </Text>
         ) : null}
         {summary.hasOversized ? (
-          <Text style={styles.warning}>{t('review.oversizedWarning')}</Text>
+          <Text style={[styles.warning, copyStyle]}>{t('review.oversizedWarning')}</Text>
         ) : null}
 
         <View style={styles.filters}>
@@ -130,7 +132,7 @@ export function ReviewSheet({
               onPress={() => setFilter(k)}
               style={[styles.chip, filter === k && styles.chipActive]}
             >
-              <Text style={[styles.chipText, filter === k && styles.chipTextActive]}>
+              <Text style={[styles.chipText, copyStyle, filter === k && styles.chipTextActive]}>
                 {k === 'all' ? t('review.filterAll') : kindLabel(k)}
               </Text>
             </TouchableOpacity>
@@ -142,7 +144,7 @@ export function ReviewSheet({
           onChangeText={setQuery}
           placeholder={t('review.searchPlaceholder')}
           placeholderTextColor={theme.text.secondary}
-          style={styles.search}
+          style={[styles.search, copyStyle]}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -153,7 +155,7 @@ export function ReviewSheet({
               data={filtered}
               keyExtractor={(item) => item.path}
               ListEmptyComponent={
-                <Text style={styles.empty}>{t('review.empty')}</Text>
+                <Text style={[styles.empty, copyStyle]}>{t('review.empty')}</Text>
               }
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -163,8 +165,8 @@ export function ReviewSheet({
                 >
                   <FileCode size={16} color={theme.text.secondary} />
                   <View style={styles.rowText}>
-                    <Text style={styles.path} numberOfLines={1}>{item.path}</Text>
-                    <Text style={styles.meta}>
+                    <Text style={[styles.path, ltrContentStyle]} numberOfLines={1}>{item.path}</Text>
+                    <Text style={[styles.meta, copyStyle]}>
                       {t('review.fileMeta', {
                         kind: kindLabel(item.kind),
                         added: item.added,
@@ -185,7 +187,7 @@ export function ReviewSheet({
                 recycleKey={selected.path}
               />
             ) : (
-              <Text style={styles.empty}>{t('review.selectFile')}</Text>
+              <Text style={[styles.empty, copyStyle]}>{t('review.selectFile')}</Text>
             )}
           </ScrollView>
         </View>
@@ -198,7 +200,7 @@ export function ReviewSheet({
             testID="review-copy-handoff"
           >
             <CopySimple size={16} color={theme.text.accent} />
-            <Text style={styles.actionText}>{t('review.copyHandoff')}</Text>
+            <Text style={[styles.actionText, copyStyle]}>{t('review.copyHandoff')}</Text>
           </TouchableOpacity>
           {canSendNote ? (
             <TouchableOpacity
@@ -214,7 +216,7 @@ export function ReviewSheet({
               testID="review-send-note"
             >
               <PaperPlaneTilt size={16} color={theme.text.accent} />
-              <Text style={styles.actionText}>{t('review.sendNote')}</Text>
+            <Text style={[styles.actionText, copyStyle]}>{t('review.sendNote')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>

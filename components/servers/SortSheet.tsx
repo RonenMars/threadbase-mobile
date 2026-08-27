@@ -6,6 +6,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SortBy, SortOrder } from '@/types/ui'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -42,6 +43,8 @@ export function SortSheet({
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const [draftBy, setDraftBy] = useState<SortBy>(sortBy)
   const [draftOrder, setDraftOrder] = useState<SortOrder>(sortOrder)
 
@@ -72,16 +75,16 @@ export function SortSheet({
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
-      <BottomSheetView style={styles.content}>
+      <BottomSheetView style={[styles.content, { direction }]}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{t('filter.sortTitle')}</Text>
+          <Text style={[styles.title, copyStyle]}>{t('filter.sortTitle')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={8}>
-            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
+            <Text style={[styles.closeButtonText, copyStyle]}>{t('filter.close')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('filter.sortBy')}</Text>
+          <Text style={[styles.sectionTitle, copyStyle]}>{t('filter.sortBy')}</Text>
           <View style={styles.chipRow}>
             {SORT_BY_OPTIONS.map((opt) => {
               const selected = draftBy === opt.value
@@ -93,7 +96,7 @@ export function SortSheet({
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                  <Text style={[styles.chipText, copyStyle, selected && styles.chipTextSelected]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -103,7 +106,7 @@ export function SortSheet({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('filter.order')}</Text>
+          <Text style={[styles.sectionTitle, copyStyle]}>{t('filter.order')}</Text>
           <View style={styles.chipRow}>
             {SORT_ORDER_OPTIONS.map((opt) => {
               const selected = draftOrder === opt.value
@@ -115,7 +118,7 @@ export function SortSheet({
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                  <Text style={[styles.chipText, copyStyle, selected && styles.chipTextSelected]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -126,7 +129,7 @@ export function SortSheet({
 
         <View style={styles.actions}>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>{t('common:button.cancel')}</Text>
+            <Text style={[styles.cancelText, copyStyle]}>{t('common:button.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}
@@ -136,7 +139,7 @@ export function SortSheet({
               onClose()
             }}
           >
-            <Text style={styles.applyText}>{t('common:button.apply')}</Text>
+            <Text style={[styles.applyText, copyStyle]}>{t('common:button.apply')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>
