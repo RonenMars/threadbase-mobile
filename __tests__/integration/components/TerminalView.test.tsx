@@ -112,6 +112,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
       isError: mockAnswerPermissionState.isError,
       error: mockAnswerPermissionState.error,
     },
+    answerPrompt: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
   }),
 }))
 

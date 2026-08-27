@@ -203,6 +203,47 @@ export function isAnswerRefusedError(err: Error | null): boolean {
   return err instanceof NetworkError && err.code !== undefined && ANSWER_REFUSED_CODES.includes(err.code)
 }
 
+/**
+ * POST /api/sessions/:id/prompt/answer — the provider-neutral route — answers
+ * every refusal as `{ ok: false, code }`; `code` is folded into NetworkError.code
+ * like `reason` is for the legacy routes. Three verdicts:
+ *
+ * closed — the prompt can no longer be answered by anyone: the card comes down
+ * with a calm notice. `prompt_not_found` is here because it is also what an
+ * answer retry gets once the server has pruned the record.
+ *
+ * stale — the answer targeted a prompt or option that has since changed
+ * (`prompt_revision_mismatch`, or an id the server no longer knows). The prompt
+ * itself is still open; the newer revision has already replaced the card, so
+ * it stays up and the user answers again.
+ *
+ * Neither is retried: both are deterministic for the payload that was sent,
+ * and the idempotency key makes a network retry a replay, not a second answer.
+ */
+const PROMPT_CLOSED_CODES: readonly string[] = [
+  'already_resolved',
+  'prompt_expired',
+  'prompt_cancelled',
+  'prompt_unavailable',
+  'prompt_not_found',
+]
+
+const PROMPT_STALE_CODES: readonly string[] = [
+  'prompt_revision_mismatch',
+  'unknown_question',
+  'unknown_option',
+  'incomplete_answer',
+  'unsupported_prompt_shape',
+]
+
+export function isPromptClosedError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code !== undefined && PROMPT_CLOSED_CODES.includes(err.code)
+}
+
+export function isPromptStaleError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code !== undefined && PROMPT_STALE_CODES.includes(err.code)
+}
+
 const REQUEST_TIMEOUT_MS = 15000
 // First attempt fails over to the silent retry sooner — a stalled connection
 // shouldn't burn the full 15 s before the retry even starts.

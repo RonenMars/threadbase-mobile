@@ -56,7 +56,7 @@ export function TerminalView({
     provider,
   )
   const confidence = parseConfidenceProp ?? parseConfidence
-  const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
+  const { sendInput, sendKeys, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
   const {
     activeQuestion,
     answerPhase,
@@ -64,9 +64,10 @@ export function TerminalView({
     clearQuestion,
     handleAnswerPermission,
     handleAnswerQuestion,
+    handleAnswerPrompt,
     answerErrorMessage,
     answerNoticeMessage,
-  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission })
+  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt })
 
   // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
   // not in SessionHistoryFeed itself, because entering it also has to hide
@@ -180,6 +181,7 @@ export function TerminalView({
           activeQuestion={activeQuestion}
           onAnswer={handleAnswerQuestion}
           onAnswerPermission={handleAnswerPermission}
+          onAnswerPrompt={handleAnswerPrompt}
           answerPhase={answerPhase}
           answerBusy={answerBusy}
           onDismissQuestion={clearQuestion}

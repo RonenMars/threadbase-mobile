@@ -97,6 +97,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendKeys: { mutate: jest.fn() },
     respondToQuestion: { mutate: jest.fn(), mutateAsync: mockRespondToQuestion, isError: false, error: null },
     answerPermission: { mutate: jest.fn(), mutateAsync: mockAnswerPermission, isError: false, error: null },
+    answerPrompt: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
   }),
 }))
 

@@ -5,6 +5,8 @@ import type {
   QuestionCancelledWsMessage,
   PermissionWsMessage,
   PermissionCancelledWsMessage,
+  PromptEventWsMessage,
+  PromptSnapshotWsMessage,
   CacheAlertSeverity,
   CacheAlertResolveAction,
   HostPressureLevel,
@@ -74,6 +76,8 @@ export type WSMessage =
   | QuestionCancelledWsMessage
   | PermissionWsMessage
   | PermissionCancelledWsMessage
+  | PromptEventWsMessage
+  | PromptSnapshotWsMessage
 
 type MessageHandler = (msg: WSMessage) => void
 

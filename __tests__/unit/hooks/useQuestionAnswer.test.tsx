@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
 import { NetworkError } from '@/services/api-client'
-import type { PermissionWsMessage, QuestionWsMessage } from '@/types/api'
+import type { PermissionWsMessage, Prompt, QuestionWsMessage } from '@/types/api'
 
 type ClientHandler = (msg: unknown) => void
 
@@ -57,9 +57,10 @@ const mutation = (over: Partial<Mutation> = {}): Mutation => ({
 // The mutations are passed in rather than created inside the hook, and these
 // stand-ins are how that is enforced: a hook that called useSessionActions()
 // itself would ignore them and read a second, independent instance.
-async function setup(over: { respondToQuestion?: Mutation; answerPermission?: Mutation } = {}) {
+async function setup(over: { respondToQuestion?: Mutation; answerPermission?: Mutation; answerPrompt?: Mutation } = {}) {
   const respondToQuestion = over.respondToQuestion ?? mutation()
   const answerPermission = over.answerPermission ?? mutation()
+  const answerPrompt = over.answerPrompt ?? mutation()
   // A provider the hook itself does not need. It is here so the mutant that
   // calls useSessionActions() internally can actually run and report a real
   // isPending, instead of throwing for want of a provider — a mutant that
@@ -77,10 +78,12 @@ async function setup(over: { respondToQuestion?: Mutation; answerPermission?: Mu
       respondToQuestion: respondToQuestion as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
       answerPermission: answerPermission as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+      answerPrompt: answerPrompt as any,
     }),
     { wrapper },
   )
-  return { ...rendered, respondToQuestion, answerPermission }
+  return { ...rendered, respondToQuestion, answerPermission, answerPrompt }
 }
 
 describe('useQuestionAnswer – the mutations it was given', () => {
@@ -222,4 +225,110 @@ describe('useQuestionAnswer – an answer the server refuses to write', () => {
       expect(result.current.answerNoticeMessage).toBeNull()
     },
   )
+})
+
+const PROMPT: Prompt = {
+  schemaVersion: 1,
+  sessionId: 's1',
+  promptId: 'prompt-1',
+  revision: 1,
+  state: 'open',
+  intent: 'approval',
+  title: 'Approval',
+  message: 'Do you want to proceed?',
+  detail: 'Bash command\ngit push',
+  questions: [
+    {
+      questionId: 'q-1',
+      text: 'Do you want to proceed?',
+      header: 'Approval',
+      inputMode: 'single',
+      options: [
+        { optionId: 'opt-yes', label: 'Yes' },
+        { optionId: 'opt-no', label: 'No' },
+      ],
+      allowOther: false,
+      secret: 'unknown',
+    },
+  ],
+  answerRequirement: 'unknown',
+  expiresAt: null,
+  provenance: { source: 'screen', confidence: 'inferred' },
+}
+
+const promptEvent = (prompt: Prompt) => ({ type: 'prompt_event', sessionId: 's1', sequence: 1, prompt })
+
+describe('useQuestionAnswer – provider-neutral prompt card', () => {
+  it('answers by the option and question ids with the revision and a fresh idempotency key', async () => {
+    const { result, answerPrompt } = await setup()
+    await act(() => __wsTest.emit('prompt_event', promptEvent({ ...PROMPT, revision: 3 })))
+    expect(result.current.activeQuestion?.source).toBe('prompt')
+
+    await act(async () => { await result.current.handleAnswerPrompt(1) })
+
+    expect(answerPrompt.mutateAsync).toHaveBeenCalledTimes(1)
+    const sent = answerPrompt.mutateAsync.mock.calls[0][0]
+    expect(sent).toMatchObject({ promptId: 'prompt-1', revision: 3, questionId: 'q-1', optionId: 'opt-no' })
+    expect(sent.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(result.current.answerPhase).toBe('pending')
+  })
+
+  it('mints a new idempotency key per tap', async () => {
+    const { result, answerPrompt } = await setup()
+    await act(() => __wsTest.emit('prompt_event', promptEvent(PROMPT)))
+    await act(async () => { await result.current.handleAnswerPrompt(0) })
+    await act(() => __wsTest.emit('prompt_event', promptEvent({ ...PROMPT, promptId: 'prompt-2' })))
+    await act(async () => { await result.current.handleAnswerPrompt(0) })
+    const keys = answerPrompt.mutateAsync.mock.calls.map((c: [{ idempotencyKey: string }]) => c[0].idempotencyKey)
+    expect(new Set(keys).size).toBe(2)
+  })
+
+  // Fail closed: an unsupported shape has no optionId to send, so a tap never
+  // reaches the network — there is nothing this client may write for it.
+  it('sends nothing for an unsupported shape', async () => {
+    const { result, answerPrompt } = await setup()
+    const multi: Prompt = { ...PROMPT, questions: [{ ...PROMPT.questions[0], inputMode: 'multi' }] }
+    await act(() => __wsTest.emit('prompt_event', promptEvent(multi)))
+    expect(result.current.activeQuestion?.unsupportedShape).toBe('multi')
+    await act(async () => { await result.current.handleAnswerPrompt(0) })
+    expect(answerPrompt.mutateAsync).not.toHaveBeenCalled()
+    expect(result.current.activeQuestion).not.toBeNull()
+  })
+
+  it('clears the card on a closed reply', async () => {
+    const closed = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('409', 'already_resolved')) })
+    const { result } = await setup({ answerPrompt: closed })
+    await act(() => __wsTest.emit('prompt_event', promptEvent(PROMPT)))
+    await act(async () => { await result.current.handleAnswerPrompt(0) })
+    expect(result.current.activeQuestion).toBeNull()
+  })
+
+  it('keeps the card on a stale reply', async () => {
+    const stale = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('409', 'prompt_revision_mismatch')) })
+    const { result } = await setup({ answerPrompt: stale })
+    await act(() => __wsTest.emit('prompt_event', promptEvent(PROMPT)))
+    await act(async () => { await result.current.handleAnswerPrompt(0) })
+    expect(result.current.activeQuestion).not.toBeNull()
+    expect(result.current.answerPhase).toBe('active')
+  })
+
+  it('derives the closed notice, the changed notice, or the error from the settled prompt mutation', async () => {
+    const closed = await setup({ answerPrompt: mutation({ isError: true, error: new NetworkError('409', 'prompt_cancelled') }) })
+    expect(closed.result.current.answerNoticeMessage).not.toBeNull()
+    expect(closed.result.current.answerErrorMessage).toBeNull()
+
+    const stale = await setup({ answerPrompt: mutation({ isError: true, error: new NetworkError('409', 'prompt_revision_mismatch') }) })
+    expect(stale.result.current.answerNoticeMessage).not.toBeNull()
+    expect(stale.result.current.answerNoticeMessage).not.toBe(closed.result.current.answerNoticeMessage)
+    expect(stale.result.current.answerErrorMessage).toBeNull()
+
+    const failed = await setup({ answerPrompt: mutation({ isError: true, error: new NetworkError('Server returned 502', 'provider_error') }) })
+    expect(failed.result.current.answerErrorMessage).toBe('Server returned 502')
+    expect(failed.result.current.answerNoticeMessage).toBeNull()
+  })
+
+  it('reports busy from the prompt mutation it was handed', async () => {
+    const { result } = await setup({ answerPrompt: mutation({ isPending: true }) })
+    expect(result.current.answerBusy).toBe(true)
+  })
 })

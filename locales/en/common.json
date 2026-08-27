@@ -68,7 +68,8 @@
     "micAccessNeededMessage": "Enable microphone access in Settings to dictate."
   },
   "question": {
-    "answerSent": "Answer sent — waiting for the agent to move on."
+    "answerSent": "Answer sent — waiting for the agent to move on.",
+    "unsupportedShape": "This prompt needs an answer this app can't send yet — answer it in the terminal."
   },
   "errorBanner": {
     "titleSessions": "Sessions failed to load",

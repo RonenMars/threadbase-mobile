@@ -11,7 +11,8 @@
   },
   "answer": {
     "failed": "Couldn't send your answer. Check your connection and try again.",
-    "questionClosed": "That question isn't open anymore."
+    "questionClosed": "That question isn't open anymore.",
+    "promptChanged": "That prompt changed — check it and answer again."
   },
   "voice": {
     "start": "Start dictation",

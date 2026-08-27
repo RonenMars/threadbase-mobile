@@ -219,7 +219,7 @@ export function LiveConversationView({
   // Phase comes gated on `presentation.live` — never re-derive liveness here.
   const agentPhase = session ? deriveSessionPresentation(session).subStatus : null
 
-  const { sendInput, sendKeys, respondToQuestion, answerPermission } = useSessionActions(serverId, sessionId)
+  const { sendInput, sendKeys, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
   const {
     activeQuestion,
     answerPhase,
@@ -227,9 +227,10 @@ export function LiveConversationView({
     clearQuestion,
     handleAnswerPermission,
     handleAnswerQuestion,
+    handleAnswerPrompt,
     answerErrorMessage,
     answerNoticeMessage,
-  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission })
+  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt })
 
   // A question arrives on the running → waiting_input edge, which is exactly the
   // edge that retires the thinking bubble. Mount on the question too, or a card
@@ -378,6 +379,7 @@ export function LiveConversationView({
             subStatus={agentPhase}
             onAnswer={handleAnswerQuestion}
             onAnswerPermission={handleAnswerPermission}
+            onAnswerPrompt={handleAnswerPrompt}
             answerPhase={answerPhase}
             answerBusy={answerBusy}
             onDismissQuestion={clearQuestion}

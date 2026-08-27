@@ -95,6 +95,8 @@ interface Props {
   onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
   /** Answer a permission gate by the option's position in the broadcast options array. */
   onAnswerPermission?: (optionIndex: number) => void
+  /** Provider-neutral prompt card: answers by the option's position, ids are on the block. */
+  onAnswerPrompt?: (optionIndex: number) => void
   /** Lifecycle phase of `activeQuestion` — 'pending' renders it as an inert ghost. */
   answerPhase?: QuestionPhase | null
   /** An answer is in flight; locks the rows so a double-tap cannot send twice. */
@@ -126,6 +128,7 @@ export function TerminalOutput({
   activeQuestion,
   onAnswer,
   onAnswerPermission,
+  onAnswerPrompt,
   answerPhase = null,
   answerBusy = false,
   onDismissQuestion,
@@ -289,10 +292,14 @@ export function TerminalOutput({
       onAnswerPermission?.(optionIndex)
       return
     }
+    if (activeQuestion.source === 'prompt') {
+      onAnswerPrompt?.(optionIndex)
+      return
+    }
     if (!activeQuestion.toolUseId || !onAnswer) return
     const q = activeQuestion.questions[questionIndex]
     onAnswer(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
-  }, [activeQuestion, onAnswer, onAnswerPermission])
+  }, [activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt])
 
   const listHeader = useMemo(() => {
     if (!onViewResumedConversation) return null
