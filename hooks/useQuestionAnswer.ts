@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { isPermissionClosedError, isQuestionClosedError } from '@/services/api-client'
+import { isPermissionClosedError, isPromptClosedError, isPromptStaleError, isQuestionClosedError } from '@/services/api-client'
+import { generateUUID } from '@/services/device-id'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import type { useSessionActions } from '@/hooks/useSessionActions'
 import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
@@ -22,6 +23,7 @@ interface Params {
    */
   respondToQuestion: SessionActions['respondToQuestion']
   answerPermission: SessionActions['answerPermission']
+  answerPrompt: SessionActions['answerPrompt']
 }
 
 /**
@@ -34,7 +36,7 @@ interface Params {
  * #807). One copy also means the end-to-end seam test covers both views by
  * construction rather than by 120 lines of duplicated mock scaffolding.
  */
-export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission }: Params) {
+export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt }: Params) {
   const { t } = useTranslation('terminal')
   const {
     question: activeQuestion,
@@ -81,31 +83,72 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
     }
   }, [activeQuestion, clearQuestion, markPending, questionKey, respondToQuestion])
 
+  // Provider-neutral card. Everything the answer needs is on the block the
+  // server built — ids, revision — so a card the mapper marked unsupported has
+  // no optionId to send and this returns without touching the network.
+  const handleAnswerPrompt = useCallback(async (optionIndex: number) => {
+    const answered = activeQuestion
+    const answeredKey = questionKey
+    if (!answered || answered.source !== 'prompt') return
+    const question = answered.questions[0]
+    const option = question?.options[optionIndex]
+    if (
+      answered.promptId === undefined ||
+      answered.promptRevision === undefined ||
+      question?.questionId === undefined ||
+      option?.optionId === undefined
+    ) return
+    try {
+      await answerPrompt.mutateAsync({
+        promptId: answered.promptId,
+        revision: answered.promptRevision,
+        questionId: question.questionId,
+        optionId: option.optionId,
+        idempotencyKey: generateUUID(),
+      })
+      markPending(answeredKey)
+    } catch (err) {
+      if (isPromptClosedError(err instanceof Error ? err : null)) clearQuestion()
+    }
+  }, [activeQuestion, answerPrompt, clearQuestion, markPending, questionKey])
+
   const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
   // Same split for the gate route, and the same reason: a gate the server says
   // is closed is not a failure the user must act on, it is the prompt going
   // away. Everything else is a real error and keeps the card up to retry.
   const isGateClosedError = isPermissionClosedError(answerPermission.error)
+  // The prompt route adds a third verdict: stale. The prompt is still open and
+  // the newer revision has already replaced the card, so it is a notice to look
+  // again, not a failure and not a close.
+  const isPromptClosed = isPromptClosedError(answerPrompt.error)
+  const isPromptStale = isPromptStaleError(answerPrompt.error)
   const answerFailure = respondToQuestion.isError && !isQuestionGoneError
     ? respondToQuestion.error
     : answerPermission.isError && !isGateClosedError
       ? answerPermission.error
-      : null
+      : answerPrompt.isError && !isPromptClosed && !isPromptStale
+        ? answerPrompt.error
+        : null
   const answerErrorMessage = answerFailure
     ? answerFailure instanceof Error
       ? answerFailure.message
       : t('answer.failed')
     : null
   const answerNoticeMessage =
-    (respondToQuestion.isError && isQuestionGoneError) || isGateClosedError ? t('answer.questionClosed') : null
+    (respondToQuestion.isError && isQuestionGoneError) || isGateClosedError || isPromptClosed
+      ? t('answer.questionClosed')
+      : isPromptStale
+        ? t('answer.promptChanged')
+        : null
 
   return {
     activeQuestion,
     answerPhase,
-    answerBusy: answerPermission.isPending || respondToQuestion.isPending,
+    answerBusy: answerPermission.isPending || respondToQuestion.isPending || answerPrompt.isPending,
     clearQuestion,
     handleAnswerPermission,
     handleAnswerQuestion,
+    handleAnswerPrompt,
     answerErrorMessage,
     answerNoticeMessage,
   }

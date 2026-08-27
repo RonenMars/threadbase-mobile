@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, isAnswerRefusedError, isPermissionClosedError, isPromptPendingError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
+import { createApiForServer, isAnswerRefusedError, isPermissionClosedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
@@ -155,6 +155,24 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
+  // Provider-neutral answer route: the prompt and option are named by the
+  // opaque ids the server minted, and the revision the card was built from is
+  // echoed so an answer to an older shape is refused rather than misapplied.
+  // The caller mints `idempotencyKey` once per tap, so the two network retries
+  // replay the same answer instead of settling the prompt twice.
+  const answerPrompt = useMutation({
+    ...retryOnNetwork,
+    retry: (count: number, err: Error) =>
+      err instanceof NetworkError && !isPromptClosedError(err) && !isPromptStaleError(err) && count < 2,
+    mutationFn: (vars: { promptId: string; revision: number; questionId: string; optionId: string; idempotencyKey: string }) =>
+      api.post(`/api/sessions/${sessionId}/prompt/answer`, {
+        promptId: vars.promptId,
+        revision: vars.revision,
+        responses: [{ questionId: vars.questionId, optionIds: [vars.optionId] }],
+        idempotencyKey: vars.idempotencyKey,
+      }),
+  })
+
   const adoptSession = useMutation({
     mutationFn: () =>
       api.post<{ sessionId: string }>(`/api/sessions/${sessionId}/adopt`),
@@ -234,5 +252,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, answerPrompt, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

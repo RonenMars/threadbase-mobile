@@ -339,6 +339,75 @@ export interface PermissionCancelledWsMessage {
   sessionId: string
 }
 
+// ─── Provider-neutral prompt contract (streamer ≥ 1.70, schemaVersion 1) ───
+//
+// One shape for every prompt regardless of provider or producer. Ids are
+// opaque and server-owned: answer by `optionId`, never by position or label.
+// Additive beside the legacy `question` / `permission` events, which the
+// streamer keeps sending; a streamer that predates the contract sends none of
+// these frames and the client stays on the legacy path.
+
+export type PromptInputMode = 'single' | 'multi' | 'text'
+
+export interface PromptOption {
+  optionId: string
+  label: string
+  description?: string
+  preview?: string
+}
+
+export interface PromptQuestion {
+  questionId: string
+  text: string
+  header?: string
+  /** Narrowed on read: anything but `single` is a shape this build cannot answer. */
+  inputMode: PromptInputMode | string
+  options: PromptOption[]
+  allowOther: boolean
+  secret: boolean | 'unknown'
+}
+
+/** `open` and `updated` are actionable; every other value, known or not, is not. */
+export type PromptState = 'open' | 'updated' | 'resolved' | 'cancelled' | 'expired' | 'unavailable'
+
+export interface Prompt {
+  schemaVersion: number
+  sessionId: string
+  promptId: string
+  /** Bumped on a meaningful update; the answer echoes the revision it saw. */
+  revision: number
+  state: PromptState | string
+  terminalReason?: string
+  intent: 'approval' | 'question'
+  title?: string
+  message?: string
+  detail?: string
+  questions: PromptQuestion[]
+  answerRequirement: 'blocking' | 'non_blocking' | 'unknown'
+  expiresAt: string | null
+  provenance: { source: string; confidence: string }
+}
+
+export interface PromptEventWsMessage {
+  type: 'prompt_event'
+  sessionId: string
+  sequence: number
+  prompt: Prompt
+}
+
+/**
+ * Sent synchronously on subscribe_session, before terminal replay. Carries
+ * every prompt the streamer still RETAINS for the session — terminal ones
+ * included — so filter on `state`; presence is not "open".
+ */
+export interface PromptSnapshotWsMessage {
+  type: 'prompt_snapshot'
+  schemaVersion: number
+  sessionId: string
+  sequence: number
+  prompts: Prompt[]
+}
+
 export interface DiffHunk {
   oldStart: number
   oldLines: number
@@ -379,6 +448,14 @@ export interface ServerInfo {
    * troubleshooting step would take every device token with it.
    */
   devicesDurable?: boolean
+  /**
+   * Additive: the server publishes the provider-neutral prompt contract
+   * (`prompt_snapshot` / `prompt_event` frames, POST /prompt/answer). Absent on
+   * older servers. Informational: the client negotiates by frame presence, not
+   * by this field, because the subscribe snapshot precedes any legacy frame and
+   * this probe has its own timing.
+   */
+  promptContract?: { schemaVersion: number; atomicAnswer: boolean }
   /**
    * Additive: whether this server speaks application-layer encryption, and
    * whether it is switched on right now.

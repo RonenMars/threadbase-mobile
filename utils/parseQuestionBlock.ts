@@ -4,18 +4,33 @@ export interface QuestionOption {
   label: string
   description?: string
   preview?: string
+  /** Prompt-contract only: the opaque id the answer carries instead of the label. */
+  optionId?: string
 }
 export interface QuestionItem {
   question: string
   header?: string
+  /** Prompt-contract only: the opaque id the answer is keyed on. */
+  questionId?: string
   /** Permission-gate only: descriptive block (tool + command + action) shown above the question. */
   detail?: string
   multiSelect: boolean
   options: QuestionOption[]
 }
 export interface QuestionBlock {
-  source: 'structured' | 'pty' | 'permission'
+  source: 'structured' | 'pty' | 'permission' | 'prompt'
   toolUseId?: string
+  /** Prompt-contract only: server-owned occurrence id, echoed on the answer. */
+  promptId?: string
+  /** Prompt-contract only: the revision this block was built from, echoed on the answer. */
+  promptRevision?: number
+  /**
+   * Prompt-contract only: set when the prompt needs an answer this build cannot
+   * send — a multi-question form, a multi-select or free-text question, or an
+   * input mode it does not know. The card renders no options and says so; no
+   * keystrokes are ever synthesized for it.
+   */
+  unsupportedShape?: 'form' | 'multi' | 'text' | 'unknown'
   questions: QuestionItem[]
   /** PTY-scrape only: index of the ❯ cursor row among options of questions[0] */
   selectedIndex?: number

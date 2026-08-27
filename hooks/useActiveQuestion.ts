@@ -3,8 +3,12 @@ import { AppState } from 'react-native'
 import { wsManager } from '@/services/ws-client'
 import { mapAskQuestionToBlock } from '@/utils/mapAskQuestionToBlock'
 import { mapPermissionToBlock } from '@/utils/mapPermissionToBlock'
+import { mapPromptToBlock } from '@/utils/mapPromptToBlock'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 import type {
+  Prompt,
+  PromptEventWsMessage,
+  PromptSnapshotWsMessage,
   QuestionWsMessage,
   QuestionCancelledWsMessage,
   PermissionWsMessage,
@@ -20,7 +24,15 @@ type Incoming =
   | QuestionCancelledWsMessage
   | PermissionWsMessage
   | PermissionCancelledWsMessage
+  | PromptEventWsMessage
+  | PromptSnapshotWsMessage
   | SessionUpdateMessage
+
+// Narrowed on read, never trusted from the type: a state this build has not
+// heard of is not actionable (tb-mobile CLAUDE.md, "degrade, don't break").
+function isActionablePrompt(prompt: Prompt): boolean {
+  return prompt.state === 'open' || prompt.state === 'updated'
+}
 
 // Content identity of a gate, cursor deliberately excluded. The streamer's own
 // dedupe key includes the cursor, so a repaint that only moves it re-broadcasts
@@ -98,6 +110,13 @@ export function useActiveQuestionReducer(sessionId: string) {
   // subscribe replay into an already-waiting session. `*_cancelled` is the exit
   // that covers that window.
   const lastStatus = useRef<SessionStatus | null>(null)
+  // Set by the first prompt_snapshot / prompt_event for this session. A
+  // contract-capable streamer emits the same prompt on BOTH the new and the
+  // legacy frames, so once one contract frame has been seen the legacy frames
+  // are ignored — otherwise every gate would open twice and flap. The snapshot
+  // goes out on subscribe before any legacy frame, so this cannot race; a
+  // streamer that predates the contract never sets it and nothing changes.
+  const promptContractSeen = useRef(false)
 
   // Both callers pass a definite key (toolUseId, or gateKey's template literal) —
   // a null here would mean a card whose identity matches every other null-keyed card.
@@ -191,6 +210,23 @@ export function useActiveQuestionReducer(sessionId: string) {
     reset()
   }, [reset])
 
+  // One normalized prompt, from a snapshot or a live event. Actionable → it is
+  // the card (a revision bump keeps the key, so the user's selection survives
+  // exactly as a cursor repaint does); terminal → it comes down if it is the
+  // card on screen. The snapshot lists every retained prompt, terminal ones
+  // included, so this runs per prompt and the last actionable one wins.
+  // ponytail: singleton card — the server models several open prompts, the
+  // UI shows the latest; a multi-prompt view is the structured-activity phase.
+  const applyPrompt = useCallback((prompt: Prompt) => {
+    if (isActionablePrompt(prompt)) {
+      if (dismissedKey.current === prompt.promptId) return
+      accept(prompt.promptId, mapPromptToBlock(prompt))
+      return
+    }
+    if (dismissedKey.current === prompt.promptId) dismissedKey.current = null
+    if (cardRef.current?.key === prompt.promptId) commit(null)
+  }, [accept, commit])
+
   const onMessage = useCallback((msg: Incoming) => {
     if (msg.type === 'session_update') {
       if (msg.session.id !== sessionId) return
@@ -200,6 +236,13 @@ export function useActiveQuestionReducer(sessionId: string) {
       return
     }
     if (msg.sessionId !== sessionId) return
+    if (msg.type === 'prompt_snapshot' || msg.type === 'prompt_event') {
+      promptContractSeen.current = true
+      const prompts = msg.type === 'prompt_snapshot' ? msg.prompts : [msg.prompt]
+      for (const prompt of prompts) applyPrompt(prompt)
+      return
+    }
+    if (promptContractSeen.current) return
     if (msg.type === 'question') {
       if (dismissedKey.current === msg.toolUseId) return
       accept(msg.toolUseId, mapAskQuestionToBlock(msg.toolUseId, msg.questions))
@@ -214,7 +257,7 @@ export function useActiveQuestionReducer(sessionId: string) {
       dismissedKey.current = null
       if (cardRef.current?.prompt.source === 'permission') commit(null)
     }
-  }, [accept, commit, reset, sessionId])
+  }, [accept, applyPrompt, commit, reset, sessionId])
 
   const clear = useCallback(() => {
     dismissedKey.current = cardRef.current?.key ?? null
@@ -259,6 +302,12 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
     const unsubPermissionCancelled = client?.on('permission_cancelled', (msg) => {
       if (msg.type === 'permission_cancelled') onMessage(msg)
     })
+    const unsubPromptEvent = client?.on('prompt_event', (msg) => {
+      if (msg.type === 'prompt_event') onMessage(msg)
+    })
+    const unsubPromptSnapshot = client?.on('prompt_snapshot', (msg) => {
+      if (msg.type === 'prompt_snapshot') onMessage(msg)
+    })
     const unsubSessionUpdate = client?.on('session_update', (msg) => {
       if (msg.type === 'session_update') onMessage(msg)
     })
@@ -272,6 +321,8 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
       unsubCancelled?.()
       unsubPermission?.()
       unsubPermissionCancelled?.()
+      unsubPromptEvent?.()
+      unsubPromptSnapshot?.()
       unsubSessionUpdate?.()
       unsubStatus()
     }

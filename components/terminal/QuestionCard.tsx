@@ -91,6 +91,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           </View>
         </TouchableOpacity>
       ))}
+      {block.unsupportedShape ? (
+        <Text style={styles.unsupported} testID="question-card-unsupported">{t('question.unsupportedShape')}</Text>
+      ) : null}
       {ghost ? <Text style={styles.ghostNote}>{t('question.answerSent')}</Text> : null}
       {onCancel && !ghost ? (
         <TouchableOpacity
@@ -114,6 +117,12 @@ const styles = StyleSheet.create({
     color: '#8b949e',
     fontSize: 12,
     marginTop: spacing.sm,
+  },
+  unsupported: {
+    color: '#d29922',
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: spacing.sm,
   },
   container: {
     borderTopWidth: 1,
