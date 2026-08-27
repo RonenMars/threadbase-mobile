@@ -10,7 +10,6 @@ import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useClaudeFlags, useUpdateClaudeFlags } from '@/hooks/useClaudeFlags'
-import { NotFoundError } from '@/services/api-client'
 
 const mockGet = jest.fn()
 const mockPut = jest.fn()
