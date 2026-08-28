@@ -301,16 +301,40 @@ export async function exchangeToken({
   // Additive and last, so a pairing with no server key serialises byte for byte
   // as it does today — which is the whole of the old-server compatibility story.
   if (started.ok) {
-    bodyPayload.e2ee = {
-      v: E2EE_CLIENT_VERSION,
-      noise: naclUtil.encodeBase64(
-        started.handshake.writeMessage1(
-          // The authenticated copy of the same two values. The outer ones above
-          // stay for released servers and stop being what a new server believes.
-          naclUtil.decodeUTF8(pairMessage1Payload({ deviceName: trimmedDeviceName, readOnly })),
-        ),
-      ),
+    // The authenticated copy of the same two values. The outer ones above stay
+    // for released servers and stop being what a new server believes.
+    const message1Payload = naclUtil.decodeUTF8(
+      pairMessage1Payload({ deviceName: trimmedDeviceName, readOnly }),
+    )
+    let message1: Uint8Array
+    // Only the Diffie-Hellman is inside the `try`, and deliberately so: a
+    // `catch` around the whole expression would report a future bug in the
+    // payload encoding to the user as "your QR is damaged", which is this same
+    // misclassification pointing the other way.
+    try {
+      message1 = started.handshake.writeMessage1(message1Payload)
+    } catch {
+      // The first curve operation on the scanned key happens here, not in
+      // `beginPairHandshake`: decoding checks length and alphabet, and the
+      // Diffie-Hellman that would reject an unusable point is deferred until
+      // message 1 is built. So a key of 43 valid base64url characters that is
+      // not a point on the curve passes `parsePairUri`, passes
+      // `decodeServerStaticKey`, and only fails here.
+      //
+      // Untranslated `Error: X25519: invalid shared key` used to escape from
+      // this line — outside every `catch` in this function — so both entry
+      // paths classified it as unknown, rendered the generic sentence and
+      // offered "Try again" on a QR that can never succeed.
+      //
+      // `bad-server-key` and not an exchange kind, because this is the same
+      // fact `parsePairUri` reports for a wrong-length key: the pairing code's
+      // server key is unusable, permanently. Nothing about retrying or about
+      // the network changes it, and the two must not look different to the
+      // user for being caught one function apart.
+      clearTimeout(timeoutId)
+      throw new PairUriError('bad-server-key', 'Server key in pair QR is not a usable public key')
     }
+    bodyPayload.e2ee = { v: E2EE_CLIENT_VERSION, noise: naclUtil.encodeBase64(message1) }
   }
 
   // Its own fetch rather than authedFetch's: there is no credential to present
