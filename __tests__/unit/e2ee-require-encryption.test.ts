@@ -33,6 +33,8 @@ const info = (e2ee?: Partial<E2eeCapability>): ServerInfo => ({
 })
 
 const SERVER_ID = 'srv_test1'
+const SPK = 'B'.repeat(43)
+const URL = 'http://192.168.68.130:8766'
 
 function seedServer(overrides: Partial<ServerConfig> = {}) {
   const server: ServerConfig = {
@@ -184,5 +186,66 @@ describe('loadPersistedServers – encryption fields', () => {
     await useServersStore.getState().loadPersistedServers()
 
     expect(useServersStore.getState().servers[SERVER_ID].requireEncryption).toBe(true)
+  })
+
+  it('restores the pinned server key and the scoped device token, not just the pin', async () => {
+    // The pin alone is half a pairing. `serverPublicKey` is the identity the
+    // pin was proved against and `deviceToken` is the credential the pin makes
+    // this device present, and the two are read back by different lines: the
+    // key rides in the persisted entry, the token comes from a separate
+    // SecureStore read keyed by server id. A loader that dropped the token
+    // would leave `requireEncryption: true` pointing at a server this device
+    // can no longer authenticate to, which is the split state design.md §6.1
+    // exists to prevent, and it would surface at the next launch rather than
+    // here.
+    //
+    // Driven through `addServer` rather than `seedServer` so the bytes under
+    // test are the ones the real writer produces.
+    const id = String(
+      await useServersStore.getState().addServer(URL, 'key-abc', 'Studio Mac', {
+        deviceId: 'device-9',
+        deviceToken: 'dt_9',
+        capabilities: ['history:read'],
+        publicUrl: 'https://tunnel.example.test',
+        serverPublicKey: SPK,
+        requireEncryption: true,
+      }),
+    )
+    await Promise.resolve()
+
+    forgetInMemoryServers()
+    expect(useServersStore.getState().servers[id]).toBeUndefined()
+
+    await useServersStore.getState().loadPersistedServers()
+
+    const restored = useServersStore.getState().servers[id]
+    expect(restored.serverPublicKey).toBe(SPK)
+    expect(restored.deviceToken).toBe('dt_9')
+    expect(restored.requireEncryption).toBe(true)
+    expect(restored.deviceId).toBe('device-9')
+    expect(restored.deviceCapabilities).toEqual(['history:read'])
+    expect(restored.publicUrl).toBe('https://tunnel.example.test')
+    expect(restored.apiKey).toBe('key-abc')
+  })
+
+  it('leaves the device token undefined for a server paired before it existed', async () => {
+    // The negative control. Without it, asserting `dt_9` above cannot tell a
+    // real read from a loader that hands every server the same token, and
+    // `undefined` rather than '' is what lets `authToken` fall through to the
+    // shared key for a pre-C5 pairing.
+    const id = String(
+      await useServersStore.getState().addServer(URL, 'key-abc', 'Studio Mac', {
+        serverPublicKey: SPK,
+        requireEncryption: true,
+      }),
+    )
+    await Promise.resolve()
+
+    forgetInMemoryServers()
+    await useServersStore.getState().loadPersistedServers()
+
+    const restored = useServersStore.getState().servers[id]
+    expect(restored.deviceToken).toBeUndefined()
+    expect(restored.serverPublicKey).toBe(SPK)
   })
 })

@@ -144,14 +144,8 @@ async function persistServerList(
 }
 
 /**
- * The read half of `persistServerList`, and the reason it is a named export
- * rather than inline below: `loadPersistedServers` cannot be executed by any
- * test in this repo. Its first statement awaits a dynamic `import()` of
- * AsyncStorage and jest runs without `--experimental-vm-modules`, so that throws
- * — `TypeError: A dynamic import callback was invoked without
- * --experimental-vm-modules` — whatever `moduleNameMapper` says. A reader that
- * dropped a field on load was therefore caught by nothing, and the loss would
- * only surface at the next launch, by which point only a re-pair recovers it.
+ * The read half of `persistServerList`, exported so a test can drive it with
+ * the exact string the writer produced rather than with a hand-built object.
  *
  * The two shapes are historical: a bare array predates the wrapper object.
  */
