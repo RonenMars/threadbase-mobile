@@ -79,7 +79,7 @@ concurrency:
 jobs:
   e2e-maestro:
     name: E2E maestro
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && 'macos-15' || 'ubuntu-24.04' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && 'macos-26' || 'ubuntu-24.04' }}
     # 75m was enough when the iOS Release cache was warm (~39m build + ~19m
     # Maestro). A cold DerivedData miss (run 32161343357) spent ~57m on the
     # build and was cancelled at 75m with the suite still running.
@@ -251,11 +251,10 @@ jobs:
 
       - name: Select Xcode 26
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
-        # Expo SDK 56's expo-modules-jsi Package.swift requires swift-tools 6.2,
-        # which ships with Xcode 26. The macos-15 runner defaults to Xcode 16.4
-        # (Swift 6.1) and rejects the package with "Could not resolve package
-        # dependencies: package 'apple' is using Swift tools version 6.2.0".
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+        # expo-modules-jsi's Package.swift requires swift-tools 6.2 (Xcode 26)
+        # and its Swift sources build only on Xcode 26.4+ (Expo issue #47875), so
+        # the iOS job runs on macos-26 and pins the same toolchain as deploy.yml.
+        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
 
       - name: Boot iOS simulator
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
