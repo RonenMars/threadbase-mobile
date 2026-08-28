@@ -418,20 +418,17 @@ describe('addServer – publicUrl', () => {
 
 // ── The pairing handshake's half of the server record (#698) ────────────────
 //
-// `loadPersistedServers` still cannot be executed by a test: its first statement
-// awaits a dynamic `import()` of AsyncStorage, and jest runs without
-// `--experimental-vm-modules`, so that throws — `TypeError: A dynamic import
-// callback was invoked without --experimental-vm-modules` — regardless of
-// `moduleNameMapper`. Verified with a bare
-// `await import('@react-native-async-storage/async-storage')` in a throwaway
-// test rather than assumed.
+// The round trip below drives `parsePersistedServers` and
+// `serverConfigFromPersisted` — the two halves that dropping a field would
+// break — with the exact string `persistServerList` wrote. That is deliberately
+// not a round trip through the store's in-memory state, which passes whenever
+// the write and read copies have not yet diverged, precisely the failure being
+// guarded against.
 //
-// Its *reader* is now reachable: `parsePersistedServers` and
-// `serverConfigFromPersisted` are the two halves that dropping a field would
-// break, and the round trip below drives them with the exact string
-// `persistServerList` wrote. That is deliberately not a round trip through the
-// store's in-memory state, which passes whenever the write and read copies have
-// not yet diverged — precisely the failure being guarded against.
+// It stops at those two helpers, so the secrets `loadPersistedServers` reads
+// back from SecureStore are not covered here. That half lives in
+// `__tests__/unit/e2ee-require-encryption.test.ts`, which drives the real
+// function.
 
 describe('addServer – e2ee material', () => {
   const SPK = 'A'.repeat(43)
