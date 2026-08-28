@@ -54,21 +54,19 @@ jobs:
   deploy-ios:
     name: Ship iOS
     if: ${{ inputs.platform == 'ios' || inputs.platform == 'all' }}
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
     permissions:
       contents: write
       pull-requests: write
     env:
       # expo-modules-jsi's Package.swift declares swift-tools-version 6.2, which
-      # needs Xcode 26+. The macos-15 runner defaults to Xcode 16.4 (Swift 6.1),
-      # so the archive fails at SPM resolution. Point the whole toolchain at the
-      # Xcode 26.3 that's preinstalled on the image.
-      # Xcode 26.3's Swift 6 compiler also hits an abs() overload-ambiguity bug in
-      # expo-modules-jsi (patched via patches/expo-modules-jsi+*.patch — see Expo
-      # issue #47875). Expo's real fix is Xcode 26.4, not preinstalled on macos-15
-      # yet; bump this to 26.4 and drop the patch once the runner image has it.
-      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      # needs Xcode 26+, and its Swift 6 sources need Xcode 26.4+ (Expo issue
+      # #47875; 26.3 failed on an abs() overload ambiguity, and 57.0.6 then on
+      # RuntimeScheduler.h's SWIFT_RETURNS_RETAINED annotations). macos-15 tops
+      # out at 26.3, so the job runs on macos-26 and pins the toolchain rather
+      # than trusting the image default, which moves between image refreshes.
+      DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
     steps:
       - name: Warn when building a non-main ref
         if: ${{ inputs.deploy_ref != 'main' }}
