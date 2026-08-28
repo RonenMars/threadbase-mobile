@@ -571,6 +571,7 @@ export default function SessionDetailScreen() {
       onError: () => Alert.alert(t('terminal:dialog.stopTitle'), t('terminal:dialog.stopFailed')),
     })
   }
+  const historyNavigationId = session?.boundConversationId ?? session?.conversationId ?? id
 
   useEffect(() => {
     // Redirect when there is no live process to attach to and the session has
@@ -592,11 +593,11 @@ export default function SessionDetailScreen() {
       session != null &&
       sessionOpensAsHistory(session) &&
       hasConversation &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '')
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(historyNavigationId ?? '')
     ) {
-      router.replace(`/conversation/${id}?server=${serverId}`)
+      router.replace(`/conversation/${historyNavigationId}?server=${serverId}`)
     }
-  }, [isPending, session, id, serverId, router])
+  }, [isPending, session, historyNavigationId, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
@@ -1038,7 +1039,7 @@ export default function SessionDetailScreen() {
             {hasConversationId ? (
               <TouchableOpacity
                 style={styles.viewConversationBtn}
-                onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
+                onPress={() => router.replace(`/conversation/${historyNavigationId}?server=${serverId}`)}
               >
                 <Text style={styles.viewConversationBtnText}>{t('session.openConversation')}</Text>
               </TouchableOpacity>
@@ -1054,7 +1055,7 @@ export default function SessionDetailScreen() {
             {hasConversationId ? (
               <TouchableOpacity
                 style={styles.viewConversationBtn}
-                onPress={() => router.replace(`/conversation/${id}?server=${serverId}`)}
+                onPress={() => router.replace(`/conversation/${historyNavigationId}?server=${serverId}`)}
               >
                 <Text style={styles.viewConversationBtnText}>{t('session.openConversation')}</Text>
               </TouchableOpacity>

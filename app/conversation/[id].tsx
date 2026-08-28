@@ -749,7 +749,7 @@ export default function ConversationDetailScreen() {
     // A 404 from /api/conversations/:id doesn't mean "gone" — it may mean the
     // session is live but hasn't written JSONL yet. Check /api/sessions/:id;
     // if found, redirect to the live session view (handled by the effect above).
-    if (isConvNotFound && isSessionLoading) {
+    if (isConvNotFound && (isSessionLoading || isSessionLive)) {
       return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           <ScreenHeader right={headerActions} />

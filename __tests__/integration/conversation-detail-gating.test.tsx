@@ -370,10 +370,12 @@ describe('conversation detail — 404 live-session fallback', () => {
     mockDetailRef.current = new NotFoundError('/api/conversations/conv-gating')
     mockSessionRef.current = { id: 'conv-gating', status: 'running', ptyAttached: true }
 
-    await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
     await flushAllQueries()
 
     expect(mockReplace).toHaveBeenCalledWith('/session/conv-gating?server=srv1')
+    expect(root.queryByTestId('conversation-not-found')).toBeNull()
+    expect(allText(root)).not.toContain('This conversation is no longer available')
   })
 
   it('does NOT redirect when the session is detached/idle — session/[id] would bounce back, looping', async () => {
