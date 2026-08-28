@@ -240,3 +240,63 @@ describe('PairScannerModal — already-added server', () => {
     expect(exchangeToken).not.toHaveBeenCalled()
   })
 })
+
+// ── The scanned QR's server key reaches the exchange (#698 item 1) ───────────
+//
+// `PairScannerModal.tsx` forwards `parsed.spk` to `exchangeToken`, and that one
+// property is the whole capability gate for an encrypted pairing: without it
+// `exchangeToken` takes the legacy branch and pairs in plaintext. Nothing used
+// to watch it, so deleting it left the suite green while every scanned E2EE QR
+// silently downgraded. These two cases are what make that deletion visible.
+describe('PairScannerModal — the QR server key', () => {
+  const SPK = 'B'.repeat(43)
+
+  it('forwards a well-formed server key to the exchange', async () => {
+    // The positive control. It has to assert the *value* arrives, not merely
+    // that some exchange happened: a scan that pairs successfully in plaintext
+    // is exactly the failure being guarded against, and it looks identical to
+    // success from the outside.
+    mockOsPermission = GRANTED
+    exchangeToken.mockResolvedValue({
+      url: 'https://a.test',
+      apiKey: 'dt_scanned',
+      publicUrl: null,
+      machineName: 'Studio Mac',
+      deviceId: 'device-1',
+      deviceToken: 'dt_scanned',
+      capabilities: ['history:read'],
+      serverPublicKey: SPK,
+      e2eeRequired: true,
+    })
+    await renderScanner()
+
+    await act(async () => {
+      mockScanHandler?.({
+        data: `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&spk=${SPK}&v=1`,
+      })
+    })
+
+    await waitFor(() =>
+      expect(exchangeToken).toHaveBeenCalledWith(
+        expect.objectContaining({ serverPublicKey: SPK }),
+      ),
+    )
+  })
+
+  it('refuses a malformed server key without exchanging at all', async () => {
+    // The negative control, and the other half of item 1: absent and
+    // present-but-invalid are different answers. A wrong-shaped key must be a
+    // hard stop here, not a quiet fall back to the no-`spk` legacy path.
+    mockOsPermission = GRANTED
+    const screen = await renderScanner()
+
+    await act(async () => {
+      mockScanHandler?.({
+        data: `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&spk=${'B'.repeat(42)}`,
+      })
+    })
+
+    await waitFor(() => expect(screen.getByTestId('pair-scanner-support')).toBeTruthy())
+    expect(exchangeToken).not.toHaveBeenCalled()
+  })
+})
