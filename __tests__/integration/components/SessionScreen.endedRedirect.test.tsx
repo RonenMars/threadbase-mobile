@@ -10,10 +10,11 @@
  * still redirect rather than strand on the read-only placeholder.
  */
 import React from 'react'
-import { render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 
-const SESSION_UUID = 'b80a4f91-17f4-4375-b65f-00e46c872b01'
+const PLACEHOLDER_UUID = 'b80a4f91-17f4-4375-b65f-00e46c872b01'
+const BOUND_ROLLOUT_UUID = '01a04720-4f11-4a2d-9e2d-b90e9c2d8c72'
 
 const mockReplace = jest.fn()
 let mockSessionData: Record<string, unknown>
@@ -97,7 +98,7 @@ jest.mock('@tanstack/react-query', () => ({
 import SessionDetailScreen from '@/app/session/[id]'
 
 const endedSession = (overrides: Record<string, unknown>) => ({
-  id: SESSION_UUID,
+  id: PLACEHOLDER_UUID,
   ptyAttached: false,
   status: 'idle',
   promptCount: 0,
@@ -111,38 +112,39 @@ const endedSession = (overrides: Record<string, unknown>) => ({
 describe('SessionScreen — ended-session redirect', () => {
   beforeEach(() => {
     mockReplace.mockClear()
-    mockParams = { id: SESSION_UUID, server: 'srv1' }
+    mockParams = { id: PLACEHOLDER_UUID, server: 'srv1' }
   })
 
   it('redirects when lifecycle is completed and a conversationId is present', async () => {
     mockSessionData = endedSession({
-      conversationId: SESSION_UUID,
+      conversationId: PLACEHOLDER_UUID,
       promptCount: 0,
       lifecycle: 'completed',
     })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${PLACEHOLDER_UUID}?server=srv1`)
   })
 
   it('redirects a held (resumable) session to conversation history for resume', async () => {
     mockSessionData = endedSession({
-      conversationId: SESSION_UUID,
+      conversationId: PLACEHOLDER_UUID,
+      boundConversationId: BOUND_ROLLOUT_UUID,
       lifecycle: 'resumable',
       completedAt: '2026-08-01T00:00:00Z',
     })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${BOUND_ROLLOUT_UUID}?server=srv1`)
   })
 
-  it('redirects via boundConversationId (codex) even without conversationId', async () => {
+  it('redirects an ended codex session via boundConversationId instead of its placeholder', async () => {
     mockSessionData = endedSession({
-      boundConversationId: SESSION_UUID,
-      conversationId: null,
+      conversationId: PLACEHOLDER_UUID,
+      boundConversationId: BOUND_ROLLOUT_UUID,
       promptCount: 0,
       lifecycle: 'completed',
     })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${BOUND_ROLLOUT_UUID}?server=srv1`)
   })
 
   it('does NOT redirect when the ended session has no conversation at all', async () => {
@@ -157,24 +159,24 @@ describe('SessionScreen — ended-session redirect', () => {
   })
 
   it('falls back to idle+detached redirect when lifecycle is absent', async () => {
-    mockSessionData = endedSession({ conversationId: SESSION_UUID, promptCount: 0 })
+    mockSessionData = endedSession({ conversationId: PLACEHOLDER_UUID, promptCount: 0 })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${SESSION_UUID}?server=srv1`)
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${PLACEHOLDER_UUID}?server=srv1`)
   })
 
   // A just-resumed session on an older server (no lifecycle) can read
   // idle+detached until its PTY attaches. Redirecting then bounced the user
   // straight back to the conversation they had just tapped Resume on.
   it('does NOT redirect a starting session that has not attached its PTY yet', async () => {
-    mockParams = { id: SESSION_UUID, server: 'srv1', starting: '1' }
-    mockSessionData = endedSession({ conversationId: SESSION_UUID, promptCount: 0 })
+    mockParams = { id: PLACEHOLDER_UUID, server: 'srv1', starting: '1' }
+    mockSessionData = endedSession({ conversationId: PLACEHOLDER_UUID, promptCount: 0 })
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(mockReplace).not.toHaveBeenCalled()
   })
 
   it('does NOT redirect an attached live session', async () => {
     mockSessionData = endedSession({
-      conversationId: SESSION_UUID,
+      conversationId: PLACEHOLDER_UUID,
       ptyAttached: true,
       status: 'waiting_input',
       lifecycle: 'attached',
@@ -183,10 +185,24 @@ describe('SessionScreen — ended-session redirect', () => {
     expect(mockReplace).not.toHaveBeenCalled()
   })
 
-  it('drops the starting screen once the PTY is attached', async () => {
-    mockParams = { id: SESSION_UUID, server: 'srv1', starting: '1' }
+  it('opens a detached codex session conversation via boundConversationId', async () => {
     mockSessionData = endedSession({
-      conversationId: SESSION_UUID,
+      conversationId: PLACEHOLDER_UUID,
+      boundConversationId: BOUND_ROLLOUT_UUID,
+      promptCount: 1,
+      lifecycle: 'detached',
+    })
+    const root = await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+
+    fireEvent.press(root.getByText('Open Conversation'))
+
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${BOUND_ROLLOUT_UUID}?server=srv1`)
+  })
+
+  it('drops the starting screen once the PTY is attached', async () => {
+    mockParams = { id: PLACEHOLDER_UUID, server: 'srv1', starting: '1' }
+    mockSessionData = endedSession({
+      conversationId: PLACEHOLDER_UUID,
       ptyAttached: true,
       status: 'waiting_input',
       lifecycle: 'attached',
