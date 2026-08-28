@@ -406,3 +406,120 @@ describe('useActiveQuestionReducer – confirmation survives a repaint', () => {
     expect(result.current.question?.questions[0].detail).toBe('Edit file')
   })
 })
+
+// The gate's *instance* identity, once the streamer sends one. Everything above
+// this block keys on content, because GATE_BASE carries no gateId — which is
+// also the proof that the fallback is untouched: none of those tests changed.
+//
+// The literal below is the content key spelled out rather than derived. Derived
+// from GATE_BASE it would agree with any formula, including a changed one, and
+// the one thing this control exists to prove is that the old-streamer key is
+// still byte-for-byte what it was.
+const CONTENT_KEY = 'Do you want to proceed?::Bash command::1.Yes,2.No'
+
+describe('useActiveQuestionReducer – gate instance identity', () => {
+  // The bug. The streamer reopens a gate the user already answered — a second
+  // run of the same command, identical down to the byte — and the content key
+  // cannot tell the two instances apart, so the suppression armed against the
+  // first one swallows the second and the user is left with no card to answer.
+  it('shows a fresh card when an identical gate reopens under a new gateId', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g1' })))
+    expect(result.current.questionKey).toBe('g1')
+    await act(() => result.current.markPending('g1'))
+    expect(result.current.phase).toBe('pending')
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g2' })))
+
+    expect(result.current.phase).toBe('active')
+    expect(result.current.questionKey).toBe('g2')
+  })
+
+  // The negative control, and the reason the fix is not "stop suppressing".
+  // Any key that varied per frame — a counter, a random id — would pass the
+  // test above and fail this one: the repaints an open gate emits between the
+  // tap and the server's close must still be swallowed.
+  it('keeps suppressing a repaint of the same gateId after the answer', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g1' })))
+    await act(() => result.current.markPending('g1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g1', cursor: 2 })))
+
+    expect(result.current.phase).toBe('pending')
+    expect(result.current.questionKey).toBe('g1')
+  })
+
+  // The field condition, asserted on the value and not just the behaviour.
+  // Every streamer deployed today predates gateId, so a change that alters the
+  // key they produce is a change that breaks the only servers this runs against.
+  it('keys a gate carrying no gateId exactly as before', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: undefined })))
+    expect(result.current.questionKey).toBe(CONTENT_KEY)
+
+    await act(() => result.current.markPending(CONTENT_KEY))
+    await act(() => result.current.onMessage(makeGate({ gateId: undefined, cursor: 2 })))
+    expect(result.current.phase).toBe('pending')
+  })
+
+  // Its twin: the same content, one field added, keys somewhere else entirely.
+  // Together with the test above this pins both halves of the branch.
+  it('keys the same gate on the gateId once the streamer sends one', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g1' })))
+
+    expect(result.current.questionKey).toBe('g1')
+    expect(result.current.questionKey).not.toBe(CONTENT_KEY)
+  })
+
+  // A reconnect can land on a streamer that answers differently from the one
+  // that armed the suppression, in either direction. Neither may collide: the
+  // key changes, so the card comes back. That is the honest direction to fail —
+  // we no longer know the answered instance is the one on the wire, and a card
+  // wrongly shown is answerable while a card wrongly hidden is a dead session.
+  it('hands the card back when an answered gateId gate returns without one', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g1' })))
+    await act(() => result.current.markPending('g1'))
+    // Load-bearing, not scene-setting: the suppression has to be genuinely
+    // armed for the next frame to be a test of anything. Without this line a
+    // key that never matched would no-op markPending, leave the card `active`
+    // for the wrong reason, and satisfy both assertions below.
+    expect(result.current.phase).toBe('pending')
+
+    await act(() => result.current.onMessage(makeGate({ gateId: undefined })))
+
+    expect(result.current.phase).toBe('active')
+    expect(result.current.questionKey).toBe(CONTENT_KEY)
+  })
+
+  it('hands the card back when an answered gateId-less gate returns with one', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: undefined })))
+    await act(() => result.current.markPending(CONTENT_KEY))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'g2' })))
+
+    expect(result.current.phase).toBe('active')
+    expect(result.current.questionKey).toBe('g2')
+  })
+
+  // What makes the two namespaces disjoint by construction rather than by luck.
+  // The wire schema is `z.string().trim().min(1).max(200)`, so `::` is a legal
+  // gateId; one that carries it is refused and the gate keys on its content,
+  // which is exactly what an old streamer would have produced.
+  it('ignores a gateId that could collide with a content key', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+
+    await act(() => result.current.onMessage(makeGate({ gateId: 'a::b::c' })))
+
+    expect(result.current.questionKey).toBe(CONTENT_KEY)
+  })
+})

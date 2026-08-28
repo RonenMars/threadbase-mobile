@@ -34,13 +34,23 @@ function isActionablePrompt(prompt: Prompt): boolean {
   return prompt.state === 'open' || prompt.state === 'updated'
 }
 
-// Content identity of a gate, cursor deliberately excluded. The streamer's own
-// dedupe key includes the cursor, so a repaint that only moves it re-broadcasts
-// the same gate — which would put a card the user already answered back on
-// screen a beat after it went away.
+// Identity of a gate *instance*. The server owns it wherever it sends a gateId;
+// a streamer too old to send one falls back to the gate's content, cursor
+// deliberately excluded — the streamer's own dedupe key includes the cursor, so
+// a repaint that only moves it re-broadcasts the same gate, which would put a
+// card the user already answered back on screen a beat after it went away. The
+// gateId is stable across those repaints too: the streamer carries the prior
+// instance's id forward rather than minting a new one.
+//
+// The two namespaces are disjoint by construction, not by probability. Every
+// content key contains the two literal `::` separators, so a gateId admitted as
+// a key can never equal one, for any string the server might send. A gateId
+// that itself contains `::` is refused and the gate keys on its content — the
+// old-streamer behaviour, which is the safe direction to degrade in.
 function gateKey(msg: PermissionWsMessage): string {
   const options = msg.options.map(o => `${o.index}.${o.label}`).join(',')
-  return `${msg.prompt ?? ''}::${msg.detail ?? ''}::${options}`
+  const content = `${msg.prompt ?? ''}::${msg.detail ?? ''}::${options}`
+  return msg.gateId && !msg.gateId.includes('::') ? msg.gateId : content
 }
 
 /**
@@ -98,8 +108,10 @@ export function useActiveQuestionReducer(sessionId: string) {
   // The server closes a gate only when its PTY detector
   // sees the box gone — end of turn, tens of seconds after the tap — so a card
   // cleared on answer has to defend itself against repaints in the meantime.
-  // ponytail: dropped on the next cancellation or different gate; an identical
-  // gate that reopens with neither in between stays hidden.
+  // ponytail: dropped on the next cancellation or different gate. Wherever the
+  // streamer sends a gateId a reopen *is* a different gate, so it comes back;
+  // on one that sends none, an identical gate that reopens with neither in
+  // between still stays hidden.
   const dismissedKey = useRef<string | null>(null)
   // Last status this session was seen in. The teardown below is edge-triggered
   // off it: the gate broadcast and the status flip to `waiting_input` are two
@@ -148,16 +160,23 @@ export function useActiveQuestionReducer(sessionId: string) {
   // disabled with nothing left to clear it.
   //
   // The card's key is the right identity for both sources and for every
-  // server: gateKey for a permission gate, toolUseId for a structured question,
-  // and it depends on no field an older streamer might not send.
+  // server: gateKey for a permission gate, toolUseId for a structured question.
+  // gateKey prefers the server's gateId and falls back to the gate's content,
+  // so it is defined on every streamer, one that sends the field and one that
+  // does not.
   //
-  // Do not "simplify" this to permissionContentKey, or to anything else derived
-  // from a field the old wire format does not carry. It looks more principled —
-  // it is the server's own identity for the gate — and it is absent on every
-  // streamer that predates the validated route, which is the only place this
-  // guard has to work. Absent, it carries no information: a bare comparison
-  // makes every gate match, and a guarded one falls back to the object identity
-  // this replaced. Both are wrong on exactly the servers deployed today.
+  // Do not "simplify" gateKey's fallback to permissionContentKey, or to
+  // anything else derived from a field the old wire format does not carry. It
+  // looks more principled — it is the server's own identity for the gate — and
+  // it is absent on every streamer that predates the validated route, which is
+  // the only place the fallback has to work. Absent, it carries no information:
+  // a bare comparison makes every gate match, and a guarded one falls back to
+  // the object identity this replaced. Both are wrong on exactly the servers
+  // deployed today.
+  //
+  // gateId sits *above* that fallback rather than replacing it, for the same
+  // reason: it is additive, so it is present on new streamers and absent on
+  // old ones, and preferring it where it exists costs the old path nothing.
   //
   // The asymmetry with CardState.key is deliberate, not an oversight to tidy
   // away: a card always has a key, but a tap might not have one — the view
