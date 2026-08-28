@@ -107,8 +107,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
   // Permission gates answer over a validated route that binds the answer to the
   // gate's *content*, so a stale tap cannot land on a different gate that merely
   // shares a shape. Content, not instance: two runs of the identical command are
-  // indistinguishable to it, the same way they already are to the client's own
-  // gateKey suppression.
+  // indistinguishable to it.
   //
   // The client sends a position and never keystrokes. The server derives the
   // bytes from its own copy of the gate, which is what keeps the two
