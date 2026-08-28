@@ -181,9 +181,14 @@ jobs:
       - name: Install Maestro CLI
         run: |
           MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
-          MAESTRO_VERSION="$MAESTRO_VERSION" curl -fsSL "https://get.maestro.mobile.dev" | bash
+          curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-          "$HOME/.maestro/bin/maestro" --version
+          INSTALLED_MAESTRO_VERSION=$("$HOME/.maestro/bin/maestro" --version)
+          if [ "$INSTALLED_MAESTRO_VERSION" != "$MAESTRO_VERSION" ]; then
+            echo "::error::Expected Maestro $MAESTRO_VERSION, installed $INSTALLED_MAESTRO_VERSION."
+            exit 1
+          fi
+          echo "Maestro $INSTALLED_MAESTRO_VERSION"
 
       # ubuntu-24.04 ships /dev/kvm but leaves it root-owned, so without this rule
       # the emulator silently falls back to software emulation. Run
@@ -307,6 +312,10 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
         env:
           FLOWS: ${{ inputs.flows }}
+          # The XCTest driver took about 203 seconds to start in run 33165429413.
+          # Leave headroom for macOS runner variance instead of failing at Maestro's
+          # default 120-second startup deadline before any app flow starts.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: '300000'
           # Tells e2e/ensure-release-build.js that the step above already built
           # and installed the Release app. Without it the script cannot find a
           # build under `-derivedDataPath build/ios-ci` and rebuilds from
