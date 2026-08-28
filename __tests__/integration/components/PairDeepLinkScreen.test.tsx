@@ -333,6 +333,39 @@ describe('PairDeepLinkScreen', () => {
     expect(queryByTestId('pair-deep-link-close')).toBeTruthy()
   })
 
+  it('offers no retry for a server key that is not a point on the curve', async () => {
+    // The other half of the fix: the classification has to reach the screen.
+    // A key of 43 valid base64url characters that is not a curve point survives
+    // `parsePairUri` and fails at the handshake's first Diffie-Hellman, and the
+    // bare `Error` that used to escape there rendered the generic sentence
+    // beside a live "Try again" — inviting the user to retry a link whose key
+    // can never work.
+    //
+    // The real `exchangeToken`, not the mock: what is under test is the error
+    // this screen actually receives from it.
+    setParams({
+      url: 'https://example.test',
+      token: 'pt_abc',
+      exp: FUTURE_EXP,
+      spk: 'A'.repeat(43),
+    })
+    exchangeToken.mockImplementation(
+      jest.requireActual<typeof import('@/services/pair-exchange')>(
+        '@/services/pair-exchange',
+      ).exchangeToken,
+    )
+
+    const { findByText, queryByTestId } = await renderWithI18n(<PairDeepLinkScreen />)
+
+    expect(
+      await findByText(
+        'The server key in this pairing code is damaged, so this pairing cannot be encrypted. Generate a fresh QR on your server.',
+      ),
+    ).toBeTruthy()
+    expect(queryByTestId('pair-deep-link-try-again')).toBeNull()
+    expect(queryByTestId('pair-deep-link-close')).toBeTruthy()
+  })
+
   it.each<[pairExchange.PairExchangeError['kind'], string]>([
     [
       'e2ee-version',

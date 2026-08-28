@@ -9,7 +9,7 @@ import {
   PairUriError,
 } from '@/services/pair-exchange'
 import { serverIdFromUrl } from '@/types/api'
-import { PAIR_PROLOGUE, derivePairPsk } from '@/services/e2ee/pair-handshake'
+import { PAIR_PROLOGUE, beginPairHandshake, derivePairPsk } from '@/services/e2ee/pair-handshake'
 import { createNoiseResponder } from '@/test-utils/noise-responder'
 import vectors from '@/__tests__/fixtures/noise-ikpsk1-vectors.json'
 
@@ -855,6 +855,59 @@ describe('exchangeToken — the pairing handshake', () => {
     await expect(
       exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK }),
     ).rejects.toMatchObject({ kind: 'e2ee-version' })
+  })
+
+  it('refuses a well-shaped server key that is not a point on the curve', async () => {
+    // The gap between the two neighbouring cases. `:778` uses a valid point
+    // that is the wrong key, which the responder rejects — an exchange-level
+    // failure. `:860` uses the wrong length, which decoding rejects. A key of
+    // 43 valid base64url characters that is simply not a curve point is
+    // neither: it passes the QR shape check and the base64 decode, and the
+    // first operation that can see the problem is the Diffie-Hellman inside
+    // `writeMessage1`.
+    //
+    // Found against a real streamer, not a fixture. The bare
+    // `Error: X25519: invalid shared key` used to escape this function
+    // untranslated, so both entry paths called it unknown and offered a retry
+    // on a QR that can never work.
+    //
+    // Real `@stablelib/x25519` — mocking the curve here would remove the only
+    // thing under test.
+    expect.assertions(3)
+    const streamer = fakeStreamer()
+    global.fetch = streamer.fetch
+
+    const caught = await exchangeToken({
+      url: SERVER_URL,
+      token: PAIR_TOKEN,
+      serverPublicKey: 'A'.repeat(43),
+    }).catch((err: unknown) => err)
+
+    expect(caught).toBeInstanceOf(PairUriError)
+    expect((caught as PairUriError).code).toBe('bad-server-key')
+    // The same fact `parsePairUri` reports for a wrong-length key, so the user
+    // sees one sentence for one problem — and never spends the pair token on it.
+    expect(streamer.seen.body).toBeUndefined()
+  })
+
+  it('is the curve itself that rejects that key, not a shape check of ours', async () => {
+    // Pins the dependency the narrowing above rests on. Only `writeMessage1` is
+    // inside the `try` in `exchangeToken`, so this classification is correct
+    // only while the curve is what rejects an unusable point — and while it
+    // does so by throwing rather than by returning a zero shared secret.
+    //
+    // If @stablelib ever stops throwing here, this test fails and the guard
+    // gets revisited. Without it, the same change would silently turn the
+    // refusal back into a plaintext pairing with nothing pointing here.
+    const started = await beginPairHandshake({
+      serverId: 'srv_probe',
+      serverPublicKey: 'A'.repeat(43),
+      pairToken: PAIR_TOKEN,
+    })
+    expect(started.ok).toBe(true)
+    if (!started.ok) return
+
+    expect(() => started.handshake.writeMessage1(new Uint8Array([1]))).toThrow(/X25519/)
   })
 
   it('refuses a server key that is present but unusable rather than falling back', async () => {
