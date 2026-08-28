@@ -421,6 +421,10 @@ Expo MCP is configured **globally** (user scope) for both Claude Code and Codex 
 - Use it for **screenshots, device/app logs, and verifying UI on the simulator or emulator**.
 - **Do not use remote tunneling** (`--mcp-server-url` / `@expo/mcp-tunnel`) unless explicitly asked. Local dev server only.
 
+## Simulators and Emulators — Shut Down What You Booted
+
+Any iOS simulator or Android emulator booted during a session (by Maestro, `expo-local`, `simctl`, `emulator`, or a dev-client launch) is shut down before the session ends or hands off — an idle simulator left showing the app against a dead server is a leftover, not a deliverable. For iOS, `xcrun simctl shutdown <UDID>` (or `all`) and quit `Simulator.app` when `xcrun simctl list devices booted` is empty; for Android, `adb -s <serial> emu kill`. Never erase a device as part of teardown. A simulator that was already booted when the session started is left as found — but "found that way" needs a record (the `xcrun simctl list devices booted` output from the start of the session), not the absence of one.
+
 ## On-Device Tracing / Dev Client — Two Silent Traps
 
 When measuring or debugging on the simulator with an `EXPO_PUBLIC_*` trace flag (e.g. `EXPO_PUBLIC_OPEN_TRACE=1`), two failure modes look like "the thing I'm tracing never happened" rather than an error. Both are documented with verify-and-fix commands in [`docs/troubleshooting.md`](./docs/troubleshooting.md) → "Measuring the wrong thing":

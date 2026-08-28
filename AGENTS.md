@@ -13,6 +13,7 @@ Keep this file to repository-specific behavior and safeguards. Agent tooling is 
 
 - Maestro flows and fixtures live in `e2e/`; `npm run test:e2e:mock` is the authoritative mock suite. Add new flows to the relevant `test:e2e:*` script and prefer `testID` over unstable visible text.
 - On iOS 26.x, never use Maestro `hideKeyboard`; scroll instead, or use Enter only for safe single-line inputs. XCTest/SpringBoard automation crashes are simulator failures, not app crashes. See [docs/troubleshooting.md](docs/troubleshooting.md).
+- Shut down any iOS simulator or Android emulator you booted before the session ends (`xcrun simctl shutdown <UDID>` and quit Simulator.app once nothing is booted; `adb emu kill` for Android). Never erase a device; leave one that was already booted as found, and only if you recorded it as booted at the start.
 
 ## UI and components
 
