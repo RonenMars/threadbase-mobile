@@ -223,3 +223,96 @@ describe('useTBPair (prod path)', () => {
     )
   })
 })
+
+// ── The pasted URI's server key reaches the exchange (#698 item 1) ───────────
+//
+// The paste path is the third pairing surface and the one with no camera: the
+// user copies a `threadbase://` URI from the streamer's terminal output. Its
+// `spk` selects the encrypted path exactly as the scanned one does, and until
+// now no test asserted the hook forwards it. The existing `:99` case above
+// passes a URI with no `spk` and asserts a call shape that omits the property,
+// which an absent value satisfies either way — so it cannot see a deletion.
+describe('useTBPair — the pasted URI server key', () => {
+  const SPK = 'C'.repeat(43)
+  const prevDev = globalWithDev.__DEV__
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    globalWithDev.__DEV__ = false
+    exchangeToken.mockReset()
+    global.fetch = jest.fn()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+    globalWithDev.__DEV__ = prevDev
+  })
+
+  it('forwards the pasted server key and reports the pairing as encrypted', async () => {
+    exchangeToken.mockResolvedValue({
+      url: 'https://from-uri.test',
+      apiKey: 'dt_pasted',
+      publicUrl: null,
+      machineName: 'Studio Mac',
+      deviceId: 'device-2',
+      deviceToken: 'dt_pasted',
+      capabilities: ['history:read'],
+      serverPublicKey: SPK,
+      e2eeRequired: true,
+    })
+
+    const onSuccess = jest.fn()
+    const { result } = await renderHook(() => useTBPair())
+
+    await act(() => {
+      result.current.pair({
+        url: '',
+        token: `threadbase://pair?url=https%3A%2F%2Ffrom-uri.test&token=pt_uri_tok&spk=${SPK}&v=1`,
+        onSuccess,
+      })
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    // The value, not just the call: a paste that pairs in plaintext looks like
+    // success from here, which is why this asserts the property explicitly.
+    expect(exchangeToken).toHaveBeenCalledWith({
+      url: 'https://from-uri.test',
+      token: 'pt_uri_tok',
+      deviceName: 'Test Phone',
+      readOnly: false,
+      serverPublicKey: SPK,
+    })
+
+    await act(() => {
+      jest.advanceTimersByTime(2400)
+    })
+
+    // And the far end: the pin and the proved key have to survive the hook's
+    // own mapping, or the server record is added unpinned.
+    expect(onSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({ serverPublicKey: SPK, requireEncryption: true }),
+    )
+  })
+
+  it('fails a pasted URI whose server key is malformed, without exchanging', async () => {
+    const onSuccess = jest.fn()
+    const { result } = await renderHook(() => useTBPair())
+
+    await act(() => {
+      result.current.pair({
+        url: '',
+        token: `threadbase://pair?url=https%3A%2F%2Ffrom-uri.test&token=pt_uri_tok&spk=${'C'.repeat(42)}`,
+        onSuccess,
+      })
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(exchangeToken).not.toHaveBeenCalled()
+    expect(onSuccess).not.toHaveBeenCalled()
+    expect(result.current.phase).toBe('err')
+  })
+})
