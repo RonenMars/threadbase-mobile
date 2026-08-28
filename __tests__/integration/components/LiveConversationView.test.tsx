@@ -68,9 +68,24 @@ jest.mock('@/hooks/useSessionActions', () => ({
 // The composer guards sends on a connected WS client. Report connected so the
 // send path runs under test. send() is called by useTerminalStream.
 const mockOnStatusChange = jest.fn((_serverId: string, _listener: (s: string) => void) => jest.fn())
+// Captured per event type so a test can drive useActiveQuestion's real
+// reducer (question open → answered → ghost) instead of mocking its output.
+const wsHandlers: Record<string, ((msg: unknown) => void)[]> = {}
+function dispatchWs(event: string, msg: unknown) {
+  ;(wsHandlers[event] ?? []).forEach((handler) => handler(msg))
+}
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
-    getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }),
+    getClient: () => ({
+      status: () => 'connected',
+      send: jest.fn(),
+      on: (event: string, handler: (msg: unknown) => void) => {
+        wsHandlers[event] = [...(wsHandlers[event] ?? []), handler]
+        return () => {
+          wsHandlers[event] = (wsHandlers[event] ?? []).filter((h) => h !== handler)
+        }
+      },
+    }),
     onAnyStatusChange: jest.fn(() => jest.fn()),
     onStatusChange: (serverId: string, listener: (s: string) => void) => mockOnStatusChange(serverId, listener),
     forceReconnect: jest.fn(),
@@ -327,5 +342,71 @@ describe('LiveConversationView — text refused while a prompt is open', () => {
     mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
     await renderView()
     expect(screen.getByText(PROMPT_PENDING_MESSAGE)).toBeTruthy()
+  })
+})
+
+// The 409 above can also land in the narrower window right after the user
+// answers a card: the server took the answer but hasn't confirmed the gate is
+// closed yet (the ghost, `answerPhase === 'pending'`). The server's message
+// there describes a wrong-answer/still-open refusal that isn't true — the
+// user just answered — so a local line replaces it. Every other phase,
+// including the gate still being open (`'active'`), keeps the server's
+// wording, because that text is accurate there.
+describe('LiveConversationView — send refused while the ghost is pending', () => {
+  const PROMPT_PENDING_MESSAGE = 'A prompt is waiting for an answer; answer or dismiss it before sending text'
+  const GHOST_LOCAL_MESSAGE = 'Waiting for the prompt to close; try again in a moment.'
+
+  const QUESTION_MESSAGE = {
+    type: 'question' as const,
+    sessionId: 'sess1',
+    toolUseId: 'q1',
+    questions: [
+      {
+        question: 'Which approach?',
+        header: 'Choose one',
+        multiSelect: false,
+        options: [
+          { label: 'Option A', description: '' },
+          { label: 'Option B', description: '' },
+        ],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    mockMutate.mockClear()
+    mockMutateAsync.mockClear()
+    mockSendInputState = { isError: false, error: null }
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = []
+    for (const key of Object.keys(wsHandlers)) delete wsHandlers[key]
+  })
+
+  it('keeps the server message while the gate is still active', async () => {
+    const { rerender } = await renderView()
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+
+    mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
+    await act(async () => rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />))
+
+    expect(screen.getByText(PROMPT_PENDING_MESSAGE)).toBeTruthy()
+    expect(screen.queryByText(GHOST_LOCAL_MESSAGE)).toBeNull()
+  })
+
+  it('shows the local ghost message once the answer has been sent and is pending confirmation', async () => {
+    const { rerender } = await renderView()
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+
+    await act(async () => fireEvent.press(screen.getByLabelText('Option A')))
+    expect(screen.getByTestId('question-card-ghost')).toBeTruthy()
+
+    mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
+    await act(async () => rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />))
+
+    expect(screen.getByText(GHOST_LOCAL_MESSAGE)).toBeTruthy()
+    expect(screen.queryByText(PROMPT_PENDING_MESSAGE)).toBeNull()
   })
 })

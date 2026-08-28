@@ -1,4 +1,5 @@
 {
+  "browse.json:screenTitle": "2f3b5c55bc27",
   "browse.json:nav.back": "dc381ae20273",
   "browse.json:nav.recentDirs": "e42232042306",
   "browse.json:nav.displayAll": "d1ceb7b9ce10",
@@ -987,6 +988,7 @@
   "terminal.json:answer.failed": "d5c69b7e71e7",
   "terminal.json:answer.questionClosed": "6305475051ce",
   "terminal.json:answer.promptChanged": "4d98c914571d",
+  "terminal.json:answer.sendPending": "058c7aef230d",
   "terminal.json:voice.start": "ee00527bbaa0",
   "terminal.json:voice.stop": "96ad53f13938",
   "terminal.json:dialog.cancelTitle": "ad5a72eda5d9",

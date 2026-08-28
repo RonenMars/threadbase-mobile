@@ -12,7 +12,8 @@
   "answer": {
     "failed": "Couldn't send your answer. Check your connection and try again.",
     "questionClosed": "That question isn't open anymore.",
-    "promptChanged": "That prompt changed — check it and answer again."
+    "promptChanged": "That prompt changed — check it and answer again.",
+    "sendPending": "Waiting for the prompt to close; try again in a moment."
   },
   "voice": {
     "start": "Start dictation",

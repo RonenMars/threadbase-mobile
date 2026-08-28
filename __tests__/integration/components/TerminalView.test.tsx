@@ -90,14 +90,16 @@ jest.mock('@/components/conversation/MessageItem', () => ({
 
 const mockAnswerPermissionMutate = jest.fn()
 const mockAnswerPermissionState: { isError: boolean; error: Error | null } = { isError: false, error: null }
+// Settled state of the send mutation, read during render for the inline
+// composer error — mutable so a test can stand in for "the last send failed".
+let mockSendInputState: { isError: boolean; error: Error | null } = { isError: false, error: null }
 
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
     sendInput: {
       mutate: mockSendInputMutate,
       mutateAsync: mockSendInputMutate,
-      isError: false,
-      error: null,
+      ...mockSendInputState,
     },
     sendKeys: { mutate: mockSendKeysMutate },
     respondToQuestion: {
@@ -140,11 +142,26 @@ jest.mock('@/hooks/useComposerState', () => ({
   }),
 }))
 
+// Captured per event type so a test can drive useActiveQuestion's real
+// reducer (question open → answered → ghost) instead of mocking its output.
+const wsHandlers: Record<string, ((msg: unknown) => void)[]> = {}
+function dispatchWs(event: string, msg: unknown) {
+  ;(wsHandlers[event] ?? []).forEach((handler) => handler(msg))
+}
 jest.mock('@/services/ws-client', () => ({
   // on() is needed now that TerminalView subscribes via useActiveQuestion, and
   // onAnyStatusChange() now that it tears the card down on a disconnect.
   wsManager: {
-    getClient: () => ({ status: () => 'connected', send: jest.fn(), on: jest.fn(() => jest.fn()) }),
+    getClient: () => ({
+      status: () => 'connected',
+      send: jest.fn(),
+      on: (event: string, handler: (msg: unknown) => void) => {
+        wsHandlers[event] = [...(wsHandlers[event] ?? []), handler]
+        return () => {
+          wsHandlers[event] = (wsHandlers[event] ?? []).filter((h) => h !== handler)
+        }
+      },
+    }),
     onAnyStatusChange: jest.fn(() => jest.fn()),
   },
 }))
@@ -191,6 +208,7 @@ describe('TerminalView', () => {
     mockSendKeysMutate.mockClear()
     mockPush.mockClear()
     mockRespondToQuestionState = { isError: false, error: null }
+    mockSendInputState = { isError: false, error: null }
     mockHistoryMessages = []
     mockHistoryHasNextPage = false
     mockHistoryIsFetchingNextPage = false
@@ -198,6 +216,7 @@ describe('TerminalView', () => {
     mockHistoryFetchNextPage.mockClear()
     mockHistoryFetchNewerPage.mockClear()
     mockSearchTargetQuery.mockReset()
+    for (const key of Object.keys(wsHandlers)) delete wsHandlers[key]
   })
 
   describe('session history feed (seeded from the conversation)', () => {
@@ -544,5 +563,61 @@ describe('TerminalView', () => {
     await renderView()
     expect(screen.getByText("That question isn't open anymore.")).toBeTruthy()
     expect(screen.queryByText('Server returned 409')).toBeNull()
+  })
+
+  // A 409 prompt_pending refusal can land in the narrow window right after the
+  // user answers a card: the server took the answer but hasn't confirmed the
+  // gate is closed yet (the ghost, `answerPhase === 'pending'`). The server's
+  // message there describes a wrong-answer/still-open refusal that isn't true
+  // — the user just answered — so a local line replaces it. Every other phase,
+  // including the gate still being open (`'active'`), keeps the server's
+  // wording, because that text is accurate there.
+  describe('send refused while the ghost is pending', () => {
+    const PROMPT_PENDING_MESSAGE = 'A prompt is waiting for an answer; answer or dismiss it before sending text'
+    const GHOST_LOCAL_MESSAGE = 'Waiting for the prompt to close; try again in a moment.'
+
+    const QUESTION_MESSAGE = {
+      type: 'question' as const,
+      sessionId: 'sess1',
+      toolUseId: 'q1',
+      questions: [
+        {
+          question: 'Which approach?',
+          header: 'Choose one',
+          multiSelect: false,
+          options: [
+            { label: 'Option A', description: '' },
+            { label: 'Option B', description: '' },
+          ],
+        },
+      ],
+    }
+
+    it('keeps the server message while the gate is still active', async () => {
+      const { rerender } = await renderView()
+      await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+      expect(screen.getByTestId('question-card')).toBeTruthy()
+
+      mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+
+      expect(screen.getByText(PROMPT_PENDING_MESSAGE)).toBeTruthy()
+      expect(screen.queryByText(GHOST_LOCAL_MESSAGE)).toBeNull()
+    })
+
+    it('shows the local ghost message once the answer has been sent and is pending confirmation', async () => {
+      const { rerender } = await renderView()
+      await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+      expect(screen.getByTestId('question-card')).toBeTruthy()
+
+      await act(async () => fireEvent.press(screen.getByLabelText('Option A')))
+      expect(screen.getByTestId('question-card-ghost')).toBeTruthy()
+
+      mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+
+      expect(screen.getByText(GHOST_LOCAL_MESSAGE)).toBeTruthy()
+      expect(screen.queryByText(PROMPT_PENDING_MESSAGE)).toBeNull()
+    })
   })
 })

@@ -311,9 +311,16 @@ export function LiveConversationView({
   // The server closes the question's menu on its own (common, self-healing —
   // it also broadcasts question_cancelled, which dismisses the card), so that
   // case reads as a calm notice rather than a failure the user must act on.
+  // A prompt-pending refusal while the ghost (`'pending'`) is still in flight
+  // means the answer we just sent hasn't closed the gate on the server yet —
+  // the server's message describes a wrong-answer/still-open case that isn't
+  // true here, so show a local line instead. Every other phase, including
+  // `'active'`, keeps the server's wording unchanged.
   const sendInputErrorMessage = sendInput.isError
     ? sendInput.error instanceof Error
-      ? sendInput.error.message
+      ? isPromptPendingError(sendInput.error) && answerPhase === 'pending'
+        ? tTerminal('answer.sendPending')
+        : sendInput.error.message
       : tTerminal('dialog.sendFailedGeneric')
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
