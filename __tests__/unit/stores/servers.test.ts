@@ -461,6 +461,29 @@ describe('addServer – e2ee material', () => {
     const entry = persistedList().find((s) => s.url === URL)
     expect(entry?.serverPublicKey).toBe(SPK)
     expect(entry?.requireEncryption).toBe(true)
+
+    // #903: a pinned add must never leave a crash window where disk holds
+    // the key with the pin absent — the first (and only) write already
+    // carries it. A count of 2 here would mean that window is back.
+    const serverListWrites = setItemAsync.mock.calls.filter(([key]) => key === 'threadbase_servers')
+    expect(serverListWrites).toHaveLength(1)
+
+    // The single write is the one persist that used to happen inline in
+    // `set()` — it must still carry everything that write used to carry,
+    // not just the pin `setRequireEncryption` adds on top.
+    const payload = JSON.parse(String(serverListWrites[0][1])) as {
+      list: Record<string, unknown>[]
+      displayedServerIds: string[]
+      hasEverHadServer: boolean
+    }
+    const payloadEntry = payload.list.find((s) => s.id === String(id))
+    expect(entry?.id).toBe(String(id))
+    expect(entry?.url).toBe(URL)
+    expect(payloadEntry?.requireEncryption).toBe(true)
+    expect(payload.list.map((s) => s.id)).toContain(String(id))
+    expect(payload.displayedServerIds).toContain(String(id))
+    expect(payload.hasEverHadServer).toBe(true)
+    expect(useServersStore.getState().activeServerIds).toContain(String(id))
   })
 
   it('leaves the pin unanswered for a pairing that did not encrypt', async () => {
@@ -474,6 +497,13 @@ describe('addServer – e2ee material', () => {
     const server = useServersStore.getState().getServer(String(id))
     expect(server?.requireEncryption).toBeUndefined()
     expect(server?.serverPublicKey).toBeUndefined()
+
+    // Negative control: this path was never the bug — it already made
+    // exactly one write, unaffected by the pinned-path fix.
+    const serverListWrites = setItemAsync.mock.calls.filter(([key]) => key === 'threadbase_servers')
+    expect(serverListWrites).toHaveLength(1)
+    const entry = persistedList().find((s) => s.url === URL)
+    expect(entry?.requireEncryption).toBeFalsy()
   })
 
   it('forgets this device static key when the server is removed', async () => {
