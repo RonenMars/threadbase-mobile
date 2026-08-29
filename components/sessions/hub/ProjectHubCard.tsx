@@ -3,6 +3,7 @@ import { ActivityIndicator, View, Text, TouchableOpacity, Platform, UIManager, L
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { CaretRight } from 'phosphor-react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -18,6 +19,7 @@ import type { ProjectHubCardProps } from './types'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
@@ -25,6 +27,7 @@ if (Platform.OS === 'android') {
 
 export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
   const { t, i18n } = useTranslation('sessions')
+  const { isRTL } = useAppDirection()
   const theme = useTheme()
   const styles = makeStyles(theme)
   const router = useRouter()
@@ -136,9 +139,9 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
           >
             <View style={styles.headerBody}>
               {pathRendered.parent ? (
-                <Text style={styles.headerParent} numberOfLines={1}>{pathRendered.parent}</Text>
+                <Text style={[styles.headerParent, ltrContentStyle]} numberOfLines={1}>{pathRendered.parent}</Text>
               ) : null}
-              <Text style={styles.headerSuffix} numberOfLines={1}>
+              <Text style={[styles.headerSuffix, ltrContentStyle]} numberOfLines={1}>
                 {pathRendered.suffix || group.projectName}
               </Text>
               {activitySummary ? (
@@ -148,7 +151,9 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
             <Text style={styles.countBadge}>
               {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
             </Text>
-            <Animated.Text style={[styles.chevron, chevronStyle]}>{'›'}</Animated.Text>
+            <Animated.View style={chevronStyle}>
+              <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
+            </Animated.View>
           </TouchableOpacity>
 
           {isOpen && (
@@ -184,6 +189,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
                   style={styles.seeAllRow}
                 >
                   <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                  <CaretRight size={14} color={theme.text.accent} mirrored={isRTL} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -232,6 +238,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
                       style={styles.seeAllRow}
                     >
                       <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                      <CaretRight size={14} color={theme.text.accent} mirrored={isRTL} />
                     </TouchableOpacity>
                   )}
                 </View>

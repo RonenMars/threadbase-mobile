@@ -498,7 +498,7 @@ function makeStyles(theme: Theme) {
     },
     jumpToLatest: {
       position: 'absolute',
-      right: spacing.md,
+      end: spacing.md,
       bottom: spacing.md,
       width: 40,
       height: 40,

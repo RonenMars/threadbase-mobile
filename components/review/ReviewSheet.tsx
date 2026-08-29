@@ -50,7 +50,7 @@ export function ReviewSheet({
   const { t } = useTranslation('conversation')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
-  const { direction } = useAppDirection()
+  const { direction, isRTL } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme)
   const [filter, setFilter] = useState<FilterKind>('all')
@@ -215,7 +215,7 @@ export function ReviewSheet({
               accessibilityRole="button"
               testID="review-send-note"
             >
-              <PaperPlaneTilt size={16} color={theme.text.accent} />
+              <PaperPlaneTilt size={16} color={theme.text.accent} mirrored={isRTL} />
             <Text style={[styles.actionText, copyStyle]}>{t('review.sendNote')}</Text>
             </TouchableOpacity>
           ) : null}

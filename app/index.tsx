@@ -995,7 +995,7 @@ function makeStyles(theme: Theme) {
   notifDot: {
     position: 'absolute',
     top: 5,
-    right: 5,
+    end: 5,
     width: 6,
     height: 6,
     borderRadius: 3,
@@ -1015,7 +1015,7 @@ function makeStyles(theme: Theme) {
   activeDot: {
     position: 'absolute',
     top: 4,
-    right: 4,
+    end: 4,
     width: 5,
     height: 5,
     borderRadius: 2.5,

@@ -18,12 +18,13 @@ describe('TerminalOutput – rendering', () => {
     await render(<TerminalOutput lines={[]} isStreaming={false} />)
   })
 
-  it('pins the terminal surface to LTR even under an RTL app language', async () => {
+  it('pins PTY lines to LTR while the chrome follows the selected language', async () => {
     await i18n.changeLanguage('he')
     const { getByText, getByTestId } = await render(
       <TerminalOutput lines={['❯ npm run build']} isStreaming={false} />
     )
-    expect(StyleSheet.flatten(getByTestId('terminal-output').props.style)).toEqual(
+    expect(StyleSheet.flatten(getByTestId('terminal-output').props.style).direction).toBeUndefined()
+    expect(StyleSheet.flatten(getByTestId('terminal-line-row').props.style)).toEqual(
       expect.objectContaining({ direction: 'ltr' }),
     )
     expect(StyleSheet.flatten(getByText('❯ npm run build').props.style)).toEqual(

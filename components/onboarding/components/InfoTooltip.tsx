@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ArrowRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import { useAppDirection } from '@/lib/rtl'
 import { colors, fonts } from '../theme'
 
 interface Props {
@@ -11,6 +13,7 @@ interface Props {
 
 export function InfoTooltip({ children, linkLabel, linkUrl }: Props) {
   const { t } = useTranslation('onboarding')
+  const { isRTL } = useAppDirection()
   const [visible, setVisible] = useState(false)
 
   return (
@@ -32,7 +35,8 @@ export function InfoTooltip({ children, linkLabel, linkUrl }: Props) {
               onPress={() => Linking.openURL(linkUrl)}
               style={styles.linkRow}
             >
-              <Text style={styles.link}>{linkLabel} →</Text>
+              <Text style={styles.link}>{linkLabel}</Text>
+              <ArrowRight size={12} color={colors.blue400} weight="bold" mirrored={isRTL} />
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={() => setVisible(false)} hitSlop={8} style={styles.dismissRow}>
@@ -65,7 +69,7 @@ const styles = StyleSheet.create({
   tooltip: {
     position: 'absolute',
     top: 24,
-    left: 0,
+    start: 0,
     width: 260,
     backgroundColor: colors.ink2,
     borderWidth: 1,
@@ -81,7 +85,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginBottom: 8,
   },
-  linkRow: { marginBottom: 8 },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+  },
   link: {
     color: colors.blue400,
     fontFamily: fonts.sans,

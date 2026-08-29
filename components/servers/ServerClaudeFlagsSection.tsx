@@ -15,6 +15,7 @@ import { useClaudeFlags, useUpdateClaudeFlags } from '@/hooks/useClaudeFlags'
 import { claudeFlagValueRisk } from '@/types/api'
 import type { ClaudeFlagDefinition, ClaudeFlagValue, ClaudeFlagValues } from '@/types/api'
 import { confirmDangerousChange } from '@/utils/confirmDangerousChange'
+import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 interface Props {
   serverId: string
@@ -50,6 +51,8 @@ const EXTRA_ARGS_PLACEHOLDER = '--bare --agent reviewer'
 
 export function ServerClaudeFlagsSection({ serverId }: Props) {
   const { t } = useTranslation(['servers', 'common'])
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
 
@@ -124,12 +127,12 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{t('servers:claudeFlags.title')}</Text>
-      <Text style={styles.sectionDescription}>{t('servers:claudeFlags.description')}</Text>
+      <Text style={[styles.sectionTitle, copyStyle]}>{t('servers:claudeFlags.title')}</Text>
+      <Text style={[styles.sectionDescription, copyStyle]}>{t('servers:claudeFlags.description')}</Text>
 
       {!data.persisted ? (
         <View style={styles.warningBox}>
-          <Text style={styles.warningText}>{t('servers:claudeFlags.notPersisted')}</Text>
+          <Text style={[styles.warningText, copyStyle]}>{t('servers:claudeFlags.notPersisted')}</Text>
         </View>
       ) : null}
 
@@ -141,11 +144,11 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
         return (
           <View key={def.id} style={styles.row}>
             <View style={styles.rowText}>
-              <Text style={[styles.rowLabel, dangerous && styles.rowLabelDangerous]}>
+              <Text style={[styles.rowLabel, copyStyle, dangerous && styles.rowLabelDangerous]}>
                 {copy.label}
               </Text>
               {copy.description ? (
-                <Text style={styles.rowDescription}>{copy.description}</Text>
+                <Text style={[styles.rowDescription, copyStyle]}>{copy.description}</Text>
               ) : null}
             </View>
 
@@ -158,7 +161,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
                 testID={`claude-flag-${def.id}`}
               />
             ) : def.valueType === 'enum' ? (
-              <View style={styles.enumRow}>
+              <View style={[styles.enumRow, { direction: 'ltr' }]}>
                 {(def.enumValues ?? []).map((option) => {
                   const selected = value === option
                   return (
@@ -170,7 +173,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
                       accessibilityState={{ selected }}
                       testID={`claude-flag-${def.id}-${option}`}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                      <Text style={[styles.chipText, ltrContentStyle, selected && styles.chipTextActive]}>
                         {option}
                       </Text>
                     </TouchableOpacity>
@@ -179,7 +182,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
               </View>
             ) : (
               <TextInput
-                style={styles.input}
+                style={[styles.input, ltrContentStyle]}
                 value={valueToText(value)}
                 onChangeText={(text) => stage(def, textToValue(def, text))}
                 autoCapitalize="none"
@@ -193,10 +196,10 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
         )
       })}
 
-      <Text style={styles.rowLabel}>{t('servers:claudeFlags.extraArgsLabel')}</Text>
-      <Text style={styles.rowDescription}>{t('servers:claudeFlags.extraArgsUnsupported')}</Text>
+      <Text style={[styles.rowLabel, copyStyle]}>{t('servers:claudeFlags.extraArgsLabel')}</Text>
+      <Text style={[styles.rowDescription, copyStyle]}>{t('servers:claudeFlags.extraArgsUnsupported')}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, ltrContentStyle]}
         value={extraArgs}
         onChangeText={setExtraArgs}
         autoCapitalize="none"

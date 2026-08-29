@@ -2,7 +2,7 @@ import React from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { render } from '@testing-library/react-native'
 import i18n from '@/test-utils/i18n-setup'
-import { OnboardingShell } from '@/components/onboarding/OnboardingShell'
+import { OnboardingShell, onboardingSwipeGoesForward } from '@/components/onboarding/OnboardingShell'
 
 const renderShell = () => render(
   <OnboardingShell
@@ -61,5 +61,17 @@ describe('OnboardingShell RTL navigation', () => {
     await i18n.changeLanguage('en')
     const screen = await renderShell()
     expect(getEnteringAnimation(screen)).toBeUndefined()
+  })
+})
+
+describe('onboardingSwipeGoesForward', () => {
+  it('treats a left swipe as forward in LTR and a right swipe as back', () => {
+    expect(onboardingSwipeGoesForward(-80, 'ltr')).toBe(true)
+    expect(onboardingSwipeGoesForward(80, 'ltr')).toBe(false)
+  })
+
+  it('treats a right swipe as forward in RTL and a left swipe as back', () => {
+    expect(onboardingSwipeGoesForward(80, 'rtl')).toBe(true)
+    expect(onboardingSwipeGoesForward(-80, 'rtl')).toBe(false)
   })
 })

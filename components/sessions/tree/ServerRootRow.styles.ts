@@ -33,19 +33,6 @@ export function makeStyles(theme: Theme) {
     textTransform: 'capitalize',
     color: theme.text.secondary,
   },
-  chevron: {
-    fontSize: 18,
-    color: theme.text.secondary,
-    lineHeight: 20,
-    marginTop: -1,
-    width: 20,
-    textAlign: 'center',
-    flexShrink: 0,
-  },
-  chevronOpen: {
-    transform: [{ rotate: '90deg' }],
-    color: theme.text.accent,
-  },
   badge: {
     backgroundColor: 'rgba(88,166,255,0.12)',
     borderRadius: 999,

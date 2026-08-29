@@ -6,8 +6,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { ChipItem } from './QuickAccessChip'
-import { flexRow, textDirectionStyle, useAppDirection } from '@/lib/rtl'
-import { useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   item: ChipItem | null
@@ -27,7 +26,7 @@ export function QuickAccessActionSheet({
   const isGlass = useIsGlass()
   const { direction, isRTL } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
-  const styles = makeStyles(theme, isRTL)
+  const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
   if (!item) return null
 
@@ -70,7 +69,7 @@ export function QuickAccessActionSheet({
   )
 }
 
-function makeStyles(theme: Theme, isRTL: boolean) {
+function makeStyles(theme: Theme) {
   return StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
     sheet: {
@@ -94,7 +93,7 @@ function makeStyles(theme: Theme, isRTL: boolean) {
       borderColor: theme.border,
     },
     row: {
-      flexDirection: flexRow(isRTL),
+      flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.md,

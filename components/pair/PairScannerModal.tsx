@@ -230,7 +230,7 @@ function makeStyles(theme: Theme) {
     closeBtn: {
       position: 'absolute',
       top: 56,
-      right: 20,
+      end: 20,
       width: 40,
       height: 40,
       borderRadius: 20,

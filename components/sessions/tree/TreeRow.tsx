@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, Pressable } from 'react-native'
-import { ChatCircle } from 'phosphor-react-native'
+import { CaretDown, CaretRight, ChatCircle } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
 import { activeSessionColor, hasLiveSession, latestActivityLabel } from './treeUtils'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { makeStyles } from './TreeRow.styles'
@@ -18,6 +19,7 @@ interface Props {
 
 export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSelectLeaf }: Props) {
   const theme = useTheme()
+  const { isRTL } = useAppDirection()
   const styles = makeStyles(theme)
   const hasChildren = node.children.size > 0
   const hasItems = node.sessions.length + node.conversationCount > 0
@@ -52,12 +54,16 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
       {Array.from({ length: indentLevels }).map((_, i) => (
         <View
           key={`gutter-${i}`}
-          style={[styles.gutter, { left: spacing.md + i * 16 + 8 }]}
+          style={[styles.gutter, { start: spacing.md + i * 16 + 8 }]}
         />
       ))}
       <View style={styles.iconSlot}>
         {hasChildren ? (
-          <Text style={[styles.chevron, isExpanded && styles.chevronOpen]}>›</Text>
+          isExpanded ? (
+            <CaretDown size={14} color={theme.text.accent} weight="bold" />
+          ) : (
+            <CaretRight size={14} color={theme.text.secondary} weight="bold" mirrored={isRTL} />
+          )
         ) : accentColor ? (
           // Pulsing brand dot when the leaf has any live session; static
           // otherwise. Matches SessionStatusBadge so a leaf in tree mode and
@@ -71,6 +77,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
       <Text
         style={[
           styles.label,
+          ltrContentStyle,
           hasItems && styles.labelWithItems,
           isLeaf && accentColor ? { color: accentColor } : null,
         ]}

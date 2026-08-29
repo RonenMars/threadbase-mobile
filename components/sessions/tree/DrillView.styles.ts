@@ -16,12 +16,6 @@ export function makeStyles(theme: Theme) {
     gap: spacing.xs,
     minHeight: 44,
   },
-  backChevron: {
-    fontSize: 22,
-    color: theme.text.accent,
-    lineHeight: 24,
-    marginTop: -1,
-  },
   backLabel: {
     fontSize: font.base,
     fontWeight: '600',

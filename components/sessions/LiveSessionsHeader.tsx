@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 
 interface Props {
   count: number
@@ -18,6 +19,7 @@ interface Props {
  */
 export function LiveSessionsHeader({ count, hasLive, collapsed, onToggle }: Props) {
   const theme = useTheme()
+  const { isRTL } = useAppDirection()
   const styles = makeStyles(theme)
   const { t } = useTranslation('sessions')
   const label = hasLive
@@ -34,6 +36,7 @@ export function LiveSessionsHeader({ count, hasLive, collapsed, onToggle }: Prop
           size={12}
           color={tint}
           weight="bold"
+          mirrored={isRTL}
           style={{ transform: [{ rotate: collapsed ? '0deg' : '90deg' }] }}
         />
       )}

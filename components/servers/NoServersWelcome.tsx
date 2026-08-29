@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { PlugsConnected, ArrowRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAppDirection } from '@/lib/rtl'
 import { font, spacing, radius, type Theme } from '@/constants/theme'
 
 interface Props {
@@ -15,6 +16,7 @@ export function NoServersWelcome({ onAddServer }: Props) {
   const theme = useTheme()
   const s = makeStyles(theme)
   const { t } = useTranslation(['sessions', 'servers'])
+  const { isRTL } = useAppDirection()
   const router = useRouter()
 
   const handlePress = onAddServer ?? (() => router.push('/settings'))
@@ -41,7 +43,7 @@ export function NoServersWelcome({ onAddServer }: Props) {
           accessibilityLabel={t('servers:noServersWelcome.addLabel')}
         >
           <Text style={s.btnText}>{t('noServer.cta')}</Text>
-          <ArrowRight size={16} color="#fff" weight="bold" />
+          <ArrowRight size={16} color="#fff" weight="bold" mirrored={isRTL} />
         </TouchableOpacity>
       </View>
     </View>

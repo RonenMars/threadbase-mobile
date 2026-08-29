@@ -404,7 +404,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
   const theme = useTheme()
   const isGlass = useIsGlass()
   const { isRTL } = useAppDirection()
-  const { t } = useTranslation(['common', 'browse'])
+  const { t } = useTranslation(['common', 'browse', 'settings', 'sessions'])
   // expo-router 57.0.4 paints the native screen container with the
   // react-navigation theme's `colors.background`. Its default is opaque light
   // grey, which covers our glass gradient backdrop. Feed it a transparent
@@ -465,11 +465,11 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       />
       <Stack.Screen
         name="settings"
-        options={{ title: 'Settings', headerShown: true }}
+        options={{ title: t('settings:header.title'), headerShown: true }}
       />
       <Stack.Screen
         name="manage-favorites"
-        options={{ title: 'Manage Favorites', headerShown: true }}
+        options={{ title: t('sessions:manageFavorites.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="help-feedback"

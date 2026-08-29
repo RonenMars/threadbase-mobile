@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { ActivityIndicator, View, Text, TouchableOpacity, FlatList, SectionList } from 'react-native'
+import { CaretLeft } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
@@ -8,6 +9,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
+import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
@@ -20,6 +22,7 @@ interface Props {
 
 export function DrillView({ node, serverId, onBack }: Props) {
   const { t } = useTranslation('sessions')
+  const { isRTL } = useAppDirection()
   const theme = useTheme()
   const styles = makeStyles(theme)
   const router = useRouter()
@@ -88,8 +91,8 @@ export function DrillView({ node, serverId, onBack }: Props) {
 
   const backRow = (
     <TouchableOpacity style={styles.backRow} onPress={onBack}>
-      <Text style={styles.backChevron}>‹</Text>
-      <Text style={styles.backLabel} numberOfLines={1}>{node.name}</Text>
+      <CaretLeft size={18} color={theme.text.accent} weight="bold" mirrored={isRTL} />
+      <Text style={[styles.backLabel, ltrContentStyle]} numberOfLines={1}>{node.name}</Text>
     </TouchableOpacity>
   )
 

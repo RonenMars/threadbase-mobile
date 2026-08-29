@@ -29,6 +29,7 @@ import {
   Image as ImageIcon,
   PaperPlaneTilt,
 } from 'phosphor-react-native'
+import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
@@ -75,6 +76,8 @@ export default function HelpFeedbackScreen() {
   const { t } = useTranslation('feedback')
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const { direction, isRTL } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const router = useRouter()
   const s = useMemo(() => styles(theme), [theme])
 
@@ -200,7 +203,7 @@ export default function HelpFeedbackScreen() {
           <Text style={s.successMessage}>{t('success.message')}</Text>
           {deliveryNote ? (
             <View style={s.deliveryNote}>
-              <PaperPlaneTilt size={14} color={theme.text.secondary} />
+              <PaperPlaneTilt size={14} color={theme.text.secondary} mirrored={isRTL} />
               <Text style={s.deliveryNoteText}>{deliveryNote}</Text>
             </View>
           ) : null}
@@ -361,9 +364,9 @@ export default function HelpFeedbackScreen() {
         </View>
 
         {/* Description */}
-        <Text style={s.fieldLabel}>{t('form.descriptionLabel')}</Text>
+        <Text style={[s.fieldLabel, copyStyle]}>{t('form.descriptionLabel')}</Text>
         <TextInput
-          style={[s.input, s.multiline, descriptionError && s.inputError]}
+          style={[s.input, s.multiline, copyStyle, descriptionError && s.inputError]}
           value={description}
           onChangeText={(v) => { setDescription(v); if (descriptionError) setDescriptionError(null) }}
           placeholder={t('form.descriptionPlaceholder')}
@@ -376,9 +379,9 @@ export default function HelpFeedbackScreen() {
         {descriptionError ? <Text style={s.errorText}>{descriptionError}</Text> : null}
 
         {/* Email */}
-        <Text style={s.fieldLabel}>{t('form.emailLabel')}</Text>
+        <Text style={[s.fieldLabel, copyStyle]}>{t('form.emailLabel')}</Text>
         <TextInput
-          style={[s.input, emailError && s.inputError]}
+          style={[s.input, ltrContentStyle, emailError && s.inputError]}
           value={email}
           onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null) }}
           placeholder={t('form.emailPlaceholder')}
@@ -477,6 +480,7 @@ function LandingRow({
   theme: Theme
   isLast?: boolean
 }) {
+  const { isRTL, direction } = useAppDirection()
   const s = useMemo(() => styles(theme), [theme])
   return (
     <TouchableOpacity
@@ -487,8 +491,8 @@ function LandingRow({
       testID={testID}
     >
       {icon}
-      <Text style={s.landingLabel}>{label}</Text>
-      <CaretRight size={18} color={theme.text.secondary} />
+      <Text style={[s.landingLabel, textDirectionStyle(direction)]}>{label}</Text>
+      <CaretRight size={18} color={theme.text.secondary} mirrored={isRTL} />
     </TouchableOpacity>
   )
 }

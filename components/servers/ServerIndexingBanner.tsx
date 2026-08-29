@@ -15,7 +15,7 @@ import { type Theme, font, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import { blockTextDirectionStyle, ltrContentStyle, useAppDirection } from '@/lib/rtl'
+import { blockTextDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 const BEAM_WIDTH = 72
 const TRACK_HEIGHT = 3
@@ -161,7 +161,7 @@ export function ServerIndexingBanner() {
                   {serverLabel}
                 </Text>
                 {validProgress && (
-                  <Text style={[styles.subtitle, ltrContentStyle]}>
+                  <Text style={[styles.subtitle, textDirectionStyle(direction)]}>
                     {t('indexing.progress', {
                       scanned: validProgress.scanned.toLocaleString(i18n.language),
                       total: validProgress.total.toLocaleString(i18n.language),

@@ -57,9 +57,9 @@
     "noBranch": "ללא git"
   },
   "hub": {
-    "seeAll_one": "ראה את כל השיחה →",
-    "seeAll_two": "ראה את שתי השיחות →",
-    "seeAll_other": "ראה את כל {{count}} השיחות →",
+    "seeAll_one": "ראה את כל השיחה",
+    "seeAll_two": "ראה את שתי השיחות",
+    "seeAll_other": "ראה את כל {{count}} השיחות",
     "msgs_one": "הודעה אחת",
     "msgs_two": "שתי הודעות",
     "msgs_other": "{{count}} הודעות",
@@ -99,6 +99,7 @@
     "unpin": "בטל נעיצה"
   },
   "manageFavorites": {
+    "screenTitle": "ניהול מועדפים",
     "empty": "עדיין אין מועדפים.",
     "emptySub": "הקש על שבב ברצועה ובחר \"נעץ למועדפים\".",
     "addToFavorites": "הוסף למועדפים"

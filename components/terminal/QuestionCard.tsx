@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics'
 import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/constants/theme'
+import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 interface Props {
@@ -23,6 +24,8 @@ interface Props {
 
 export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false }: Props) {
   const { t } = useTranslation('common')
+  const { direction } = useAppDirection()
+  const copyStyle = textDirectionStyle(direction)
   const q = block.questions[0]
   // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
   const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
@@ -64,9 +67,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           <X size={16} color="#8b949e" />
         </TouchableOpacity>
       ) : null}
-      {q.header ? <Text style={styles.header}>{q.header}</Text> : null}
-      {q.detail ? <Text style={styles.detail}>{q.detail}</Text> : null}
-      <Text style={styles.question}>{q.question}</Text>
+      {q.header ? <Text style={[styles.header, copyStyle]}>{q.header}</Text> : null}
+      {q.detail ? <Text style={[styles.detail, ltrContentStyle]}>{q.detail}</Text> : null}
+      <Text style={[styles.question, copyStyle]}>{q.question}</Text>
       {q.options.map((option, index) => (
         <TouchableOpacity
           key={index}
@@ -81,7 +84,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
             {index === selected && <View style={styles.radioInner} />}
           </View>
           <View style={styles.optionBody}>
-            <Text style={[styles.optionText, index === selected && styles.optionTextSelected]}>
+            <Text style={[styles.optionText, copyStyle, index === selected && styles.optionTextSelected]}>
               {option.label}
             </Text>
             {option.description ? (
@@ -92,9 +95,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
         </TouchableOpacity>
       ))}
       {block.unsupportedShape ? (
-        <Text style={styles.unsupported} testID="question-card-unsupported">{t('question.unsupportedShape')}</Text>
+        <Text style={[styles.unsupported, copyStyle]} testID="question-card-unsupported">{t('question.unsupportedShape')}</Text>
       ) : null}
-      {ghost ? <Text style={styles.ghostNote}>{t('question.answerSent')}</Text> : null}
+      {ghost ? <Text style={[styles.ghostNote, copyStyle]}>{t('question.answerSent')}</Text> : null}
       {onCancel && !ghost ? (
         <TouchableOpacity
           style={styles.cancelButton}
@@ -102,7 +105,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           accessibilityRole="button"
           accessibilityLabel={t('button.cancel')}
         >
-          <Text style={styles.cancelText}>{t('button.cancel')}</Text>
+          <Text style={[styles.cancelText, copyStyle]}>{t('button.cancel')}</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: spacing.sm,
-    right: spacing.md,
+    end: spacing.md,
     zIndex: 1,
     padding: 4,
   },

@@ -27,16 +27,6 @@ export function makeStyles(theme: Theme) {
     marginEnd: spacing.xs,
     flexShrink: 0,
   },
-  chevron: {
-    fontSize: 18,
-    color: theme.text.secondary,
-    lineHeight: 20,
-    marginTop: -1,
-  },
-  chevronOpen: {
-    transform: [{ rotate: '90deg' }],
-    color: theme.text.accent,
-  },
   leafDot: {
     width: 6,
     height: 6,

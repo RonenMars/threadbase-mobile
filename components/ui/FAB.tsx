@@ -54,7 +54,7 @@ const FAB_SIZE = 56
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    right: 20,
+    end: 20,
     width: FAB_SIZE,
     height: FAB_SIZE,
     borderRadius: FAB_SIZE / 2,

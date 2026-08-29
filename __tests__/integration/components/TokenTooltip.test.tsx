@@ -26,6 +26,6 @@ describe('InfoTooltip', () => {
       <InfoTooltip linkLabel="Learn more" linkUrl="https://example.com">Some info</InfoTooltip>
     )
     await fireEvent.press(getByTestId('info-tooltip-trigger'))
-    expect(getByText('Learn more →')).toBeTruthy()
+    expect(getByText('Learn more')).toBeTruthy()
   })
 })

@@ -56,14 +56,6 @@ export function makeStyles(theme: Theme) {
     color: theme.text.secondary,
     fontSize: font.xs,
   },
-  chevron: {
-    color: theme.text.secondary,
-    fontSize: font.lg,
-    fontWeight: '300',
-    lineHeight: font.lg,
-    width: 16,
-    textAlign: 'center',
-  },
   body: {
     borderTopWidth: 1,
     borderTopColor: theme.border,
@@ -81,6 +73,9 @@ export function makeStyles(theme: Theme) {
     marginBottom: spacing.xs,
   },
   seeAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     paddingVertical: spacing.xs,
   },
   bodySpinner: {

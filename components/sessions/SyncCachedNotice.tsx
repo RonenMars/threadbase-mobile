@@ -34,6 +34,6 @@ const styles = StyleSheet.create({
   },
   caption: {
     top: 4,
-    right: 14,
+    end: 14,
   },
 })
