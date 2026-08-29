@@ -56,7 +56,6 @@ function derivePort(url: string): string {
 export function OnboardingNavigator({ onDone, mode }: Props) {
   const { t } = useTranslation('onboarding')
   const [index, setIndex] = useState<number | null>(null)
-  const [direction, setDirection] = useState<1 | -1 | 0>(0)
   const [paired, setPaired] = useState<PairResult | null>(null)
   const [languageBusy, setLanguageBusy] = useState(false)
   const [languageError, setLanguageError] = useState<'persist' | null>(null)
@@ -89,7 +88,6 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
   const goto = useCallback((next: number) => {
     setIndex((curr) => {
       const clamped = Math.max(0, Math.min(TOTAL_STEPS - 1, next))
-      setDirection(clamped >= (curr ?? 0) ? 1 : -1)
       return clamped
     })
   }, [])
@@ -128,7 +126,6 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
       // Connect step: swipe/forward must not jump to Done unpaired.
       if (curr === 2 && !paired) return curr
       if (curr >= TOTAL_STEPS - 1) return curr
-      setDirection(1)
       return curr + 1
     })
   }, [continueFromLanguage, index, paired])
@@ -136,7 +133,6 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
   // ConnectStep calls this after a successful pair — bypass the unpaired guard
   // (paired state may not have flushed yet when onAdvance runs).
   const advanceAfterPair = useCallback(() => {
-    setDirection(1)
     setIndex(3)
   }, [])
 
@@ -144,7 +140,6 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
     setIndex((curr) => {
       if (curr === null) return curr
       if (curr <= 0) return curr
-      setDirection(-1)
       return curr - 1
     })
   }, [])
@@ -189,7 +184,6 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
     <OnboardingShell
       index={index}
       total={TOTAL_STEPS}
-      direction={direction}
       onNext={onNext}
       onBack={onBack}
       onSkip={onSkip}

@@ -1,15 +1,13 @@
 import React from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { render } from '@testing-library/react-native'
-import { SlideInLeft, SlideInRight } from 'react-native-reanimated'
 import i18n from '@/test-utils/i18n-setup'
 import { OnboardingShell } from '@/components/onboarding/OnboardingShell'
 
-const renderShell = (direction: 1 | -1 | 0 = 0) => render(
+const renderShell = () => render(
   <OnboardingShell
     index={2}
     total={5}
-    direction={direction}
     onNext={jest.fn()}
     onBack={jest.fn()}
     onSkip={jest.fn()}
@@ -59,23 +57,9 @@ describe('OnboardingShell RTL navigation', () => {
     expect(queryByTestId('onboarding-shell-back-arrow-left')).toBeNull()
   })
 
-  it('keeps forward and backward step motion in LTR reading order', async () => {
+  it('does not apply an entering layout animation to onboarding steps', async () => {
     await i18n.changeLanguage('en')
-    const forward = await renderShell(1)
-    expect(getEnteringAnimation(forward)).toBe(SlideInRight)
-    await forward.unmount()
-
-    const backward = await renderShell(-1)
-    expect(getEnteringAnimation(backward)).toBe(SlideInLeft)
-  })
-
-  it('mirrors forward and backward step motion in RTL reading order', async () => {
-    await i18n.changeLanguage('he')
-    const forward = await renderShell(1)
-    expect(getEnteringAnimation(forward)).toBe(SlideInLeft)
-    await forward.unmount()
-
-    const backward = await renderShell(-1)
-    expect(getEnteringAnimation(backward)).toBe(SlideInRight)
+    const screen = await renderShell()
+    expect(getEnteringAnimation(screen)).toBeUndefined()
   })
 })
