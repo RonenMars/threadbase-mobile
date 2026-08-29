@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
+import type { RtlStyleKit } from '@/lib/rtl'
 
-export function makeStyles(theme: Theme) {
+export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -37,6 +38,7 @@ export function makeStyles(theme: Theme) {
     flex: 1,
     fontSize: font.sm,
     color: theme.text.secondary,
+    ...rtl.ltr,
   },
   labelWithItems: {
     color: theme.text.primary,

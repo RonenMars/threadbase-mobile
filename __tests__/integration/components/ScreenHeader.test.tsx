@@ -3,6 +3,7 @@ import { StyleSheet, type ViewStyle } from 'react-native'
 import { render, fireEvent, cleanup } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
+import { DirectionRoot } from '@/lib/direction-root'
 import i18n from '@/test-utils/i18n-setup'
 
 function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
@@ -26,7 +27,11 @@ describe('ScreenHeader – back button', () => {
       canGoBack: () => true,
     })
 
-    const { getByTestId } = await render(<ScreenHeader title="Test" />)
+    const { getByTestId } = await render(
+      <DirectionRoot>
+        <ScreenHeader title="Test" />
+      </DirectionRoot>,
+    )
     await fireEvent.press(getByTestId('screen-header-back-button'))
 
     expect(back).toHaveBeenCalled()
@@ -44,7 +49,11 @@ describe('ScreenHeader – back button', () => {
       canGoBack: () => false,
     })
 
-    const { getByTestId } = await render(<ScreenHeader title="Test" />)
+    const { getByTestId } = await render(
+      <DirectionRoot>
+        <ScreenHeader title="Test" />
+      </DirectionRoot>,
+    )
     await fireEvent.press(getByTestId('screen-header-back-button'))
 
     expect(back).not.toHaveBeenCalled()
@@ -60,7 +69,11 @@ describe('ScreenHeader – back button', () => {
       canGoBack: () => true,
     })
 
-    const { getByTestId } = await render(<ScreenHeader title="Test" onBack={onBack} />)
+    const { getByTestId } = await render(
+      <DirectionRoot>
+        <ScreenHeader title="Test" onBack={onBack} />
+      </DirectionRoot>,
+    )
     await fireEvent.press(getByTestId('screen-header-back-button'))
 
     expect(onBack).toHaveBeenCalled()
@@ -74,7 +87,11 @@ describe('ScreenHeader – back button', () => {
       canGoBack: () => true,
     })
 
-    const ltr = await render(<ScreenHeader title="Test" />)
+    const ltr = await render(
+      <DirectionRoot>
+        <ScreenHeader title="Test" />
+      </DirectionRoot>,
+    )
     expect(isMirrored(ltr.getByTestId('phosphor-react-native-caret-left-undefined'))).toBe(false)
     expect(StyleSheet.flatten(ltr.getByText('Test').props.style)).toEqual(
       expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto' }),
@@ -82,7 +99,11 @@ describe('ScreenHeader – back button', () => {
 
     cleanup()
     await i18n.changeLanguage('he')
-    const rtl = await render(<ScreenHeader title="Test" />)
+    const rtl = await render(
+      <DirectionRoot>
+        <ScreenHeader title="Test" />
+      </DirectionRoot>,
+    )
     expect(isMirrored(rtl.getByTestId('phosphor-react-native-caret-left-undefined'))).toBe(true)
     expect(StyleSheet.flatten(rtl.getByText('Test').props.style)).toEqual(
       expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),

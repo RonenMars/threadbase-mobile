@@ -29,7 +29,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const [arg, setArg] = useState('')
 
@@ -118,7 +118,7 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
               disabled={!canConfirm}
               accessibilityLabel={`Run /${command.id}`}
             >
-              <PaperPlaneRight size={15} color="#fff" mirrored={isRTL} />
+              <PaperPlaneRight size={15} color="#fff" />
               <Text style={[styles.confirmBtnText, copyStyle]}>{t('commands.run', { command: command.id })}</Text>
             </TouchableOpacity>
           </View>

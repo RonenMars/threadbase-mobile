@@ -8,8 +8,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
-import { useTheme } from '@/contexts/ThemeContext'
-import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
@@ -22,9 +21,7 @@ interface Props {
 
 export function DrillView({ node, serverId, onBack }: Props) {
   const { t } = useTranslation('sessions')
-  const { isRTL } = useAppDirection()
-  const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)
@@ -91,8 +88,8 @@ export function DrillView({ node, serverId, onBack }: Props) {
 
   const backRow = (
     <TouchableOpacity style={styles.backRow} onPress={onBack}>
-      <CaretLeft size={18} color={theme.text.accent} weight="bold" mirrored={isRTL} />
-      <Text style={[styles.backLabel, ltrContentStyle]} numberOfLines={1}>{node.name}</Text>
+      <CaretLeft size={18} color={theme.text.accent} weight="bold" />
+      <Text style={styles.backLabel} numberOfLines={1}>{node.name}</Text>
     </TouchableOpacity>
   )
 

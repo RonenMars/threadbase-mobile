@@ -86,7 +86,7 @@ export default function ConversationDetailScreen() {
   useLiveInstanceCount('ConversationDetail')
   const { t } = useTranslation(['conversation', 'common'])
   const theme = useTheme()
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const searchStyles = useMemo(() => makeSearchStyles(theme, direction), [theme, direction])
   const { id, server, search, anchor_index, fromSession: fromSessionParam, openSearch: openSearchParam } = useLocalSearchParams<{
@@ -920,9 +920,9 @@ export default function ConversationDetailScreen() {
               testID={footerActionTestId}
             >
               {showBackToLive ? (
-                <ArrowLeft size={16} weight="bold" color="#fff" mirrored={isRTL} />
+                <ArrowLeft size={16} weight="bold" color="#fff" />
               ) : canResume ? (
-                <Play size={16} weight="fill" color="#fff" mirrored={isRTL} />
+                <Play size={16} weight="fill" color="#fff" />
               ) : null}
               <Text style={styles.resumeBtnText}>{resumeLabel}</Text>
             </TouchableOpacity>

@@ -8,6 +8,7 @@ import React from 'react'
 import { StyleSheet, type ViewStyle } from 'react-native'
 import { fireEvent, screen, cleanup } from '@testing-library/react-native'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
+import { DirectionRoot } from '@/lib/direction-root'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
 
@@ -32,7 +33,11 @@ function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProp
 
 async function renderComposer(overrides?: Partial<ChatComposerProps>) {
   const props = makeProps(overrides)
-  return { props, ...(await renderWithI18n(<ChatComposer {...props} />)) }
+  return { props, ...(await renderWithI18n(
+    <DirectionRoot>
+      <ChatComposer {...props} />
+    </DirectionRoot>,
+  )) }
 }
 
 describe('ChatComposer', () => {

@@ -87,6 +87,36 @@ export function useTextDirectionStyle(): TextDirectionStyle {
 }
 
 /**
+ * Named style fragments for `makeStyles(theme, rtl)`. Copy and overlay follow
+ * the selected language; `ltr` isolates technical tokens. Icon mirroring is
+ * not a style — `DirectionRoot` sets Phosphor `IconContext` once.
+ */
+export type RtlStyleKit = {
+  direction: Direction;
+  isRTL: boolean;
+  copy: TextDirectionStyle;
+  block: TextDirectionStyle & { width: '100%' };
+  ltr: TextDirectionStyle;
+  overlay: { direction: Direction };
+};
+
+export function rtlStyleKit(direction: Direction): RtlStyleKit {
+  return {
+    direction,
+    isRTL: direction === 'rtl',
+    copy: textDirectionStyle(direction),
+    block: blockTextDirectionStyle(direction),
+    ltr: ltrContentStyle,
+    overlay: { direction },
+  };
+}
+
+export function useRtlStyles(): RtlStyleKit {
+  const { direction } = useAppDirection();
+  return useMemo(() => rtlStyleKit(direction), [direction]);
+}
+
+/**
  * Returns the appropriate flex direction based on RTL setting.
  * Use this for horizontal layouts that should flip in RTL.
  */

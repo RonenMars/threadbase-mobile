@@ -2,9 +2,8 @@ import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import { CaretDown, CaretRight } from 'phosphor-react-native'
 import Svg, { Path } from 'react-native-svg'
-import { useTheme } from '@/contexts/ThemeContext'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
-import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles } from './ServerRootRow.styles'
 import type { TreeNode } from './types'
 
@@ -19,9 +18,7 @@ interface Props {
 }
 
 export function ServerRootRow({ node, serverLabel, collapsible, isExpanded, onToggle, onSelectLeaf, isRefreshing }: Props) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const hasDirectItems = (node.sessions.length + node.conversationCount) > 0
 
   const handlePress = () => {
@@ -42,15 +39,15 @@ export function ServerRootRow({ node, serverLabel, collapsible, isExpanded, onTo
         isExpanded ? (
           <CaretDown size={14} color={theme.text.accent} weight="bold" />
         ) : (
-          <CaretRight size={14} color={theme.text.secondary} weight="bold" mirrored={isRTL} />
+          <CaretRight size={14} color={theme.text.secondary} weight="bold" />
         )
       ) : (
         <View style={[styles.statusDot, { backgroundColor: theme.text.secondary }]} />
       )}
       <View style={styles.drillContent}>
-        <Text style={[styles.drillLabel, ltrContentStyle]} numberOfLines={1}>{serverLabel}</Text>
+        <Text style={styles.drillLabel} numberOfLines={1}>{serverLabel}</Text>
         {!collapsible ? (
-          <Text style={[styles.drillStatus, ltrContentStyle]}>{node.name}</Text>
+          <Text style={styles.drillStatus}>{node.name}</Text>
         ) : null}
       </View>
       {isRefreshing ? (

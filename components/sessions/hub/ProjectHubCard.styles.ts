@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
+import type { RtlStyleKit } from '@/lib/rtl'
 
-export function makeStyles(theme: Theme) {
+export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
   // Spine wrapper: a flex row that pins the brand-coloured thread spine to
   // the left edge of the card and lets the existing header / body fill the
@@ -35,12 +36,14 @@ export function makeStyles(theme: Theme) {
     color: theme.text.secondary,
     fontSize: font.xs - 1,
     fontWeight: '500',
+    ...rtl.ltr,
   },
   headerSuffix: {
     color: theme.text.primary,
     fontSize: font.lg,
     fontWeight: '600',
     lineHeight: font.lg + 4,
+    ...rtl.ltr,
   },
   headerActivity: {
     color: theme.text.secondary,

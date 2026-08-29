@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { textDirectionStyle, type Direction } from '@/lib/rtl'
+import { rtlStyleKit, type Direction } from '@/lib/rtl'
 
 export function makeStyles(theme: Theme, direction: Direction) {
+  const rtl = rtlStyleKit(direction)
   return StyleSheet.create({
   searchBar: {
     paddingHorizontal: spacing.lg,
@@ -19,7 +20,7 @@ export function makeStyles(theme: Theme, direction: Direction) {
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.border,
-    ...textDirectionStyle(direction),
+    ...rtl.copy,
   },
   listContent: {
     padding: spacing.sm,

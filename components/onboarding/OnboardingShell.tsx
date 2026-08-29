@@ -83,6 +83,7 @@ export function OnboardingShell({
                 size={18}
                 weight="bold"
                 color={colors.fg2}
+                mirrored={false}
               />
             ) : (
               <ArrowLeft
@@ -90,6 +91,7 @@ export function OnboardingShell({
                 size={18}
                 weight="bold"
                 color={colors.fg2}
+                mirrored={false}
               />
             )}
             <Text style={styles.chromeBack}>{t('shell.back')}</Text>

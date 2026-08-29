@@ -15,9 +15,10 @@ import Animated, {
 } from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
-import { spacing } from '@/constants/theme'
+import { spacing, type Theme } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
-import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
+import { ltrContentStyle, type RtlStyleKit } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import type { QuestionPhase } from '@/hooks/useActiveQuestion'
@@ -138,8 +139,7 @@ export function TerminalOutput({
 }: Props) {
   const { t } = useTranslation('common')
   const { t: tTerminal } = useTranslation('terminal')
-  const { direction } = useAppDirection()
-  const copyStyle = textDirectionStyle(direction)
+  const { styles: chrome } = useThemedStyles(makeChromeStyles)
   const collapsedLines = useMemo(
     () => collapseWrappedUserLines(lines, userMessageTexts),
     [lines, userMessageTexts],
@@ -319,8 +319,8 @@ export function TerminalOutput({
         accessibilityLabel={`${tTerminal('session.resumedEmptyScrollback')} ${linkA11y}`}
         testID="terminal-resumed-scrollback-notice"
       >
-        <Text style={[styles.resumedNoticeText, copyStyle]}>{tTerminal('session.resumedEmptyScrollback')}</Text>
-        <Text style={[styles.resumedNoticeLinkRow, copyStyle]}>
+        <Text style={chrome.resumedNoticeText}>{tTerminal('session.resumedEmptyScrollback')}</Text>
+        <Text style={chrome.resumedNoticeLinkRow}>
           <Text
             style={styles.resumedNoticeLink}
             onPress={onViewResumedConversation}
@@ -353,7 +353,7 @@ export function TerminalOutput({
         </Text>
       </View>
     )
-  }, [copyStyle, onSearchResumedConversation, onViewResumedConversation, tTerminal])
+  }, [chrome, onSearchResumedConversation, onViewResumedConversation, tTerminal])
 
   return (
     <View style={styles.container} onLayout={handleContainerLayout} testID="terminal-output">
@@ -399,7 +399,7 @@ export function TerminalOutput({
           accessibilityLabel={t('nav.scrollToTop')}
           style={styles.jumpBtnInner}
         >
-          <Text style={[styles.jumpBtnText, copyStyle]}>{t('nav.top')}</Text>
+          <Text style={chrome.jumpBtnText}>{t('nav.top')}</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -409,7 +409,7 @@ export function TerminalOutput({
           accessibilityLabel={t('nav.scrollToBottom')}
           style={styles.jumpBtnInner}
         >
-          <Text style={[styles.jumpBtnText, copyStyle]}>{t('nav.bottom')}</Text>
+          <Text style={chrome.jumpBtnText}>{t('nav.bottom')}</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -442,16 +442,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#30363d',
     gap: 4,
-  },
-  resumedNoticeText: {
-    color: '#8b949e',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  resumedNoticeLinkRow: {
-    color: '#8b949e',
-    fontSize: 12,
-    lineHeight: 16,
   },
   resumedNoticePlain: {
     color: '#8b949e',
@@ -502,9 +492,27 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET,
     justifyContent: 'center',
   },
-  jumpBtnText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 12,
-    fontWeight: '500',
-  },
 })
+
+function makeChromeStyles(_theme: Theme, rtl: RtlStyleKit) {
+  return StyleSheet.create({
+    resumedNoticeText: {
+      color: '#8b949e',
+      fontSize: 12,
+      lineHeight: 16,
+      ...rtl.copy,
+    },
+    resumedNoticeLinkRow: {
+      color: '#8b949e',
+      fontSize: 12,
+      lineHeight: 16,
+      ...rtl.copy,
+    },
+    jumpBtnText: {
+      color: 'rgba(255, 255, 255, 0.7)',
+      fontSize: 12,
+      fontWeight: '500',
+      ...rtl.copy,
+    },
+  })
+}

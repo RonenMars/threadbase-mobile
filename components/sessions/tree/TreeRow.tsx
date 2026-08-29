@@ -1,8 +1,7 @@
 import { View, Text, TouchableOpacity, Pressable } from 'react-native'
 import { CaretDown, CaretRight, ChatCircle } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
-import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { activeSessionColor, hasLiveSession, latestActivityLabel } from './treeUtils'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { makeStyles } from './TreeRow.styles'
@@ -18,9 +17,7 @@ interface Props {
 }
 
 export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSelectLeaf }: Props) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const hasChildren = node.children.size > 0
   const hasItems = node.sessions.length + node.conversationCount > 0
   const isLeaf = !hasChildren
@@ -62,7 +59,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
           isExpanded ? (
             <CaretDown size={14} color={theme.text.accent} weight="bold" />
           ) : (
-            <CaretRight size={14} color={theme.text.secondary} weight="bold" mirrored={isRTL} />
+            <CaretRight size={14} color={theme.text.secondary} weight="bold" />
           )
         ) : accentColor ? (
           // Pulsing brand dot when the leaf has any live session; static
@@ -77,7 +74,6 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
       <Text
         style={[
           styles.label,
-          ltrContentStyle,
           hasItems && styles.labelWithItems,
           isLeaf && accentColor ? { color: accentColor } : null,
         ]}

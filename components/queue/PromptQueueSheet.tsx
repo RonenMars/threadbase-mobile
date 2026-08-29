@@ -36,7 +36,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
   const styles = useMemo(() => makeStyles(theme), [theme])
   const STATUS_COLORS = useMemo(() => statusColors(theme), [theme])
   const { t } = useTranslation('queue')
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const sheetRef = useRef<BottomSheet>(null)
   const [input, setInput] = useState('')
@@ -118,7 +118,7 @@ export function PromptQueueSheet({ serverId, sessionId, visible, onClose }: Prop
             disabled={!input.trim()}
             accessibilityLabel={t('promptQueue.addLabel')}
           >
-            <PaperPlaneRight size={22} color={theme.text.onAccent} mirrored={isRTL} />
+            <PaperPlaneRight size={22} color={theme.text.onAccent} />
           </TouchableOpacity>
         </View>
 

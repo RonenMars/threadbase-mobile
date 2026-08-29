@@ -11,7 +11,7 @@ import { I18nManager, StyleSheet, Text, View } from 'react-native'
 import { act, render } from '@testing-library/react-native'
 import * as Updates from 'expo-updates'
 import i18n from '@/test-utils/i18n-setup'
-import { localeDirection, useAppDirection, flexRow, textDirectionStyle, ltrContentStyle, blockTextDirectionStyle } from '@/lib/rtl'
+import { localeDirection, useAppDirection, flexRow, textDirectionStyle, ltrContentStyle, blockTextDirectionStyle, rtlStyleKit } from '@/lib/rtl'
 import { isRTLLocale, SUPPORTED_LOCALES } from '@/lib/locale'
 
 function setNativeRTL(value: boolean) {
@@ -178,5 +178,19 @@ describe('text direction helpers', () => {
       writingDirection: 'ltr',
       textAlign: 'auto',
     })
+  })
+
+  it('exposes named copy, ltr, and overlay fragments on rtlStyleKit', () => {
+    const rtl = rtlStyleKit('rtl')
+    expect(rtl.isRTL).toBe(true)
+    expect(rtl.copy).toEqual(textDirectionStyle('rtl'))
+    expect(rtl.block).toEqual(blockTextDirectionStyle('rtl'))
+    expect(rtl.ltr).toEqual(ltrContentStyle)
+    expect(rtl.overlay).toEqual({ direction: 'rtl' })
+
+    const ltr = rtlStyleKit('ltr')
+    expect(ltr.isRTL).toBe(false)
+    expect(ltr.copy).toEqual(textDirectionStyle('ltr'))
+    expect(ltr.overlay).toEqual({ direction: 'ltr' })
   })
 })

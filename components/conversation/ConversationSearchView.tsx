@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, type LayoutChangeEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
@@ -7,8 +7,8 @@ import { CaretDown, CaretUp, X } from 'phosphor-react-native'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
 import type { Message } from '@/types/api'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
-import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 // The anchored search view: given a resolved match set, it renders the shared
 // history list with native bottom-anchoring OFF and drives scrolling itself —
@@ -58,10 +58,7 @@ export function ConversationSearchView({
   contentContainerStyle,
 }: ConversationSearchViewProps) {
   const { t } = useTranslation(['conversation', 'common'])
-  const theme = useTheme()
-  const { direction } = useAppDirection()
-  const styles = useMemo(() => makeStyles(theme), [theme])
-  const copyStyle = textDirectionStyle(direction)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
 
   const listRef = useRef<FlashListRef<Message>>(null)
@@ -193,7 +190,7 @@ export function ConversationSearchView({
   return (
     <>
       <View style={styles.matchNavBar} testID="search-match-nav">
-        <Text style={[styles.matchNavCount, copyStyle]} testID="search-match-count">
+        <Text style={styles.matchNavCount} testID="search-match-count">
           {t('search.matchCount', { current: activeMatchPos + 1, total: matchTotalLabel })}
         </Text>
         <View style={styles.matchNavActions}>
@@ -246,7 +243,7 @@ export function ConversationSearchView({
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     matchNavBar: {
       flexDirection: 'row',
@@ -258,7 +255,7 @@ function makeStyles(theme: Theme) {
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
-    matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
+    matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', ...rtl.copy },
     matchNavActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     matchNavBtn: { minWidth: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   })

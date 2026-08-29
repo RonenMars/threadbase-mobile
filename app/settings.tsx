@@ -31,7 +31,6 @@ import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode, CaretRight } from 'phosphor-react-native'
-import { useAppDirection } from '@/lib/rtl'
 import { captureHandledError } from '@/services/sentry'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/theme'
@@ -1065,8 +1064,7 @@ function ActionSegment({
 
 function SettingsChevron() {
   const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  return <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
+  return <CaretRight size={16} color={theme.text.secondary} />
 }
 
 function styles(theme: ReturnType<typeof useTheme>) {

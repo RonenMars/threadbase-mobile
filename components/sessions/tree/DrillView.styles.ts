@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
+import type { RtlStyleKit } from '@/lib/rtl'
 
-export function makeStyles(theme: Theme) {
+export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
   drill: {
     flex: 1,
@@ -22,6 +23,7 @@ export function makeStyles(theme: Theme) {
     color: theme.text.primary,
     fontFamily: 'monospace',
     flex: 1,
+    ...rtl.ltr,
   },
   sectionHeader: {
     paddingHorizontal: spacing.md,

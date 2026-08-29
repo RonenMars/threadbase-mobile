@@ -2,6 +2,7 @@ import React from 'react'
 import { StyleSheet, type ViewStyle } from 'react-native'
 import { act, render } from '@testing-library/react-native'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
+import { DirectionRoot } from '@/lib/direction-root'
 import i18n from '@/test-utils/i18n-setup'
 
 function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
@@ -20,13 +21,15 @@ describe('ServerHeaderRow direction', () => {
 
   it('keeps server identifiers LTR and leaves the disclosure unmirrored in LTR', async () => {
     const { getByText, getByTestId } = await render(
-      <ServerHeaderRow
-        serverId="s1"
-        serverLabel="work-mac.local"
-        totalCount={3}
-        collapsible
-        onToggle={jest.fn()}
-      />,
+      <DirectionRoot>
+        <ServerHeaderRow
+          serverId="s1"
+          serverLabel="work-mac.local"
+          totalCount={3}
+          collapsible
+          onToggle={jest.fn()}
+        />
+      </DirectionRoot>,
     )
 
     expect(StyleSheet.flatten(getByText('work-mac.local').props.style)).toEqual(
@@ -43,13 +46,15 @@ describe('ServerHeaderRow direction', () => {
       await i18n.changeLanguage('he')
     })
     const { getByText, getByTestId } = await render(
-      <ServerHeaderRow
-        serverId="s1"
-        serverLabel="work-mac.local"
-        totalCount={3}
-        collapsible
-        onToggle={jest.fn()}
-      />,
+      <DirectionRoot>
+        <ServerHeaderRow
+          serverId="s1"
+          serverLabel="work-mac.local"
+          totalCount={3}
+          collapsible
+          onToggle={jest.fn()}
+        />
+      </DirectionRoot>,
     )
 
     expect(StyleSheet.flatten(getByText('work-mac.local').props.style)).toEqual(

@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { ArrowRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { useAppDirection } from '@/lib/rtl'
 import { colors, fonts } from '../theme'
 
 interface Props {
@@ -13,7 +12,6 @@ interface Props {
 
 export function InfoTooltip({ children, linkLabel, linkUrl }: Props) {
   const { t } = useTranslation('onboarding')
-  const { isRTL } = useAppDirection()
   const [visible, setVisible] = useState(false)
 
   return (
@@ -36,7 +34,7 @@ export function InfoTooltip({ children, linkLabel, linkUrl }: Props) {
               style={styles.linkRow}
             >
               <Text style={styles.link}>{linkLabel}</Text>
-              <ArrowRight size={12} color={colors.blue400} weight="bold" mirrored={isRTL} />
+              <ArrowRight size={12} color={colors.blue400} weight="bold" />
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={() => setVisible(false)} hitSlop={8} style={styles.dismissRow}>

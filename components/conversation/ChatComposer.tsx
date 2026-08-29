@@ -77,7 +77,7 @@ export function ChatComposer({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const inputDirection = textDirectionStyle(direction)
   const insets = useSafeAreaInsets()
   // When the keyboard is up, behavior="padding" already lifts the composer above
@@ -168,7 +168,7 @@ export function ChatComposer({
       disabled={disabled || sendDisabled}
       accessibilityLabel={t('action.sendInput')}
     >
-      <PaperPlaneRight size={24} color={theme.text.onAccent} mirrored={isRTL} />
+      <PaperPlaneRight size={24} color={theme.text.onAccent} />
     </TouchableOpacity>
   ) : micGranted ? (
     <TouchableOpacity
@@ -191,7 +191,7 @@ export function ChatComposer({
       disabled
       accessibilityLabel={t('action.sendInput')}
     >
-      <PaperPlaneRight size={24} color={theme.text.onAccent} mirrored={isRTL} />
+      <PaperPlaneRight size={24} color={theme.text.onAccent} />
     </TouchableOpacity>
   )
 
@@ -317,7 +317,7 @@ export function ChatComposer({
                   disabled={!hasContent || disabled || sendDisabled}
                   accessibilityLabel={t('action.sendInput')}
                 >
-                  <PaperPlaneRight size={26} color={theme.text.onAccent} mirrored={isRTL} />
+                  <PaperPlaneRight size={26} color={theme.text.onAccent} />
                 </TouchableOpacity>
               </View>
             </View>

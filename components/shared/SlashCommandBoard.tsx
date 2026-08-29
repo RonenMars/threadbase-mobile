@@ -11,9 +11,9 @@ import {
 import { Terminal, CaretRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
-import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 interface Props {
   /** Whether the board is visible */
@@ -28,11 +28,7 @@ interface Props {
 
 export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props) {
   const { t } = useTranslation('shared')
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const directionStyle = useDirectionStyle()
-  const { direction, isRTL } = useAppDirection()
-  const copyStyle = textDirectionStyle(direction)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return SLASH_COMMANDS
@@ -54,27 +50,27 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
     >
       {/* Tapping outside dismisses without sending */}
       <Pressable style={styles.backdrop} onPress={onDismiss} />
-      <View style={[styles.sheet, directionStyle]}>
+      <View style={styles.sheet}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Terminal size={15} color={theme.text.accent} />
-            <Text style={[styles.headerTitle, copyStyle]}>{t('commands.title')}</Text>
+            <Text style={styles.headerTitle}>{t('commands.title')}</Text>
           </View>
           {query.length > 0 && (
-            <Text style={[styles.queryBadge, ltrContentStyle]}>/{query}</Text>
+            <Text style={styles.queryBadge}>/{query}</Text>
           )}
         </View>
 
         {filtered.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={[styles.emptyText, copyStyle]}>{t('commands.empty', { query })}</Text>
+            <Text style={styles.emptyText}>{t('commands.empty', { query })}</Text>
           </View>
         ) : (
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <CommandRow command={item} onPress={() => onSelect(item)} theme={theme} styles={styles} isRTL={isRTL} copyStyle={copyStyle} />
+              <CommandRow command={item} onPress={() => onSelect(item)} theme={theme} styles={styles} />
             )}
             style={styles.list}
             keyboardShouldPersistTaps="always"
@@ -91,11 +87,9 @@ interface RowProps {
   onPress: () => void
   theme: Theme
   styles: ReturnType<typeof makeStyles>
-  isRTL: boolean
-  copyStyle: ReturnType<typeof textDirectionStyle>
 }
 
-function CommandRow({ command, onPress, theme, styles, isRTL, copyStyle }: RowProps) {
+function CommandRow({ command, onPress, theme, styles }: RowProps) {
   const { t } = useTranslation('shared')
   return (
     <TouchableOpacity
@@ -110,27 +104,28 @@ function CommandRow({ command, onPress, theme, styles, isRTL, copyStyle }: RowPr
       <View style={styles.rowBody}>
         <View style={styles.rowTitleRow}>
           <Text style={styles.commandSlash}>/</Text>
-          <Text style={[styles.commandTitle, ltrContentStyle]}>{command.id}</Text>
+          <Text style={styles.commandTitle}>{command.id}</Text>
           {command.needsArgs && (
             <Text style={styles.argsBadge}>{t('commands.argsBadge')}</Text>
           )}
         </View>
-        <Text style={[styles.commandDesc, copyStyle]} numberOfLines={1}>
+        <Text style={styles.commandDesc} numberOfLines={1}>
           {command.description}
         </Text>
       </View>
-      <CaretRight size={14} color={theme.text.secondary} mirrored={isRTL} />
+      <CaretRight size={14} color={theme.text.secondary} />
     </TouchableOpacity>
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     backdrop: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.35)',
     },
     sheet: {
+      ...rtl.overlay,
       backgroundColor: theme.bg.secondary,
       borderTopLeftRadius: radius.lg,
       borderTopRightRadius: radius.lg,
@@ -161,8 +156,10 @@ function makeStyles(theme: Theme) {
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
+      ...rtl.copy,
     },
     queryBadge: {
+      ...rtl.ltr,
       color: theme.text.accent,
       fontSize: font.xs,
       fontFamily: 'monospace',
@@ -180,6 +177,7 @@ function makeStyles(theme: Theme) {
     emptyText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      ...rtl.copy,
     },
     row: {
       flexDirection: 'row',
@@ -218,6 +216,7 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.base,
       fontWeight: '600',
+      ...rtl.ltr,
     },
     argsBadge: {
       color: theme.text.warning,
@@ -232,6 +231,7 @@ function makeStyles(theme: Theme) {
     commandDesc: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      ...rtl.copy,
     },
   })
 }

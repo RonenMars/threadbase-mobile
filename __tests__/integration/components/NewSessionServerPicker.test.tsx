@@ -2,6 +2,7 @@ import React from 'react'
 import { StyleSheet, type ViewStyle } from 'react-native'
 import { render, fireEvent } from '@testing-library/react-native'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
+import { DirectionRoot } from '@/lib/direction-root'
 import type { ServerConfig } from '@/types/api'
 import i18n from '@/test-utils/i18n-setup'
 
@@ -121,13 +122,15 @@ describe('NewSessionServerPicker', () => {
 
     await i18n.changeLanguage('he')
     const { getByText, getByTestId } = await render(
-      <NewSessionServerPicker
-        visible
-        serverIds={['alpha']}
-        servers={servers}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />,
+      <DirectionRoot>
+        <NewSessionServerPicker
+          visible
+          serverIds={['alpha']}
+          servers={servers}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      </DirectionRoot>,
     )
 
     expect(StyleSheet.flatten(getByText('התחל סשן על').props.style)).toEqual(

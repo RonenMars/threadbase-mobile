@@ -12,10 +12,10 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import { blockTextDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 const BEAM_WIDTH = 72
 const TRACK_HEIGHT = 3
@@ -26,8 +26,7 @@ const SCAN_DURATION_MS = 1800
 
 // A single glowing dot that pulses opacity in sequence.
 function PulseDot({ index }: { index: number }) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { styles } = useThemedStyles(makeStyles)
   const opacity = useSharedValue(0.2)
 
   useEffect(() => {
@@ -55,9 +54,9 @@ function PulseDot({ index }: { index: number }) {
 }
 
 // Sweeping beam that bounces left ↔ right along the track.
-function ScanBeam({ trackWidth, isRTL }: { trackWidth: number; isRTL: boolean }) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
+function ScanBeam({ trackWidth }: { trackWidth: number }) {
+  const { styles, rtl } = useThemedStyles(makeStyles)
+  const isRTL = rtl.isRTL
   const position = useSharedValue(0)
   const colorProgress = useSharedValue(0)
 
@@ -102,11 +101,8 @@ function ScanBeam({ trackWidth, isRTL }: { trackWidth: number; isRTL: boolean })
 }
 
 export function ServerIndexingBanner() {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { styles } = useThemedStyles(makeStyles)
   const { t, i18n } = useTranslation('servers')
-  const { direction, isRTL } = useAppDirection()
-  const titleStyle = blockTextDirectionStyle(direction)
   const { width: screenWidth } = useWindowDimensions()
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -134,8 +130,8 @@ export function ServerIndexingBanner() {
     >
       {/* Text */}
       <View style={styles.textBlock}>
-        <Text style={[styles.title, titleStyle]}>{t('indexing.label')}</Text>
-        {!hasProgress && <Text style={[styles.subtitle, titleStyle]}>{t('indexing.subtitle')}</Text>}
+        <Text style={styles.title}>{t('indexing.label')}</Text>
+        {!hasProgress && <Text style={styles.subtitle}>{t('indexing.subtitle')}</Text>}
       </View>
 
       {/* Pulse dots */}
@@ -157,11 +153,11 @@ export function ServerIndexingBanner() {
           return (
             <View key={serverId} style={styles.serverProgress}>
               <View style={styles.serverHeader}>
-                <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>
+                <Text style={styles.serverLabel} numberOfLines={1}>
                   {serverLabel}
                 </Text>
                 {validProgress && (
-                  <Text style={[styles.subtitle, textDirectionStyle(direction)]}>
+                  <Text style={styles.subtitle}>
                     {t('indexing.progress', {
                       scanned: validProgress.scanned.toLocaleString(i18n.language),
                       total: validProgress.total.toLocaleString(i18n.language),
@@ -175,7 +171,7 @@ export function ServerIndexingBanner() {
                 {validProgress ? (
                   <View testID="indexing-progress-fill" style={[styles.fill, { width: fillWidth }]} />
                 ) : (
-                  <ScanBeam trackWidth={trackWidth} isRTL={isRTL} />
+                  <ScanBeam trackWidth={trackWidth} />
                 )}
               </View>
             </View>
@@ -186,7 +182,7 @@ export function ServerIndexingBanner() {
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     banner: {
       paddingHorizontal: spacing.lg,
@@ -204,11 +200,13 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.base,
       fontWeight: '600',
+      ...rtl.block,
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.xs,
       lineHeight: 16,
+      ...rtl.block,
     },
     serverList: {
       gap: spacing.sm,
@@ -227,6 +225,7 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.sm,
       fontWeight: '600',
+      ...rtl.ltr,
     },
     dotsRow: {
       flexDirection: 'row',
