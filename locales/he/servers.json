@@ -10,7 +10,6 @@
   "action": {
     "add": "הוסף שרת",
     "edit": "ערוך שרת",
-    "connect": "התחבר",
     "details": "פרטים"
   },
   "dialog": {
@@ -22,14 +21,8 @@
     "labelOptional": "תווית (אופציונלי)",
     "serverUrl": "כתובת שרת",
     "apiKey": "מפתח API",
-    "hint": "הרץ tb-streamer pair על ה-Mac שלך לקבלת QR, או tb serve --tunnel לכתובת URL ציבורית.",
-    "scanQrLabel": "סרוק QR לזיווג",
-    "namePlaceholder": "Mac בעבודה, שרת בית…",
     "labelPlaceholder": "לדוגמה: Mac בעבודה, שרת בית",
     "apiKeyPlaceholder": "הדבק כאן את מפתח ה-API שלך",
-    "showApiKey": "הצג",
-    "hideApiKey": "הסתר",
-    "urlHint": "כתובת IP ברשת מקומית, שם מארח, או כל כתובת URL (למשל https://myserver.com)",
     "urlRequired": "נדרשת כתובת שרת.",
     "apiKeyRequired": "נדרש מפתח API."
   },
@@ -105,11 +98,6 @@
   },
   "newSessionPicker": {
     "title": "התחל סשן על"
-  },
-  "addAction": {
-    "title": "העדפת תצוגת שרת חדש",
-    "subtitle": "כיצד יש לעדכן את השרתים המוצגים לאחר הוספה זו?",
-    "rememberChoice": "זכור את הבחירה הזו"
   },
   "statusModal": {
     "close": "✕",

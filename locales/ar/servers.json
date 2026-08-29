@@ -10,7 +10,6 @@
   "action": {
     "add": "إضافة خادم",
     "edit": "تعديل الخادم",
-    "connect": "اتصال",
     "details": "التفاصيل"
   },
   "dialog": {
@@ -22,14 +21,8 @@
     "labelOptional": "التسمية (اختياري)",
     "serverUrl": "عنوان الخادم",
     "apiKey": "مفتاح API",
-    "hint": "شغّل tb-streamer pair على جهاز Mac للحصول على رمز QR، أو tb serve --tunnel للحصول على عنوان URL عام.",
-    "scanQrLabel": "مسح رمز QR للإقران",
-    "namePlaceholder": "Mac في العمل، خادم منزلي…",
     "labelPlaceholder": "مثال: Mac في العمل، خادم منزلي",
     "apiKeyPlaceholder": "الصق مفتاح API هنا",
-    "showApiKey": "إظهار",
-    "hideApiKey": "إخفاء",
-    "urlHint": "عنوان IP على الشبكة المحلية أو اسم المضيف أو أي عنوان URL (مثل https://myserver.com)",
     "urlRequired": "عنوان الخادم مطلوب.",
     "apiKeyRequired": "مفتاح API مطلوب."
   },
@@ -105,11 +98,6 @@
   },
   "newSessionPicker": {
     "title": "بدء سيشن على"
-  },
-  "addAction": {
-    "title": "تفضيل عرض الخادم الجديد",
-    "subtitle": "كيف ينبغي تحديث الخوادم المعروضة بعد هذه الإضافة؟",
-    "rememberChoice": "تذكّر هذا الاختيار"
   },
   "statusModal": {
     "close": "✕",

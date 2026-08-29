@@ -10,7 +10,6 @@
   "action": {
     "add": "Добавить сервер",
     "edit": "Изменить сервер",
-    "connect": "Подключить",
     "details": "Подробнее"
   },
   "dialog": {
@@ -22,14 +21,8 @@
     "labelOptional": "Метка (необязательно)",
     "serverUrl": "URL сервера",
     "apiKey": "API-ключ",
-    "hint": "Запустите tb-streamer pair на вашем Mac, чтобы получить QR-код, или tb serve --tunnel для публичного URL.",
-    "scanQrLabel": "Сканировать QR для сопряжения",
-    "namePlaceholder": "Рабочий Mac, домашний сервер…",
     "labelPlaceholder": "например, Рабочий Mac, домашний сервер",
     "apiKeyPlaceholder": "Вставьте сюда ваш API-ключ",
-    "showApiKey": "Показать",
-    "hideApiKey": "Скрыть",
-    "urlHint": "IP-адрес в локальной сети, имя хоста или любой URL (например, https://myserver.com)",
     "urlRequired": "Укажите адрес сервера.",
     "apiKeyRequired": "Укажите API-ключ."
   },
@@ -105,11 +98,6 @@
   },
   "newSessionPicker": {
     "title": "Начать сессию на"
-  },
-  "addAction": {
-    "title": "Настройка отображения нового сервера",
-    "subtitle": "Как должны обновиться отображаемые серверы после этого добавления?",
-    "rememberChoice": "Запомнить этот выбор"
   },
   "statusModal": {
     "close": "✕",

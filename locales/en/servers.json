@@ -10,7 +10,6 @@
   "action": {
     "add": "Add Server",
     "edit": "Edit Server",
-    "connect": "Connect",
     "details": "Details"
   },
   "dialog": {
@@ -22,14 +21,8 @@
     "labelOptional": "Label (optional)",
     "serverUrl": "Server URL",
     "apiKey": "API Key",
-    "hint": "Run tb-streamer pair on your Mac for a QR, or tb serve --tunnel for a public URL.",
-    "scanQrLabel": "Scan pairing QR",
-    "namePlaceholder": "Work Mac, Home Server…",
     "labelPlaceholder": "e.g. Work Mac, Home Server",
     "apiKeyPlaceholder": "Paste your API token here",
-    "showApiKey": "Show",
-    "hideApiKey": "Hide",
-    "urlHint": "LAN IP, hostname, or any URL (e.g. https://myserver.com)",
     "urlRequired": "Server URL is required.",
     "apiKeyRequired": "API key is required."
   },
@@ -105,11 +98,6 @@
   },
   "newSessionPicker": {
     "title": "Start session on"
-  },
-  "addAction": {
-    "title": "New server display preference",
-    "subtitle": "How should displayed servers update after this add?",
-    "rememberChoice": "Remember this choice"
   },
   "statusModal": {
     "close": "✕",
