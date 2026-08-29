@@ -193,6 +193,7 @@ export function ServerFormFields({
           editable={editable}
         />
         <TouchableOpacity
+          testID="server-form-toggle-api-key"
           onPress={() => setShowApiKey((v) => !v)}
           hitSlop={8}
           style={styles.eyeBtn}

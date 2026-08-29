@@ -16,7 +16,9 @@ import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairC
 import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { pendingTargetFromApiKey } from '@/services/pair-confirm-target'
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
-import { authToken } from '@/services/authed-fetch'
+import { authedFetch, authToken, AuthError } from '@/services/authed-fetch'
+import { NetworkError } from '@/services/api-client'
+import { CleartextBlockedError } from '@/services/cleartext-policy'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
@@ -144,6 +146,29 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         wsManager.connect(newId, updated.url, authToken(updated))
       }
     } else {
+      // A scan already proved reachability and identity through the pair-exchange
+      // protocol; only manual entry needs this pre-flight check, matching the
+      // validation the now-retired AddServerScreen ran before every add.
+      if (!pendingScanMeta.current) {
+        try {
+          const res = await authedFetch({ url: trimmedUrl, apiKey: trimmedKey }, '/api/profiles')
+          if (!res.ok) throw new NetworkError(`HTTP ${res.status}`)
+          await res.json()
+        } catch (err) {
+          if (err instanceof AuthError) {
+            setError(t('common:error.authKeyRejectedOnConnect'))
+          } else if (err instanceof CleartextBlockedError) {
+            setError(t('common:error.cleartextBlocked'))
+          } else if (err instanceof NetworkError || err instanceof TypeError) {
+            const usesLocalhost = /localhost|127\.0\.0\.1/.test(trimmedUrl)
+            setError(usesLocalhost ? t('servers:error.localhostUnreachable') : t('pair:scanner.errors.exchange.network'))
+          } else {
+            setError(t('servers:error.connectionFailed'))
+          }
+          return
+        }
+      }
+
       const result = await addServer(trimmedUrl, trimmedKey, labelArg, pendingScanMeta.current)
       if (result && typeof result === 'object' && 'error' in result && result.error === 'duplicate') {
         setError(t('pair:scanner.errors.alreadyAdded'))

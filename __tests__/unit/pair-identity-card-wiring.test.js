@@ -15,13 +15,15 @@ const walk = (dir) =>
 // user can compare it against `tb-streamer identity` before trusting the server.
 // Listing the screens here would not catch the failure this guards: app/settings.tsx
 // shipped a scanner with no card because nobody remembered it was the fourth one.
+// (Down from 4 to 3 when #831 retired AddServerScreen.tsx's duplicate wiring —
+// ServerEditModal is now the only add-mode scanner.)
 describe('pair identity card wiring', () => {
   const scanners = SEARCH_DIRS.flatMap((dir) => walk(path.join(ROOT, dir))).filter((file) =>
     fs.readFileSync(file, 'utf8').includes('<PairScannerModal'),
   )
 
   it('finds the scan entry points', () => {
-    expect(scanners.length).toBeGreaterThanOrEqual(4)
+    expect(scanners.length).toBeGreaterThanOrEqual(3)
   })
 
   it.each(scanners.map((file) => [path.relative(ROOT, file), file]))(
