@@ -183,7 +183,7 @@ jobs:
           MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
           curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-          INSTALLED_MAESTRO_VERSION=$("$HOME/.maestro/bin/maestro" --version)
+          INSTALLED_MAESTRO_VERSION=$(MAESTRO_CLI_NO_ANALYTICS=1 "$HOME/.maestro/bin/maestro" --version | tail -n 1)
           if [ "$INSTALLED_MAESTRO_VERSION" != "$MAESTRO_VERSION" ]; then
             echo "::error::Expected Maestro $MAESTRO_VERSION, installed $INSTALLED_MAESTRO_VERSION."
             exit 1
