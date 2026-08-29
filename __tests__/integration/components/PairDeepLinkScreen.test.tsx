@@ -158,6 +158,30 @@ describe('PairDeepLinkScreen', () => {
     expect(Object.values(useServersStore.getState().servers)).toHaveLength(1)
   })
 
+  // #759: the pin is written the moment a fully authenticated msg2 validates,
+  // through the real screen -> useServersStore().addServer path — not asserted
+  // anywhere at this level before (only at the store-call level).
+  it('pins the server to require encryption when msg2 says the pairing is encrypted', async () => {
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk: 'B'.repeat(43) })
+    exchangeToken.mockResolvedValue({
+      url: 'https://example.test',
+      apiKey: 'tb_sealed',
+      publicUrl: 'https://example.test',
+      machineName: 'ronen-mac.local',
+      deviceId: 'dev-1',
+      deviceToken: 'dt_1',
+      capabilities: null,
+      serverPublicKey: 'B'.repeat(43),
+      e2eeRequired: true,
+    })
+
+    await confirmAndAdd()
+
+    const added = Object.values(useServersStore.getState().servers)
+    expect(added).toHaveLength(1)
+    expect(added[0].requireEncryption).toBe(true)
+  })
+
   it('shows a real error for an expired link, without exchanging', async () => {
     setParams({ url: 'https://example.test', token: 'pt_x', exp: '1' })
 
@@ -263,6 +287,8 @@ describe('PairDeepLinkScreen', () => {
     // so a navigation away here would render the error unseen (issue #597's
     // failure mode one layer down).
     expect(mockReplace).not.toHaveBeenCalled()
+    // The rejection must not have added a plaintext server before the retry.
+    expect(Object.values(useServersStore.getState().servers)).toHaveLength(0)
 
     exchangeToken.mockResolvedValueOnce({
       url: 'https://example.test',
