@@ -276,7 +276,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       const displayedServerIds = state.displayedServerIds.includes(id)
         ? state.displayedServerIds
         : [...state.displayedServerIds, id]
-      persistServerList(servers, activeServerIds, displayedServerIds, true)
+      // Skip this write when a pin write is about to immediately follow, so a
+      // pinned add produces exactly one persist (with the pin already set)
+      // instead of leaving a crash window where disk holds the key unpinned.
+      if (!device?.requireEncryption) {
+        persistServerList(servers, activeServerIds, displayedServerIds, true)
+      }
       return { servers, activeServerIds, displayedServerIds, hasEverHadServer: true }
     })
 
