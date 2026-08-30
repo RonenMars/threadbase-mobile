@@ -415,6 +415,9 @@ jobs:
           # a workflow-injection vector the repo's PostToolUse hook flags.
           MESSAGE=$(printf 'Threadbase Mobile E2E Weekly 🤖\n🚨 E2E run failed\n📱 Platform: %s\n🌐 View run: %s' "$PLATFORMS" "$RUN_URL")
           PAYLOAD=$(jq -n --arg t "$MESSAGE" '{text: $t}')
-          curl -sf -X POST "$WEBHOOK_URL" \
+          # Preserve the destination's response body so Telegram errors (for
+          # example, an invalid bot token or chat_id) identify the secret
+          # configuration problem instead of producing an opaque curl 22.
+          curl -sS --fail-with-body -X POST "$WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -d "$PAYLOAD"

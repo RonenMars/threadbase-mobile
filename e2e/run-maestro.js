@@ -307,6 +307,28 @@ function runMaestro(args) {
   })
 }
 
+// XCTest's iOS accessibility session can expire after roughly twelve minutes
+// even while the simulator and app remain healthy.  A long multi-flow Maestro
+// invocation then turns the first stale hierarchy request into a cascade of
+// failures for every remaining flow.  Keep each iOS driver session bounded;
+// Android and single-flow invocations retain their existing behavior.
+function splitIosFlowArgs(args) {
+  if (process.env.E2E_PLATFORM !== 'ios') return [args]
+
+  const firstFlow = args.findIndex((arg) => arg.endsWith('.yaml'))
+  if (firstFlow === -1) return [args]
+
+  const prefix = args.slice(0, firstFlow)
+  const flows = args.slice(firstFlow)
+  if (flows.length <= 8) return [args]
+
+  const groups = []
+  for (let index = 0; index < flows.length; index += 8) {
+    groups.push([...prefix, ...flows.slice(index, index + 8)])
+  }
+  return groups
+}
+
 async function main() {
   const warnings = new Set()
   const warnOnce = (key, message) => {
@@ -322,7 +344,14 @@ async function main() {
     path.join(process.cwd(), 'e2e', '_artifacts', 'xctest-crashes')
 
   const baseline = await listCrashReports(directories, warnOnce)
-  const maestroResult = await runMaestro(process.argv.slice(2))
+  const maestroResults = []
+  for (const args of splitIosFlowArgs(process.argv.slice(2))) {
+    const result = await runMaestro(args)
+    maestroResults.push(result)
+    if (result.signal || result.forwardedSignal) break
+  }
+  const maestroResult = maestroResults.find((result) => result.code !== 0) ||
+    maestroResults[maestroResults.length - 1] || { code: 1, signal: null }
   const terminationSignal = maestroResult.signal || maestroResult.forwardedSignal
   const matchingReports = await findNewMatchingReports(
     baseline,
