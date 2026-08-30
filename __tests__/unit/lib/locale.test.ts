@@ -25,6 +25,20 @@ describe('locale', () => {
     ).toBe('he')
   })
 
+  it('matches regional tags and Android Hebrew iw', () => {
+    expect(resolveSupportedLocale([{ languageCode: 'en', languageTag: 'en-US' }])).toBe('en')
+    expect(resolveSupportedLocale([{ languageCode: null, languageTag: 'he-IL' }])).toBe('he')
+    expect(resolveSupportedLocale([{ languageCode: 'iw', languageTag: 'iw-IL' }])).toBe('he')
+    expect(resolveSupportedLocale([{ languageCode: null, languageTag: 'ar_SA' }])).toBe('ar')
+    expect(resolveSupportedLocale([{ languageCode: 'ru', languageTag: 'ru-RU' }])).toBe('ru')
+    expect(
+      resolveSupportedLocale([
+        { languageCode: 'ja', languageTag: 'ja-JP' },
+        { languageCode: null, languageTag: 'he-IL' },
+      ]),
+    ).toBe('he')
+  })
+
   it('falls back to English when no device preference is supported', () => {
     expect(resolveSupportedLocale([{ languageCode: 'ja' }, { languageCode: 'fr' }])).toBe('en')
   })

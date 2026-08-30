@@ -125,6 +125,17 @@ describe('LanguageStep', () => {
     })
   })
 
+  it('preselects the device-resolved locale before the user chooses', async () => {
+    useSettingsStore.setState({ locale: 'he' })
+    const { getByTestId } = await render(<LanguageStep onContinue={jest.fn()} />)
+    expect(getByTestId('onboarding-language-option-he').props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: true }),
+    )
+    expect(getByTestId('onboarding-language-option-en').props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: false }),
+    )
+  })
+
   it('renders the four autonyms without country flags and selects a language immediately', async () => {
     const { getAllByRole, getByTestId, getByText, queryByTestId } = await render(
       <LanguageStep onContinue={jest.fn()} />,
