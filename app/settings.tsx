@@ -180,6 +180,8 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   nord: 'Nord',
   oneDark: 'One Dark',
   oneLight: 'One Light',
+  githubDark: 'Primer Dark',
+  githubLight: 'Primer Light',
   solarizedDark: 'Solarized Dark',
   solarizedLight: 'Solarized Light',
   rosePine: 'Rosé Pine',

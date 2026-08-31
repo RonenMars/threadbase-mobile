@@ -273,6 +273,65 @@ export const oneLight = {
   },
 } as const satisfies Theme
 
+// Primer color primitives (MIT) — GitHub-inspired neutral developer palettes.
+export const githubDark = {
+  colorMode: 'dark' as const,
+  bg: {
+    primary: '#0d1117',
+    secondary: '#161b22',
+    card: '#21262d',
+  },
+  text: {
+    primary: '#f0f6fc',
+    secondary: '#8b949e',
+    accent: '#58a6ff',
+    onAccent: '#0d1117',
+    highlight: '#d29922',
+    onHighlight: '#0d1117',
+    danger: '#ff7b72',
+    warning: '#d29922',
+    success: '#3fb950',
+    beta: '#d29922',
+  },
+  border: '#30363d',
+  status: {
+    running: '#3fb950',
+    waiting: '#d29922',
+    failed: '#ff7b72',
+    completed: '#58a6ff',
+    idle: '#8b949e',
+  },
+} as const satisfies Theme
+
+export const githubLight = {
+  colorMode: 'light' as const,
+  bg: {
+    primary: '#ffffff',
+    secondary: '#f6f8fa',
+    card: '#ffffff',
+  },
+  text: {
+    primary: '#1f2328',
+    secondary: '#59636e',
+    accent: '#0969da',
+    onAccent: '#ffffff',
+    highlight: '#bf8700',
+    onHighlight: '#ffffff',
+    danger: '#cf222e',
+    warning: '#9a6700',
+    success: '#1a7f37',
+    beta: '#9a6700',
+  },
+  border: '#d0d7de',
+  status: {
+    running: '#1a7f37',
+    waiting: '#9a6700',
+    failed: '#cf222e',
+    completed: '#0969da',
+    idle: '#59636e',
+  },
+} as const satisfies Theme
+
 // Solarized Dark — Ethan Schoonover's precision palette (MIT)
 export const solarizedDark = {
   colorMode: 'dark' as const,
@@ -570,6 +629,8 @@ export type ThemeId =
   | 'nord'
   | 'oneDark'
   | 'oneLight'
+  | 'githubDark'
+  | 'githubLight'
   | 'solarizedDark'
   | 'solarizedLight'
   | 'rosePine'
@@ -587,6 +648,8 @@ export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   nord,
   oneDark,
   oneLight,
+  githubDark,
+  githubLight,
   solarizedDark,
   solarizedLight,
   rosePine,
