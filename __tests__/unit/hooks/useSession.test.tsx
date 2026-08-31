@@ -2,13 +2,14 @@ import { renderHook, waitFor, act } from '@testing-library/react-native'
 import { useEagerSessions } from '@/hooks/useSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { createWrapper } from '@/test-utils'
 import type { Session, SessionListPage } from '@/types/api'
 
 const mockGet = jest.fn()
 
 jest.mock('@/services/api-client', () => ({
-  createApiForServer: () => ({ get: (path: string) => mockGet(path) }),
+  createApiForServer: () => ({ get: (path: string, options?: unknown) => mockGet(path, options) }),
 }))
 
 function makeSession(id: string): Session {
@@ -64,6 +65,7 @@ beforeEach(() => {
     activeServerIds: [],
     displayedServerIds: [],
   } as any)
+  useServerFetchStatusStore.getState().reset()
 })
 
 describe('useEagerSessions', () => {
@@ -165,6 +167,47 @@ describe('useEagerSessions', () => {
     expect(result.current.error).toBeNull()
     // Only sessions from the healthy server are present.
     expect(result.current.sessions.map((s) => s.id)).toEqual(['b1'])
+  })
+
+  it('uses the short initial timeout without retrying a failed server', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet.mockRejectedValueOnce(new Error('offline'))
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet.mock.calls[0][1]).toEqual(expect.objectContaining({
+      timeoutMs: 12_000,
+      retry: false,
+    }))
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']).toMatchObject({
+      status: 'error',
+      error: 'offline',
+    })
+  })
+
+  it('retries only failed servers and keeps sessions from healthy servers', async () => {
+    setActiveServers([
+      { id: 'srv-A', label: 'A' },
+      { id: 'srv-B', label: 'B' },
+    ])
+    mockGet
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(pageOf(['b1'], { nextCursor: null, total: 1 }))
+      .mockResolvedValueOnce(pageOf(['a1'], { nextCursor: null, total: 1 }))
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    await act(async () => {
+      result.current.retryFailed()
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(3))
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(result.current.sessions.map((session) => session.id).sort()).toEqual(['a1', 'b1'])
   })
 
   // The streamer ships wire changes without gating on this build (CLAUDE.md →

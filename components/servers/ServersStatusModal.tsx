@@ -30,6 +30,7 @@ import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle
 interface Props {
   visible: boolean
   onClose: () => void
+  onRetrySessions?: (serverId: string) => void
 }
 
 type WSStatus = 'connecting' | 'connected' | 'disconnected'
@@ -230,7 +231,7 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
   )
 }
 
-export function ServersStatusModal({ visible, onClose }: Props) {
+export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
   const isGlass = useIsGlass()
@@ -275,8 +276,12 @@ export function ServersStatusModal({ visible, onClose }: Props) {
 
   const handleRefresh = async (serverId: string) => {
     setRefreshingIds((prev) => new Set(prev).add(serverId))
-    await refreshServerInfo(serverId)
-    setRefreshingIds((prev) => { const n = new Set(prev); n.delete(serverId); return n })
+    try {
+      if (fetchStatuses[serverId]?.status === 'error' && onRetrySessions) onRetrySessions(serverId)
+      else await refreshServerInfo(serverId)
+    } finally {
+      setRefreshingIds((prev) => { const n = new Set(prev); n.delete(serverId); return n })
+    }
   }
 
   const handlePullRefresh = async () => {

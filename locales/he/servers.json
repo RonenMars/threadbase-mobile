@@ -10,7 +10,8 @@
   "action": {
     "add": "הוסף שרת",
     "edit": "ערוך שרת",
-    "details": "פרטים"
+    "details": "פרטים",
+    "retry": "ניסיון חוזר"
   },
   "dialog": {
     "removeTitle": "הסר שרת",
@@ -89,7 +90,8 @@
     "connectingNamed": "מתחבר אל {{server}}…",
     "connectingAll": "מתחבר לשרתים…",
     "partialUnreachableNamed": "לא ניתן להגיע אל {{server}}. ייתכן שחלק מהסשנים חסרים.",
-    "partialUnreachableSome": "לא ניתן להגיע לחלק מהשרתים. ייתכן שחלק מהסשנים חסרים."
+    "partialUnreachableSome": "לא ניתן להגיע לחלק מהשרתים. ייתכן שחלק מהסשנים חסרים.",
+    "retrying": "מנסה מחדש שרתים שנכשלו…"
   },
   "displayedServers": {
     "all": "הכל",

@@ -13,6 +13,8 @@ type Props = {
   fetchStatuses: Record<string, ServerFetchStatusEntry>
   wsConnectedCount: number
   onViewDetails: () => void
+  onRetryFailed: () => void
+  isRetrying: boolean
 }
 
 function serverLabel(id: string, servers: Record<string, ServerConfig>): string {
@@ -49,7 +51,15 @@ function toLevel(severity: Exclude<Severity, null>): AlertLevel {
   return 'info'
 }
 
-export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, wsConnectedCount, onViewDetails }: Props) {
+export function ServerStateMessage({
+  activeServerIds,
+  servers,
+  fetchStatuses,
+  wsConnectedCount,
+  onViewDetails,
+  onRetryFailed,
+  isRetrying,
+}: Props) {
   const { t } = useTranslation('servers')
   const [showInfo, setShowInfo] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -213,8 +223,14 @@ export function ServerStateMessage({ activeServerIds, servers, fetchStatuses, ws
       timeout: null,
     }
     if (!showAction) return base
-    return { ...base, buttonText: t('action.details'), buttonAction: onViewDetails }
-  }, [visible, severity, detailKind, message, showAction, onViewDetails, t])
+    if (isRetrying) return { ...base, message: t('stateMessage.retrying'), onPress: onViewDetails }
+    return {
+      ...base,
+      buttonText: t('action.retry'),
+      buttonAction: onRetryFailed,
+      onPress: onViewDetails,
+    }
+  }, [visible, severity, detailKind, message, showAction, isRetrying, onRetryFailed, onViewDetails, t])
 
   useToastSync(TOAST_ID, spec, VIEWPORT)
   return null

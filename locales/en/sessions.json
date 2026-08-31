@@ -29,6 +29,8 @@
   "list": {
     "empty": "No sessions",
     "emptySubtitle": "Start a Claude Code or Codex\nsession to see it here",
+    "allServersOffline": "Can’t connect to your servers",
+    "allServersOfflineSubtitle": "Check that your phone can reach the server addresses, then use the server status button above to retry or view details.",
     "noResults": "No results",
     "noResultsSubtitle": "Nothing matched \"{{query}}\"",
     "serverEmpty": "No sessions on this server",

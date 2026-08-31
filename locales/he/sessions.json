@@ -29,6 +29,8 @@
   "list": {
     "empty": "אין סשנים",
     "emptySubtitle": "התחילו סשן Claude Code או Codex\nכדי לראות אותו כאן",
+    "allServersOffline": "לא ניתן להתחבר לשרתים שלך",
+    "allServersOfflineSubtitle": "בדקו שהטלפון יכול להגיע לכתובות השרתים, ואז השתמשו בכפתור סטטוס השרת למעלה כדי לנסות שוב או לראות פרטים.",
     "noResults": "אין תוצאות",
     "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
     "serverEmpty": "אין סשנים בשרת זה",
