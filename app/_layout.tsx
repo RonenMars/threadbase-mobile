@@ -46,7 +46,6 @@ import { BannerHost } from '@/components/ui/BannerHost'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassView } from '@/components/ui/GlassView'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
@@ -413,9 +412,6 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       screenOptions={{
         headerStyle: isGlass ? undefined : { backgroundColor: theme.bg.secondary },
         headerTransparent: isGlass,
-        headerBackground: isGlass
-          ? () => <GlassView style={StyleSheet.absoluteFill} />
-          : undefined,
         headerTintColor: theme.text.primary,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },

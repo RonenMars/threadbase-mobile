@@ -193,6 +193,7 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
 
     expect(mockCapture.navTheme).toBeDefined()
     expect(mockCapture.navTheme?.colors.background).toBe('transparent')
+    expect(mockCapture.screenOptions?.headerBackground).toBeUndefined()
     // aurora is a dark-mode theme → base must be the real DarkTheme
     expect(mockCapture.navTheme?.dark).toBe(true)
     expect(mockCapture.navTheme?.colors.text).toBe(NavDarkTheme.colors.text)
