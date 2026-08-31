@@ -2,7 +2,16 @@ import React from 'react'
 import { renderHook } from '@testing-library/react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
-import { dark, dracula, catppuccin, nord, light, appleGlassThemes } from '@/constants/theme'
+import {
+  dark,
+  dracula,
+  catppuccin,
+  nord,
+  light,
+  githubDark,
+  githubLight,
+  appleGlassThemes,
+} from '@/constants/theme'
 
 // Use the real ThemeContext so the provider/hook contract tests remain meaningful
 jest.unmock('@/contexts/ThemeContext')
@@ -46,6 +55,15 @@ describe('useTheme', () => {
     const { result } = await renderHook(() => useTheme(), { wrapper })
     expect(result.current.bg.primary).toBe(light.bg.primary)
     expect(result.current.text.accent).toBe(light.text.accent)
+  })
+
+  it.each([
+    ['githubDark', githubDark],
+    ['githubLight', githubLight],
+  ] as const)('returns %s when selected', async (colorScheme, expectedTheme) => {
+    useSettingsStore.setState({ colorScheme })
+    const { result } = await renderHook(() => useTheme(), { wrapper })
+    expect(result.current).toBe(expectedTheme)
   })
 
   it('resolves system to light when OS scheme is light', async () => {
