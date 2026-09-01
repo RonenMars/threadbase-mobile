@@ -23,14 +23,39 @@ export function getSupportedLocaleLabel(locale: SupportedLocale, t: TFunction<'s
   }
 }
 
+function canonicalLanguage(value: string | null | undefined): SupportedLocale | undefined {
+  if (!value) return undefined
+  const primary = value.trim().toLowerCase().split(/[-_]/)[0]
+  switch (primary) {
+    case 'en':
+      return 'en'
+    case 'he':
+    case 'iw': // Android/Java historical Hebrew code
+      return 'he'
+    case 'ar':
+      return 'ar'
+    case 'ru':
+      return 'ru'
+    default:
+      return undefined
+  }
+}
+
+/**
+ * First supported match from the device preference list (`expo-localization`
+ * `getLocales()`), else English. Used as the first-run default.
+ */
 export function resolveSupportedLocale(
-  deviceLocales: readonly { languageCode?: string | null }[],
+  deviceLocales: readonly {
+    languageCode?: string | null
+    languageTag?: string | null
+  }[],
 ): SupportedLocale {
-  return (
-    deviceLocales
-      .map((locale) => SUPPORTED_LOCALES.find(({ code }) => code === locale.languageCode)?.code)
-      .find((locale): locale is SupportedLocale => locale !== undefined) ?? 'en'
-  )
+  for (const locale of deviceLocales) {
+    const match = canonicalLanguage(locale.languageCode) ?? canonicalLanguage(locale.languageTag)
+    if (match) return match
+  }
+  return 'en'
 }
 
 export function isRTLLocale(locale: SupportedLocale): boolean {
