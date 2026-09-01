@@ -35,26 +35,13 @@ describe('ConnectStep – manual mode', () => {
     jest.useRealTimers()
   })
 
-  it('shows "Type / paste manually" card in choose mode', async () => {
+  it('shows manual-mode onboarding copy after choosing paste entry', async () => {
     const { getByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
     expect(getByText('Type / paste manually')).toBeTruthy()
-  })
-
-  it('shows "On your computer" section header in manual mode', async () => {
-    const { getByText } = await render(
-      <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
-    )
     await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText('On your computer')).toBeTruthy()
-  })
-
-  it('shows copyable tb-streamer pair command in manual mode', async () => {
-    const { getByText } = await render(
-      <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
-    )
-    await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText(/tb-streamer pair/)).toBeTruthy()
   })
 
@@ -73,7 +60,7 @@ describe('ConnectStep – manual mode', () => {
     expect(queryByText(/✓/)).toBeNull()
   })
 
-  it('shows "Server URL" and "Token" field labels (not faux-shell labels)', async () => {
+  it('shows field labels and Connect CTA in manual mode', async () => {
     const { getByText, queryByText } = await render(
       <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
     )
@@ -82,13 +69,6 @@ describe('ConnectStep – manual mode', () => {
     expect(getByText('Token')).toBeTruthy()
     expect(queryByText(/\$ tb-streamer pair --server/)).toBeNull()
     expect(queryByText(/\$ tb-streamer pair --token/)).toBeNull()
-  })
-
-  it('CTA shows "Connect" not "Open handshake"', async () => {
-    const { getByText, queryByText } = await render(
-      <ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />
-    )
-    await fireEvent.press(getByText('Type / paste manually'))
     expect(getByText('Connect')).toBeTruthy()
     expect(queryByText('Open handshake')).toBeNull()
   })
