@@ -1,0 +1,75 @@
+# Native Liquid Glass visual reference capture.
+#
+# Exercises the unpaired first-run path, selects the Nord palette, and captures
+# the four reference states stored in e2e/visual/native-liquid-glass/.
+# The companion settings-theme gallery captures every retained palette.
+#
+# Requires: an iOS 26+ simulator with the app installed and a Metro bundle
+# available to that app.
+# Usage: node e2e/run-maestro.js test e2e/native-liquid-glass-visual.yaml
+
+appId: com.ronenmars.threadbase
+---
+# This flow requires a release-style app build. `clearState` creates the
+# unpaired first-run state; Expo Dev Launcher builds are unsuitable because
+# clearing state removes their remembered Metro server.
+- launchApp:
+    clearState: true
+
+# 1. Language selection / first-run chrome.
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 30000
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-01-onboarding-language
+
+- tapOn:
+    id: "onboarding-language-cta"
+
+# 2. Finish onboarding without pairing a server.
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-welcome-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-connect-root"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-shell-skip"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-done-cta"
+
+# 3. Empty home surface.
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-02-no-server-home
+
+# 4. Set the established Nord palette and capture Settings.
+- tapOn:
+    id: "hub-settings-btn"
+- extendedWaitUntil:
+    visible: "Nord"
+    timeout: 8000
+- tapOn:
+    id: "settings-theme-nord"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-03-settings-nord
+
+# 5. Add-server form over the palette-derived backdrop.
+- tapOn:
+    id: "settings-add-server-btn"
+- extendedWaitUntil:
+    visible:
+      id: "server-edit-url-input"
+    timeout: 4000
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-04-add-server-sheet

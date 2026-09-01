@@ -1,0 +1,79 @@
+# Native Liquid Glass Settings palette gallery.
+#
+# Captures the Settings viewport for every retained palette. The committed
+# references live in e2e/visual/native-liquid-glass/settings-themes/.
+#
+# Requires: an iOS 26+ release-style app build with an unpaired, onboarded app
+# state. Usage: node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 30000
+- tapOn:
+    id: "hub-settings-btn"
+- extendedWaitUntil:
+    visible:
+      id: "settings-theme-tab-dark"
+    timeout: 8000
+
+# Dark palettes
+- tapOn:
+    id: "settings-theme-tab-dark"
+- tapOn:
+    id: "settings-theme-dark"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-dark
+- tapOn:
+    id: "settings-theme-dracula"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-dracula
+- tapOn:
+    id: "settings-theme-catppuccin"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-catppuccin
+- tapOn:
+    id: "settings-theme-nord"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-nord
+- tapOn:
+    id: "settings-theme-oneDark"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-one-dark
+- tapOn:
+    id: "settings-theme-githubDark"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-primer-dark
+- tapOn:
+    id: "settings-theme-solarizedDark"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-solarized-dark
+- tapOn:
+    id: "settings-theme-rosePine"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-rose-pine
+- tapOn:
+    id: "settings-theme-tokyoNight"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-tokyo-night
+
+# Light palettes
+- tapOn:
+    id: "settings-theme-tab-light"
+- tapOn:
+    id: "settings-theme-light"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-light
+- tapOn:
+    id: "settings-theme-catppuccinLatte"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-latte
+- tapOn:
+    id: "settings-theme-oneLight"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-one-light
+- tapOn:
+    id: "settings-theme-githubLight"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-primer-light
+- tapOn:
+    id: "settings-theme-solarizedLight"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-solarized-light
+- tapOn:
+    id: "settings-theme-rosePineDawn"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-rose-pine-dawn
+- tapOn:
+    id: "settings-theme-tokyoNightLight"
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-tokyo-night-light

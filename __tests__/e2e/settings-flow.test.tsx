@@ -92,16 +92,27 @@ describe('Settings – server section', () => {
   })
 
   it('shows Add Server button', async () => {
-    const { getByText } = await renderWithTheme(<SettingsScreen />)
-    expect(getByText('+ Add Server')).toBeTruthy()
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(getByTestId('settings-add-server-btn')).toBeTruthy()
   })
 
   it('opens add server modal from settings', async () => {
-    const { getByText } = await renderWithTheme(<SettingsScreen />)
-    // Pressing "+ Add Server" now opens the ServerEditModal (sets editServerId to 'new')
-    // rather than navigating to onboarding. Just verify the button is pressable.
-    await fireEvent.press(getByText('+ Add Server'))
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+    // Pressing "+ Add Server" opens the native form instead of navigating away.
+    await fireEvent.press(getByTestId('settings-add-server-btn'))
     expect(mockPush).not.toHaveBeenCalled()
+    expect(getByTestId('server-edit-url-input')).toBeTruthy()
+  })
+
+  it('exposes a stable selector for the Nord palette', async () => {
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(getByTestId('settings-theme-nord')).toBeTruthy()
+  })
+
+  it('exposes stable selectors for the palette tabs', async () => {
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(getByTestId('settings-theme-tab-dark')).toBeTruthy()
+    expect(getByTestId('settings-theme-tab-light')).toBeTruthy()
   })
 })
 

@@ -212,6 +212,7 @@ function ThemePicker({
         return (
           <TouchableOpacity
             key={id}
+            testID={`settings-theme-${id}`}
             style={[s.themeCard, isSelected && s.themeCardSelected]}
             onPress={() => onChange(id)}
             activeOpacity={0.7}
@@ -458,6 +459,7 @@ await refreshServerInfo(serverId)
           )
         })}
         <TouchableOpacity
+          testID="settings-add-server-btn"
           style={[s.addServerBtn, isGlass && s.cardGlass]}
           onPress={() => setEditServerId('new')}
         >
@@ -538,12 +540,14 @@ await refreshServerInfo(serverId)
             </View>
             <View style={s.segmentedTabs}>
               <TouchableOpacity
+                testID="settings-theme-tab-dark"
                 style={[s.segmentTab, themeTab === 'dark' && s.segmentTabActive]}
                 onPress={() => setThemeTab('dark')}
               >
                 <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, themeTab === 'dark' && s.segmentBtnTextActive]}>{t('appearance.dark')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="settings-theme-tab-light"
                 style={[s.segmentTab, themeTab === 'light' && s.segmentTabActive]}
                 onPress={() => setThemeTab('light')}
               >
