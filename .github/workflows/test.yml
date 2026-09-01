@@ -36,7 +36,8 @@ jobs:
   # run in full, which is why a docs-only commit riding in a code PR is safe.
   # Both outcomes report success, so duration is the only reliable way to tell
   # a real run from a skipped one: a skipped job finishes in seconds, a real
-  # one in minutes (as of 2026-08-02, Unit ran 68 s against 4 s skipped).
+  # one in minutes (as of 2026-09-01, the Unit tests job was ~8 min serial before
+  # sharding unit Jest and script tests across parallel matrix legs).
   # Compare against a run you know was skipped rather than against a number. Bracketing only stops an unbracketed
   # mention of the words from tripping the skip — writing the bracketed tag
   # itself in a PR title DOES trip it, even in prose saying the run should not
@@ -113,10 +114,18 @@ jobs:
           run: npm run typecheck
 
   # ── Unit tests ───────────────────────────────────────────────────────────────
-  unit:
-    name: Unit tests
+  # Jest already parallelizes within a runner; the bottleneck was serial steps
+  # (unit ~100 s, then scripts ~380 s). Sharded matrix legs plus an aggregator
+  # keep the required "Unit tests" check name while overlapping the two suites.
+  unit-jest:
+    name: Unit jest (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
     needs: [gate, setup]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+        total: [2]
     steps:
       - uses: actions/checkout@v5
 
@@ -124,13 +133,70 @@ jobs:
         if: needs.gate.outputs.skip != 'true'
         uses: ./.github/actions/run-ci
         with:
-          run: npm run test:unit -- --coverage --coverageDirectory=coverage/unit
+          run: npm run test:unit -- --coverage --coverageDirectory=coverage/unit-shard-${{ matrix.shard }} --shard=${{ matrix.shard }}/${{ matrix.total }}
+
+      - name: Upload unit coverage shard
+        uses: actions/upload-artifact@v6
+        if: always() && needs.gate.outputs.skip != 'true'
+        with:
+          name: unit-coverage-shard-${{ matrix.shard }}
+          path: coverage/unit-shard-${{ matrix.shard }}
+          retention-days: 7
+
+  unit-scripts:
+    name: Script tests (${{ matrix.shard }}/${{ matrix.total }})
+    runs-on: ubuntu-latest
+    needs: [gate, setup]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+        total: [4]
+    steps:
+      - uses: actions/checkout@v5
 
       - name: Script tests
         if: needs.gate.outputs.skip != 'true'
         uses: ./.github/actions/run-ci
         with:
-          run: npm run test:scripts
+          run: npm run test:scripts -- --shard=${{ matrix.shard }}/${{ matrix.total }}
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: [gate, unit-jest, unit-scripts]
+    if: ${{ always() && !cancelled() && needs.gate.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Report shard results
+        env:
+          SKIP: ${{ needs.gate.outputs.skip }}
+          UNIT_JEST: ${{ needs.unit-jest.result }}
+          UNIT_SCRIPTS: ${{ needs.unit-scripts.result }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "CI skipped — nothing to aggregate."
+            exit 0
+          fi
+          if [ "$UNIT_JEST" != "success" ] || [ "$UNIT_SCRIPTS" != "success" ]; then
+            echo "::error::A unit-test shard failed (jest=$UNIT_JEST, scripts=$UNIT_SCRIPTS)."
+            exit 1
+          fi
+
+      - name: Download unit coverage shards
+        if: needs.gate.outputs.skip != 'true'
+        uses: actions/download-artifact@v6
+        with:
+          pattern: unit-coverage-shard-*
+          merge-multiple: true
+          path: coverage/shards
+
+      - name: Merge unit coverage
+        if: needs.gate.outputs.skip != 'true'
+        uses: ./.github/actions/run-ci
+        with:
+          run: node scripts/merge-jest-coverage.js coverage/unit coverage/shards
 
       - name: Upload unit coverage
         uses: actions/upload-artifact@v6
