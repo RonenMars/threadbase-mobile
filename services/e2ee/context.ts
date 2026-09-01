@@ -18,6 +18,8 @@ import naclUtil from 'tweetnacl-util'
 import { E2EE_CLIENT_VERSION } from '@/types/api'
 import { createOpenInitiator, openMessage1Payload, type OpenContextKind } from '@/services/e2ee/pair-handshake'
 import {
+  CHANNEL_REST_REQUEST,
+  CHANNEL_REST_RESPONSE,
   CHANNEL_WEBSOCKET,
   CTX_ID_BYTES,
   DIRECTION_CLIENT_TO_SERVER,
@@ -236,20 +238,22 @@ function contextFor(
   clientToServerKey: Uint8Array,
   serverToClientKey: Uint8Array,
 ): TransportContext {
-  // XC1 wires the socket channel only. A REST context's channel bytes are
-  // 0x02/0x03 and its receive state is a sliding window, which is XC2's.
-  const channel = CHANNEL_WEBSOCKET
+  // REST send is the request channel; REST receive is the response channel.
+  // A websocket context uses 0x01 both ways. Mixing them is a seal failure
+  // on the first frame, which is why this split is its own mutation row.
+  const sendChannel = kind === 'rest' ? CHANNEL_REST_REQUEST : CHANNEL_WEBSOCKET
+  const recvChannel = kind === 'rest' ? CHANNEL_REST_RESPONSE : CHANNEL_WEBSOCKET
   const send = createRecordState({
     key: clientToServerKey,
     ctxId: ctxIdRaw,
     direction: DIRECTION_CLIENT_TO_SERVER,
-    channel,
+    channel: sendChannel,
   })
   const recv = createRecordState({
     key: serverToClientKey,
     ctxId: ctxIdRaw,
     direction: DIRECTION_SERVER_TO_CLIENT,
-    channel,
+    channel: recvChannel,
   })
   // The handshake's copies are wiped now that the record states hold their own.
   clientToServerKey.fill(0)

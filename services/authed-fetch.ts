@@ -1,5 +1,13 @@
 import type { ServerConfig, ServerInfo } from '@/types/api'
 import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
+import naclUtil from 'tweetnacl-util'
+import { OpenError } from '@/services/e2ee/context'
+import { RecordError, recordCounter, restTargetHash } from '@/services/e2ee/record'
+import {
+  acquireRestContext,
+  invalidateRestContext,
+  noteRestBytes,
+} from '@/services/e2ee/rest-session'
 
 /** Which credential a request presented. See `selectCredential`. */
 export type CredentialKind = 'device' | 'shared'
@@ -60,10 +68,45 @@ export interface AuthedTarget {
   apiKey: string
   deviceToken?: string
   serverInfo?: ServerInfo | null
+  /** Stable store id. Required to seal: crypto state keys off this, never the URL. */
+  id?: string
+  serverPublicKey?: string
+  requireEncryption?: boolean
 }
 
 export interface AuthedFetchInit extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>
+}
+
+// eslint-disable-next-line i18next/no-literal-string -- protocol header name, never rendered
+export const HEADER_E2EE = 'X-TB-E2EE'
+export const HEADER_CTX = 'X-TB-Ctx'
+export const HEADER_SEQ = 'X-TB-Seq'
+export const HEADER_ENV = 'X-TB-Env'
+// eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
+const HEADER_AUTHORIZATION = 'Authorization'
+// eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
+const HEADER_CONTENT_TYPE = 'Content-Type'
+
+/** Encoded-length ceiling on `X-TB-Env`, matching the streamer's bound. */
+const MAX_ENVELOPE_HEADER_CHARS = 1024
+
+/**
+ * A sealed-transport failure. Distinct from `AuthError`: H2 forbids treating an
+ * unsealed 401 on a request we sealed as a credential rejection.
+ */
+export class EnvelopeError extends Error {
+  readonly code: string
+  readonly retryable: boolean
+  readonly path: string
+
+  constructor(code: string, message: string, path: string, retryable: boolean) {
+    super(message)
+    this.name = 'EnvelopeError'
+    this.code = code
+    this.path = path.replace(/\?.*$/, '')
+    this.retryable = retryable
+  }
 }
 
 /** The absolute URL a request to `path` will hit. Exported for error messages. */
@@ -121,16 +164,31 @@ export function authToken(
  * `AuthError` — a rejected credential is not a network failure, and retrying it
  * only presents the same rejected key again. The same holds for
  * `CleartextBlockedError`: the request never left the process, and every retry
- * of the same URL is refused at the same line.
+ * of the same URL is refused at the same line. The same holds for
+ * `EnvelopeError`: a sealed-transport failure is not a rejected credential.
  */
 export async function authedFetch(
   target: AuthedTarget,
   path: string,
   init: AuthedFetchInit = {},
 ): Promise<Response> {
-  const credential = selectCredential(target)
   const url = serverUrl(target, path)
   if (!isCleartextAllowed(url)) throw new CleartextBlockedError(url)
+  if (isPinned(target)) return sealedFetch(target, path, url, init, false)
+  return plaintextFetch(target, path, url, init)
+}
+
+function isPinned(target: AuthedTarget): boolean {
+  return target.requireEncryption === true && !!target.serverPublicKey && !!target.id
+}
+
+async function plaintextFetch(
+  target: AuthedTarget,
+  path: string,
+  url: string,
+  init: AuthedFetchInit,
+): Promise<Response> {
+  const credential = selectCredential(target)
   const response = await fetch(url, {
     ...init,
     headers: {
@@ -141,8 +199,240 @@ export async function authedFetch(
       Authorization: `Bearer ${credential.token}`,
     },
   })
-  // Attributed to the credential actually presented, which is knowable only
-  // here — the choice is gone by the time this reaches a screen.
   if (response.status === 401) throw new AuthError(credential.kind, path)
   return response
+}
+
+function isForbiddenSealedHeader(name: string): boolean {
+  const lower = name.toLowerCase()
+  // Fetch header names are case-insensitive. A caller `AUTHORIZATION` or
+  // `x-tb-env` is the same header as the canonical spelling, and deleting
+  // only the two mixed-case keys leaves the credential or a second envelope
+  // carrier on the object `fetch` actually sends.
+  if (lower === HEADER_AUTHORIZATION.toLowerCase()) return true
+  if (lower === HEADER_E2EE.toLowerCase()) return true
+  if (lower === HEADER_CTX.toLowerCase()) return true
+  if (lower === HEADER_SEQ.toLowerCase()) return true
+  if (lower === HEADER_ENV.toLowerCase()) return true
+  if (lower === HEADER_CONTENT_TYPE.toLowerCase()) return true
+  return false
+}
+
+function copySealedCallerHeaders(init: AuthedFetchInit): Record<string, string> {
+  const headers: Record<string, string> = {}
+  for (const [key, value] of Object.entries(init.headers ?? {})) {
+    if (isForbiddenSealedHeader(key)) continue
+    headers[key] = value
+  }
+  return headers
+}
+
+function splitPathQuery(path: string): { pathname: string; query: string } {
+  const q = path.indexOf('?')
+  const raw = q === -1 ? path : path.slice(0, q)
+  const pathname = raw.startsWith('/') ? raw : `/${raw}`
+  return { pathname, query: q === -1 ? '' : path.slice(q + 1) }
+}
+
+function requestMethod(init: AuthedFetchInit): string {
+  return (init.method ?? 'GET').toUpperCase()
+}
+
+function canCarryRequestBody(method: string): boolean {
+  return method !== 'GET' && method !== 'HEAD'
+}
+
+function encodeBase64Url(bytes: Uint8Array): string {
+  return naclUtil.encodeBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function decodeBase64Url(value: string): Uint8Array {
+  const standard = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = standard + '='.repeat((4 - (standard.length % 4)) % 4)
+  return naclUtil.decodeBase64(padded)
+}
+
+function bodyToBytes(body: AuthedFetchInit['body']): Uint8Array {
+  if (body == null) return new Uint8Array(0)
+  if (typeof body === 'string') return new TextEncoder().encode(body)
+  if (body instanceof Uint8Array) return body
+  if (body instanceof ArrayBuffer) return new Uint8Array(body)
+  throw new EnvelopeError(
+    'E2EE_SEAL_FAILED',
+    'E2EE: this request body cannot be sealed',
+    '',
+    false,
+  )
+}
+
+function inferJsonContentType(plaintext: Uint8Array): string | null {
+  if (plaintext.byteLength === 0) return null
+  try {
+    JSON.parse(new TextDecoder().decode(plaintext))
+    return 'application/json'
+  } catch {
+    return null
+  }
+}
+
+function isSealedResponse(response: Response): boolean {
+  return response.headers.get(HEADER_E2EE) === '1' || response.headers.has(HEADER_ENV)
+}
+
+function isPlaintextRefusal(status: number): boolean {
+  return status === 400 || status === 409 || status === 413 || status === 426
+}
+
+async function readErrorCode(response: Response): Promise<string> {
+  try {
+    const body: { code?: string } = (await response.clone().json()) as { code?: string }
+    return typeof body.code === 'string' ? body.code : ''
+  } catch {
+    return ''
+  }
+}
+
+function responseFromPlaintext(status: number, plaintext: Uint8Array, source: Response): Response {
+  const headers = new Headers()
+  source.headers.forEach((value, key) => {
+    const lower = key.toLowerCase()
+    if (
+      lower === 'content-type' ||
+      lower === 'content-length' ||
+      lower === 'transfer-encoding' ||
+      lower === HEADER_E2EE.toLowerCase() ||
+      lower === HEADER_ENV.toLowerCase()
+    ) {
+      return
+    }
+    headers.set(key, value)
+  })
+  const inferred = inferJsonContentType(plaintext)
+  if (inferred) {
+    // eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
+    headers.set('Content-Type', inferred)
+  }
+  return new Response(plaintext.byteLength === 0 ? null : (plaintext as BodyInit), {
+    status,
+    headers,
+  })
+}
+
+async function sealedFetch(
+  target: AuthedTarget,
+  path: string,
+  url: string,
+  init: AuthedFetchInit,
+  retriedUnknown: boolean,
+): Promise<Response> {
+  const serverId = target.id
+  const serverPublicKey = target.serverPublicKey
+  if (!serverId || !serverPublicKey) {
+    throw new EnvelopeError('E2EE_SEAL_FAILED', 'E2EE: a pinned request has no server identity', path, false)
+  }
+
+  const method = requestMethod(init)
+  const { pathname, query } = splitPathQuery(path)
+  const targetHash = restTargetHash(method, pathname, query)
+  const plaintext = bodyToBytes(init.body)
+
+  let context
+  try {
+    context = await acquireRestContext({
+      serverId,
+      baseUrl: target.url,
+      serverPublicKey,
+      kind: 'rest',
+    })
+  } catch (err) {
+    if (err instanceof OpenError) {
+      throw new EnvelopeError(err.code, err.message, path, err.retryable)
+    }
+    throw err
+  }
+
+  const frame = context.send.seal(plaintext, targetHash)
+  const seq = recordCounter(frame)
+  noteRestBytes(serverId, frame.byteLength)
+
+  const headers: Record<string, string> = copySealedCallerHeaders(init)
+  headers[HEADER_E2EE] = '1'
+  headers[HEADER_CTX] = context.ctxId
+  headers[HEADER_SEQ] = seq.toString(10)
+
+  let body: BodyInit | undefined
+  if (canCarryRequestBody(method)) {
+    delete headers[HEADER_ENV]
+    body = frame as BodyInit
+    headers['Content-Type'] = 'application/octet-stream'
+  } else {
+    delete headers['Content-Type']
+    headers[HEADER_ENV] = encodeBase64Url(frame)
+    body = undefined
+  }
+
+  const response = await fetch(url, {
+    ...init,
+    method,
+    headers,
+    body,
+  })
+
+  if (!isSealedResponse(response) && isPlaintextRefusal(response.status)) {
+    const code = await readErrorCode(response)
+    if (response.status === 409 && code === 'E2EE_CTX_UNKNOWN' && !retriedUnknown) {
+      invalidateRestContext(serverId)
+      return sealedFetch(target, path, url, init, true)
+    }
+    throw new EnvelopeError(
+      code || 'E2EE_SEAL_FAILED',
+      `E2EE: sealed request refused (${response.status})`,
+      path,
+      false,
+    )
+  }
+
+  if (!isSealedResponse(response)) {
+    throw new EnvelopeError(
+      'E2EE_SEAL_FAILED',
+      'E2EE: the server answered a sealed request without a sealed response',
+      path,
+      false,
+    )
+  }
+
+  let responseFrame: Uint8Array
+  const env = response.headers.get(HEADER_ENV)
+  if (env !== null) {
+    if (env.length > MAX_ENVELOPE_HEADER_CHARS) {
+      throw new EnvelopeError('E2EE_SEAL_FAILED', 'E2EE: X-TB-Env is too large', path, false)
+    }
+    try {
+      responseFrame = decodeBase64Url(env)
+    } catch {
+      throw new EnvelopeError('E2EE_SEAL_FAILED', 'E2EE: X-TB-Env is not valid base64url', path, false)
+    }
+  } else {
+    responseFrame = new Uint8Array(await response.arrayBuffer())
+  }
+
+  let opened: Uint8Array
+  try {
+    opened = context.recv.unsealMatching(responseFrame, seq, targetHash)
+  } catch (err) {
+    if (err instanceof RecordError) {
+      throw new EnvelopeError(err.code, err.message, path, false)
+    }
+    throw err
+  }
+  noteRestBytes(serverId, responseFrame.byteLength)
+
+  const unsealed = responseFromPlaintext(response.status, opened, response)
+  if (unsealed.status === 503) {
+    const code = await readErrorCode(unsealed)
+    if (code === 'STORE_UNAVAILABLE') {
+      throw new EnvelopeError('E2EE_TRANSIENT', 'The server is busy; retrying shortly', path, true)
+    }
+  }
+  return unsealed
 }

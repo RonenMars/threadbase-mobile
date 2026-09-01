@@ -13,7 +13,7 @@ import type {
   FeatureFlagsConfig,
   ServerWarmupState,
 } from '@/types/api'
-import { authedFetch, AuthError, serverUrl } from './authed-fetch'
+import { authedFetch, AuthError, EnvelopeError, serverUrl } from './authed-fetch'
 
 export { AuthError }
 
@@ -339,6 +339,7 @@ async function request<T>(
     // A rejected credential is not a network failure: retrying presents the
     // same key, and the retry would mask the AuthError as a NetworkError.
     if (err instanceof AuthError) throw err
+    if (err instanceof EnvelopeError) throw err
     if (isStartSession) {
       clientLog.info('startSession', 'start request failed (network)', {
         method,
@@ -453,6 +454,7 @@ export async function stopSession(
     response = await authedFetch(server, path, { method: 'POST' })
   } catch (err) {
     if (err instanceof AuthError) throw err
+    if (err instanceof EnvelopeError) throw err
     throw new NetworkError(`Failed to reach ${serverUrl(server, path)}: ${String(err)}`)
   }
 
@@ -513,6 +515,7 @@ async function requestWithMeta<T>(
     })
   } catch (err) {
     if (err instanceof AuthError) throw err
+    if (err instanceof EnvelopeError) throw err
     if (options.signal?.aborted) {
       throw new NetworkError('Request cancelled')
     }
@@ -664,6 +667,7 @@ export async function resolveCacheAlert(
     })
   } catch (err) {
     if (err instanceof AuthError) throw err
+    if (err instanceof EnvelopeError) throw err
     throw new NetworkError(`Failed to reach ${serverUrl(server, path)}: ${String(err)}`)
   }
 

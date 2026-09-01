@@ -22,6 +22,7 @@ import {
   createRecordState,
   recordAad,
   recordNonce,
+  restTargetHash,
   type RecordChannel,
   type RecordDirection,
 } from '@/services/e2ee/record'
@@ -271,6 +272,44 @@ describe('record layer rules that the fixtures cannot express', () => {
     const c = vectors.restTargetCanonicalization
     const hashed = require('@stablelib/sha256').hash(Buffer.from(c.hashInputUtf8, 'utf8'))
     expect(toB64(hashed)).not.toBe(c.decodedPathMustDiffer.hash)
+
+    const [method, path, query] = c.hashInputUtf8.split('\n')
+    expect(toB64(restTargetHash(method, path, query))).toBe(toB64(hashed))
+    expect(toB64(restTargetHash(method, c.decodedPathMustDiffer.path, query))).toBe(
+      c.decodedPathMustDiffer.hash,
+    )
+
+    const rest = fixture.restResponse.target
+    expect(toB64(restTargetHash(rest.method ?? '', rest.path ?? '', rest.query ?? ''))).toBe(rest.hash)
+  })
+
+  it('§13(a): unsealMatching binds a REST response to its request counter, not a sequential expected', () => {
+    const target = b64(fixture.restResponse.target.hash)
+    const first = createRecordState({
+      key: b64(fixture.serverToClientKey),
+      ctxId,
+      direction: DIRECTION_SERVER_TO_CLIENT,
+      channel: CHANNEL_REST_RESPONSE,
+      initialCounter: 5n,
+    })
+    const second = createRecordState({
+      key: b64(fixture.serverToClientKey),
+      ctxId,
+      direction: DIRECTION_SERVER_TO_CLIENT,
+      channel: CHANNEL_REST_RESPONSE,
+      initialCounter: 6n,
+    })
+    const frame5 = first.seal(Buffer.from('five'), target)
+    const frame6 = second.seal(Buffer.from('six'), target)
+    const recv = createRecordState({
+      key: b64(fixture.serverToClientKey),
+      ctxId,
+      direction: DIRECTION_SERVER_TO_CLIENT,
+      channel: CHANNEL_REST_RESPONSE,
+    })
+    expect(Buffer.from(recv.unsealMatching(frame6, 6n, target)).toString()).toBe('six')
+    expect(Buffer.from(recv.unsealMatching(frame5, 5n, target)).toString()).toBe('five')
+    expect(() => recv.unsealMatching(frame6, 5n, target)).toThrow(RecordError)
   })
 
   it('the guard is BYTES_PER_ELEMENT/byteLength, not `.length` — a Float64Array(32) is refused', () => {
