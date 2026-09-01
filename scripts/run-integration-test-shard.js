@@ -25,7 +25,7 @@ if (!shard?.files?.length) {
 
 const repoRoot = process.cwd();
 const jestBin = path.join(repoRoot, 'node_modules', '.bin', 'jest');
-const jestArgs = ['--ci', '--forceExit'];
+const jestArgs = ['--ci', '--forceExit', '--testTimeout=10000'];
 
 if (shard.runInBand) {
   jestArgs.push('--runInBand');

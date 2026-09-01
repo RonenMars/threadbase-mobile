@@ -20,15 +20,16 @@
       "__tests__/integration/conversation-detail-gating.test.tsx",
       "__tests__/integration/conversation-search-anchor.test.tsx",
       "__tests__/integration/components/ConnectStepManual.test.tsx",
-      "__tests__/integration/components/BackupRestoreAuthRemedy.test.tsx"
+      "__tests__/integration/components/BackupRestoreAuthRemedy.test.tsx",
+      "__tests__/integration/components/PairDeepLinkScreen.test.tsx"
     ]
   },
   "3": {
+    "runInBand": true,
     "files": [
       "__tests__/integration/components/TerminalView.test.tsx",
       "__tests__/integration/components/PermissionAnswerSeam.test.tsx",
       "__tests__/integration/components/PromptAnswerSeam.test.tsx",
-      "__tests__/integration/components/PairDeepLinkScreen.test.tsx",
       "__tests__/integration/components/PermissionCardAnswer.test.tsx",
       "__tests__/integration/components/DisplayedServersList.test.tsx",
       "__tests__/integration/components/ConnectStepScan.test.tsx",

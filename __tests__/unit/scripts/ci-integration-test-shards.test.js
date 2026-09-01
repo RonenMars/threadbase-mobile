@@ -39,4 +39,11 @@ describe('ci-integration-test-shards.json', () => {
     expect(shards['1'].runInBand).toBe(true);
     expect(shards['1'].files.every((file) => file.includes('SessionScreen.'))).toBe(true);
   });
+
+  it('runs heavy component suites serially on shard 3', () => {
+    expect(shards['3'].runInBand).toBe(true);
+    expect(shards['3'].files).not.toContain(
+      '__tests__/integration/components/PairDeepLinkScreen.test.tsx',
+    );
+  });
 });
