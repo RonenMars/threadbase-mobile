@@ -138,6 +138,10 @@ describe('conversation detail — resume collision', () => {
     ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: CONV_ID, server: 'srv1' })
   })
 
+  afterEach(() => {
+    testQc?.clear()
+  })
+
   async function renderAndFindResume() {
     const root = await render(<ConversationDetailScreen />, { wrapper: wrapper() })
     const btn = await waitFor(() => root.getByTestId('resume-button'))

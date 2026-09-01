@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as pairExchange from '@/services/pair-exchange'
 import { useServersStore } from '@/stores/servers'
@@ -37,7 +37,10 @@ const FUTURE_EXP = String(Math.floor(Date.now() / 1000) + 180)
 
 async function confirmAndAdd() {
   const screen = await renderWithI18n(<PairDeepLinkScreen />)
-  fireEvent.press(await screen.findByTestId('pair-confirm-add-btn'))
+  const addBtn = await screen.findByTestId('pair-confirm-add-btn')
+  await act(async () => {
+    fireEvent.press(addBtn)
+  })
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
   return screen
 }
