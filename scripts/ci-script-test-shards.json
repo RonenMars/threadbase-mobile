@@ -1,0 +1,43 @@
+{
+  "1": [
+    "__tests__/unit/scripts/commit-msg-hook.test.js"
+  ],
+  "2": [
+    "__tests__/unit/scripts/land-version-bump.test.js",
+    "__tests__/unit/scripts/promote-android.test.js",
+    "__tests__/unit/scripts/ship-ios.test.js",
+    "__tests__/unit/scripts/ship-android.test.js",
+    "__tests__/unit/scripts/pre-commit-hook.test.js"
+  ],
+  "3": [
+    "__tests__/unit/scripts/check-story-coverage.test.js",
+    "__tests__/unit/scripts/run-android-ci-device-guard.test.js"
+  ],
+  "4": [
+    "__tests__/unit/scripts/maestro-flow-env.test.js",
+    "__tests__/unit/scripts/run-maestro.test.js",
+    "__tests__/unit/scripts/maestro-install-pin.test.js",
+    "__tests__/unit/scripts/check-sim.test.js",
+    "__tests__/unit/scripts/mock-server-question-triggers.test.js",
+    "__tests__/unit/scripts/ensure-release-build.test.js",
+    "__tests__/unit/scripts/ensure-release-build-pick-newest.test.js",
+    "__tests__/unit/scripts/android-camera-permission.test.js",
+    "__tests__/unit/scripts/android-cleartext-policy.test.js",
+    "__tests__/unit/scripts/check-sentry-env.test.js",
+    "__tests__/unit/scripts/ci-script-test-shards.test.js",
+    "__tests__/unit/scripts/e2e-android-apk-cache.test.js",
+    "__tests__/unit/scripts/e2e-android-script-single-line.test.js",
+    "__tests__/unit/scripts/e2e-schedule-and-notification.test.js",
+    "__tests__/unit/scripts/ios-e2e-simulator-target.test.js",
+    "__tests__/unit/scripts/ios-export-compliance.test.js",
+    "__tests__/unit/scripts/ios-permission-strings.test.js",
+    "__tests__/unit/scripts/ios-signing.test.js",
+    "__tests__/unit/scripts/live-activity-plugin-order.test.js",
+    "__tests__/unit/scripts/locale-checks.test.ts",
+    "__tests__/unit/scripts/localized-permission-strings.test.js",
+    "__tests__/unit/scripts/merge-jest-coverage.test.js",
+    "__tests__/unit/scripts/native-strings-check.test.js",
+    "__tests__/unit/scripts/reset-podfile-lock-path-noise.test.js",
+    "__tests__/unit/scripts/withLiveActivityTarget.test.js"
+  ]
+}
