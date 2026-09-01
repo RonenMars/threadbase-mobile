@@ -25,7 +25,7 @@ npm run storybook:build    # static build → storybook-static/
 
 Co-locate `Component.stories.tsx` next to `Component.tsx`, CSF3 style. Stories run
 through the same `ThemeProvider` (`contexts/ThemeContext.tsx`) as the app — a global
-theme toolbar in the Storybook UI switches between `dark`, `light`, `dracula`, and
+theme toolbar in the Storybook UI switches between `dark`, `light`, `nord`, and
 `catppuccin` by writing directly to the real `useSettingsStore` (no mocking layer).
 
 Don't story screens, navigation, camera, SecureStore, biometrics, notifications, or

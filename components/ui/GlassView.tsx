@@ -1,8 +1,12 @@
-import React from 'react'
-import { StyleSheet, View } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { AccessibilityInfo, Platform, View } from 'react-native'
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native'
 import { BlurView } from 'expo-blur'
 import type { BlurTint } from 'expo-blur'
+import {
+  GlassView as NativeGlassView,
+  isGlassEffectAPIAvailable,
+} from 'expo-glass-effect'
 import { useTheme } from '@/contexts/ThemeContext'
 
 interface GlassViewProps extends ViewProps {
@@ -15,34 +19,50 @@ interface GlassViewProps extends ViewProps {
 }
 
 /**
- * Primitive frosted-glass container. When the active theme defines a `glass`
- * field (Apple Glass), renders an expo-blur `BlurView` with a translucent
- * overlay; otherwise renders a plain `View`. This is the only file that imports
- * BlurView — all other glass surfaces compose this.
+ * Shared glass surface. On iOS 26+, it renders Expo's bridge to Apple's native
+ * Liquid Glass material. Other platforms retain the existing blur treatment.
  */
 export function GlassView({ children, style, intensity, tint, ...rest }: GlassViewProps) {
   const theme = useTheme()
+  const [reduceTransparency, setReduceTransparency] = useState(false)
 
-  if (theme.glass) {
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return
+
+    let mounted = true
+    void AccessibilityInfo.isReduceTransparencyEnabled().then((value) => {
+      if (mounted) setReduceTransparency(value)
+    })
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceTransparencyChanged',
+      setReduceTransparency,
+    )
+    return () => {
+      mounted = false
+      subscription.remove()
+    }
+  }, [])
+
+  if (Platform.OS === 'ios' && isGlassEffectAPIAvailable() && !reduceTransparency) {
     return (
-      <BlurView
-        intensity={intensity ?? theme.glass.intensity}
-        tint={tint ?? theme.glass.tint}
+      <NativeGlassView
+        glassEffectStyle="regular"
+        colorScheme={theme.colorMode}
         style={style}
         {...rest}
       >
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.glass.overlayColor }]}
-          pointerEvents="none"
-        />
         {children}
-      </BlurView>
+      </NativeGlassView>
     )
   }
 
+  if (reduceTransparency) {
+    return <View style={[style, { backgroundColor: theme.bg.secondary }]} {...rest}>{children}</View>
+  }
+
   return (
-    <View style={style} {...rest}>
+    <BlurView intensity={intensity ?? 40} tint={tint ?? (theme.colorMode === 'light' ? 'light' : 'dark')} style={style} {...rest}>
       {children}
-    </View>
+    </BlurView>
   )
 }

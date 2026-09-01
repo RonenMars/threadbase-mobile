@@ -238,14 +238,14 @@ jest.mock('@shopify/flash-list', () => {
 jest.mock('@gorhom/bottom-sheet', () => {
   const React = require('react')
   const { View, TextInput } = require('react-native')
-  const MockBottomSheet = React.forwardRef(({ children }, ref) => {
+  const MockBottomSheet = React.forwardRef(({ children, ...props }, ref) => {
     React.useImperativeHandle(ref, () => ({
       expand: jest.fn(),
       collapse: jest.fn(),
       close: jest.fn(),
       snapToIndex: jest.fn(),
     }))
-    return React.createElement(View, { testID: 'bottom-sheet' }, children)
+    return React.createElement(View, { ...props, testID: 'bottom-sheet' }, children)
   })
   return {
     __esModule: true,

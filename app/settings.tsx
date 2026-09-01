@@ -33,8 +33,8 @@ import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode, CaretRight } from 'phosphor-react-native'
 import { captureHandledError } from '@/services/sentry'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
-import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/theme'
-import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
+import { THEMES, font, radius, spacing } from '@/constants/theme'
+import type { ThemeId } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
@@ -68,10 +68,11 @@ function getSessionLeaveActionLabel(action: SessionLeaveAction, t: TFunction<'se
 
 function SectionHeader({ title, badge }: { title: string; badge?: string }) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
   return (
     <View style={s.sectionHeaderRow}>
-      <Text style={s.sectionHeader}>{title}</Text>
+      <Text style={[s.sectionHeader, isGlass && s.sectionHeaderGlass]}>{title}</Text>
       {badge ? <Badge label={badge} /> : null}
     </View>
   )
@@ -174,7 +175,6 @@ function PermissionRow({
 const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   dark: 'Dark',
   light: 'Light',
-  dracula: 'Dracula',
   catppuccin: 'Mocha',
   catppuccinLatte: 'Latte',
   nord: 'Nord',
@@ -188,24 +188,15 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   rosePineDawn: 'Rosé Pine Dawn',
   tokyoNight: 'Tokyo Night',
   tokyoNightLight: 'Tokyo Night Light',
-  appleGlass: 'Apple Glass',
-}
-
-const GLASS_VARIANT_LABELS: Record<GlassThemeVariant, string> = {
-  aurora: 'Aurora',
-  sunset: 'Sunset',
-  midnight: 'Midnight',
 }
 
 function ThemePicker({
   current,
   tab,
-  glassVariant,
   onChange,
 }: {
   current: ThemeId
   tab: 'dark' | 'light'
-  glassVariant: GlassThemeVariant
   onChange: (id: ThemeId) => void
 }) {
   const theme = useTheme()
@@ -215,33 +206,23 @@ function ThemePicker({
   return (
     <View style={s.themeGrid}>
       {themeIds.map((id) => {
-        const t = id === 'appleGlass' ? appleGlassThemes[glassVariant] : THEMES[id]
+        const t = THEMES[id]
         const isSelected = current === id || (current === 'system' && id === 'dark')
         return (
           <TouchableOpacity
             key={id}
+            testID={`settings-theme-${id}`}
             style={[s.themeCard, isSelected && s.themeCardSelected]}
             onPress={() => onChange(id)}
             activeOpacity={0.7}
           >
             <View style={[s.themeCardPreview, { backgroundColor: t.bg.primary }]}>
-              {id === 'appleGlass' ? (
-                <>
-                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(255,255,255,0.22)' }]} />
-                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(89,214,255,0.34)' }]} />
-                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(255,159,122,0.34)' }]} />
-                  <View style={[s.themePreviewBand, { backgroundColor: 'rgba(94,234,212,0.28)' }]} />
-                </>
-              ) : (
-                <>
-                  <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
-                  <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
-                </>
-              )}
+              <View style={{ height: 8, borderRadius: 2, backgroundColor: t.bg.card, borderWidth: 1, borderColor: t.border }} />
+              <View style={{ height: 6, width: '60%', borderRadius: 2, backgroundColor: t.text.secondary, opacity: 0.6 }} />
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.text.accent, alignSelf: 'flex-end' }} />
             </View>
             <View style={{ backgroundColor: t.bg.secondary }}>
-              <Text style={[s.themeCardName, { color: t.text.secondary }]}>
+              <Text style={[s.themeCardName, { color: t.text.primary }]}>
                 {THEME_LABELS[id]}
               </Text>
             </View>
@@ -303,8 +284,6 @@ export default function SettingsScreen() {
     setBiometricLock,
     crashReportingEnabled,
     setCrashReportingEnabled,
-    glassThemeVariant,
-    setGlassThemeVariant,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [isLeaveActionOpen, setIsLeaveActionOpen] = React.useState(false)
@@ -451,7 +430,7 @@ await refreshServerInfo(serverId)
   const glassContentStyle = isGlass ? { paddingTop: s.content.padding + insets.top + headerHeight } : null
 
   return (
-    <SafeAreaView style={s.container} edges={[]}>
+    <SafeAreaView style={[s.container, isGlass && s.containerGlass]} edges={[]}>
       <ScrollView
         contentContainerStyle={[s.content, glassContentStyle]}
         refreshControl={
@@ -479,6 +458,7 @@ await refreshServerInfo(serverId)
           )
         })}
         <TouchableOpacity
+          testID="settings-add-server-btn"
           style={[s.addServerBtn, isGlass && s.cardGlass]}
           onPress={() => setEditServerId('new')}
         >
@@ -506,11 +486,10 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.appearance')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('section.language')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               {SUPPORTED_LOCALES.map((supportedLocale) => (
                 <TouchableOpacity
                   key={supportedLocale.code}
@@ -518,7 +497,7 @@ await refreshServerInfo(serverId)
                   style={[s.segmentBtn, locale === supportedLocale.code && s.segmentBtnActive]}
                   onPress={() => handleLanguageChange(supportedLocale.code)}
                 >
-                  <Text style={[s.segmentBtnText, locale === supportedLocale.code && s.segmentBtnTextActive]}>
+                  <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, locale === supportedLocale.code && s.segmentBtnTextActive]}>
                     {getSupportedLocaleLabel(supportedLocale.code, t)}
                   </Text>
                 </TouchableOpacity>
@@ -528,12 +507,11 @@ await refreshServerInfo(serverId)
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('appearance.layout')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, sessionsLayout === 'tree' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('tree')}
               >
-                <Text style={[s.segmentBtnText, sessionsLayout === 'tree' && s.segmentBtnTextActive]}>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, sessionsLayout === 'tree' && s.segmentBtnTextActive]}>
                   {t('appearance.layoutTree')}
                 </Text>
               </TouchableOpacity>
@@ -541,7 +519,7 @@ await refreshServerInfo(serverId)
                 style={[s.segmentBtn, sessionsLayout === 'hub' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('hub')}
               >
-                <Text style={[s.segmentBtnText, sessionsLayout === 'hub' && s.segmentBtnTextActive]}>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, sessionsLayout === 'hub' && s.segmentBtnTextActive]}>
                   {t('appearance.layoutHub')}
                 </Text>
               </TouchableOpacity>
@@ -549,7 +527,7 @@ await refreshServerInfo(serverId)
                 style={[s.segmentBtn, sessionsLayout === 'classic' && s.segmentBtnActive]}
                 onPress={() => setSessionsLayout('classic')}
               >
-                <Text style={[s.segmentBtnText, sessionsLayout === 'classic' && s.segmentBtnTextActive]}>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, sessionsLayout === 'classic' && s.segmentBtnTextActive]}>
                   {t('appearance.layoutClassic')}
                 </Text>
               </TouchableOpacity>
@@ -561,37 +539,21 @@ await refreshServerInfo(serverId)
             </View>
             <View style={s.segmentedTabs}>
               <TouchableOpacity
+                testID="settings-theme-tab-dark"
                 style={[s.segmentTab, themeTab === 'dark' && s.segmentTabActive]}
                 onPress={() => setThemeTab('dark')}
               >
-                <Text style={[s.segmentBtnText, themeTab === 'dark' && s.segmentBtnTextActive]}>{t('appearance.dark')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, themeTab === 'dark' && s.segmentBtnTextActive]}>{t('appearance.dark')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="settings-theme-tab-light"
                 style={[s.segmentTab, themeTab === 'light' && s.segmentTabActive]}
                 onPress={() => setThemeTab('light')}
               >
-                <Text style={[s.segmentBtnText, themeTab === 'light' && s.segmentBtnTextActive]}>{t('appearance.light')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, themeTab === 'light' && s.segmentBtnTextActive]}>{t('appearance.light')}</Text>
               </TouchableOpacity>
             </View>
-            <ThemePicker current={colorScheme} tab={themeTab} glassVariant={glassThemeVariant} onChange={setColorScheme} />
-            {colorScheme === 'appleGlass' ? (
-              <View style={s.glassVariantSection}>
-                <Text style={s.glassVariantLabel}>{t('appearance.glassVariations')}</Text>
-                <View style={s.glassVariantChips}>
-                  {(Object.keys(GLASS_VARIANT_LABELS) as GlassThemeVariant[]).map((variant) => (
-                    <TouchableOpacity
-                      key={variant}
-                      style={[s.glassVariantChip, glassThemeVariant === variant && s.glassVariantChipActive]}
-                      onPress={() => setGlassThemeVariant(variant)}
-                    >
-                      <Text style={[s.segmentBtnText, glassThemeVariant === variant && s.segmentBtnTextActive]}>
-                        {GLASS_VARIANT_LABELS[variant]}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            ) : null}
+            <ThemePicker current={colorScheme} tab={themeTab} onChange={setColorScheme} />
           </View>
           <SettingsRow
             label={t('session.mergeChats')}
@@ -603,7 +565,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('notifications.whenAddingServer')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <TouchableOpacity
             style={s.row}
             onPress={() => setIsAddBehaviorOpen((v) => !v)}
@@ -623,7 +585,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.notifications')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
           <SettingsRow label={t('notifications.sessionCompleted')} value={notifications.sessionComplete} onValueChange={(v) => setNotifications({ sessionComplete: v })} />
           <SettingsRow label={t('notifications.sessionFailed')} value={notifications.sessionFailed} onValueChange={(v) => setNotifications({ sessionFailed: v })} />
@@ -645,7 +607,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('sessionNaming.title')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <SettingsRow label={t('sessionNaming.autoNameFromMessage')} value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
           <Text style={s.rowNote}>{t('sessionNaming.autoNameNote')}</Text>
           <SettingsRow label={t('sessionNaming.aiGeneratedNames')} value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
@@ -654,7 +616,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.session')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <TouchableOpacity
             style={s.row}
             onPress={() => setIsLeaveActionOpen((v) => !v)}
@@ -682,22 +644,21 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.history')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('history.messagePreview')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, historyMessageDisplay === 'first' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('first')}
               >
-                <Text style={[s.segmentBtnText, historyMessageDisplay === 'first' && s.segmentBtnTextActive]}>{t('history.first')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, historyMessageDisplay === 'first' && s.segmentBtnTextActive]}>{t('history.first')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, historyMessageDisplay === 'last' && s.segmentBtnActive]}
                 onPress={() => setHistoryMessageDisplay('last')}
               >
-                <Text style={[s.segmentBtnText, historyMessageDisplay === 'last' && s.segmentBtnTextActive]}>{t('history.last')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, historyMessageDisplay === 'last' && s.segmentBtnTextActive]}>{t('history.last')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -705,118 +666,113 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('conversationRows.title')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.density')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowDensity === 'comfortable' && s.segmentBtnActive]}
                 onPress={() => setRowDensity('comfortable')}
               >
-                <Text style={[s.segmentBtnText, rowDensity === 'comfortable' && s.segmentBtnTextActive]}>{t('conversationRows.comfortable')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowDensity === 'comfortable' && s.segmentBtnTextActive]}>{t('conversationRows.comfortable')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowDensity === 'compact' && s.segmentBtnActive]}
                 onPress={() => setRowDensity('compact')}
               >
-                <Text style={[s.segmentBtnText, rowDensity === 'compact' && s.segmentBtnTextActive]}>{t('conversationRows.compact')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowDensity === 'compact' && s.segmentBtnTextActive]}>{t('conversationRows.compact')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.messagePreview')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'first' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('first')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'first' && s.segmentBtnTextActive]}>{t('conversationRows.previewFirst')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPreviewMode === 'first' && s.segmentBtnTextActive]}>{t('conversationRows.previewFirst')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'last' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('last')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'last' && s.segmentBtnTextActive]}>{t('conversationRows.previewLast')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPreviewMode === 'last' && s.segmentBtnTextActive]}>{t('conversationRows.previewLast')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'auto' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('auto')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'auto' && s.segmentBtnTextActive]}>{t('conversationRows.auto')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPreviewMode === 'auto' && s.segmentBtnTextActive]}>{t('conversationRows.auto')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPreviewMode === 'off' && s.segmentBtnActive]}
                 onPress={() => setRowPreviewMode('off')}
               >
-                <Text style={[s.segmentBtnText, rowPreviewMode === 'off' && s.segmentBtnTextActive]}>{t('conversationRows.previewOff')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPreviewMode === 'off' && s.segmentBtnTextActive]}>{t('conversationRows.previewOff')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.pathDisplay')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'smart' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('smart')}
               >
-                <Text style={[s.segmentBtnText, rowPathDisplay === 'smart' && s.segmentBtnTextActive]}>{t('conversationRows.smart')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPathDisplay === 'smart' && s.segmentBtnTextActive]}>{t('conversationRows.smart')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'full' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('full')}
               >
-                <Text style={[s.segmentBtnText, rowPathDisplay === 'full' && s.segmentBtnTextActive]}>{t('conversationRows.full')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPathDisplay === 'full' && s.segmentBtnTextActive]}>{t('conversationRows.full')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowPathDisplay === 'last-segment' && s.segmentBtnActive]}
                 onPress={() => setRowPathDisplay('last-segment')}
               >
-                <Text style={[s.segmentBtnText, rowPathDisplay === 'last-segment' && s.segmentBtnTextActive]}>{t('conversationRows.lastSegment')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowPathDisplay === 'last-segment' && s.segmentBtnTextActive]}>{t('conversationRows.lastSegment')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.serverIndicator')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'auto' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('auto')}
               >
-                <Text style={[s.segmentBtnText, rowServerIndicator === 'auto' && s.segmentBtnTextActive]}>{t('conversationRows.auto')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowServerIndicator === 'auto' && s.segmentBtnTextActive]}>{t('conversationRows.auto')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'always' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('always')}
               >
-                <Text style={[s.segmentBtnText, rowServerIndicator === 'always' && s.segmentBtnTextActive]}>{t('conversationRows.always')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowServerIndicator === 'always' && s.segmentBtnTextActive]}>{t('conversationRows.always')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerIndicator === 'never' && s.segmentBtnActive]}
                 onPress={() => setRowServerIndicator('never')}
               >
-                <Text style={[s.segmentBtnText, rowServerIndicator === 'never' && s.segmentBtnTextActive]}>{t('conversationRows.never')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowServerIndicator === 'never' && s.segmentBtnTextActive]}>{t('conversationRows.never')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.serverChipStyle')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <GlassFill />
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerChipVariant === 'label' && s.segmentBtnActive]}
                 onPress={() => setRowServerChipVariant('label')}
               >
-                <Text style={[s.segmentBtnText, rowServerChipVariant === 'label' && s.segmentBtnTextActive]}>{t('conversationRows.label')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowServerChipVariant === 'label' && s.segmentBtnTextActive]}>{t('conversationRows.label')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.segmentBtn, rowServerChipVariant === 'letter' && s.segmentBtnActive]}
                 onPress={() => setRowServerChipVariant('letter')}
               >
-                <Text style={[s.segmentBtnText, rowServerChipVariant === 'letter' && s.segmentBtnTextActive]}>{t('conversationRows.letter')}</Text>
+                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowServerChipVariant === 'letter' && s.segmentBtnTextActive]}>{t('conversationRows.letter')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -834,7 +790,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.crashReporting')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <SettingsRow
             label={t('crashReporting.title')}
             value={crashReportingEnabled}
@@ -880,7 +836,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.permissions')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <PermissionRow
             label={t('permissions.camera')}
             description={t('permissions.cameraDesc')}
@@ -910,7 +866,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.about')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <Text style={s.aboutText}>
             {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${
               Platform.OS === 'ios'
@@ -923,7 +879,7 @@ await refreshServerInfo(serverId)
 
         <SectionHeader title={t('section.help')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
-          <GlassFill />
+          <GlassFill material />
           <TouchableOpacity
             style={s.row}
             onPress={() => router.push('/server-health')}
@@ -1046,14 +1002,13 @@ function ActionSegment({
   ]
   return (
     <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-      <GlassFill />
       {options.map((option) => (
         <TouchableOpacity
           key={option.id}
           style={[s.segmentBtn, value === option.id && s.segmentBtnActive]}
           onPress={() => onChange(option.id)}
         >
-          <Text style={[s.segmentBtnText, value === option.id && s.segmentBtnTextActive]}>
+          <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, value === option.id && s.segmentBtnTextActive]}>
             {option.label}
           </Text>
         </TouchableOpacity>
@@ -1070,6 +1025,7 @@ function SettingsChevron() {
 function styles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
+    containerGlass: { backgroundColor: 'transparent' },
     content: { padding: spacing.md, gap: spacing.sm },
     sectionHeaderRow: {
       flexDirection: 'row',
@@ -1085,6 +1041,9 @@ function styles(theme: ReturnType<typeof useTheme>) {
       textTransform: 'uppercase',
       letterSpacing: 0.8,
       marginStart: spacing.xs,
+    },
+    sectionHeaderGlass: {
+      color: theme.text.primary,
     },
     card: {
       backgroundColor: theme.bg.card,
@@ -1169,6 +1128,7 @@ function styles(theme: ReturnType<typeof useTheme>) {
     segmentBtn: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.sm },
     segmentBtnActive: { backgroundColor: theme.text.accent },
     segmentBtnText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
+    segmentBtnTextGlass: { color: theme.text.primary },
     segmentBtnTextActive: { color: theme.text.onAccent },
     aboutText: { color: theme.text.primary, fontSize: font.base, padding: spacing.md, fontWeight: '500' },
     aboutSubtext: { color: theme.text.secondary, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
@@ -1224,34 +1184,6 @@ function styles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
     },
     segmentTabActive: {
-      backgroundColor: theme.text.accent,
-    },
-    glassVariantSection: {
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.border,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      gap: spacing.xs,
-    },
-    glassVariantLabel: {
-      color: theme.text.secondary,
-      fontSize: font.xs,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
-    },
-    glassVariantChips: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.xs,
-    },
-    glassVariantChip: {
-      paddingVertical: spacing.xs,
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.full,
-      backgroundColor: theme.bg.primary,
-    },
-    glassVariantChipActive: {
       backgroundColor: theme.text.accent,
     },
   })

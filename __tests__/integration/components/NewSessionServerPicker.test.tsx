@@ -6,6 +6,16 @@ import { DirectionRoot } from '@/lib/direction-root'
 import type { ServerConfig } from '@/types/api'
 import i18n from '@/test-utils/i18n-setup'
 
+const mockUseIsGlass = jest.fn(() => true)
+
+jest.mock('@/contexts/ThemeContext', () => {
+  const { dark } = require('@/constants/theme')
+  return {
+    useTheme: () => dark,
+    useIsGlass: () => mockUseIsGlass(),
+  }
+})
+
 function makeServer(id: string, overrides: Partial<ServerConfig> = {}): ServerConfig {
   return {
     id,
@@ -25,6 +35,10 @@ const servers: Record<string, ServerConfig> = {
 }
 
 describe('NewSessionServerPicker', () => {
+  beforeEach(() => {
+    mockUseIsGlass.mockReturnValue(true)
+  })
+
   afterEach(async () => {
     await i18n.changeLanguage('en')
   })
@@ -61,6 +75,44 @@ describe('NewSessionServerPicker', () => {
     expect(getByTestId('new-session-server-1')).toBeTruthy()
     // Servers not included in serverIds are not rendered
     expect(queryByText('Gamma Box')).toBeNull()
+  })
+
+  it('uses one transparent native-material background for the picker sheet', async () => {
+    const { getByTestId } = await render(
+      <NewSessionServerPicker
+        visible
+        serverIds={['alpha', 'beta']}
+        servers={servers}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    )
+
+    const sheet = getByTestId('bottom-sheet')
+    expect(StyleSheet.flatten(sheet.props.backgroundStyle)).toEqual(
+      expect.objectContaining({ backgroundColor: 'transparent' }),
+    )
+    expect(sheet.props.backgroundComponent).toBeDefined()
+  })
+
+  it('keeps the opaque sheet fallback when native glass is unavailable', async () => {
+    mockUseIsGlass.mockReturnValue(false)
+
+    const { getByTestId } = await render(
+      <NewSessionServerPicker
+        visible
+        serverIds={['alpha']}
+        servers={servers}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    )
+
+    const sheet = getByTestId('bottom-sheet')
+    expect(StyleSheet.flatten(sheet.props.backgroundStyle)).toEqual(
+      expect.objectContaining({ backgroundColor: '#161b22' }),
+    )
+    expect(sheet.props.backgroundComponent).toBeUndefined()
   })
 
   it('skips serverIds that are missing from the servers map', async () => {

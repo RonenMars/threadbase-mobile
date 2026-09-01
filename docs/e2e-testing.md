@@ -78,6 +78,23 @@ Runs a suite of tests against a local mock server on port 7071/7072. Tests inclu
 - `e2e/voice_dictation.yaml`
 - `e2e/settings_qr_scanner.yaml`
 
+### Native Liquid Glass visual captures
+
+These are **not** part of `test:e2e:mock`. They capture iOS 26+ Release screenshots
+for the native `expo-glass-effect` migration. Operational detail, failure notes,
+and regenerate commands live in
+[`e2e/visual/native-liquid-glass/README.md`](../e2e/visual/native-liquid-glass/README.md).
+
+| Flow | What it captures |
+| --- | --- |
+| `e2e/native-liquid-glass-visual.yaml` | First-run language → empty hub → Settings/Nord → Add Server |
+| `e2e/native-liquid-glass-settings-themes.yaml` | Settings viewport for every retained dark and light palette |
+
+```bash
+node e2e/run-maestro.js test e2e/native-liquid-glass-visual.yaml
+node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
+```
+
 ## Running Tests
 
 ### Demo Server Test
@@ -416,10 +433,21 @@ The HTML report and debug artifacts can be uploaded as CI artifacts for review.
 
 3. **npm output buffering:** npm buffers maestro's live output. Use `:watch` variants or run maestro directly for live feedback.
 
+4. **Unpaired relaunch is not a hub session:** `AuthGate` redirects any route with
+   no paired servers to `/onboarding`, even after skip-onboarding wrote
+   `threadbase_onboarded`. A second flow that `launchApp`s (with or without
+   `clearState`) cannot tap `hub-settings-btn`. The Settings theme gallery walks
+   the skip path itself. See
+   [`e2e/visual/native-liquid-glass/README.md`](../e2e/visual/native-liquid-glass/README.md).
+
+5. **`takeScreenshot` can beat first paint:** `extendedWaitUntil` on a testID can
+   pass while native glass chrome is still blank. Put `waitForAnimationToEnd`
+   immediately before each visual capture.
+
 ## Future Improvements
 
 - [ ] Add Android E2E tests
 - [ ] Expand mock server test coverage
-- [ ] Add visual regression testing
+- [ ] Add visual regression testing (capture flows exist; no pixel-diff runner yet — see `e2e/visual/native-liquid-glass/`)
 - [ ] Integrate with CI/CD pipeline
 - [ ] Add performance testing (startup time, response time)

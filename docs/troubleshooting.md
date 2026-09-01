@@ -586,6 +586,38 @@ Those fields identify the iOS Simulator named by `<UDID>`. They rule out both th
 
 **Fix:** Do not change Threadbase runtime code for this signature. Avoid `hideKeyboard` in iOS 26.x Maestro flows; scroll the keyboard-aware screen until the next control is visible. `pressKey: Enter` is acceptable only for a single-line input whose return action is known not to alter the tested value. If SpringBoard does not recover, restart only the simulator named by the coalition UDID, then rerun the flow.
 
+### Unpaired Maestro `launchApp` lands on the language step, not the hub
+
+**When:** A flow walks skip-onboarding to the empty hub, then a later flow (or
+`simctl terminate` + launch) uses `launchApp` with `clearState: false`. Maestro
+may still report `hub-screen` visible, then fail on `hub-settings-btn`. The
+failure screenshot is `> 01 / LANGUAGE`.
+
+**Cause:** `AuthGate` in `app/_layout.tsx` (`shouldRedirectToOnboarding`) sends any
+route with no paired servers to `/onboarding`. It does not read
+`threadbase_onboarded`. Skip-onboarding writes that flag, but a JS remount with
+`activeServerIds.length === 0` still redirects. `hub-screen` can be a leftover
+hierarchy from the previous flow; the language step is what is on screen.
+
+**Fix:** Do not split unpaired visual captures across two `launchApp`s. The
+Settings theme gallery (`e2e/native-liquid-glass-settings-themes.yaml`) walks
+language → welcome → pair-later → done → hub in the same flow, then opens
+Settings. Details:
+[`e2e/visual/native-liquid-glass/README.md`](../e2e/visual/native-liquid-glass/README.md).
+
+### Maestro `takeScreenshot` captures a blank glass frame
+
+**When:** The first screenshot after `launchApp: clearState: true` is a nearly
+empty dark screen (status bar plus a thin accent line) even though
+`extendedWaitUntil` on `onboarding-language-cta` passed.
+
+**Cause:** The CTA is already in the accessibility tree; native `expo-glass-effect`
+chrome has not painted. Accessibility-visible is not the same as pixels.
+
+**Fix:** `waitForAnimationToEnd` immediately before each `takeScreenshot` in the
+native liquid glass visual flows. Re-run; do not treat the blank PNG as a
+product regression.
+
 ---
 
 ## iOS Simulator console noise

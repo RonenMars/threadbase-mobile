@@ -1,0 +1,125 @@
+# Native Liquid Glass Settings palette gallery.
+#
+# Captures the Settings viewport for every retained palette. The committed
+# references live in e2e/visual/native-liquid-glass/themes/.
+#
+# An unpaired relaunch is bounced back to onboarding (AuthGate keys off
+# paired servers, not the onboarded flag), so this flow walks the skip path
+# itself rather than assuming a prior hub session survived `launchApp`.
+# Usage: node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
+
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-language-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-welcome-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-connect-root"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-shell-skip"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-done-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+- waitForAnimationToEnd
+- tapOn:
+    id: "hub-settings-btn"
+- extendedWaitUntil:
+    visible:
+      id: "settings-theme-tab-dark"
+    timeout: 8000
+- waitForAnimationToEnd
+
+# Dark palettes
+- tapOn:
+    id: "settings-theme-tab-dark"
+- waitForAnimationToEnd
+- tapOn:
+    id: "settings-theme-dark"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-dark
+- tapOn:
+    id: "settings-theme-catppuccin"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-catppuccin
+- tapOn:
+    id: "settings-theme-nord"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-nord
+- tapOn:
+    id: "settings-theme-oneDark"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-one-dark
+- tapOn:
+    id: "settings-theme-githubDark"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-primer-dark
+- tapOn:
+    id: "settings-theme-solarizedDark"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-solarized-dark
+- tapOn:
+    id: "settings-theme-rosePine"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-rose-pine
+- tapOn:
+    id: "settings-theme-tokyoNight"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-tokyo-night
+
+# Light palettes
+- tapOn:
+    id: "settings-theme-tab-light"
+- waitForAnimationToEnd
+- tapOn:
+    id: "settings-theme-light"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-light
+- tapOn:
+    id: "settings-theme-catppuccinLatte"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-latte
+- tapOn:
+    id: "settings-theme-oneLight"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-one-light
+- tapOn:
+    id: "settings-theme-githubLight"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-primer-light
+- tapOn:
+    id: "settings-theme-solarizedLight"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-solarized-light
+- tapOn:
+    id: "settings-theme-rosePineDawn"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-rose-pine-dawn
+- tapOn:
+    id: "settings-theme-tokyoNightLight"
+- waitForAnimationToEnd
+- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-tokyo-night-light

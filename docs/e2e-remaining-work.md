@@ -133,3 +133,10 @@ XCUITest-driver infrastructure (see Environment gotchas), not a sheet open bug.
 - **Onboarding pairing survives `clearState`** (SecureStore/Keychain persists), so a
   sim previously paired to a real streamer skips onboarding and never points at the
   mock. `simctl erase` (or uninstall) clears it.
+- **Unpaired skip-onboarding does *not* survive `launchApp`.** `AuthGate` redirects
+  any route with no paired servers to `/onboarding`, so a second flow cannot start
+  from the empty hub. Walk the skip path in the same flow (see
+  `e2e/native-liquid-glass-settings-themes.yaml` and
+  `e2e/visual/native-liquid-glass/README.md`).
+- **`takeScreenshot` can fire before native glass paints.** Accessibility-visible
+  CTAs are not enough; `waitForAnimationToEnd` before each visual capture.

@@ -28,14 +28,6 @@ export type Theme = {
     readonly completed: string
     readonly idle: string
   }
-  readonly glass?: {
-    readonly tint: 'light' | 'dark' | 'default'
-    readonly intensity: number
-    readonly overlayColor: string
-    /** Solid background for modals that stack on top of glass surfaces,
-     *  preventing translucent-over-translucent text bleed. */
-    readonly opaqueSurface: string
-  }
 }
 
 export const dark = {
@@ -93,35 +85,6 @@ export const light = {
     failed: '#cf222e',
     completed: '#0969da',
     idle: '#57606a',
-  },
-} as const satisfies Theme
-
-export const dracula = {
-  colorMode: 'dark' as const,
-  bg: {
-    primary: '#282a36',
-    secondary: '#21222c',
-    card: '#44475a',
-  },
-  text: {
-    primary: '#f8f8f2',
-    secondary: '#6272a4',
-    accent: '#bd93f9',
-    onAccent: '#282a36',
-    highlight: '#f1fa8c',
-    onHighlight: '#282a36',
-    danger: '#ff5555',
-    warning: '#ffb86c',
-    success: '#50fa7b',
-    beta: '#ffb86c',
-  },
-  border: '#6272a4',
-  status: {
-    running: '#50fa7b',
-    waiting: '#ffb86c',
-    failed: '#ff5555',
-    completed: '#bd93f9',
-    idle: '#6272a4',
   },
 } as const satisfies Theme
 
@@ -255,7 +218,7 @@ export const oneLight = {
     primary: '#383a42',
     secondary: '#696c77',
     accent: '#4078f2',
-    onAccent: '#fafafa',
+    onAccent: '#0d1117',
     highlight: '#eab700',
     onHighlight: '#383a42',
     danger: '#e45649',
@@ -344,7 +307,7 @@ export const solarizedDark = {
     primary: '#839496',
     secondary: '#586e75',
     accent: '#268bd2',
-    onAccent: '#002b36',
+    onAccent: '#001b24',
     highlight: '#b58900',
     onHighlight: '#fdf6e3',
     danger: '#dc322f',
@@ -374,7 +337,7 @@ export const solarizedLight = {
     primary: '#657b83',
     secondary: '#93a1a1',
     accent: '#268bd2',
-    onAccent: '#fdf6e3',
+    onAccent: '#001b24',
     highlight: '#e0b000',
     onHighlight: '#002b36',
     danger: '#dc322f',
@@ -434,7 +397,7 @@ export const rosePineDawn = {
     primary: '#575279',
     secondary: '#9893a5',
     accent: '#907aa9',
-    onAccent: '#faf4ed',
+    onAccent: '#191724',
     highlight: '#ea9d34',
     onHighlight: '#575279',
     danger: '#b4637a',
@@ -512,118 +475,10 @@ export const tokyoNightLight = {
   },
 } as const satisfies Theme
 
-export type GlassThemeVariant = 'aurora' | 'sunset' | 'midnight'
-
-export const appleGlassThemes: Record<GlassThemeVariant, Theme> = {
-  aurora: {
-    colorMode: 'dark' as const,
-    bg: {
-      primary: 'transparent',
-      secondary: 'rgba(24, 42, 54, 0.34)',
-      card: 'rgba(255, 255, 255, 0.08)',
-    },
-    text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.72)',
-      accent: '#59d6ff',
-      onAccent: '#ffffff',
-      highlight: '#ffd166',
-      onHighlight: '#182a36',
-      danger: '#ff5d5d',
-      warning: '#ffb84d',
-      success: '#34d399',
-      beta: '#ffb84d',
-    },
-    border: 'rgba(255, 255, 255, 0.16)',
-    status: {
-      running: '#34d399',
-      waiting: '#ffb84d',
-      failed: '#ff5d5d',
-      completed: '#59d6ff',
-      idle: 'rgba(255, 255, 255, 0.5)',
-    },
-    glass: {
-      tint: 'dark' as const,
-      intensity: 72,
-      overlayColor: 'rgba(10, 20, 30, 0.22)',
-      opaqueSurface: '#1c1c2e',
-    },
-  },
-  sunset: {
-    colorMode: 'dark' as const,
-    bg: {
-      primary: 'transparent',
-      secondary: 'rgba(52, 28, 42, 0.34)',
-      card: 'rgba(255, 255, 255, 0.1)',
-    },
-    text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.72)',
-      accent: '#ff9f7a',
-      onAccent: '#ffffff',
-      highlight: '#ffcc66',
-      onHighlight: '#2a1020',
-      danger: '#ff6b6b',
-      warning: '#ffcc66',
-      success: '#5eead4',
-      beta: '#ffcc66',
-    },
-    border: 'rgba(255, 255, 255, 0.16)',
-    status: {
-      running: '#5eead4',
-      waiting: '#ffcc66',
-      failed: '#ff6b6b',
-      completed: '#ff9f7a',
-      idle: 'rgba(255, 255, 255, 0.5)',
-    },
-    glass: {
-      tint: 'dark' as const,
-      intensity: 76,
-      overlayColor: 'rgba(34, 12, 24, 0.24)',
-      opaqueSurface: '#2a1020',
-    },
-  },
-  midnight: {
-    colorMode: 'dark' as const,
-    bg: {
-      primary: 'transparent',
-      secondary: 'rgba(18, 22, 46, 0.36)',
-      card: 'rgba(255, 255, 255, 0.07)',
-    },
-    text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.7)',
-      accent: '#8cb3ff',
-      onAccent: '#ffffff',
-      highlight: '#f8d66d',
-      onHighlight: '#10121e',
-      danger: '#ff7b7b',
-      warning: '#f8d66d',
-      success: '#7dd3fc',
-      beta: '#f8d66d',
-    },
-    border: 'rgba(255, 255, 255, 0.14)',
-    status: {
-      running: '#7dd3fc',
-      waiting: '#f8d66d',
-      failed: '#ff7b7b',
-      completed: '#8cb3ff',
-      idle: 'rgba(255, 255, 255, 0.48)',
-    },
-    glass: {
-      tint: 'dark' as const,
-      intensity: 70,
-      overlayColor: 'rgba(8, 10, 24, 0.26)',
-      opaqueSurface: '#10121e',
-    },
-  },
-} as const
-
 export type ThemeId =
   | 'dark'
   | 'light'
   | 'system'
-  | 'dracula'
   | 'catppuccin'
   | 'catppuccinLatte'
   | 'nord'
@@ -637,12 +492,10 @@ export type ThemeId =
   | 'rosePineDawn'
   | 'tokyoNight'
   | 'tokyoNightLight'
-  | 'appleGlass'
 
 export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   dark,
   light,
-  dracula,
   catppuccin,
   catppuccinLatte,
   nord,
@@ -656,7 +509,6 @@ export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   rosePineDawn,
   tokyoNight,
   tokyoNightLight,
-  appleGlass: appleGlassThemes.aurora,
 }
 
 export const spacing = {

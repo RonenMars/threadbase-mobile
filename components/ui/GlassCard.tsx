@@ -1,7 +1,7 @@
 import React from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import type { ViewStyle } from 'react-native'
-import { radius, spacing, type Theme } from '@/constants/theme'
+import { radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { GlassView } from './GlassView'
 
@@ -21,7 +21,7 @@ interface GlassCardProps {
  */
 export function GlassCard({ children, style, variant = 'default', testID }: GlassCardProps) {
   const theme = useTheme()
-  const s = makeStyles(theme)
+  const s = makeStyles()
   const borderColor =
     variant === 'warning'
       ? theme.status.waiting
@@ -31,13 +31,12 @@ export function GlassCard({ children, style, variant = 'default', testID }: Glas
 
   return (
     <GlassView testID={testID} style={[s.card, { borderColor }, style]}>
-      <View style={s.fill} pointerEvents="none" />
       {children}
     </GlassView>
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles() {
   return StyleSheet.create({
     card: {
       borderRadius: radius.md,
@@ -46,14 +45,6 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.sm,
       gap: spacing.xs,
       overflow: 'hidden',
-    },
-    fill: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: theme.bg.card,
     },
   })
 }

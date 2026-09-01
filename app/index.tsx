@@ -390,7 +390,7 @@ export default function ProjectsHub() {
 
   return (
     <SafeAreaView
-      style={styles.container}
+      style={[styles.container, isGlass && styles.containerGlass]}
       edges={['top']}
       testID="hub-screen"
     >
@@ -962,6 +962,9 @@ function makeStyles(theme: Theme) {
   container: {
     flex: 1,
     backgroundColor: theme.bg.primary,
+  },
+  containerGlass: {
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',

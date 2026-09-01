@@ -2,8 +2,8 @@ import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { NotificationPreferences } from '@/types/api'
 import type { SessionsLayout } from '@/types/ui'
-import { THEMES, appleGlassThemes } from '@/constants/theme'
-import type { GlassThemeVariant, ThemeId } from '@/constants/theme'
+import { THEMES } from '@/constants/theme'
+import type { ThemeId } from '@/constants/theme'
 import {
   coerceSessionLeaveAction,
   type SessionLeaveAction,
@@ -13,14 +13,8 @@ import { resolveSupportedLocale, SUPPORTED_LOCALES, type SupportedLocale } from 
 
 const VALID_THEME_IDS = new Set<string>([...Object.keys(THEMES), 'system'])
 
-const VALID_GLASS_THEME_VARIANTS = new Set<string>(Object.keys(appleGlassThemes))
-
 function isValidThemeId(v: unknown): v is ThemeId {
   return typeof v === 'string' && VALID_THEME_IDS.has(v)
-}
-
-function isValidGlassThemeVariant(v: unknown): v is GlassThemeVariant {
-  return typeof v === 'string' && VALID_GLASS_THEME_VARIANTS.has(v)
 }
 
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
@@ -39,7 +33,6 @@ export type RowPreviewModalCount = 5 | 10 | 20
 
 interface SettingsStore {
   colorScheme: ThemeId
-  glassThemeVariant: GlassThemeVariant
   completedSessionFadeMs: number
   terminalMaxLines: number
   notifications: NotificationPreferences
@@ -66,7 +59,6 @@ interface SettingsStore {
   rowServerChipVariant: RowServerChipVariant
   rowPreviewModalCount: RowPreviewModalCount
   setColorScheme: (scheme: ThemeId) => void
-  setGlassThemeVariant: (variant: GlassThemeVariant) => void
   setCompletedSessionFadeMs: (ms: number) => void
   setTerminalMaxLines: (n: number) => void
   setNotifications: (prefs: Partial<NotificationPreferences>) => void
@@ -108,8 +100,8 @@ const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
 }
 
 interface PersistedSettings {
-  colorScheme: ThemeId
-  glassThemeVariant: GlassThemeVariant
+  // appleGlass and dracula are retired; hydrate maps both to dark.
+  colorScheme: ThemeId | 'appleGlass' | 'dracula'
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
@@ -135,7 +127,6 @@ interface PersistedSettings {
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
   colorScheme: 'dark',
-  glassThemeVariant: 'aurora',
   completedSessionFadeMs: 60000,
   terminalMaxLines: 5000,
   notifications: DEFAULT_NOTIFICATIONS,
@@ -163,7 +154,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   rowPreviewModalCount: 10,
 
   setColorScheme: (colorScheme) => set({ colorScheme }),
-  setGlassThemeVariant: (glassThemeVariant) => set({ glassThemeVariant }),
   setCompletedSessionFadeMs: (completedSessionFadeMs) => set({ completedSessionFadeMs }),
   setTerminalMaxLines: (terminalMaxLines) => set({ terminalMaxLines }),
   setNotifications: (prefs) =>
@@ -198,10 +188,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       if (!raw) return
       const parsed = JSON.parse(raw) as Partial<PersistedSettings>
       set((state) => ({
-        colorScheme: isValidThemeId(parsed.colorScheme) ? parsed.colorScheme : state.colorScheme,
-        glassThemeVariant: isValidGlassThemeVariant(parsed.glassThemeVariant)
-          ? parsed.glassThemeVariant
-          : state.glassThemeVariant,
+        colorScheme: parsed.colorScheme === 'appleGlass' || parsed.colorScheme === 'dracula'
+          ? 'dark'
+          : isValidThemeId(parsed.colorScheme)
+            ? parsed.colorScheme
+            : state.colorScheme,
         notifications: parsed.notifications
           ? { ...state.notifications, ...parsed.notifications }
           : state.notifications,
@@ -242,7 +233,6 @@ export function persistSettingsNow(): Promise<void> {
   const state = useSettingsStore.getState()
   const payload: PersistedSettings = {
     colorScheme: state.colorScheme,
-    glassThemeVariant: state.glassThemeVariant,
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,
