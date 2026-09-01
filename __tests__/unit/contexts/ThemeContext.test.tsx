@@ -4,7 +4,6 @@ import { useSettingsStore } from '@/stores/settings'
 import { ThemeProvider, useIsGlass, useTheme } from '@/contexts/ThemeContext'
 import {
   dark,
-  dracula,
   catppuccin,
   nord,
   light,
@@ -28,13 +27,6 @@ describe('useTheme', () => {
     const { result } = await renderHook(() => useTheme(), { wrapper })
     expect(result.current.bg.primary).toBe(dark.bg.primary)
     expect(result.current.text.accent).toBe(dark.text.accent)
-  })
-
-  it('returns dracula theme when colorScheme is dracula', async () => {
-    useSettingsStore.setState({ colorScheme: 'dracula' })
-    const { result } = await renderHook(() => useTheme(), { wrapper })
-    expect(result.current.bg.primary).toBe(dracula.bg.primary)
-    expect(result.current.text.accent).toBe(dracula.text.accent)
   })
 
   it('returns catppuccin theme when colorScheme is catppuccin', async () => {

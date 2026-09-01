@@ -86,11 +86,6 @@ describe('SettingsStore – colorScheme', () => {
     expect(useSettingsStore.getState().colorScheme).toBe('system')
   })
 
-  it('accepts dracula', () => {
-    useSettingsStore.getState().setColorScheme('dracula')
-    expect(useSettingsStore.getState().colorScheme).toBe('dracula')
-  })
-
   it('accepts catppuccin', () => {
     useSettingsStore.getState().setColorScheme('catppuccin')
     expect(useSettingsStore.getState().colorScheme).toBe('catppuccin')
@@ -102,13 +97,13 @@ describe('SettingsStore – colorScheme', () => {
   })
 
   it('persists colorScheme to AsyncStorage when changed', async () => {
-    useSettingsStore.getState().setColorScheme('dracula')
+    useSettingsStore.getState().setColorScheme('nord')
     // Allow the subscriber microtask to flush
     await Promise.resolve()
     const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
     expect(raw).toBeDefined()
     const payload = JSON.parse(raw[1])
-    expect(payload.colorScheme).toBe('dracula')
+    expect(payload.colorScheme).toBe('nord')
   })
 
   it('restores colorScheme from AsyncStorage on hydrate', async () => {
@@ -129,6 +124,16 @@ describe('SettingsStore – colorScheme', () => {
     const stored = JSON.stringify({
       colorScheme: 'appleGlass',
       glassThemeVariant: 'sunset',
+      notifications: DEFAULT_NOTIFICATIONS,
+    })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().colorScheme).toBe('dark')
+  })
+
+  it('migrates a persisted Dracula selection to dark', async () => {
+    const stored = JSON.stringify({
+      colorScheme: 'dracula',
       notifications: DEFAULT_NOTIFICATIONS,
     })
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)

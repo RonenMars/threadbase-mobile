@@ -88,35 +88,6 @@ export const light = {
   },
 } as const satisfies Theme
 
-export const dracula = {
-  colorMode: 'dark' as const,
-  bg: {
-    primary: '#282a36',
-    secondary: '#21222c',
-    card: '#44475a',
-  },
-  text: {
-    primary: '#f8f8f2',
-    secondary: '#6272a4',
-    accent: '#bd93f9',
-    onAccent: '#282a36',
-    highlight: '#f1fa8c',
-    onHighlight: '#282a36',
-    danger: '#ff5555',
-    warning: '#ffb86c',
-    success: '#50fa7b',
-    beta: '#ffb86c',
-  },
-  border: '#6272a4',
-  status: {
-    running: '#50fa7b',
-    waiting: '#ffb86c',
-    failed: '#ff5555',
-    completed: '#bd93f9',
-    idle: '#6272a4',
-  },
-} as const satisfies Theme
-
 export const catppuccin = {
   colorMode: 'dark' as const,
   bg: {
@@ -508,7 +479,6 @@ export type ThemeId =
   | 'dark'
   | 'light'
   | 'system'
-  | 'dracula'
   | 'catppuccin'
   | 'catppuccinLatte'
   | 'nord'
@@ -526,7 +496,6 @@ export type ThemeId =
 export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   dark,
   light,
-  dracula,
   catppuccin,
   catppuccinLatte,
   nord,

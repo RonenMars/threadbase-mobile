@@ -175,7 +175,6 @@ function PermissionRow({
 const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   dark: 'Dark',
   light: 'Light',
-  dracula: 'Dracula',
   catppuccin: 'Mocha',
   catppuccinLatte: 'Latte',
   nord: 'Nord',

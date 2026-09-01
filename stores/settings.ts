@@ -100,7 +100,8 @@ const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
 }
 
 interface PersistedSettings {
-  colorScheme: ThemeId | 'appleGlass'
+  // appleGlass and dracula are retired; hydrate maps both to dark.
+  colorScheme: ThemeId | 'appleGlass' | 'dracula'
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
@@ -187,7 +188,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       if (!raw) return
       const parsed = JSON.parse(raw) as Partial<PersistedSettings>
       set((state) => ({
-        colorScheme: parsed.colorScheme === 'appleGlass'
+        colorScheme: parsed.colorScheme === 'appleGlass' || parsed.colorScheme === 'dracula'
           ? 'dark'
           : isValidThemeId(parsed.colorScheme)
             ? parsed.colorScheme

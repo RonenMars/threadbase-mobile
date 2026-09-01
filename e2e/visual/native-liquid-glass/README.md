@@ -42,7 +42,7 @@ Settings, selects Nord, and opens the Add Server sheet.
 ## Settings palette gallery
 
 [`e2e/native-liquid-glass-settings-themes.yaml`](../../native-liquid-glass-settings-themes.yaml)
-opens Settings and screenshots every retained palette (9 dark, 7 light). That
+opens Settings and screenshots every retained palette (8 dark, 7 light). That
 matches `THEME_LABELS` in `app/settings.tsx`, excluding `system`.
 
 Committed baselines live in `themes/`. Maestro still writes fresh captures to
@@ -51,7 +51,6 @@ Committed baselines live in `themes/`. Maestro still writes fresh captures to
 | Reference | Palette |
 | --- | --- |
 | `themes/native-liquid-glass-settings-dark.png` | Dark |
-| `themes/native-liquid-glass-settings-dracula.png` | Dracula |
 | `themes/native-liquid-glass-settings-catppuccin.png` | Mocha |
 | `themes/native-liquid-glass-settings-nord.png` | Nord |
 | `themes/native-liquid-glass-settings-one-dark.png` | One Dark |

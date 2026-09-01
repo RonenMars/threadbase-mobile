@@ -6,7 +6,7 @@ import { THEMES, type ThemeId } from '@/constants/theme'
 import '@/test-utils/i18n-setup'
 import '@/global.css'
 
-const THEME_OPTIONS: Exclude<ThemeId, 'system' | 'appleGlass'>[] = ['dark', 'light', 'dracula', 'catppuccin']
+const THEME_OPTIONS: Exclude<ThemeId, 'system'>[] = ['dark', 'light', 'nord', 'catppuccin']
 
 function ThemedStory({ themeId, children }: { themeId: ThemeId; children: React.ReactNode }) {
   const bg = THEMES[themeId === 'system' ? 'dark' : themeId].bg.primary

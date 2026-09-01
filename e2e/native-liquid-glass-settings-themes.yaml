@@ -63,10 +63,6 @@ appId: com.ronenmars.threadbase
 - waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-dark
 - tapOn:
-    id: "settings-theme-dracula"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-dracula
-- tapOn:
     id: "settings-theme-catppuccin"
 - waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-catppuccin
