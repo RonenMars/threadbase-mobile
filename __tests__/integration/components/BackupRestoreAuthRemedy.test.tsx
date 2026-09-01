@@ -67,7 +67,7 @@ beforeEach(() => {
 })
 
 async function renderScreen() {
-  return await render(
+  return render(
     <ThemeProvider>
       <BackupRestoreScreen />
     </ThemeProvider>,

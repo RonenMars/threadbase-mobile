@@ -149,6 +149,13 @@ jest.mock('@/hooks/useVoiceInput', () => ({
   useVoiceInput: () => ({ listening: false, start: jest.fn(), stop: jest.fn() }),
 }))
 
+afterEach(() => {
+  for (const key of Object.keys(wsHandlers)) {
+    delete wsHandlers[key]
+  }
+  mockSendInputState = { isError: false, error: null }
+})
+
 async function renderView() {
   return await render(
     <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
