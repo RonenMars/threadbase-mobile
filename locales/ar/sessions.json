@@ -60,12 +60,12 @@
     "noBranch": "بدون git"
   },
   "hub": {
-    "seeAll_zero": "لا محادثات →",
-    "seeAll_one": "عرض المحادثة الوحيدة →",
-    "seeAll_two": "عرض المحادثتين →",
-    "seeAll_few": "عرض كل {{count}} محادثات →",
-    "seeAll_many": "عرض كل {{count}} محادثة →",
-    "seeAll_other": "عرض كل {{count}} محادثة →",
+    "seeAll_zero": "لا محادثات",
+    "seeAll_one": "عرض المحادثة الوحيدة",
+    "seeAll_two": "عرض المحادثتين",
+    "seeAll_few": "عرض كل {{count}} محادثات",
+    "seeAll_many": "عرض كل {{count}} محادثة",
+    "seeAll_other": "عرض كل {{count}} محادثة",
     "msgs_zero": "لا رسائل",
     "msgs_one": "رسالة واحدة",
     "msgs_two": "رسالتان",
@@ -120,6 +120,7 @@
     "unpin": "إلغاء التثبيت"
   },
   "manageFavorites": {
+    "screenTitle": "إدارة المفضلة",
     "empty": "لا توجد مفضلة مثبّتة بعد.",
     "emptySub": "اضغط على رقاقة في الشريط واختر \"تثبيت في المفضلة\".",
     "addToFavorites": "إضافة إلى المفضلة"

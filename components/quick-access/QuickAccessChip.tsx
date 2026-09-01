@@ -114,7 +114,7 @@ function makeStyles(theme: Theme) {
     deleteBadge: {
       position: 'absolute',
       top: -6,
-      right: -6,
+      end: -6,
       width: 16,
       height: 16,
       borderRadius: 8,

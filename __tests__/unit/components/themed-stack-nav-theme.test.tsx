@@ -277,4 +277,15 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
     expect(mockCapture.screenOptionsByName.browse?.title).toBe('Browse')
     expect(mockCapture.screenOptionsByName.browse?.headerBackTitle).toBe('Cancel')
   })
+
+  it('translates Settings and Manage Favorites native titles', async () => {
+    await renderThemedStack(dark, false)
+    expect(mockCapture.screenOptionsByName.settings?.title).toBe('Settings')
+    expect(mockCapture.screenOptionsByName['manage-favorites']?.title).toBe('Manage Favorites')
+
+    await i18n.changeLanguage('he')
+    await renderThemedStack(dark, false)
+    expect(mockCapture.screenOptionsByName.settings?.title).toBe('הגדרות')
+    expect(mockCapture.screenOptionsByName['manage-favorites']?.title).toBe('ניהול מועדפים')
+  })
 })

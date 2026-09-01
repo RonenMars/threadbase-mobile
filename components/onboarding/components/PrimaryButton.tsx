@@ -28,9 +28,9 @@ export function PrimaryButton({ children, onPress, disabled, showIcon = true, te
       {showIcon && (
         <View style={styles.icon}>
           {isRtl ? (
-            <ArrowLeft testID="primary-button-arrow-left" size={18} weight="bold" color={fg} />
+            <ArrowLeft testID="primary-button-arrow-left" size={18} weight="bold" color={fg} mirrored={false} />
           ) : (
-            <ArrowRight testID="primary-button-arrow-right" size={18} weight="bold" color={fg} />
+            <ArrowRight testID="primary-button-arrow-right" size={18} weight="bold" color={fg} mirrored={false} />
           )}
         </View>
       )}

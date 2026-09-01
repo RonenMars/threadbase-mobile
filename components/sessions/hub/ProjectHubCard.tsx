@@ -3,9 +3,10 @@ import { ActivityIndicator, View, Text, TouchableOpacity, Platform, UIManager, L
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { CaretRight } from 'phosphor-react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
 import { ConvRow } from './ConvRow'
@@ -25,8 +26,7 @@ if (Platform.OS === 'android') {
 
 export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
   const { t, i18n } = useTranslation('sessions')
-  const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
@@ -148,7 +148,9 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
             <Text style={styles.countBadge}>
               {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
             </Text>
-            <Animated.Text style={[styles.chevron, chevronStyle]}>{'›'}</Animated.Text>
+            <Animated.View style={chevronStyle}>
+              <CaretRight size={16} color={theme.text.secondary} />
+            </Animated.View>
           </TouchableOpacity>
 
           {isOpen && (
@@ -184,6 +186,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
                   style={styles.seeAllRow}
                 >
                   <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                  <CaretRight size={14} color={theme.text.accent} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -232,6 +235,7 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
                       style={styles.seeAllRow}
                     >
                       <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                      <CaretRight size={14} color={theme.text.accent} />
                     </TouchableOpacity>
                   )}
                 </View>

@@ -75,7 +75,13 @@ jest.mock('expo-linear-gradient', () => {
       ReactActual.createElement(View, null, children),
   }
 })
-jest.mock('phosphor-react-native', () => ({ CaretLeft: () => null }))
+jest.mock('phosphor-react-native', () => {
+  const ReactActual = require('react') as typeof React
+  return {
+    CaretLeft: () => null,
+    IconContext: ReactActual.createContext({}),
+  }
+})
 jest.mock('@/hooks/useBiometricLock', () => ({
   useBiometricLock: () => ({ locked: false, authenticate: jest.fn() }),
 }))

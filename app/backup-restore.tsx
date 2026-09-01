@@ -14,10 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { Archive, ArrowsClockwise, Warning } from 'phosphor-react-native'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { MIN_TOUCH_TARGET } from '@/constants/a11y'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
 import { useServersStore } from '@/stores/servers'
 import { useBackupRestore } from '@/hooks/useBackup'
 import { archiveToShareText, exportBackup, RestoreConflictError } from '@/services/backup'
@@ -31,9 +33,8 @@ import { AuthError, NetworkError } from '@/services/api-client'
 
 export default function BackupRestoreScreen() {
   const { t } = useTranslation(['settings', 'common'])
-  const theme = useTheme()
+  const { styles: s, theme } = useThemedStyles(styles)
   const isGlass = useIsGlass()
-  const s = useMemo(() => styles(theme), [theme])
 
   const servers = useServersStore((st) => st.servers)
   const activeServerIds = useServersStore((st) => st.activeServerIds)
@@ -433,7 +434,7 @@ function PlanCard({
   )
 }
 
-function styles(theme: Theme) {
+function styles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl },
@@ -471,7 +472,7 @@ function styles(theme: Theme) {
       letterSpacing: 0.6,
       marginTop: spacing.sm,
     },
-    helper: { color: theme.text.secondary, fontSize: font.sm, lineHeight: 18 },
+    helper: { color: theme.text.secondary, fontSize: font.sm, lineHeight: 18, ...rtl.copy },
     toolbar: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     toolbarBtn: {
       flexDirection: 'row',
@@ -506,6 +507,7 @@ function styles(theme: Theme) {
       fontSize: font.sm,
       textAlignVertical: 'top',
       backgroundColor: theme.bg.card,
+      ...rtl.ltr,
     },
     singleInput: {
       minHeight: MIN_TOUCH_TARGET,
@@ -516,6 +518,7 @@ function styles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.sm,
       backgroundColor: theme.bg.card,
+      ...rtl.ltr,
     },
     actionMsg: { color: theme.text.secondary, fontSize: font.sm },
     errorText: { color: theme.text.danger, fontSize: font.sm, lineHeight: 20 },

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { ActivityIndicator, View, Text, TouchableOpacity, FlatList, SectionList } from 'react-native'
+import { CaretLeft } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
@@ -7,7 +8,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
@@ -20,8 +21,7 @@ interface Props {
 
 export function DrillView({ node, serverId, onBack }: Props) {
   const { t } = useTranslation('sessions')
-  const theme = useTheme()
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)
@@ -88,7 +88,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
 
   const backRow = (
     <TouchableOpacity style={styles.backRow} onPress={onBack}>
-      <Text style={styles.backChevron}>‹</Text>
+      <CaretLeft size={18} color={theme.text.accent} weight="bold" />
       <Text style={styles.backLabel} numberOfLines={1}>{node.name}</Text>
     </TouchableOpacity>
   )

@@ -30,7 +30,7 @@ import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
-import { QrCode } from 'phosphor-react-native'
+import { QrCode, CaretRight } from 'phosphor-react-native'
 import { captureHandledError } from '@/services/sentry'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { THEMES, appleGlassThemes, font, radius, spacing } from '@/constants/theme'
@@ -639,7 +639,7 @@ await refreshServerInfo(serverId)
             testID="settings-notification-health-row"
           >
             <Text style={s.rowLabel}>{t('notificationHealth.openRow')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
         </View>
 
@@ -849,7 +849,7 @@ await refreshServerInfo(serverId)
             accessibilityLabel={t('crashReporting.privacyPolicy')}
           >
             <Text style={s.rowLabel}>{t('crashReporting.privacyPolicy')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
           {__DEV__ ? (
             <TouchableOpacity
@@ -860,7 +860,7 @@ await refreshServerInfo(serverId)
               testID="settings-test-crash-btn"
             >
               <Text style={s.rowLabel}>{t('crashReporting.testCrash')}</Text>
-              <Text style={s.rowValue}>›</Text>
+              <SettingsChevron />
             </TouchableOpacity>
           ) : null}
           {__DEV__ ? (
@@ -872,7 +872,7 @@ await refreshServerInfo(serverId)
               testID="settings-throw-uncaught-btn"
             >
               <Text style={s.rowLabel}>{t('crashReporting.testThrow')}</Text>
-              <Text style={s.rowValue}>›</Text>
+              <SettingsChevron />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -930,7 +930,7 @@ await refreshServerInfo(serverId)
             testID="settings-server-health-row"
           >
             <Text style={s.rowLabel}>{t('help.serverHealth')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
           <TouchableOpacity
             style={s.row}
@@ -938,7 +938,7 @@ await refreshServerInfo(serverId)
             testID="settings-paired-devices-row"
           >
             <Text style={s.rowLabel}>{t('help.pairedDevices')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
           <TouchableOpacity
             style={s.row}
@@ -946,7 +946,7 @@ await refreshServerInfo(serverId)
             testID="settings-backup-restore-row"
           >
             <Text style={s.rowLabel}>{t('help.backupRestore')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
           <TouchableOpacity
             style={s.row}
@@ -954,15 +954,15 @@ await refreshServerInfo(serverId)
             testID="settings-help-feedback-row"
           >
             <Text style={s.rowLabel}>{i18n.t('feedback:screenTitle')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding?mode=review')}>
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Support`)}>
             <Text style={s.rowLabel}>{t('help.helpSupport')}</Text>
-            <Text style={s.rowValue}>›</Text>
+            <SettingsChevron />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -1060,6 +1060,11 @@ function ActionSegment({
       ))}
     </View>
   )
+}
+
+function SettingsChevron() {
+  const theme = useTheme()
+  return <CaretRight size={16} color={theme.text.secondary} />
 }
 
 function styles(theme: ReturnType<typeof useTheme>) {

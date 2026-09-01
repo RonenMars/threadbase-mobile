@@ -30,6 +30,14 @@ function getSkipLabel(label: 'skip' | 'pairLater', t: TFunction<'onboarding'>): 
   }
 }
 
+export function onboardingSwipeGoesForward(
+  translationX: number,
+  localeDirection: 'ltr' | 'rtl',
+): boolean {
+  'worklet'
+  return localeDirection === 'rtl' ? translationX > 0 : translationX < 0
+}
+
 export function OnboardingShell({
   index,
   total,
@@ -49,7 +57,7 @@ export function OnboardingShell({
     .onEnd((e) => {
       'worklet'
       if (Math.abs(e.translationX) <= 50) return
-      if (e.translationX < 0) onNext()
+      if (onboardingSwipeGoesForward(e.translationX, localeDirection)) onNext()
       else onBack()
     })
     .runOnJS(true)
@@ -75,6 +83,7 @@ export function OnboardingShell({
                 size={18}
                 weight="bold"
                 color={colors.fg2}
+                mirrored={false}
               />
             ) : (
               <ArrowLeft
@@ -82,6 +91,7 @@ export function OnboardingShell({
                 size={18}
                 weight="bold"
                 color={colors.fg2}
+                mirrored={false}
               />
             )}
             <Text style={styles.chromeBack}>{t('shell.back')}</Text>

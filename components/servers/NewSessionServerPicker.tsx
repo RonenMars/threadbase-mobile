@@ -28,7 +28,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const directionStyle = useDirectionStyle()
   const titleStyle = blockTextDirectionStyle(direction)
   const actionTextStyle = textDirectionStyle(direction)
@@ -66,7 +66,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
                     </Text>
                   ) : null}
                 </View>
-                <CaretRight size={18} color={theme.text.secondary} mirrored={isRTL} />
+                <CaretRight size={18} color={theme.text.secondary} />
               </TouchableOpacity>
             )
           })}

@@ -8,6 +8,7 @@ import React from 'react'
 import { StyleSheet, type ViewStyle } from 'react-native'
 import { fireEvent, screen, cleanup } from '@testing-library/react-native'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
+import { DirectionRoot } from '@/lib/direction-root'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
 
@@ -32,7 +33,11 @@ function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProp
 
 async function renderComposer(overrides?: Partial<ChatComposerProps>) {
   const props = makeProps(overrides)
-  return { props, ...(await renderWithI18n(<ChatComposer {...props} />)) }
+  return { props, ...(await renderWithI18n(
+    <DirectionRoot>
+      <ChatComposer {...props} />
+    </DirectionRoot>,
+  )) }
 }
 
 describe('ChatComposer', () => {
@@ -89,7 +94,7 @@ describe('ChatComposer', () => {
     expect(screen.queryByText('That question isn\'t open anymore.')).toBeNull()
   })
 
-  it('mirrors the send plane and follows locale writing direction on the input', async () => {
+  it('mirrors the send plane, follows locale writing direction, and pins iOS chrome LTR', async () => {
     function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
       const style = StyleSheet.flatten(element.props.style)
       const transform = style.transform
@@ -111,6 +116,9 @@ describe('ChatComposer', () => {
     expect(isMirrored(rtlPlane)).toBe(true)
     expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style)).toEqual(
       expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),
+    )
+    expect(StyleSheet.flatten(screen.getByTestId('chat-send-button').parent?.props.style)).toEqual(
+      expect.objectContaining({ direction: 'ltr', flexDirection: 'row' }),
     )
   })
 })

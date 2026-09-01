@@ -9,12 +9,13 @@ import {
   View,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useClaudeFlags, useUpdateClaudeFlags } from '@/hooks/useClaudeFlags'
 import { claudeFlagValueRisk } from '@/types/api'
 import type { ClaudeFlagDefinition, ClaudeFlagValue, ClaudeFlagValues } from '@/types/api'
 import { confirmDangerousChange } from '@/utils/confirmDangerousChange'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 interface Props {
   serverId: string
@@ -50,8 +51,7 @@ const EXTRA_ARGS_PLACEHOLDER = '--bare --agent reviewer'
 
 export function ServerClaudeFlagsSection({ serverId }: Props) {
   const { t } = useTranslation(['servers', 'common'])
-  const theme = useTheme()
-  const styles = useMemo(() => makeStyles(theme), [theme])
+  const { styles, theme } = useThemedStyles(makeStyles)
 
   const { data, isLoading } = useClaudeFlags(serverId)
   const update = useUpdateClaudeFlags(serverId)
@@ -124,12 +124,12 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{t('servers:claudeFlags.title')}</Text>
-      <Text style={styles.sectionDescription}>{t('servers:claudeFlags.description')}</Text>
+      <Text style={[styles.sectionTitle]}>{t('servers:claudeFlags.title')}</Text>
+      <Text style={[styles.sectionDescription]}>{t('servers:claudeFlags.description')}</Text>
 
       {!data.persisted ? (
         <View style={styles.warningBox}>
-          <Text style={styles.warningText}>{t('servers:claudeFlags.notPersisted')}</Text>
+          <Text style={[styles.warningText]}>{t('servers:claudeFlags.notPersisted')}</Text>
         </View>
       ) : null}
 
@@ -145,7 +145,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
                 {copy.label}
               </Text>
               {copy.description ? (
-                <Text style={styles.rowDescription}>{copy.description}</Text>
+                <Text style={[styles.rowDescription]}>{copy.description}</Text>
               ) : null}
             </View>
 
@@ -158,7 +158,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
                 testID={`claude-flag-${def.id}`}
               />
             ) : def.valueType === 'enum' ? (
-              <View style={styles.enumRow}>
+              <View style={[styles.enumRow, { direction: 'ltr' }]}>
                 {(def.enumValues ?? []).map((option) => {
                   const selected = value === option
                   return (
@@ -179,7 +179,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
               </View>
             ) : (
               <TextInput
-                style={styles.input}
+                style={[styles.input]}
                 value={valueToText(value)}
                 onChangeText={(text) => stage(def, textToValue(def, text))}
                 autoCapitalize="none"
@@ -193,10 +193,10 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
         )
       })}
 
-      <Text style={styles.rowLabel}>{t('servers:claudeFlags.extraArgsLabel')}</Text>
-      <Text style={styles.rowDescription}>{t('servers:claudeFlags.extraArgsUnsupported')}</Text>
+      <Text style={[styles.rowLabel]}>{t('servers:claudeFlags.extraArgsLabel')}</Text>
+      <Text style={[styles.rowDescription]}>{t('servers:claudeFlags.extraArgsUnsupported')}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input]}
         value={extraArgs}
         onChangeText={setExtraArgs}
         autoCapitalize="none"
@@ -226,17 +226,17 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
   )
 }
 
-const makeStyles = (theme: Theme) =>
+const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
   StyleSheet.create({
     section: { marginTop: spacing.lg, gap: spacing.sm },
-    sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
-    sectionDescription: { color: theme.text.secondary, fontSize: font.sm },
+    sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600', ...rtl.copy },
+    sectionDescription: { color: theme.text.secondary, fontSize: font.sm, ...rtl.copy },
     warningBox: {
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.sm,
       padding: spacing.sm,
     },
-    warningText: { color: theme.text.secondary, fontSize: font.sm },
+    warningText: { color: theme.text.secondary, fontSize: font.sm, ...rtl.copy },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -247,9 +247,9 @@ const makeStyles = (theme: Theme) =>
       borderBottomColor: theme.border,
     },
     rowText: { flex: 1, gap: 2 },
-    rowLabel: { color: theme.text.primary, fontSize: font.sm, fontWeight: '500' },
+    rowLabel: { color: theme.text.primary, fontSize: font.sm, fontWeight: '500', ...rtl.copy },
     rowLabelDangerous: { color: theme.text.danger },
-    rowDescription: { color: theme.text.secondary, fontSize: font.xs },
+    rowDescription: { color: theme.text.secondary, fontSize: font.xs, ...rtl.copy },
     enumRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, maxWidth: '55%' },
     chip: {
       paddingHorizontal: spacing.sm,
@@ -263,9 +263,10 @@ const makeStyles = (theme: Theme) =>
       backgroundColor: theme.bg.secondary,
     },
     chipActive: { backgroundColor: theme.text.accent },
-    chipText: { color: theme.text.secondary, fontSize: font.xs },
+    chipText: { color: theme.text.secondary, fontSize: font.xs, ...rtl.ltr },
     chipTextActive: { color: '#fff' },
     input: {
+      ...rtl.ltr,
       color: theme.text.primary,
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.sm,

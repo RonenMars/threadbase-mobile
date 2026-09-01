@@ -56,8 +56,8 @@
     "noBranch": "no git"
   },
   "hub": {
-    "seeAll_one": "See all {{count}} conversation →",
-    "seeAll_other": "See all {{count}} conversations →",
+    "seeAll_one": "See all {{count}} conversation",
+    "seeAll_other": "See all {{count}} conversations",
     "msgs_one": "{{count}} msg",
     "msgs_other": "{{count}} msgs",
     "activityLive_one": "{{count}} live",
@@ -92,6 +92,7 @@
     "unpin": "Unpin"
   },
   "manageFavorites": {
+    "screenTitle": "Manage Favorites",
     "empty": "No favorites pinned yet.",
     "emptySub": "Tap a chip in the strip and choose \"Pin to Favorites\".",
     "addToFavorites": "Add to favorites"

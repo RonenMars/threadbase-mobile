@@ -33,7 +33,7 @@ interface Props {
 export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: Props) {
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const searchDirection = textDirectionStyle(direction)
   const styles = useMemo(() => makeStyles(theme), [theme])
   const { t } = useTranslation(['browse', 'common'])
@@ -113,7 +113,7 @@ export function RecentDirsModal({ visible, dirs, onClose, onSelect, disabled }: 
                   {item.path}
                 </Text>
               </View>
-              <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
+              <CaretRight size={16} color={theme.text.secondary} />
             </TouchableOpacity>
           )}
         />

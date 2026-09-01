@@ -54,6 +54,7 @@ const FAB_SIZE = 56
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
+    // Physical right in both directions — `end` would pin this to the left in RTL.
     right: 20,
     width: FAB_SIZE,
     height: FAB_SIZE,

@@ -1,9 +1,8 @@
 import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import { CaretDown, CaretRight } from 'phosphor-react-native'
-import { useTheme } from '@/contexts/ThemeContext'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
-import { ltrContentStyle, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles } from './ServerHeaderRow.styles'
 
 interface Props {
@@ -17,9 +16,7 @@ interface Props {
 }
 
 export function ServerHeaderRow({ serverId, serverLabel, totalCount, collapsible, isExpanded, onToggle, isRefreshing }: Props) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
 
   const scanner = isRefreshing ? (
     <KnightRiderScanner testID={`server-header-refreshing-${serverId}`} />
@@ -29,15 +26,15 @@ export function ServerHeaderRow({ serverId, serverLabel, totalCount, collapsible
     isExpanded ? (
       <CaretDown size={14} color={theme.text.accent} weight="bold" />
     ) : (
-      <CaretRight size={14} color={theme.text.secondary} weight="bold" mirrored={isRTL} />
+      <CaretRight size={14} color={theme.text.secondary} weight="bold" />
     )
   ) : null
 
   const inner = (
     <>
-      <Text style={[styles.label, ltrContentStyle]} numberOfLines={1}>{serverLabel}</Text>
+      <Text style={styles.label} numberOfLines={1}>{serverLabel}</Text>
       {scanner}
-      <Text style={[styles.count, ltrContentStyle]}>{totalCount}</Text>
+      <Text style={styles.count}>{totalCount}</Text>
       {chevron}
     </>
   )

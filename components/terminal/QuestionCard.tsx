@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { spacing } from '@/constants/theme'
+import { spacing, type Theme } from '@/constants/theme'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 interface Props {
@@ -23,6 +25,7 @@ interface Props {
 
 export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false }: Props) {
   const { t } = useTranslation('common')
+  const { styles } = useThemedStyles(makeStyles)
   const q = block.questions[0]
   // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
   const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
@@ -109,7 +112,8 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   )
 })
 
-const styles = StyleSheet.create({
+function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
+  return StyleSheet.create({
   ghost: {
     opacity: 0.55,
   },
@@ -117,12 +121,14 @@ const styles = StyleSheet.create({
     color: '#8b949e',
     fontSize: 12,
     marginTop: spacing.sm,
+    ...rtl.copy,
   },
   unsupported: {
     color: '#d29922',
     fontSize: 12,
     lineHeight: 16,
     marginBottom: spacing.sm,
+    ...rtl.copy,
   },
   container: {
     borderTopWidth: 1,
@@ -134,7 +140,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: spacing.sm,
-    right: spacing.md,
+    end: spacing.md,
     zIndex: 1,
     padding: 4,
   },
@@ -145,8 +151,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
+    ...rtl.copy,
   },
   detail: {
+    ...rtl.ltr,
     fontFamily: 'monospace',
     color: '#8b949e',
     fontSize: 12,
@@ -159,6 +167,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: spacing.sm,
     lineHeight: 18,
+    ...rtl.copy,
   },
   option: {
     flexDirection: 'row',
@@ -203,6 +212,7 @@ const styles = StyleSheet.create({
     color: '#8b949e',
     fontSize: 13,
     lineHeight: 18,
+    ...rtl.copy,
   },
   optionTextSelected: {
     color: '#e6edf3',
@@ -228,5 +238,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: '#8b949e',
     fontSize: 13,
+    ...rtl.copy,
   },
-})
+  })
+}

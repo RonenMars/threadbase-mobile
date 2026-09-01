@@ -11,7 +11,6 @@ import {
 import { CameraView } from 'expo-camera'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
 import {
   exchangeToken,
@@ -24,7 +23,8 @@ import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
-import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
@@ -36,11 +36,7 @@ type Phase = 'permission' | 'scanning' | 'exchanging' | 'error'
 
 export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   const { t } = useTranslation('pair')
-  const theme = useTheme()
-  const directionStyle = useDirectionStyle()
-  const { direction } = useAppDirection()
-  const copyStyle = textDirectionStyle(direction)
-  const styles = makeStyles(theme)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const [permission, requestPermission] = useLiveCameraPermissions()
   const [phase, setPhase] = useState<Phase>('scanning')
   const [error, setError] = useState<string | null>(null)
@@ -116,8 +112,8 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   } else if (!permission.granted) {
     body = (
       <View style={styles.permissionWrap}>
-        <Text style={[styles.permissionTitle, copyStyle]}>{t('scanner.permissionTitle')}</Text>
-        <Text style={[styles.permissionBody, copyStyle]}>{t('scanner.permissionBody')}</Text>
+        <Text style={styles.permissionTitle}>{t('scanner.permissionTitle')}</Text>
+        <Text style={styles.permissionBody}>{t('scanner.permissionBody')}</Text>
         {permission.canAskAgain ? (
           <TouchableOpacity
             testID="pair-scanner-allow-camera"
@@ -127,7 +123,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
               if (next.granted) reset()
             }}
           >
-            <Text style={[styles.primaryBtnText, copyStyle]}>{t('scanner.allowCamera')}</Text>
+            <Text style={styles.primaryBtnText}>{t('scanner.allowCamera')}</Text>
           </TouchableOpacity>
         ) : (
           <>
@@ -208,7 +204,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <View style={[styles.root, directionStyle]} testID="pair-scanner-modal">
+      <View style={styles.root} testID="pair-scanner-modal">
         {body}
         <TouchableOpacity
           testID="pair-scanner-close-btn"
@@ -223,14 +219,14 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     // Camera screen always uses black background — camera overlay context
-    root: { flex: 1, backgroundColor: '#000' },
+    root: { flex: 1, backgroundColor: '#000', ...rtl.overlay },
     closeBtn: {
       position: 'absolute',
       top: 56,
-      right: 20,
+      end: 20,
       width: 40,
       height: 40,
       borderRadius: 20,
@@ -254,12 +250,12 @@ function makeStyles(theme: Theme) {
       padding: spacing.xl,
       gap: spacing.md,
     },
-    permissionTitle: { color: theme.text.primary, fontSize: font.xl, fontWeight: '700' },
+    permissionTitle: { color: theme.text.primary, fontSize: font.xl, fontWeight: '700', ...rtl.copy },
     permissionBody: {
       color: theme.text.secondary,
       fontSize: font.base,
-      textAlign: 'center',
       lineHeight: 22,
+      ...rtl.copy,
     },
     permissionHint: { color: theme.text.warning, fontSize: font.sm, textAlign: 'center' },
     primaryBtn: {
@@ -269,7 +265,7 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.xl,
     },
-    primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '700' },
+    primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '700', ...rtl.copy },
     reticleWrap: {
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
       alignItems: 'center',

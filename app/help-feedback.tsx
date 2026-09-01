@@ -29,7 +29,9 @@ import {
   Image as ImageIcon,
   PaperPlaneTilt,
 } from 'phosphor-react-native'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
+import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { DiagnosticsPreview } from '@/components/feedback/DiagnosticsPreview'
@@ -73,10 +75,9 @@ function isValidEmail(email: string): boolean {
 
 export default function HelpFeedbackScreen() {
   const { t } = useTranslation('feedback')
-  const theme = useTheme()
+  const { styles: s, theme } = useThemedStyles(styles)
   const isGlass = useIsGlass()
   const router = useRouter()
-  const s = useMemo(() => styles(theme), [theme])
 
   const [view, setView] = useState<View3>('landing')
   const [category, setCategory] = useState<FeedbackCategory>('bug')
@@ -378,7 +379,7 @@ export default function HelpFeedbackScreen() {
         {/* Email */}
         <Text style={s.fieldLabel}>{t('form.emailLabel')}</Text>
         <TextInput
-          style={[s.input, emailError && s.inputError]}
+          style={[s.input, s.emailInput, emailError && s.inputError]}
           value={email}
           onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null) }}
           placeholder={t('form.emailPlaceholder')}
@@ -477,7 +478,7 @@ function LandingRow({
   theme: Theme
   isLast?: boolean
 }) {
-  const s = useMemo(() => styles(theme), [theme])
+  const { styles: s } = useThemedStyles(styles)
   return (
     <TouchableOpacity
       style={[s.landingRow, isLast && { borderBottomWidth: 0 }]}
@@ -493,7 +494,7 @@ function LandingRow({
   )
 }
 
-function styles(theme: Theme) {
+function styles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
     content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl },
@@ -533,12 +534,13 @@ function styles(theme: Theme) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.border,
     },
-    landingLabel: { flex: 1, color: theme.text.primary, fontSize: font.base },
+    landingLabel: { flex: 1, color: theme.text.primary, fontSize: font.base, ...rtl.copy },
     fieldLabel: {
       color: theme.text.secondary,
       fontSize: font.sm,
       fontWeight: '500',
       marginTop: spacing.sm,
+      ...rtl.copy,
     },
     segmented: {
       flexDirection: 'row',
@@ -562,7 +564,9 @@ function styles(theme: Theme) {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       minHeight: 44,
+      ...rtl.copy,
     },
+    emailInput: { ...rtl.ltr },
     multiline: { minHeight: 110 },
     inputError: { borderColor: theme.text.danger },
     errorText: { color: theme.text.danger, fontSize: font.sm },

@@ -4,9 +4,9 @@ import { CaretLeft } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
 import { goBackOrHub } from '@/lib/goBackOrHub'
-import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 interface Props {
   title?: string
@@ -18,10 +18,7 @@ interface Props {
 export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
   const router = useRouter()
   const { t } = useTranslation('common')
-  const theme = useTheme()
-  const { direction, isRTL } = useAppDirection()
-  const styles = makeStyles(theme)
-  const titleDirection = textDirectionStyle(direction)
+  const { styles, theme } = useThemedStyles(makeStyles)
   return (
     <View style={styles.bar}>
       <Pressable
@@ -31,10 +28,10 @@ export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
         style={({ pressed }) => [styles.side, { opacity: pressed ? 0.5 : 1 }]}
         accessibilityLabel={t('button.back')}
       >
-        <CaretLeft size={28} color={theme.text.primary} mirrored={isRTL} />
+        <CaretLeft size={28} color={theme.text.primary} />
       </Pressable>
       <View style={styles.titleRow}>
-        <Text style={[styles.title, titleDirection]} numberOfLines={1}>{title ?? ''}</Text>
+        <Text style={styles.title} numberOfLines={1}>{title ?? ''}</Text>
         {titleRight ?? null}
       </View>
       <View style={styles.side}>{right ?? null}</View>
@@ -42,7 +39,7 @@ export function ScreenHeader({ title, titleRight, right, onBack }: Props) {
   )
 }
 
-function makeStyles(theme: Theme) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     bar: {
       flexDirection: 'row',
@@ -70,6 +67,7 @@ function makeStyles(theme: Theme) {
       fontSize: font.base,
       fontWeight: '600',
       flexShrink: 1,
+      ...rtl.copy,
     },
   })
 }

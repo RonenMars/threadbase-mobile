@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, type LayoutChangeEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
@@ -7,8 +7,8 @@ import { CaretDown, CaretUp, X } from 'phosphor-react-native'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
 import type { Message } from '@/types/api'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
-import { flexRow, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
 
 // The anchored search view: given a resolved match set, it renders the shared
 // history list with native bottom-anchoring OFF and drives scrolling itself —
@@ -58,9 +58,7 @@ export function ConversationSearchView({
   contentContainerStyle,
 }: ConversationSearchViewProps) {
   const { t } = useTranslation(['conversation', 'common'])
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = useMemo(() => makeStyles(theme, isRTL), [theme, isRTL])
+  const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
 
   const listRef = useRef<FlashListRef<Message>>(null)
@@ -245,10 +243,10 @@ export function ConversationSearchView({
   )
 }
 
-function makeStyles(theme: Theme, isRTL: boolean) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     matchNavBar: {
-      flexDirection: flexRow(isRTL),
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
@@ -257,8 +255,8 @@ function makeStyles(theme: Theme, isRTL: boolean) {
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
-    matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
-    matchNavActions: { flexDirection: flexRow(isRTL), alignItems: 'center', gap: spacing.sm },
+    matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', ...rtl.copy },
+    matchNavActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     matchNavBtn: { minWidth: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   })
 }

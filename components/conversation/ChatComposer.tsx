@@ -77,7 +77,7 @@ export function ChatComposer({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const inputDirection = textDirectionStyle(direction)
   const insets = useSafeAreaInsets()
   // When the keyboard is up, behavior="padding" already lifts the composer above
@@ -168,7 +168,7 @@ export function ChatComposer({
       disabled={disabled || sendDisabled}
       accessibilityLabel={t('action.sendInput')}
     >
-      <PaperPlaneRight size={24} color={theme.text.onAccent} mirrored={isRTL} />
+      <PaperPlaneRight size={24} color={theme.text.onAccent} />
     </TouchableOpacity>
   ) : micGranted ? (
     <TouchableOpacity
@@ -191,7 +191,7 @@ export function ChatComposer({
       disabled
       accessibilityLabel={t('action.sendInput')}
     >
-      <PaperPlaneRight size={24} color={theme.text.onAccent} mirrored={isRTL} />
+      <PaperPlaneRight size={24} color={theme.text.onAccent} />
     </TouchableOpacity>
   )
 
@@ -317,7 +317,7 @@ export function ChatComposer({
                   disabled={!hasContent || disabled || sendDisabled}
                   accessibilityLabel={t('action.sendInput')}
                 >
-                  <PaperPlaneRight size={26} color={theme.text.onAccent} mirrored={isRTL} />
+                  <PaperPlaneRight size={26} color={theme.text.onAccent} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -329,6 +329,10 @@ export function ChatComposer({
 }
 
 function makeStyles(theme: Theme) {
+  // WhatsApp-style chrome: iOS keeps send/mic on the physical right; Android
+  // inherits RTL so they sit on the left. TextInput still uses `inputDirection`.
+  const iosComposerChrome = Platform.OS === 'ios' ? ({ direction: 'ltr' } as const) : {}
+
   return StyleSheet.create({
     flex: { flex: 1 },
     modalContainer: { flex: 1, backgroundColor: theme.bg.primary },
@@ -342,7 +346,7 @@ function makeStyles(theme: Theme) {
     inputAreaExpanded: { flex: 1, borderTopWidth: 0 },
     sendError: { color: theme.status.failed, fontSize: font.sm },
     sendNotice: { color: theme.text.secondary, fontSize: font.sm },
-    inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+    inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, ...iosComposerChrome },
     input: {
       flex: 1,
       backgroundColor: theme.bg.card,
@@ -368,7 +372,13 @@ function makeStyles(theme: Theme) {
     expandBtn: { justifyContent: 'flex-end', alignSelf: 'flex-end', paddingBottom: spacing.sm, paddingHorizontal: spacing.xs },
     inputWrapper: { flex: 1, position: 'relative' },
     expandBtnAndroid: { position: 'absolute', top: 4, end: 4 },
-    expandedToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs },
+    expandedToolbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
+      ...iosComposerChrome,
+    },
     iconBtn: {
       width: 52,
       backgroundColor: theme.bg.card,

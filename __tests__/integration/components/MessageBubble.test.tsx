@@ -4,6 +4,7 @@ import { render } from "@testing-library/react-native";
 import { MessageBubble } from "@/components/conversation/MessageBubble";
 import { dark } from "@/constants/theme";
 import type { Message } from "@/types/api";
+import i18n from "@/test-utils/i18n-setup";
 
 const mockHighlightRenders = { count: 0 };
 jest.mock("prism-react-renderer", () => {
@@ -56,6 +57,28 @@ describe("MessageBubble – text content", () => {
       <MessageBubble message={makeMessage({ tokens: undefined })} />,
     );
     expect(queryByText(/tokens/)).toBeNull();
+  });
+
+  it("follows the selected language for message copy and keeps code LTR", async () => {
+    await i18n.changeLanguage("he");
+    const { getByText, getByTestId, unmount } = await render(
+      <MessageBubble
+        message={makeMessage({
+          content: [{ type: "text", text: "Hello!\n```\nconst x = 1\n```" }],
+        })}
+      />,
+    );
+    expect(StyleSheet.flatten(getByText("Hello!").props.style)).toEqual(
+      expect.objectContaining({ writingDirection: "rtl", textAlign: "auto" }),
+    );
+    expect(StyleSheet.flatten(getByTestId("message-code-block").props.style)).toEqual(
+      expect.objectContaining({ direction: "ltr" }),
+    );
+    expect(StyleSheet.flatten(getByTestId("message-code-block").props.style).flexDirection).not.toBe(
+      "row-reverse",
+    );
+    unmount();
+    await i18n.changeLanguage("en");
   });
 });
 

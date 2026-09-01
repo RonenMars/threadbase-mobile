@@ -11,10 +11,15 @@ import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
 import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
-import { flexRow, useAppDirection } from '@/lib/rtl'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import type { RtlStyleKit } from '@/lib/rtl'
+
+function useBubbleStyles() {
+  return useThemedStyles(makeStyles)
+}
 
 interface Props {
   message: Message
@@ -60,9 +65,7 @@ function TextContent({
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
 }) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
+  const { styles, theme } = useBubbleStyles()
   const textRef = useRef<Text>(null)
   const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
   const needle = highlight?.trim()
@@ -103,9 +106,7 @@ function TextContent({
 const CODE_THEME = themes.oneDark
 
 function DiffLines({ code }: { code: string }) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
+  const { styles } = useBubbleStyles()
   const lines = code.split('\n')
   return (
     <>
@@ -127,9 +128,7 @@ function DiffLines({ code }: { code: string }) {
 // costs tens of ms — memoized so CodeBlock-local state changes (the copied
 // flag) and parent re-renders don't re-tokenize the same code.
 const HighlightedCode = React.memo(function HighlightedCode({ code, language }: { code: string; language: Language }) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
+  const { styles } = useBubbleStyles()
   return (
     <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
       {language === 'diff' ? (
@@ -167,9 +166,7 @@ const HighlightedCode = React.memo(function HighlightedCode({ code, language }: 
 
 function CodeBlock({ code, language }: { code: string; language: Language }) {
   const { t } = useTranslation('conversation')
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
+  const { styles } = useBubbleStyles()
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => {
@@ -184,7 +181,7 @@ function CodeBlock({ code, language }: { code: string; language: Language }) {
   }
 
   return (
-    <View style={styles.codeBlock}>
+    <View style={styles.codeBlock} testID="message-code-block">
       <View style={styles.codeHeader}>
         <Text style={styles.codeHeaderText}>{t('message.code')}</Text>
         <TouchableOpacity onPress={copy} style={styles.codeCopyBtn}>
@@ -285,9 +282,7 @@ function TextBlockBody({
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
 }) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
+  const { styles } = useBubbleStyles()
   // The fence split + per-block parse runs on every render otherwise —
   // memoized so re-renders of the bubble don't redo string work.
   const parts = useMemo(() => parseTextParts(text), [text])
@@ -325,9 +320,7 @@ function ContentBlock({
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
 }) {
-  const theme = useTheme()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
+  const { styles } = useBubbleStyles()
   if (block.type === 'text') {
     return (
       <TextBlockBody
@@ -354,10 +347,8 @@ function ContentBlock({
 // changes don't re-render — and re-highlight — every visible row.
 export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor, activeMatch, noOuterMargin }: Props) {
   const { t } = useTranslation('conversation')
-  const theme = useTheme()
+  const { styles } = useBubbleStyles()
   const isGlass = useIsGlass()
-  const { isRTL } = useAppDirection()
-  const styles = makeStyles(theme, isRTL)
   const isUser = message.role === 'user'
 
   return (
@@ -382,7 +373,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
   )
 })
 
-function makeStyles(theme: Theme, isRTL: boolean) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     container: {
       paddingHorizontal: spacing.md,
@@ -402,13 +393,13 @@ function makeStyles(theme: Theme, isRTL: boolean) {
     bubbleUser: {
       alignSelf: 'flex-end',
       backgroundColor: theme.text.accent,
-      borderBottomRightRadius: radius.sm,
+      borderBottomEndRadius: radius.sm,
     },
     bubbleAssistant: {
       backgroundColor: theme.bg.card,
       borderWidth: 1,
       borderColor: theme.border,
-      borderBottomLeftRadius: radius.sm,
+      borderBottomStartRadius: radius.sm,
     },
     bubbleAssistantGlass: {
       backgroundColor: 'transparent',
@@ -417,6 +408,7 @@ function makeStyles(theme: Theme, isRTL: boolean) {
       color: theme.text.primary,
       fontSize: font.base,
       lineHeight: 22,
+      ...rtl.copy,
     },
     // Solid high-contrast highlighter fill, identical in every bubble type —
     // a dedicated per-theme token so it pops on both the assistant card bg and
@@ -433,13 +425,14 @@ function makeStyles(theme: Theme, isRTL: boolean) {
       borderRadius: 3,
     },
     codeBlock: {
+      direction: 'ltr',
       backgroundColor: theme.bg.primary,
       borderRadius: radius.sm,
       overflow: 'hidden',
       marginVertical: spacing.xs,
     },
     codeHeader: {
-      flexDirection: flexRow(isRTL),
+      flexDirection: 'row',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
@@ -463,7 +456,7 @@ function makeStyles(theme: Theme, isRTL: boolean) {
       paddingVertical: 6,
     },
     codeLine: {
-      flexDirection: flexRow(isRTL),
+      flexDirection: 'row',
       flexWrap: 'wrap',
     },
     codeToken: {

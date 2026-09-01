@@ -46,7 +46,7 @@ export default function BrowseScreen() {
     return makeStyles(theme)
   }, [theme])
   const { t } = useTranslation(['browse', 'common', 'sessions'])
-  const { direction, isRTL } = useAppDirection()
+  const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const router = useRouter()
   const { server: serverId, path: initialPath } = useLocalSearchParams<{ server: string; path?: string }>()
@@ -291,11 +291,11 @@ export default function BrowseScreen() {
           <Text style={[styles.dirName, ltrContentStyle]} numberOfLines={1}>
             {item.name}
           </Text>
-          <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
+          <CaretRight size={16} color={theme.text.secondary} />
         </TouchableOpacity>
       )
     },
-    [currentPath, navigateTo, styles, theme, isRTL],
+    [currentPath, navigateTo, styles, theme],
   )
 
   // Directories first (navigable), then files (view-only). Both arrive
@@ -350,7 +350,7 @@ export default function BrowseScreen() {
             {isRecentsOpen ? (
               <CaretDown size={14} color={theme.text.secondary} weight="bold" />
             ) : (
-              <CaretRight size={14} color={theme.text.secondary} weight="bold" mirrored={isRTL} />
+              <CaretRight size={14} color={theme.text.secondary} weight="bold" />
             )}
           </TouchableOpacity>
           {isRecentsOpen ? (
@@ -372,7 +372,7 @@ export default function BrowseScreen() {
                       {dir.path}
                     </Text>
                   </View>
-                  <CaretRight size={16} color={theme.text.secondary} mirrored={isRTL} />
+                  <CaretRight size={16} color={theme.text.secondary} />
                 </TouchableOpacity>
               ))}
               {hasMoreRecents ? (

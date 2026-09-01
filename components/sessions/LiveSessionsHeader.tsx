@@ -34,6 +34,7 @@ export function LiveSessionsHeader({ count, hasLive, collapsed, onToggle }: Prop
           size={12}
           color={tint}
           weight="bold"
+         
           style={{ transform: [{ rotate: collapsed ? '0deg' : '90deg' }] }}
         />
       )}

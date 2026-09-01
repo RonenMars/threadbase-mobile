@@ -48,7 +48,7 @@ function makeStyles(theme: Theme) {
     fill: {
       position: 'absolute',
       top: 0,
-      left: 0,
+      start: 0,
       bottom: 0,
       borderRadius: BAR_HEIGHT / 2,
       backgroundColor: theme.text.accent,

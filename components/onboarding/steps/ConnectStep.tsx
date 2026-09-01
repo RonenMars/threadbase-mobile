@@ -211,6 +211,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           size={16}
           weight="bold"
           color={colors.blue400}
+          mirrored={false}
         />
       ) : (
         <ArrowLeft
@@ -218,6 +219,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           size={16}
           weight="bold"
           color={colors.blue400}
+          mirrored={false}
         />
       )}
       <Text style={[styles.linkText, textDirectionStyle]}>{t('connect.backToOptions')}</Text>

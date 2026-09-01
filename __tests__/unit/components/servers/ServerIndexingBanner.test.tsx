@@ -125,6 +125,13 @@ describe('ServerIndexingBanner', () => {
     expect(StyleSheet.flatten((await findByText('http://test.local')).props.style)).toEqual(
       expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
     )
+    expect(StyleSheet.flatten((await findByText('12 / 100 קבצים')).props.style)).toEqual(
+      expect.objectContaining({
+        direction: 'rtl',
+        writingDirection: 'rtl',
+        textAlign: 'auto',
+      }),
+    )
     expect(StyleSheet.flatten(getByTestId('indexing-progress-fill').props.style)).toEqual(
       expect.objectContaining({ start: 0 }),
     )

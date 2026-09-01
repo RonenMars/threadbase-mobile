@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
+import type { RtlStyleKit } from '@/lib/rtl'
 
-export function makeStyles(theme: Theme) {
+export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
   drillRow: {
     flexDirection: 'row',
@@ -26,25 +27,14 @@ export function makeStyles(theme: Theme) {
     fontSize: font.base,
     color: theme.text.primary,
     fontWeight: '600',
+    ...rtl.ltr,
   },
   drillStatus: {
     fontSize: font.xs,
     marginTop: 2,
     textTransform: 'capitalize',
     color: theme.text.secondary,
-  },
-  chevron: {
-    fontSize: 18,
-    color: theme.text.secondary,
-    lineHeight: 20,
-    marginTop: -1,
-    width: 20,
-    textAlign: 'center',
-    flexShrink: 0,
-  },
-  chevronOpen: {
-    transform: [{ rotate: '90deg' }],
-    color: theme.text.accent,
+    ...rtl.ltr,
   },
   badge: {
     backgroundColor: 'rgba(88,166,255,0.12)',
