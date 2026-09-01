@@ -281,18 +281,63 @@ jobs:
           retention-days: 7
 
   # ── Lint ─────────────────────────────────────────────────────────────────────
-  lint:
-    name: Lint
+  # Runtime-balanced shards (scripts/ci-lint-shards.json) split components and
+  # app onto dedicated legs. Each shard keeps its own ESLint cache file so
+  # parallel runners do not clobber each other; restore-keys warm re-pushes.
+  lint-shard:
+    name: Lint (${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     needs: [gate, setup]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v5
+
+      - name: Restore ESLint cache
+        if: needs.gate.outputs.skip != 'true'
+        uses: actions/cache/restore@v5
+        with:
+          path: .eslintcache-shard-${{ matrix.shard }}
+          key: eslint-shard-${{ matrix.shard }}-${{ hashFiles('eslint.config.js', 'package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            eslint-shard-${{ matrix.shard }}-${{ hashFiles('eslint.config.js', 'package-lock.json') }}-
 
       - name: Lint
         if: needs.gate.outputs.skip != 'true'
         uses: ./.github/actions/run-ci
         with:
-          run: npm run lint -- --max-warnings=0
+          run: npm run lint:ci-shard -- ${{ matrix.shard }}
+
+      - name: Save ESLint cache
+        if: always() && needs.gate.outputs.skip != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .eslintcache-shard-${{ matrix.shard }}
+          key: eslint-shard-${{ matrix.shard }}-${{ hashFiles('eslint.config.js', 'package-lock.json') }}-${{ github.sha }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: [gate, lint-shard]
+    if: ${{ always() && !cancelled() && needs.gate.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Report shard results
+        env:
+          SKIP: ${{ needs.gate.outputs.skip }}
+          LINT_SHARD: ${{ needs.lint-shard.result }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "CI skipped — nothing to aggregate."
+            exit 0
+          fi
+          if [ "$LINT_SHARD" != "success" ]; then
+            echo "::error::A lint shard failed (result=$LINT_SHARD)."
+            exit 1
+          fi
 
   # ── i18n ─────────────────────────────────────────────────────────────────────
   # The locale gates (`i18n-completeness`, `i18n-unused-keys`, `i18n`) live at the
