@@ -3,18 +3,49 @@
 # Captures the Settings viewport for every retained palette. The committed
 # references live in e2e/visual/native-liquid-glass/settings-themes/.
 #
-# Requires: an iOS 26+ release-style app build with an unpaired, onboarded app
-# state. Usage: node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
+# An unpaired relaunch is bounced back to onboarding (AuthGate keys off
+# paired servers, not the onboarded flag), so this flow walks the skip path
+# itself rather than assuming a prior hub session survived `launchApp`.
+# Usage: node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
 
 appId: com.ronenmars.threadbase
 ---
 - launchApp:
-    clearState: false
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-language-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-welcome-cta"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-connect-root"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-shell-skip"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-done-cta"
 
 - extendedWaitUntil:
     visible:
       id: "hub-screen"
-    timeout: 30000
+    timeout: 8000
+- waitForAnimationToEnd
 - tapOn:
     id: "hub-settings-btn"
 - extendedWaitUntil:
