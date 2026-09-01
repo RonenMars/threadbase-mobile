@@ -61,6 +61,7 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
   const [languageBusy, setLanguageBusy] = useState(false)
   const [languageError, setLanguageError] = useState<'persist' | null>(null)
   const languageInProgress = useRef(false)
+  const pairedRef = useRef<PairResult | null>(null)
   const addServer = useServersStore((s) => s.addServer)
 
   useEffect(() => {
@@ -155,23 +156,25 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
   }, [goto, index])
 
   const handlePaired = useCallback((result: PairResult) => {
+    pairedRef.current = result
     setPaired(result)
   }, [])
 
   const handleEnter = useCallback(async () => {
     try {
-      if (paired) {
-        await addServer(paired.url, paired.apiKey, paired.label, {
-          deviceId: paired.deviceId,
-          deviceToken: paired.deviceToken,
-          capabilities: paired.capabilities,
-          publicUrl: paired.publicUrl,
-          serverPublicKey: paired.serverPublicKey,
-          requireEncryption: paired.requireEncryption,
+      const pairResult = paired ?? pairedRef.current
+      if (pairResult) {
+        await addServer(pairResult.url, pairResult.apiKey, pairResult.label, {
+          deviceId: pairResult.deviceId,
+          deviceToken: pairResult.deviceToken,
+          capabilities: pairResult.capabilities,
+          publicUrl: pairResult.publicUrl,
+          serverPublicKey: pairResult.serverPublicKey,
+          requireEncryption: pairResult.requireEncryption,
         })
         await SecureStore.setItemAsync(
           PAIRED_TOKEN_HASH_KEY,
-          hashToken(paired.apiKey),
+          hashToken(pairResult.apiKey),
         )
       }
       await AsyncStorage.setItem(ONBOARDED_KEY, 'true')

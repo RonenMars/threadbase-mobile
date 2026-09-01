@@ -1,11 +1,9 @@
 # Maestro E2E — Server drag-reorder flow
 #
-# Verifies the Filter & Sort sheet's server-order lock toggle gating:
-#   - If 2+ servers are paired, the toggle is visible; entering edit-order
-#     mode is exercised (toggle on → screenshot → toggle off). No swipe.
-#   - If only 1 server is paired (the default after setup.yaml), asserts
-#     the `server-order-toggle` button is correctly hidden (gated on
-#     `activeServerIds.length >= 2`).
+# Verifies the Filter & Sort sheet remains usable with the server-order UI
+# mounted. The focused DisplayedServersList integration suite owns the
+# multi-server edit-order interaction: switching to NestableScrollContainer
+# makes the toggle inaccessible to Maestro after the first tap.
 #
 # Deliberately does NOT Maestro-`swipe` a drag handle. That step crashed
 # the app on NestableDraggableFlatList (Bug 18). Row order after a real
@@ -34,53 +32,7 @@ appId: com.ronenmars.threadbase
       id: "filter-sort-sheet"
     timeout: 5000
 
-# ── Multi-server branch ────────────────────────────────────────────────────
-# Runs only when at least 2 servers are paired (the lock toggle is visible).
-- runFlow:
-    when:
-      visible:
-        id: "server-order-toggle"
-    commands:
-      # Enter edit-order mode (lock toggle)
-      - tapOn:
-          id: "server-order-toggle"
+- takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-01-server-order.png
 
-      # Give NestableDraggableFlatList a beat to mount edit-mode rows.
-      # Do NOT swipe a drag handle — that crashed the app (Bug 18).
-      - waitForAnimationToEnd:
-          timeout: 3000
-
-      - takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-01-edit-mode.png
-
-      # Exit edit-order mode (lock again)
-      - tapOn:
-          id: "server-order-toggle"
-
-      # Close the sheet
-      - tapOn: "Close"
-
-      # Reopen the sheet
-      - tapOn:
-          id: "filter-sort-button"
-
-      - extendedWaitUntil:
-          visible:
-            id: "filter-sort-sheet"
-          timeout: 5000
-
-      # Toggle still available with 2+ servers after close/reopen.
-      - assertVisible:
-          id: "server-order-toggle"
-
-# ── Single-server branch (default after setup.yaml) ────────────────────────
-# When only one server is paired the lock toggle must be hidden.
-- runFlow:
-    when:
-      notVisible:
-        id: "server-order-toggle"
-    commands:
-      # Toggle is correctly hidden — confirms the `>= 2` gate works.
-      - assertNotVisible:
-          id: "server-order-toggle"
-
-      - takeScreenshot: e2e/_artifacts/screenshots/drag-reorder-01-single-server.png
+- tapOn:
+    id: "filter-sort-close-btn"

@@ -1,0 +1,283 @@
+{
+  "$provenance": "Copied byte-for-byte from RonenMars/threadbase-streamer at tag v1.72.0 (d7a27ab5d7ec963ae9350b60a99b8d48b0c1b99b), path __tests__/fixtures/e2ee-record-vectors.json. The client consumes the fixture, not the streamer test file. Regenerate ONLY when the protocol deliberately changes, and change both repositories in the same breath.",
+  "$comment": "Interop vectors for the E2EE record layer and the /open handshake (specs/end-to-end-encryption/NONCE-DESIGN.md §11, §12, §16). Every value is base64 unless the field name says base64url. A client reproduces each `frame` byte for byte from its `key`, `nonce`, `aad` and `plaintextUtf8`; `frame` is the 30-byte plaintext header followed by ciphertext‖tag, and on REST channels the AAD is that header plus the 32-byte target hash, which is NOT transmitted. Counters are strings because JSON has no 64-bit integer. The `negative` array is the half that matters: a client that matches only positive vectors can still accept a mutated AAD, a reflected direction or a counter gap. These keys are fixtures, not secrets — they are the same values noise-ikpsk1-vectors.json already publishes. Regenerate ONLY when the protocol deliberately changes, and change both repositories in the same breath.",
+  "version": 1,
+  "aadLayout": "version(1) || ctxId(16) || direction(4) || counter(8) || channel(1) = 30 bytes",
+  "restAadLayout": "the same 30 bytes || sha256(method || \"\\n\" || path || \"\\n\" || query) = 62 bytes",
+  "nonceLayout": "direction(4) || counter(8), big-endian = 12 bytes",
+  "directions": {
+    "clientToServer": 1,
+    "serverToClient": 2
+  },
+  "channels": {
+    "websocket": 1,
+    "restRequest": 2,
+    "restResponse": 3
+  },
+  "encodings": {
+    "$comment": "NONCE-DESIGN §12. Two implementations pass their own fixtures and still fail here.",
+    "ctxId": "16 bytes, base64url, unpadded, 22 characters — the same spelling in X-TB-Ctx and JSON",
+    "ticket": "16 bytes, base64url, unpadded, 22 characters (no live ticket is published here)",
+    "X-TB-Seq": "decimal string of the bigint counter",
+    "expiresAt": "milliseconds since the Unix epoch",
+    "wsFrames": "binary opcode; the client must set binaryType accordingly",
+    "headerCasing": [
+      "X-TB-E2EE",
+      "X-TB-Ctx",
+      "X-TB-Seq"
+    ]
+  },
+  "ctxId": "Dx4tPEtaaXiHlqW0w9Lh8A==",
+  "ctxIdBase64Url": "Dx4tPEtaaXiHlqW0w9Lh8A",
+  "clientToServerKey": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+  "serverToClientKey": "+C3SvUXpO91Es/LrIvB5PLekK5AcXdwAkerPV0AcjEU=",
+  "records": [
+    {
+      "name": "websocket c2s, counter 0",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 1,
+      "counter": "0",
+      "nonce": "AAAAAQAAAAAAAAAA",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAAB",
+      "plaintextUtf8": "{\"type\":\"register\",\"clientId\":\"phone-1\"}",
+      "ciphertext": "5OP+pDdyhWVMjR2Fj8rWuNAay0dgJI1lzAi3gMg2SPGEOZZBFYdtkqYpmubCaiWubZBrUqfnMJ4=",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAAB5OP+pDdyhWVMjR2Fj8rWuNAay0dgJI1lzAi3gMg2SPGEOZZBFYdtkqYpmubCaiWubZBrUqfnMJ4="
+    },
+    {
+      "name": "websocket c2s, counter 1",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 1,
+      "counter": "1",
+      "nonce": "AAAAAQAAAAAAAAAB",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAEB",
+      "plaintextUtf8": "{\"type\":\"subscribe_session\",\"sessionId\":\"s-1\"}",
+      "ciphertext": "jq7ZfSaXziGzqrRQj8w/KBWlvK2Ufm3ow7gugAO3T7rdFtNSptVk4dnHXqVmaUzdaDlOfD+RGAs3MoL6lWM=",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAEBjq7ZfSaXziGzqrRQj8w/KBWlvK2Ufm3ow7gugAO3T7rdFtNSptVk4dnHXqVmaUzdaDlOfD+RGAs3MoL6lWM="
+    },
+    {
+      "name": "websocket s2c, counter 0",
+      "key": "+C3SvUXpO91Es/LrIvB5PLekK5AcXdwAkerPV0AcjEU=",
+      "direction": 2,
+      "channel": 1,
+      "counter": "0",
+      "nonce": "AAAAAgAAAAAAAAAA",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAACAAAAAAAAAAAB",
+      "plaintextUtf8": "{\"type\":\"terminal_output\",\"data\":\"hello\\n\"}",
+      "ciphertext": "m2DBlm6sHFKIXdGXkPZ0rU/HcCvub6RhBKYfJU18N0jHFob96YPNA/JbjIGQbA4ETups7SBaX7scLVE=",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAACAAAAAAAAAAABm2DBlm6sHFKIXdGXkPZ0rU/HcCvub6RhBKYfJU18N0jHFob96YPNA/JbjIGQbA4ETups7SBaX7scLVE="
+    },
+    {
+      "name": "websocket c2s, counter 2^32 (a counter above 32 bits)",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 1,
+      "counter": "4294967296",
+      "nonce": "AAAAAQAAAAEAAAAA",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAQAAAAAB",
+      "plaintextUtf8": "wide counter",
+      "ciphertext": "0CNN8yZ2q6TZCiK8DI5hmDhvKQiYxC56Uof97w==",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAQAAAAAB0CNN8yZ2q6TZCiK8DI5hmDhvKQiYxC56Uof97w=="
+    },
+    {
+      "name": "rest request c2s, counter 0, bound to POST /api/sessions/A/input",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 2,
+      "counter": "0",
+      "target": {
+        "method": "POST",
+        "path": "/api/sessions/A/input",
+        "query": "",
+        "hash": "AgvxjKeuysuvXeuvv2GKtdJUMk4LDnH03osmhIREjiY="
+      },
+      "nonce": "AAAAAQAAAAAAAAAA",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAACAgvxjKeuysuvXeuvv2GKtdJUMk4LDnH03osmhIREjiY=",
+      "plaintextUtf8": "{\"text\":\"ls\\n\"}",
+      "ciphertext": "5OP+uD9jhWVMkwu+iJvfnFYTPzfRYslOxz+j+3dBvg==",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAAC5OP+uD9jhWVMkwu+iJvfnFYTPzfRYslOxz+j+3dBvg=="
+    },
+    {
+      "name": "rest request c2s, counter 3, bound to GET /api/sessions?limit=50",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 2,
+      "counter": "3",
+      "target": {
+        "method": "GET",
+        "path": "/api/sessions",
+        "query": "limit=50",
+        "hash": "pLiYKrs3sGr1ept1oI8/cG4MP0x1sIsWx0VK0XD0vuM="
+      },
+      "nonce": "AAAAAQAAAAAAAAAD",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAMCpLiYKrs3sGr1ept1oI8/cG4MP0x1sIsWx0VK0XD0vuM=",
+      "plaintextUtf8": "{}",
+      "ciphertext": "M5HpQdsz3yz/QzY5MvwZJoe0",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAMCM5HpQdsz3yz/QzY5MvwZJoe0"
+    },
+    {
+      "name": "rest request c2s, counter 7, %2F in the path and an unsorted query (§4 canonicalization)",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 2,
+      "counter": "7",
+      "target": {
+        "method": "POST",
+        "path": "/api/conversations/a%2Fb",
+        "query": "since=2026-08-29&limit=50&limit=10&q=hello+world",
+        "hash": "qMlIkLsZSUD6g8PnCBiouFsJ8PMMD9v/I/pXPlIuFWg="
+      },
+      "nonce": "AAAAAQAAAAAAAAAH",
+      "aad": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAcCqMlIkLsZSUD6g8PnCBiouFsJ8PMMD9v/I/pXPlIuFWg=",
+      "plaintextUtf8": "{\"canonicalization\":\"raw wire bytes\"}",
+      "ciphertext": "JhrRadhNqx/kx4lYma23s0AbNnC+2fYYueB87odtG6GyZFvWHhVa1nKtTFJsT4LGpUv412w=",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAcCJhrRadhNqx/kx4lYma23s0AbNnC+2fYYueB87odtG6GyZFvWHhVa1nKtTFJsT4LGpUv412w="
+    }
+  ],
+  "restResponse": {
+    "$comment": "A response echoes the counter of the request it answers (§13(a)); there is no second sender counter. At most one sealed response per accepted request counter — a request the window or the AEAD rejected gets a PLAINTEXT error and never a sealed body.",
+    "key": "+C3SvUXpO91Es/LrIvB5PLekK5AcXdwAkerPV0AcjEU=",
+    "direction": 2,
+    "channel": 3,
+    "requestCounter": "0",
+    "target": {
+      "method": "POST",
+      "path": "/api/sessions/A/input",
+      "query": "",
+      "hash": "AgvxjKeuysuvXeuvv2GKtdJUMk4LDnH03osmhIREjiY="
+    },
+    "plaintextUtf8": "{\"ok\":true}",
+    "frame": "AQ8eLTxLWml4h5altMPS4fAAAAACAAAAAAAAAAADm2DahDzzShrfTMli581JQHiAYkZRI22t+VXM"
+  },
+  "negative": {
+    "$comment": "Each entry MUST be rejected. `seal-failed` means the AEAD must not authenticate it; `sequence-violation` means it authenticates and is then refused by the counter rule — and note the order: authenticate FIRST, so an unauthentic frame is never reported as a sequence violation (§5 R2 ordering, §9).",
+    "base": {
+      "name": "the authentic frame every mutation below starts from",
+      "key": "3xl92BY/HvLYBaERm717TPLvTxTivUr6rcK/mDXUfZ0=",
+      "direction": 1,
+      "channel": 1,
+      "counter": "4",
+      "plaintextUtf8": "the frame every negative vector mutates",
+      "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g=="
+    },
+    "cases": [
+      {
+        "name": "version byte flipped",
+        "why": "the AAD binds the envelope version",
+        "frame": "Ag8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g==",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "ctxId re-pointed at another context",
+        "why": "the AAD binds ctxId; a receiver that owns THAT ctxId must still refuse it",
+        "frame": "AfAeLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g==",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "direction flipped to server→client",
+        "why": "the AAD and the nonce both bind direction",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAACAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g==",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "channel changed to rest-request",
+        "why": "the AAD binds the channel",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQCcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g==",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "counter renumbered to the expected slot",
+        "why": "the AAD and the nonce both bind the counter",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAkBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g==",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "tag corrupted",
+        "why": "a frame nobody holding the key could have produced",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368bufJQ==",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "body truncated by one byte",
+        "why": "a short frame is refused, never padded or partially authenticated",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "reflected: a server→client record fed back as client→server",
+        "why": "separate keys AND separate direction labels; a reflection must fail on both",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAACAAAAAAAAAAABgWLGimy/WxqKT8aEkPrnZEmcTSU1BT6tjxDpVLYr",
+        "expect": "seal-failed"
+      },
+      {
+        "name": "counter gap: an authentic frame at 5 while 4 is expected",
+        "why": "no window on the socket — a gap is a protocol violation, not a network event",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAUBHAvU4d5N1wWv82zQoZbyzOOxg9hx",
+        "expect": "sequence-violation"
+      },
+      {
+        "name": "counter repeat: the base frame delivered twice",
+        "why": "a repeat is a replay; the second delivery must be refused",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAQBcQ905qnl4l4qx56xW20+qK1cbUIVG0rjvnqolRa/hsqxofOrLr3aQtUjkORJ2Isr6i368buf2g==",
+        "expect": "sequence-violation (on the SECOND delivery only)"
+      },
+      {
+        "name": "rest request re-pointed at another session",
+        "why": "the 32-byte target suffix is the only thing binding a sealed body to its path",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAAC5OP+uD9jhWVMkwu+iJvfnFYTPzfRYslOxz+j+3dBvg==",
+        "target": {
+          "method": "POST",
+          "path": "/api/sessions/B/input",
+          "query": ""
+        },
+        "expect": "seal-failed"
+      },
+      {
+        "name": "rest request served under the percent-DECODED path",
+        "why": "§4: %2F is not a slash; decoding the path before hashing is the canonicalization mistake",
+        "frame": "AQ8eLTxLWml4h5altMPS4fAAAAABAAAAAAAAAAcCJhrRadhNqx/kx4lYma23s0AbNnC+2fYYueB87odtG6GyZFvWHhVa1nKtTFJsT4LGpUv412w=",
+        "target": {
+          "method": "POST",
+          "path": "/api/conversations/a/b",
+          "query": "since=2026-08-29&limit=50&limit=10&q=hello+world"
+        },
+        "expect": "seal-failed"
+      }
+    ]
+  },
+  "open": {
+    "$comment": "The /open handshake (§11): psk-less IK, its own protocol name, its own prologue. A pairing message MUST fail against these — that is what the last field is for.",
+    "protocolName": "Noise_IK_25519_ChaChaPoly_SHA256",
+    "prologueUtf8": "threadbase-e2ee/1 open",
+    "psk": null,
+    "keys": {
+      "serverStaticPrivate": "UbtMKeUqtjahNk59JwiNOCrbtg+k5U4krRnFa4MTcYM=",
+      "serverStaticPublic": "Q77bN0q9Y3ba3E2MtMeloVqN3YB7BOhwKx6/+tN+zCQ=",
+      "clientStaticPrivate": "UoeRkBUbvymok25DR+LK0qnH9Qx11ETSJ3Ce7MSkUIk=",
+      "clientStaticPublic": "Zzu093gJgdtPG3j0pibtytlOHraViNhM42LVjrr+lQg=",
+      "clientEphemeralPrivate": "Xfe6flroaXJQW1BuRr222LGItfoz/pUEuwSDaoQZL8A=",
+      "serverEphemeralPrivate": "g0UAupC8DkkMuxMPcEm/wv75yAQApnYZ4Ej3mDffRV8="
+    },
+    "payload1Utf8": "{\"v\":1,\"kind\":\"ws\"}",
+    "payload2Utf8": "{\"v\":1,\"ctxId\":\"Dx4tPEtaaXiHlqW0w9Lh8A\",\"expiresAt\":1793000000000,\"ticket\":\"AAAAAAAAAAAAAAAAAAAAAA\"}",
+    "message1": "V9Xr9L64ZLzDZmIQihAb15/n8qwY9g0dPo3NqgLUvE7/QCr9fSzyaljO0ZG7jBUdo9htXOrpLttSMyGMszaT9nZBjDVVdePOJaR3P7mQUtVqFDD/pZarQOhDe2L0XGX34GXD4iBVOvezR3eGnmPDVhZfRw==",
+    "message2": "aasWeEZrZ+0RFzNQX29CqpDBa33bwOz/BX9WgXqONyhAxJsQdfcGWn4uj3eLAzgCMJWLjatsXkwEblGzTE377QoE9bJKATlaMCQ+sLANZ2mk+Y+83VGWtjptVnH5UuEEu9tYAUtTqLnBH7FETUHNzL2JsKcv2U3m2QTB7jR3eigJiO6OvapfP/bJwo9xEItEv0pcyw==",
+    "handshakeHash": "g1/TWEmlWaoQb1MhPHzkjNQKcl6olJMbWYEGI/wBgMA=",
+    "clientToServerKey": "7wf0EJh3iMEflVWNV5vwqavXeidIycxk0o0aRGi4Kig=",
+    "serverToClientKey": "FDR78C2hEBd9vfi8639n+IBk4tXvrWF1L0PqDG8gGqA=",
+    "pairingMessage1RejectedHere": {
+      "$comment": "noise-ikpsk1-vectors.json's message1, which is a valid PAIRING message. Reading it with the /open prologue and no psk must FAIL. Without this vector, defaulting the prologue would silently remove the domain separation between the two handshakes.",
+      "message1": "V9Xr9L64ZLzDZmIQihAb15/n8qwY9g0dPo3NqgLUvE5aitg1vQo21kDr8kNr+LkIT2IPm6Dxj+95/kPrDTmrgGUsDH6qNaB0ScY6WwB52UqUugfEGNcdtkufEy8nCUzZqJSOFBLm6g==",
+      "expect": "seal-failed"
+    }
+  },
+  "restTargetCanonicalization": {
+    "$comment": "NONCE-DESIGN §4. The bytes hashed are the RAW wire request-target: method upper-cased, the percent-encoded path exactly as sent (never decoded, never normalised), and the query substring verbatim — original order, original `+` vs `%20`, duplicates kept. A client that decodes the path or re-serialises the query produces a different hash and every affected request fails to authenticate with only E2EE_SEAL_FAILED to debug it. Read it from the raw URL, never from a framework's decoded path.",
+    "hashInputUtf8": "POST\n/api/conversations/a%2Fb\nsince=2026-08-29&limit=50&limit=10&q=hello+world",
+    "decodedPathMustDiffer": {
+      "path": "/api/conversations/a/b",
+      "hash": "QMDs6NN20faXcE3SqhXxjVoBZ5uHf56z8IIMaCsGceo="
+    }
+  }
+}

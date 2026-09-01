@@ -268,10 +268,17 @@ function withMockServerUrl(args) {
   return [args[0], '-e', `E2E_MOCK_SERVER_URL=${url}`, ...args.slice(1)]
 }
 
+function withRequestedUdid(args) {
+  if (!process.env.MAESTRO_UDID || args.length === 0) return args
+  if (args.includes('--udid')) return args
+
+  return [args[0], '--udid', process.env.MAESTRO_UDID, ...args.slice(1)]
+}
+
 function runMaestro(args) {
   return new Promise((resolve) => {
     const command = process.env.MAESTRO_BIN || 'maestro'
-    const child = spawn(command, withMockServerUrl(args), { stdio: 'inherit', shell: false })
+    const child = spawn(command, withRequestedUdid(withMockServerUrl(args)), { stdio: 'inherit', shell: false })
     let settled = false
     let forwardedSignal = null
     const signalHandlers = new Map()

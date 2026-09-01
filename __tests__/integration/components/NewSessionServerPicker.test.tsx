@@ -41,7 +41,7 @@ describe('NewSessionServerPicker', () => {
   })
 
   it('renders one row per provided serverId in order', async () => {
-    const { getByText, queryByText } = await render(
+    const { getByText, getByTestId, queryByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
@@ -56,6 +56,8 @@ describe('NewSessionServerPicker', () => {
     expect(getByText('http://alpha.local:7070')).toBeTruthy()
     // Unlabelled server falls back to url as title (no separate subtitle row)
     expect(getByText('http://beta.local:7070')).toBeTruthy()
+    expect(getByTestId('new-session-server-0')).toBeTruthy()
+    expect(getByTestId('new-session-server-1')).toBeTruthy()
     // Servers not included in serverIds are not rendered
     expect(queryByText('Gamma Box')).toBeNull()
   })
@@ -76,7 +78,7 @@ describe('NewSessionServerPicker', () => {
 
   it('calls onPick with the tapped server id', async () => {
     const onPick = jest.fn()
-    const { getByText } = await render(
+    const { getByTestId, getByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
@@ -88,6 +90,8 @@ describe('NewSessionServerPicker', () => {
     await fireEvent.press(getByText('Alpha Box'))
     expect(onPick).toHaveBeenCalledWith('alpha')
     expect(onPick).toHaveBeenCalledTimes(1)
+    await fireEvent.press(getByTestId('new-session-server-1'))
+    expect(onPick).toHaveBeenLastCalledWith('beta')
   })
 
   it('calls onClose when Cancel is pressed', async () => {

@@ -15,6 +15,7 @@ import type {
 import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
 import { clientLog } from '@/lib/clientLog'
+import { OpenError, openContextOnce, type TransportContext } from '@/services/e2ee/context'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
@@ -81,6 +82,19 @@ export type WSMessage =
 
 type MessageHandler = (msg: WSMessage) => void
 
+export interface WsEncryptionConfig {
+  serverPublicKey?: string
+  requireEncryption?: boolean
+}
+
+type HeaderWebSocketConstructor = {
+  new (
+    uri: string,
+    protocols?: string | string[] | null,
+    options?: { headers: Record<string, string> } | null,
+  ): WebSocket
+}
+
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000, 30000]
 // A TCP/TLS handshake that is black-holed (packets dropped, no RST) can hang
 // for 60s+ before the platform fires onerror. Abandon the attempt sooner so
@@ -130,11 +144,16 @@ class WSClient {
   private connectTimer: ReturnType<typeof setTimeout> | null = null
   private _status: 'connecting' | 'connected' | 'disconnected' = 'disconnected'
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
+  private encryption: WsEncryptionConfig = {}
+  private context: TransportContext | null = null
+  private generation = 0
+  private ticketUpgradeRetryAvailable = true
 
   // Label for the connection log only — the manager passes its serverId.
   constructor(private serverId = 'default') {}
 
-  connect(url: string, apiKey: string) {
+  connect(url: string, apiKey: string, encryption: WsEncryptionConfig = {}) {
+    this.encryption = encryption
     const wsUrl = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
     // The socket carries the whole live session — terminal output, replay and
     // every prompt typed — so it is the traffic the cleartext policy exists for.
@@ -156,27 +175,60 @@ class WSClient {
     }
     this.url = wsUrl
     this.reconnectAttempt = 0
-    this._doConnect()
+    this.ticketUpgradeRetryAvailable = true
+    void this._doConnect()
   }
 
-  private _doConnect() {
-    if (this.socket) {
-      this.socket.onclose = null
-      this.socket.onerror = null
-      this.socket.onmessage = null
-      this.socket.close()
-      this.socket = null
-    }
+  private async _doConnect() {
+    const generation = ++this.generation
+    this._retireCurrentConnection()
     this._clearConnectTimer()
 
     this._setStatus('connecting')
     logConnection(this.serverId, 'connect', this.reconnectAttempt)
 
+    const pinned = this.encryption.requireEncryption === true && !!this.encryption.serverPublicKey
     let socket: WebSocket
+    let context: TransportContext | null = null
+    let clientId: string | null = null
     try {
-      socket = new WebSocket(this.url)
+      if (pinned && this.encryption.serverPublicKey) {
+        // Obtain the client id before the ticketed upgrade. The server requires
+        // the first sealed frame within ten seconds of the 101 response, so
+        // awaiting storage from onopen is too late.
+        ;[context, clientId] = await Promise.all([
+          openContextOnce({
+            serverId: this.serverId,
+            baseUrl: this.url.replace(/^ws/, 'http').replace(/\/ws\?key=.*$/, ''),
+            serverPublicKey: this.encryption.serverPublicKey,
+            kind: 'ws',
+          }),
+          getDeviceClientId(),
+        ])
+        if (generation !== this.generation) {
+          context.destroy()
+          return
+        }
+        if (!context.ticket) {
+          context.destroy()
+          throw new Error('E2EE: WebSocket context was issued without a ticket')
+        }
+        this.context = context
+        const HeaderWebSocket = WebSocket as HeaderWebSocketConstructor
+        socket = new HeaderWebSocket(this.url.replace(/\?key=.*$/, ''), null, {
+          headers: { 'X-TB-Ticket': context.ticket },
+        })
+      } else {
+        socket = new WebSocket(this.url)
+      }
       this.socket = socket
-    } catch {
+    } catch (error) {
+      context?.destroy()
+      if (generation !== this.generation) return
+      this._setStatus('disconnected')
+      // A bad pin, revoked device, or malformed handshake cannot heal through
+      // retries. In particular, it must never fall back to the URL credential.
+      if (error instanceof OpenError && !error.retryable) return
       this._scheduleReconnect()
       return
     }
@@ -187,19 +239,16 @@ class WSClient {
     // events already queued for dispatch. Comparing against `this.socket`
     // (updated synchronously whenever a new connect attempt starts) closes
     // that gap regardless of platform close() timing.
-    const isCurrent = () => this.socket === socket
+    const isCurrent = () =>
+      generation === this.generation &&
+      this.socket === socket &&
+      (context === null || this.context === context)
 
     // Abandon the attempt if the handshake neither opens nor errors in time.
     this.connectTimer = setTimeout(() => {
+      if (!isCurrent()) return
       logConnection(this.serverId, 'connect_timeout', this.reconnectAttempt)
-      if (this.socket) {
-        this.socket.onclose = null
-        this.socket.onerror = null
-        this.socket.onmessage = null
-        this.socket.close()
-        this.socket = null
-      }
-      this._scheduleReconnect()
+      this._failCurrentConnection(socket, context, false)
     }, CONNECT_TIMEOUT_MS)
 
     socket.onopen = () => {
@@ -207,6 +256,7 @@ class WSClient {
       this._clearConnectTimer()
       logConnection(this.serverId, 'open')
       this.reconnectAttempt = 0
+      this.ticketUpgradeRetryAvailable = true
       this._setStatus('connected')
       // Register this device so the server can unicast session_list back only
       // to the initiating client.
@@ -216,18 +266,31 @@ class WSClient {
       // message handler only knows `register`, `subscribe_session`,
       // `unsubscribe_session` and `hold_session`, and unknown types are swallowed
       // — so it re-transmitted the long-term credential over the wire for nothing.
-      // The socket is already authenticated by `?key=` on the upgrade.
-      getDeviceClientId().then((clientId) => {
-        if (isCurrent()) this.send({ type: 'register', clientId })
-      })
+      // The socket is authenticated by its one-time ticket. On an encrypted
+      // socket this is synchronous because clientId was acquired pre-upgrade.
+      if (clientId) {
+        this.sendWithContext(socket, context, { type: 'register', clientId })
+      } else {
+        getDeviceClientId().then((legacyClientId) => {
+          if (isCurrent()) this.sendWithContext(socket, null, { type: 'register', clientId: legacyClientId })
+        })
+      }
     }
 
     socket.onmessage = (event) => {
       if (!isCurrent()) return
       let msg: WSMessage
       try {
-        msg = JSON.parse(event.data as string) as WSMessage
+        if (context) {
+          if (!(event.data instanceof Uint8Array)) {
+            throw new Error('E2EE: sealed socket received a non-binary frame')
+          }
+          msg = JSON.parse(new TextDecoder().decode(context.recv.unseal(event.data))) as WSMessage
+        } else {
+          msg = JSON.parse(event.data as string) as WSMessage
+        }
       } catch {
+        if (context) this._failCurrentConnection(socket, context, false)
         return
       }
       if (msg.type === 'session_ready') {
@@ -257,16 +320,38 @@ class WSClient {
       if (!isCurrent()) return
       this._clearConnectTimer()
       logConnection(this.serverId, 'error', this.reconnectAttempt)
-      this._scheduleReconnect()
+      this._failCurrentConnection(socket, context, true)
     }
 
     socket.onclose = () => {
       if (!isCurrent()) return
       this._clearConnectTimer()
       logConnection(this.serverId, 'close')
-      this._setStatus('disconnected')
-      this._scheduleReconnect()
+      this._failCurrentConnection(socket, context, true)
     }
+  }
+
+  private _retireCurrentConnection() {
+    if (this.socket) {
+      this.socket.onclose = null
+      this.socket.onerror = null
+      this.socket.onmessage = null
+      this.socket.close()
+      this.socket = null
+    }
+    this.context?.destroy()
+    this.context = null
+  }
+
+  private _failCurrentConnection(socket: WebSocket, context: TransportContext | null, beforeOpen: boolean) {
+    this._retireCurrentConnection()
+    this._setStatus('disconnected')
+    if (context && beforeOpen && this.ticketUpgradeRetryAvailable) {
+      this.ticketUpgradeRetryAvailable = false
+      void this._doConnect()
+      return
+    }
+    this._scheduleReconnect()
   }
 
   private _clearConnectTimer() {
@@ -281,7 +366,7 @@ class WSClient {
     const delay = BACKOFF_MS[Math.min(this.reconnectAttempt, BACKOFF_MS.length - 1)]
     this.reconnectAttempt++
     logConnection(this.serverId, 'schedule_reconnect', this.reconnectAttempt)
-    this.reconnectTimer = setTimeout(() => this._doConnect(), delay)
+    this.reconnectTimer = setTimeout(() => void this._doConnect(), delay)
   }
 
   private _setStatus(s: WSClient['_status']) {
@@ -291,16 +376,13 @@ class WSClient {
 
   disconnect() {
     logConnection(this.serverId, 'disconnect')
+    this.generation++
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
     this._clearConnectTimer()
-    if (this.socket) {
-      this.socket.onclose = null
-      this.socket.close()
-      this.socket = null
-    }
+    this._retireCurrentConnection()
     this._setStatus('disconnected')
   }
 
@@ -316,13 +398,17 @@ class WSClient {
       this.reconnectTimer = null
     }
     this.reconnectAttempt = 0
-    this._doConnect()
+    void this._doConnect()
   }
 
   send(msg: unknown) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(msg))
-    }
+    this.sendWithContext(this.socket, this.context, msg)
+  }
+
+  private sendWithContext(socket: WebSocket | null, context: TransportContext | null, msg: unknown) {
+    if (socket?.readyState !== WebSocket.OPEN) return
+    const plaintext = JSON.stringify(msg)
+    socket.send(context ? context.send.seal(new TextEncoder().encode(plaintext)) : plaintext)
   }
 
   on(type: string, handler: MessageHandler): () => void {
@@ -357,7 +443,7 @@ class WSClientManager {
   // PTY stream. One socket stays subscribed until the last view releases.
   private sessionRefCounts = new Map<string, Map<string, number>>()
 
-  connect(serverId: string, url: string, apiKey: string) {
+  connect(serverId: string, url: string, apiKey: string, encryption: WsEncryptionConfig = {}) {
     // Disconnect existing client for this server if any
     this.disconnect(serverId)
     const client = new WSClient(serverId)
@@ -367,7 +453,7 @@ class WSClientManager {
       if (s === 'connected') this.resubscribeHeldSessions(serverId)
       this.managerStatusListeners.forEach((l) => l(serverId, s))
     })
-    client.connect(url, apiKey)
+    client.connect(url, apiKey, encryption)
   }
 
   disconnect(serverId: string) {

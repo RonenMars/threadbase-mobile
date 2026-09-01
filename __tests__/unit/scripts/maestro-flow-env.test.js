@@ -70,6 +70,21 @@ describe('run-maestro.js flow variables', () => {
     expect(argv).toContain('http://explicit:1234');
     expect(argv).not.toContain('from-env');
   });
+
+  it('passes MAESTRO_UDID to Maestro after the subcommand', () => {
+    const { argv } = runWithStub(['test', 'e2e/launch.yaml'], {
+      MAESTRO_UDID: '1CBE2E33-AFD5-4199-B0F1-B5BFBB09A7A3',
+    });
+    expect(argv.startsWith('test --udid 1CBE2E33-AFD5-4199-B0F1-B5BFBB09A7A3 ')).toBe(true);
+  });
+
+  it("does not override a caller's explicit --udid", () => {
+    const { argv } = runWithStub(['test', '--udid', 'caller-chosen', 'e2e/launch.yaml'], {
+      MAESTRO_UDID: 'environment-chosen',
+    });
+    expect(argv).toContain('--udid caller-chosen');
+    expect(argv).not.toContain('environment-chosen');
+  });
 });
 
 describe('mock-suite flow server URLs', () => {

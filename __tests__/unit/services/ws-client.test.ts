@@ -1,12 +1,30 @@
 import { getConnectionLog, wsClient, wsManager } from '@/services/ws-client'
 import { authedFetch } from '@/services/authed-fetch'
 import { CleartextBlockedError } from '@/services/cleartext-policy'
+import { openContextOnce } from '@/services/e2ee/context'
+import { createRecordState } from '@/services/e2ee/record'
+
+jest.mock('@/services/e2ee/context', () => ({
+  openContextOnce: jest.fn(),
+}))
+
+jest.mock('@/services/device-id', () => ({
+  getDeviceClientId: jest.fn().mockResolvedValue('device-client-id'),
+}))
+
+const mockedOpenContextOnce = openContextOnce as jest.MockedFunction<typeof openContextOnce>
+const recordKey = new Uint8Array(32).fill(7)
+const recordContextId = new Uint8Array(16).fill(8)
+const flushAsyncConnect = async () => {
+  await Promise.resolve()
+  await Promise.resolve()
+}
 
 // ── Minimal WebSocket mock ───────────────────────────────────────────────────
 type MockSocket = {
   url: string
   onopen: (() => void) | null
-  onmessage: ((e: { data: string }) => void) | null
+  onmessage: ((e: { data: string | Uint8Array }) => void) | null
   onclose: (() => void) | null
   onerror: (() => void) | null
   send: jest.Mock
@@ -15,6 +33,7 @@ type MockSocket = {
 }
 
 let mockSocket: MockSocket
+const mockSockets: MockSocket[] = []
 
 const MockWebSocket = jest.fn().mockImplementation((url: string) => {
   mockSocket = {
@@ -27,6 +46,7 @@ const MockWebSocket = jest.fn().mockImplementation((url: string) => {
     close: jest.fn(),
     readyState: 0,
   }
+  mockSockets.push(mockSocket)
   return mockSocket
 }) as unknown as typeof WebSocket
 ;(MockWebSocket as unknown as Record<string, number>).OPEN = 1
@@ -39,6 +59,7 @@ beforeEach(() => {
   wsClient.disconnect()
   wsManager.disconnectAll()
   jest.clearAllMocks()
+  mockSockets.length = 0
   jest.useFakeTimers()
 })
 
@@ -85,6 +106,85 @@ describe('WSClient – connect', () => {
     mockSocket.onopen!()
     // Should have notified status listeners
     expect(wsClient.status()).toBe('connected')
+  })
+
+  it('opens a pinned server context and sends its ticket only in the upgrade header', async () => {
+    mockedOpenContextOnce.mockResolvedValue({
+      ctxId: 'safe-context-id',
+      kind: 'ws',
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 1,
+        channel: 1,
+      }),
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy: jest.fn(),
+    })
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    await flushAsyncConnect()
+
+    expect(mockedOpenContextOnce).toHaveBeenCalledWith({
+      serverId: 'pinned-server',
+      baseUrl: 'https://secure.host',
+      serverPublicKey: 'pinned-server-key',
+      kind: 'ws',
+    })
+    expect(MockWebSocket).toHaveBeenCalledWith('wss://secure.host/ws', null, {
+      headers: { 'X-TB-Ticket': 'ticket-does-not-belong-in-url' },
+    })
+  })
+
+  it('destroys a context that resolves after disconnect superseded its open', async () => {
+    let resolveContext: ((context: Awaited<ReturnType<typeof openContextOnce>>) => void) | undefined
+    const pendingContext = new Promise<Awaited<ReturnType<typeof openContextOnce>>>((resolve) => {
+      resolveContext = resolve
+    })
+    const destroy = jest.fn()
+    mockedOpenContextOnce.mockReturnValue(pendingContext)
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    wsManager.disconnect('pinned-server')
+
+    resolveContext?.({
+      ctxId: 'safe-context-id',
+      kind: 'ws',
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 1,
+        channel: 1,
+      }),
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy,
+    })
+    await flushAsyncConnect()
+
+    expect(destroy).toHaveBeenCalledTimes(1)
+    expect(MockWebSocket).not.toHaveBeenCalled()
   })
 })
 
@@ -255,6 +355,138 @@ describe('WSClient – send', () => {
   it('does not throw when socket is not open', () => {
     expect(() => wsClient.send({ type: 'ping' })).not.toThrow()
   })
+
+  it('seals pinned-server messages before sending them on an open socket', async () => {
+    const send = createRecordState({
+      key: recordKey,
+      ctxId: recordContextId,
+      direction: 1,
+      channel: 1,
+    })
+    const seal = jest.spyOn(send, 'seal')
+    mockedOpenContextOnce.mockResolvedValue({
+      ctxId: 'safe-context-id',
+      kind: 'ws',
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send,
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy: jest.fn(),
+    })
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    await flushAsyncConnect()
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+    mockSocket.send.mockClear()
+
+    wsManager.send('pinned-server', { type: 'subscribe_session', sessionId: 'session-1' })
+
+    expect(seal).toHaveBeenCalled()
+    expect(mockSocket.send).toHaveBeenCalledWith(expect.any(Uint8Array))
+    expect(mockSocket.send).not.toHaveBeenCalledWith(
+      JSON.stringify({ type: 'subscribe_session', sessionId: 'session-1' }),
+    )
+  })
+
+  it('sends the first pinned register frame sealed as soon as the upgrade opens', async () => {
+    const send = createRecordState({
+      key: recordKey,
+      ctxId: recordContextId,
+      direction: 1,
+      channel: 1,
+    })
+    const recv = createRecordState({
+      key: recordKey,
+      ctxId: recordContextId,
+      direction: 1,
+      channel: 1,
+    })
+    mockedOpenContextOnce.mockResolvedValue({
+      ctxId: 'safe-context-id',
+      kind: 'ws',
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send,
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy: jest.fn(),
+    })
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    await flushAsyncConnect()
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+
+    expect(mockSocket.send).toHaveBeenCalledWith(expect.any(Uint8Array))
+    expect(JSON.parse(new TextDecoder().decode(recv.unseal(mockSocket.send.mock.calls[0][0])))).toEqual({
+      type: 'register',
+      clientId: 'device-client-id',
+    })
+  })
+
+  it('unseals an authenticated pinned-server frame before dispatching it', async () => {
+    const remoteSend = createRecordState({
+      key: recordKey,
+      ctxId: recordContextId,
+      direction: 2,
+      channel: 1,
+    })
+    mockedOpenContextOnce.mockResolvedValue({
+      ctxId: 'safe-context-id',
+      kind: 'ws',
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 1,
+        channel: 1,
+      }),
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy: jest.fn(),
+    })
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    await flushAsyncConnect()
+    const handler = jest.fn()
+    const unsubscribe = wsManager.getClient('pinned-server')?.on('session_update', handler)
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+    mockSocket.onmessage!({
+      data: remoteSend.seal(
+        new TextEncoder().encode(JSON.stringify({ type: 'session_update', session: { id: 'sealed' } })),
+      ),
+    })
+
+    expect(handler).toHaveBeenCalledWith({ type: 'session_update', session: { id: 'sealed' } })
+    unsubscribe?.()
+  })
 })
 
 describe('WSClient – connect-attempt timeout', () => {
@@ -299,6 +531,45 @@ describe('WSClient – forceReconnect', () => {
     expect(mockSocket).not.toBe(firstSocket)
     // The first socket was explicitly closed during the reconnect.
     expect(firstSocket.close).toHaveBeenCalled()
+  })
+
+  it('opens one fresh context immediately after a ticketed upgrade fails', async () => {
+    const firstDestroy = jest.fn()
+    const secondDestroy = jest.fn()
+    const makeContext = (destroy: jest.Mock) => ({
+      ctxId: 'safe-context-id',
+      kind: 'ws' as const,
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 1,
+        channel: 1,
+      }),
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy,
+    })
+    mockedOpenContextOnce.mockResolvedValueOnce(makeContext(firstDestroy)).mockResolvedValueOnce(makeContext(secondDestroy))
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    await flushAsyncConnect()
+    const failedSocket = mockSocket
+    failedSocket.onerror!()
+    await flushAsyncConnect()
+
+    expect(firstDestroy).toHaveBeenCalledTimes(1)
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(2)
+    expect(mockSockets).toHaveLength(2)
   })
 
   it('does not throw when called with no prior connect', () => {

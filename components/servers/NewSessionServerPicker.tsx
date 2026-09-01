@@ -46,11 +46,16 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
       <BottomSheetView style={[styles.content, directionStyle]}>
         <Text style={[styles.title, titleStyle]}>{t('newSessionPicker.title')}</Text>
         <View style={styles.list}>
-          {serverIds.map((id) => {
+          {serverIds.map((id, index) => {
             const server = servers[id]
             if (!server) return null
             return (
-              <TouchableOpacity key={id} style={styles.row} onPress={() => onPick(id)}>
+              <TouchableOpacity
+                key={id}
+                style={styles.row}
+                onPress={() => onPick(id)}
+                testID={`new-session-server-${index}`}
+              >
                 <View style={styles.serverInfo}>
                   <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>
                     {server.label || server.url}

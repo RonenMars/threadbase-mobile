@@ -87,8 +87,10 @@ jest.mock('@/components/onboarding/steps/NotificationsStep', () => {
 
 jest.mock('@/components/onboarding/steps/DoneStep', () => {
   const React = require('react')
-  const { View } = require('react-native')
-  return { DoneStep: () => <View testID="step-done" /> }
+  const { Pressable, Text } = require('react-native')
+  return { DoneStep: ({ onEnter }: { onEnter: () => void }) => (
+    <Pressable testID="step-done" onPress={onEnter}><Text>done</Text></Pressable>
+  ) }
 })
 
 describe('OnboardingNavigator', () => {
@@ -138,6 +140,25 @@ describe('OnboardingNavigator', () => {
     expect(await pairedScreen.findByTestId('step-notifications')).toBeTruthy()
     await fireEvent.press(pairedScreen.getByTestId('step-notifications'))
     await waitFor(() => expect(pairedScreen.getByTestId('step-done')).toBeTruthy())
+  })
+
+  it('persists the pair result when Enter follows the confirmation transition immediately', async () => {
+    const screen = await render(<OnboardingNavigator onDone={jest.fn()} />)
+
+    await fireEvent.press(screen.getByTestId('onboarding-language-cta'))
+    await fireEvent.press(await screen.findByTestId('step-welcome'))
+    await fireEvent.press(await screen.findByTestId('step-connect'))
+    await fireEvent.press(await screen.findByTestId('step-notifications'))
+    await fireEvent.press(await screen.findByTestId('step-done'))
+
+    await waitFor(() => {
+      expect(mockAddServer).toHaveBeenCalledWith(
+        'http://localhost:8766',
+        'token',
+        undefined,
+        expect.any(Object),
+      )
+    })
   })
 
   it('uses the language continuation transition for shell-forward at index zero', async () => {

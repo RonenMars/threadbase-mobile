@@ -143,7 +143,10 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
       ) ?? serverId
       const updated = state.servers[newId]
       if (updated) {
-        wsManager.connect(newId, updated.url, authToken(updated))
+        wsManager.connect(newId, updated.url, authToken(updated), {
+          serverPublicKey: updated.serverPublicKey,
+          requireEncryption: updated.requireEncryption,
+        })
       }
     } else {
       // A scan already proved reachability and identity through the pair-exchange
@@ -175,7 +178,11 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         return
       }
       const newId = result as string
-      wsManager.connect(newId, trimmedUrl, trimmedKey)
+      const added = useServersStore.getState().servers[newId]
+      wsManager.connect(newId, trimmedUrl, trimmedKey, {
+        serverPublicKey: added?.serverPublicKey,
+        requireEncryption: added?.requireEncryption,
+      })
     }
 
     onClose()
