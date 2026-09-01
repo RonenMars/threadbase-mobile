@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { PlugsConnected, ArrowRight } from 'phosphor-react-native'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { font, spacing, radius, type Theme } from '@/constants/theme'
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 
 export function NoServersWelcome({ onAddServer }: Props) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const s = makeStyles(theme)
   const { t } = useTranslation(['sessions', 'servers'])
   const router = useRouter()
@@ -26,7 +27,7 @@ export function NoServersWelcome({ onAddServer }: Props) {
           <PlugsConnected size={32} color={theme.text.accent} weight="light" />
         </View>
         <Text style={s.title}>{t('noServer.title')}</Text>
-        <Text style={s.desc}>{t('noServer.desc')}</Text>
+        <Text style={[s.desc, isGlass && s.descGlass]}>{t('noServer.desc')}</Text>
         <TouchableOpacity
           onPress={() => Linking.openURL(t('noServer.repoUrl'))}
           accessibilityLabel={t('servers:noServersWelcome.repoLabel')}
@@ -41,7 +42,7 @@ export function NoServersWelcome({ onAddServer }: Props) {
           accessibilityLabel={t('servers:noServersWelcome.addLabel')}
         >
           <Text style={s.btnText}>{t('noServer.cta')}</Text>
-          <ArrowRight size={16} color="#fff" weight="bold" />
+          <ArrowRight size={16} color={theme.text.onAccent} weight="bold" />
         </TouchableOpacity>
       </View>
     </View>
@@ -90,6 +91,9 @@ function makeStyles(theme: Theme) {
       textAlign: 'center',
       lineHeight: 20,
     },
+    descGlass: {
+      color: theme.text.primary,
+    },
     link: {
       color: theme.text.accent,
       fontSize: font.base,
@@ -106,7 +110,7 @@ function makeStyles(theme: Theme) {
       marginTop: spacing.xs,
     },
     btnText: {
-      color: '#fff',
+      color: theme.text.onAccent,
       fontSize: font.base,
       fontWeight: '600',
     },

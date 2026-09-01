@@ -1,7 +1,7 @@
 import React from 'react'
 import { renderHook } from '@testing-library/react-native'
 import { useSettingsStore } from '@/stores/settings'
-import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
+import { ThemeProvider, useIsGlass, useTheme } from '@/contexts/ThemeContext'
 import {
   dark,
   dracula,
@@ -10,7 +10,6 @@ import {
   light,
   githubDark,
   githubLight,
-  appleGlassThemes,
 } from '@/constants/theme'
 
 // Use the real ThemeContext so the provider/hook contract tests remain meaningful
@@ -21,7 +20,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
-  useSettingsStore.setState({ colorScheme: 'dark', glassThemeVariant: 'aurora' })
+  useSettingsStore.setState({ colorScheme: 'dark' })
 })
 
 describe('useTheme', () => {
@@ -80,11 +79,10 @@ describe('useTheme', () => {
     expect(result.current.bg.primary).toBe(dark.bg.primary)
   })
 
-  it('returns selected Apple Glass variant when colorScheme is appleGlass', async () => {
-    useSettingsStore.setState({ colorScheme: 'appleGlass', glassThemeVariant: 'sunset' })
-    const { result } = await renderHook(() => useTheme(), { wrapper })
-    expect(result.current.bg.secondary).toBe(appleGlassThemes.sunset.bg.secondary)
-    expect(result.current.glass?.overlayColor).toBe(appleGlassThemes.sunset.glass?.overlayColor)
+  it('uses native glass presentation with every selected palette', async () => {
+    useSettingsStore.setState({ colorScheme: 'githubDark' })
+    const { result } = await renderHook(() => useIsGlass(), { wrapper })
+    expect(result.current).toBe(true)
   })
 
   it('throws when used outside ThemeProvider', async () => {

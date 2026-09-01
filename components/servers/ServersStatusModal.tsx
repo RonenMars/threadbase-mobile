@@ -509,7 +509,7 @@ function makeStyles(theme: Theme) {
       flex: 1,
       // Stronger scrim under glass so the modal beneath is occluded and the
       // stacked menu stays readable.
-      backgroundColor: theme.glass ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.45)',
+      backgroundColor: 'rgba(0,0,0,0.7)',
       justifyContent: 'flex-end',
       paddingBottom: 40,
       paddingHorizontal: spacing.md,
@@ -518,7 +518,7 @@ function makeStyles(theme: Theme) {
       // A stacked popup must be opaque — a translucent menu over the (also
       // translucent) Servers Status modal lets text bleed through. Use a solid
       // dark surface under glass instead of the see-through bg.card token.
-      backgroundColor: theme.glass?.opaqueSurface ?? theme.bg.card,
+      backgroundColor: theme.bg.card,
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: theme.border,

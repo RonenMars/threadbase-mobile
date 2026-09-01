@@ -9,7 +9,7 @@ import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { brand, type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
@@ -114,6 +114,7 @@ export function FilterSortSheet({
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const router = useRouter()
   const glassBackground = useGlassSheetBackground()
   const { t } = useTranslation(['servers', 'settings', 'sessions'])
@@ -379,7 +380,7 @@ export function FilterSortSheet({
       enablePanDownToClose={!isEditingOrder}
       onClose={onClose}
       backdropComponent={renderBackdrop}
-      backgroundStyle={styles.sheetBg}
+      backgroundStyle={[styles.sheetBg, isGlass && styles.sheetBgGlass]}
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
@@ -399,6 +400,7 @@ export function FilterSortSheet({
 function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
   return StyleSheet.create({
     sheetBg: { backgroundColor: theme.bg.secondary },
+    sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
     content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xl },
     titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

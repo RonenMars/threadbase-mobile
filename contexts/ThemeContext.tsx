@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo } from 'react'
 import { useColorScheme, View } from 'react-native'
 import { vars } from 'nativewind'
 import { useSettingsStore } from '@/stores/settings'
-import { THEMES, appleGlassThemes, type Theme, type ThemeId, type GlassThemeVariant } from '@/constants/theme'
+import { THEMES, type Theme, type ThemeId } from '@/constants/theme'
 
 const ThemeContext = createContext<Theme | null>(null)
 
@@ -28,23 +28,18 @@ function themeToVars(theme: Theme): Record<string, string> {
 
 function resolveTheme(
   colorScheme: ThemeId,
-  glassThemeVariant: GlassThemeVariant,
   systemScheme: 'light' | 'dark' | null | undefined
 ): Theme {
   if (colorScheme === 'system') {
     return THEMES[systemScheme === 'light' ? 'light' : 'dark']
-  }
-  if (colorScheme === 'appleGlass') {
-    return appleGlassThemes[glassThemeVariant]
   }
   return THEMES[colorScheme]
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const colorScheme = useSettingsStore((s) => s.colorScheme)
-  const glassThemeVariant = useSettingsStore((s) => s.glassThemeVariant)
   const systemScheme = useColorScheme() as 'light' | 'dark' | null | undefined
-  const theme = useMemo(() => resolveTheme(colorScheme, glassThemeVariant, systemScheme), [colorScheme, glassThemeVariant, systemScheme])
+  const theme = useMemo(() => resolveTheme(colorScheme, systemScheme), [colorScheme, systemScheme])
   const cssVars = useMemo(() => vars(themeToVars(theme)), [theme])
 
   return (
@@ -65,5 +60,5 @@ export function useTheme(): Theme {
 }
 
 export function useIsGlass(): boolean {
-  return useTheme().glass !== undefined
+  return true
 }

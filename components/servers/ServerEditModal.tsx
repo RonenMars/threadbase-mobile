@@ -354,7 +354,7 @@ function makeStyles(theme: Theme) {
       width: '100%',
       // Opaque under glass — this modal can stack over the Servers Status modal,
       // and a translucent sheet over a translucent sheet bleeds text through.
-      backgroundColor: theme.glass?.opaqueSurface ?? theme.bg.card,
+      backgroundColor: theme.bg.card,
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: theme.border,

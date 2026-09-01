@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import type { SessionStatus } from '@/types/api'
 import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
@@ -55,6 +55,7 @@ export function ServerFilterSheet({
   onChangeSortType,
 }: Props) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
   const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common', 'sessions'])
@@ -103,7 +104,7 @@ export function ServerFilterSheet({
       enablePanDownToClose
       onClose={onClose}
       backdropComponent={renderBackdrop}
-      backgroundStyle={styles.sheetBg}
+      backgroundStyle={[styles.sheetBg, isGlass && styles.sheetBgGlass]}
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
@@ -216,6 +217,7 @@ export function ServerFilterSheet({
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     sheetBg: { backgroundColor: theme.bg.secondary },
+    sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
     content: { flex: 1, padding: spacing.md, gap: spacing.md },
     titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

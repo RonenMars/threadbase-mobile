@@ -143,17 +143,29 @@ export function DisplayedServersList({
     <View style={styles.container}>
       {showQuickActions ? (
         <View style={styles.quickRow} testID="quick-actions">
-          <TouchableOpacity style={styles.quickButton} onPress={() => onChange(activeServerIds)}>
-            <Text style={styles.quickButtonText}>{t('displayedServers.all')}</Text>
+          <TouchableOpacity
+            style={[styles.quickButton, isGlass && styles.quickButtonGlass]}
+            onPress={() => onChange(activeServerIds)}
+          >
+            <Text style={[styles.quickButtonText, isGlass && styles.quickButtonTextGlass]}>
+              {t('displayedServers.all')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickButton}
+            style={[styles.quickButton, isGlass && styles.quickButtonGlass]}
             onPress={() => onChange(latestServerId ? [latestServerId] : [])}
           >
-            <Text style={styles.quickButtonText}>{t('displayedServers.latestOnly')}</Text>
+            <Text style={[styles.quickButtonText, isGlass && styles.quickButtonTextGlass]}>
+              {t('displayedServers.latestOnly')}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickButton} onPress={() => onChange([])}>
-            <Text style={styles.quickButtonText}>{t('displayedServers.none')}</Text>
+          <TouchableOpacity
+            style={[styles.quickButton, isGlass && styles.quickButtonGlass]}
+            onPress={() => onChange([])}
+          >
+            <Text style={[styles.quickButtonText, isGlass && styles.quickButtonTextGlass]}>
+              {t('displayedServers.none')}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -215,6 +227,12 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.base,
       fontWeight: '500',
+    },
+    quickButtonGlass: {
+      backgroundColor: 'transparent',
+    },
+    quickButtonTextGlass: {
+      color: theme.text.primary,
     },
     row: {
       minHeight: 44,

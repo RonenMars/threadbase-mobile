@@ -499,19 +499,22 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
     return (
       <NavThemeProvider value={navTheme}>
         <View style={styles.flex}>
-          {/* Vivid backdrop — gives the frosted surfaces something colorful to
-              blur. Deep indigo → violet → magenta on the diagonal, dark enough
-              to keep white text readable. */}
+          {/* Each palette supplies the backdrop sampled by the native material. */}
           <LinearGradient
-            colors={['#1b1d4d', '#3a1d6e', '#6e2b6e', '#1a1330']}
-            locations={[0, 0.4, 0.7, 1]}
+            colors={[
+              theme.bg.primary,
+              theme.bg.secondary,
+              `${theme.text.accent}55`,
+              theme.bg.primary,
+            ]}
+            locations={[0, 0.38, 0.68, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          {/* Soft accent glow in the upper area for extra depth under the blur. */}
+          {/* A low-opacity accent lift gives the material depth without tinting it. */}
           <LinearGradient
-            colors={['rgba(10,132,255,0.35)', 'transparent']}
+            colors={[`${theme.text.accent}26`, 'transparent']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 0.55 }}
             style={StyleSheet.absoluteFill}

@@ -1,15 +1,21 @@
 import React from 'react'
 import { StyleSheet } from 'react-native'
-import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassView } from './GlassView'
 
 interface GlassFillProps {
-  /** Override the blur intensity for this surface (defaults to the theme's). */
+  /** Adds one material layer for a major card or sheet surface. */
+  material?: boolean
+  /** Retained while callers migrate away from nested surface backgrounds. */
   intensity?: number
 }
 
-export function GlassFill({ intensity }: GlassFillProps) {
-  const isGlass = useIsGlass()
-  if (!isGlass) return null
+/**
+ * Legacy background helper.
+ *
+ * Major cards and sheets now own the only material layer. Leaving this
+ * transparent prevents controls nested inside them from becoming glass-on-glass.
+ */
+export function GlassFill({ material = false, intensity }: GlassFillProps) {
+  if (!material) return null
   return <GlassView intensity={intensity} style={StyleSheet.absoluteFill} pointerEvents="none" />
 }

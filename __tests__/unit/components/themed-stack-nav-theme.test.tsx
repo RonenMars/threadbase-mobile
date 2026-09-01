@@ -23,7 +23,6 @@ import i18n from '@/lib/i18n'
 import {
   dark,
   light,
-  appleGlassThemes,
   type Theme,
 } from '@/constants/theme'
 import {
@@ -189,7 +188,7 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
   })
 
   it('provides a transparent nav background under a glass theme', async () => {
-    await renderThemedStack(appleGlassThemes.aurora, true)
+    await renderThemedStack(dark, true)
 
     expect(mockCapture.navTheme).toBeDefined()
     expect(mockCapture.navTheme?.colors.background).toBe('transparent')

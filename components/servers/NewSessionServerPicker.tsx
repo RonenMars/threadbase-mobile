@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import type { ServerConfig } from '@/types/api'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
 import {
   blockTextDirectionStyle,
   ltrContentStyle,
@@ -26,6 +27,8 @@ const SNAP_POINTS = ['40%', '70%']
 
 export function NewSessionServerPicker({ visible, serverIds, servers, onPick, onClose }: Props) {
   const theme = useTheme()
+  const isGlass = useIsGlass()
+  const glassBackground = useGlassSheetBackground()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['servers', 'common'])
   const { direction } = useAppDirection()
@@ -40,7 +43,8 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
       index={0}
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={styles.sheetBg}
+      backgroundStyle={[styles.sheetBg, isGlass && styles.sheetBgGlass]}
+      backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetView style={[styles.content, directionStyle]}>
@@ -52,7 +56,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
             return (
               <TouchableOpacity
                 key={id}
-                style={styles.row}
+                style={[styles.row, isGlass && styles.rowGlass]}
                 onPress={() => onPick(id)}
                 testID={`new-session-server-${index}`}
               >
@@ -84,6 +88,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     sheetBg: { backgroundColor: theme.bg.secondary },
+    sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
     content: { flex: 1, padding: spacing.md, gap: spacing.md },
     title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
@@ -101,6 +106,7 @@ function makeStyles(theme: Theme) {
       justifyContent: 'space-between',
       gap: spacing.md,
     },
+    rowGlass: { backgroundColor: 'transparent' },
     serverInfo: {
       flex: 1,
       gap: spacing.xs,

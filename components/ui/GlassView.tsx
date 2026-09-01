@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native'
+import { AccessibilityInfo, Platform, View } from 'react-native'
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native'
 import { BlurView } from 'expo-blur'
 import type { BlurTint } from 'expo-blur'
@@ -43,51 +43,26 @@ export function GlassView({ children, style, intensity, tint, ...rest }: GlassVi
     }
   }, [])
 
-  if (theme.glass) {
-    if (Platform.OS === 'ios' && isGlassEffectAPIAvailable() && !reduceTransparency) {
-      return (
-        <NativeGlassView
-          glassEffectStyle="regular"
-          tintColor={theme.text.accent}
-          colorScheme={theme.colorMode}
-          style={style}
-          {...rest}
-        >
-          {children}
-        </NativeGlassView>
-      )
-    }
-
-    if (reduceTransparency) {
-      return (
-        <View
-          style={[style, { backgroundColor: theme.glass.opaqueSurface }]}
-          {...rest}
-        >
-          {children}
-        </View>
-      )
-    }
-
+  if (Platform.OS === 'ios' && isGlassEffectAPIAvailable() && !reduceTransparency) {
     return (
-      <BlurView
-        intensity={intensity ?? theme.glass.intensity}
-        tint={tint ?? theme.glass.tint}
+      <NativeGlassView
+        glassEffectStyle="regular"
+        colorScheme={theme.colorMode}
         style={style}
         {...rest}
       >
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.glass.overlayColor }]}
-          pointerEvents="none"
-        />
         {children}
-      </BlurView>
+      </NativeGlassView>
     )
   }
 
+  if (reduceTransparency) {
+    return <View style={[style, { backgroundColor: theme.bg.secondary }]} {...rest}>{children}</View>
+  }
+
   return (
-    <View style={style} {...rest}>
+    <BlurView intensity={intensity ?? 40} tint={tint ?? (theme.colorMode === 'light' ? 'light' : 'dark')} style={style} {...rest}>
       {children}
-    </View>
+    </BlurView>
   )
 }

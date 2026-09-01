@@ -1,11 +1,11 @@
-import { THEMES, appleGlassThemes } from '@/constants/theme'
+import { THEMES } from '@/constants/theme'
 
 // The search-match highlight (MessageBubble + ToolCard) uses a dedicated
 // per-theme token pair — `text.highlight` (fill) + `text.onHighlight` (text on
 // the fill). Guard that every registered theme (including glass variants)
 // defines both as concrete `#rrggbb` colors, so a new theme can't ship a
 // missing or malformed highlight.
-const ALL_THEMES = { ...THEMES, ...appleGlassThemes }
+const ALL_THEMES = THEMES
 
 describe('search highlight color', () => {
   it.each(Object.entries(ALL_THEMES))('theme "%s" defines a #rrggbb highlight fill', (_id, theme) => {
