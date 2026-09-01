@@ -58,6 +58,7 @@
       "__tests__/integration/components/MessageBubble.test.tsx",
       "__tests__/integration/components/NameSessionModal.rtl.test.tsx",
       "__tests__/integration/components/NewSessionServerPicker.test.tsx",
+      "__tests__/integration/components/NoServersWelcome.test.tsx",
       "__tests__/integration/components/PairCameraIdentityCard.test.tsx",
       "__tests__/integration/components/PairConfirmGate.test.tsx",
       "__tests__/integration/components/PairScannerPermissionRefresh.test.tsx",
