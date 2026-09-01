@@ -21,9 +21,34 @@ import { ChaCha20Poly1305 } from '@stablelib/chacha20poly1305'
 import { hmac } from '@stablelib/hmac'
 import { DIGEST_LENGTH, SHA256, hash as sha256 } from '@stablelib/sha256'
 import { PUBLIC_KEY_LENGTH, generateKeyPairFromSeed, sharedKey } from '@stablelib/x25519'
+import { assertBytes } from '@/services/e2ee/record'
 import { randomBytes } from 'tweetnacl'
 
 export const NOISE_PROTOCOL_NAME = 'Noise_IKpsk1_25519_ChaChaPoly_SHA256'
+
+/**
+ * `POST /api/e2ee/open` runs a **psk-less** `IK` — a different pattern, a
+ * different protocol name, and its own prologue
+ * (`threadbase-e2ee/1 open`, in `pair-handshake.ts`).
+ *
+ * The protocol name is the exact bytes that seed `h`, so the name itself is the
+ * domain separation between this handshake and pairing. NONCE-DESIGN §11.
+ */
+export const NOISE_OPEN_PROTOCOL_NAME = 'Noise_IK_25519_ChaChaPoly_SHA256'
+
+/** The PSK is a 32-byte value or it is absent. There is no third case. */
+export const PSK_BYTES = 32
+
+/**
+ * Which pattern an initiator runs. **Required, with no default and never
+ * inferred from whether a `psk` happens to be present.**
+ *
+ * Selecting the pattern by `psk` presence is the specific bug W1a's fourth
+ * adversary round found: an empty `Uint8Array` is truthy, so a truthiness check
+ * ran a full `IKpsk1` binding a constant. A capability that was never asked for
+ * must not be inferred — the same rule `readOnly` follows at pairing.
+ */
+export type NoisePattern = 'IKpsk1' | 'IK'
 
 const TAG_LENGTH = 16
 const NONCE_LENGTH = 12
@@ -189,10 +214,13 @@ export class SymmetricState {
 }
 
 export interface NoiseInitiatorConfig {
+  /** Required. Never defaulted, never inferred from `psk` — see `NoisePattern`. */
+  pattern: NoisePattern
   /** The responder's static public key, known in advance — `IK`'s `<- s` pre-message. */
   serverStaticPublic: Uint8Array
   clientStaticPrivate: Uint8Array
-  psk: Uint8Array
+  /** Exactly 32 bytes on `IKpsk1`; must be absent on `IK`. */
+  psk?: Uint8Array
   prologue: Uint8Array
   /** Test-only injection. A real handshake takes a fresh key from the system CSPRNG. */
   ephemeralPrivate?: Uint8Array
@@ -212,7 +240,33 @@ export interface NoiseInitiator {
 }
 
 export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiator {
-  const sym = new SymmetricState(NOISE_PROTOCOL_NAME)
+  // The pattern is read explicitly and validated before anything else. Both
+  // directions are errors: `IKpsk1` without a psk, and `IK` with one.
+  const pattern = config.pattern
+  if (pattern !== 'IKpsk1' && pattern !== 'IK') {
+    throw new Error('Noise: a handshake pattern is required (IKpsk1 or IK)')
+  }
+  // `Object.hasOwn`, never `??` or truthiness: `psk` reaches a trust boundary,
+  // an empty `Uint8Array` is truthy, and a polluted `Object.prototype` would
+  // otherwise supply one.
+  const hasPsk = Object.hasOwn(config, 'psk') && config.psk !== undefined
+  if (pattern === 'IKpsk1') {
+    if (!hasPsk) throw new Error('Noise: IKpsk1 requires a psk')
+    // Exactly 32 bytes. A `.length`/truthiness check accepted a zero-length or
+    // wrong-typed array and ran a full handshake binding a constant.
+    assertBytes(config.psk, PSK_BYTES, 'psk')
+  } else if (hasPsk) {
+    throw new Error('Noise: the psk-less IK pattern must not be given a psk')
+  }
+  if (!(config.prologue instanceof Uint8Array)) {
+    // Required parameter, deliberately not defaulted — defaulting it would
+    // silently remove the domain separation between /open and pairing.
+    throw new Error('Noise: a prologue is required')
+  }
+
+  const sym = new SymmetricState(
+    pattern === 'IKpsk1' ? NOISE_PROTOCOL_NAME : NOISE_OPEN_PROTOCOL_NAME,
+  )
   sym.mixHash(config.prologue)
   sym.mixHash(config.serverStaticPublic)
 
@@ -226,15 +280,29 @@ export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiat
       if (wroteMessage1) throw new Error('Noise: message 1 was already written')
       wroteMessage1 = true
 
-      // -> e, es, s, ss, psk
+      // IKpsk1: -> e, es, s, ss, psk        IK: -> e, es, s, ss
       sym.mixHash(e.publicKey)
-      // A PSK handshake additionally mixes each ephemeral into the chaining key,
-      // because message 1's payload can otherwise be keyed by the PSK alone.
+      // `MixKey(e.pk)` runs on BOTH patterns, and on `IK` that is a deliberate
+      // deviation from the Noise specification.
+      //
+      // Spec §9.2 calls MixKey on the ephemeral only in a PSK handshake, so a
+      // spec-pure `Noise_IK_25519_ChaChaPoly_SHA256` would omit it here. The
+      // streamer's `writeMessage1` calls it unconditionally
+      // (`src/e2ee/noise.ts` at tag v1.72.0), so the transcript that the
+      // committed `/open` vector pins is NOT a spec-pure `IK` — it is `IK` plus
+      // this extra chaining-key mix.
+      //
+      // The fixture is the contract, so we match the wire. Writing this to the
+      // specification instead produces a message 1 whose first 32 bytes match
+      // and whose remainder does not, failing with nothing but
+      // "authentication failed" to debug — which is exactly how it was found.
+      // Reported upstream; do NOT "fix" this to match the spec unless the
+      // streamer changes in the same breath, or /open stops interoperating.
       sym.mixKey(e.publicKey)
       sym.mixKey(dh(e.secretKey, config.serverStaticPublic))
       const encryptedStatic = sym.encryptAndHash(s.publicKey)
       sym.mixKey(dh(s.secretKey, config.serverStaticPublic))
-      sym.mixKeyAndHash(config.psk)
+      if (pattern === 'IKpsk1') sym.mixKeyAndHash(config.psk as Uint8Array)
       return concatBytes(e.publicKey, encryptedStatic, sym.encryptAndHash(payload))
     },
 
@@ -254,6 +322,9 @@ export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiat
       // <- e, ee, se
       const re = message.subarray(0, PUBLIC_KEY_LENGTH)
       sym.mixHash(re)
+      // Unconditional for the same reason as message 1's `mixKey(e.publicKey)`:
+      // the streamer's `readMessage2` mixes the responder ephemeral on both
+      // patterns, and the vector pins that transcript.
       sym.mixKey(re)
       sym.mixKey(dh(e.secretKey, re))
       sym.mixKey(dh(s.secretKey, re))

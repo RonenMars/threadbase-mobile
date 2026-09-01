@@ -170,6 +170,25 @@ describe('setRequireEncryption', () => {
 })
 
 describe('loadPersistedServers – encryption fields', () => {
+  it('does not overwrite a server added while hydration is reading an empty store', async () => {
+    let resolveInitialRead: (value: string | null) => void = () => {}
+    const initialRead = new Promise<string | null>((resolve) => {
+      resolveInitialRead = resolve
+    })
+    const getItemAsync = jest.requireMock('@/services/secure-store').getItemAsync as jest.Mock
+    getItemAsync.mockImplementationOnce(() => initialRead)
+
+    const loading = useServersStore.getState().loadPersistedServers()
+    await Promise.resolve()
+
+    const id = String(await useServersStore.getState().addServer(URL, 'key-abc', 'Studio Mac'))
+    resolveInitialRead(null)
+    await loading
+
+    expect(useServersStore.getState().servers[id]?.url).toBe(URL)
+    expect(useServersStore.getState().activeServerIds).toEqual([id])
+  })
+
   it('restores the require-encryption pin from the persisted store after memory is wiped', async () => {
     // A reader that dropped the field on load would look identical to an
     // unpinned server: the next connection goes out in plaintext, with nothing

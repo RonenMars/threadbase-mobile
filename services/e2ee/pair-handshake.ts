@@ -210,6 +210,7 @@ export async function beginPairHandshake(args: PairHandshakeArgs): Promise<PairH
   return {
     ok: true,
     handshake: createNoiseInitiator({
+      pattern: 'IKpsk1',
       serverStaticPublic,
       clientStaticPrivate,
       psk: derivePairPsk(args.pairToken),
@@ -217,4 +218,78 @@ export async function beginPairHandshake(args: PairHandshakeArgs): Promise<PairH
       ephemeralPrivate: args.ephemeralPrivate,
     }),
   }
+}
+
+/**
+ * `MixHash`'d before any token of the `/api/e2ee/open` handshake.
+ *
+ * **Explicit, never the default `PAIR_PROLOGUE`** (NONCE-DESIGN §11, §14).
+ * Together with the psk-less protocol name it is the whole of the domain
+ * separation between opening a transport context and pairing a device: a valid
+ * *pairing* message 1 read under this prologue must fail, and the committed
+ * `open.pairingMessage1RejectedHere` vector is what proves it still does.
+ */
+export const OPEN_PROLOGUE = 'threadbase-e2ee/1 open'
+
+/**
+ * Which kind of context an `/open` is asking for. **Required, no default**
+ * (NONCE-DESIGN §11): the two kinds have different lifetimes, different receive
+ * state and different contents, so the handshake has to say which one it is
+ * opening. It travels *inside* the encrypted payload, so an intermediary cannot
+ * flip a socket context into a REST one.
+ */
+export type OpenContextKind = 'ws' | 'rest'
+
+export type OpenHandshakeStart =
+  | { ok: true; handshake: NoiseInitiator }
+  /** No stored device key for this server: this device is not paired. */
+  | { ok: false; reason: 'not-paired' }
+
+export interface OpenHandshakeArgs {
+  serverId: string
+  /** The pinned server static key, base64url, from the server record. */
+  serverPublicKey: string
+  /** Test-only injection, forwarded verbatim to the Noise initiator. */
+  ephemeralPrivate?: Uint8Array
+}
+
+/**
+ * Builds the initiator for `POST /api/e2ee/open`.
+ *
+ * **The device key is loaded here and never handed back.** There is deliberately
+ * no `getDeviceStaticKey()` — a getter that returns key bytes is exactly the
+ * shape W1a's guard-class rules forbid, and it would put `D_priv` one careless
+ * log line away from a breadcrumb. The key enters `createNoiseInitiator` and
+ * leaves this function only as a `NoiseInitiator`.
+ *
+ * **Load-only, never create.** `beginPairHandshake` is load-or-create because
+ * pairing is where a device key legitimately comes into existence; `/open` is
+ * not. Minting one here would hand the server a static key it has no row for,
+ * and the handshake would fail at the device lookup anyway — but as
+ * `E2EE_DEVICE_REVOKED`, which the client is required to surface as a hard
+ * failure. "Not paired" is the honest answer and a different one.
+ */
+export async function createOpenInitiator(args: OpenHandshakeArgs): Promise<OpenHandshakeStart> {
+  const serverStaticPublic = decodeServerStaticKey(args.serverPublicKey)
+  const clientStaticPrivate = decodeStoredDeviceKey(
+    await SecureStore.getItemAsync(deviceStaticKeyStoreKey(args.serverId)),
+  )
+  if (!clientStaticPrivate) return { ok: false, reason: 'not-paired' }
+
+  return {
+    ok: true,
+    handshake: createNoiseInitiator({
+      // Psk-less IK. Passing `psk` at all here is refused by `noise.ts`.
+      pattern: 'IK',
+      serverStaticPublic,
+      clientStaticPrivate,
+      prologue: naclUtil.decodeUTF8(OPEN_PROLOGUE),
+      ...(args.ephemeralPrivate ? { ephemeralPrivate: args.ephemeralPrivate } : {}),
+    }),
+  }
+}
+
+/** msg1's payload: `{ v, kind }`. `kind` is required and authenticated inside the AEAD. */
+export function openMessage1Payload(kind: OpenContextKind): string {
+  return JSON.stringify({ v: E2EE_CLIENT_VERSION, kind })
 }

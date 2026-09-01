@@ -431,7 +431,11 @@ await refreshServerInfo(serverId)
       requireEncryption: result.e2eeRequired,
     })
     if (typeof addResult === 'string') {
-      wsManager.connect(addResult, result.url, result.apiKey)
+      const server = useServersStore.getState().servers[addResult]
+      wsManager.connect(addResult, result.url, result.apiKey, {
+        serverPublicKey: server?.serverPublicKey,
+        requireEncryption: server?.requireEncryption,
+      })
     } else {
       Alert.alert(
         i18n.t('pair:scanner.alreadyAddedTitle'),

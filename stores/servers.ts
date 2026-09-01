@@ -528,6 +528,10 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   },
 
   loadPersistedServers: async () => {
+    // Hydration is asynchronous, while onboarding can add a server immediately
+    // after the root mounts. Do not let an older persisted snapshot overwrite
+    // a server mutation that completed while this read was in flight.
+    const serversAtLoadStart = get().servers
     set({ isLoading: true })
     try {
       // ── Try SecureStore first (survives uninstall on iOS), then migrate from AsyncStorage ──
@@ -567,6 +571,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           ? validDisplayed
           : defaultDisplayedServerIds(activeServerIds)
         const hasEverHadServer = parsed.hasEverHadServer ?? activeServerIds.length > 0
+        if (get().servers !== serversAtLoadStart) return
         set({ servers, activeServerIds, displayedServerIds, hasEverHadServer })
         return
       }
@@ -603,6 +608,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         await SecureStore.deleteItemAsync(LEGACY_SECURE_KEY)
         await AsyncStorage.removeItem(LEGACY_ASYNC_KEY)
 
+        if (get().servers !== serversAtLoadStart) return
         set({ servers, activeServerIds, displayedServerIds, hasEverHadServer: true })
       }
     } finally {

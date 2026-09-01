@@ -180,7 +180,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     for (const serverId of activeServerIds) {
       const server = currentServers[serverId]
       if (server) {
-        wsManager.connect(serverId, server.url, authToken(server))
+        wsManager.connect(serverId, server.url, authToken(server), {
+          serverPublicKey: server.serverPublicKey,
+          requireEncryption: server.requireEncryption,
+        })
       }
     }
 

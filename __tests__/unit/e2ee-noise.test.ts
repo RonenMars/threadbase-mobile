@@ -29,6 +29,7 @@ const payload2 = utf8(vectors.payload2Utf8)
 
 function initiator(overrides: { psk?: Uint8Array; serverStaticPublic?: Uint8Array } = {}) {
   return createNoiseInitiator({
+    pattern: 'IKpsk1',
     serverStaticPublic: overrides.serverStaticPublic ?? serverStaticPublic,
     clientStaticPrivate,
     psk: overrides.psk ?? psk,

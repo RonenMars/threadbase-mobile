@@ -18,6 +18,19 @@ appId: com.ronenmars.threadbase
 
 - tapOn:
     id: "fab-new-session"
+    retryTapIfNoChange: true
+
+# setup.yaml pairs both mock servers, so the FAB correctly opens the server
+# picker rather than navigating directly to Browse. Pick the primary mock
+# server when that picker is present; a one-server setup still goes straight
+# through to Browse.
+- runFlow:
+    when:
+      visible:
+        id: "new-session-server-0"
+    commands:
+      - tapOn:
+            id: "new-session-server-0"
 
 - extendedWaitUntil:
     visible:

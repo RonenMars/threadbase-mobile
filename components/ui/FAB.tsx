@@ -43,7 +43,7 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
       style={[styles.fab, { bottom: 24 + insets.bottom }]}
     >
       {/* glow halo */}
-      <Animated.View style={[styles.glow, { opacity: glowAnim }]} />
+      <Animated.View pointerEvents="none" style={[styles.glow, { opacity: glowAnim }]} />
       <Plus size={22} color="#e6edf3" weight="bold" />
     </TouchableOpacity>
   )
