@@ -25,6 +25,7 @@
     "__tests__/unit/scripts/android-cleartext-policy.test.js",
     "__tests__/unit/scripts/check-sentry-env.test.js",
     "__tests__/unit/scripts/ci-integration-test-shards.test.js",
+    "__tests__/unit/scripts/ci-lint-shards.test.js",
     "__tests__/unit/scripts/ci-script-test-shards.test.js",
     "__tests__/unit/scripts/e2e-android-apk-cache.test.js",
     "__tests__/unit/scripts/e2e-android-script-single-line.test.js",
