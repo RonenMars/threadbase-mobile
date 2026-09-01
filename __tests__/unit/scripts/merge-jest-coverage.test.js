@@ -10,6 +10,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/merge-jest-coverage.js');
+const WORKFLOW = path.resolve(__dirname, '../../../.github/workflows/test.yml');
 
 function writeCoverage(dir, payload) {
   fs.mkdirSync(dir, { recursive: true });
@@ -58,5 +59,17 @@ describe('merge-jest-coverage.js', () => {
       fs.readFileSync(path.join(outDir, 'coverage-final.json'), 'utf8'),
     );
     expect(Object.keys(merged).sort()).toEqual(['/repo/a.ts', '/repo/b.ts']);
+  });
+
+  it('keeps coverage shard artifacts in separate directories before merging', () => {
+    const workflow = fs.readFileSync(WORKFLOW, 'utf8');
+
+    for (const stepName of ['Download unit coverage shards', 'Download integration coverage shards']) {
+      const start = workflow.indexOf(`- name: ${stepName}`);
+      const end = workflow.indexOf('\n      - name:', start + 1);
+      const step = workflow.slice(start, end === -1 ? undefined : end);
+
+      expect(step).not.toContain('merge-multiple: true');
+    }
   });
 });

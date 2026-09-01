@@ -190,7 +190,6 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           pattern: unit-coverage-shard-*
-          merge-multiple: true
           path: coverage/shards
 
       - name: Merge unit coverage
@@ -265,7 +264,6 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           pattern: integration-coverage-shard-*
-          merge-multiple: true
           path: coverage/shards
 
       - name: Merge integration coverage
