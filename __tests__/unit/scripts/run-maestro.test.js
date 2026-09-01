@@ -52,6 +52,7 @@ function makeFixture() {
       "const { spawn } = require('child_process');",
       "const fs = require('fs');",
       "if (process.env.FAKE_ARGS_PATH) fs.writeFileSync(process.env.FAKE_ARGS_PATH, JSON.stringify(process.argv.slice(2)));",
+      "if (process.env.FAKE_ARGS_LOG_PATH) fs.appendFileSync(process.env.FAKE_ARGS_LOG_PATH, JSON.stringify(process.argv.slice(2)) + '\\n');",
       "if (process.env.FAKE_PARTIAL_REPORT_DELAY_MS) {",
       "  fs.writeFileSync(process.env.FAKE_REPORT_PATH, '{\\\"app_name\\\":\\\"SpringBoard\\\"}\\n');",
       "  spawn(process.execPath, ['-e', 'setTimeout(() => require(\\'fs\\').writeFileSync(process.argv[1], process.argv[2]), Number(process.argv[3]))', process.env.FAKE_REPORT_PATH, process.env.FAKE_REPORT_CONTENT, process.env.FAKE_PARTIAL_REPORT_DELAY_MS], { detached: true, stdio: 'ignore' }).unref();",
@@ -194,6 +195,27 @@ test('caller arguments reach Maestro unmangled, without shell re-parsing', () =>
   expect(received.slice(3)).toEqual(args.slice(1));
 
   expect(fs.existsSync(path.join(fixture.root, 'nope'))).toBe(false);
+});
+
+test('iOS suites restart Maestro before the accessibility session expires', () => {
+  fixture = makeFixture();
+  const argsLogPath = path.join(fixture.root, 'args.log');
+  const flows = Array.from({ length: 9 }, (_, index) => `e2e/flow-${index}.yaml`);
+
+  const result = runGuard(fixture, {
+    args: ['test', '--debug-output', 'e2e/_artifacts/debug', ...flows],
+    env: { E2E_PLATFORM: 'ios', FAKE_ARGS_LOG_PATH: argsLogPath },
+  });
+
+  expect(result.status).toBe(0);
+  const invocations = fs
+    .readFileSync(argsLogPath, 'utf8')
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+  expect(invocations).toHaveLength(2);
+  expect(invocations[0].slice(-8)).toEqual(flows.slice(0, 8));
+  expect(invocations[1].slice(-1)).toEqual(flows.slice(8));
 });
 
 test('a matching report written after Maestro exits is found during the grace period', () => {

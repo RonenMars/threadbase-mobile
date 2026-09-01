@@ -1,6 +1,5 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import Animated, { SlideInLeft, SlideInRight } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft, ArrowRight } from 'phosphor-react-native'
@@ -12,7 +11,6 @@ import { colors, fonts } from './theme'
 interface Props {
   index: number
   total: number
-  direction: 1 | -1 | 0
   onNext: () => void
   onBack: () => void
   onSkip: () => void
@@ -35,7 +33,6 @@ function getSkipLabel(label: 'skip' | 'pairLater', t: TFunction<'onboarding'>): 
 export function OnboardingShell({
   index,
   total,
-  direction,
   onNext,
   onBack,
   onSkip,
@@ -59,10 +56,6 @@ export function OnboardingShell({
 
   const showBack = index > 0
   const showSkip = showSkipProp ?? index < total - 1
-  const isBackward = direction === -1
-  const entersFromLeft = localeDirection === 'rtl' ? !isBackward : isBackward
-  const Entering = entersFromLeft ? SlideInLeft : SlideInRight
-
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View
@@ -111,13 +104,12 @@ export function OnboardingShell({
       </View>
 
       <GestureDetector gesture={swipe}>
-        <Animated.View
+        <View
           key={index}
           style={styles.content}
-          entering={Entering.duration(350)}
         >
           {children}
-        </Animated.View>
+        </View>
       </GestureDetector>
 
       <View style={[styles.dotsWrap, { paddingBottom: Math.max(insets.bottom, 18) }]}>

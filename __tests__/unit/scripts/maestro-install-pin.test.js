@@ -28,15 +28,18 @@ function maestroInstallScript() {
   return match[1].replace(/^          /gm, '');
 }
 
-function writeFakeCurl(binDirectory, installedVersion) {
+function writeFakeCurl(binDirectory, installedVersion, emitsAnalyticsNotice) {
   const curlPath = path.join(binDirectory, 'curl');
+  const analyticsNotice = emitsAnalyticsNotice
+    ? "printf '%s\\n' 'Anonymous analytics enabled. To opt out, set MAESTRO_CLI_NO_ANALYTICS environment variable to any value before running Maestro.'\n"
+    : '';
   fs.writeFileSync(
     curlPath,
     `#!/bin/sh
 cat <<'INSTALLER'
 printf '%s' "\${MAESTRO_VERSION:-}" > "$OUTPUT_FILE"
 mkdir -p "$HOME/.maestro/bin"
-printf '%s\\n' '#!/bin/sh' 'echo "${installedVersion}"' > "$HOME/.maestro/bin/maestro"
+printf '%s\\n' '#!/bin/sh' '${analyticsNotice}printf %s\\\\n ${JSON.stringify(installedVersion)}' > "$HOME/.maestro/bin/maestro"
 chmod +x "$HOME/.maestro/bin/maestro"
 INSTALLER
 `,
@@ -44,12 +47,12 @@ INSTALLER
   fs.chmodSync(curlPath, 0o755);
 }
 
-function runInstallStep(installedVersion) {
+function runInstallStep(installedVersion, { emitsAnalyticsNotice = false } = {}) {
   const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-install-pin-'));
   const binDirectory = path.join(tempDirectory, 'bin');
   const outputFile = path.join(tempDirectory, 'installer-version');
   fs.mkdirSync(binDirectory);
-  writeFakeCurl(binDirectory, installedVersion);
+  writeFakeCurl(binDirectory, installedVersion, emitsAnalyticsNotice);
 
   const env = {
     ...process.env,
@@ -76,6 +79,16 @@ test('passes the pinned version to the Maestro installer process', () => {
   try {
     expect(result.status).toBe(0);
     expect(fs.readFileSync(outputFile, 'utf8')).toBe('2.8.0');
+  } finally {
+    fs.rmSync(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('accepts the pinned version after Maestro prints its analytics notice', () => {
+  const { result, tempDirectory } = runInstallStep('2.8.0', { emitsAnalyticsNotice: true });
+
+  try {
+    expect(result.status).toBe(0);
   } finally {
     fs.rmSync(tempDirectory, { recursive: true, force: true });
   }

@@ -36,7 +36,7 @@ jobs:
           # Same construction as e2e.yml: context values arrive via env: and are
           # handed to jq -n --arg, never interpolated into a shell-quoted body.
           PAYLOAD=$(jq -n --arg t "Threadbase CI alert test — if you can read this, CI_ALERT_WEBHOOK works. $RUN_URL" '{text: $t}')
-          curl -sf -X POST "$WEBHOOK_URL" \
+          curl -sS --fail-with-body -X POST "$WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -d "$PAYLOAD"
           echo "Alert POSTed successfully. If nothing arrived, the URL is well-formed but points somewhere unexpected."

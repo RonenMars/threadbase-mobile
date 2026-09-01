@@ -2,7 +2,7 @@ name: E2E
 
 # Maestro E2E (Android by default, with an iOS option). Two ways in:
 #
-#   * Monthly schedule — 00:00 UTC on the 1st, the low-frequency regression gate
+#   * Weekly schedule — 00:00 UTC every Sunday, covering Android and iOS
 #     this suite has always been. It lived in `test.yml` until this workflow
 #     existed; it moved here so E2E has one home rather than two.
 #   * Manual dispatch — run it against any branch, tag, commit SHA, or open PR
@@ -68,8 +68,8 @@ on:
         default: ''
         type: string
   schedule:
-    # Monthly E2E run: 00:00 UTC on the 1st of each month
-    - cron: '0 0 1 * *'
+    # Weekly E2E run: 00:00 UTC every Sunday
+    - cron: '0 0 * * 0'
 
 concurrency:
   # One E2E at a time per target — two runs would fight over the same emulator.
@@ -78,8 +78,12 @@ concurrency:
 
 jobs:
   e2e-maestro:
-    name: E2E maestro
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && 'macos-26' || 'ubuntu-24.04' }}
+    name: E2E maestro (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ github.event_name == 'schedule' && fromJSON('["android", "ios"]') || fromJSON(format('["{0}"]', inputs.platform)) }}
+    runs-on: ${{ matrix.platform == 'ios' && 'macos-26' || 'ubuntu-24.04' }}
     # 75m was enough when the iOS Release cache was warm (~39m build + ~19m
     # Maestro). A cold DerivedData miss (run 32161343357) spent ~57m on the
     # build and was cancelled at 75m with the suite still running.
@@ -123,25 +127,25 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' && '22' || '24.15.0' }}
+          node-version: ${{ matrix.platform == 'ios' && '22' || '24.15.0' }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        if: ${{ matrix.platform == 'android' }}
         with:
           distribution: temurin
           java-version: '17'
 
       - uses: android-actions/setup-android@v4
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        if: ${{ matrix.platform == 'android' }}
 
       # cache-read-only defaults to true off `main`, which would make a feature-
       # branch warmup unable to seed the next dispatch on that same branch.
       - uses: gradle/actions/setup-gradle@v5
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        if: ${{ matrix.platform == 'android' }}
         with:
           cache-read-only: false
 
@@ -151,7 +155,7 @@ jobs:
       # the same `--ref` (typically the branch under test).
       - name: Cache Android Release APK
         id: apk-cache
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        if: ${{ matrix.platform == 'android' }}
         uses: actions/cache@v5
         with:
           path: android/app/build/outputs/apk/release/app-release.apk
@@ -161,7 +165,7 @@ jobs:
       # a live emulator idle. That idle window is what made later Maestro flows
       # die with `device offline`. A cache hit skips this step entirely.
       - name: Assemble Android Release APK
-        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.platform == 'android') && steps.apk-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.platform == 'android' && steps.apk-cache.outputs.cache-hit != 'true' }}
         env:
           REACT_NATIVE_ARCHITECTURES: x86_64
           TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
@@ -173,7 +177,7 @@ jobs:
         run: ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"
 
       - name: Note APK cache hit
-        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.platform == 'android') && steps.apk-cache.outputs.cache-hit == 'true' }}
+        if: ${{ matrix.platform == 'android' && steps.apk-cache.outputs.cache-hit == 'true' }}
         env:
           TEST_SHA: ${{ steps.head.outputs.sha }}
         run: echo "Reusing cached Release APK for $TEST_SHA" >> "$GITHUB_STEP_SUMMARY"
@@ -183,7 +187,7 @@ jobs:
           MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
           curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-          INSTALLED_MAESTRO_VERSION=$("$HOME/.maestro/bin/maestro" --version)
+          INSTALLED_MAESTRO_VERSION=$(MAESTRO_CLI_NO_ANALYTICS=1 "$HOME/.maestro/bin/maestro" --version | tail -n 1)
           if [ "$INSTALLED_MAESTRO_VERSION" != "$MAESTRO_VERSION" ]; then
             echo "::error::Expected Maestro $MAESTRO_VERSION, installed $INSTALLED_MAESTRO_VERSION."
             exit 1
@@ -199,7 +203,7 @@ jobs:
       # post-boot unlock ran, before any of the script below executed. With KVM
       # the boot is ~1 minute and those calls land on a settled system.
       - name: Enable KVM
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        if: ${{ matrix.platform == 'android' }}
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -209,7 +213,7 @@ jobs:
       # and Google APIs x86_64 image, then waits for the one requested emulator
       # to finish booting before it runs the script below.
       - name: Install APK and run Maestro on Android API 35
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'android' }}
+        if: ${{ matrix.platform == 'android' }}
         uses: reactivecircus/android-emulator-runner@v2
         env:
           FLOWS: ${{ inputs.flows }}
@@ -239,13 +243,13 @@ jobs:
           script: bash e2e/run-android-ci.sh
 
       - uses: ruby/setup-ruby@v1
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         with:
           ruby-version: '3.3'
           bundler-cache: true
 
       - name: Restore iOS DerivedData cache
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         uses: actions/cache@v5
         with:
           path: build/ios-ci
@@ -255,22 +259,23 @@ jobs:
             ios-derived-v1-${{ runner.os }}-xcode26.3-
 
       - name: Select Xcode 26
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         # expo-modules-jsi's Package.swift requires swift-tools 6.2 (Xcode 26)
         # and its Swift sources build only on Xcode 26.4+ (Expo issue #47875), so
         # the iOS job runs on macos-26 and pins the same toolchain as deploy.yml.
         run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
 
       - name: Boot iOS simulator
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         run: |
           DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
           echo "Booting simulator: $DEVICE"
           xcrun simctl boot "$DEVICE" || true
           xcrun simctl bootstatus "$DEVICE" -b
+          echo "IOS_UDID=$DEVICE" >> "$GITHUB_ENV"
 
       - name: Install CocoaPods
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
         # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
         # and an xcodebuild that dies on a missing `Pods-Threadbase.release
@@ -293,7 +298,7 @@ jobs:
         run: ./scripts/check-sentry-env.sh >> "$GITHUB_ENV"
 
       - name: Build and install iOS app (Release)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         env:
           SENTRY_DISABLE_AUTO_UPLOAD: true
         run: |
@@ -301,14 +306,14 @@ jobs:
             -workspace ios/Threadbase.xcworkspace \
             -scheme Threadbase \
             -configuration Release \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "platform=iOS Simulator,id=$IOS_UDID" \
             -derivedDataPath build/ios-ci \
             build
           APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
           xcrun simctl install booted "$APP_PATH"
 
       - name: Run Maestro E2E suite on iOS
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ matrix.platform == 'ios' }}
         env:
           FLOWS: ${{ inputs.flows }}
           # The XCTest driver took about 203 seconds to start in run 33165429413.
@@ -360,7 +365,7 @@ jobs:
       # That is what run 31904637356 uploaded: an empty PNG and nothing else.
 
       - name: Capture iOS simulator screenshot on failure
-        if: ${{ failure() && github.event_name == 'workflow_dispatch' && inputs.platform == 'ios' }}
+        if: ${{ failure() && matrix.platform == 'ios' }}
         run: xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
 
       - name: Copy Maestro session dir on failure
@@ -376,21 +381,18 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: maestro-artifacts
+          name: maestro-artifacts-${{ matrix.platform }}
           path: e2e/_artifacts/
           retention-days: 7
           if-no-files-found: warn
 
-  notify-schedule-failure:
-    name: Notify on scheduled E2E failure
+  notify-e2e-failure:
+    name: Notify on E2E failure
     needs: e2e-maestro
-    # `failure()` is true only when a needed job (e2e-maestro) actually failed —
-    # not when it's cancelled, and not when it's skipped. Combined with the
-    # event_name check, this only fires for the monthly cron: a workflow_dispatch
-    # run has someone watching it live, so it doesn't need a push alert. A
-    # scheduled run has no PR to report into, which is the blind spot this job
-    # closes — see docs/followups/repo-health/01-scheduled-run-notifications.md.
-    if: failure() && github.event_name == 'schedule'
+    # A dependent failure ordinarily skips this job. `always()` makes it run
+    # after the Android/iOS matrix completes, while the result check suppresses
+    # notifications for successful, skipped, and cancelled E2E runs.
+    if: ${{ always() && needs.e2e-maestro.result == 'failure' }}
     runs-on: ubuntu-latest
     steps:
       # CI_ALERT_WEBHOOK is unset until a channel (Slack/Discord/ntfy/etc.) is
@@ -400,7 +402,7 @@ jobs:
         env:
           WEBHOOK_URL: ${{ secrets.CI_ALERT_WEBHOOK }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: ${{ github.workflow }}
+          PLATFORMS: ${{ github.event_name == 'schedule' && 'android, ios' || inputs.platform }}
         run: |
           set -euo pipefail
           if [ -z "${WEBHOOK_URL:-}" ]; then
@@ -411,7 +413,11 @@ jobs:
           # here as shell variables, then handed to jq -n --arg — never
           # string-interpolated straight into a shell-quoted JSON body, which is
           # a workflow-injection vector the repo's PostToolUse hook flags.
-          PAYLOAD=$(jq -n --arg t "E2E scheduled run failed: $WORKFLOW_NAME — $RUN_URL" '{text: $t}')
-          curl -sf -X POST "$WEBHOOK_URL" \
+          MESSAGE=$(printf 'Threadbase Mobile E2E Weekly 🤖\n🚨 E2E run failed\n📱 Platform: %s\n🌐 View run: %s' "$PLATFORMS" "$RUN_URL")
+          PAYLOAD=$(jq -n --arg t "$MESSAGE" '{text: $t}')
+          # Preserve the destination's response body so Telegram errors (for
+          # example, an invalid bot token or chat_id) identify the secret
+          # configuration problem instead of producing an opaque curl 22.
+          curl -sS --fail-with-body -X POST "$WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -d "$PAYLOAD"
