@@ -17,9 +17,9 @@ import type {
 import type { SortBy, SortOrder } from '@/types/ui'
 
 const DEFAULT_PAGE_SIZE = 50
-// Per-page timeout for eager sessions fetching — generous (60 s) because a cold
-// scanner or many connected servers can make the first page slow.
-const SESSIONS_FETCH_TIMEOUT_MS = 60000
+// Initial Hub loading must fail promptly when a phone cannot reach a configured
+// server. The user can explicitly retry from the non-blocking server alert.
+const SESSIONS_FETCH_TIMEOUT_MS = 12_000
 
 // The home screen's `SortBy` (UI) uses 'lastActivity'; the wire format is
 // 'lastActivityAt' to match the field on SessionResponse. All other names
@@ -77,9 +77,13 @@ async function fetchAllPagesForServer(
     if (signal?.aborted) throw new Error('aborted')
 
     const qs = buildSessionsQueryString({ limit: DEFAULT_PAGE_SIZE, cursor, sortBy, order, status })
-    // Sessions fetching can be slow on a cold scanner / many servers — give each
-    // page a generous 60 s timeout instead of the default 8/15 s.
-    const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, { signal, timeoutMs: SESSIONS_FETCH_TIMEOUT_MS })
+    // Do not automatically retry startup list requests: two unreachable servers
+    // otherwise keep the Hub blocked for two 60-second attempts.
+    const page = await api.get<SessionListPage>(`/api/sessions?${qs}`, {
+      signal,
+      timeoutMs: SESSIONS_FETCH_TIMEOUT_MS,
+      retry: false,
+    })
     for (const s of page.sessions) {
       collected.push({ ...s, status: narrowSessionStatus(s.status), serverId, serverLabel })
     }
@@ -111,8 +115,10 @@ export interface UseEagerSessionsResult {
   isDone: boolean
   isCounting: boolean
   inFlightCount: number
+  isRetrying: boolean
   error: Error | null
   refetch: () => Promise<void>
+  retryFailed: (serverIds?: string[]) => void
 }
 
 export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessionsResult {
@@ -128,6 +134,13 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
 
   const wireSortBy = toWireSortKey(sortBy)
   const statusKey = status?.length ? [...status].sort().join(',') : ''
+  const [fetchRequest, setFetchRequest] = useState<{
+    serverIds: string[]
+    retrying: boolean
+    nonce: number
+  } | null>(null)
+  const [preservedSessions, setPreservedSessions] = useState<MultiSession[]>([])
+  const targetServerIds = fetchRequest?.serverIds ?? activeServerIds
 
   // Per-server progress map stored in a ref so queryFn mutations don't need
   // setState on every page tick, only a single aggregate setState call.
@@ -146,8 +159,8 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   }, [servers])
 
   const queryKey = useMemo(
-    () => ['sessions-eager', wireSortBy, order, statusKey, ...activeServerIds],
-    [wireSortBy, order, statusKey, activeServerIds],
+    () => ['sessions-eager', wireSortBy, order, statusKey, ...targetServerIds, fetchRequest?.nonce ?? 0],
+    [wireSortBy, order, statusKey, targetServerIds, fetchRequest?.nonce],
   )
 
   // Recomputes and flushes aggregate to state. Called from per-server progress
@@ -171,15 +184,15 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
     queryFn: async ({ signal }) => {
       // Reset per-server slices and aggregate at the start of every run.
       const initialMap = new Map<string, ServerProgress>()
-      for (const id of activeServerIds) {
+      for (const id of targetServerIds) {
         initialMap.set(id, { loaded: 0, total: null, done: false })
       }
       serverProgressRef.current = initialMap
       throttledSetAggregate.cancel()
-      setAggregateProgress({ loaded: 0, total: 0, inFlightCount: activeServerIds.length })
+      setAggregateProgress({ loaded: 0, total: 0, inFlightCount: targetServerIds.length })
 
       const perServerResults = await Promise.all(
-        activeServerIds.map(async (serverId) => {
+        targetServerIds.map(async (serverId) => {
           const server = serversRef.current[serverId]
           const label = server?.label
 
@@ -222,14 +235,33 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       // otherwise leave the counter one page short at "done".
       throttledSetAggregate.flush()
 
-      return dedupeByServerAndId(perServerResults.flat())
+      const untouchedSessions = preservedSessions.filter((session) => !targetServerIds.includes(session.serverId))
+      return dedupeByServerAndId([...untouchedSessions, ...perServerResults.flat()])
     },
     enabled: activeServerIds.length > 0,
   })
 
   const refetch = useCallback(async () => {
-    await query.refetch()
-  }, [query])
+    setPreservedSessions(query.data ?? preservedSessions)
+    setFetchRequest((previous) => ({
+      serverIds: activeServerIds,
+      retrying: false,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }))
+  }, [activeServerIds, preservedSessions, query.data])
+
+  const retryFailed = useCallback((serverIds?: string[]) => {
+    const failedServerIds = (serverIds ?? activeServerIds).filter(
+      (serverId) => useServerFetchStatusStore.getState().statuses[serverId]?.status === 'error',
+    )
+    if (failedServerIds.length === 0) return
+    setPreservedSessions(query.data ?? preservedSessions)
+    setFetchRequest((previous) => ({
+      serverIds: failedServerIds,
+      retrying: true,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }))
+  }, [activeServerIds, preservedSessions, query.data])
 
   useEffect(() => {
     if (activeServerIds.length === 0) {
@@ -240,7 +272,9 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
     }
   }, [activeServerIds.length])
 
-  const sessions = query.data ?? []
+  // A targeted retry uses a new query key. Keep the prior successful sessions
+  // visible while that fresh query has no data yet.
+  const sessions = query.data ?? preservedSessions
   const isDone = activeServerIds.length === 0 || (query.isFetched && !query.isFetching)
   // "Counting" = fetches are running but no server has returned its first page yet
   const isCounting = !isDone && aggregateProgress.total === 0 && aggregateProgress.inFlightCount > 0
@@ -252,8 +286,10 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
     isDone,
     isCounting,
     inFlightCount: aggregateProgress.inFlightCount,
+    isRetrying: fetchRequest?.retrying === true && query.isFetching,
     error: query.error,
     refetch,
+    retryFailed,
   }
 }
 

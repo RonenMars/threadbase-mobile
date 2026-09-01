@@ -222,6 +222,8 @@ export default function ProjectsHub() {
     total: sessionsTotal,
     inFlightCount: sessionsInFlight,
     refetch: refetchSessions,
+    retryFailed,
+    isRetrying: isRetryingFailedServers,
   } = useEagerSessions({
     sort: { sortBy, order: sortOrder },
     filter: { status: selectedStatuses },
@@ -304,6 +306,10 @@ export default function ProjectsHub() {
   // header fallback spinner in Classic. Multi-server is covered by the chips.
   const showSyncNotice = isBackgroundRefreshing && activeServerIds.length <= 1
   const syncNoticeVariant = sessionsLayout === 'tree' || sessionsLayout === 'hub' ? 'banner' : 'caption'
+  const allServersFailed =
+    activeServerIds.length > 0 &&
+    sessionsDone &&
+    activeServerIds.every((serverId) => fetchStatuses[serverId]?.status === 'error')
 
   // Sessions cluster to the top of the merged list under the LIVE header
   // (running / waiting_input first, then idle), regardless of conversation
@@ -472,12 +478,27 @@ export default function ProjectsHub() {
         fetchStatuses={fetchStatuses}
         wsConnectedCount={wsConnectedCount}
         onViewDetails={() => setStatusModalOpen(true)}
+        onRetryFailed={() => retryFailed()}
+        isRetrying={isRetryingFailedServers}
       />
 
       {/* Content */}
       <View style={styles.contentArea}>
       {activeServerIds.length === 0 && !hasEverHadServer ? (
         <NoServersWelcome />
+      ) : allServersFailed ? (
+        <EmptyState
+          title={t('sessions:list.allServersOffline')}
+          subtitle={t('sessions:list.allServersOfflineSubtitle')}
+          action={{
+            label: t('servers:action.details'),
+            onPress: () => setStatusModalOpen(true),
+          }}
+          secondaryAction={{
+            label: t('servers:action.retry'),
+            onPress: () => retryFailed(),
+          }}
+        />
       ) : sessionsLayout === 'tree' ? (
         <TreeSessionsList
           sessions={visibleSessions}
@@ -591,6 +612,7 @@ export default function ProjectsHub() {
       <ServersStatusModal
         visible={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
+        onRetrySessions={(serverId) => retryFailed([serverId])}
       />
       <FilterSortSheet
         visible={sheetOpen}

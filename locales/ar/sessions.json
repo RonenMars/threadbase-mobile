@@ -29,6 +29,8 @@
   "list": {
     "empty": "لا توجد سيشنات",
     "emptySubtitle": "ابدؤوا سيشن Claude Code أو Codex\nلرؤيته هنا",
+    "allServersOffline": "يتعذر الاتصال بخوادمك",
+    "allServersOfflineSubtitle": "تحقق من أن هاتفك يستطيع الوصول إلى عناوين الخوادم، ثم استخدم زر حالة الخادم أعلاه لإعادة المحاولة أو عرض التفاصيل.",
     "noResults": "لا توجد نتائج",
     "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
     "serverEmpty": "لا توجد سيشنات على هذا الخادم",

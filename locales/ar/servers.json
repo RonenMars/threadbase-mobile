@@ -10,7 +10,8 @@
   "action": {
     "add": "إضافة خادم",
     "edit": "تعديل الخادم",
-    "details": "التفاصيل"
+    "details": "التفاصيل",
+    "retry": "إعادة المحاولة"
   },
   "dialog": {
     "removeTitle": "إزالة الخادم",
@@ -89,7 +90,8 @@
     "connectingNamed": "جارٍ الاتصال بـ {{server}}…",
     "connectingAll": "جارٍ الاتصال بالخوادم…",
     "partialUnreachableNamed": "يتعذر الوصول إلى {{server}}. قد تكون بعض السيشنات مفقودة.",
-    "partialUnreachableSome": "يتعذر الوصول إلى بعض الخوادم. قد تكون بعض السيشنات مفقودة."
+    "partialUnreachableSome": "يتعذر الوصول إلى بعض الخوادم. قد تكون بعض السيشنات مفقودة.",
+    "retrying": "تجري إعادة محاولة الخوادم التي تعذّر الوصول إليها…"
   },
   "displayedServers": {
     "all": "الكل",

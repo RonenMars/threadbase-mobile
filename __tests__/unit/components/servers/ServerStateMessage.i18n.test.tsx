@@ -40,6 +40,8 @@ describe('ServerStateMessage localization', () => {
           }}
           wsConnectedCount={0}
           onViewDetails={() => {}}
+          onRetryFailed={() => {}}
+          isRetrying={false}
         />
         <ToastViewport id="home" />
       </>,

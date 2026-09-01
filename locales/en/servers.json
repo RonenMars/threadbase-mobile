@@ -10,7 +10,8 @@
   "action": {
     "add": "Add Server",
     "edit": "Edit Server",
-    "details": "Details"
+    "details": "Details",
+    "retry": "Retry"
   },
   "dialog": {
     "removeTitle": "Remove Server",
@@ -89,7 +90,8 @@
     "connectingNamed": "Connecting to {{server}}…",
     "connectingAll": "Connecting to servers…",
     "partialUnreachableNamed": "{{server}} is unreachable. Some sessions may be missing.",
-    "partialUnreachableSome": "Some servers are unreachable. Some sessions may be missing."
+    "partialUnreachableSome": "Some servers are unreachable. Some sessions may be missing.",
+    "retrying": "Retrying failed servers…"
   },
   "displayedServers": {
     "all": "All",
