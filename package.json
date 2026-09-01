@@ -49,6 +49,7 @@
     "typecheck": "tsc --noEmit",
     "check:native-deps": "node scripts/check-native-deps.js",
     "test:scripts": "node_modules/.bin/jest --config jest.config.scripts.js --ci --forceExit",
+    "test:scripts:ci-shard": "node scripts/run-script-test-shard.js",
     "dev:list-devices": "./scripts/list-ios-devices.sh",
     "dev:device": "./scripts/dev-device.sh",
     "dev:js": "./scripts/dev-device.sh --js-only",

@@ -32,7 +32,14 @@ function runWithStub(args, env) {
   });
 
   const result = spawnSync(process.execPath, [RUN_MAESTRO, ...args], {
-    env: { PATH: `${bin}:/usr/bin:/bin`, MAESTRO_BIN: path.join(bin, 'maestro'), ...env },
+    env: {
+      PATH: `${bin}:/usr/bin:/bin`,
+      MAESTRO_BIN: path.join(bin, 'maestro'),
+      // run-maestro.js waits up to 60 s for XCTest crash reports after every
+      // invocation; these argv-guard tests only need the stub to exit.
+      E2E_XCTEST_CRASH_GRACE_MS: '0',
+      ...env,
+    },
     encoding: 'utf8',
   });
 
