@@ -21,6 +21,7 @@ appId: com.ronenmars.threadbase
     visible:
       id: "onboarding-language-cta"
     timeout: 30000
+- waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-01-onboarding-language
 
 - tapOn:
@@ -53,6 +54,7 @@ appId: com.ronenmars.threadbase
     visible:
       id: "hub-screen"
     timeout: 8000
+- waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-02-no-server-home
 
 # 4. Set the established Nord palette and capture Settings.
@@ -63,6 +65,7 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 - tapOn:
     id: "settings-theme-nord"
+- waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-03-settings-nord
 
 # 5. Add-server form over the palette-derived backdrop.
@@ -72,4 +75,5 @@ appId: com.ronenmars.threadbase
     visible:
       id: "server-edit-url-input"
     timeout: 4000
+- waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-04-add-server-sheet
