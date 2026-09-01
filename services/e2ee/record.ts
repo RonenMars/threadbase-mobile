@@ -21,6 +21,7 @@
  * encodings, both correct for their own specification. Do not unify them.
  */
 import { ChaCha20Poly1305 } from '@stablelib/chacha20poly1305'
+import { hash as sha256 } from '@stablelib/sha256'
 
 /** `E2EE_PROTOCOL_VERSION`. Minting a third copy of this constant is forbidden (§4). */
 export const E2EE_PROTOCOL_VERSION = 1
@@ -195,6 +196,33 @@ export function recordNonce(direction: RecordDirection, counter: bigint): Uint8A
   return nonce
 }
 
+/** Offset of the counter in the 30-byte header: version + ctxId + direction. */
+const COUNTER_OFFSET = 1 + CTX_ID_BYTES + 4
+
+/**
+ * The REST AAD suffix (§4): `sha256(method || "\n" || path || "\n" || query)`.
+ *
+ * `method` is upper-cased. `path` is the percent-encoded request-target as it
+ * will appear on the wire — never decoded. `query` is the raw query string
+ * WITHOUT the leading `?`, empty when there is none. The fixture
+ * `restTargetCanonicalization.hashInputUtf8` is the authority.
+ */
+export function restTargetHash(method: string, path: string, query: string): Uint8Array {
+  const input = `${method.toUpperCase()}\n${path}\n${query}`
+  return sha256(new TextEncoder().encode(input))
+}
+
+/** The authenticated counter sitting in a record header. */
+export function recordCounter(frame: Uint8Array): bigint {
+  if (!(frame instanceof Uint8Array) || frame.byteLength < HEADER_BYTES) {
+    throw new RecordError('E2EE_SEAL_FAILED', 'E2EE: the record frame is too short')
+  }
+  return new DataView(frame.buffer, frame.byteOffset, frame.byteLength).getBigUint64(
+    COUNTER_OFFSET,
+    false,
+  )
+}
+
 interface ParsedHeader {
   version: number
   ctxId: Uint8Array
@@ -323,21 +351,24 @@ export class RecordState {
    *
    * §5 R3: a rejected frame advances the counter in neither branch.
    */
-  unseal(frame: Uint8Array, target?: Uint8Array): Uint8Array {
+  /**
+   * Authenticate first. A counter complaint is only legal after the AEAD
+   * succeeds — otherwise `E2EE_SEQUENCE_VIOLATION` is an unauthenticated
+   * verdict anyone who can inject bytes could force (§5 R2 ordering).
+   */
+  #openAuthenticated(
+    frame: Uint8Array,
+    target: Uint8Array | undefined,
+  ): { counter: bigint; plaintext: Uint8Array } {
     this.#assertLive()
     if (!(frame instanceof Uint8Array) || frame.BYTES_PER_ELEMENT !== 1) {
       throw new RecordError('E2EE_SEAL_FAILED', 'E2EE: a record frame must be a byte array')
     }
-    // A short frame is refused outright, never padded or partially authenticated.
     if (frame.byteLength < HEADER_BYTES + TAG_BYTES) {
       throw new RecordError('E2EE_SEAL_FAILED', 'E2EE: the record frame is too short')
     }
 
     const header = parseHeader(frame)
-
-    // The explicit header check. `direction` is bound in three independent
-    // places — here, in the AAD, and in the nonce — which is why §15 requires a
-    // mutation to remove *every* binding before it proves anything.
     if (
       header.version !== E2EE_PROTOCOL_VERSION ||
       header.direction !== this.#direction ||
@@ -368,17 +399,38 @@ export class RecordState {
     if (!opened) {
       throw new RecordError('E2EE_SEAL_FAILED', 'E2EE: the record did not authenticate')
     }
+    return { counter: header.counter, plaintext: opened }
+  }
 
-    // Authenticated. Only now is a counter complaint a claim about the peer.
-    if (header.counter !== this.#counter) {
+  unseal(frame: Uint8Array, target?: Uint8Array): Uint8Array {
+    const opened = this.#openAuthenticated(frame, target)
+    if (opened.counter !== this.#counter) {
       throw new RecordError(
         'E2EE_SEQUENCE_VIOLATION',
-        `E2EE: expected record counter ${this.#counter}, got ${header.counter}`,
+        `E2EE: expected record counter ${this.#counter}, got ${opened.counter}`,
       )
     }
+    this.#counter = opened.counter + 1n
+    return opened.plaintext
+  }
 
-    this.#counter = header.counter + 1n
-    return opened
+  /**
+   * REST responses are bound to the request counter they answer (§13(a)), not
+   * to a sequential expected. Concurrent React Query calls would otherwise
+   * reject a later-numbered response that arrived first.
+   *
+   * Does not advance `#counter`. A rejected frame still advances nothing (§5 R3).
+   */
+  unsealMatching(frame: Uint8Array, requestCounter: bigint, target?: Uint8Array): Uint8Array {
+    const expected = assertCounter(requestCounter)
+    const opened = this.#openAuthenticated(frame, target)
+    if (opened.counter !== expected) {
+      throw new RecordError(
+        'E2EE_SEQUENCE_VIOLATION',
+        `E2EE: expected record counter ${expected}, got ${opened.counter}`,
+      )
+    }
+    return opened.plaintext
   }
 
   /** Wipes the key material. The state refuses to seal or unseal afterwards. */

@@ -1,7 +1,7 @@
 import { createApiForServer, NetworkError } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import { getDeviceClientId } from '@/services/device-id'
-import { authedFetch, AuthError, serverUrl } from '@/services/authed-fetch'
+import { authedFetch, AuthError, EnvelopeError, serverUrl } from '@/services/authed-fetch'
 import {
   archiveToShareText,
   parseBackupArchive,
@@ -85,6 +85,7 @@ export async function restoreBackup(
     })
   } catch (err) {
     if (err instanceof AuthError) throw err
+    if (err instanceof EnvelopeError) throw err
     throw new NetworkError(`Failed to reach ${serverUrl(server, path)}: ${String(err)}`)
   }
 
