@@ -1,7 +1,7 @@
 # Native Liquid Glass Settings palette gallery.
 #
 # Captures the Settings viewport for every retained palette. The committed
-# references live in e2e/visual/native-liquid-glass/settings-themes/.
+# references live in e2e/visual/native-liquid-glass/themes/.
 #
 # An unpaired relaunch is bounced back to onboarding (AuthGate keys off
 # paired servers, not the onboarded flag), so this flow walks the skip path

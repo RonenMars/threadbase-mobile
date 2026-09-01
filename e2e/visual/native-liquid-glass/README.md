@@ -45,27 +45,27 @@ Settings, selects Nord, and opens the Add Server sheet.
 opens Settings and screenshots every retained palette (9 dark, 7 light). That
 matches `THEME_LABELS` in `app/settings.tsx`, excluding `system`.
 
-| Artifact stem | Palette |
-| --- | --- |
-| `native-liquid-glass-settings-dark` | Dark |
-| `native-liquid-glass-settings-dracula` | Dracula |
-| `native-liquid-glass-settings-catppuccin` | Mocha |
-| `native-liquid-glass-settings-nord` | Nord |
-| `native-liquid-glass-settings-one-dark` | One Dark |
-| `native-liquid-glass-settings-primer-dark` | Primer Dark |
-| `native-liquid-glass-settings-solarized-dark` | Solarized Dark |
-| `native-liquid-glass-settings-rose-pine` | Rosé Pine |
-| `native-liquid-glass-settings-tokyo-night` | Tokyo Night |
-| `native-liquid-glass-settings-light` | Light |
-| `native-liquid-glass-settings-latte` | Latte |
-| `native-liquid-glass-settings-one-light` | One Light |
-| `native-liquid-glass-settings-primer-light` | Primer Light |
-| `native-liquid-glass-settings-solarized-light` | Solarized Light |
-| `native-liquid-glass-settings-rose-pine-dawn` | Rosé Pine Dawn |
-| `native-liquid-glass-settings-tokyo-night-light` | Tokyo Night Light |
+Committed baselines live in `themes/`. Maestro still writes fresh captures to
+`e2e/_artifacts/screenshots/`; copy over these files when the design changes.
 
-Committed gallery baselines belong in `settings-themes/ios/` once they are
-intentionally blessed. That folder is empty until then.
+| Reference | Palette |
+| --- | --- |
+| `themes/native-liquid-glass-settings-dark.png` | Dark |
+| `themes/native-liquid-glass-settings-dracula.png` | Dracula |
+| `themes/native-liquid-glass-settings-catppuccin.png` | Mocha |
+| `themes/native-liquid-glass-settings-nord.png` | Nord |
+| `themes/native-liquid-glass-settings-one-dark.png` | One Dark |
+| `themes/native-liquid-glass-settings-primer-dark.png` | Primer Dark |
+| `themes/native-liquid-glass-settings-solarized-dark.png` | Solarized Dark |
+| `themes/native-liquid-glass-settings-rose-pine.png` | Rosé Pine |
+| `themes/native-liquid-glass-settings-tokyo-night.png` | Tokyo Night |
+| `themes/native-liquid-glass-settings-light.png` | Light |
+| `themes/native-liquid-glass-settings-latte.png` | Latte |
+| `themes/native-liquid-glass-settings-one-light.png` | One Light |
+| `themes/native-liquid-glass-settings-primer-light.png` | Primer Light |
+| `themes/native-liquid-glass-settings-solarized-light.png` | Solarized Light |
+| `themes/native-liquid-glass-settings-rose-pine-dawn.png` | Rosé Pine Dawn |
+| `themes/native-liquid-glass-settings-tokyo-night-light.png` | Tokyo Night Light |
 
 ## Failures found while capturing (2026-09-01)
 
