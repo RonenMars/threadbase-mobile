@@ -69,9 +69,13 @@ export function ErrorBanner() {
   const { t } = useTranslation('common')
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
 
+  // Only servers still in the store: a row whose ServerConfig cannot be
+  // resolved renders as a bare id and taps into a modal that returns null, so
+  // it reads as a dead button. Dropping it falls through to the category rows,
+  // which always carry their own details.
   const failedServerIds = useMemo(
-    () => Object.keys(statuses).filter((id) => statuses[id].status === 'error'),
-    [statuses],
+    () => Object.keys(statuses).filter((id) => statuses[id].status === 'error' && servers[id]),
+    [statuses, servers],
   )
 
   const spec = useMemo((): AlertSpec | null => {
@@ -86,10 +90,10 @@ export function ErrorBanner() {
     const items: AlertItem[] = failedServerIds.length > 0
       ? failedServerIds.map((serverId): AlertItem => {
           const server = servers[serverId]
-          const label = server?.label?.trim()
+          const label = server.label?.trim()
           return {
             id: serverId,
-            title: label || server?.url || serverId,
+            title: label || server.url,
             message: statuses[serverId].error ?? t('errorBanner.messageOther'),
             // Tapping drills into ServerErrorModal, which already renders the
             // full error unclamped alongside the machine/platform/version rows.

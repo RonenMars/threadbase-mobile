@@ -118,4 +118,27 @@ describe('ErrorBanner server rows', () => {
     // landed there rather than just expanding the row in place.
     await findByText('URL')
   })
+
+  it('skips a failing server that is no longer in the store', async () => {
+    seedFailures(1)
+    // The shape removeServer used to leave behind: a status entry outliving its
+    // ServerConfig. Its row titled itself with the raw id and tapped into a
+    // modal that renders null.
+    useServerFetchStatusStore.setState({
+      statuses: {
+        ...useServerFetchStatusStore.getState().statuses,
+        srv_ghost: { status: 'error', error: 'gone', lastCheckedAt: 0 },
+      },
+    })
+
+    await renderWithI18n(
+      <>
+        <ErrorBanner />
+        <BannerHost />
+      </>,
+    )
+
+    const items = useBannerStore.getState().banners[0].items ?? []
+    expect(items.map((i) => i.id)).toEqual(['s0'])
+  })
 })

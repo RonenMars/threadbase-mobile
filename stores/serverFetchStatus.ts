@@ -25,6 +25,7 @@ interface Actions {
   recordReady: (serverId: string) => void
   recordFailure: (serverId: string, error: unknown) => void
   recordWarmingUp: (serverId: string, warmupState: ServerWarmupState) => void
+  clearServer: (serverId: string) => void
   reset: () => void
 }
 
@@ -86,5 +87,15 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
         [serverId]: { status: 'warming_up', warmupState, lastCheckedAt: Date.now() },
       },
     })),
+  // Removing a server must drop its status with it. A left-behind 'error' entry
+  // outlives the ServerConfig it names, and anything keyed off these ids then
+  // renders a row for a server it cannot resolve.
+  clearServer: (serverId) =>
+    set((s) => {
+      if (!s.statuses[serverId]) return s
+      const { [serverId]: _removed, ...statuses } = s.statuses
+      return { statuses }
+    }),
+
   reset: () => set({ statuses: {} }),
 }))
