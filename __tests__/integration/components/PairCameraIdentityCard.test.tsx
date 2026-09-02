@@ -1,5 +1,7 @@
 import React from 'react'
 import { fireEvent } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
+import { dark } from '@/constants/theme'
 import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { renderWithI18n } from '@/test-utils/render'
 
@@ -26,5 +28,15 @@ describe('PairCameraIdentityCard', () => {
 
     fireEvent.press(getByTestId('pair-camera-identity-done'))
     expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the identity sheet opaque in the Glass theme', async () => {
+    const { getByTestId } = await renderWithI18n(
+      <PairCameraIdentityCard visible fingerprint={FINGERPRINT} onDone={jest.fn()} />,
+    )
+
+    expect(StyleSheet.flatten(getByTestId('pair-camera-identity-sheet').props.style)).toMatchObject({
+      backgroundColor: dark.bg.secondary,
+    })
   })
 })

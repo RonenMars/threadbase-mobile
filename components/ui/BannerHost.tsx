@@ -26,6 +26,7 @@ export function BannerHost() {
       title={current.title}
       message={current.message}
       details={current.details}
+      items={current.items}
       accent={appearance.accent}
       icon={current.icon ?? (
         <Icon size={28} color={appearance.accent} weight={appearance.iconWeight} />

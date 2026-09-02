@@ -16,3 +16,7 @@ export function isValidHttpServerUrl(raw: string): boolean {
   if (!parsed.hostname) return false
   return true
 }
+
+export function safeHostname(url: string): string {
+  try { return new URL(url).hostname } catch { return url.replace(/^[a-z]+:\/\//i, '').split('/')[0] || url }
+}

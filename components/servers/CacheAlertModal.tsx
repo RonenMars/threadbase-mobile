@@ -6,8 +6,7 @@ import { getCacheAlert, resolveCacheAlert } from '@/services/api-client'
 import { useServersStore } from '@/stores/servers'
 import type { CacheAlertResolveAction } from '@/types/api'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassFill } from '@/components/ui/GlassFill'
+import { useTheme } from '@/contexts/ThemeContext'
 import { clearServerConversationAndSessionState, queryClient } from '@/services/query-client'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
@@ -26,7 +25,6 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
   const directionStyle = useDirectionStyle()
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const servers = useServersStore((s) => s.servers)
   const cacheAlert = useServersStore((s) => s.cacheAlert)
@@ -129,8 +127,7 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={[styles.backdrop, directionStyle]} onPress={submitting ? undefined : onClose}>
-        <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
-          <GlassFill />
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <WarningCircle size={20} color={theme.status.failed} weight="fill" />
             <Text style={[styles.title, copyStyle]}>
@@ -272,10 +269,6 @@ function makeStyles(theme: Theme) {
       padding: spacing.md,
       gap: spacing.sm,
       maxHeight: '80%',
-    },
-    sheetGlass: {
-      backgroundColor: 'transparent',
-      overflow: 'hidden',
     },
     header: {
       flexDirection: 'row',

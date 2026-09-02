@@ -48,12 +48,22 @@ export const useLoadingStateStore = create<LoadingStateStore>((set) => ({
       },
     })),
 
+  // Keyed by category, not per failure: the banner shows one entry per category
+  // and its Retry invalidates the whole category key, so a category that fails
+  // on 24 queries (or retries 24 times offline) is one banner, not 24.
   pushError: (error) =>
-    set((s) => ({
-      errors: [...s.errors, { ...error, id: `${Date.now()}-${Math.random()}` }],
-      // clear the slow indicator for this category — error supersedes warning
-      slowCounts: { ...s.slowCounts, [error.category]: 0 },
-    })),
+    set((s) => {
+      const entry: QueryError = { ...error, id: error.category }
+      const index = s.errors.findIndex((e) => e.category === error.category)
+      const errors = s.errors.slice()
+      if (index === -1) errors.push(entry)
+      else errors[index] = entry
+      return {
+        errors,
+        // clear the slow indicator for this category — error supersedes warning
+        slowCounts: { ...s.slowCounts, [error.category]: 0 },
+      }
+    }),
 
   dismissError: (id) =>
     set((s) => ({ errors: s.errors.filter((e) => e.id !== id) })),
