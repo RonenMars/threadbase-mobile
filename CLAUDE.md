@@ -132,6 +132,18 @@ Prefer:
 
 ---
 
+## Encryption (E2EE) — Never Fall Back to Plaintext
+
+A server record carrying `serverPublicKey` is **pinned**. Its WebSocket frames and REST bodies are sealed, and no failure may be handled by retrying in the clear. Full notes, including the traps found on hardware: [docs/e2ee-client.md](docs/e2ee-client.md).
+
+Rules that hold regardless of what a screen wants:
+
+- **Classification is the contract.** `retryable` (`services/e2ee/context.ts`) is true for exactly `E2EE_CTX_UNKNOWN` and `E2EE_TRANSIENT`. `E2EE_DEVICE_REVOKED`, `E2EE_HANDSHAKE_FAILED` and the rest are permanent — surface them, never loop on them. A `429` that arrives after a permanent refusal is the server reacting to our own retries; it must not reset the verdict.
+- **Binary means binary.** React Native hands sealed frames over as `ArrayBuffer`; convert to `Uint8Array` before unsealing. A string frame on a sealed socket still throws — do not widen the accepted shape to make an error go away.
+- **A missing message 2 is a failed pairing.** Not a plaintext success, however tempting the fallback looks. This is the rule that saved a user whose streamer sat behind a Cloudflare Access gate.
+- **Contexts are never rekeyed in place.** A new key is a new context. Socket contexts die with the socket; the REST context rolls over on 24h / 1 GiB / every foreground and drains for 10 s.
+- **Reconnect loops are not free any more.** Each redial now costs a Noise handshake against a five-per-minute-per-device server limit. Before adding or shortening a timer that reconnects, work out what it costs at idle.
+
 ## Lint Before Commit
 
 Before every `git commit`, run ESLint on the files being committed:

@@ -4,6 +4,52 @@ Collected from fixed bugs, incidents, and session notes. Each section describes 
 
 ---
 
+## Encryption (E2EE)
+
+Client-side notes and the invariants: [e2ee-client.md](e2ee-client.md).
+
+### "Pairing failed — this server offered an encrypted pairing and then did not finish it"
+
+**Symptom:** Scanning a QR for a server reached over a public hostname fails with that message. The same server pairs fine over the LAN.
+
+**Cause:** Something between the app and the streamer answered instead of the streamer. The usual culprit is a Cloudflare Access application on that hostname: a sealed request carries no `Authorization` header by design, so Access refuses it at the edge and returns an HTML login redirect where Noise message 2 belongs. Confirmed on hardware 2026-09-02 — the streamer logged no `POST /api/pair/exchange` at all, because the request never arrived.
+
+**The app is behaving correctly here.** It refuses to complete the pairing rather than continue in plaintext. The message is honest about the symptom but blames the server, so it is easy to waste an afternoon regenerating pairing codes.
+
+**Fix (server side):** remove Access from the hostname devices use, or bypass the paths they call. A Cloudflare **service token** is not currently an option — this client has no `CF-Access-Client-*` support. Streamer builds after v1.73.0 detect the gate at boot and log `access.gate_detected`; older ones say nothing, so on those the only signal is this pairing failure.
+
+---
+
+### A server shows "unreachable / Retry", or "The server is busy; retrying shortly", and never recovers
+
+**Symptom:** One server sits disconnected forever. The banner suggests a network problem; the server-detail sheet may say the server is busy. Other servers are fine.
+
+**Cause:** Usually a permanent refusal being retried. Open the **Servers Status** sheet and read the per-server line — `This device is not paired for encryption` means the device was revoked or its pairing no longer matches that server, which no amount of retrying fixes. The "busy" text is the 429 the server started returning *because* of those retries, mapped to a retryable code (see [e2ee-client.md](e2ee-client.md#a-permanent-refusal-can-launder-itself-into-a-retryable-one)).
+
+**Fix:** delete that server entry and pair again. If the server was rebuilt or the device revoked, re-pairing is the only path.
+
+---
+
+### An encrypted server connects, then drops and reconnects every ~45 seconds
+
+**Symptom:** Steady reconnects with nobody touching the phone; on a busy server it can end in 429s and a "busy" banner.
+
+**Cause:** `WS_SILENCE_TIMEOUT_MS` (45 s) in `hooks/useTerminalStream.ts` force-reconnects when no WS traffic arrives, and cannot distinguish a dead socket from an idle session. Each redial now costs a full Noise handshake against the server's five-opens-per-device-per-minute limit — about 3.1 opens per minute at idle, measured.
+
+**Workaround:** none client-side today; it is a known defect rather than a misconfiguration. Do not raise the server's limit to hide it.
+
+---
+
+### A session shows "A prompt is waiting for an answer" and nothing can be sent
+
+**Symptom:** Both the chat composer and the **Terminal** view refuse to send. The prompt card may say "That question isn't open anymore".
+
+**Cause:** The pending-prompt guard applies to every input path, so a prompt the agent will never resolve — an unauthenticated CLI's login selector, for instance — leaves the session completely uninteractive from the phone. Not E2EE-specific.
+
+**Workaround:** answer or dismiss the prompt if the card still offers it; otherwise cancel the session and start a new one. The first message of a *new* session travels in `POST /api/sessions/start`, before any prompt exists, so it always gets through.
+
+---
+
 ## Terminal output / session display
 
 ### SSH passphrase prompt appears mid-conversation in the terminal view
