@@ -42,6 +42,15 @@ The mobile client absorbs streamer evolution: a newer server may degrade a scree
 - Probe `GET /api/info` and `GET /api/config/feature-flags`; hide or explain unsupported features instead of throwing. A failed probe means the feature is off.
 - Report malformed data while keeping the rest of the screen alive. Do not invent client-side repair shims or pin a minimum server version.
 
+## Encryption (E2EE)
+
+A server whose record carries `serverPublicKey` is **pinned**: its traffic is sealed and must never silently fall back to plaintext. See [docs/e2ee-client.md](docs/e2ee-client.md).
+
+- `retryable` in `services/e2ee/context.ts` is true for exactly `E2EE_CTX_UNKNOWN` and `E2EE_TRANSIENT`. Every other code is a hard refusal to surface, never to retry — and a 429 arriving *after* a hard refusal is the server reacting to our own retries, not new information.
+- A sealed socket that receives a non-binary frame throws. React Native delivers binary frames as `ArrayBuffer`, not `Uint8Array`; convert, never widen the accepted shape to strings.
+- A pairing that gets no message 2 is a failed pairing, not a plaintext success. This is what protects a user whose streamer sits behind an edge gate.
+- Contexts are never rekeyed in place: a new key is a new context. Socket contexts die with the socket; the REST context rolls over on 24h / 1 GiB / every foreground with a 10 s drain.
+
 ## Repository workflows
 
 - PR titles use `type(scope)?: imperative summary` with `feat`, `fix`, `chore`, `docs`, `test`, `ci`, `perf`, or `refactor`; branches use the matching `type/kebab-case-summary`. Work explicitly targeting `integration-merge-354-355-376` uses that branch as its base and rebases onto its latest tip.
