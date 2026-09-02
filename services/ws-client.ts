@@ -282,10 +282,16 @@ class WSClient {
       let msg: WSMessage
       try {
         if (context) {
-          if (!(event.data instanceof Uint8Array)) {
+          const frame =
+            event.data instanceof Uint8Array
+              ? event.data
+              : event.data instanceof ArrayBuffer
+                ? new Uint8Array(event.data)
+                : null
+          if (!frame) {
             throw new Error('E2EE: sealed socket received a non-binary frame')
           }
-          msg = JSON.parse(new TextDecoder().decode(context.recv.unseal(event.data))) as WSMessage
+          msg = JSON.parse(new TextDecoder().decode(context.recv.unseal(frame))) as WSMessage
         } else {
           msg = JSON.parse(event.data as string) as WSMessage
         }
