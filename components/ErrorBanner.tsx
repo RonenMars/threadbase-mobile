@@ -81,6 +81,9 @@ export function ErrorBanner() {
   const spec = useMemo((): AlertSpec | null => {
     if (errors.length === 0) return null
 
+    // sticky only on close — a retry that fails again must still be able to
+    // put the banner back.
+    const dismissAllSticky = () => errors.forEach((error) => dismissError(error.id, true))
     const dismissAll = () => errors.forEach((error) => dismissError(error.id))
 
     // One row per failing server. The aggregate queries (`sessions`,
@@ -146,7 +149,7 @@ export function ErrorBanner() {
       message: getCategoryMessage(errors[0].category, t),
       items,
       ...retryAll,
-      onClose: dismissAll,
+      onClose: dismissAllSticky,
     }
   }, [errors, failedServerIds, servers, statuses, dismissError, t])
 

@@ -174,6 +174,12 @@ queryClient.getQueryCache().subscribe((event) => {
   } else {
     clearSlowTimer(hash)
 
+    if (query.state.status === 'success') {
+      // Recovery re-arms the banner: a category the user dismissed is worth
+      // showing again the next time it breaks.
+      store.clearDismissed(category)
+    }
+
     if (query.state.status === 'error') {
       const err = query.state.error
       const message = err instanceof Error ? err.message : i18n.t('common:error.unexpected')
