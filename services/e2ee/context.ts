@@ -286,8 +286,10 @@ function contextFor(
  * repeated one as `E2EE_HANDSHAKE_FAILED` for the life of the entry, so
  * re-sending is a permanent refusal rather than a retry. Because this function
  * builds its initiator internally, a caller cannot get that wrong.
+ *
+ * Callers reach this through `openContext`, which remembers a permanent refusal.
  */
-export async function openContext(args: OpenContextArgs): Promise<TransportContext> {
+async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext> {
   const start = await createOpenInitiator({
     serverId: args.serverId,
     serverPublicKey: args.serverPublicKey,
@@ -371,6 +373,83 @@ export async function openContext(args: OpenContextArgs): Promise<TransportConte
     result.clientToServerKey,
     result.serverToClientKey,
   )
+}
+
+/**
+ * Servers whose `/open` has been permanently refused, and the pin each refusal
+ * was reached under.
+ *
+ * D2 row 8: a revoked device retried forever — 10 × 403 then 60 × 429 in under
+ * two minutes, still climbing. `403 E2EE_DEVICE_REVOKED` is correctly
+ * non-retryable and `mapOpenFailure` correctly calls a `429` transient; neither
+ * is the bug. The bug is that the retries themselves charge the streamer's
+ * per-source failure budget, so the server switches to `429` — and that
+ * transient answer was allowed to overwrite a verdict already reached. A
+ * permanent condition became a retryable one, and the true "This device is not
+ * paired for encryption" degraded into the false "The server is busy; retrying
+ * shortly".
+ *
+ * Remembering the verdict in front of the network, at the one point both
+ * channels funnel through, stops the loop whichever layer above the transport
+ * re-issues the request — which is why this does not wait on identifying it.
+ */
+const refused = new Map<string, { error: OpenError; serverPublicKey: string }>()
+
+/**
+ * Forgets a server's permanent refusal, so the next open reaches the network.
+ *
+ * Only for events that genuinely change the condition: re-pairing, and an
+ * explicit user retry. **Never on a foreground or a network blip** — those are
+ * what the storm was made of, and clearing there brings it back with extra
+ * steps. A pin change and a successful handshake are recognised by
+ * `openContext` itself and need no caller.
+ */
+export function clearOpenRefusal(serverId: string): void {
+  refused.delete(serverId)
+}
+
+/** Test helper: how many servers currently hold a permanent refusal. */
+export function _openRefusalCount(): number {
+  return refused.size
+}
+
+export function _resetOpenRefusalsForTests(): void {
+  refused.clear()
+}
+
+/**
+ * Runs one `/open` handshake, unless this server has already refused one
+ * permanently.
+ *
+ * The verdict is per server, not per channel: a revoked device is revoked for
+ * the socket and for REST alike, so one refusal answers both. It is thrown back
+ * with the message it was reached under, which is what keeps the accurate
+ * diagnosis on screen instead of the busy message.
+ */
+export async function openContext(args: OpenContextArgs): Promise<TransportContext> {
+  const standing = refused.get(args.serverId)
+  if (standing) {
+    if (standing.serverPublicKey === args.serverPublicKey) {
+      throw new OpenError(standing.error.code, standing.error.message)
+    }
+    // A different pin is a different server identity; the old verdict says
+    // nothing about it.
+    refused.delete(args.serverId)
+  }
+
+  try {
+    const context = await runOpenHandshake(args)
+    refused.delete(args.serverId)
+    return context
+  } catch (error) {
+    // Only a permanent refusal is remembered. A retryable one — `429`, a 5xx, an
+    // unreachable server, `E2EE_CTX_UNKNOWN` — is neither recorded nor allowed
+    // to clear a verdict the other channel may already have reached.
+    if (error instanceof OpenError && !error.retryable) {
+      refused.set(args.serverId, { error, serverPublicKey: args.serverPublicKey })
+    }
+    throw error
+  }
 }
 
 /**

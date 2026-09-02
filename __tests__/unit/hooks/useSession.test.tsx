@@ -4,9 +4,30 @@ import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { createWrapper } from '@/test-utils'
+import { generateKeyPairFromSeed } from '@stablelib/x25519'
+import { getItemAsync } from '@/services/secure-store'
+import {
+  openContext,
+  type OpenError,
+  _openRefusalCount,
+  _resetOpenRefusalsForTests,
+} from '@/services/e2ee/context'
 import type { Session, SessionListPage } from '@/types/api'
 
 const mockGet = jest.fn()
+
+// A real X25519 identity for the E2EE recovery test below, so the handshake it
+// drives is the real one rather than a stub. `@stablelib` treats a private key
+// as a seed, so any 32 bytes is a usable device key; the server key has to be a
+// genuine curve point, or `writeMessage1` would throw before the refusal we want.
+const DEVICE_STATIC_KEY_B64 = Buffer.alloc(32, 7).toString('base64')
+const SERVER_PUBLIC_KEY_B64URL = Buffer.from(
+  generateKeyPairFromSeed(new Uint8Array(32).fill(3)).publicKey,
+)
+  .toString('base64')
+  .replace(/\+/g, '-')
+  .replace(/\//g, '_')
+  .replace(/=+$/, '')
 
 jest.mock('@/services/api-client', () => ({
   createApiForServer: () => ({ get: (path: string, options?: unknown) => mockGet(path, options) }),
@@ -186,6 +207,81 @@ describe('useEagerSessions', () => {
       status: 'error',
       error: 'offline',
     })
+  })
+
+  // An explicit user retry is one of the few events allowed to forget a
+  // permanent E2EE refusal (D2 row 8). A foreground or a reconnect is not, which
+  // is why the clear lives here and not in `forceReconnect`.
+  //
+  // The verdict's whole trade — that a mispinned device stops self-healing —
+  // rests on the user having a way out that works. So this asserts the way out,
+  // not just the clearing function: with a verdict standing, the next attempt
+  // does not reach the server; after the real Retry, it does. If a standing
+  // verdict ever left no reachable recovery, "one Retry tap" would quietly
+  // become "stuck until reinstall", and nothing else in the suite would notice.
+  //
+  // Nothing here is mocked: a real device key is seeded, so `createOpenInitiator`
+  // succeeds and a real Noise `writeMessage1` runs. The refusal is therefore a
+  // genuine `E2EE_HANDSHAKE_FAILED` — the code behind the unprompted field storm
+  // (168 × 400 over six minutes), not the revocation we produced in a lab.
+  it('after an explicit retry a handshake-refused server is reachable again', async () => {
+    _resetOpenRefusalsForTests()
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(pageOf(['a1']))
+    const secureRead = getItemAsync as jest.MockedFunction<typeof getItemAsync>
+    secureRead.mockImplementation(async (key: string) =>
+      key === 'threadbase_e2ee_device_key_srv-A' ? DEVICE_STATIC_KEY_B64 : null,
+    )
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+    await waitFor(() =>
+      expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error'),
+    )
+
+    let opens = 0
+    const refusing = (async () => {
+      opens++
+      return { ok: false, status: 400, json: async () => ({ code: 'E2EE_HANDSHAKE_FAILED' }) }
+    }) as unknown as typeof fetch
+    const open = async (): Promise<OpenError> => {
+      try {
+        const context = await openContext({
+          serverId: 'srv-A',
+          baseUrl: 'http://stub',
+          serverPublicKey: SERVER_PUBLIC_KEY_B64URL,
+          kind: 'rest',
+          fetchImpl: refusing,
+        })
+        context.destroy()
+        throw new Error('expected the open to be refused')
+      } catch (error) {
+        return error as OpenError
+      }
+    }
+
+    const first = await open()
+    expect(first.code).toBe('E2EE_HANDSHAKE_FAILED')
+    expect(first.retryable).toBe(false)
+    expect(opens).toBe(1)
+
+    // The storm's next attempt never reaches the server.
+    await open()
+    expect(opens).toBe(1)
+
+    await act(async () => {
+      result.current.retryFailed()
+    })
+
+    // The user's way out is real: the server is reachable again. Asserted before
+    // the bookkeeping, so a broken recovery path reports the fact the user would
+    // feel — the server is still unreachable — rather than a map's size.
+    await open()
+    expect(opens).toBe(2)
+    expect(_openRefusalCount()).toBe(1)
+
+    _resetOpenRefusalsForTests()
+    secureRead.mockResolvedValue(null)
   })
 
   it('retries only failed servers and keeps sessions from healthy servers', async () => {

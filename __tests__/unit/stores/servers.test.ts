@@ -3,6 +3,12 @@ import {
   serverConfigFromPersisted,
   useServersStore,
 } from '@/stores/servers'
+import { serverIdFromUrl } from '@/types/api'
+import {
+  openContext,
+  _openRefusalCount,
+  _resetOpenRefusalsForTests,
+} from '@/services/e2ee/context'
 // Read through the app's own module, never `expo-secure-store` directly: Metro
 // swaps this one for a localStorage shim on web, so it is the boundary the app
 // actually uses. The mock below stands in for whatever it re-exports.
@@ -622,5 +628,50 @@ describe('reading a persisted server back', () => {
     expect(parsed.list).toHaveLength(1)
     expect(parsed.list[0].serverPublicKey).toBe(SPK)
     expect(parsed.hasEverHadServer).toBeUndefined()
+  })
+})
+
+// ── addServer forgets a permanent E2EE refusal ─────────────────────────────
+
+describe('addServer clears a permanent E2EE refusal', () => {
+  // Seeded through the real classifier, not by reaching into the map: an
+  // unpaired device's open throws `E2EE_NOT_PAIRED`, which is non-retryable and
+  // is therefore remembered exactly like the revocation D2 row 8 reproduced.
+  async function seedRefusal(serverId: string) {
+    await expect(
+      openContext({
+        serverId,
+        baseUrl: 'http://192.168.1.10:7070',
+        serverPublicKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        kind: 'rest',
+      }),
+    ).rejects.toThrow()
+    expect(_openRefusalCount()).toBe(1)
+  }
+
+  beforeEach(() => {
+    _resetOpenRefusalsForTests()
+  })
+
+  afterEach(() => {
+    _resetOpenRefusalsForTests()
+  })
+
+  it('a fresh pairing forgets the verdict for that server', async () => {
+    const url = 'http://192.168.1.55:7070'
+    await seedRefusal(serverIdFromUrl(url))
+
+    await useServersStore.getState().addServer(url, 'key-new')
+
+    expect(_openRefusalCount()).toBe(0)
+  })
+
+  it('pairing one server does not forget another server’s verdict', async () => {
+    const other = serverIdFromUrl('http://192.168.1.77:7070')
+    await seedRefusal(other)
+
+    await useServersStore.getState().addServer('http://192.168.1.55:7070', 'key-new')
+
+    expect(_openRefusalCount()).toBe(1)
   })
 })

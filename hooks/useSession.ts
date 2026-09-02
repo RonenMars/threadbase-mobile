@@ -6,6 +6,7 @@ import { createApiForServer } from '@/services/api-client'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { clearOpenRefusal } from '@/services/e2ee/context'
 import type {
   MultiSession,
   Session,
@@ -255,6 +256,9 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       (serverId) => useServerFetchStatusStore.getState().statuses[serverId]?.status === 'error',
     )
     if (failedServerIds.length === 0) return
+    // The user asking again is one of the few events that may forget a permanent
+    // E2EE refusal. A foreground or a reconnect must not, or the storm returns.
+    for (const serverId of failedServerIds) clearOpenRefusal(serverId)
     setPreservedSessions(query.data ?? preservedSessions)
     setFetchRequest((previous) => ({
       serverIds: failedServerIds,
