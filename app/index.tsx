@@ -37,6 +37,7 @@ import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
+import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -172,6 +173,7 @@ export default function ProjectsHub() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const [browseErrorServerId, setBrowseErrorServerId] = useState<string | null>(null)
   const [pickerVisible, setPickerVisible] = useState(false)
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
   const [manualCacheAlertServerId, setManualCacheAlertServerId] = useState<string | null>(null)
@@ -364,6 +366,22 @@ export default function ProjectsHub() {
     return `/browse?${params.toString()}` as `/browse?${string}`
   }
 
+  // Every route into Browse goes through here, not just the picker: a single
+  // active server skips the picker entirely, and it can be just as dead. Browse
+  // would open on an error banner and an empty listing; show the error instead.
+  const openBrowse = (serverId: string, path?: string) => {
+    const unreachable =
+      fetchStatuses[serverId]?.status === 'error' || Boolean(servers[serverId]?.connectionError)
+    if (unreachable) {
+      // Picker stays open behind the error, so closing the error returns to the
+      // list rather than dumping the user back on the hub.
+      setBrowseErrorServerId(serverId)
+      return
+    }
+    setPickerVisible(false)
+    router.push(browseHref(serverId, path))
+  }
+
   const handleFABPress = () => {
     if (activeServerIds.length === 0) {
       setFabNoServerToast(true)
@@ -371,19 +389,18 @@ export default function ProjectsHub() {
       return
     }
     if (currentDrill && activeServerIds.includes(currentDrill.serverId)) {
-      router.push(browseHref(currentDrill.serverId, currentDrill.path))
+      openBrowse(currentDrill.serverId, currentDrill.path)
       return
     }
     if (activeServerIds.length === 1) {
-      router.push(browseHref(activeServerIds[0]))
+      openBrowse(activeServerIds[0])
       return
     }
     setPickerVisible(true)
   }
 
   const startSessionOn = (serverId: string) => {
-    setPickerVisible(false)
-    router.push(browseHref(serverId))
+    openBrowse(serverId)
   }
 
   const fabRef = useRef<View>(null)
@@ -630,8 +647,14 @@ export default function ProjectsHub() {
         visible={pickerVisible}
         serverIds={activeServerIds}
         servers={servers}
+        fetchStatuses={fetchStatuses}
         onPick={startSessionOn}
         onClose={() => setPickerVisible(false)}
+      />
+      <ServerErrorModal
+        visible={browseErrorServerId !== null}
+        server={browseErrorServerId ? servers[browseErrorServerId] ?? null : null}
+        onClose={() => setBrowseErrorServerId(null)}
       />
       <CacheAlertModal
         visible={cacheAlertModalServerId !== null}

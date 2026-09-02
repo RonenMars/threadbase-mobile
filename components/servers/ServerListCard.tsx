@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated, Easing } from 'react-native'
-import { Trash, PencilSimple, ArrowsClockwise, XCircle } from 'phosphor-react-native'
+import { Trash, PencilSimple, ArrowsClockwise, Info } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -88,7 +88,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
               hitSlop={4}
               accessibilityLabel={t('card.viewError')}
             >
-              <XCircle size={20} color={theme.text.danger} weight="fill" />
+              <Info size={20} color={theme.text.danger} weight="fill" />
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity

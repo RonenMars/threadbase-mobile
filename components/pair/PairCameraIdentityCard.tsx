@@ -2,8 +2,7 @@ import React from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassFill } from '@/components/ui/GlassFill'
+import { useTheme } from '@/contexts/ThemeContext'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
@@ -24,7 +23,6 @@ export function PairCameraIdentityCard({ visible, fingerprint, onDone }: Props) 
   const directionStyle = useDirectionStyle()
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
 
   if (!fingerprint) return null
@@ -34,8 +32,7 @@ export function PairCameraIdentityCard({ visible, fingerprint, onDone }: Props) 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDone} statusBarTranslucent>
       <View style={[styles.backdrop, directionStyle]} testID="pair-camera-identity-card">
-        <View style={[styles.sheet, isGlass && styles.sheetGlass]}>
-          <GlassFill />
+        <View style={styles.sheet} testID="pair-camera-identity-sheet">
           <IdentityFingerprintBlock fingerprint={fingerprint} variant="camera" />
           <Pressable
             style={styles.doneBtn}
@@ -68,10 +65,6 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       padding: spacing.md,
       gap: spacing.md,
-    },
-    sheetGlass: {
-      backgroundColor: 'transparent',
-      overflow: 'hidden',
     },
     doneBtn: {
       paddingVertical: spacing.sm,

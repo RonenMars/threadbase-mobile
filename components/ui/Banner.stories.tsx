@@ -28,3 +28,29 @@ export const WithPrimaryAction: Story = {
     action: { label: 'Details', onPress: fn(), variant: 'primary' },
   },
 }
+
+export const FailureList: Story = {
+  args: {
+    title: 'Something went wrong',
+    message: 'Two categories failed to load.',
+    accent: '#f85149',
+    items: [
+      {
+        id: 'conversations',
+        title: 'History failed to load',
+        message: "History didn't come through. Retry usually fixes it.",
+        details: 'HTTP 503\nservice unavailable',
+        buttonText: 'Retry',
+        buttonAction: fn(),
+      },
+      {
+        id: 'sessions',
+        title: 'Sessions failed to load',
+        message: 'Sessions refused to load. Worth a retry.',
+        buttonText: 'Retry',
+        buttonAction: fn(),
+      },
+    ],
+    secondaryAction: { label: 'Close', onPress: fn() },
+  },
+}

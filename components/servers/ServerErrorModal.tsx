@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { ServerConfig } from '@/types/api'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { safeHostname } from '@/lib/serverUrl'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
@@ -33,7 +35,15 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const { t } = useTranslation(['servers', 'common'])
+  // connectionError covers the WS/config failure only. A server can fail its
+  // HTTP fetches with that still null, which used to open this on an empty
+  // error box — fall back to the fetch error that marked it unreachable.
+  const fetchError = useServerFetchStatusStore(
+    (s) => (server ? s.statuses[server.id]?.error : undefined),
+  )
   if (!server) return null
+
+  const errorText = server.connectionError ?? fetchError ?? null
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -47,7 +57,7 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <View style={[styles.dot, server.isConnected ? styles.dotConnected : styles.dotDisconnected]} />
-              <Text style={[styles.serverName, copyStyle]}>{server.label || t('defaultLabel')}</Text>
+              <Text style={[styles.serverName, copyStyle]}>{server.label || safeHostname(server.url)}</Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
               <X size={20} color={theme.text.secondary} />
@@ -64,11 +74,11 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
           </View>
 
           {/* Error box */}
-          {server.connectionError ? (
+          {errorText ? (
             <ScrollView style={styles.errorBox} nestedScrollEnabled>
               <View style={styles.errorInner}>
                 <XCircle size={14} color={theme.text.danger} weight="fill" style={styles.errorIcon} />
-                <Text style={[styles.errorText, ltrContentStyle]}>{server.connectionError}</Text>
+                <Text style={[styles.errorText, ltrContentStyle]}>{errorText}</Text>
               </View>
             </ScrollView>
           ) : null}

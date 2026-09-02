@@ -238,19 +238,25 @@ jest.mock('@shopify/flash-list', () => {
 jest.mock('@gorhom/bottom-sheet', () => {
   const React = require('react')
   const { View, TextInput } = require('react-native')
-  const MockBottomSheet = React.forwardRef(({ children, ...props }, ref) => {
+  const MockBottomSheet = React.forwardRef(({ children, backdropComponent, ...props }, ref) => {
     React.useImperativeHandle(ref, () => ({
       expand: jest.fn(),
       collapse: jest.fn(),
       close: jest.fn(),
       snapToIndex: jest.fn(),
     }))
-    return React.createElement(View, { ...props, testID: 'bottom-sheet' }, children)
+    // Render the backdrop the way the real sheet does, so tests can assert on it.
+    const backdrop = backdropComponent
+      ? React.createElement(backdropComponent, { animatedIndex: 0, animatedPosition: 0, style: {} })
+      : null
+    return React.createElement(View, { ...props, testID: 'bottom-sheet' }, backdrop, children)
   })
   return {
     __esModule: true,
     default: MockBottomSheet,
     BottomSheetView: ({ children }) => React.createElement(View, {}, children),
+    BottomSheetBackdrop: (props) =>
+      React.createElement(View, { ...props, testID: 'bottom-sheet-backdrop' }),
     BottomSheetScrollView: ({ children }) => React.createElement(View, {}, children),
     BottomSheetFlatList: React.forwardRef((props, ref) => {
       const { FlatList } = require('react-native')

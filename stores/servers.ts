@@ -11,6 +11,7 @@ import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { clearDeviceStaticKey } from '@/services/e2ee/pair-handshake'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
 
@@ -299,6 +300,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
     await clearDeviceStaticKey(serverId)
     recordDiagnosticEvent('server_removed')
+    useServerFetchStatusStore.getState().clearServer(serverId)
 
     set((state) => {
       const { [serverId]: _removed, ...servers } = state.servers

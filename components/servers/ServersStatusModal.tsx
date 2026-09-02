@@ -21,10 +21,10 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore, type ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
+import { safeHostname } from '@/lib/serverUrl'
 import { AddServerButton } from '@/components/servers/AddServerButton'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassFill } from '@/components/ui/GlassFill'
+import { useTheme } from '@/contexts/ThemeContext'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
@@ -34,10 +34,6 @@ interface Props {
 }
 
 type WSStatus = 'connecting' | 'connected' | 'disconnected'
-
-function safeHostname(url: string): string {
-  try { return new URL(url).hostname } catch { return url.replace(/^[a-z]+:\/\//i, '').split('/')[0] || url }
-}
 
 function useServerStatuses(serverIds: string[]) {
   const [statuses, setStatuses] = useState<Record<string, WSStatus>>(() => {
@@ -73,6 +69,7 @@ function StatusRow({
   isMenuOpen,
   onRefresh,
   onOpenMenu,
+  onViewError,
   theme,
 }: {
   label: string
@@ -83,6 +80,8 @@ function StatusRow({
   isMenuOpen: boolean
   onRefresh: () => void
   onOpenMenu: () => void
+  /** Set only when there is an error to show; opens ServerErrorModal. */
+  onViewError?: () => void
   theme: Theme
 }) {
   const { t } = useTranslation('servers')
@@ -134,13 +133,22 @@ function StatusRow({
 
   return (
     <View style={styles.row}>
-      <View style={styles.rowLeft}>
+      <TouchableOpacity
+        style={styles.rowLeft}
+        onPress={onViewError}
+        disabled={!onViewError}
+        accessibilityLabel={onViewError ? t('card.viewError') : undefined}
+        testID={onViewError ? `status-row-view-error-${url}` : undefined}
+      >
         <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>{label}</Text>
         <Text style={[styles.serverUrl, ltrContentStyle]} numberOfLines={1}>{url}</Text>
         {fetchFailed && fetchStatus?.error ? (
           isRefreshing
             ? <View style={[styles.skeletonBar, { width: '80%', marginTop: 2, height: errorHeight ?? 14 }]} />
             : (
+              // Stays clamped at 2 lines on purpose: one CleartextBlockedError
+              // runs 8 lines and would push every other server off screen. The
+              // full text lives one tap away in ServerErrorModal.
               <Text
                 style={[styles.errorDetail, ltrContentStyle]}
                 numberOfLines={2}
@@ -150,7 +158,7 @@ function StatusRow({
               </Text>
             )
         ) : null}
-      </View>
+      </TouchableOpacity>
       <View style={styles.rowRight}>
         <TouchableOpacity onPress={onRefresh} disabled={isRefreshing} hitSlop={8} style={styles.refreshIcon}>
           <Animated.View style={[styles.refreshIconInner, { transform: [{ rotate }] }]}>
@@ -160,13 +168,17 @@ function StatusRow({
         {isRefreshing ? (
           <View style={[styles.skeletonBar, { width: statusWidth ?? 40 }]} />
         ) : (
-          <View
+          <TouchableOpacity
             style={styles.statusGroup}
             onLayout={(e) => setStatusWidth(e.nativeEvent.layout.width)}
+            onPress={onViewError}
+            disabled={!onViewError}
+            accessibilityLabel={onViewError ? t('card.viewError') : undefined}
+            testID={onViewError ? `status-label-view-error-${url}` : undefined}
           >
             <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
             <Text style={[styles.statusText, { color: dotColor }]}>{statusLabel}</Text>
-          </View>
+          </TouchableOpacity>
         )}
         <TouchableOpacity
           onPress={onOpenMenu}
@@ -234,7 +246,6 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
 export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props) {
   const { t } = useTranslation('servers')
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
   const { direction } = useAppDirection()
@@ -299,8 +310,7 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
       statusBarTranslucent
     >
       <Pressable style={[styles.backdrop, directionStyle]} onPress={onClose}>
-        <Pressable style={[styles.sheet, isGlass && styles.sheetGlass]} onPress={() => {}}>
-          <GlassFill />
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <Cloud size={18} color={theme.text.secondary} weight="regular" />
           <Text style={[styles.title, copyStyle]}>
@@ -345,6 +355,11 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
                       isMenuOpen={openMenuId === id}
                       onRefresh={() => handleRefresh(id)}
                       onOpenMenu={() => setOpenMenuId(id)}
+                      onViewError={
+                        server.connectionError || fetchStatuses[id]?.error
+                          ? () => setErrorServerId(id)
+                          : undefined
+                      }
                       theme={theme}
                     />
                   )
@@ -396,10 +411,6 @@ function makeStyles(theme: Theme) {
       padding: spacing.md,
       gap: spacing.sm,
       maxHeight: '75%',
-    },
-    sheetGlass: {
-      backgroundColor: 'transparent',
-      overflow: 'hidden',
     },
     scrollView: {
       flexGrow: 0,

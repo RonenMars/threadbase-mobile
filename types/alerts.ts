@@ -10,6 +10,16 @@ type AlertButton =
   | { buttonText?: undefined; buttonAction?: undefined; buttonVariant?: undefined }
   | { buttonText: string; buttonAction: () => void; buttonVariant?: AlertButtonVariant }
 
+/** One collapsible row inside a multi-failure banner. */
+export type AlertItem = {
+  id: string
+  title: string
+  message: string
+  details?: string
+  /** When set, tapping the row runs this instead of expanding it in place. */
+  onPress?: () => void
+} & AlertButton
+
 export type AlertSpec = {
   level: AlertLevel
   title: string
@@ -23,6 +33,8 @@ export type AlertSpec = {
   accent?: string
   icon?: ReactNode
   testID?: string
+  /** When set, the banner renders these as an accordion list instead of a single message. */
+  items?: AlertItem[]
 } & AlertButton
 
 export function alertFingerprint(spec: Pick<AlertSpec, 'level' | 'title' | 'message' | 'details'>): string {

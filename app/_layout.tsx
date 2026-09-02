@@ -584,11 +584,11 @@ function RootLayout() {
           >
             <AuthGate>
               <BiometricLockGate>
+                <ThemedStatusBar />
+                <ThemedStack router={router} />
                 <SlowQueryBanner />
                 <ErrorBanner />
                 <BannerHost />
-                <ThemedStatusBar />
-                <ThemedStack router={router} />
                 <NavigationLockOverlay />
               </BiometricLockGate>
             </AuthGate>

@@ -47,6 +47,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible={false}
         serverIds={['alpha', 'beta']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -60,6 +61,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -82,6 +84,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -102,6 +105,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -120,6 +124,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'missing']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -135,6 +140,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={onPick}
         onClose={jest.fn()}
@@ -154,6 +160,7 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
+        fetchStatuses={{}}
         servers={servers}
         onPick={onPick}
         onClose={onClose}
@@ -178,7 +185,8 @@ describe('NewSessionServerPicker', () => {
         <NewSessionServerPicker
           visible
           serverIds={['alpha']}
-          servers={servers}
+          fetchStatuses={{}}
+        servers={servers}
           onPick={jest.fn()}
           onClose={jest.fn()}
         />
@@ -200,5 +208,44 @@ describe('NewSessionServerPicker', () => {
       expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
     )
     expect(isMirrored(getByTestId('phosphor-react-native-caret-right-undefined'))).toBe(true)
+  })
+
+  it('marks an unreachable server and still lets it be picked', async () => {
+    const onPick = jest.fn()
+    const { getByTestId, getByText } = await render(
+      <NewSessionServerPicker
+        visible
+        serverIds={['alpha', 'beta']}
+        fetchStatuses={{ beta: { status: 'error', error: 'unreachable', lastCheckedAt: 0 } }}
+        servers={servers}
+        onPick={onPick}
+        onClose={jest.fn()}
+      />
+    )
+
+    getByTestId('new-session-server-unreachable-1')
+    expect(() => getByTestId('new-session-server-unreachable-0')).toThrow()
+
+    // Still tappable: picking it is how the caller surfaces the error.
+    fireEvent.press(getByTestId('new-session-server-1'))
+    expect(onPick).toHaveBeenCalledWith('beta')
+    expect(getByText('Unreachable')).toBeTruthy()
+  })
+
+  it('renders a dismiss backdrop that closes on an outside tap', async () => {
+    const { getByTestId } = await render(
+      <NewSessionServerPicker
+        visible
+        serverIds={['alpha']}
+        fetchStatuses={{}}
+        servers={servers}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    )
+
+    // pressBehavior 'close' is what both dismisses the sheet and stops the tap
+    // reaching the screen behind it.
+    expect(getByTestId('bottom-sheet-backdrop').props.pressBehavior).toBe('close')
   })
 })
