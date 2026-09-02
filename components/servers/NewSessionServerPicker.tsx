@@ -1,9 +1,14 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import type { ServerConfig } from '@/types/api'
+import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
@@ -19,13 +24,21 @@ interface Props {
   visible: boolean
   serverIds: string[]
   servers: Record<string, ServerConfig>
+  fetchStatuses: Record<string, ServerFetchStatusEntry>
   onPick: (serverId: string) => void
   onClose: () => void
 }
 
 const SNAP_POINTS = ['40%', '70%']
 
-export function NewSessionServerPicker({ visible, serverIds, servers, onPick, onClose }: Props) {
+// Without a backdrop the sheet has no outside area: a tap meant to dismiss it
+// fell through to whatever sat behind. pressBehavior 'close' both swallows the
+// tap and closes.
+function renderBackdrop(props: BottomSheetBackdropProps) {
+  return <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} pressBehavior="close" />
+}
+
+export function NewSessionServerPicker({ visible, serverIds, servers, fetchStatuses, onPick, onClose }: Props) {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const glassBackground = useGlassSheetBackground()
@@ -42,6 +55,7 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
       snapPoints={SNAP_POINTS}
       index={0}
       enablePanDownToClose
+      backdropComponent={renderBackdrop}
       onClose={onClose}
       backgroundStyle={[styles.sheetBg, isGlass && styles.sheetBgGlass]}
       backgroundComponent={glassBackground}
@@ -53,6 +67,8 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
           {serverIds.map((id, index) => {
             const server = servers[id]
             if (!server) return null
+            const unreachable =
+              fetchStatuses[id]?.status === 'error' || Boolean(server.connectionError)
             return (
               <TouchableOpacity
                 key={id}
@@ -60,6 +76,12 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
                 onPress={() => onPick(id)}
                 testID={`new-session-server-${index}`}
               >
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: unreachable ? theme.status.failed : theme.status.running },
+                  ]}
+                />
                 <View style={styles.serverInfo}>
                   <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>
                     {server.label || server.url}
@@ -67,6 +89,11 @@ export function NewSessionServerPicker({ visible, serverIds, servers, onPick, on
                   {server.label ? (
                     <Text style={[styles.serverUrl, ltrContentStyle]} numberOfLines={1}>
                       {server.url}
+                    </Text>
+                  ) : null}
+                  {unreachable ? (
+                    <Text style={styles.serverUnreachable} testID={`new-session-server-unreachable-${index}`}>
+                      {t('status.unreachable')}
                     </Text>
                   ) : null}
                 </View>
@@ -107,9 +134,18 @@ function makeStyles(theme: Theme) {
       gap: spacing.md,
     },
     rowGlass: { backgroundColor: 'transparent' },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
     serverInfo: {
       flex: 1,
       gap: spacing.xs,
+    },
+    serverUnreachable: {
+      color: theme.status.failed,
+      fontSize: font.xs,
     },
     serverLabel: {
       color: theme.text.primary,

@@ -168,13 +168,17 @@ function StatusRow({
         {isRefreshing ? (
           <View style={[styles.skeletonBar, { width: statusWidth ?? 40 }]} />
         ) : (
-          <View
+          <TouchableOpacity
             style={styles.statusGroup}
             onLayout={(e) => setStatusWidth(e.nativeEvent.layout.width)}
+            onPress={onViewError}
+            disabled={!onViewError}
+            accessibilityLabel={onViewError ? t('card.viewError') : undefined}
+            testID={onViewError ? `status-label-view-error-${url}` : undefined}
           >
             <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
             <Text style={[styles.statusText, { color: dotColor }]}>{statusLabel}</Text>
-          </View>
+          </TouchableOpacity>
         )}
         <TouchableOpacity
           onPress={onOpenMenu}

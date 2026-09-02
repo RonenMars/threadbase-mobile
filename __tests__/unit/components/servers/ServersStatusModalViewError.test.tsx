@@ -83,4 +83,16 @@ describe('ServersStatusModal error drill-in', () => {
 
     await findByText('tb-ak.example')
   })
+
+  it('opens the same detail from the status label', async () => {
+    const { getByTestId, findByText, queryByTestId } = await renderWithI18n(
+      <ServersStatusModal visible onClose={() => {}} />,
+    )
+
+    fireEvent.press(getByTestId('status-label-view-error-http://tb-ak.example'))
+    await findByText('Machine')
+
+    // A healthy server's label stays inert, same as its row.
+    expect(queryByTestId('status-label-view-error-http://ok.example')).toBeNull()
+  })
 })

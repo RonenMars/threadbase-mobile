@@ -15,7 +15,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder } from 'phosphor-react-native'
+import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder, X } from 'phosphor-react-native'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
@@ -24,6 +24,7 @@ import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { RecentDirsModal, type RecentDir } from '@/components/browse/RecentDirsModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -124,6 +125,9 @@ export default function BrowseScreen() {
   }, [])
 
   const { data, isLoading, isError, error } = useBrowse(serverId ?? '', currentPath)
+  const serverUnreachable = useServerFetchStatusStore(
+    (s) => (serverId ? s.statuses[serverId]?.status === 'error' : false),
+  )
   const isBrowseSlow = useLoadingStateStore((s) => s.slowCounts.browse > 0)
 
   // The TreeView drill prefill passes the session's absolute cwd, which may
@@ -158,9 +162,16 @@ export default function BrowseScreen() {
     setShowNewFolder(false)
   }, [currentPath])
 
-  // Set header back button when inside a subdirectory
+  // Set header back button when inside a subdirectory, and a close button that
+  // leaves the screen entirely. headerRight sits on the I18nManager trailing
+  // edge, so it lands top-right in LTR and top-left in RTL without extra work.
   useEffect(() => {
     navigation.setOptions({
+      // Opaque and non-transparent even under glass: the breadcrumb row's
+      // bottom border used to run behind the title, and the content started
+      // at y=0 under the header.
+      headerTransparent: false,
+      headerStyle: { backgroundColor: theme.bg.secondary },
       headerLeft: currentPath
         ? () => (
             <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginStart: 8, paddingEnd: 16 }}>
@@ -168,8 +179,18 @@ export default function BrowseScreen() {
             </TouchableOpacity>
           )
         : undefined,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityLabel={t('common:button.close')}
+          testID="browse-close"
+        >
+          <X size={22} color={theme.text.primary} />
+        </TouchableOpacity>
+      ),
     })
-  }, [currentPath, navigation, goBack, t, theme.text.accent])
+  }, [currentPath, navigation, goBack, router, t, theme.bg.secondary, theme.text.accent, theme.text.primary])
 
   // Swipe from left edge to go back
   const swipeBack = Gesture.Pan()
@@ -311,6 +332,10 @@ export default function BrowseScreen() {
     error?.message?.includes('not configured')
   )
   const recentsToggleLabel = isRecentsOpen ? t('nav.hideRecentDirs') : t('nav.showRecentDirs')
+  // Every control on this screen talks to the same server, so a failed listing
+  // or an unreachable server makes all of them dead ends. Only closing — the
+  // swipe-back gesture and the new-folder Cancel — stays live.
+  const actionsDisabled = isError || serverUnreachable
   const unableToLoadSubtitle =
     error instanceof Error && error.message ? error.message : t('error.unknownError')
 
@@ -319,14 +344,14 @@ export default function BrowseScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']} testID="browse-screen">
       {/* Breadcrumbs */}
       <View style={[styles.breadcrumbs, ltrContentStyle]} testID={`browse-cwd-${currentPath || '~'}`}>
-        <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)}>
-          <Text style={[styles.crumb, currentPath === '' && styles.crumbActive]}>~</Text>
+        <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)} disabled={actionsDisabled}>
+          <Text style={[styles.crumb, currentPath === '' && styles.crumbActive, actionsDisabled && styles.actionDisabled]}>~</Text>
         </TouchableOpacity>
         {breadcrumbs.map((segment, i) => (
           <React.Fragment key={i}>
             <Text style={styles.crumbSeparator}>/</Text>
-            <TouchableOpacity onPress={() => navigateToBreadcrumb(i)}>
-              <Text style={[styles.crumb, i === breadcrumbs.length - 1 && styles.crumbActive]}>
+            <TouchableOpacity onPress={() => navigateToBreadcrumb(i)} disabled={actionsDisabled}>
+              <Text style={[styles.crumb, i === breadcrumbs.length - 1 && styles.crumbActive, actionsDisabled && styles.actionDisabled]}>
                 {segment}
               </Text>
             </TouchableOpacity>
@@ -338,8 +363,9 @@ export default function BrowseScreen() {
       {recentDirs.length > 0 ? (
         <View style={styles.recents}>
           <TouchableOpacity
-            style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass]}
+            style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass, actionsDisabled && styles.actionDisabled]}
             onPress={() => setRecentsOpen(!isRecentsOpen)}
+            disabled={actionsDisabled}
             accessibilityRole="button"
             accessibilityLabel={recentsToggleLabel}
           >
@@ -358,9 +384,9 @@ export default function BrowseScreen() {
               {previewRecentDirs.map((dir) => (
                 <TouchableOpacity
                   key={dir.path}
-                  style={styles.recentRow}
+                  style={[styles.recentRow, actionsDisabled && styles.actionDisabled]}
                   onPress={() => handleStartFromRecent(dir)}
-                  disabled={isStarting}
+                  disabled={isStarting || actionsDisabled}
                   testID={`recent-dir-preview-${dir.path}`}
                 >
                   <ClockCounterClockwise size={18} color={theme.text.secondary} />
@@ -377,8 +403,9 @@ export default function BrowseScreen() {
               ))}
               {hasMoreRecents ? (
                 <TouchableOpacity
-                  style={styles.displayAllBtn}
+                  style={[styles.displayAllBtn, actionsDisabled && styles.actionDisabled]}
                   onPress={() => setShowAllRecents(true)}
+                  disabled={actionsDisabled}
                   accessibilityRole="button"
                   testID="recent-dirs-display-all"
                 >
@@ -395,7 +422,7 @@ export default function BrowseScreen() {
         dirs={recentDirs}
         onClose={() => setShowAllRecents(false)}
         onSelect={handleStartFromRecent}
-        disabled={isStarting}
+        disabled={isStarting || actionsDisabled}
       />
 
       {/* Directory list */}
@@ -449,7 +476,11 @@ export default function BrowseScreen() {
             autoFocus
             onSubmitEditing={handleCreateFolder}
           />
-          <TouchableOpacity style={[styles.newFolderBtn, isGlass && styles.cardGlass]} onPress={handleCreateFolder}>
+          <TouchableOpacity
+            style={[styles.newFolderBtn, isGlass && styles.cardGlass, actionsDisabled && styles.actionDisabled]}
+            onPress={handleCreateFolder}
+            disabled={actionsDisabled}
+          >
             <GlassFill />
             {createDir.isPending ? (
               <ActivityIndicator size="small" color={theme.text.accent} />
@@ -496,11 +527,14 @@ export default function BrowseScreen() {
                   styles.providerOption,
                   selected && styles.providerOptionSelected,
                   selected ? { borderColor: option.color } : null,
-                  unavailable && styles.providerOptionDisabled,
+                  (unavailable || actionsDisabled) && styles.providerOptionDisabled,
                 ]}
-                onPress={() => setSelectedProvider(option.value)}
+                // Guarded in onPress, not via `disabled`: TouchableOpacity
+                // overwrites accessibilityState.disabled with its own prop,
+                // which would report an unavailable provider as enabled.
+                onPress={() => { if (!actionsDisabled) setSelectedProvider(option.value) }}
                 accessibilityRole="button"
-                accessibilityState={{ selected, disabled: unavailable }}
+                accessibilityState={{ selected, disabled: unavailable || actionsDisabled }}
                 testID={`start-provider-${option.value}`}
               >
                 <View style={[styles.providerDot, { backgroundColor: option.color }]} />
@@ -509,7 +543,7 @@ export default function BrowseScreen() {
                     styles.providerOptionText,
                     selected && styles.providerOptionTextSelected,
                     selected ? { color: option.color } : null,
-                    unavailable && styles.providerOptionTextDisabled,
+                    (unavailable || actionsDisabled) && styles.providerOptionTextDisabled,
                   ]}
                 >
                   {option.label}
@@ -547,8 +581,10 @@ export default function BrowseScreen() {
         ) : null}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.newFolderToggle}
+            style={[styles.newFolderToggle, actionsDisabled && styles.actionDisabled]}
             onPress={() => setShowNewFolder(true)}
+            disabled={actionsDisabled}
+            testID="browse-new-folder"
           >
             <Text style={styles.newFolderToggleText}>{t('nav.newFolder')}</Text>
           </TouchableOpacity>
@@ -556,10 +592,10 @@ export default function BrowseScreen() {
           <TouchableOpacity
             style={[
               styles.startBtn,
-              (isStarting || selectedUnavailable) && styles.startBtnDisabled,
+              (isStarting || selectedUnavailable || actionsDisabled) && styles.startBtnDisabled,
             ]}
             onPress={handleStartSession}
-            disabled={isStarting || selectedUnavailable}
+            disabled={isStarting || selectedUnavailable || actionsDisabled}
             testID="browse-start-session"
           >
             {isStarting ? (
@@ -587,7 +623,8 @@ function makeStyles(theme: Theme) {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
     flexWrap: 'wrap',
@@ -596,6 +633,9 @@ function makeStyles(theme: Theme) {
   crumb: {
     color: theme.text.accent,
     fontSize: font.sm,
+  },
+  actionDisabled: {
+    opacity: 0.4,
   },
   crumbActive: {
     color: theme.text.primary,
@@ -669,7 +709,7 @@ function makeStyles(theme: Theme) {
   providerSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
@@ -699,7 +739,7 @@ function makeStyles(theme: Theme) {
     color: theme.text.secondary,
   },
   providerWarning: {
-    marginHorizontal: spacing.md,
+    marginHorizontal: spacing.xl,
     marginBottom: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.md,
@@ -774,8 +814,9 @@ function makeStyles(theme: Theme) {
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
     gap: spacing.md,
   },
   newFolderToggle: {
