@@ -24,7 +24,7 @@ const flushAsyncConnect = async () => {
 type MockSocket = {
   url: string
   onopen: (() => void) | null
-  onmessage: ((e: { data: string | Uint8Array }) => void) | null
+  onmessage: ((e: { data: string | Uint8Array | ArrayBuffer }) => void) | null
   onclose: (() => void) | null
   onerror: (() => void) | null
   send: jest.Mock
@@ -485,6 +485,55 @@ describe('WSClient – send', () => {
     })
 
     expect(handler).toHaveBeenCalledWith({ type: 'session_update', session: { id: 'sealed' } })
+    unsubscribe?.()
+  })
+
+  it('unseals an ArrayBuffer pinned-server frame before dispatching it', async () => {
+    const remoteSend = createRecordState({
+      key: recordKey,
+      ctxId: recordContextId,
+      direction: 2,
+      channel: 1,
+    })
+    mockedOpenContextOnce.mockResolvedValue({
+      ctxId: 'safe-context-id',
+      kind: 'ws',
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket-does-not-belong-in-url',
+      send: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 1,
+        channel: 1,
+      }),
+      recv: createRecordState({
+        key: recordKey,
+        ctxId: recordContextId,
+        direction: 2,
+        channel: 1,
+      }),
+      destroy: jest.fn(),
+    })
+    wsManager.connect('pinned-server', 'https://secure.host', 'long-term-api-key', {
+      serverPublicKey: 'pinned-server-key',
+      requireEncryption: true,
+    })
+    await flushAsyncConnect()
+    const handler = jest.fn()
+    const unsubscribe = wsManager.getClient('pinned-server')?.on('session_update', handler)
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+    const frame = remoteSend.seal(
+      new TextEncoder().encode(JSON.stringify({ type: 'session_update', session: { id: 'arraybuffer' } })),
+    )
+    const arrayBuffer = new ArrayBuffer(frame.byteLength)
+    new Uint8Array(arrayBuffer).set(frame)
+    mockSocket.onmessage!({
+      data: arrayBuffer,
+    })
+
+    expect(handler).toHaveBeenCalledWith({ type: 'session_update', session: { id: 'arraybuffer' } })
     unsubscribe?.()
   })
 })
