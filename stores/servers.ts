@@ -11,6 +11,7 @@ import type { DeviceCapability } from '@/types/devices'
 import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { clearDeviceStaticKey } from '@/services/e2ee/pair-handshake'
+import { clearOpenRefusal } from '@/services/e2ee/context'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
@@ -290,6 +291,10 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     // A pairing that did not encrypt says nothing about whether this device
     // should demand encryption, so it must not answer the question with `false`.
     if (device?.requireEncryption) get().setRequireEncryption(id, true)
+
+    // Pairing is one of the few events that can genuinely resolve a permanent
+    // E2EE refusal, so a fresh pairing forgets the old verdict for this id.
+    clearOpenRefusal(id)
 
     recordDiagnosticEvent('server_added')
     return id
