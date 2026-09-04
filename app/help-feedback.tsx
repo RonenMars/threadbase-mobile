@@ -335,7 +335,11 @@ export default function HelpFeedbackScreen() {
   // ---- Form state ----
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
-      <KeyboardAwareScrollView contentContainerStyle={s.content} bottomOffset={20}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={20}
+      >
         <Text style={s.heading}>{heading}</Text>
         <Text style={s.subheading}>{subheading}</Text>
 
