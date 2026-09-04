@@ -77,14 +77,33 @@
     "titleConversations": "Не удалось загрузить историю",
     "titleMessages": "Не удалось загрузить сообщения",
     "titleSessionDetail": "Не удалось загрузить детали сессии",
-    "titleBrowse": "Не удалось загрузить дерево файлов",
     "titleOther": "Что-то пошло не так",
     "listTitle": "Некоторые запросы не выполнены",
     "messageSessions": "Сессии не загрузились. Стоит повторить попытку.",
     "messageConversations": "История не пришла. Обычно помогает повторная попытка.",
     "messageMessages": "Сообщения застряли. Нажмите «Повторить», чтобы попробовать снова.",
     "messageSessionDetail": "Детали сессии не пришли. Обычно помогает повторная попытка.",
-    "messageBrowse": "Не удалось получить дерево файлов. Проверьте соединение или повторите попытку.",
-    "messageOther": "На нашей стороне произошёл сбой. Повторите попытку или закройте и продолжайте."
+    "messageOther": "На нашей стороне произошёл сбой. Повторите попытку или закройте и продолжайте.",
+    "messageConnection": "Не удаётся подключиться к {{label}}",
+    "retrying": "Повтор…",
+    "retryAllRetrying_one": "Повтор {{count}} запроса…",
+    "retryAllRetrying_few": "Повтор {{count}} запросов…",
+    "retryAllRetrying_many": "Повтор {{count}} запросов…",
+    "retryAllRetrying_other": "Повтор {{count}} запросов…",
+    "codeLabel": "Код ошибки",
+    "rawLabel": "Исходная ошибка",
+    "issuesIndicator_one": "{{count}} проблема",
+    "issuesIndicator_few": "{{count}} проблемы",
+    "issuesIndicator_many": "{{count}} проблем",
+    "issuesIndicator_other": "{{count}} проблемы",
+    "detailsLink": "Подробнее"
+  },
+  "errorPolicy": {
+    "sessionExpired": "Срок действия сессии истёк",
+    "forbidden": "У вас нет доступа к этому",
+    "notFound": "Это больше не найдено",
+    "timeout": "Сервер слишком долго не отвечал",
+    "tooManyRequests": "Слишком много запросов",
+    "serverError": "Сервер не смог выполнить запрос"
   }
 }

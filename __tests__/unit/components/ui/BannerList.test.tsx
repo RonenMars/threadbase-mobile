@@ -8,7 +8,7 @@ function makeItems() {
       id: 'conversations',
       title: 'History failed to load',
       message: 'History did not come through.',
-      details: 'HTTP 503',
+      code: 'HTTP 503',
       buttonText: 'Retry',
       buttonAction: jest.fn(),
     },

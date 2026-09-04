@@ -1,15 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
+import { useLoadingStateStore, type QueryCategory, type QueryError } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
+import { useErrorSheetStore } from '@/stores/errorSheet'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
+import { ErrorRecoverySheet } from '@/components/ui/ErrorRecoverySheet'
+import { IssuesIndicator } from '@/components/ui/IssuesIndicator'
 import { queryClient } from '@/services/query-client'
-import { useBannerSync } from '@/hooks/useBannerSync'
-import type { AlertItem, AlertSpec } from '@/types/alerts'
+import { classifyError } from '@/services/error-policy'
+import type { AlertItem } from '@/types/alerts'
 
-function getCategoryTitle(category: QueryCategory, t: TFunction<'common'>): string {
+/** Categories rendered in the global recovery sheet. `browse` is deliberately
+ * excluded: the file-tree screen already renders its own failure inline
+ * (app/browse.tsx), and the rest of the app stays fully usable when it fails
+ * — the local/Option-2 case, not the sheet's job. */
+type SheetCategory = Exclude<QueryCategory, 'browse'>
+
+function isSheetCategory(category: QueryCategory): category is SheetCategory {
+  return category !== 'browse'
+}
+
+function getCategoryTitle(category: SheetCategory, t: TFunction<'common'>): string {
   switch (category) {
     case 'sessions':
       return t('errorBanner.titleSessions')
@@ -19,14 +32,12 @@ function getCategoryTitle(category: QueryCategory, t: TFunction<'common'>): stri
       return t('errorBanner.titleMessages')
     case 'session-detail':
       return t('errorBanner.titleSessionDetail')
-    case 'browse':
-      return t('errorBanner.titleBrowse')
     case 'other':
       return t('errorBanner.titleOther')
   }
 }
 
-function getCategoryMessage(category: QueryCategory, t: TFunction<'common'>): string {
+function getCategoryMessage(category: SheetCategory, t: TFunction<'common'>): string {
   switch (category) {
     case 'sessions':
       return t('errorBanner.messageSessions')
@@ -36,27 +47,17 @@ function getCategoryMessage(category: QueryCategory, t: TFunction<'common'>): st
       return t('errorBanner.messageMessages')
     case 'session-detail':
       return t('errorBanner.messageSessionDetail')
-    case 'browse':
-      return t('errorBanner.messageBrowse')
     case 'other':
       return t('errorBanner.messageOther')
   }
 }
 
-function formatDetails(status?: number, message?: string): string | undefined {
-  const parts: string[] = []
-  if (status) parts.push(`HTTP ${status}`)
-  if (message) parts.push(message)
-  return parts.length ? parts.join('\n') : undefined
-}
-
-function categoryQueryKey(category: QueryCategory): unknown[] {
+function categoryQueryKey(category: SheetCategory): unknown[] {
   switch (category) {
     case 'sessions': return ['sessions']
     case 'conversations': return ['conversations']
     case 'messages': return ['conversation']
     case 'session-detail': return ['session']
-    case 'browse': return ['browse']
     default: return []
   }
 }
@@ -68,6 +69,17 @@ export function ErrorBanner() {
   const servers = useServersStore((s) => s.servers)
   const { t } = useTranslation('common')
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
+  const [retryingAll, setRetryingAll] = useState(false)
+  const sheetOpen = useErrorSheetStore((s) => s.open)
+  const openSheet = useErrorSheetStore((s) => s.openSheet)
+  const closeSheet = useErrorSheetStore((s) => s.closeSheet)
+
+  const sheetErrors = useMemo(
+    (): (QueryError & { category: SheetCategory })[] =>
+      errors.filter((e): e is QueryError & { category: SheetCategory } => isSheetCategory(e.category)),
+    [errors],
+  )
 
   // Only servers still in the store: a row whose ServerConfig cannot be
   // resolved renders as a bare id and taps into a modal that returns null, so
@@ -78,88 +90,121 @@ export function ErrorBanner() {
     [statuses, servers],
   )
 
-  const spec = useMemo((): AlertSpec | null => {
-    if (errors.length === 0) return null
-
-    // sticky only on close — a retry that fails again must still be able to
-    // put the banner back.
-    const dismissAllSticky = () => errors.forEach((error) => dismissError(error.id, true))
-    const dismissAll = () => errors.forEach((error) => dismissError(error.id))
-
-    // One row per failing server. The aggregate queries (`sessions`,
-    // `conversations`) span every server at once, so a per-category row cannot
-    // say which of 68 went down — serverFetchStatus can. Falls back to category
-    // rows when nothing is attributable to a server.
-    const items: AlertItem[] = failedServerIds.length > 0
-      ? failedServerIds.map((serverId): AlertItem => {
-          const server = servers[serverId]
-          const label = server.label?.trim()
-          return {
-            id: serverId,
-            title: label || server.url,
-            message: statuses[serverId].error ?? t('errorBanner.messageOther'),
-            // Tapping drills into ServerErrorModal, which already renders the
-            // full error unclamped alongside the machine/platform/version rows.
-            onPress: () => setErrorServerId(serverId),
-            buttonText: t('button.retry'),
-            buttonAction: () => {
-              // serverId sits at varying positions across key shapes
-              // (['session', id, …] vs ['conversations', filter, epoch, …ids]),
-              // so match on membership rather than a key prefix.
-              queryClient.invalidateQueries({
-                predicate: (query) => query.queryKey.includes(serverId),
-              })
-              dismissAll()
-            },
-            buttonVariant: 'primary',
-          }
-        })
-      : errors.map((error): AlertItem => ({
-          id: error.id,
-          title: getCategoryTitle(error.category, t),
-          message: getCategoryMessage(error.category, t),
-          details: formatDetails(error.status, error.message),
-          buttonText: t('button.retry'),
-          buttonAction: () => {
-            queryClient.invalidateQueries({ queryKey: categoryQueryKey(error.category) })
-            dismissError(error.id)
-          },
-          buttonVariant: 'primary',
-        }))
-
-    const retryAll = items.length > 1
-      ? {
-          buttonText: t('button.retryAll'),
-          // No key filter: the rows span every server and category that failed,
-          // so "all" is literally the whole cache.
-          buttonAction: () => {
-            queryClient.invalidateQueries()
-            dismissAll()
-          },
-          buttonVariant: 'primary' as const,
-        }
-      : {}
-
-    return {
-      level: 'error',
-      // Always the generic header, and deliberately not titleOther: the rows
-      // carry the server address or the category, so echoing either a single
-      // row's title or the 'other' row printed the same line twice.
-      title: t('errorBanner.listTitle'),
-      message: getCategoryMessage(errors[0].category, t),
-      items,
-      ...retryAll,
-      onClose: dismissAllSticky,
+  const retry = async (id: string, run: () => Promise<unknown>) => {
+    setRetryingIds((s) => new Set(s).add(id))
+    try {
+      await run()
+    } finally {
+      setRetryingIds((s) => {
+        const next = new Set(s)
+        next.delete(id)
+        return next
+      })
     }
-  }, [errors, failedServerIds, servers, statuses, dismissError, t])
+  }
 
-  useBannerSync('query-error', spec)
+  const items = useMemo((): AlertItem[] => {
+    const serverRows: AlertItem[] = failedServerIds.map((serverId): AlertItem => {
+      const entry = statuses[serverId]
+      const server = servers[serverId]
+      const label = server.label?.trim() || server.url
+      return {
+        id: serverId,
+        title: label,
+        message: t('errorBanner.messageConnection', { label }),
+        code: entry.code ?? (entry.httpStatus ? `HTTP_${entry.httpStatus}` : undefined),
+        rawMessage: entry.error,
+        retrying: retryingIds.has(serverId),
+        onPress: () => setErrorServerId(serverId),
+        buttonText: t('button.retry'),
+        // No explicit dismiss on success: this row is driven by
+        // serverFetchStatus, which clears itself via recordSuccess/recordReady
+        // once the invalidated queries land — the row disappears on its own.
+        buttonAction: () => {
+          void retry(serverId, () =>
+            // serverId sits at varying positions across key shapes
+            // (['session', id, …] vs ['conversations', filter, epoch, …ids]),
+            // so match on membership rather than a key prefix.
+            queryClient.invalidateQueries({
+              predicate: (query) => query.queryKey.includes(serverId),
+            }),
+          )
+        },
+        buttonVariant: 'primary',
+      }
+    })
+
+    const categoryRows: AlertItem[] = sheetErrors.map((error): AlertItem => {
+      const classified = classifyError({ status: error.status, code: error.code }, t)
+      return {
+        id: error.id,
+        title: getCategoryTitle(error.category, t),
+        message: classified.description ?? getCategoryMessage(error.category, t),
+        code: error.code ?? (error.status ? `HTTP_${error.status}` : undefined),
+        rawMessage: error.message,
+        retrying: retryingIds.has(error.id),
+        buttonText: t('button.retry'),
+        buttonAction: () => {
+          void retry(error.id, () =>
+            queryClient.invalidateQueries({ queryKey: categoryQueryKey(error.category) }),
+          ).then(() => dismissError(error.id))
+        },
+        buttonVariant: 'primary',
+      }
+    })
+
+    return failedServerIds.length > 0 ? serverRows : categoryRows
+  }, [failedServerIds, sheetErrors, servers, statuses, retryingIds, t, dismissError])
+
+  // Auto-open the moment a new batch of sheet-worthy failures appears; stays
+  // closed (only the compact indicator shows) once the user has minimized it,
+  // until it empties out and a fresh batch arrives.
+  useEffect(() => {
+    if (items.length > 0) openSheet()
+  }, [items.length > 0, openSheet]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const title = t('errorBanner.listTitle')
+  const retryAllLabel = items.length > 1
+    ? (retryingAll ? t('errorBanner.retryAllRetrying', { count: items.length }) : t('button.retryAll'))
+    : undefined
+
+  const handleRetryAll = items.length > 1
+    ? () => {
+        setRetryingAll(true)
+        // No key filter on the invalidate below — every failing server and
+        // category is being retried, so clear both, not just whichever the
+        // sheet is currently showing (rows are server-first, mutually
+        // exclusive with category rows — see the `items` memo above).
+        items.forEach((item) => dismissError(item.id))
+        sheetErrors.forEach((error) => dismissError(error.id))
+        void queryClient.invalidateQueries().finally(() => setRetryingAll(false))
+      }
+    : undefined
+
+  // Closing the sheet minimizes it — the errors themselves stay live, and the
+  // compact IssuesIndicator keeps reminding the user until they're resolved.
+  // There is deliberately no "dismiss and never show again": every error
+  // shown here is still failing, and a major/critical failure should not be
+  // silenceable the way the old single-shot sticky-dismiss allowed.
+  const handleClose = () => closeSheet()
 
   return (
-    <ServerErrorModal
-      visible={errorServerId !== null}
-      server={errorServerId ? servers[errorServerId] ?? null : null}
-      onClose={() => setErrorServerId(null)}
-    />
+    <>
+      <ErrorRecoverySheet
+        visible={sheetOpen && items.length > 0}
+        title={title}
+        items={items}
+        retryAllLabel={retryAllLabel}
+        retryAllRetrying={retryingAll}
+        onRetryAll={handleRetryAll}
+        onClose={handleClose}
+      />
+      <IssuesIndicator count={!sheetOpen ? items.length : 0} onPress={openSheet} />
+      <ServerErrorModal
+        visible={errorServerId !== null}
+        server={errorServerId ? servers[errorServerId] ?? null : null}
+        onClose={() => setErrorServerId(null)}
+      />
+    </>
   )
 }

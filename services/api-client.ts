@@ -20,11 +20,14 @@ export { AuthError }
 export class NetworkError extends Error {
   code?: string
   warmupState?: ServerWarmupState
-  constructor(message: string, code?: string, warmupState?: ServerWarmupState) {
+  /** The HTTP status the server actually returned, when there was one — undefined for a request that never reached the server. */
+  status?: number
+  constructor(message: string, code?: string, warmupState?: ServerWarmupState, status?: number) {
     super(message)
     this.name = 'NetworkError'
     this.code = code
     this.warmupState = warmupState
+    this.status = status
   }
 }
 
@@ -411,7 +414,7 @@ async function request<T>(
     if (response.status === 409 && code === 'CONVERSATION_BUSY') {
       throw new ConversationBusyError(detail || 'Conversation is busy', errBody ?? {})
     }
-    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState, response.status)
   }
 
   if (traced) traceMark('response', `HTTP ${response.status}`)
@@ -555,7 +558,7 @@ async function requestWithMeta<T>(
       if (errBody?.code) code = errBody.code
       warmupState = recordWarmupError(serverId, errBody)
     } catch {}
-    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState)
+    throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState, response.status)
   }
 
   useServerFetchStatusStore.getState().recordReady(serverId)

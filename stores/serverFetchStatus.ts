@@ -12,6 +12,10 @@ export interface ServerFetchStatusEntry {
   status: ServerFetchStatus
   /** Human-readable error message when status === 'error'. */
   error?: string
+  /** HTTP status the failing request returned, when there was one. */
+  httpStatus?: number
+  /** Server-supplied error code, when the response carried one. */
+  code?: string
   warmupState?: ServerWarmupState
   lastCheckedAt: number
 }
@@ -76,6 +80,12 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
         [serverId]: {
           status: 'error',
           error: describeError(error),
+          httpStatus: error && typeof error === 'object' && 'status' in error
+            ? (error as { status?: number }).status
+            : undefined,
+          code: error && typeof error === 'object' && 'code' in error
+            ? (error as { code?: string }).code
+            : undefined,
           lastCheckedAt: Date.now(),
         },
       },
