@@ -325,6 +325,17 @@ export function LiveConversationView({
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
 
+  // The prompt_pending refusal is server-side and applies to `{ input }` only;
+  // `{ keys }` is deliberately not arbitrated there, because Escape and arrow
+  // keys are how a picker is dismissed. When the card is gone (closed itself,
+  // or the user dismissed it) but the server still refuses text, this is the
+  // only way left to get a key to the PTY from the phone (#947/#948). Mirrors
+  // TerminalView's sendEscapeAction — this tab hits the same refusal.
+  const sendEscapeAction =
+    sendInput.isError && isPromptPendingError(sendInput.error) && answerPhase !== 'pending'
+      ? { label: tTerminal('answer.sendEscape'), onPress: () => sendKeys.mutate('\x1b') }
+      : null
+
   // Auto-scroll to bottom when keyboard opens or app resumes with keyboard already up.
   // New-message/thinking-bubble scrolling is left to FlashList's native
   // maintainVisibleContentPosition bottom-anchoring below — a JS scrollToEnd
@@ -420,6 +431,7 @@ export function LiveConversationView({
         isUploading={isUploading}
         attachError={attachError}
         sendError={sendErrorMessage}
+        sendErrorAction={sendEscapeAction}
         sendNotice={answerNoticeMessage}
         disabled={disabled}
         voice={voice}
