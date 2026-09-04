@@ -40,6 +40,10 @@ export interface ChatComposerProps {
   isUploading: boolean
   attachError: string | null
   sendError: string | null
+  /** One tappable recovery under sendError, for a refusal the user can only
+   *  get past by doing something other than retrying (e.g. sending Escape to
+   *  a prompt the server still thinks is open). */
+  sendErrorAction?: { label: string; onPress: () => void } | null
   /** Calm, non-failure notice shown in the same slot as sendError (e.g. a
    *  question that closed itself) — not styled as a failure. */
   sendNotice?: string | null
@@ -66,6 +70,7 @@ export function ChatComposer({
   isUploading,
   attachError,
   sendError,
+  sendErrorAction = null,
   sendNotice = null,
   disabled,
   sendDisabled = false,
@@ -129,6 +134,16 @@ export function ChatComposer({
         <Text style={styles.sendError} numberOfLines={2}>
           {sendError}
         </Text>
+      ) : null}
+      {sendError && sendErrorAction ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          testID="send-error-action"
+          onPress={sendErrorAction.onPress}
+          disabled={disabled}
+        >
+          <Text style={styles.sendErrorAction}>{sendErrorAction.label}</Text>
+        </TouchableOpacity>
       ) : null}
       {sendNotice ? (
         <Text style={styles.sendNotice} numberOfLines={2}>
@@ -345,6 +360,7 @@ function makeStyles(theme: Theme) {
     },
     inputAreaExpanded: { flex: 1, borderTopWidth: 0 },
     sendError: { color: theme.status.failed, fontSize: font.sm },
+    sendErrorAction: { color: theme.text.accent, fontSize: font.sm, textDecorationLine: 'underline' },
     sendNotice: { color: theme.text.secondary, fontSize: font.sm },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, ...iosComposerChrome },
     input: {

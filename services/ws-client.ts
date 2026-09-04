@@ -25,6 +25,9 @@ export type WSMessage =
   // trusting raw WS arrival order.
   | { type: 'terminal_output'; sessionId: string; data: string; seq?: number }
   | { type: 'session_list'; sessions: Session[] }
+  // Liveness only. Carries nothing to render; its job is to reset the silence
+  // watchdog in useTerminalStream on an otherwise idle socket (#946).
+  | { type: 'ping'; ts: number }
   | { type: 'notification'; event: NotificationEvent }
   | { type: 'plan_ready'; sessionId: string; plan: string }
   // Ground-truth user message: the streamer wrote this text to the PTY, so the

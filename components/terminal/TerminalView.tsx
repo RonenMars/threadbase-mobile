@@ -163,6 +163,18 @@ export function TerminalView({
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
 
+  // The prompt_pending refusal is server-side and applies to `{ input }` only;
+  // `{ keys }` is deliberately not arbitrated there, because Escape and arrow
+  // keys are how a picker is dismissed. When the card is gone (closed itself,
+  // or the user dismissed it) but the server still refuses text, this is the
+  // only way left to get a key to the PTY from the phone (#947). Composer text
+  // is never re-routed as keys: prose over an open picker is exactly what the
+  // server guard exists to stop.
+  const sendEscapeAction =
+    sendInput.isError && isPromptPendingError(sendInput.error) && answerPhase !== 'pending'
+      ? { label: t('answer.sendEscape'), onPress: () => sendKeys.mutate('\x1b') }
+      : null
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
       <ToastViewport id="terminal" />
@@ -213,6 +225,7 @@ export function TerminalView({
         isUploading={isUploading}
         attachError={attachError}
         sendError={sendErrorMessage}
+        sendErrorAction={sendEscapeAction}
         sendNotice={answerNoticeMessage}
         disabled={disabled}
         voice={voice}
