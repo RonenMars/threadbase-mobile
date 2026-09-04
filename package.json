@@ -161,7 +161,7 @@
     "postcss": "^8.5.26",
     "react-refresh": "^0.18.0",
     "react-test-renderer": "19.2.7",
-    "storybook": "10.5.9",
+    "storybook": "10.5.10",
     "tailwindcss": "^4.3.3",
     "test-renderer": "^1.2.0",
     "typescript": "~6.0.3",
