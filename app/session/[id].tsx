@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
+  Keyboard,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -970,6 +971,12 @@ export default function SessionDetailScreen() {
                 onPress={() => {
                   const next = showTerminalSurface ? 'chat' : 'terminal'
                   if (!hasConversationId && next === 'chat') return
+                  // The outgoing surface owns the focused input, so switching
+                  // leaves an orphan keyboard up on Android — and a
+                  // KeyboardAvoidingView that mounts under an already-open
+                  // keyboard never gets a keyboard event to size its padding
+                  // from, so the incoming composer renders behind it.
+                  Keyboard.dismiss()
                   setForceRawTerminal(false)
                   setSessionView(next)
                 }}
