@@ -149,10 +149,10 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const timeLabel = lastActivityTs ? formatListTime(lastActivityTs) : null
 
   return (
-    <View style={[styles.cardWrap, isGlass && styles.cardWrapGlass]}>
+    <View style={[styles.cardWrap, isGlass && styles.cardWrapGlass]} testID={isFirstSession ? "first-session-card" : undefined}>
       <GlassFill />
       <TouchableOpacity
-        testID={isFirstSession ? "first-session-card" : undefined}
+        testID={`session-row-${session.id}`}
         onPress={handlePress}
         onLongPress={handleLongPress}
         activeOpacity={0.75}

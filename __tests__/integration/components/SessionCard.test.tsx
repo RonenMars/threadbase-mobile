@@ -44,6 +44,17 @@ describe('SessionCard', () => {
     expect(getByText('my-project')).toBeTruthy()
   })
 
+  it('uses a stable session-id testID', async () => {
+    const { getByTestId } = await render(<SessionCard session={makeSession()} />)
+    expect(getByTestId('session-row-session-1')).toBeTruthy()
+  })
+
+  it('keeps the legacy first-session testID when requested', async () => {
+    const { getByTestId } = await render(<SessionCard session={makeSession()} isFirstSession />)
+    expect(getByTestId('first-session-card')).toBeTruthy()
+    expect(getByTestId('session-row-session-1')).toBeTruthy()
+  })
+
   it('renders the status badge', async () => {
     const { getByText } = await render(<SessionCard session={makeSession({ status: 'running' })} />)
     expect(getByText('Running')).toBeTruthy()
