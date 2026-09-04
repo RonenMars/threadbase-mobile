@@ -12,7 +12,14 @@ describe('LeaveSessionModal', () => {
     const onConfirm = jest.fn()
     const onCancel = jest.fn()
     await render(
-      <LeaveSessionModal visible onCancel={onCancel} onConfirm={onConfirm} />,
+      <LeaveSessionModal
+        visible
+        phase="idle"
+        onCancel={onCancel}
+        onConfirm={onConfirm}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
     )
 
     expect(screen.getByTestId('leave-session-modal')).toBeTruthy()
@@ -30,7 +37,14 @@ describe('LeaveSessionModal', () => {
     const onConfirm = jest.fn()
     const onCancel = jest.fn()
     await render(
-      <LeaveSessionModal visible onCancel={onCancel} onConfirm={onConfirm} />,
+      <LeaveSessionModal
+        visible
+        phase="idle"
+        onCancel={onCancel}
+        onConfirm={onConfirm}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
     )
     await fireEvent.press(screen.getByTestId('leave-session-cancel'))
     expect(onCancel).toHaveBeenCalled()
@@ -40,7 +54,14 @@ describe('LeaveSessionModal', () => {
   it('can select Kill it and remember', async () => {
     const onConfirm = jest.fn()
     await render(
-      <LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />,
+      <LeaveSessionModal
+        visible
+        phase="idle"
+        onCancel={jest.fn()}
+        onConfirm={onConfirm}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
     )
     await fireEvent.press(screen.getByTestId('leave-session-option-kill'))
     await fireEvent.press(screen.getByTestId('leave-session-remember'))
@@ -51,11 +72,36 @@ describe('LeaveSessionModal', () => {
   it('resets choice when reopened', async () => {
     const onConfirm = jest.fn()
     const { rerender } = await render(
-      <LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />,
+      <LeaveSessionModal
+        visible
+        phase="idle"
+        onCancel={jest.fn()}
+        onConfirm={onConfirm}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
     )
     await fireEvent.press(screen.getByTestId('leave-session-option-kill'))
-    await rerender(<LeaveSessionModal visible={false} onCancel={jest.fn()} onConfirm={onConfirm} />)
-    await rerender(<LeaveSessionModal visible onCancel={jest.fn()} onConfirm={onConfirm} />)
+    await rerender(
+      <LeaveSessionModal
+        visible={false}
+        phase="idle"
+        onCancel={jest.fn()}
+        onConfirm={onConfirm}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
+    )
+    await rerender(
+      <LeaveSessionModal
+        visible
+        phase="idle"
+        onCancel={jest.fn()}
+        onConfirm={onConfirm}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
+    )
     await fireEvent.press(screen.getByTestId('leave-session-confirm'))
     expect(onConfirm).toHaveBeenCalledWith('leave', false)
   })
@@ -63,7 +109,14 @@ describe('LeaveSessionModal', () => {
   it('aligns translated copy to the locale writing direction', async () => {
     await i18n.changeLanguage('he')
     await render(
-      <LeaveSessionModal visible onCancel={jest.fn()} onConfirm={jest.fn()} />,
+      <LeaveSessionModal
+        visible
+        phase="idle"
+        onCancel={jest.fn()}
+        onConfirm={jest.fn()}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
     )
 
     expect(StyleSheet.flatten(screen.getByText('Leave this session?').props.style)).toEqual(
@@ -77,5 +130,37 @@ describe('LeaveSessionModal', () => {
     expect(StyleSheet.flatten(screen.getByText('Leave it').props.style)).toEqual(
       expect.objectContaining({ direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' }),
     )
+  })
+
+  it('shows a loader instead of the options while pending, and swallows options taps', async () => {
+    await render(
+      <LeaveSessionModal
+        visible={false}
+        phase="pending"
+        onCancel={jest.fn()}
+        onConfirm={jest.fn()}
+        onDismissError={jest.fn()}
+        onModalDismiss={jest.fn()}
+      />,
+    )
+    expect(screen.getByTestId('leave-session-pending')).toBeTruthy()
+    expect(screen.queryByTestId('leave-session-option-kill')).toBeNull()
+  })
+
+  it('shows an error with a dismiss button, which does not itself navigate', async () => {
+    const onDismissError = jest.fn()
+    await render(
+      <LeaveSessionModal
+        visible={false}
+        phase="error"
+        onCancel={jest.fn()}
+        onConfirm={jest.fn()}
+        onDismissError={onDismissError}
+        onModalDismiss={jest.fn()}
+      />,
+    )
+    expect(screen.getByTestId('leave-session-error')).toBeTruthy()
+    await fireEvent.press(screen.getByTestId('leave-session-error-ok'))
+    expect(onDismissError).toHaveBeenCalled()
   })
 })

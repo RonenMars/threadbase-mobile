@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -14,6 +15,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { AppliedSessionLeaveAction } from '@/lib/sessionLeavePolicy'
 import { DEFAULT_LEAVE_MODAL_CHOICE } from '@/lib/sessionLeavePolicy'
+import type { SessionLeavePhase } from '@/hooks/useSessionLeaveGuard'
 import { blockTextDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 const OPTIONS: AppliedSessionLeaveAction[] = ['kill', 'leave', 'kill_on_idle']
@@ -48,30 +50,94 @@ function getLeaveActionHint(
 
 interface Props {
   visible: boolean
+  phase: SessionLeavePhase
   onCancel: () => void
   onConfirm: (choice: AppliedSessionLeaveAction, remember: boolean) => void
+  onDismissError: () => void
+  // iOS-only native signal (RN never calls this on Android) that the modal's
+  // close animation has actually finished — see useSessionLeaveGuard's
+  // finishLeave for why the guard waits on it before navigating.
+  onModalDismiss: () => void
 }
 
-export function LeaveSessionModal({ visible, onCancel, onConfirm }: Props) {
+export function LeaveSessionModal({
+  visible,
+  phase,
+  onCancel,
+  onConfirm,
+  onDismissError,
+  onModalDismiss,
+}: Props) {
+  const showOptions = visible && phase === 'idle'
+  const showPending = phase === 'pending'
+  const showError = phase === 'error'
   return (
     <Modal
-      visible={visible}
+      visible={showOptions || showPending || showError}
       transparent
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onCancel}
+      onDismiss={onModalDismiss}
     >
-      {visible ? (
-        <LeaveSessionForm onCancel={onCancel} onConfirm={onConfirm} />
-      ) : null}
+      {showOptions ? <LeaveSessionForm onCancel={onCancel} onConfirm={onConfirm} /> : null}
+      {showPending ? <LeaveSessionStatusCard kind="pending" /> : null}
+      {showError ? <LeaveSessionStatusCard kind="error" onDismiss={onDismissError} /> : null}
     </Modal>
+  )
+}
+
+function LeaveSessionStatusCard({
+  kind,
+  onDismiss,
+}: {
+  kind: 'pending' | 'error'
+  onDismiss?: () => void
+}) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const directionStyle = useDirectionStyle()
+  const { direction } = useAppDirection()
+  const copyStyle = blockTextDirectionStyle(direction)
+  const optionTextStyle = textDirectionStyle(direction)
+  const { t } = useTranslation(['terminal', 'common'])
+
+  return (
+    <View style={[styles.overlay, directionStyle]}>
+      <View
+        style={styles.card}
+        accessibilityRole="alert"
+        accessibilityViewIsModal
+        testID={kind === 'pending' ? 'leave-session-pending' : 'leave-session-error'}
+      >
+        {kind === 'pending' ? (
+          <View style={styles.statusRow}>
+            <ActivityIndicator color={theme.text.accent} />
+            <Text style={[styles.body, copyStyle]}>{t('terminal:leaveSession.pending')}</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.body, copyStyle]}>{t('terminal:leaveSession.error')}</Text>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={onDismiss}
+              testID="leave-session-error-ok"
+              accessibilityRole="button"
+              accessibilityLabel={t('common:button.confirm')}
+            >
+              <Text style={[styles.confirmLabel, optionTextStyle]}>{t('common:button.confirm')}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
   )
 }
 
 function LeaveSessionForm({
   onCancel,
   onConfirm,
-}: Omit<Props, 'visible'>) {
+}: Pick<Props, 'onCancel' | 'onConfirm'>) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
@@ -191,6 +257,11 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.sm,
       lineHeight: 20,
+    },
+    statusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
     },
     options: {
       gap: spacing.sm,
