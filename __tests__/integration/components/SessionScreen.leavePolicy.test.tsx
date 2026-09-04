@@ -16,6 +16,7 @@ const fireAppState = (s: string) => appStateListeners.forEach((l) => l(s))
 
 const mockSend = jest.fn()
 const mockStopMutate = jest.fn()
+const mockStopMutateAsync = jest.fn(() => Promise.resolve())
 const mockDispatch = jest.fn()
 
 let mockSession = {
@@ -54,7 +55,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendInput: { mutate: jest.fn() },
     sendKeys: { mutate: jest.fn(), isPending: false },
     adoptSession: { mutate: jest.fn() },
-    stopSession: { mutate: mockStopMutate, isPending: false },
+    stopSession: { mutate: mockStopMutate, mutateAsync: mockStopMutateAsync, isPending: false },
   }),
 }))
 jest.mock('@/hooks/useTerminalStream', () => ({
@@ -67,6 +68,7 @@ jest.mock('@/services/ws-client', () => ({
     send: (...args: unknown[]) => mockSend(...args),
     status: () => 'connected',
     onAnyStatusChange: () => () => {},
+    holdSessionWaitingInput: jest.fn(() => Promise.resolve({ ok: true })),
   },
 }))
 jest.mock('@/stores/servers', () => ({
@@ -116,6 +118,7 @@ describe('SessionScreen — leave-session gate', () => {
     mockStarting = undefined
     mockSend.mockClear()
     mockStopMutate.mockClear()
+    mockStopMutateAsync.mockClear()
     mockDispatch.mockClear()
     mockSession = {
       id: 'sess-live',

@@ -82,7 +82,9 @@
     "leaveHint": "Keep it running so you can come back.",
     "kill_on_idle": "Kill on idle",
     "kill_on_idleHint": "Don't cut a turn in progress; hold when the session is idle.",
-    "remember": "Don't ask me again"
+    "remember": "Don't ask me again",
+    "pending": "Sending…",
+    "error": "Couldn't complete this action. Check your connection and try again."
   },
   "history": {
     "header_one": "History · {{count}} message",

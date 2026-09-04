@@ -43,22 +43,29 @@ export function decideSessionLeave(opts: {
   return { kind: 'apply', action: setting }
 }
 
-export type LeaveApplyResult = AppliedSessionLeaveAction | 'leave_fallback'
+export interface LeaveActionOutcome {
+  ok: boolean
+  applied: AppliedSessionLeaveAction
+}
 
-export function applySessionLeaveAction(opts: {
+/**
+ * Runs the chosen leave action and reports whether it succeeded.
+ * `leave` never touches the server, so it always succeeds; `kill` and
+ * `kill_on_idle` await their respective server round trips.
+ */
+export async function applySessionLeaveAction(opts: {
   action: AppliedSessionLeaveAction
-  stopSession: () => void
-  sendHold: () => boolean
-}): LeaveApplyResult {
+  stopSession: () => Promise<void>
+  sendHold: () => Promise<boolean>
+}): Promise<LeaveActionOutcome> {
+  if (opts.action === 'leave') return { ok: true, applied: 'leave' }
   if (opts.action === 'kill') {
-    opts.stopSession()
-    return 'kill'
+    try {
+      await opts.stopSession()
+      return { ok: true, applied: 'kill' }
+    } catch {
+      return { ok: false, applied: 'kill' }
+    }
   }
-  if (opts.action === 'leave') {
-    return 'leave'
-  }
-  if (opts.sendHold()) {
-    return 'kill_on_idle'
-  }
-  return 'leave_fallback'
+  return { ok: await opts.sendHold(), applied: 'kill_on_idle' }
 }

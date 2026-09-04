@@ -82,6 +82,18 @@ export type WSMessage =
   | PermissionCancelledWsMessage
   | PromptEventWsMessage
   | PromptSnapshotWsMessage
+  // Unicast reply to this client's own `hold_session` frame. `ok` fires on
+  // request-accepted (immediate hold, or a latch armed for the next
+  // running -> waiting_input edge), not on the PTY actually exiting — the
+  // real exit may be arbitrarily far off for `applied: 'armed'`. Old
+  // streamers never send this frame; callers must not block on it forever.
+  | {
+      type: 'hold_session_result'
+      sessionId: string
+      ok: boolean
+      applied?: 'held' | 'armed' | 'grace'
+      reason?: 'permission_denied' | 'unknown_when' | 'no_session'
+    }
 
 type MessageHandler = (msg: WSMessage) => void
 
@@ -522,6 +534,38 @@ class WSClientManager {
 
   send(serverId: string, msg: unknown) {
     this.clients.get(serverId)?.send(msg)
+  }
+
+  /**
+   * Sends `hold_session` with `when: 'waiting_input'` and waits for the
+   * matching `hold_session_result`. Resolves `null` (not `ok: false`) on a
+   * closed socket or a timeout — an old streamer ignores the frame and never
+   * replies, and per the server-contract rule that must degrade, not error.
+   */
+  holdSessionWaitingInput(
+    serverId: string,
+    sessionId: string,
+    timeoutMs = 8000,
+  ): Promise<{ ok: boolean; reason?: string } | null> {
+    const client = this.clients.get(serverId)
+    if (!client || client.status() !== 'connected') return Promise.resolve(null)
+    return new Promise((resolve) => {
+      let settled = false
+      const unsub = client.on('hold_session_result', (msg) => {
+        if (msg.type !== 'hold_session_result' || msg.sessionId !== sessionId || settled) return
+        settled = true
+        clearTimeout(timer)
+        unsub()
+        resolve({ ok: msg.ok, reason: msg.reason })
+      })
+      const timer = setTimeout(() => {
+        if (settled) return
+        settled = true
+        unsub()
+        resolve(null)
+      }, timeoutMs)
+      client.send({ type: 'hold_session', sessionId, when: 'waiting_input' })
+    })
   }
 
   acquireSession(serverId: string, sessionId: string) {

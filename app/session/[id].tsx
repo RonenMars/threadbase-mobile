@@ -521,20 +521,28 @@ export default function SessionDetailScreen() {
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
   const { sendKeys, sendInput, stopSession } = useSessionActions(serverId, id ?? '')
-  const { mutate: stopSessionMutate } = stopSession
-  const { leaveModalVisible, cancelLeave, confirmLeave } = useSessionLeaveGuard({
-    navigation: {
-      dispatch: (action) => {
-        navigation.dispatch(action as Parameters<typeof navigation.dispatch>[0])
+  const { mutateAsync: stopSessionMutateAsync } = stopSession
+  const {
+    leaveModalVisible,
+    leavePhase,
+    isLeaving,
+    cancelLeave,
+    confirmLeave,
+    dismissLeaveError,
+    onModalDismiss,
+  } = useSessionLeaveGuard({
+      navigation: {
+        dispatch: (action) => {
+          navigation.dispatch(action as Parameters<typeof navigation.dispatch>[0])
+        },
       },
-    },
-    serverId,
-    sessionId: id,
-    session,
-    isPending,
-    skipInitialReplace: isStarting,
-    stopSessionMutate,
-  })
+      serverId,
+      sessionId: id,
+      session,
+      isPending,
+      skipInitialReplace: isStarting,
+      stopSessionMutateAsync,
+    })
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
   const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
     enabled: Boolean(serverId && reviewConversationId),
@@ -587,7 +595,12 @@ export default function SessionDetailScreen() {
     //
     // Skip while starting: older servers omit `lifecycle`, and a spawning
     // session can still read idle+detached on those builds.
-    if (isPending) return
+    //
+    // Skip while a leave is in flight: kill/kill_on_idle can flip the
+    // session to resumable/ended before the guard's own home navigation has
+    // unmounted this screen, and this redirect must not win that race and
+    // strand the user on the conversation view instead of the homepage.
+    if (isPending || isLeaving) return
     const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
     if (
       session != null &&
@@ -597,7 +610,7 @@ export default function SessionDetailScreen() {
     ) {
       router.replace(`/conversation/${historyNavigationId}?server=${serverId}`)
     }
-  }, [isPending, session, historyNavigationId, serverId, router])
+  }, [isPending, isLeaving, session, historyNavigationId, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
@@ -1068,8 +1081,11 @@ export default function SessionDetailScreen() {
 
       <LeaveSessionModal
         visible={leaveModalVisible}
+        phase={leavePhase}
         onCancel={cancelLeave}
         onConfirm={confirmLeave}
+        onDismissError={dismissLeaveError}
+        onModalDismiss={onModalDismiss}
       />
 
       <NameSessionModal

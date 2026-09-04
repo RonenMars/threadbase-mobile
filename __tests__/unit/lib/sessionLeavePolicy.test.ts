@@ -55,25 +55,41 @@ describe('sessionLeavePolicy', () => {
     ).toEqual({ kind: 'none' })
   })
 
-  it('maps kill / leave / hold, and hold without WS falls back to leave', () => {
-    const stopSession = jest.fn()
-    const sendHold = jest.fn(() => true)
-    expect(applySessionLeaveAction({ action: 'kill', stopSession, sendHold })).toBe('kill')
+  it('maps kill / leave / hold to their outcomes', async () => {
+    const stopSession = jest.fn(() => Promise.resolve())
+    const sendHold = jest.fn(() => Promise.resolve(true))
+    await expect(applySessionLeaveAction({ action: 'kill', stopSession, sendHold })).resolves.toEqual(
+      { ok: true, applied: 'kill' },
+    )
     expect(stopSession).toHaveBeenCalled()
     expect(sendHold).not.toHaveBeenCalled()
 
     stopSession.mockClear()
-    expect(applySessionLeaveAction({ action: 'leave', stopSession, sendHold })).toBe('leave')
+    await expect(
+      applySessionLeaveAction({ action: 'leave', stopSession, sendHold }),
+    ).resolves.toEqual({ ok: true, applied: 'leave' })
     expect(stopSession).not.toHaveBeenCalled()
 
-    expect(applySessionLeaveAction({ action: 'kill_on_idle', stopSession, sendHold })).toBe(
-      'kill_on_idle',
-    )
+    await expect(
+      applySessionLeaveAction({ action: 'kill_on_idle', stopSession, sendHold }),
+    ).resolves.toEqual({ ok: true, applied: 'kill_on_idle' })
     expect(sendHold).toHaveBeenCalled()
+  })
 
-    expect(
-      applySessionLeaveAction({ action: 'kill_on_idle', stopSession, sendHold: () => false }),
-    ).toBe('leave_fallback')
+  it('reports failure without throwing when kill fails', async () => {
+    const stopSession = jest.fn(() => Promise.reject(new Error('stop failed')))
+    const sendHold = jest.fn(() => Promise.resolve(true))
+    await expect(applySessionLeaveAction({ action: 'kill', stopSession, sendHold })).resolves.toEqual(
+      { ok: false, applied: 'kill' },
+    )
+  })
+
+  it('reports failure when the streamer denies the hold', async () => {
+    const stopSession = jest.fn(() => Promise.resolve())
+    const sendHold = jest.fn(() => Promise.resolve(false))
+    await expect(
+      applySessionLeaveAction({ action: 'kill_on_idle', stopSession, sendHold }),
+    ).resolves.toEqual({ ok: false, applied: 'kill_on_idle' })
     expect(stopSession).not.toHaveBeenCalled()
   })
 })
