@@ -1,6 +1,7 @@
 import type { NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
 import { shouldPersistQuery, queryClient } from '@/services/query-client'
+import { NotFoundError } from '@/services/api-client'
 import { useLoadingStateStore } from '@/stores/loading-state'
 
 // jest.mock is hoisted above imports and its factory runs during the
@@ -133,5 +134,52 @@ describe('slow-query overlay (dangling slow-count)', () => {
     queryClient.removeQueries({ queryKey: ['sessions', 'srv1'] })
     expect(useLoadingStateStore.getState().slowCounts.sessions).toBe(0)
     void cancelled
+  })
+})
+
+
+describe('error banner opt-out (meta.silentError)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    useLoadingStateStore.setState({ errors: [] })
+  })
+  afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
+    queryClient.clear()
+  })
+
+  async function failWith(queryKey: readonly unknown[], meta?: Record<string, unknown>) {
+    await queryClient
+      .fetchQuery({
+        queryKey,
+        queryFn: () => Promise.reject(new NotFoundError('/api/sessions/abc')),
+        retry: false,
+        meta,
+      })
+      .catch(() => {})
+    // pushError is deferred a tick so it never runs inside the cache subscriber.
+    jest.advanceTimersByTime(0)
+  }
+
+  it('pushes a banner row for an ordinary failing query — the control', async () => {
+    await failWith(['session', 'srv1', 'ordinary'])
+    expect(useLoadingStateStore.getState().errors).toHaveLength(1)
+    expect(useLoadingStateStore.getState().errors[0].category).toBe('session-detail')
+  })
+
+  it('pushes no row when the query opts out', async () => {
+    // The conversation screen's not-found fallback asks /api/sessions/<id> with a
+    // CONVERSATION id: it 404s by construction for anything that was never a
+    // session, and every conversation 404 therefore grew a phantom second row.
+    await failWith(['session', 'srv1', 'probe'], { persist: false, silentError: true })
+    expect(useLoadingStateStore.getState().errors).toHaveLength(0)
+  })
+
+  it('carries the 404 status through to the row, so it can be classified', async () => {
+    await failWith(['session', 'srv1', 'statused'])
+    const [row] = useLoadingStateStore.getState().errors
+    expect(row.status).toBe(404)
+    expect(row.code).toBe('HTTP_404')
   })
 })
