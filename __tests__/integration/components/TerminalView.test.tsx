@@ -620,4 +620,43 @@ describe('TerminalView', () => {
       expect(screen.queryByText(PROMPT_PENDING_MESSAGE)).toBeNull()
     })
   })
+
+  // The prompt_pending guard is a server 409 on `{ input }` and applies to the
+  // Terminal view's composer too. `{ keys }` is not arbitrated server-side, so
+  // Escape is the one thing that can still reach the PTY — but with no card on
+  // screen there was nowhere to send it from (#947).
+  describe('send refused with no card to answer', () => {
+    const PROMPT_PENDING_MESSAGE = 'A prompt is waiting for an answer; answer or dismiss it before sending text'
+    const SEND_ESCAPE = 'Send Escape to dismiss it'
+
+    it('offers Escape through the raw-key route, and never re-sends the text as keys', async () => {
+      const { rerender } = await renderView()
+      expect(screen.queryByTestId('question-card')).toBeNull()
+
+      mockSendInputState = { isError: true, error: new NetworkError(PROMPT_PENDING_MESSAGE, 'prompt_pending') }
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+
+      // Positive control: the text refusal itself is unchanged.
+      expect(screen.getByText(PROMPT_PENDING_MESSAGE)).toBeTruthy()
+
+      await act(async () => fireEvent.press(screen.getByText(SEND_ESCAPE)))
+      expect(mockSendKeysMutate).toHaveBeenCalledTimes(1)
+      expect(mockSendKeysMutate).toHaveBeenCalledWith('\x1b')
+      expect(mockSendInputMutate).not.toHaveBeenCalled()
+    })
+
+    it('does not offer Escape when nothing was refused', async () => {
+      await renderView()
+      expect(screen.queryByText(SEND_ESCAPE)).toBeNull()
+      expect(screen.queryByTestId('send-error-action')).toBeNull()
+    })
+
+    it('does not offer Escape for a refusal that is not prompt_pending', async () => {
+      const { rerender } = await renderView()
+      mockSendInputState = { isError: true, error: new NetworkError('boom', 'something_else') }
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+      expect(screen.getByText('boom')).toBeTruthy()
+      expect(screen.queryByText(SEND_ESCAPE)).toBeNull()
+    })
+  })
 })
