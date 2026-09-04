@@ -7,7 +7,7 @@ import { createWrapper } from '@/test-utils'
 type Handler = (msg: { type: string; sessionId?: string; data?: string; lines?: string[] }) => void
 
 type StatusListener = (serverId: string, s: string) => void
-type WatchdogMsg = { type: string; sessionId?: string; data?: string }
+type WatchdogMsg = { type: string; sessionId?: string; data?: string; ts?: number }
 
 jest.mock('@/services/ws-client', () => {
   const handlers = new Map<string, Set<Handler>>()
@@ -58,7 +58,7 @@ jest.mock('@/services/api-client', () => ({
 const { __wsTest } = jest.requireMock('@/services/ws-client') as {
   __wsTest: {
     forceReconnect: jest.Mock
-    emit: (msg: { type: string; sessionId?: string; data?: string }) => void
+    emit: (msg: { type: string; sessionId?: string; data?: string; ts?: number }) => void
     reset: () => void
     emitStatus: (serverId: string, s: string) => void
   }
@@ -104,6 +104,25 @@ describe('useTerminalStream – silence watchdog', () => {
 
     // 45s after the last message — fires.
     await act(() => jest.advanceTimersByTime(15_000))
+    expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(1)
+  })
+
+  // A WebSocket protocol ping never reaches JS, so an app-level ping is the
+  // only liveness signal an idle socket has. Pinned separately from the
+  // "any inbound message" case so the wildcard reset can never be narrowed to
+  // session traffic without this going red (#946).
+  it('a server ping frame with no session payload resets the silence timer', async () => {
+    await renderStream()
+
+    // Server cadence is 30 s; three pings without any session traffic.
+    for (let i = 0; i < 3; i++) {
+      await act(() => jest.advanceTimersByTime(30_000))
+      await act(() => __wsTest.emit({ type: 'ping', ts: Date.now() }))
+    }
+    expect(__wsTest.forceReconnect).not.toHaveBeenCalled()
+
+    // Pings stop: 45 s after the last one, the watchdog fires.
+    await act(() => jest.advanceTimersByTime(WS_SILENCE_TIMEOUT_MS))
     expect(__wsTest.forceReconnect).toHaveBeenCalledTimes(1)
   })
 

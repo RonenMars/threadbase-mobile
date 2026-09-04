@@ -52,7 +52,9 @@ Measured: 10 × 403 then 60 × 429 in under two minutes, still climbing. A fix n
 
 ### The silence timer is expensive now
 
-`hooks/useTerminalStream.ts` force-reconnects the socket when no WS traffic arrives for `WS_SILENCE_TIMEOUT_MS` (45 s), because iOS kills TCP silently. It cannot tell a dead socket from an idle session, so on an idle session it fires forever. Before E2EE that cost one socket dial. Now each redial costs a full Noise handshake: measured **3.1 context opens per minute at idle against a server limit of 5**, i.e. 62 % of the budget spent doing nothing. Any inbound frame — the server already sends `host_pressure` and `session_list` — should reset that timer.
+`hooks/useTerminalStream.ts` force-reconnects the socket when no WS traffic arrives for `WS_SILENCE_TIMEOUT_MS` (45 s), because iOS kills TCP silently. It cannot tell a dead socket from an idle session, so on an idle session it fires forever. Before E2EE that cost one socket dial. Now each redial costs a full Noise handshake: measured **3.1 context opens per minute at idle against a server limit of 5**, i.e. 62 % of the budget spent doing nothing.
+
+The client already resets that timer on **any** inbound frame (the `'*'` subscription in `useTerminalStream`, since #143). The reason it still fires is that an idle socket receives nothing JS can see: the streamer's liveness signal is a WebSocket *protocol* ping, which the native layer answers without ever surfacing to `onmessage`, and `host_pressure` / `session_list` arrive only on a change. The fix is an app-level `{ type: 'ping' }` frame from the server at a cadence shorter than 45 s; the client treats it as liveness and nothing else, and a test pins that. Tracked as #946 on this side. Do not "fix" this by shortening the window or raising the server's limit — the limit is doing its job.
 
 Note also that **every foreground rotates every REST context** (`rest-session.ts`, `onAppState`), so a foreground costs two handshakes on top of this.
 

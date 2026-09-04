@@ -22,6 +22,13 @@ const TERMINAL_REPLAY_TIMEOUT_MS = 2000
 // If no WS message of any kind arrives for this long, the connection is
 // probably dead without having fired onclose (iOS silently kills TCP while
 // the app is in the foreground). Force a reconnect so streaming resumes.
+//
+// "Any kind" is load-bearing: a WebSocket protocol ping never reaches JS, so
+// the only thing that proves an idle socket alive is an app-level frame such
+// as the streamer's `{ type: 'ping' }`, sent every 30 s. This window must stay
+// longer than that cadence, or every idle session redials on schedule — and on
+// a pinned server each redial is a Noise handshake against a five-per-minute
+// budget (#946).
 const WS_SILENCE_TIMEOUT_MS = 45_000
 
 export function useTerminalStream(
