@@ -12,6 +12,8 @@ export interface QueryError {
   id: string
   category: QueryCategory
   status?: number
+  /** Server-supplied error code, when the response carried one. */
+  code?: string
   message: string
 }
 

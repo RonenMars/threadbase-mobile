@@ -1,12 +1,11 @@
 import { ErrorBanner } from '@/components/ErrorBanner'
-import { BannerHost } from '@/components/ui/BannerHost'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
-import { useBannerStore } from '@/stores/banners'
+import { useErrorSheetStore } from '@/stores/errorSheet'
 import { renderWithI18n } from '@/test-utils/render'
 import { queryClient } from '@/services/query-client'
-import { fireEvent } from '@testing-library/react-native'
+import { fireEvent, waitFor } from '@testing-library/react-native'
 import type { ServerConfig } from '@/types/api'
 
 function server(id: string, url: string, label?: string): ServerConfig {
@@ -31,54 +30,28 @@ function seedFailures(count: number) {
 
 describe('ErrorBanner server rows', () => {
   beforeEach(() => {
-    useBannerStore.setState({ banners: [] })
+    useErrorSheetStore.setState({ open: false })
     useLoadingStateStore.setState({ errors: [] })
     useServerFetchStatusStore.setState({ statuses: {} })
     useServersStore.setState({ servers: {} })
   })
 
-  it('renders one row per failing server, named or addressed', async () => {
+  it('renders one row per failing server, named or addressed, and opens the sheet automatically', async () => {
     seedFailures(3)
-    const { getByTestId, getByText } = await renderWithI18n(
-      <>
-        <ErrorBanner />
-        <BannerHost />
-      </>,
-    )
+    const { getByTestId, getByText } = await renderWithI18n(<ErrorBanner />)
 
-    getByTestId('banner-row-s0')
-    getByTestId('banner-row-s1')
-    getByTestId('banner-row-s2')
+    getByTestId('error-sheet-row-s0')
+    getByTestId('error-sheet-row-s1')
+    getByTestId('error-sheet-row-s2')
     getByText('Studio Mac')
     getByText('https://host-1.example')
-  })
-
-  it('survives a full 68-server outage as 68 rows under one banner', async () => {
-    seedFailures(68)
-    const { getByTestId, queryAllByTestId } = await renderWithI18n(
-      <>
-        <ErrorBanner />
-        <BannerHost />
-      </>,
-    )
-
-    // One banner, not 68 — and the header reads as a summary, not a server name.
-    expect(useBannerStore.getState().banners).toHaveLength(1)
-    expect(useBannerStore.getState().banners[0].items).toHaveLength(68)
-    getByTestId('banner-row-s0')
-    // FlatList windows the rest; only a screenful is mounted.
-    expect(queryAllByTestId(/^banner-row-s/).length).toBeLessThan(68)
+    expect(useErrorSheetStore.getState().open).toBe(true)
   })
 
   it('offers Retry all only when more than one thing failed', async () => {
     seedFailures(3)
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined)
-    const { getByText } = await renderWithI18n(
-      <>
-        <ErrorBanner />
-        <BannerHost />
-      </>,
-    )
+    const { getByText } = await renderWithI18n(<ErrorBanner />)
 
     fireEvent.press(getByText('Retry all'))
     // No key filter — every failing server and category is in the list.
@@ -89,27 +62,17 @@ describe('ErrorBanner server rows', () => {
 
   it('shows no Retry all for a single failure', async () => {
     seedFailures(1)
-    const { queryByText, getByTestId } = await renderWithI18n(
-      <>
-        <ErrorBanner />
-        <BannerHost />
-      </>,
-    )
+    const { queryByText, getByTestId } = await renderWithI18n(<ErrorBanner />)
 
-    getByTestId('banner-row-s0')
+    getByTestId('error-sheet-row-s0')
     expect(queryByText('Retry all')).toBeNull()
   })
 
   it('drills a row into ServerErrorModal, falling back to the fetch error', async () => {
     seedFailures(2)
-    const { getByTestId, findByText } = await renderWithI18n(
-      <>
-        <ErrorBanner />
-        <BannerHost />
-      </>,
-    )
+    const { getByTestId, findByText } = await renderWithI18n(<ErrorBanner />)
 
-    fireEvent.press(getByTestId('banner-row-s1'))
+    fireEvent.press(getByTestId('error-sheet-row-s1'))
 
     // connectionError is null on these servers, so the modal would show an empty
     // error box without the serverFetchStatus fallback.
@@ -131,14 +94,29 @@ describe('ErrorBanner server rows', () => {
       },
     })
 
-    await renderWithI18n(
-      <>
-        <ErrorBanner />
-        <BannerHost />
-      </>,
-    )
+    const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
 
-    const items = useBannerStore.getState().banners[0].items ?? []
-    expect(items.map((i) => i.id)).toEqual(['s0'])
+    queryByTestId('error-sheet-row-s0')
+    expect(queryByTestId('error-sheet-row-srv_ghost')).toBeNull()
+  })
+
+  it('disables the retry icon while its retry is in flight, then re-enables it', async () => {
+    seedFailures(1)
+    let resolveInvalidate: () => void = () => {}
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockReturnValue(
+      new Promise((resolve) => { resolveInvalidate = () => resolve(undefined) }),
+    )
+    const { getByTestId } = await renderWithI18n(<ErrorBanner />)
+
+    fireEvent.press(getByTestId('error-sheet-retry-s0'))
+    await waitFor(() => {
+      expect(getByTestId('error-sheet-retry-s0').props.accessibilityState?.disabled).toBe(true)
+    })
+
+    resolveInvalidate()
+    await waitFor(() => {
+      expect(getByTestId('error-sheet-retry-s0').props.accessibilityState?.disabled).toBeFalsy()
+    })
+    invalidate.mockRestore()
   })
 })

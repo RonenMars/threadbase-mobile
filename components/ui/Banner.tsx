@@ -68,8 +68,10 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
                   {open ? (
                     <View style={s.rowBody}>
                       <Text style={[s.message, { color: accent }]}>{item.message}</Text>
-                      {item.details ? (
-                        <Text style={[s.detailsText, { color: accent }]}>{item.details}</Text>
+                      {item.code || item.rawMessage ? (
+                        <Text style={[s.detailsText, { color: accent }]}>
+                          {[item.code, item.rawMessage].filter(Boolean).join('\n')}
+                        </Text>
                       ) : null}
                       {item.buttonText ? (
                         <TouchableOpacity

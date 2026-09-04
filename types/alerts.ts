@@ -15,7 +15,12 @@ export type AlertItem = {
   id: string
   title: string
   message: string
-  details?: string
+  /** Server error code or `HTTP <status>`, when one is known. */
+  code?: string
+  /** The raw, unparaphrased error text from the failing request. */
+  rawMessage?: string
+  /** Whether this row's retry is currently in flight — disables its button and shows a "Retrying…" state. */
+  retrying?: boolean
   /** When set, tapping the row runs this instead of expanding it in place. */
   onPress?: () => void
 } & AlertButton

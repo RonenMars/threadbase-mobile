@@ -124,7 +124,7 @@ export default function BrowseScreen() {
     }
   }, [])
 
-  const { data, isLoading, isError, error } = useBrowse(serverId ?? '', currentPath)
+  const { data, isLoading, isError, error, refetch } = useBrowse(serverId ?? '', currentPath)
   const serverUnreachable = useServerFetchStatusStore(
     (s) => (serverId ? s.statuses[serverId]?.status === 'error' : false),
   )
@@ -446,6 +446,7 @@ export default function BrowseScreen() {
           <EmptyState
             title={t('error.unableToLoadTitle')}
             subtitle={unableToLoadSubtitle}
+            action={{ label: t('common:button.retry'), onPress: () => void refetch() }}
           />
         ) : rows.length === 0 ? (
           <EmptyState title={t('error.emptyTitle')} subtitle={t('error.emptySubtitle')} />

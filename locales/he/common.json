@@ -77,14 +77,31 @@
     "titleConversations": "טעינת ההיסטוריה נכשלה",
     "titleMessages": "טעינת ההודעות נכשלה",
     "titleSessionDetail": "טעינת פרטי הסשן נכשלה",
-    "titleBrowse": "טעינת עץ הקבצים נכשלה",
     "titleOther": "משהו השתבש",
     "listTitle": "חלק מהבקשות נכשלו",
     "messageSessions": "הסשנים סירבו להיטען. שווה לנסות שוב.",
     "messageConversations": "ההיסטוריה לא הגיעה. ניסיון נוסף בדרך כלל פותר זאת.",
     "messageMessages": "ההודעות נתקעו. הקישו \"נסה שוב\" כדי לנסות שנית.",
     "messageSessionDetail": "פרטי הסשן לא הגיעו. ניסיון נוסף בדרך כלל פותר זאת.",
-    "messageBrowse": "עץ הקבצים לא נטען. בדקו את החיבור או נסו שוב.",
-    "messageOther": "משהו השתבש אצלנו. נסו שוב או סגרו והמשיכו."
+    "messageOther": "משהו השתבש אצלנו. נסו שוב או סגרו והמשיכו.",
+    "messageConnection": "לא ניתן להגיע אל {{label}}",
+    "retrying": "מנסה שוב…",
+    "retryAllRetrying_one": "מנסה שוב בקשה אחת…",
+    "retryAllRetrying_two": "מנסה שוב {{count}} בקשות…",
+    "retryAllRetrying_other": "מנסה שוב {{count}} בקשות…",
+    "codeLabel": "קוד שגיאה",
+    "rawLabel": "שגיאה מקורית",
+    "issuesIndicator_one": "בעיה אחת",
+    "issuesIndicator_two": "{{count}} בעיות",
+    "issuesIndicator_other": "{{count}} בעיות",
+    "detailsLink": "פרטים"
+  },
+  "errorPolicy": {
+    "sessionExpired": "הסשן שלך פג",
+    "forbidden": "אין לך הרשאה לגשת לכך",
+    "notFound": "לא ניתן היה למצוא זאת יותר",
+    "timeout": "השרת לקח יותר מדי זמן להגיב",
+    "tooManyRequests": "יותר מדי בקשות",
+    "serverError": "השרת לא הצליח להשלים את הבקשה"
   }
 }

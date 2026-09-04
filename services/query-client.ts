@@ -184,8 +184,10 @@ queryClient.getQueryCache().subscribe((event) => {
       const err = query.state.error
       const message = err instanceof Error ? err.message : i18n.t('common:error.unexpected')
       const status =
-        err && 'status' in (err as object) ? (err as { status: number }).status : undefined
-      setTimeout(() => store.pushError({ category, message, status }), 0)
+        err && 'status' in (err as object) ? (err as { status?: number }).status : undefined
+      const code =
+        err && 'code' in (err as object) ? (err as { code?: string }).code : undefined
+      setTimeout(() => store.pushError({ category, message, status, code }), 0)
     }
   }
 })
