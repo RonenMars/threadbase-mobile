@@ -32,9 +32,17 @@ export class NetworkError extends Error {
 }
 
 export class NotFoundError extends Error {
+  /** Always 404 — carried so `classifyError` can reach its 404 branch. Without it a
+   * NotFoundError fell through to the generic default, and a missing conversation was
+   * reported as "Retry usually fixes it" with an empty error-code row. */
+  readonly status = 404
+  readonly code = 'HTTP_404'
+  /** The request path, kept as a field so callers can log it without parsing `message`. */
+  readonly path: string
   constructor(path: string) {
     super(`Not found: ${path}`)
     this.name = 'NotFoundError'
+    this.path = path
   }
 }
 

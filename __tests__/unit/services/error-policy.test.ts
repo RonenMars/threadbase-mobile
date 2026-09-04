@@ -1,3 +1,4 @@
+import { NotFoundError } from '@/services/api-client'
 import { classifyError, isTransientError } from '@/services/error-policy'
 import i18n from '@/test-utils/i18n-setup'
 
@@ -22,6 +23,16 @@ describe('classifyError', () => {
     expect(result.presentation).toBe('recovery-sheet')
     expect(result.retryable).toBe(false)
     expect(result.code).toBe('HTTP_404')
+  })
+
+  it('classifies a real NotFoundError as a 404, not as the generic default', () => {
+    // NotFoundError used to carry no status and no code, so it fell past every
+    // branch below to the catch-all — which reports retryable:true. The banner
+    // then told the user "Retry usually fixes it" about a thing that is gone.
+    const result = classifyError(new NotFoundError('/api/conversations/abc?msg_limit=80'), t)
+    expect(result.code).toBe('HTTP_404')
+    expect(result.retryable).toBe(false)
+    expect(result.description).toBe(t('errorPolicy.notFound'))
   })
 
   it('classifies a 429 as recovery-sheet and retryable', () => {

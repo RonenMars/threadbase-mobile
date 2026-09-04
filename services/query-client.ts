@@ -181,6 +181,13 @@ queryClient.getQueryCache().subscribe((event) => {
     }
 
     if (query.state.status === 'error') {
+      // A probe whose failure is the expected outcome reports itself through its
+      // own screen, not through the global banner. Without this opt-out the
+      // conversation screen's not-found fallback (which asks /api/sessions/<id>
+      // using a conversation id, and 404s by construction for any conversation
+      // that was never a session) added a second, phantom "Session details
+      // failed to load" row to every conversation 404.
+      if ((query.meta as { silentError?: boolean } | undefined)?.silentError) return
       const err = query.state.error
       const message = err instanceof Error ? err.message : i18n.t('common:error.unexpected')
       const status =
