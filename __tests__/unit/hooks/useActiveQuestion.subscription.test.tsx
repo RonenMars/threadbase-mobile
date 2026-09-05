@@ -17,59 +17,73 @@ import { renderHook, act } from '@testing-library/react-native'
 import type { PermissionWsMessage } from '@/types/api'
 import type { WSMessage } from '@/services/ws-client'
 
-type MockHandler = (msg: WSMessage) => void
-type MockStatus = 'connecting' | 'connected' | 'disconnected'
-type MockStatusListener = (serverId: string, status: MockStatus) => void
+// These aliases are not decoration. A jest.mock factory is hoisted above the
+// imports and checked by babel-plugin-jest-hoist before TypeScript annotations
+// are stripped, so the plugin reads type nodes as if they were code. An inline
+// function type inside a `new` type argument — `new Set<(id: string) => void>()`
+// — makes it treat the parameter name as out-of-scope variable access and throw.
+// Behind an alias the same type is invisible to it, which is what lets all the
+// state below stay inside the factory instead of leaking to module scope.
+type Handler = (msg: WSMessage) => void
+type Status = 'connecting' | 'connected' | 'disconnected'
+type StatusListener = (serverId: string, status: Status) => void
 
-// State lives outside the factory. A jest.mock factory is hoisted above the
-// imports and may not reference anything out of its own scope — not even a
-// type alias, whose parameter names the hoist guard reads as variable access.
-// `mock`-prefixed names are the sanctioned exception.
-const mockListeners = new Map<string, Set<MockHandler>>()
-const mockStatusListeners = new Set<MockStatusListener>()
-let mockClient: { on: (type: string, handler: MockHandler) => () => void } | undefined
-
-const mockMakeClient = () => ({
-  on: (type: string, handler: MockHandler) => {
-    if (!mockListeners.has(type)) mockListeners.set(type, new Set())
-    mockListeners.get(type)!.add(handler)
-    // Tolerant: dropClient() can clear the map before a stale unsub runs.
-    return () => mockListeners.get(type)?.delete(handler)
-  },
-})
-
-jest.mock('@/services/ws-client', () => ({
-  wsManager: {
-    getClient: () => mockClient,
-    onAnyStatusChange: (l: MockStatusListener) => {
-      mockStatusListeners.add(l)
-      return () => mockStatusListeners.delete(l)
-    },
-  },
-}))
-
-const ws = {
-  // The socket dials: a client appears, then subscribers are told.
-  connect: (serverId: string) => {
-    mockClient = mockMakeClient()
-    mockStatusListeners.forEach((l) => l(serverId, 'connected'))
-  },
-  // disconnect()/retain() drop the instance; a later dial builds a new one.
-  dropClient: () => {
-    mockClient = undefined
-    mockListeners.clear()
-  },
-  emit: (type: string, msg: WSMessage) => mockListeners.get(type)?.forEach((h) => h(msg)),
-  handlerCount: (type: string) => mockListeners.get(type)?.size ?? 0,
-  reset: () => {
-    mockListeners.clear()
-    mockStatusListeners.clear()
-    mockClient = undefined
-  },
+type WsTestApi = {
+  connect: (serverId: string) => void
+  dropClient: () => void
+  emit: (type: string, msg: WSMessage) => void
+  handlerCount: (type: string) => number
+  reset: () => void
 }
+
+jest.mock('@/services/ws-client', () => {
+  const listeners = new Map<string, Set<Handler>>()
+  const statusListeners = new Set<StatusListener>()
+  let client: { on: (type: string, handler: Handler) => () => void } | undefined
+
+  const makeClient = () => ({
+    on: (type: string, handler: Handler) => {
+      if (!listeners.has(type)) listeners.set(type, new Set())
+      listeners.get(type)!.add(handler)
+      // Tolerant: dropClient() can clear the map before a stale unsub runs.
+      return () => listeners.get(type)?.delete(handler)
+    },
+  })
+
+  return {
+    wsManager: {
+      getClient: () => client,
+      onAnyStatusChange: (l: StatusListener) => {
+        statusListeners.add(l)
+        return () => statusListeners.delete(l)
+      },
+    },
+    __wsTest: {
+      // The socket dials: a client appears, then subscribers are told.
+      connect: (serverId: string) => {
+        client = makeClient()
+        statusListeners.forEach((l) => l(serverId, 'connected'))
+      },
+      // disconnect()/retain() drop the instance; a later dial builds a new one.
+      dropClient: () => {
+        client = undefined
+        listeners.clear()
+      },
+      emit: (type: string, msg: WSMessage) => listeners.get(type)?.forEach((h) => h(msg)),
+      handlerCount: (type: string) => listeners.get(type)?.size ?? 0,
+      reset: () => {
+        listeners.clear()
+        statusListeners.clear()
+        client = undefined
+      },
+    },
+  }
+})
 
 // eslint-disable-next-line import/first
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
+
+const { __wsTest: ws } = jest.requireMock('@/services/ws-client') as { __wsTest: WsTestApi }
 
 const gate: PermissionWsMessage = {
   type: 'permission',
