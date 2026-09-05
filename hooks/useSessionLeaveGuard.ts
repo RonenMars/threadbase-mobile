@@ -140,10 +140,14 @@ export function useSessionLeaveGuard(opts: {
   const runLeaveAction = useCallback(
     async (choice: AppliedSessionLeaveAction, action: { type: string } | null) => {
       if (!sessionId) return
-      if (choice === 'leave') {
-        finishLeave(action)
-        return
-      }
+      // No special-case shortcut for 'leave': it must go through this same
+      // await (applySessionLeaveAction resolves it instantly with no server
+      // call) so the Modal's `visible` prop gets a render commit where it's
+      // still true via the 'pending' phase, instead of flipping straight to
+      // false in the same synchronous tick as this button's own press —
+      // that immediate flip is what let iOS drop the native onDismiss and
+      // strand the deferred navigation (kill/kill_on_idle never hit this
+      // because their real await already provided that gap).
       modalIsShowingRef.current = true
       setLeavePhase('pending')
       const outcome = await applySessionLeaveAction({
