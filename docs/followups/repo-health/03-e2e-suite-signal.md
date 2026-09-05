@@ -3,7 +3,10 @@
 > **Overtaken 2026-09-05.** The four-flow table below is a 2026-08 iOS measurement and no longer describes the suite.
 > Android CI run [33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192) on `main` `8146d2f5` ran **16 flows and failed 1**: `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all passed.
 > The one failure is `feedback_flow`, and not at the assertion named below — #772 fixed `settings-help-feedback-row` on 2026-08-20.
-> It now dies 30 lines later at `e2e/feedback_flow.yaml`'s `tapOn: "Help us squash a bug"`, because the Android IME scrolls that heading off the top of the `KeyboardAwareScrollView`.
+> It now dies 30 lines later at `e2e/feedback_flow.yaml`'s `tapOn: "Help us squash a bug"`, and the cause is an app layout bug rather than the flow.
+> `headerTransparent: isGlass` (`app/_layout.tsx:413`) with `useIsGlass()` returning `true` unconditionally (`contexts/ThemeContext.tsx:62`) lays Android content out from y=0 behind the title bar; iOS inset-adjusts under a transparent native-stack header and Android does not.
+> The heading is drawn but fully occluded by the header container, so Android drops it from the accessibility tree and Maestro reports not-found for text that is visibly on screen.
+> `app/browse.tsx:173` already carries the per-screen fix, with the comment "the content started at y=0 under the header".
 > Re-measure before acting on any count here.
 
 **Priority: high.** Depends on task 04 — you need a trustworthy build before you can trust a pass set.
