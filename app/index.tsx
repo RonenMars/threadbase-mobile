@@ -43,7 +43,7 @@ import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Cloud, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, BellRinging, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
@@ -440,11 +440,11 @@ export default function ProjectsHub() {
           <Pressable
             onPress={() => setStatusModalOpen(true)}
             hitSlop={8}
-            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
+            style={({ pressed }) => [styles.headerButton, styles.headerStatusButton, { opacity: pressed ? 0.5 : 1 }]}
             accessibilityLabel={t('header.serverStatus')}
             testID="header-server-status-btn"
           >
-            <Cloud size={20} color={theme.text.secondary} />
+            <BellRinging size={20} color={theme.text.secondary} />
             {!allConnected ? (
               <View style={[styles.notifDot, { backgroundColor: someConnected ? theme.status.waiting : theme.status.failed }]} />
             ) : null}
@@ -1034,6 +1034,13 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
+  },
+  headerStatusButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   headerButtonActive: {
     backgroundColor: 'rgba(88,166,255,0.12)',

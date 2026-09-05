@@ -77,8 +77,11 @@ export function ErrorBanner() {
 
   const sheetErrors = useMemo(
     (): (QueryError & { category: SheetCategory })[] =>
-      errors.filter((e): e is QueryError & { category: SheetCategory } => isSheetCategory(e.category)),
-    [errors],
+      errors.filter((e): e is QueryError & { category: SheetCategory } => {
+        if (!isSheetCategory(e.category)) return false
+        return classifyError({ status: e.status, code: e.code }, t).presentation === 'recovery-sheet'
+      }),
+    [errors, t],
   )
 
   // Only servers still in the store: a row whose ServerConfig cannot be

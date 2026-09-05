@@ -98,4 +98,14 @@ describe('ErrorBanner category rows', () => {
     expect(queryByTestId('error-recovery-sheet')).toBeNull()
     expect(queryByTestId('issues-indicator')).toBeNull()
   })
+
+  it('keeps blocking auth failures out of the global recovery sheet', async () => {
+    useLoadingStateStore.setState({
+      errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
+    })
+    const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
+
+    expect(queryByTestId('error-recovery-sheet')).toBeNull()
+    expect(queryByTestId('issues-indicator')).toBeNull()
+  })
 })

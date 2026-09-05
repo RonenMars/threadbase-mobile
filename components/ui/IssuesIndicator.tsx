@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react'
 import { Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { WarningCircle } from 'phosphor-react-native'
+import { BellRinging } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
 interface Props {
@@ -15,50 +16,55 @@ interface Props {
 export function IssuesIndicator({ count, onPress }: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
   const s = useMemo(() => styles(theme), [theme])
 
   if (count === 0) return null
 
   return (
     <TouchableOpacity
-      style={[s.bar, { borderColor: theme.text.danger }]}
+      style={[s.button, { bottom: insets.bottom + spacing.lg, backgroundColor: theme.bg.card, borderColor: theme.text.danger }]}
       onPress={onPress}
       testID="issues-indicator"
       accessibilityRole="button"
       accessibilityLabel={t('errorBanner.issuesIndicator', { count })}
     >
-      <WarningCircle size={14} color={theme.text.danger} />
-      <Text style={[s.text, { color: theme.text.danger }]}>
-        {t('errorBanner.issuesIndicator', { count })}
-      </Text>
-      <Text style={[s.link, { color: theme.text.accent }]}>{t('errorBanner.detailsLink')}</Text>
+      <BellRinging size={22} color={theme.text.danger} />
+      <Text style={[s.badge, { backgroundColor: theme.text.danger }]}>{count}</Text>
     </TouchableOpacity>
   )
 }
 
 function styles(theme: Theme) {
   return StyleSheet.create({
-    bar: {
+    button: {
       position: 'absolute',
-      bottom: spacing.lg,
-      alignSelf: 'center',
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      backgroundColor: theme.bg.card,
+      left: spacing.lg,
+      width: 48,
+      height: 48,
       borderWidth: 1,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 8,
+      shadowColor: theme.bg.primary,
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
     },
-    text: {
-      fontSize: font.sm,
-      fontWeight: '600',
-    },
-    link: {
-      fontSize: font.sm,
-      fontWeight: '600',
-      marginStart: spacing.xs,
+    badge: {
+      position: 'absolute',
+      top: -5,
+      right: -5,
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      paddingHorizontal: 4,
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: '700',
+      textAlign: 'center',
+      textAlignVertical: 'center',
     },
   })
 }

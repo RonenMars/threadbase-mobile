@@ -427,7 +427,9 @@ await refreshServerInfo(serverId)
   // Transparent header (glass themes) doesn't reserve layout space, so the
   // ScrollView starts under it; push content down by the header's own height.
   const headerHeight = Platform.OS === 'ios' ? 44 : 56
-  const glassContentStyle = isGlass ? { paddingTop: s.content.padding + insets.top + headerHeight } : null
+  const glassContentStyle = isGlass && Platform.OS !== 'android'
+    ? { paddingTop: s.content.padding + insets.top + headerHeight }
+    : null
 
   return (
     <SafeAreaView style={[s.container, isGlass && s.containerGlass]} edges={[]}>
