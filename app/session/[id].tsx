@@ -522,10 +522,7 @@ export default function SessionDetailScreen() {
   const renameSession = useRenameSession(serverId)
   // User rename wins; then the JSONL-derived conversation name; then project name.
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
-  const rawKeysUnsupported = useServersStore((s) => {
-    const info = s.servers?.[serverId]?.serverInfo
-    return info != null && info.rawKeys !== true
-  })
+  const rawKeysSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.rawKeys === true)
 
   const { sendKeys, sendInput, sendRawKey, stopSession } = useSessionActions(serverId, id ?? '')
   const { question: activeQuestion } = useActiveQuestion(serverId, id ?? '')
@@ -592,7 +589,7 @@ export default function SessionDetailScreen() {
     })
   }
   const openRawKeyboard = () => {
-    if (rawKeysUnsupported) {
+    if (!rawKeysSupported) {
       Alert.alert(t('terminal:rawKeyboard.unavailableTitle'), t('terminal:rawKeyboard.unavailableBody'))
       return
     }
