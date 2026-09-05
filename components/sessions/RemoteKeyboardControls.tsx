@@ -16,7 +16,7 @@ interface Props {
 
 export function RemoteKeyboardControls({ promptId, busy = false, onClose, onSend }: Props) {
   const { t } = useTranslation('terminal')
-  const { theme } = useTheme()
+  const theme = useTheme()
   const styles = makeStyles(theme)
   const key = (label: string, action: Action, confirm?: true) => (
     <Pressable key={action} style={[styles.key, busy && styles.disabled]} disabled={busy || (action !== 'escape' && !promptId)} onPress={() => onSend(action, confirm)} accessibilityRole="button" accessibilityLabel={label}>
