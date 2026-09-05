@@ -66,6 +66,8 @@ grep -ac "some-string-you-just-added" "$C/main.jsbundle"
 
 Four other flows (`session_lifecycle`, `feedback_flow`, `05_chat_flow`'s later assertions, `06_search_anchor`) fail for reasons **unrelated** to the keyboard. Each was confirmed pre-existing by running it against a build of the branch base with the feature code absent. `05_chat_flow` currently fails at `first-session-card is visible`, which is *before* the `hideKeyboard` step — so expect to hit that first, and treat it as a separate, out-of-scope problem unless fixing it is trivial.
 
+> **Overtaken 2026-09-05:** the Android suite is 15/16 ([run 33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192)) — `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all pass. The one failure is `feedback_flow`, at a later step than the one named here, and it is an app layout bug (`headerTransparent` with no Android header inset), not a flow defect. Detail in [`../repo-health/03-e2e-suite-signal.md`](../repo-health/03-e2e-suite-signal.md).
+
 ## Commit
 
 `fix(e2e): dismiss the composer keyboard without hideKeyboard` — one sentence per line in the body, no AI attribution (see `CLAUDE.md`).

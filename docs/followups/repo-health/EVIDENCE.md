@@ -73,6 +73,8 @@ Four flows fail for known reasons unrelated to any current change:
 | `05_chat_flow` | `first-session-card is visible` |
 | `06_search_anchor` | `conversation-row-conv-search-anchor is visible` |
 
+> **Overtaken 2026-09-05:** the Android suite is 15/16 ([run 33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192)) — `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all pass. The one failure is `feedback_flow`, at a later step than the one named here, and it is an app layout bug (`headerTransparent` with no Android header inset), not a flow defect. Detail in [`03-e2e-suite-signal.md`](03-e2e-suite-signal.md).
+
 Red is therefore the expected state, so nobody can tell new breakage from the familiar four. That is why the suite could sit broken at the build step for three months without anyone reading the result — even a green build would have produced a red suite.
 
 Two ways out, either acceptable:

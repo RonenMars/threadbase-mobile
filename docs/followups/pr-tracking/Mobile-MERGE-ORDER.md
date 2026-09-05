@@ -65,6 +65,8 @@ Two caveats:
 - **Four flows are known-failing for unrelated reasons** — `session_lifecycle`, `feedback_flow`, `05_chat_flow`, `06_search_anchor`. A full-suite run stays red; narrowing sidesteps them.
 - **#574's CocoaPods fix is unverified.** `expo prebuild --no-clean` skips `pod install` when `ios/` exists, so xcodebuild dies on a missing `Pods-Threadbase.release.xcconfig` — why every scheduled run since at least June 2026 failed at the build step. The fix mirrors `deploy.yml`, but expect the possibility of a second build problem behind the first.
 
+> **Overtaken 2026-09-05:** the Android suite is 15/16 ([run 33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192)) — `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all pass. The one failure is `feedback_flow`, at a later step than the one named here, and it is an app layout bug (`headerTransparent` with no Android header inset), not a flow defect. Detail in [`../repo-health/03-e2e-suite-signal.md`](../repo-health/03-e2e-suite-signal.md).
+
 The old warning that "fixing `main` did not fix what a `ref=572` dispatch tests" **no longer applies**: #572 now targets `main` and its branch carries the setup fix.
 
 ## Worktrees
