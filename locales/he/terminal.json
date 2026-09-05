@@ -26,7 +26,11 @@
     "tab": "Tab",
     "shiftTab": "Shift Tab",
     "confirm": "לחצו והחזיקו לאישור האפשרות שנבחרה",
-    "confirmLabel": "אישור האפשרות שנבחרה. לחצו והחזיקו לשליחת Enter."
+    "confirmLabel": "אישור האפשרות שנבחרה. לחצו והחזיקו לשליחת Enter.",
+    "unavailableTitle": "המקלדת המרוחקת אינה זמינה",
+    "unavailableBody": "עדכנו את Threadbase Streamer כדי להשתמש בפקדי המקלדת המרוחקת.",
+    "failedTitle": "לא ניתן לשלוח מקש",
+    "failedBody": "הבקשה הממוקדת השתנתה או שאינה זמינה עוד. בדקו את הסשן ונסו שוב."
   },
   "voice": {
     "start": "התחל הכתבה",

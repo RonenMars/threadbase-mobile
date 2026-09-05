@@ -26,7 +26,11 @@
     "tab": "Tab",
     "shiftTab": "Shift Tab",
     "confirm": "اضغط مطولًا لتأكيد الخيار المحدد",
-    "confirmLabel": "تأكيد الخيار المحدد. اضغط مطولًا لإرسال Enter."
+    "confirmLabel": "تأكيد الخيار المحدد. اضغط مطولًا لإرسال Enter.",
+    "unavailableTitle": "لوحة المفاتيح البعيدة غير متاحة",
+    "unavailableBody": "حدّث Threadbase Streamer لاستخدام عناصر لوحة المفاتيح البعيدة.",
+    "failedTitle": "تعذّر إرسال المفتاح",
+    "failedBody": "تغيّر الطلب المحدد أو لم يعد متاحًا. تحقق من الجلسة وحاول مرة أخرى."
   },
   "voice": {
     "start": "بدء الإملاء",

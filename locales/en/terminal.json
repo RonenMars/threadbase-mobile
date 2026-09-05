@@ -26,7 +26,11 @@
     "tab": "Tab",
     "shiftTab": "Shift Tab",
     "confirm": "Hold to confirm selected option",
-    "confirmLabel": "Confirm selected option. Hold to send Enter."
+    "confirmLabel": "Confirm selected option. Hold to send Enter.",
+    "unavailableTitle": "Remote keyboard unavailable",
+    "unavailableBody": "Update Threadbase Streamer to use remote keyboard controls.",
+    "failedTitle": "Couldn't send key",
+    "failedBody": "The focused prompt changed or is no longer available. Check the session and try again."
   },
   "voice": {
     "start": "Start dictation",
