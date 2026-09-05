@@ -15,6 +15,7 @@
  * color mode.
  */
 import React from 'react'
+import { Platform } from 'react-native'
 import { fireEvent, render } from '@testing-library/react-native'
 import type { NativeStackNavigationOptions } from 'expo-router'
 
@@ -200,6 +201,38 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
     expect(mockCapture.screenOptions?.contentStyle).toEqual({
       backgroundColor: 'transparent',
     })
+  })
+
+  // A transparent header lays screen content out from y=0, behind the title
+  // bar. iOS inset-adjusts scroll views for that; Android does not, so the
+  // first heading of every header-shown screen rendered under the title and
+  // dropped out of the accessibility tree (E2E run 33933929192).
+  it('keeps the glass header transparent on iOS', async () => {
+    const originalPlatformOS = Platform.OS
+    Platform.OS = 'ios'
+    try {
+      await renderThemedStack(dark, true)
+
+      expect(mockCapture.screenOptions?.headerTransparent).toBe(true)
+      expect(mockCapture.screenOptions?.headerStyle).toBeUndefined()
+    } finally {
+      Platform.OS = originalPlatformOS
+    }
+  })
+
+  it('gives the glass header a background on Android so content starts below it', async () => {
+    const originalPlatformOS = Platform.OS
+    Platform.OS = 'android'
+    try {
+      await renderThemedStack(dark, true)
+
+      expect(mockCapture.screenOptions?.headerTransparent).toBe(false)
+      expect(mockCapture.screenOptions?.headerStyle).toEqual({
+        backgroundColor: dark.bg.secondary,
+      })
+    } finally {
+      Platform.OS = originalPlatformOS
+    }
   })
 
   it('provides theme.bg.primary on a dark non-glass theme', async () => {
