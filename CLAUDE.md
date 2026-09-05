@@ -284,6 +284,8 @@ Always use `/expo-local-ship` when the user says "ship", "TestFlight", "build th
 
 The `[skip-ci]` suffix keeps CI from re-triggering on the bump-only commit. Never push the bump straight to `main`. See `docs/deployment.md` → "Version bumps after a ship".
 
+**The bump merge depends on the ruleset bypass.** `admin-merge-pr.sh` runs `gh pr merge --squash --admin` seconds after opening the PR, before the required contexts report, so the merge only lands because the admin role bypasses `main protection`. On 2026-09-05 that bypass was narrowed from `always` to `pull_request` mode — still the mode an `--admin` PR merge uses, and `current_user_can_bypass` reports `pull_requests_only`, but **the first ship after that date is the first to exercise it**. A refusal surfaces as a red Deploy at the version-bump step *after* the store upload already succeeded, never as a hang. Recovery and the exact restore command: `docs/deployment.md` → "Shared merge primitive".
+
 **`/ship-expo-cloud` (EAS cloud builds) is opt-in only:**
 - Only invoke it when the user explicitly types `/ship-expo-cloud`
 - Before running any EAS build or submit command, stop and ask the user to confirm — do not proceed automatically

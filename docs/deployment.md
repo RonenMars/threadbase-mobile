@@ -552,6 +552,8 @@ existing one) and runs `gh pr merge --squash --delete-branch --admin`.
 
 The `main protection` ruleset grants the admin role a `pull_request`-mode bypass, which is exactly what this helper needs and no more: it can push the merge through despite missing contexts, but the bump can never skip the PR and land on `main` as a direct push. See `CLAUDE.md` → "Merging PRs" for the full rule list.
 
+If that merge is ever refused with a rules/protection error, the bypass mode is the first suspect: `gh api -X PUT repos/RonenMars/threadbase-mobile/rulesets/17538234` with the admin bypass actor set back to `"bypass_mode": "always"` restores the pre-2026-09-05 behaviour. The job fails loudly rather than hanging, so a red Deploy at the "land the version bump" step — with the upload already succeeded — is what this looks like.
+
 ### Local ships — `scripts/land-version-bump.sh`
 
 Called by `ship-ios.sh` / `ship-android.sh` after upload. Commits from the
