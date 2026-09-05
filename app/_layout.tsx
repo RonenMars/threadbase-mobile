@@ -175,6 +175,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (activeServerIds.length === 0) return
 
+    // Drop only the servers that actually left the list. This used to be a
+    // `wsManager.disconnectAll()` in the cleanup below, which ran on every
+    // re-run of this effect — including the ones where `activeServerIds` merely
+    // changed identity — and made every `connect` below an unconditional
+    // redial. On a pinned server a redial is a Noise handshake, and the
+    // streamer allows a device five per minute.
+    wsManager.retain(activeServerIds)
+
     const currentServers = useServersStore.getState().servers
     for (const serverId of activeServerIds) {
       const server = currentServers[serverId]
@@ -301,7 +309,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       unsubCacheAlertResolved()
       unsubHostPressure()
       unsubHostPressureCleared()
-      wsManager.disconnectAll()
     }
     // router from expo-router is a stable singleton; setConnected is a stable
     // Zustand setter. Wiring is intentionally scoped to activeServerIds changes.
