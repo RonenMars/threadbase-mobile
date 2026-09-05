@@ -335,6 +335,52 @@ async function handleRequest(req, res) {
     })
   }
 
+  // Stub provider health — GET /api/providers (C2). The Browse screen's
+  // useProviderHealth asks for this on mount; without it the 404 became a
+  // global "Something went wrong" recovery sheet over otherwise-healthy
+  // screens, which failed session_lifecycle on iOS run 33959431171.
+  //
+  // Capability values mirror the real streamer's CLAUDE_CODE_CAPABILITIES and
+  // CODEX_CLI_CAPABILITIES (services/providers/capabilities.ts) — a payload
+  // that parses but misstates capabilities would hide or offer the wrong
+  // actions in the flows that read them.
+  if (method === 'GET' && p === '/api/providers') {
+    return json(res, 200, {
+      providers: [
+        {
+          name: 'claude-code',
+          available: true,
+          version: '2.0.0-mock',
+          verifiedAgainst: { min: '1.0.0', captured: ['2.0.0-mock'] },
+          capabilities: {
+            freshSessionId: 'explicit',
+            resume: 'native',
+            systemPrompt: 'flag',
+            structuredQuestions: true,
+            permissionGates: true,
+            liveControl: true,
+          },
+          warnings: [],
+        },
+        {
+          name: 'codex-cli',
+          available: true,
+          version: '0.9.0-mock',
+          verifiedAgainst: { min: '0.1.0', captured: ['0.9.0-mock'] },
+          capabilities: {
+            freshSessionId: 'late-bound',
+            resume: 'native',
+            systemPrompt: 'positional',
+            structuredQuestions: false,
+            permissionGates: true,
+            liveControl: true,
+          },
+          warnings: [],
+        },
+      ],
+    })
+  }
+
   // Stub profiles endpoint — used by useTBPair during onboarding handshake
   // in production builds. Returning 200 with an empty profile is enough for
   // the pair flow to advance past `handshake` into `paired`.
