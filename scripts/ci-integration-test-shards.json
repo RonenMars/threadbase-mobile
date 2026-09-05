@@ -37,6 +37,7 @@
       "__tests__/integration/components/QuestionCardGhost.test.tsx",
       "__tests__/integration/components/PromptCardSelect.test.tsx",
       "__tests__/integration/components/TerminalOutput.test.tsx",
+      "__tests__/integration/components/RemoteKeyboardControls.test.tsx",
       "__tests__/integration/components/BrowseRecents.test.tsx",
       "__tests__/integration/components/EncryptionRefusalToClearFlow.test.tsx",
       "__tests__/integration/components/ProjectHubCard.test.tsx",

@@ -16,6 +16,22 @@
     "sendPending": "Waiting for the prompt to close; try again in a moment.",
     "sendEscape": "Send Escape to dismiss it"
   },
+  "rawKeyboard": {
+    "menu": "Raw keys",
+    "title": "Remote Computer Keyboard",
+    "warning": "These controls send terminal keys directly to this session. A key may change or approve the focused prompt. Use the normal question card whenever possible.",
+    "agree": "Agree",
+    "close": "Close remote keyboard",
+    "escape": "Esc",
+    "tab": "Tab",
+    "shiftTab": "Shift Tab",
+    "confirm": "Hold to confirm selected option",
+    "confirmLabel": "Confirm selected option. Hold to send Enter.",
+    "unavailableTitle": "Remote keyboard unavailable",
+    "unavailableBody": "Update Threadbase Streamer to use remote keyboard controls.",
+    "failedTitle": "Couldn't send key",
+    "failedBody": "The focused prompt changed or is no longer available. Check the session and try again."
+  },
   "voice": {
     "start": "Start dictation",
     "stop": "Stop dictation"
