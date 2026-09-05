@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, AccessibilityInfo } from 'rea
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { CaretDown, CaretUp, CaretRight, ArrowsClockwise, Copy, Check, WarningCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
@@ -104,6 +105,7 @@ export function ErrorRecoverySheet({ visible, title, items, retryAllLabel, retry
   const { t } = useTranslation('common')
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const s = useMemo(() => styles(theme), [theme])
   const glassBackground = useGlassSheetBackground()
 
@@ -126,9 +128,10 @@ export function ErrorRecoverySheet({ visible, title, items, retryAllLabel, retry
   if (!visible) return null
 
   return (
-    <BottomSheet
-      snapPoints={SNAP_POINTS}
-      index={0}
+      <BottomSheet
+        snapPoints={SNAP_POINTS}
+        index={0}
+        bottomInset={insets.bottom}
       enablePanDownToClose
       onClose={onClose}
       backdropComponent={renderBackdrop}
