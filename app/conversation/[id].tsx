@@ -336,7 +336,10 @@ export default function ConversationDetailScreen() {
     queryFn: () => createApiForServer(serverId).get<Session>(`/api/sessions/${id}`),
     enabled: isConvNotFound,
     retry: false,
-    meta: { persist: false },
+    // silentError: this probe 404s by design for any conversation that was never
+    // a session id. Its result drives the not-found screen below; a banner row
+    // for it is noise on top of the conversation error the user already has.
+    meta: { persist: false, silentError: true },
   })
 
   // Only redirect to the live session view when the session is actually

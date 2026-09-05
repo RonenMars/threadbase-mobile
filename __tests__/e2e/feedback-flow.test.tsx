@@ -141,6 +141,12 @@ describe('Help & Feedback — validation', () => {
 })
 
 describe('Help & Feedback — diagnostics opt-in', () => {
+  it('allows the diagnostics toggle to receive the first tap after text entry', async () => {
+    const screen = await renderScreen()
+    await gotoForm(screen)
+    expect(JSON.stringify(screen.toJSON())).toContain('"keyboardShouldPersistTaps":"handled"')
+  })
+
   it('shows the diagnostics preview by default and can toggle detail', async () => {
     const screen = await renderScreen()
     await gotoForm(screen)

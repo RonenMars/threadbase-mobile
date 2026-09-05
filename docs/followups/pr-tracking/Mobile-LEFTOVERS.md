@@ -47,6 +47,8 @@ gh workflow run E2E -f ref=572 -f flows=e2e/codex_parity.yaml
 
 Four flows are known-failing for unrelated reasons per #575's ADR (`session_lifecycle`, `feedback_flow`, `05_chat_flow`, `06_search_anchor`), so a full-suite run stays red even when everything above is done. Narrowing to `codex_parity` sidesteps them.
 
+> **Overtaken 2026-09-05:** the Android suite is 15/16 ([run 33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192)) — `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all pass. The one failure is `feedback_flow`, at a later step than the one named here, and it is an app layout bug (`headerTransparent` with no Android header inset), not a flow defect. Detail in [`../repo-health/03-e2e-suite-signal.md`](../repo-health/03-e2e-suite-signal.md).
+
 ### Streamer side of #572 — it exists, and this section was wrong
 
 Corrected in [`Streamer-CODEX-FORK-AND-FOLLOWUPS.md`](https://github.com/RonenMars/threadbase-streamer/blob/docs/pr-follow-notes/docs/pr-follow/Streamer-CODEX-FORK-AND-FOLLOWUPS.md): the server half is tb-streamer PR #463 on branch `fix/codex-active-writer-resume`, green and unmerged, with `POST /api/sessions/:id/fork` implemented. Both contract assumptions are answered there — and the second (no idempotency key) is answered the other way, so mobile's withheld Retry affordance can come back.
@@ -103,3 +105,5 @@ gh workflow run E2E -f flows=e2e/codex_parity.yaml   # or narrow, once #574 give
 ```
 
 A full-suite run stays red regardless: four flows fail for unrelated reasons (`session_lifecycle`, `feedback_flow`, `05_chat_flow`, `06_search_anchor`).
+
+> **Overtaken 2026-09-05:** the Android suite is 15/16 ([run 33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192)) — `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all pass. The one failure is `feedback_flow`, at a later step than the one named here, and it is an app layout bug (`headerTransparent` with no Android header inset), not a flow defect. Detail in [`../repo-health/03-e2e-suite-signal.md`](../repo-health/03-e2e-suite-signal.md).

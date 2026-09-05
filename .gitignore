@@ -37,6 +37,9 @@ android/.kotlin/
 # macOS metadata
 .DS_Store
 
+# Local VS Code editor settings — not shared project config
+.vscode/
+
 # Crash logs
 *.crash
 

@@ -136,6 +136,20 @@ export function ErrorBanner() {
 
     const categoryRows: AlertItem[] = sheetErrors.map((error): AlertItem => {
       const classified = classifyError({ status: error.status, code: error.code }, t)
+      // A 404 is not retryable, and offering Retry on one is the whole
+      // "Retry usually fixes it" complaint: the button re-runs a request whose
+      // answer will not change, so the row never clears.
+      const retryAction = classified.retryable
+        ? {
+            buttonText: t('button.retry'),
+            buttonAction: () => {
+              void retry(error.id, () =>
+                queryClient.invalidateQueries({ queryKey: categoryQueryKey(error.category) }),
+              ).then(() => dismissError(error.id))
+            },
+            buttonVariant: 'primary' as const,
+          }
+        : {}
       return {
         id: error.id,
         title: getCategoryTitle(error.category, t),
@@ -143,13 +157,7 @@ export function ErrorBanner() {
         code: error.code ?? (error.status ? `HTTP_${error.status}` : undefined),
         rawMessage: error.message,
         retrying: retryingIds.has(error.id),
-        buttonText: t('button.retry'),
-        buttonAction: () => {
-          void retry(error.id, () =>
-            queryClient.invalidateQueries({ queryKey: categoryQueryKey(error.category) }),
-          ).then(() => dismissError(error.id))
-        },
-        buttonVariant: 'primary',
+        ...retryAction,
       }
     })
 

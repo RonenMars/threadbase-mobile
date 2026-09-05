@@ -8,6 +8,7 @@ import type { CacheAlertResolveAction } from '@/types/api'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { clearServerConversationAndSessionState, queryClient } from '@/services/query-client'
+import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
@@ -163,9 +164,13 @@ export function CacheAlertModal({ visible, serverId, onClose, onResolved }: Prop
                   onPress={() => submit(pendingAction)}
                   disabled={submitting}
                 >
-                  <Text style={[styles.confirmBtnText, copyStyle, { color: theme.text.danger }]}>
-                    {t('cacheAlert.confirmProceed')}
-                  </Text>
+                  {submitting ? (
+                    <KnightRiderScanner testID="cache-alert-proceed-loader" />
+                  ) : (
+                    <Text style={[styles.confirmBtnText, copyStyle, { color: theme.text.danger }]}>
+                      {t('cacheAlert.confirmProceed')}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
