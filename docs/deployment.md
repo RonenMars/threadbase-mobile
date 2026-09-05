@@ -476,7 +476,7 @@ Upload is via `xcrun altool --upload-app`.
 | `IOS_PROVISION_PROFILE_UUID` | UUID of the main app's provisioning profile |
 | `IOS_WIDGET_PROVISION_PROFILE_B64` | Base64 of the widget extension's App Store provisioning profile |
 | `IOS_WIDGET_PROVISION_PROFILE_UUID` | UUID of the widget extension's provisioning profile |
-| `GH_PAT` | GitHub PAT used to push bump branches and admin squash-merge them onto `main` (repo admin role bypasses required-check rulesets) |
+| `GH_PAT` | GitHub PAT used to push bump branches and admin squash-merge them onto `main` (the repo admin role bypasses the `main protection` ruleset on PR merges only — a direct push to `main` is refused for everyone) |
 
 ### Rotating the Distribution cert or provisioning profile
 
@@ -548,7 +548,9 @@ primitive but build the bump commit differently.
 existing one) and runs `gh pr merge --squash --delete-branch --admin`.
 
 - **Local:** uses your logged-in `gh` auth.
-- **CI:** `gh pr create` uses `GITHUB_TOKEN`; merge uses `GH_PAT` (`GH_PUSH_TOKEN`) so the admin role can bypass required-check rulesets. An empty or mis-scoped `GH_PAT` fails the Deploy job loudly.
+- **CI:** `gh pr create` uses `GITHUB_TOKEN`; merge uses `GH_PAT` (`GH_PUSH_TOKEN`) so the admin role can bypass the required checks. An empty or mis-scoped `GH_PAT` fails the Deploy job loudly.
+
+The `main protection` ruleset grants the admin role a `pull_request`-mode bypass, which is exactly what this helper needs and no more: it can push the merge through despite missing contexts, but the bump can never skip the PR and land on `main` as a direct push. See `CLAUDE.md` → "Merging PRs" for the full rule list.
 
 ### Local ships — `scripts/land-version-bump.sh`
 

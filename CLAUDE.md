@@ -404,6 +404,20 @@ Labels:  <one priority> + <one type> + <zero or more areas>
 
 ## Merging PRs — Rebase + Squash, Linear History
 
+**What actually enforces this.** `main` is protected by the `main protection` repository ruleset ([rules/17538234](https://github.com/RonenMars/threadbase-mobile/rules/17538234)).
+It is a *ruleset*, not classic branch protection, so `GET /repos/RonenMars/threadbase-mobile/branches/main/protection` answers `Branch not protected` — read `GET /repos/RonenMars/threadbase-mobile/rulesets` instead.
+
+| Rule | What it refuses |
+|---|---|
+| `pull_request` (0 approvals, squash + rebase only) | A direct push to `main`, and the merge-commit button |
+| `required_status_checks` (strict) | A merge while `Lint`, `Type check`, `Unit tests`, `Integration tests`, `i18n`, `Native deps` or `E2E jest` is not green, **or** while the branch is behind `main` |
+| `required_linear_history`, `non_fast_forward`, `deletion` | A merge commit, a force-push to `main`, deleting `main` |
+| `required_signatures` | An unsigned commit (GitHub signs squash-merges it performs) |
+
+The strict flag is why step 1 below is not optional: a PR that fell behind `main` cannot merge until it is rebased, which is also what keeps the history linear.
+
+**The one sanctioned bypass.** The repo **admin** role bypasses in `pull_request` mode — an admin can force a *PR merge* through (this is what `scripts/admin-merge-pr.sh` relies on to land version bumps whose PAT-pushed commits never produce the required contexts), but no actor, admin included, can push to `main` directly.
+
 Keep `main` a straight line — one commit per PR, no merge commits. Every PR follows the same two operations, in this order:
 
 1. **Rebase onto latest `main`** to sync before merging. `git fetch origin && git rebase origin/main`, resolve conflicts preserving the PR's intent, then `git push --force-with-lease` (never plain `--force`, never force-push `main`). This guarantees no merge commit sneaks in.
