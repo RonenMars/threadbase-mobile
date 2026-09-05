@@ -27,6 +27,12 @@ interface LoadingStateStore {
   pushError: (error: Omit<QueryError, 'id'>) => void
   /** `sticky` marks the category suppressed — for a close, never for a retry. */
   dismissError: (id: string, sticky?: boolean) => void
+  /** Drops a category's row once one of its queries succeeds — the mirror of
+   * `pushError`. Server rows already self-clear through serverFetchStatus; a
+   * category row had no equivalent, so a failure that had since healed kept
+   * its row until the user closed it, and the sheet is global — it followed
+   * them onto unrelated, healthy screens. */
+  resolveError: (category: QueryCategory) => void
   clearDismissed: (category: QueryCategory) => void
 }
 
@@ -86,6 +92,14 @@ export const useLoadingStateStore = create<LoadingStateStore>((set) => ({
       const category = s.errors.find((e) => e.id === id)?.category
       if (!category || s.dismissed.includes(category)) return { errors }
       return { errors, dismissed: [...s.dismissed, category] }
+    }),
+
+  resolveError: (category) =>
+    set((s) => {
+      const errors = s.errors.filter((e) => e.category !== category)
+      // Same-length means nothing matched: returning `s` unchanged keeps this
+      // off the notify path, since every settled query calls it.
+      return errors.length === s.errors.length ? s : { errors }
     }),
 
   clearDismissed: (category) =>

@@ -178,6 +178,10 @@ queryClient.getQueryCache().subscribe((event) => {
       // Recovery re-arms the banner: a category the user dismissed is worth
       // showing again the next time it breaks.
       store.clearDismissed(category)
+      // ...and retires the row for a failure that has since healed. Without
+      // this only a user tap removed one, so a transient failure kept its row
+      // and the global sheet showed it over screens that were fine.
+      store.resolveError(category)
     }
 
     if (query.state.status === 'error') {
