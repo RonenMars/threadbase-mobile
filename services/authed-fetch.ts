@@ -265,11 +265,13 @@ function bodyToBytes(body: AuthedFetchInit['body']): Uint8Array {
   )
 }
 
-function inferJsonContentType(plaintext: Uint8Array): string | null {
+/** The UTF-8 text of a JSON body, or null when the body is empty or not JSON. */
+function decodeJsonText(plaintext: Uint8Array): string | null {
   if (plaintext.byteLength === 0) return null
+  const text = new TextDecoder().decode(plaintext)
   try {
-    JSON.parse(new TextDecoder().decode(plaintext))
-    return 'application/json'
+    JSON.parse(text)
+    return text
   } catch {
     return null
   }
@@ -281,6 +283,18 @@ function isSealedResponse(response: Response): boolean {
 
 function isPlaintextRefusal(status: number): boolean {
   return status === 400 || status === 409 || status === 413 || status === 426
+}
+
+/**
+ * Whether this status's HTTP framing can carry a body at all.
+ *
+ * The streamer's `canCarryBody` (`api/middleware/e2ee-envelope.middleware.ts`),
+ * restated here because it is what decides where a record travels: a response
+ * whose framing allows a body gets the record in the body, and only the two
+ * that cannot — `204` and `304` — get it base64url in `X-TB-Env`.
+ */
+function canCarryResponseBody(status: number): boolean {
+  return status !== 204 && status !== 304 && status >= 200
 }
 
 async function readErrorCode(response: Response): Promise<string> {
@@ -307,12 +321,16 @@ function responseFromPlaintext(status: number, plaintext: Uint8Array, source: Re
     }
     headers.set(key, value)
   })
-  const inferred = inferJsonContentType(plaintext)
-  if (inferred) {
+  const jsonText = decodeJsonText(plaintext)
+  if (jsonText !== null) {
     // eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
-    headers.set('Content-Type', inferred)
+    headers.set('Content-Type', 'application/json')
   }
-  return new Response(plaintext.byteLength === 0 ? null : (plaintext as BodyInit), {
+  // Hand a JSON body over as a string, never as bytes: React Native's whatwg-fetch
+  // reads an ArrayBuffer body with String.fromCharCode per byte (latin-1), which
+  // mangles every non-ASCII character. A string body is returned verbatim.
+  const body = jsonText ?? (plaintext.byteLength === 0 ? null : (plaintext as BodyInit))
+  return new Response(body, {
     status,
     headers,
   })
@@ -403,6 +421,33 @@ async function sealedFetch(
 
   let responseFrame: Uint8Array
   const env = response.headers.get(HEADER_ENV)
+  // **`X-TB-Env` on a status that can carry a body did not come from the
+  // streamer.** The server puts the record in the header only when the framing
+  // forbids a body, so this pairing is unreachable from a correct one — which
+  // makes it a free assertion that something rewrote the status in between.
+  //
+  // What does it: iOS's `NSURLCache`. Nothing set `Cache-Control` on either
+  // side before streamer #788, so a response with an `ETag` and no freshness
+  // information gets stored and revalidated on the cache's own
+  // `If-None-Match`; the sealed `304` that comes back is applied to the stored
+  // entry and the app is handed THAT entry — status `200`, headers merged. The
+  // record in the header is real and unseals cleanly, but it seals the empty
+  // body a `304` carries, so the reply is a `200` with nothing in it and the
+  // caller's `response.json()` dies on `Unexpected end of input`. Observed on
+  // iOS build 219 against streamer 1.77.3, 2026-09-05.
+  //
+  // Refuse rather than guess. The true status was `204` or `304` and nothing
+  // here can tell which, the real body is not in this response under either
+  // reading, and a caller that is handed a `304` it never earned would reuse a
+  // cached page as though the server had vouched for it.
+  if (env !== null && canCarryResponseBody(response.status)) {
+    throw new EnvelopeError(
+      'E2EE_RESPONSE_CACHED',
+      'E2EE: an HTTP cache answered a sealed request with a rewritten status',
+      path,
+      false,
+    )
+  }
   if (env !== null) {
     if (env.length > MAX_ENVELOPE_HEADER_CHARS) {
       throw new EnvelopeError('E2EE_SEAL_FAILED', 'E2EE: X-TB-Env is too large', path, false)

@@ -28,6 +28,7 @@ Two context kinds, and they are not interchangeable. A **socket** context dies w
 | `E2EE_HANDSHAKE_FAILED` | wrong server identity, tampered message | **no** |
 | `E2EE_MALFORMED`, `E2EE_VERSION_UNSUPPORTED`, `E2EE_SEAL_FAILED`, `E2EE_SEQUENCE_VIOLATION` | protocol-level refusals | **no** |
 | `E2EE_DISABLED`, `E2EE_NOT_PAIRED` | this server does not offer, or this device does not hold, encryption | **no** |
+| `E2EE_RESPONSE_CACHED` | an HTTP cache rewrote a sealed response's status — `sealedFetch` only, never from `/open` | **no** |
 
 Both transport consumers honour it: `ws-client.ts` returns without scheduling a reconnect, and `sealedFetch` throws `EnvelopeError(..., retryable: false)`.
 
@@ -49,6 +50,18 @@ Revoke a paired device while the app is open and the client retries forever. The
 4. `context.ts` maps 429 → `E2EE_TRANSIENT`, which **is** retryable. The client now believes a permanent condition is temporary, and the on-screen text degrades to the false *"The server is busy; retrying shortly"*.
 
 Measured: 10 × 403 then 60 × 429 in under two minutes, still climbing. A fix needs both halves — a non-retryable verdict for a server must survive a later 429, **and** the retry above the transport must consult `retryable` at all, since it fires before any 429 exists.
+
+### An HTTP cache can rewrite a sealed response's status (2026-09-05)
+
+The streamer set `Cache-Control` nowhere — one occurrence in the whole repository, on an SSE route — and this client sets it nowhere either. `/api/conversations/:id` therefore went out with an `ETag` and no freshness information, which is the one combination that makes iOS's `NSURLCache` store a response and revalidate it on its **own** `If-None-Match`, whether or not the app asked for a conditional GET.
+
+The server then answers `304`, correctly: `canCarryBody(304)` is false, so its record travels base64url in `X-TB-Env` and the body it seals is empty. The cache applies that `304` to its stored entry and hands the app the stored entry — status **200**, headers merged. `sealedFetch` prefers `X-TB-Env`, unseals it cleanly (the record is real, the counter matches, the AAD matches) and gets zero plaintext bytes. `responseFromPlaintext` builds a `200` with a null body, `requestWithMeta` is past its `304` branch, and `response.json()` throws **`JSON Parse error: Unexpected end of input`** on the messages query.
+
+Nothing about the crypto failed. The `304`'s *status* was laundered into `200` while its payload was empty by construction, and the app's own 304 handling never saw a `304` to handle.
+
+The server-side fix is `Cache-Control: no-store` on every sealed response (streamer #788): a record is owed to ONE accepted counter, so it has no business in a shared cache under any framing. This client refuses the artefact as well, because `X-TB-Env` on a status that *can* carry a body is unreachable from a correct streamer and is therefore a free assertion that something rewrote the status. It refuses rather than recovering: the true status was `204` or `304`, nothing in the response says which, and the real body is absent under either reading.
+
+Do not "fix" this by having the client stop sending `If-None-Match`. The cache adds its own.
 
 ### The silence timer is expensive now
 

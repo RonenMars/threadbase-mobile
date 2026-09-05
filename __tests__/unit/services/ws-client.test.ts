@@ -773,3 +773,101 @@ describe('WSClientManager – session stream refcount', () => {
     )
   })
 })
+
+// The streamer allows a device FIVE `/api/e2ee/open` per minute
+// (`api/rate-limit.ts`, `PAIR_EXCHANGE_LIMIT`). On 2026-09-05, iOS build 219
+// spent four of them in 660 ms on one foreground and got ONE `/ws` upgrade for
+// them; the next open came back `429` and the app showed "The server is busy;
+// retrying shortly". Every count below is a count of handshakes ASKED FOR — the
+// only number the server's budget reacts to.
+describe('WSClientManager – handshake budget', () => {
+  const pinnedContext = () => ({
+    ctxId: 'ctx',
+    kind: 'ws' as const,
+    expiresAt: Date.now() + 30_000,
+    provisional: false,
+    ticket: 'ticket',
+    send: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 1, channel: 1 }),
+    recv: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 2, channel: 1 }),
+    destroy: jest.fn(),
+  })
+  const pin = { serverPublicKey: 'pinned-server-key', requireEncryption: true }
+
+  it('opens one context however often connect() is called for an unchanged server', async () => {
+    mockedOpenContextOnce.mockResolvedValue(pinnedContext())
+
+    // `app/_layout.tsx`'s effect re-runs on every `activeServerIds` identity
+    // change and calls straight through to here with the same arguments.
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+    expect(MockWebSocket).toHaveBeenCalledTimes(1)
+  })
+
+  it('still opens a fresh context when the destination actually changes', async () => {
+    mockedOpenContextOnce.mockResolvedValue(pinnedContext())
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+    // The negative control for the test above: the guard is keyed on the
+    // destination, so a server whose URL was edited must redial, not be
+    // silently left pointing at the old host.
+    wsManager.connect('pinned-server', 'https://other.host', 'api-key', pin)
+    await flushAsyncConnect()
+
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(2)
+    expect(MockWebSocket).toHaveBeenLastCalledWith('wss://other.host/ws', null, {
+      headers: { 'X-TB-Ticket': 'ticket' },
+    })
+  })
+
+  it('keeps a live client across a re-run of the wiring effect', async () => {
+    mockedOpenContextOnce.mockResolvedValue(pinnedContext())
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+
+    // What `app/_layout.tsx` does on every re-run: reconcile the list, then
+    // connect it. The server is still in the list, so nothing is torn down and
+    // nothing is redialed. (Before this, the effect's cleanup ran
+    // `disconnectAll()` and the guard above could never hold.)
+    wsManager.retain(['pinned-server'])
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+
+    // Negative control: a server that really did leave the list loses its
+    // socket, which is the job the old `disconnectAll()` was doing.
+    wsManager.retain([])
+    expect(wsManager.status('pinned-server')).toBe('disconnected')
+  })
+
+  it('does not stack a second handshake on one already in flight', async () => {
+    let resolveContext: ((c: Awaited<ReturnType<typeof openContextOnce>>) => void) | undefined
+    mockedOpenContextOnce.mockReturnValue(
+      new Promise<Awaited<ReturnType<typeof openContextOnce>>>((r) => {
+        resolveContext = r
+      }),
+    )
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    // The three callers that fire within a few hundred ms of one foreground:
+    // `app/session/[id].tsx`'s AppState listener, its waking-up backstop, and
+    // `hooks/useTerminalStream.ts`'s silence timer.
+    wsManager.forceReconnect('pinned-server')
+    wsManager.forceReconnect('pinned-server')
+    wsManager.forceReconnect('pinned-server')
+
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+
+    // And the guard is bounded, not latched: once the handshake settles, the
+    // next forceReconnect is a real redial again.
+    resolveContext?.(pinnedContext())
+    await flushAsyncConnect()
+    wsManager.forceReconnect('pinned-server')
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(2)
+  })
+})

@@ -61,6 +61,7 @@ jest.mock('@/services/ws-client', () => ({
     connect: jest.fn(),
     onAll: jest.fn(() => jest.fn()),
     onAnyStatusChange: jest.fn(() => jest.fn()),
+    retain: jest.fn(),
     disconnectAll: jest.fn(),
   },
 }))
