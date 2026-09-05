@@ -402,4 +402,40 @@ describe('authedFetch REST envelope', () => {
     expect(setSecure).not.toHaveBeenCalled()
     expect(setAsync).not.toHaveBeenCalled()
   })
+
+  // Regression: the unsealed body used to be handed to Response as raw bytes.
+  // React Native's whatwg-fetch reads an ArrayBuffer body one String.fromCharCode
+  // per byte (latin-1), so every multi-byte character was mangled -- an em dash
+  // (U+2014 = E2 80 94) surfaced in the app as "\u00e2" plus two invisible C1 controls.
+  // jest's environment supplies Node's native Response, which decodes UTF-8
+  // correctly, so this test pins the polyfill the app actually ships.
+  it('keeps non-ASCII text intact when the unsealed body is read by RN\'s fetch polyfill', async () => {
+    const { Response: RNResponse } = jest.requireActual('whatwg-fetch') as {
+      Response: typeof Response
+    }
+    const NativeResponse = globalThis.Response
+    const title = '# Prompt \u2014 reconcile prompt-expiry (not authoritative \u2014 reading state)'
+    const ctx = makeRestContext()
+    _setRestOpenForTests(async () => ctx)
+    const fn = jest.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      const headers = init.headers as Record<string, string>
+      const seq = BigInt(headers[HEADER_SEQ])
+      const frame = sealServerResponse(seq, '/api/info', 'GET', JSON.stringify({ title }))
+      return new RNResponse(asBody(frame), {
+        status: 200,
+        headers: { [HEADER_E2EE]: '1', 'Content-Type': 'application/octet-stream' },
+      })
+    })
+    globalThis.fetch = fn as unknown as typeof fetch
+    globalThis.Response = RNResponse
+
+    try {
+      const response = await authedFetch(pinnedTarget(), '/api/info')
+      const body = (await response.json()) as { title: string }
+      expect(body.title).toBe(title)
+      expect(body.title).not.toContain('\u00e2')
+    } finally {
+      globalThis.Response = NativeResponse
+    }
+  })
 })
