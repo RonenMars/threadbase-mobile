@@ -1,5 +1,11 @@
 # 06 — Three pre-existing mock-suite failures
 
+> **Overtaken 2026-09-05.** The four-flow table below is a 2026-08 iOS measurement and no longer describes the suite.
+> Android CI run [33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192) on `main` `8146d2f5` ran **16 flows and failed 1**: `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all passed.
+> The one failure is `feedback_flow`, and not at the assertion named below — #772 fixed `settings-help-feedback-row` on 2026-08-20.
+> It now dies 30 lines later at `e2e/feedback_flow.yaml`'s `tapOn: "Help us squash a bug"`, because the Android IME scrolls that heading off the top of the `KeyboardAwareScrollView`.
+> Re-measure before acting on any count here.
+
 **Repo:** tb-mobile · **Base:** `main` (the onboarding repair is already there via PR #578) · **Owns:** `e2e/*.yaml`, the simulator
 **Pair with:** 05 — same domain, same build, same device
 
