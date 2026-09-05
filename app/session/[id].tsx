@@ -21,6 +21,7 @@ import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
+import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
@@ -60,6 +61,7 @@ import { stripAnsi } from '@/utils/stripAnsi'
 import { ReviewSheet } from '@/components/review/ReviewSheet'
 import { buildReviewFromMessages } from '@/lib/reviewFromConversation'
 import { useConversation } from '@/hooks/useConversations'
+import { RemoteKeyboardControls } from '@/components/sessions/RemoteKeyboardControls'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -521,7 +523,9 @@ export default function SessionDetailScreen() {
   // User rename wins; then the JSONL-derived conversation name; then project name.
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
 
-  const { sendKeys, sendInput, stopSession } = useSessionActions(serverId, id ?? '')
+  const { sendKeys, sendInput, sendRawKey, stopSession } = useSessionActions(serverId, id ?? '')
+  const { question: activeQuestion } = useActiveQuestion(serverId, id ?? '')
+  const [rawKeyboardVisible, setRawKeyboardVisible] = useState(false)
   const { mutateAsync: stopSessionMutateAsync } = stopSession
   const {
     leaveModalVisible,
@@ -574,11 +578,24 @@ export default function SessionDetailScreen() {
     if (!text.trim()) return
     await Clipboard.setStringAsync(text)
   }
+  const isLive =
+    session?.ptyAttached === true &&
+    (session.status === 'waiting_input' || session.status === 'running')
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
     sendKeys.mutate('\x1b', {
       onError: () => Alert.alert(t('terminal:dialog.stopTitle'), t('terminal:dialog.stopFailed')),
     })
+  }
+  const openRawKeyboard = () => {
+    Alert.alert(
+      t('terminal:rawKeyboard.title'),
+      t('terminal:rawKeyboard.warning'),
+      [
+        { text: t('common:button.cancel'), style: 'cancel' },
+        { text: t('terminal:rawKeyboard.agree'), onPress: () => setRawKeyboardVisible(true) },
+      ],
+    )
   }
   const historyNavigationId = session?.boundConversationId ?? session?.conversationId ?? id
 
@@ -882,6 +899,14 @@ export default function SessionDetailScreen() {
             disabled: streamPreviewLines.length === 0,
             testID: 'terminal-copy-all',
           },
+          {
+            key: 'raw-keys',
+            label: t('terminal:rawKeyboard.menu'),
+            icon: Warning,
+            onPress: openRawKeyboard,
+            disabled: !isLive,
+            testID: 'session-raw-keys',
+          },
         ]}
       />
     </View>
@@ -902,9 +927,6 @@ export default function SessionDetailScreen() {
     router.replace('/')
   }
 
-  const isLive =
-    session.ptyAttached === true &&
-    (session.status === 'waiting_input' || session.status === 'running')
   const presentation = deriveSessionPresentation(session)
   const capabilityLabel = presentation.capabilities.isObserveOnly
     ? t('sessions:capability.observeOnly')
@@ -1084,6 +1106,22 @@ export default function SessionDetailScreen() {
         ) : null}
       </View>
 
+      {rawKeyboardVisible ? (
+        <RemoteKeyboardControls
+          promptId={activeQuestion?.source === 'prompt' ? activeQuestion.promptId : undefined}
+          busy={sendRawKey.isPending}
+          onClose={() => setRawKeyboardVisible(false)}
+          onSend={(action, confirm) =>
+            sendRawKey.mutate({
+              action,
+              ...(action !== 'escape' && activeQuestion?.source === 'prompt' && activeQuestion.promptId
+                ? { promptId: activeQuestion.promptId }
+                : {}),
+              ...(confirm ? { confirm } : {}),
+            })
+          }
+        />
+      ) : null}
       {infoModal}
 
       <LeaveSessionModal
