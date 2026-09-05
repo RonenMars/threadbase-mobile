@@ -472,6 +472,8 @@ export interface ServerInfo {
    * are authoritative for showing the Hub banner.
    */
   hostPressure?: true
+  /** Additive: POST /api/sessions/:id/raw-key accepts constrained picker controls. */
+  rawKeys?: true
 }
 
 /**

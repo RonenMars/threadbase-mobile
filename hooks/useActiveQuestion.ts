@@ -129,6 +129,9 @@ export function useActiveQuestionReducer(sessionId: string) {
   // goes out on subscribe before any legacy frame, so this cannot race; a
   // streamer that predates the contract never sets it and nothing changes.
   const promptContractSeen = useRef(false)
+  // Keep every normalized prompt so approval gates take focus over retained
+  // questions, matching the streamer's permission-first arbitration.
+  const openPrompts = useRef(new Map<string, Prompt>())
 
   // Both callers pass a definite key (toolUseId, or gateKey's template literal) —
   // a null here would mean a card whose identity matches every other null-keyed card.
@@ -214,6 +217,7 @@ export function useActiveQuestionReducer(sessionId: string) {
   // dismissedKey untouched keeps both halves right: an unanswered gate returns
   // on replay, an answered one stays suppressed.
   const reset = useCallback(() => {
+    openPrompts.current.clear()
     commit(null)
   }, [commit])
 
@@ -229,22 +233,32 @@ export function useActiveQuestionReducer(sessionId: string) {
     reset()
   }, [reset])
 
-  // One normalized prompt, from a snapshot or a live event. Actionable → it is
-  // the card (a revision bump keeps the key, so the user's selection survives
-  // exactly as a cursor repaint does); terminal → it comes down if it is the
-  // card on screen. The snapshot lists every retained prompt, terminal ones
-  // included, so this runs per prompt and the last actionable one wins.
-  // ponytail: singleton card — the server models several open prompts, the
-  // UI shows the latest; a multi-prompt view is the structured-activity phase.
-  const applyPrompt = useCallback((prompt: Prompt) => {
-    if (isActionablePrompt(prompt)) {
-      if (dismissedKey.current === prompt.promptId) return
-      accept(prompt.promptId, mapPromptToBlock(prompt))
+  const focusPrompt = useCallback(() => {
+    const prompts = [...openPrompts.current.values()].filter(
+      (candidate) => dismissedKey.current !== candidate.promptId,
+    )
+    const focused = prompts.filter((candidate) => candidate.intent === 'approval').at(-1)
+      ?? prompts.filter((candidate) => candidate.intent !== 'approval').at(-1)
+    if (!focused) {
+      commit(null)
       return
     }
-    if (dismissedKey.current === prompt.promptId) dismissedKey.current = null
-    if (cardRef.current?.key === prompt.promptId) commit(null)
+    accept(focused.promptId, mapPromptToBlock(focused))
   }, [accept, commit])
+
+  // A permission gate has the PTY focus whenever it coexists with a question.
+  // Within either type, the latest normalized event wins.
+  const applyPrompt = useCallback((prompt: Prompt) => {
+    if (isActionablePrompt(prompt)) {
+      openPrompts.current.delete(prompt.promptId)
+      openPrompts.current.set(prompt.promptId, prompt)
+      focusPrompt()
+      return
+    }
+    openPrompts.current.delete(prompt.promptId)
+    if (dismissedKey.current === prompt.promptId) dismissedKey.current = null
+    focusPrompt()
+  }, [focusPrompt])
 
   const onMessage = useCallback((msg: Incoming) => {
     if (msg.type === 'session_update') {

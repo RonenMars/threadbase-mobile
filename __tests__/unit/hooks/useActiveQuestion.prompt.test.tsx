@@ -61,6 +61,17 @@ describe('useActiveQuestionReducer — provider-neutral prompts', () => {
     expect(result.current.questionKey).toBe('prompt-2')
   })
 
+  it('keeps a permission prompt focused when a question arrives after it', async () => {
+    const { result } = await renderHook(() => useActiveQuestionReducer('s1'))
+    const question: Prompt = { ...PROMPT, promptId: 'question-1', intent: 'question', message: 'Which option?' }
+    await act(() => result.current.onMessage(event(PROMPT)))
+    await act(() => result.current.onMessage(event(question, 2)))
+    expect(result.current.questionKey).toBe('prompt-1')
+
+    await act(() => result.current.onMessage(event({ ...PROMPT, state: 'resolved', terminalReason: 'answered' }, 3)))
+    expect(result.current.questionKey).toBe('question-1')
+  })
+
   it('ignores a prompt for another session', async () => {
     const { result } = await renderHook(() => useActiveQuestionReducer('OTHER'))
     await act(() => result.current.onMessage(event(PROMPT)))

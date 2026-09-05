@@ -9,5 +9,8 @@
   "sessions.json:noServer.repoLink": "repository URL",
   "settings.json:backup.pastePlaceholder": "JSON shape sample, not prose",
   "settings.json:language.english": "language names are endonyms — every locale lists English as \"English\"",
-  "conversation.json:review.kindDiff": "technical term used verbatim in he/ar/ru prose (\"ה-diff\")"
+  "conversation.json:review.kindDiff": "technical term used verbatim in he/ar/ru prose (\"ה-diff\")",
+  "terminal.json:rawKeyboard.escape": "physical keyboard keycap label",
+  "terminal.json:rawKeyboard.tab": "physical keyboard keycap label",
+  "terminal.json:rawKeyboard.shiftTab": "physical keyboard keycap label"
 }
