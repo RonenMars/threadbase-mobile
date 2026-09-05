@@ -163,12 +163,16 @@ class WSClient {
   private context: TransportContext | null = null
   private generation = 0
   private ticketUpgradeRetryAvailable = true
+  // True from the moment a Noise handshake is asked for until it settles. The
+  // streamer allows a device FIVE `/api/e2ee/open` per minute
+  // (`api/rate-limit.ts`, `PAIR_EXCHANGE_LIMIT`), and a handshake it has
+  // already counted is spent whether or not this client goes on to dial.
+  private handshakeInFlight = false
 
   // Label for the connection log only — the manager passes its serverId.
   constructor(private serverId = 'default') {}
 
   connect(url: string, apiKey: string, encryption: WsEncryptionConfig = {}) {
-    this.encryption = encryption
     const wsUrl = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
     // The socket carries the whole live session — terminal output, replay and
     // every prompt typed — so it is the traffic the cleartext policy exists for.
@@ -188,6 +192,21 @@ class WSClient {
       logConnection(this.serverId, 'cleartext_blocked')
       return
     }
+    // Nothing about the destination changed and this client is not down, so
+    // the socket this would build is the socket it already has. `_layout.tsx`'s
+    // effect re-runs on every `activeServerIds` identity change and calls
+    // straight through to here; before this guard each of those runs cost a
+    // full Noise handshake against a budget of five per minute. A dead-looking
+    // socket is `forceReconnect`'s job, not this one's.
+    if (
+      wsUrl === this.url &&
+      this._status !== 'disconnected' &&
+      encryption.serverPublicKey === this.encryption.serverPublicKey &&
+      encryption.requireEncryption === this.encryption.requireEncryption
+    ) {
+      return
+    }
+    this.encryption = encryption
     this.url = wsUrl
     this.reconnectAttempt = 0
     this.ticketUpgradeRetryAvailable = true
@@ -211,15 +230,20 @@ class WSClient {
         // Obtain the client id before the ticketed upgrade. The server requires
         // the first sealed frame within ten seconds of the 101 response, so
         // awaiting storage from onopen is too late.
-        ;[context, clientId] = await Promise.all([
-          openContextOnce({
-            serverId: this.serverId,
-            baseUrl: this.url.replace(/^ws/, 'http').replace(/\/ws\?key=.*$/, ''),
-            serverPublicKey: this.encryption.serverPublicKey,
-            kind: 'ws',
-          }),
-          getDeviceClientId(),
-        ])
+        this.handshakeInFlight = true
+        try {
+          ;[context, clientId] = await Promise.all([
+            openContextOnce({
+              serverId: this.serverId,
+              baseUrl: this.url.replace(/^ws/, 'http').replace(/\/ws\?key=.*$/, ''),
+              serverPublicKey: this.encryption.serverPublicKey,
+              kind: 'ws',
+            }),
+            getDeviceClientId(),
+          ])
+        } finally {
+          this.handshakeInFlight = false
+        }
         if (generation !== this.generation) {
           context.destroy()
           return
@@ -413,6 +437,16 @@ class WSClient {
   // but is in fact dead, and we can't wait 1–30s for the next backoff tick.
   forceReconnect() {
     if (!this.url) return
+    // A handshake already in flight IS the fresh connection this asks for.
+    // Three callers fire within a few hundred ms of one foreground — the
+    // session screen's `AppState` listener, its waking-up backstop and
+    // `useTerminalStream`'s silence timer — and each extra call used to mint a
+    // context that `_doConnect`'s generation check then destroyed without ever
+    // dialing, after the streamer had already counted the open. Measured on
+    // 2026-09-05: four `/api/e2ee/open` for one `/ws`, and the next open 429'd.
+    // Bounded, not latched: `openContext` carries its own timeout, so this
+    // clears whether the handshake answers, refuses or times out.
+    if (this.handshakeInFlight) return
     logConnection(this.serverId, 'force_reconnect')
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
@@ -465,15 +499,24 @@ class WSClientManager {
   private sessionRefCounts = new Map<string, Map<string, number>>()
 
   connect(serverId: string, url: string, apiKey: string, encryption: WsEncryptionConfig = {}) {
-    // Disconnect existing client for this server if any
-    this.disconnect(serverId)
-    const client = new WSClient(serverId)
-    this.clients.set(serverId, client)
-    // Wire this client's status changes into the manager-level listeners.
-    client.onStatusChange((s) => {
-      if (s === 'connected') this.resubscribeHeldSessions(serverId)
-      this.managerStatusListeners.forEach((l) => l(serverId, s))
-    })
+    // The client is REUSED, not rebuilt. Tearing it down and constructing a new
+    // one made every call an unconditional redial, and on a pinned server a
+    // redial is a full Noise handshake against the streamer's five-opens-per-
+    // device-per-minute budget — spent even by a call that changes nothing.
+    // `WSClient.connect` is the one that decides whether a dial is owed, so it
+    // sees the current destination instead of a blank client that always
+    // differs from it.
+    let client = this.clients.get(serverId)
+    if (!client) {
+      client = new WSClient(serverId)
+      this.clients.set(serverId, client)
+      // Wire this client's status changes into the manager-level listeners.
+      // Once per client, so reuse must not re-register it.
+      client.onStatusChange((s) => {
+        if (s === 'connected') this.resubscribeHeldSessions(serverId)
+        this.managerStatusListeners.forEach((l) => l(serverId, s))
+      })
+    }
     client.connect(url, apiKey, encryption)
   }
 
@@ -488,6 +531,22 @@ class WSClientManager {
   disconnectAll() {
     for (const [id] of this.clients) {
       this.disconnect(id)
+    }
+  }
+
+  /**
+   * Keep exactly the servers in `serverIds` connected; drop the rest.
+   *
+   * `app/_layout.tsx` used to express this as a `disconnectAll()` in its effect
+   * cleanup, which tore down every live client on every re-run of that effect
+   * — and the effect re-runs on any `activeServerIds` identity change, not only
+   * when the set of servers actually changed. On a pinned server each teardown
+   * made the `connect` that followed it a full Noise handshake, against a
+   * budget of five per minute.
+   */
+  retain(serverIds: readonly string[]) {
+    for (const [id] of this.clients) {
+      if (!serverIds.includes(id)) this.disconnect(id)
     }
   }
 
