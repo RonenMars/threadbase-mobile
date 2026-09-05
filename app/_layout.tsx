@@ -2,7 +2,7 @@ import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { Platform, Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
   Stack,
@@ -406,11 +406,16 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       background: isGlass ? 'transparent' : theme.bg.primary,
     },
   }
+  // A transparent header leaves screen content laid out from y=0, behind the
+  // title bar. iOS inset-adjusts scroll views for that; Android does not, so
+  // every header-shown screen printed its first heading under the title
+  // (E2E run 33933929192, feedback_flow). Same call as browse.tsx.
+  const headerTransparent = isGlass && Platform.OS !== 'android'
   const stack = (
     <Stack
       screenOptions={{
-        headerStyle: isGlass ? undefined : { backgroundColor: theme.bg.secondary },
-        headerTransparent: isGlass,
+        headerStyle: headerTransparent ? undefined : { backgroundColor: theme.bg.secondary },
+        headerTransparent,
         headerTintColor: theme.text.primary,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },
