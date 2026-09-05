@@ -265,11 +265,13 @@ function bodyToBytes(body: AuthedFetchInit['body']): Uint8Array {
   )
 }
 
-function inferJsonContentType(plaintext: Uint8Array): string | null {
+/** The UTF-8 text of a JSON body, or null when the body is empty or not JSON. */
+function decodeJsonText(plaintext: Uint8Array): string | null {
   if (plaintext.byteLength === 0) return null
+  const text = new TextDecoder().decode(plaintext)
   try {
-    JSON.parse(new TextDecoder().decode(plaintext))
-    return 'application/json'
+    JSON.parse(text)
+    return text
   } catch {
     return null
   }
@@ -319,12 +321,16 @@ function responseFromPlaintext(status: number, plaintext: Uint8Array, source: Re
     }
     headers.set(key, value)
   })
-  const inferred = inferJsonContentType(plaintext)
-  if (inferred) {
+  const jsonText = decodeJsonText(plaintext)
+  if (jsonText !== null) {
     // eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
-    headers.set('Content-Type', inferred)
+    headers.set('Content-Type', 'application/json')
   }
-  return new Response(plaintext.byteLength === 0 ? null : (plaintext as BodyInit), {
+  // Hand a JSON body over as a string, never as bytes: React Native's whatwg-fetch
+  // reads an ArrayBuffer body with String.fromCharCode per byte (latin-1), which
+  // mangles every non-ASCII character. A string body is returned verbatim.
+  const body = jsonText ?? (plaintext.byteLength === 0 ? null : (plaintext as BodyInit))
+  return new Response(body, {
     status,
     headers,
   })
