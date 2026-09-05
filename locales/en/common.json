@@ -91,8 +91,7 @@
     "codeLabel": "Error code",
     "rawLabel": "Raw error",
     "issuesIndicator_one": "{{count}} issue",
-    "issuesIndicator_other": "{{count}} issues",
-    "detailsLink": "Details"
+    "issuesIndicator_other": "{{count}} issues"
   },
   "errorPolicy": {
     "sessionExpired": "Your session has expired",

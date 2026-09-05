@@ -99,8 +99,7 @@
     "issuesIndicator_two": "مشكلتان",
     "issuesIndicator_few": "{{count}} مشكلات",
     "issuesIndicator_many": "{{count}} مشكلة",
-    "issuesIndicator_other": "{{count}} مشكلة",
-    "detailsLink": "التفاصيل"
+    "issuesIndicator_other": "{{count}} مشكلة"
   },
   "errorPolicy": {
     "sessionExpired": "انتهت صلاحية الجلسة",

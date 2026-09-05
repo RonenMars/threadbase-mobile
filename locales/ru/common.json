@@ -95,8 +95,7 @@
     "issuesIndicator_one": "{{count}} проблема",
     "issuesIndicator_few": "{{count}} проблемы",
     "issuesIndicator_many": "{{count}} проблем",
-    "issuesIndicator_other": "{{count}} проблемы",
-    "detailsLink": "Подробнее"
+    "issuesIndicator_other": "{{count}} проблемы"
   },
   "errorPolicy": {
     "sessionExpired": "Срок действия сессии истёк",

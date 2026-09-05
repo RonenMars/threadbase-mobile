@@ -93,8 +93,7 @@
     "rawLabel": "שגיאה מקורית",
     "issuesIndicator_one": "בעיה אחת",
     "issuesIndicator_two": "{{count}} בעיות",
-    "issuesIndicator_other": "{{count}} בעיות",
-    "detailsLink": "פרטים"
+    "issuesIndicator_other": "{{count}} בעיות"
   },
   "errorPolicy": {
     "sessionExpired": "הסשן שלך פג",
