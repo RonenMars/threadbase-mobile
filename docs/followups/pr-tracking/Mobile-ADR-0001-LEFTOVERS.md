@@ -91,6 +91,8 @@ The mock suite went **1/15 → 11/15** once `setup.yaml` was repaired. Four fail
 | `05_chat_flow` | `first-session-card is visible` |
 | `06_search_anchor` | `conversation-row-conv-search-anchor is visible` |
 
+> **Overtaken 2026-09-05:** the Android suite is 15/16 ([run 33933929192](https://github.com/RonenMars/threadbase-mobile/actions/runs/33933929192)) — `session_lifecycle`, `05_chat_flow` and `06_search_anchor` all pass. The one failure is `feedback_flow`, at a later step than the one named here, and it is an app layout bug (`headerTransparent` with no Android header inset), not a flow defect. Detail in [`../repo-health/03-e2e-suite-signal.md`](../repo-health/03-e2e-suite-signal.md).
+
 They were invisible until now because every flow previously died during onboarding. Covered by mobile follow-up task 06.
 
 ## Two behaviour changes in #576 worth a reviewer's eye
