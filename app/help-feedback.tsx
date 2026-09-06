@@ -46,6 +46,7 @@ import {
 import { pickAndPrepareScreenshot } from '@/services/feedback-screenshot'
 import { addSafeBreadcrumb } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
+import { useSettingsStore } from '@/stores/settings'
 import type { FeedbackCategory, FeedbackReport, FeedbackAttachment, FeedbackTransportKind } from '@/types/feedback'
 
 const PRIVACY_URL = 'https://threadbase.sh/privacy-policy'
@@ -88,11 +89,16 @@ export default function HelpFeedbackScreen() {
       ? { paddingTop: s.content.padding + insets.top + headerHeight }
       : null
 
+  const anonymousDiagnosticsEnabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
+
   const [view, setView] = useState<View3>('landing')
   const [category, setCategory] = useState<FeedbackCategory>('bug')
   const [description, setDescription] = useState('')
   const [email, setEmail] = useState('')
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
+  // Default unchecked (spec §11) — while standing consent is off, diagnostics
+  // are opt-in per submission. While consent is on, this checkbox is hidden
+  // entirely and diagnostics are always included (see effectiveIncludeDiagnostics).
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(false)
   const [attachment, setAttachment] = useState<FeedbackAttachment | null>(null)
   const [descriptionError, setDescriptionError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -103,6 +109,10 @@ export default function HelpFeedbackScreen() {
   const [deliveredVia, setDeliveredVia] = useState<FeedbackTransportKind | null>(null)
 
   const diagnostics = useMemo(() => buildFeedbackDiagnostics(), [])
+  // Standing consent auto-includes diagnostics regardless of the (hidden)
+  // per-submission checkbox — the user already granted standing authorization
+  // for the same diagnostics/purpose (spec §11).
+  const effectiveIncludeDiagnostics = anonymousDiagnosticsEnabled || includeDiagnostics
 
   const openForm = useCallback((cat: FeedbackCategory) => {
     setCategory(cat)
@@ -116,9 +126,9 @@ export default function HelpFeedbackScreen() {
     category,
     description: description.trim(),
     email: email.trim() || undefined,
-    diagnostics: includeDiagnostics ? diagnostics : undefined,
+    diagnostics: effectiveIncludeDiagnostics ? diagnostics : undefined,
     attachment: attachment ?? undefined,
-  }), [reportId, category, description, email, includeDiagnostics, diagnostics, attachment])
+  }), [reportId, category, description, email, effectiveIncludeDiagnostics, diagnostics, attachment])
 
   const handlePickScreenshot = useCallback(async () => {
     try {
@@ -434,22 +444,26 @@ export default function HelpFeedbackScreen() {
         )}
         <Text style={s.helperText}>{t('form.screenshotHelper')}</Text>
 
-        {/* Diagnostics opt-in */}
-        <TouchableOpacity
-          style={s.checkboxRow}
-          onPress={() => setIncludeDiagnostics((v) => !v)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: includeDiagnostics }}
-          accessibilityLabel={t('form.includeDiagnostics')}
-          testID="feedback-include-diagnostics"
-        >
-          <View style={[s.checkbox, includeDiagnostics && s.checkboxChecked]}>
-            {includeDiagnostics ? <Check size={14} color={theme.text.onAccent} weight="bold" /> : null}
-          </View>
-          <Text style={s.checkboxLabel}>{t('form.includeDiagnostics')}</Text>
-        </TouchableOpacity>
-        <Text style={s.helperText}>{t('form.diagnosticsHelper')}</Text>
-        {includeDiagnostics ? <DiagnosticsPreview diagnostics={diagnostics} /> : null}
+        {/* Diagnostics opt-in — hidden once standing consent already covers it (spec §11) */}
+        {!anonymousDiagnosticsEnabled ? (
+          <>
+            <TouchableOpacity
+              style={s.checkboxRow}
+              onPress={() => setIncludeDiagnostics((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: includeDiagnostics }}
+              accessibilityLabel={t('form.includeDiagnostics')}
+              testID="feedback-include-diagnostics"
+            >
+              <View style={[s.checkbox, includeDiagnostics && s.checkboxChecked]}>
+                {includeDiagnostics ? <Check size={14} color={theme.text.onAccent} weight="bold" /> : null}
+              </View>
+              <Text style={s.checkboxLabel}>{t('form.includeDiagnostics')}</Text>
+            </TouchableOpacity>
+            <Text style={s.helperText}>{t('form.diagnosticsHelper')}</Text>
+          </>
+        ) : null}
+        {effectiveIncludeDiagnostics ? <DiagnosticsPreview diagnostics={diagnostics} /> : null}
 
         {submitError ? <Text style={s.errorText}>{submitError}</Text> : null}
 

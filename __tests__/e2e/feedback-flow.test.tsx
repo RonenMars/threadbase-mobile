@@ -18,6 +18,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import HelpFeedbackScreen from '@/app/help-feedback'
 import { submitFeedback, copyReportToClipboard } from '@/services/feedback-transport'
 import { pickAndPrepareScreenshot } from '@/services/feedback-screenshot'
+import { useSettingsStore } from '@/stores/settings'
 
 jest.mock('@/services/feedback-transport', () => ({
   submitFeedback: jest.fn(),
@@ -140,49 +141,78 @@ describe('Help & Feedback — validation', () => {
   })
 })
 
-describe('Help & Feedback — diagnostics opt-in', () => {
+describe('Help & Feedback — diagnostics opt-in (standing consent OFF, spec §11)', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ anonymousDiagnosticsEnabled: false })
+  })
+
   it('allows the diagnostics toggle to receive the first tap after text entry', async () => {
     const screen = await renderScreen()
     await gotoForm(screen)
     expect(JSON.stringify(screen.toJSON())).toContain('"keyboardShouldPersistTaps":"handled"')
   })
 
-  it('shows the diagnostics preview by default and can toggle detail', async () => {
+  it('defaults the checkbox unchecked and the preview hidden', async () => {
     const screen = await renderScreen()
     await gotoForm(screen)
+    const checkbox = screen.getByTestId('feedback-include-diagnostics')
+    expect(checkbox.props.accessibilityState.checked).toBe(false)
+    expect(screen.queryByTestId('feedback-diagnostics-toggle')).toBeNull()
+  })
+
+  it('shows the diagnostics preview once opted in, and can toggle detail', async () => {
+    const screen = await renderScreen()
+    await gotoForm(screen)
+    await press(screen, 'feedback-include-diagnostics')
     expect(screen.getByTestId('feedback-diagnostics-toggle')).toBeTruthy()
     expect(screen.queryByTestId('feedback-diagnostics-rows')).toBeNull()
     await press(screen, 'feedback-diagnostics-toggle')
     expect(screen.getByTestId('feedback-diagnostics-rows')).toBeTruthy()
   })
 
-  it('hides the diagnostics preview when opted out', async () => {
-    const screen = await renderScreen()
-    await gotoForm(screen)
-    await press(screen, 'feedback-include-diagnostics')
-    expect(screen.queryByTestId('feedback-diagnostics-toggle')).toBeNull()
-  })
-
-  it('submits WITHOUT diagnostics when opted out', async () => {
+  it('submits WITHOUT diagnostics by default', async () => {
     const screen = await renderScreen()
     await gotoForm(screen)
     await type(screen, 'feedback-description-input', VALID_DESC)
-    await press(screen, 'feedback-include-diagnostics')
     await press(screen, 'feedback-submit')
     await waitFor(() => expect(submitFeedback).toHaveBeenCalled())
     const report = (submitFeedback as jest.Mock).mock.calls[0][0]
     expect(report.diagnostics).toBeUndefined()
   })
 
-  it('submits WITH diagnostics when opted in (default)', async () => {
+  it('submits WITH diagnostics once explicitly opted in for this submission', async () => {
     const screen = await renderScreen()
     await gotoForm(screen)
     await type(screen, 'feedback-description-input', VALID_DESC)
+    await press(screen, 'feedback-include-diagnostics')
     await press(screen, 'feedback-submit')
     await waitFor(() => expect(submitFeedback).toHaveBeenCalled())
     const report = (submitFeedback as jest.Mock).mock.calls[0][0]
     expect(report.diagnostics).toBeDefined()
     expect(report.diagnostics.appVersion).toBe('1.0.0')
+  })
+})
+
+describe('Help & Feedback — standing consent ON (spec §11)', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ anonymousDiagnosticsEnabled: true })
+  })
+  afterEach(async () => {
+    await act(async () => {
+      useSettingsStore.setState({ anonymousDiagnosticsEnabled: false })
+    })
+  })
+
+  it('hides the checkbox entirely and always includes diagnostics', async () => {
+    const screen = await renderScreen()
+    await gotoForm(screen)
+    expect(screen.queryByTestId('feedback-include-diagnostics')).toBeNull()
+    expect(screen.getByTestId('feedback-diagnostics-toggle')).toBeTruthy() // "See what's included" stays available
+    await type(screen, 'feedback-description-input', VALID_DESC)
+    await press(screen, 'feedback-submit')
+    await waitFor(() => expect(submitFeedback).toHaveBeenCalled())
+    const report = (submitFeedback as jest.Mock).mock.calls[0][0]
+    expect(report.diagnostics).toBeDefined()
   })
 })
 
