@@ -129,6 +129,9 @@ export function useActiveQuestionReducer(sessionId: string) {
   // goes out on subscribe before any legacy frame, so this cannot race; a
   // streamer that predates the contract never sets it and nothing changes.
   const promptContractSeen = useRef(false)
+  // Keep every normalized prompt so approval gates take focus over retained
+  // questions, matching the streamer's permission-first arbitration.
+  const openPrompts = useRef(new Map<string, Prompt>())
 
   // Both callers pass a definite key (toolUseId, or gateKey's template literal) —
   // a null here would mean a card whose identity matches every other null-keyed card.
@@ -214,6 +217,7 @@ export function useActiveQuestionReducer(sessionId: string) {
   // dismissedKey untouched keeps both halves right: an unanswered gate returns
   // on replay, an answered one stays suppressed.
   const reset = useCallback(() => {
+    openPrompts.current.clear()
     commit(null)
   }, [commit])
 
@@ -229,22 +233,32 @@ export function useActiveQuestionReducer(sessionId: string) {
     reset()
   }, [reset])
 
-  // One normalized prompt, from a snapshot or a live event. Actionable → it is
-  // the card (a revision bump keeps the key, so the user's selection survives
-  // exactly as a cursor repaint does); terminal → it comes down if it is the
-  // card on screen. The snapshot lists every retained prompt, terminal ones
-  // included, so this runs per prompt and the last actionable one wins.
-  // ponytail: singleton card — the server models several open prompts, the
-  // UI shows the latest; a multi-prompt view is the structured-activity phase.
-  const applyPrompt = useCallback((prompt: Prompt) => {
-    if (isActionablePrompt(prompt)) {
-      if (dismissedKey.current === prompt.promptId) return
-      accept(prompt.promptId, mapPromptToBlock(prompt))
+  const focusPrompt = useCallback(() => {
+    const prompts = [...openPrompts.current.values()].filter(
+      (candidate) => dismissedKey.current !== candidate.promptId,
+    )
+    const focused = prompts.filter((candidate) => candidate.intent === 'approval').at(-1)
+      ?? prompts.filter((candidate) => candidate.intent !== 'approval').at(-1)
+    if (!focused) {
+      commit(null)
       return
     }
-    if (dismissedKey.current === prompt.promptId) dismissedKey.current = null
-    if (cardRef.current?.key === prompt.promptId) commit(null)
+    accept(focused.promptId, mapPromptToBlock(focused))
   }, [accept, commit])
+
+  // A permission gate has the PTY focus whenever it coexists with a question.
+  // Within either type, the latest normalized event wins.
+  const applyPrompt = useCallback((prompt: Prompt) => {
+    if (isActionablePrompt(prompt)) {
+      openPrompts.current.delete(prompt.promptId)
+      openPrompts.current.set(prompt.promptId, prompt)
+      focusPrompt()
+      return
+    }
+    openPrompts.current.delete(prompt.promptId)
+    if (dismissedKey.current === prompt.promptId) dismissedKey.current = null
+    focusPrompt()
+  }, [focusPrompt])
 
   const onMessage = useCallback((msg: Incoming) => {
     if (msg.type === 'session_update') {
@@ -308,41 +322,61 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
 
   useEffect(() => {
     if (!serverId || !sessionId) return
-    const client = wsManager.getClient(serverId)
-    const unsubQuestion = client?.on('question', (msg) => {
-      if (msg.type === 'question') onMessage(msg)
-    })
-    const unsubCancelled = client?.on('question_cancelled', (msg) => {
-      if (msg.type === 'question_cancelled') onMessage(msg)
-    })
-    const unsubPermission = client?.on('permission', (msg) => {
-      if (msg.type === 'permission') onMessage(msg)
-    })
-    const unsubPermissionCancelled = client?.on('permission_cancelled', (msg) => {
-      if (msg.type === 'permission_cancelled') onMessage(msg)
-    })
-    const unsubPromptEvent = client?.on('prompt_event', (msg) => {
-      if (msg.type === 'prompt_event') onMessage(msg)
-    })
-    const unsubPromptSnapshot = client?.on('prompt_snapshot', (msg) => {
-      if (msg.type === 'prompt_snapshot') onMessage(msg)
-    })
-    const unsubSessionUpdate = client?.on('session_update', (msg) => {
-      if (msg.type === 'session_update') onMessage(msg)
-    })
-    // onAnyStatusChange, not onStatusChange: a reconnect replaces the WSClient
-    // instance, and a listener bound to the old one stops firing.
+    let unsubs: (() => void)[] = []
+
+    // The client is resolved on every bind, never once. On a cold start React
+    // runs this child effect before _layout.tsx's wsManager.connect() has made
+    // a client, so getClient() returns undefined and every listener below is a
+    // no-op — and nothing in this effect's deps changes when the socket later
+    // connects, so the mount stayed deaf for its whole life.
+    //
+    // That is not a cosmetic gap. `subscribe_session` makes the streamer
+    // unicast any gate that opened before the client subscribed
+    // (server-wiring's ws.replay_permission) — so the card was arriving
+    // correctly and being dropped on the floor here. useTerminalStream carries
+    // the same rebind for the same ordering.
+    const bind = () => {
+      unsubs.forEach((u) => u())
+      unsubs = []
+      const client = wsManager.getClient(serverId)
+      if (!client) return
+      unsubs.push(
+        client.on('question', (msg) => {
+          if (msg.type === 'question') onMessage(msg)
+        }),
+        client.on('question_cancelled', (msg) => {
+          if (msg.type === 'question_cancelled') onMessage(msg)
+        }),
+        client.on('permission', (msg) => {
+          if (msg.type === 'permission') onMessage(msg)
+        }),
+        client.on('permission_cancelled', (msg) => {
+          if (msg.type === 'permission_cancelled') onMessage(msg)
+        }),
+        client.on('prompt_event', (msg) => {
+          if (msg.type === 'prompt_event') onMessage(msg)
+        }),
+        client.on('prompt_snapshot', (msg) => {
+          if (msg.type === 'prompt_snapshot') onMessage(msg)
+        }),
+        client.on('session_update', (msg) => {
+          if (msg.type === 'session_update') onMessage(msg)
+        }),
+      )
+    }
+
+    bind()
+    // onAnyStatusChange, not onStatusChange: it also reaches clients created
+    // after this call, which is the whole point when the client may not exist
+    // yet. 'connected' covers both the first dial and the new instance that
+    // disconnect()/retain() forces — connect() itself reuses the client.
     const unsubStatus = wsManager.onAnyStatusChange((id, status) => {
-      if (id === serverId && status === 'disconnected') resetAndUnsuppress()
+      if (id !== serverId) return
+      if (status === 'connected') bind()
+      if (status === 'disconnected') resetAndUnsuppress()
     })
     return () => {
-      unsubQuestion?.()
-      unsubCancelled?.()
-      unsubPermission?.()
-      unsubPermissionCancelled?.()
-      unsubPromptEvent?.()
-      unsubPromptSnapshot?.()
-      unsubSessionUpdate?.()
+      unsubs.forEach((u) => u())
       unsubStatus()
     }
   }, [serverId, sessionId, onMessage, resetAndUnsuppress])

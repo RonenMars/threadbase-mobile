@@ -54,6 +54,11 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
+  const sendRawKey = useMutation({
+    mutationFn: (vars: { action: 'escape' | 'up' | 'down' | 'left' | 'right' | 'tab' | 'shift_tab' | 'enter'; promptId?: string; confirm?: true }) =>
+      api.post(`/api/sessions/${sessionId}/raw-key`, vars),
+  })
+
   const cancelSession = useMutation({
     mutationFn: () => api.post(`/api/sessions/${sessionId}/cancel`),
     onSuccess: () => {
@@ -251,5 +256,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, answerPrompt, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, sendRawKey, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, answerPrompt, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

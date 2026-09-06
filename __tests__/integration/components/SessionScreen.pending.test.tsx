@@ -12,11 +12,13 @@ import { render, screen, fireEvent, act, cleanup } from '@testing-library/react-
 import { createWrapper } from '@/test-utils'
 
 let sessionReadyHandler: ((msg: unknown) => void) | undefined
-let sessionUpdateHandler: ((msg: unknown) => void) | undefined
+let sessionUpdateHandlers: ((msg: unknown) => void)[] = []
 const mockOn = jest.fn((type: string, handler: (msg: unknown) => void) => {
   if (type === 'session_ready') sessionReadyHandler = handler
-  if (type === 'session_update') sessionUpdateHandler = handler
-  return jest.fn()
+  if (type === 'session_update') sessionUpdateHandlers.push(handler)
+  return () => {
+    if (type === 'session_update') sessionUpdateHandlers = sessionUpdateHandlers.filter(h => h !== handler)
+  }
 })
 
 const mockReplace = jest.fn()
@@ -99,7 +101,7 @@ function installPendingFakeTimers() {
 describe('SessionScreen — pending session', () => {
   beforeEach(() => {
     sessionReadyHandler = undefined
-    sessionUpdateHandler = undefined
+    sessionUpdateHandlers = []
     mockOn.mockClear()
     mockReplace.mockClear()
     mockBack.mockClear()
@@ -132,10 +134,10 @@ describe('SessionScreen — pending session', () => {
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
     await act(async () => {
-      sessionUpdateHandler?.({
+      sessionUpdateHandlers.forEach(handler => handler({
         type: 'session_update',
         session: { id: 'sess-real-id', ptyAttached: true },
-      })
+      }))
     })
 
     expect(mockReplace).toHaveBeenCalledWith('/session/sess-real-id?server=srv1')
