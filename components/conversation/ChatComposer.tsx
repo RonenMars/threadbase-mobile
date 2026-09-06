@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  AppState,
   View,
   Text,
   TextInput,
@@ -95,6 +96,21 @@ export function ChatComposer({
     ? spacing.sm
     : Math.max(insets.bottom, spacing.sm)
   const [expanded, setExpanded] = useState(false)
+
+  // iOS sometimes drops the software keyboard across a background/foreground
+  // cycle even though the TextInput never lost first-responder state, so
+  // nothing else tells it to resurface. Track whether the composer was
+  // focused and nudge it back on return.
+  const inputRef = useRef<TextInput>(null)
+  const wasFocusedRef = useRef(false)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active' && wasFocusedRef.current) {
+        inputRef.current?.focus()
+      }
+    })
+    return () => sub.remove()
+  }, [])
 
   const hasContent = value.trim().length > 0 || attachments.length > 0
 
@@ -219,10 +235,13 @@ export function ChatComposer({
         {Platform.OS === 'android' ? (
           <View style={styles.inputWrapper}>
             <TextInput
+              ref={inputRef}
               testID="chat-message-input"
               style={[styles.input, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
+              onFocus={() => { wasFocusedRef.current = true }}
+              onBlur={() => { wasFocusedRef.current = false }}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline
@@ -245,10 +264,13 @@ export function ChatComposer({
         ) : (
           <>
             <TextInput
+              ref={inputRef}
               testID="chat-message-input"
               style={[styles.input, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
+              onFocus={() => { wasFocusedRef.current = true }}
+              onBlur={() => { wasFocusedRef.current = false }}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline
