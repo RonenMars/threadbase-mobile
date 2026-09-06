@@ -55,6 +55,7 @@
       "__tests__/integration/components/EmptyState.test.tsx",
       "__tests__/integration/components/FirstShowBanner.test.tsx",
       "__tests__/integration/components/IdentityFingerprintBlock.test.tsx",
+      "__tests__/integration/components/InheritedHistoryDivider.test.tsx",
       "__tests__/integration/components/LiveActivity.reconcile.test.tsx",
       "__tests__/integration/components/LiveSessionsHeader.test.tsx",
       "__tests__/integration/components/MessageBubble.test.tsx",
