@@ -22,6 +22,11 @@
     "worktreeRemoved": "جرى تشغيل هذه المحادثة في شجرة عمل (worktree) خاصة بـ git لم تعد موجودة. يمكنك قراءة السجل، لكن لا يمكن استئنافها.",
     "cannotResume": "لا يمكن الاستئناف"
   },
+  "inheritedHistory": {
+    "forked": "تفرَّع إلى Threadbase",
+    "forkedAt": "تفرَّع إلى Threadbase · {{time}}",
+    "unavailable": "لم يعد السجل الأقدم السابق للتفرُّع متاحًا."
+  },
   "resume": {
     "start": "استئناف السيشن",
     "backToLive": "العودة إلى الجلسة المباشرة",

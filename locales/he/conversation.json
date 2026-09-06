@@ -22,6 +22,11 @@
     "worktreeRemoved": "שיחה זו רצה ב‑worktree של git שכבר אינו קיים. ניתן לקרוא את ההיסטוריה, אך לא ניתן לחדש אותה.",
     "cannotResume": "לא ניתן לחדש"
   },
+  "inheritedHistory": {
+    "forked": "פוצל אל Threadbase",
+    "forkedAt": "פוצל אל Threadbase · {{time}}",
+    "unavailable": "ההיסטוריה שקדמה לפיצול אינה זמינה עוד."
+  },
   "resume": {
     "start": "המשך סשן",
     "backToLive": "חזרה לסשן החי",

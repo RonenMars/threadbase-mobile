@@ -14,7 +14,9 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown } from 'phosphor-react-native'
 import { MessageItem } from '@/components/conversation/MessageItem'
+import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
 import type { Message } from '@/types/api'
+import type { InheritedHistorySeam } from '@/utils/inheritedHistory'
 import { spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -30,6 +32,8 @@ import { useTheme } from '@/contexts/ThemeContext'
 // the tail — so a live append fades in, but a jump/backfill of older history
 // does not animate a screenful at once.
 const ANIMATE_TAIL_WINDOW = 8
+
+const UNAVAILABLE_SEAM: InheritedHistorySeam = { kind: 'unavailable' }
 
 export interface ConversationHistoryListProps {
   messages: Message[]
@@ -48,6 +52,8 @@ export interface ConversationHistoryListProps {
   disableAutoAnchor?: boolean
   isFetchingOlder?: boolean
   isFetchingNewer?: boolean
+  /** Fork seam to mark, when the conversation inherited history from a parent. */
+  inheritedHistory?: InheritedHistorySeam
   onLayout?: (e: LayoutChangeEvent) => void
   contentContainerStyle?: object
 }
@@ -66,6 +72,7 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
       disableAutoAnchor,
       isFetchingOlder,
       isFetchingNewer,
+      inheritedHistory,
       onLayout,
       contentContainerStyle,
     },
@@ -144,20 +151,30 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     const animateIds = animateIdsRef.current
     /* eslint-enable react-hooks/refs */
 
+    // Drawn as part of the boundary message's row rather than as its own list
+    // item, so the seam survives paging without a second `data` shape.
+    const dividerSeam =
+      inheritedHistory?.kind === 'divider' ? inheritedHistory : undefined
+
     const renderItem = useCallback(
       ({ item }: { item: Message }) => (
-        <MessageItem
-          message={item}
-          isLast={item.id === lastMessageId}
-          highlight={highlight}
-          isActiveMatch={Boolean(highlight) && item.messageIndex === highlightIndex}
-          onMatchLayout={onMatchLayout}
-          animateIn={animateIds.has(item.id)}
-        />
+        <>
+          {dividerSeam && item.messageIndex === dividerSeam.beforeMessageIndex ? (
+            <InheritedHistoryDivider seam={dividerSeam} />
+          ) : null}
+          <MessageItem
+            message={item}
+            isLast={item.id === lastMessageId}
+            highlight={highlight}
+            isActiveMatch={Boolean(highlight) && item.messageIndex === highlightIndex}
+            onMatchLayout={onMatchLayout}
+            animateIn={animateIds.has(item.id)}
+          />
+        </>
       ),
       // animateIds is a stable ref; animateEpoch re-keys this only when it grew.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [lastMessageId, highlight, highlightIndex, onMatchLayout, animateEpoch],
+      [lastMessageId, highlight, highlightIndex, onMatchLayout, animateEpoch, dividerSeam],
     )
 
     // Item type drives two FlashList v2 mechanisms: the recycling pool AND the
@@ -197,15 +214,23 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     // changes, and an inline conditional recreates it on every parent render —
     // during an onStartReached page fetch that churn feeds extra mVCP anchor
     // corrections (upstream guidance: keep these stable, Shopify/flash-list#1844).
-    // Memoized so identity only changes when the fetching state itself flips.
+    // Memoized so identity only changes when the fetching state itself flips —
+    // which is also why the source-missing notice enters as a primitive rather
+    // than as the seam object.
+    const showSourceMissing = inheritedHistory?.kind === 'unavailable'
     const listHeader = useMemo(
       () =>
-        isFetchingOlder ? (
-          <View style={styles.pageLoading}>
-            <ActivityIndicator color={theme.text.secondary} />
-          </View>
+        isFetchingOlder || showSourceMissing ? (
+          <>
+            {showSourceMissing ? <InheritedHistoryDivider seam={UNAVAILABLE_SEAM} /> : null}
+            {isFetchingOlder ? (
+              <View style={styles.pageLoading}>
+                <ActivityIndicator color={theme.text.secondary} />
+              </View>
+            ) : null}
+          </>
         ) : null,
-      [isFetchingOlder, styles, theme],
+      [isFetchingOlder, showSourceMissing, styles, theme],
     )
     const listFooter = useMemo(
       () =>

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import type { FlashListRef } from '@shopify/flash-list'
 import { CaretDown, CaretUp, X } from 'phosphor-react-native'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
+import type { InheritedHistorySeam } from '@/utils/inheritedHistory'
 import type { Message } from '@/types/api'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
@@ -37,6 +38,8 @@ export interface ConversationSearchViewProps {
   onEndReached?: () => void
   isFetchingOlder?: boolean
   isFetchingNewer?: boolean
+  /** Fork seam to mark; forwarded so search shows the same conversation the reader left. */
+  inheritedHistory?: InheritedHistorySeam
   contentContainerStyle?: object
 }
 
@@ -55,6 +58,7 @@ export function ConversationSearchView({
   onEndReached,
   isFetchingOlder,
   isFetchingNewer,
+  inheritedHistory,
   contentContainerStyle,
 }: ConversationSearchViewProps) {
   const { t } = useTranslation(['conversation', 'common'])
@@ -235,6 +239,7 @@ export function ConversationSearchView({
         onEndReached={onEndReached}
         isFetchingOlder={isFetchingOlder}
         isFetchingNewer={isFetchingNewer}
+        inheritedHistory={inheritedHistory}
         disableAutoAnchor
         onLayout={handleListLayout}
         contentContainerStyle={contentContainerStyle}
