@@ -88,7 +88,14 @@
     "resumedHistoryLinkOr": " או ",
     "resumedHistoryLinkSearch": "חפש",
     "resumedHistoryLinkIn": " ב",
-    "resumedHistoryLinkTail": "היסטוריית השיחה ←"
+    "resumedHistoryLinkTail": "היסטוריית השיחה ←",
+    "externalTitle": "הופעל מחוץ ל-Threadbase",
+    "externalMessage": "הפלט משודר בלבד — אי אפשר לענות כאן על שאלות.",
+    "takeOver": "השתלטות",
+    "takeOverConfirmTitle": "להשתלט על הסשן?",
+    "takeOverConfirmBody": "הפעולה עוצרת את התהליך שרץ בטרמינל שלך ומפעילה אותו מחדש כאן. עבודה שלא נשמרה בטרמינל תאבד.",
+    "takeOverFailedTitle": "ההשתלטות נכשלה",
+    "takeOverFailedUnknown": "שגיאה לא ידועה"
   },
   "leaveSession": {
     "title": "לעזוב את הסשן?",

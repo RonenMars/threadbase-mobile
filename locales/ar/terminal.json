@@ -91,7 +91,14 @@
     "resumedHistoryLinkOr": " أو ",
     "resumedHistoryLinkSearch": "بحث",
     "resumedHistoryLinkIn": " في ",
-    "resumedHistoryLinkTail": "سجل المحادثة ←"
+    "resumedHistoryLinkTail": "سجل المحادثة ←",
+    "externalTitle": "شُغِّلت خارج Threadbase",
+    "externalMessage": "بث المخرجات فقط — لا يمكن الإجابة عن الأسئلة من هنا.",
+    "takeOver": "الاستحواذ",
+    "takeOverConfirmTitle": "الاستحواذ على هذه الجلسة؟",
+    "takeOverConfirmBody": "سيؤدي ذلك إلى إيقاف العملية العاملة في الطرفية وإعادة تشغيلها هنا. يُفقد أي عمل غير محفوظ في تلك الطرفية.",
+    "takeOverFailedTitle": "فشل الاستحواذ",
+    "takeOverFailedUnknown": "خطأ غير معروف"
   },
   "leaveSession": {
     "title": "مغادرة هذه الجلسة؟",

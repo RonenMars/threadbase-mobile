@@ -33,6 +33,7 @@ import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { HeaderOverflowMenu } from '@/components/shared/HeaderOverflowMenu'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
+import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
@@ -524,7 +525,27 @@ export default function SessionDetailScreen() {
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
   const rawKeysSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.rawKeys === true)
 
-  const { sendKeys, sendInput, sendRawKey, stopSession } = useSessionActions(serverId, id ?? '')
+  const { sendKeys, sendInput, sendRawKey, stopSession, adoptSession } = useSessionActions(
+    serverId,
+    id ?? '',
+  )
+
+  // Adopt replaces the session with a streamer-owned one under a new id, so the
+  // route this screen is mounted on stops existing — replace rather than push,
+  // or Back returns to a session that was just terminated.
+  const handleTakeOver = () => {
+    adoptSession.mutate(undefined, {
+      onSuccess: (data) => {
+        router.replace(`/session/${data.sessionId}?server=${serverId}`)
+      },
+      onError: (err) => {
+        Alert.alert(
+          t('session.takeOverFailedTitle'),
+          err instanceof Error ? err.message : t('session.takeOverFailedUnknown'),
+        )
+      },
+    })
+  }
   const { question: activeQuestion } = useActiveQuestion(serverId, id ?? '')
   const [rawKeyboardVisible, setRawKeyboardVisible] = useState(false)
   const { mutateAsync: stopSessionMutateAsync } = stopSession
@@ -1025,6 +1046,18 @@ export default function SessionDetailScreen() {
           <View style={styles.flex}>
             {showReconnectBanner ? (
               <ConnectionBanner variant="reconnecting" />
+            ) : null}
+            {/*
+              An external session falls through the DiscoveredSessionScreen gate
+              into this live view, where it streams transcript and can never
+              show a question card — its prompts are drawn by a TUI only the PTY
+              owner can see. Without this it reads as broken rather than limited.
+            */}
+            {session?.ownership === 'external' ? (
+              <ExternalSessionBanner
+                onTakeOver={handleTakeOver}
+                isTakingOver={adoptSession.isPending}
+              />
             ) : null}
             {rawFallbackBanner ? (
               <View style={styles.rawBanner} testID="session-raw-fallback-banner">
