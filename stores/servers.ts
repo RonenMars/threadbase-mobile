@@ -102,7 +102,12 @@ interface ServersStore {
   clearCacheAlert: (serverId: string, fingerprint: string) => void
   setHostPressure: (serverId: string, pressure: HostPressureAlert | null) => void
   clearHostPressure: (serverId: string) => void
-  refreshServerInfo: (serverId: string) => Promise<void>
+  /**
+   * Re-read `/api/info`. `silent` is for an automatic probe: it keeps the last
+   * known capabilities and raises no connection error when the request fails,
+   * because a background refresh must never make a working server look broken.
+   */
+  refreshServerInfo: (serverId: string, opts?: { silent?: boolean }) => Promise<void>
   editServer: (serverId: string, patch: { url: string; apiKey: string; label?: string }) => Promise<void | { error: 'duplicate' }>
   loadPersistedServers: () => Promise<void>
   getServer: (serverId: string) => ServerConfig | undefined
@@ -406,7 +411,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   clearHostPressure: (serverId: string) =>
     set((state) => ({ hostPressure: { ...state.hostPressure, [serverId]: null } })),
 
-  refreshServerInfo: async (serverId: string): Promise<void> => {
+  refreshServerInfo: async (serverId: string, opts?: { silent?: boolean }): Promise<void> => {
     const server = get().servers[serverId]
     if (!server) return
 
@@ -434,6 +439,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       })
     } catch (err) {
       clearTimeout(timeout)
+      // A silent refresh runs off a socket that just connected, so the server
+      // is reachable by definition and a failed probe is transient. Clearing
+      // serverInfo here would drop capabilities that work and raise a
+      // connection error against a live socket — the manual path still
+      // reports, because there a user asked and is waiting for the answer.
+      if (opts?.silent) return
       const isTimeout = err instanceof Error && err.name === 'AbortError'
       const message = isTimeout ? 'Request timed out after 12s' : (err instanceof Error ? err.message : String(err))
       set((state) => {
