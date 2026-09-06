@@ -5,12 +5,17 @@
  * full-screen expand modal: text input, send, attach, mic, and expand/minimize.
  */
 import React from 'react'
-import { StyleSheet, type ViewStyle } from 'react-native'
+import { AppState, StyleSheet, TextInput, type ViewStyle } from 'react-native'
 import { fireEvent, screen, cleanup } from '@testing-library/react-native'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
 import { DirectionRoot } from '@/lib/direction-root'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
+
+// Capture every AppState 'change' listener so a test can drive a background →
+// active transition, mirroring SessionScreen.holdOnBackground.test.tsx.
+let appStateListeners: ((s: string) => void)[] = []
+const fireAppState = (s: string) => appStateListeners.forEach((l) => l(s))
 
 function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProps {
   return {
@@ -41,8 +46,41 @@ async function renderComposer(overrides?: Partial<ChatComposerProps>) {
 }
 
 describe('ChatComposer', () => {
+  beforeEach(() => {
+    appStateListeners = []
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, cb) => {
+      appStateListeners.push(cb as (s: string) => void)
+      return { remove: jest.fn() } as ReturnType<typeof AppState.addEventListener>
+    })
+  })
+
   afterEach(async () => {
+    jest.restoreAllMocks()
     await i18n.changeLanguage('en')
+  })
+
+  it('refocuses the input on return to foreground if it was focused when backgrounded', async () => {
+    await renderComposer()
+    const input = screen.getByTestId('chat-message-input')
+    fireEvent(input, 'focus')
+
+    // TextInput's jest mock shares one `focus` jest.fn() across every
+    // instance (assigned onto the mock class prototype), so clear any calls
+    // picked up during render/focus before asserting the foreground nudge.
+    const focusSpy = TextInput.prototype.focus as jest.Mock
+    focusSpy.mockClear()
+    fireAppState('background')
+    fireAppState('active')
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('does not refocus on return to foreground if the input was never focused', async () => {
+    await renderComposer()
+    const focusSpy = TextInput.prototype.focus as jest.Mock
+    focusSpy.mockClear()
+    fireAppState('background')
+    fireAppState('active')
+    expect(focusSpy).not.toHaveBeenCalled()
   })
   it('renders the text input and forwards typing', async () => {
     const { props } = await renderComposer()
