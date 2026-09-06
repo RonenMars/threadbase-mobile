@@ -112,6 +112,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const hydrateViewPrefs = useViewPrefsStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
+  const refreshServerInfo = useServersStore((s) => s.refreshServerInfo)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
   const setCacheAlert = useServersStore((s) => s.setCacheAlert)
   const clearCacheAlert = useServersStore((s) => s.clearCacheAlert)
@@ -247,6 +248,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     })
     const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
       setConnected(serverId, status === 'connected')
+      // Capabilities were read once, when the server was added, and then only
+      // when someone opened the servers modal — so a streamer that gained a
+      // feature after pairing stayed invisible, and the app told the user to
+      // update a server that was already newer than it knew. Every flag on
+      // /api/info had this: rawKeys, hostPressure, promptContract, e2ee.
+      //
+      // Silent, because this is a background probe: a failure keeps the last
+      // known capabilities rather than blanking them behind a live socket.
+      if (status === 'connected') void refreshServerInfo(serverId, { silent: true })
     })
     const unsubCacheReady = wsManager.onAll('cache_ready', (msg) => {
       if (msg.type !== 'cache_ready') return

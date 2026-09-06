@@ -146,6 +146,68 @@ describe('refreshServerInfo', () => {
       useServersStore.getState().refreshServerInfo('nonexistent')
     ).resolves.not.toThrow()
   })
+
+  // A silent refresh runs off a socket that just connected, so the server is
+  // reachable by definition and a failed probe is transient. Blanking the
+  // capabilities would hide features that work — and raise a connection error
+  // against a live socket.
+  it('keeps the last known capabilities when a silent refresh fails', async () => {
+    const known = { version: '1.82.0', machineName: 'mac', platform: 'macOS', activeSessions: 0, rawKeys: true } as const
+    const server = seedServer({ serverInfo: { ...known } })
+    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'))
+
+    await useServersStore.getState().refreshServerInfo(server.id, { silent: true })
+
+    const updated = useServersStore.getState().servers[server.id]
+    expect(updated.serverInfo).toEqual(known)
+    expect(updated.connectionError).toBeNull()
+  })
+
+  it('keeps them on a non-ok response too', async () => {
+    const known = { version: '1.82.0', machineName: 'mac', platform: 'macOS', activeSessions: 0 } as const
+    const server = seedServer({ serverInfo: { ...known } })
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 503 })
+
+    await useServersStore.getState().refreshServerInfo(server.id, { silent: true })
+
+    expect(useServersStore.getState().servers[server.id].serverInfo).toEqual(known)
+  })
+
+  // The point of the whole change: a capability the streamer gained after
+  // pairing has to replace the stale copy, or the app keeps telling the user
+  // to update a server that is already newer than it knows.
+  it('adopts a capability the server gained since pairing', async () => {
+    const server = seedServer({
+      serverInfo: { version: '1.70.0', machineName: 'mac', platform: 'macOS', activeSessions: 0 },
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        version: '1.82.0',
+        machineName: 'mac',
+        platform: 'macOS',
+        activeSessions: 0,
+        rawKeys: true,
+      }),
+    })
+
+    await useServersStore.getState().refreshServerInfo(server.id, { silent: true })
+
+    expect(useServersStore.getState().servers[server.id].serverInfo?.rawKeys).toBe(true)
+  })
+
+  it('still reports a failure when a person asked for the refresh', async () => {
+    const server = seedServer({
+      serverInfo: { version: '1.82.0', machineName: 'mac', platform: 'macOS', activeSessions: 0 },
+    })
+    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'))
+
+    await useServersStore.getState().refreshServerInfo(server.id)
+
+    const updated = useServersStore.getState().servers[server.id]
+    expect(updated.serverInfo).toBeNull()
+    expect(updated.connectionError).toContain('ECONNREFUSED')
+  })
 })
 
 // ── editServer ────────────────────────────────────────────────────────────
