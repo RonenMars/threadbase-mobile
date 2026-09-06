@@ -87,6 +87,7 @@ export function useSessionLeaveGuard(opts: {
   // starts the modal's close animation.
   const modalIsShowingRef = useRef(false)
   const pendingContinueRef = useRef<{ type: string } | null>(null)
+  const dismissFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sessionRef = useRef(session)
   const stopRef = useRef(stopSessionMutateAsync)
   const navRef = useRef(navigation)
@@ -117,25 +118,51 @@ export function useSessionLeaveGuard(opts: {
   // (fired once the close animation has genuinely finished) whenever one was
   // showing. Android's Modal has no equivalent race and never calls
   // onDismiss, so it stays on the immediate path.
+  //
+  // onDismiss is not fully reliable in practice (confirmed on-device on a
+  // build that already had the onDismiss-only version of this fix: "Leave
+  // it" could still hang past the first back press). Rather than chase the
+  // exact RN/UIKit timing further blind, arm a bounded fallback alongside
+  // it — whichever fires first wins, so a missing onDismiss degrades to a
+  // short delay instead of a stuck screen.
+  const DISMISS_FALLBACK_MS = 400
+  const clearDismissFallback = useCallback(() => {
+    if (dismissFallbackRef.current) {
+      clearTimeout(dismissFallbackRef.current)
+      dismissFallbackRef.current = null
+    }
+  }, [])
+
   const finishLeave = useCallback(
     (action: { type: string } | null) => {
       if (!action) return
       if (Platform.OS === 'ios' && modalIsShowingRef.current) {
         pendingContinueRef.current = action
+        clearDismissFallback()
+        dismissFallbackRef.current = setTimeout(() => {
+          dismissFallbackRef.current = null
+          if (pendingContinueRef.current !== action) return
+          pendingContinueRef.current = null
+          modalIsShowingRef.current = false
+          proceed(action)
+        }, DISMISS_FALLBACK_MS)
         return
       }
       modalIsShowingRef.current = false
       proceed(action)
     },
-    [proceed],
+    [proceed, clearDismissFallback],
   )
 
   const onModalDismiss = useCallback(() => {
+    clearDismissFallback()
     modalIsShowingRef.current = false
     const action = pendingContinueRef.current
     pendingContinueRef.current = null
     if (action) proceed(action)
-  }, [proceed])
+  }, [proceed, clearDismissFallback])
+
+  useEffect(() => clearDismissFallback, [clearDismissFallback])
 
   const runLeaveAction = useCallback(
     async (choice: AppliedSessionLeaveAction, action: { type: string } | null) => {

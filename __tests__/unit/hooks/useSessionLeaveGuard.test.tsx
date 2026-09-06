@@ -160,6 +160,28 @@ describe('useSessionLeaveGuard', () => {
     expect(dispatch).toHaveBeenCalledWith(action)
   })
 
+  it('on iOS, dispatch fires from a bounded fallback if onDismiss never comes', async () => {
+    // Confirmed on-device on a build with only the onDismiss-based fix: it
+    // does not reliably fire for every choice, stranding the user past the
+    // first back press. The fallback must not depend on onDismiss at all.
+    jest.useFakeTimers()
+    try {
+      const { fire, dispatch } = await setup()
+      const { action } = await fire()
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('leave-confirm-leave'))
+      })
+      expect(dispatch).not.toHaveBeenCalled()
+
+      await act(async () => {
+        jest.advanceTimersByTime(500)
+      })
+      expect(dispatch).toHaveBeenCalledWith(action)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
   it('on Android, dispatch fires immediately — no onDismiss race to defer for', async () => {
     Platform.OS = 'android'
     const { fire, dispatch } = await setup()
