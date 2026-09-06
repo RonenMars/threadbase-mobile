@@ -20,9 +20,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { ConversationBusyError } from '@/services/api-client'
-import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import {
+  clearAutoNavSuppress,
+  markNavigatedToSession,
+  suppressAutoNavForPendingStart,
+} from '@/lib/sessionNavGuard'
 
-jest.mock('@/lib/sessionNavGuard', () => ({ markNavigatedToSession: jest.fn() }))
+jest.mock('@/lib/sessionNavGuard', () => ({
+  markNavigatedToSession: jest.fn(),
+  suppressAutoNavForPendingStart: jest.fn(),
+  clearAutoNavSuppress: jest.fn(),
+}))
 
 const CONV_ID = 'conv-resume'
 
@@ -127,6 +135,8 @@ describe('conversation detail — resume collision', () => {
     seedServer()
     mockPost.mockReset()
     ;(markNavigatedToSession as jest.Mock).mockClear()
+    ;(suppressAutoNavForPendingStart as jest.Mock).mockClear()
+    ;(clearAutoNavSuppress as jest.Mock).mockClear()
     mockReplace = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({
       push: jest.fn(),
@@ -462,6 +472,8 @@ describe('conversation detail — resume collision', () => {
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
     expect(alertSpy.mock.calls[0][0]).toBe('This Codex session is open elsewhere')
     expect(alertSpy.mock.calls[0][1]).toContain('another Codex client currently has it open')
+    // Fork is confirmed here, so the divergence it causes is stated here.
+    expect(alertSpy.mock.calls[0][1]).toContain('separate continuation')
 
     alertSpy.mockRestore()
   })
@@ -481,7 +493,7 @@ describe('conversation detail — resume collision', () => {
     alertSpy.mockRestore()
   })
 
-  it('Fork confirms the history divergence, then forks and navigates', async () => {
+  it('Fork forks and navigates from the collision dialog alone', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValueOnce(codexBusy()).mockResolvedValueOnce({
       id: 'sess-fork',
@@ -507,19 +519,9 @@ describe('conversation detail — resume collision', () => {
       fork?.onPress?.()
     })
 
-    // Confirmation first — a fork is a divergence, not a takeover.
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
-    expect(alertSpy.mock.calls[1][1]).toContain('separate continuation')
-    expect(mockPost).toHaveBeenCalledTimes(1)
-
-    const confirmFork = ((alertSpy.mock.calls[1][2] ?? []) as AlertButton[]).find(
-      (b) => b.text === 'Fork into Threadbase',
-    )
-    await act(async () => {
-      confirmFork?.onPress?.()
-    })
-
+    // One press, one fork: no second confirmation dialog to press through.
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2))
+    expect(alertSpy).toHaveBeenCalledTimes(1)
     expect(mockPost.mock.calls[1][0]).toBe(`/api/sessions/${CONV_ID}/fork`)
     // Non-idempotent: a transport-level retry could spawn a second fork.
     expect(mockPost.mock.calls[1][2]).toMatchObject({ retry: false })
@@ -534,6 +536,13 @@ describe('conversation detail — resume collision', () => {
     expect(target).toContain('forkedFromConversationId=' + CONV_ID)
     expect(target).toContain('conversationId=conv-forked-rollout')
     expect(markNavigatedToSession).toHaveBeenCalledWith('sess-fork')
+    // The streamer's session_ready can beat this POST's response; without the
+    // suppression the global listener pushes /session/sess-fork first and our
+    // own replace then reads as leaving a live session (leave-options modal).
+    expect(suppressAutoNavForPendingStart).toHaveBeenCalled()
+    expect(
+      (suppressAutoNavForPendingStart as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeLessThan((markNavigatedToSession as jest.Mock).mock.invocationCallOrder[0])
     expect(testQc.getQueryData(['session', 'srv1', 'sess-fork'])).toMatchObject({ id: 'sess-fork' })
 
     alertSpy.mockRestore()
@@ -556,20 +565,14 @@ describe('conversation detail — resume collision', () => {
       fork?.onPress?.()
     })
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
-    const confirmFork = ((alertSpy.mock.calls[1][2] ?? []) as AlertButton[]).find(
-      (b) => b.text === 'Fork into Threadbase',
-    )
-    await act(async () => {
-      confirmFork?.onPress?.()
-    })
-
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(3))
     // Exactly one fork POST, and no Retry affordance that could make a second
     // fork out of a request that may have succeeded server-side.
     expect(mockPost.mock.calls.filter(([path]) => String(path).endsWith('/fork'))).toHaveLength(1)
-    const buttons = (alertSpy.mock.calls[2][2] ?? []) as AlertButton[]
+    const buttons = (alertSpy.mock.calls[1][2] ?? []) as AlertButton[]
     expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
     expect(mockReplace).not.toHaveBeenCalled()
+    // Nobody navigated, so the blanket auto-nav suppression must be released.
+    expect(clearAutoNavSuppress).toHaveBeenCalled()
 
     alertSpy.mockRestore()
   })

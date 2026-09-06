@@ -6,8 +6,8 @@ import NewSessionScreen from '@/app/session/new'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import {
   markNavigatedToSession,
-  suppressAutoNavForBrowseStart,
-  clearBrowseStartAutoNavSuppress,
+  suppressAutoNavForPendingStart,
+  clearAutoNavSuppress,
 } from '@/lib/sessionNavGuard'
 import { NetworkError } from '@/services/api-client'
 
@@ -34,8 +34,8 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/lib/sessionNavGuard', () => ({
   markNavigatedToSession: jest.fn(),
-  suppressAutoNavForBrowseStart: jest.fn(),
-  clearBrowseStartAutoNavSuppress: jest.fn(),
+  suppressAutoNavForPendingStart: jest.fn(),
+  clearAutoNavSuppress: jest.fn(),
 }))
 
 jest.mock('@/hooks/useBrowse', () => ({
@@ -49,8 +49,8 @@ beforeEach(() => {
   mockStartMutate.mockClear()
   mockParams.current = { server: 'srv_alpha', path: 'work', projectName: 'work' }
   ;(markNavigatedToSession as jest.Mock).mockClear()
-  ;(suppressAutoNavForBrowseStart as jest.Mock).mockClear()
-  ;(clearBrowseStartAutoNavSuppress as jest.Mock).mockClear()
+  ;(suppressAutoNavForPendingStart as jest.Mock).mockClear()
+  ;(clearAutoNavSuppress as jest.Mock).mockClear()
 })
 
 async function renderScreen() {
@@ -68,10 +68,10 @@ describe('/session/new start lifecycle', () => {
   it('suppresses auto-nav before firing the start request', async () => {
     const { getByText, getByTestId } = await renderScreen()
 
-    expect(suppressAutoNavForBrowseStart).toHaveBeenCalledTimes(1)
+    expect(suppressAutoNavForPendingStart).toHaveBeenCalledTimes(1)
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
     expect(
-      (suppressAutoNavForBrowseStart as jest.Mock).mock.invocationCallOrder[0],
+      (suppressAutoNavForPendingStart as jest.Mock).mock.invocationCallOrder[0],
     ).toBeLessThan(mockStartMutate.mock.invocationCallOrder[0])
     expect(mockStartMutate.mock.calls[0][0]).toEqual({ path: 'work', projectName: 'work' })
     // Countdown starts at the full request budget, with the waking-up robot
@@ -114,14 +114,14 @@ describe('/session/new start lifecycle', () => {
     const { onError } = mockStartMutate.mock.calls[0][1]
     await act(async () => onError(new NetworkError('boom', 'TIMEOUT')))
 
-    expect(clearBrowseStartAutoNavSuppress).toHaveBeenCalledTimes(1)
+    expect(clearAutoNavSuppress).toHaveBeenCalledTimes(1)
     expect(alertSpy).toHaveBeenCalledTimes(1)
     const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
 
     // Retry: a fresh attempt suppresses again and re-fires the POST.
     await act(async () => buttons.find((b) => b.text === 'Retry')?.onPress?.())
     await waitFor(() => expect(mockStartMutate).toHaveBeenCalledTimes(2))
-    expect(suppressAutoNavForBrowseStart).toHaveBeenCalledTimes(2)
+    expect(suppressAutoNavForPendingStart).toHaveBeenCalledTimes(2)
 
     // Cancel on the next failure: back to the hub, no further attempts.
     const { onError: onError2 } = mockStartMutate.mock.calls[1][1]

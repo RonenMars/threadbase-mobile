@@ -19,8 +19,8 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import {
   markNavigatedToSession,
-  suppressAutoNavForBrowseStart,
-  clearBrowseStartAutoNavSuppress,
+  suppressAutoNavForPendingStart,
+  clearAutoNavSuppress,
 } from '@/lib/sessionNavGuard'
 import { clientLog } from '@/lib/clientLog'
 import type { RemediationCode } from '@/types/server-diagnostics'
@@ -215,7 +215,7 @@ export default function NewSessionScreen() {
         message: err.message,
         code: err instanceof NetworkError ? err.code : undefined,
       })
-      clearBrowseStartAutoNavSuppress()
+      clearAutoNavSuppress()
       haltedRef.current = true
       const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
       const isProviderNotInstalled = err instanceof NetworkError && err.code === PROVIDER_NOT_INSTALLED_CODE
@@ -263,7 +263,7 @@ export default function NewSessionScreen() {
       serverId,
       payload,
     })
-    suppressAutoNavForBrowseStart()
+    suppressAutoNavForPendingStart()
     mutate(payload, { onSuccess: handleResult, onError: handleError })
   }, [attempt, mutate, handleResult, handleError, path, projectName, provider, serverId])
 
