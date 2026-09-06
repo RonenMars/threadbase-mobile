@@ -43,7 +43,16 @@ export type WSMessage =
       lines: string[]
       userMessages?: { text: string; ts: number }[]
       seq?: number
+      // Geometry these lines were rendered at. Absent on a streamer that
+      // predates it, which means the spawn defaults — what this client
+      // assumed unconditionally before the field existed.
+      cols?: number
+      rows?: number
     }
+  // A live session's PTY was resized. Only something attached to the session
+  // locally asks for this, so it is rare; ignoring it renders the stream
+  // against the wrong viewport height until the next resubscribe.
+  | { type: 'terminal_resize'; sessionId: string; cols: number; rows: number }
   | { type: 'session_ready'; session: Session }
   | { type: 'cache_ready' }
   | { type: 'scan_progress'; scanned: number; total: number }

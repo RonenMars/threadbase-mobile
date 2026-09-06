@@ -189,6 +189,7 @@ export function useTerminalStream(
     let unsubReplay: (() => void) | null = null
     let unsubUserMessage: (() => void) | null = null
     let unsubWildcard: (() => void) | null = null
+    let unsubResize: (() => void) | null = null
 
     function resetSilenceTimer() {
       if (silenceTimer) clearTimeout(silenceTimer)
@@ -221,6 +222,9 @@ export function useTerminalStream(
         // the fallback timer armed otherwise so /output fills the screen.
         const hasContent = msg.lines.some((line) => line.trim().length > 0)
         if (!hasContent) return
+        // Before feeding: the replayed screen is decoded against this height,
+        // so adopting it afterwards would leave the first paint misplaced.
+        if (msg.rows != null) vtRef.current?.setViewportRows(msg.rows)
         replayReceivedRef.current = true
         if (fallbackTimer) {
           clearTimeout(fallbackTimer)
@@ -261,6 +265,19 @@ export function useTerminalStream(
       })
     }
 
+    function subscribeResize() {
+      unsubResize?.()
+      const client = wsManager.getClient(serverId)
+      if (!client) return
+      // Rare — only a locally attached terminal asks for a resize — but until
+      // it is adopted every absolute row address in the stream resolves against
+      // the old viewport height, which renders the screen as garbage.
+      unsubResize = client.on('terminal_resize', (msg) => {
+        if (msg.type !== 'terminal_resize' || msg.sessionId !== sessionId) return
+        vtRef.current?.setViewportRows(msg.rows)
+      })
+    }
+
     function subscribeUserMessage() {
       unsubUserMessage?.()
       const client = wsManager.getClient(serverId)
@@ -281,6 +298,7 @@ export function useTerminalStream(
 
     sendSubscribeAndWaitForReplay()
     subscribeOutput()
+    subscribeResize()
     subscribeUserMessage()
     subscribeWildcard()
     resetSilenceTimer()
@@ -299,6 +317,7 @@ export function useTerminalStream(
       historyFedRef.current = false
       sendSubscribeAndWaitForReplay()
       subscribeOutput()
+      subscribeResize()
       subscribeUserMessage()
       subscribeWildcard()
       resetSilenceTimer()
@@ -309,6 +328,7 @@ export function useTerminalStream(
       unsubReplay?.()
       unsubUserMessage?.()
       unsubWildcard?.()
+      unsubResize?.()
       unsubStatus()
       clearTimeout(idleTimer)
       if (fallbackTimer) clearTimeout(fallbackTimer)

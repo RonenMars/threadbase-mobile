@@ -30,7 +30,7 @@ const MAX_PENDING_ESCAPE_BYTES = 8_192
 // be maintained correctly through every splice, and each grid mutation becomes
 // a way to desynchronise it. Derived state is self-correcting, and reset()
 // already restores `grid = [[]]`, which is the origin.
-const VIEWPORT_ROWS = 40
+const DEFAULT_VIEWPORT_ROWS = 40
 
 // CSI finals we intentionally ignore (SGR, modes, reports) without counting
 // as unsupported — they are expected noise in agent TUIs.
@@ -46,10 +46,28 @@ export class VirtualTerminal {
   private grid: string[][] = [[]]
   private row = 0
   private col = 0
+  /**
+   * Rows in the TUI's viewport. The streamer spawns every PTY at the constants
+   * above and reports the real number on `terminal_replay` / `terminal_resize`
+   * once something attached resizes one, so this tracks the session rather than
+   * assuming it — an absolute row address resolved against the wrong viewport
+   * height lands on the wrong line and the screen renders as garbage.
+   */
+  private viewportRows = DEFAULT_VIEWPORT_ROWS
+
+  /**
+   * Adopt the session's viewport height. A no-op for an unchanged or nonsense
+   * value, so a caller can hand over whatever the server last said without
+   * checking first.
+   */
+  setViewportRows(rows: number): void {
+    if (!Number.isInteger(rows) || rows < 1) return
+    this.viewportRows = rows
+  }
 
   /** Top of the TUI's viewport within the scrollback grid. Derived, never stored. */
   private viewportTop(): number {
-    return Math.max(0, this.grid.length - VIEWPORT_ROWS)
+    return Math.max(0, this.grid.length - this.viewportRows)
   }
 
   /** Incomplete escape sequence retained across WebSocket frame boundaries. */
@@ -261,7 +279,7 @@ export class VirtualTerminal {
         // Clamped to the viewport bottom so a cursor move can never grow the
         // grid — growth mid-frame shifts the derived origin, and a later
         // absolute move in the same frame then lands somewhere else.
-        this.row = Math.min(this.row + n, this.viewportTop() + VIEWPORT_ROWS - 1)
+        this.row = Math.min(this.row + n, this.viewportTop() + this.viewportRows - 1)
         this.ensureRow(this.row)
         break
       case 'C':
@@ -283,7 +301,7 @@ export class VirtualTerminal {
         // HTTP fallback can start mid-escape) appends a screenful of blanks
         // each time and eventually evicts real transcript through MAX_ROWS.
         this.row =
-          this.viewportTop() + Math.min(Math.max(0, (args[0] || 1) - 1), VIEWPORT_ROWS - 1)
+          this.viewportTop() + Math.min(Math.max(0, (args[0] || 1) - 1), this.viewportRows - 1)
         this.col = Math.max(0, (args[1] || 1) - 1)
         this.ensureRow(this.row)
         break
