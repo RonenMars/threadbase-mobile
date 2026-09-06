@@ -208,7 +208,10 @@ appId: com.ronenmars.threadbase
 - takeScreenshot: e2e/_artifacts/screenshots/scroll-gaps-top-fab-over-content
 - tapOn:
     id: "conversation-scroll-top"
+# CI run 33987037977 rendered the marker after this animated jump, but each
+# XCTest hierarchy snapshot took 6–7s, exceeding the old 4s polling budget.
+# Allow another snapshot here; the fast-fling render check above stays tight.
 - extendedWaitUntil:
     visible:
       text: ".*SCROLL-GAPS-TOP-MARKER.*"
-    timeout: 4000
+    timeout: 20000
