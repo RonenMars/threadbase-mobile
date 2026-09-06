@@ -11,38 +11,7 @@ import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { SkeletonBox } from '@/components/ui/Skeleton'
-
-function DotsAnimation({ style, color }: { style?: object; color: string }) {
-  // useMemo so Animated.Value instances are stable across re-renders
-  const dots = useMemo(() => [
-    new Animated.Value(0.3),
-    new Animated.Value(0.3),
-    new Animated.Value(0.3),
-  ], [])
-
-  useEffect(() => {
-    const animations = dots.map((dot, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 200),
-          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
-          Animated.delay(800 - i * 200),
-        ]),
-      )
-    )
-    animations.forEach(a => a.start())
-    return () => animations.forEach(a => a.stop())
-  }, [dots])
-
-  return (
-    <View style={[{ flexDirection: 'row', gap: 4 }, style]}>
-      {dots.map((dot, i) => (
-        <Animated.Text key={i} style={{ opacity: dot, fontSize: 18, color }}>•</Animated.Text>
-      ))}
-    </View>
-  )
-}
+import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 
 interface Props {
   lines: string[]
@@ -181,14 +150,16 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     )
   }
 
-  // The server-derived phase is the whole reason to show a bubble: no phase, no
-  // claim about what the agent is doing, so nothing renders. Gated on
-  // `presentation.live` upstream, so this is never a phase on a dead session.
-  if (!subStatus) return null
+  // The Knight Rider scanner is the working cue, not the server phase. Claude
+  // never emits a `subStatus` (the streamer stubs it to null), so gating the
+  // bubble on a phase hid the indicator for every Claude turn. The footer only
+  // mounts while the turn is live (or fading out), so a mounted bubble without a
+  // card already means "the agent is working" — render it regardless of phase.
+  const workingLabel = subStatus ? getAgentPhaseLabel(subStatus, t) : t('phase.working')
 
   // The PTY has gone quiet mid-turn (Claude only repaints when it has something
-  // to draw, and 30s+ of silence is routine). The dots would stop meaning
-  // anything, so swap them for the skeleton — the phase label carries the claim.
+  // to draw, and 30s+ of silence is routine). The scraped terminal text would
+  // freeze, so swap it for the skeleton — the scanner keeps signalling activity.
   const quiet = hasLines && !isStreaming
 
   return (
@@ -207,8 +178,8 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
           </ScrollView>
         ) : null}
         <View style={styles.phaseRow} testID="thinking-phase">
-          <Text style={styles.phase}>{getAgentPhaseLabel(subStatus, t)}</Text>
-          {quiet ? null : <DotsAnimation color={theme.text.accent} />}
+          {subStatus ? <Text style={styles.phase}>{workingLabel}</Text> : null}
+          <KnightRiderScanner testID="thinking-scanner" accessibilityLabel={workingLabel} />
         </View>
         {quiet ? (
           <View style={styles.skeleton} testID="thinking-skeleton">

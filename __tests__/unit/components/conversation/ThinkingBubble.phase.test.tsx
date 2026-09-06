@@ -33,14 +33,23 @@ describe('ThinkingBubble agent phase', () => {
     expect(getByTestId('thinking-phase')).toBeTruthy()
   })
 
-  // No phase, no claim about what the agent is doing — the whole bubble goes,
-  // terminal lines and dots included, not just the label.
-  it('renders no bubble at all when there is no phase', async () => {
+  // Claude never emits a phase (the streamer stubs subStatus to null), so the
+  // working cue can't hinge on one: the scanner still shows, only the text label
+  // is dropped. The footer's mount gate is what means "the agent is working".
+  it('still shows the working scanner when there is no phase', async () => {
     const { queryByTestId } = await render(
       <ThinkingBubble lines={['Reading file…']} isStreaming subStatus={null} />,
     )
-    expect(queryByTestId('thinking-bubble')).toBeNull()
-    expect(queryByTestId('thinking-phase')).toBeNull()
+    expect(queryByTestId('thinking-bubble')).toBeTruthy()
+    expect(queryByTestId('thinking-scanner')).toBeTruthy()
+  })
+
+  it('shows the scanner alongside the phase label when a phase is present', async () => {
+    const { queryByTestId } = await render(
+      <ThinkingBubble lines={['Reading file…']} isStreaming subStatus="working" />,
+    )
+    expect(queryByTestId('thinking-scanner')).toBeTruthy()
+    expect(queryByTestId('thinking-phase')).toBeTruthy()
   })
 
   it('still renders a question card when there is no phase', async () => {

@@ -15,14 +15,14 @@ describe('ThinkingBubble progress skeleton', () => {
     expect(queryByTestId('thinking-skeleton')).toBeTruthy()
   })
 
-  it('shows dots instead of the skeleton while output is actively streaming', async () => {
+  it('shows the scanner instead of the skeleton while output is actively streaming', async () => {
     const { queryByTestId } = await render(
       <ThinkingBubble lines={['Reading file…']} isStreaming subStatus="working" />,
     )
     expect(queryByTestId('thinking-skeleton')).toBeNull()
   })
 
-  it('shows dots (not the skeleton) before any output has arrived', async () => {
+  it('shows the scanner (not the skeleton) before any output has arrived', async () => {
     const { queryByTestId } = await render(
       <ThinkingBubble lines={[]} isStreaming={false} subStatus="working" />,
     )
