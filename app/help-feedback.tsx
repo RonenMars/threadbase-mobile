@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Platform,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useTranslation } from 'react-i18next'
@@ -77,7 +78,15 @@ export default function HelpFeedbackScreen() {
   const { t } = useTranslation('feedback')
   const { styles: s, theme } = useThemedStyles(styles)
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const router = useRouter()
+  // Transparent header (glass themes) doesn't reserve layout space, so the
+  // ScrollView starts under it; push content down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassContentStyle =
+    isGlass && Platform.OS !== 'android'
+      ? { paddingTop: s.content.padding + insets.top + headerHeight }
+      : null
 
   const [view, setView] = useState<View3>('landing')
   const [category, setCategory] = useState<FeedbackCategory>('bug')
@@ -223,7 +232,7 @@ export default function HelpFeedbackScreen() {
   if (view === 'copyFallback') {
     return (
       <SafeAreaView style={s.container} edges={['bottom']}>
-        <ScrollView contentContainerStyle={s.content}>
+        <ScrollView contentContainerStyle={[s.content, glassContentStyle]}>
           <Text style={s.heading}>{t('copyFallback.title')}</Text>
           <View style={[s.card, isGlass && s.cardGlass]}>
             <GlassFill />
@@ -272,7 +281,7 @@ export default function HelpFeedbackScreen() {
   if (view === 'landing') {
     return (
       <SafeAreaView style={s.container} edges={['bottom']}>
-        <ScrollView contentContainerStyle={s.content}>
+        <ScrollView contentContainerStyle={[s.content, glassContentStyle]}>
           <Text style={s.heading}>{t('landing.heading')}</Text>
           <Text style={s.subheading}>{t('landing.subtitle')}</Text>
 
@@ -336,7 +345,7 @@ export default function HelpFeedbackScreen() {
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
       <KeyboardAwareScrollView
-        contentContainerStyle={s.content}
+        contentContainerStyle={[s.content, glassContentStyle]}
         keyboardShouldPersistTaps="handled"
         bottomOffset={20}
       >

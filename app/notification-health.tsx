@@ -6,8 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Bell, ArrowsClockwise } from 'phosphor-react-native'
@@ -26,7 +27,15 @@ export default function NotificationHealthScreen() {
   const { t } = useTranslation(['settings', 'common'])
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const s = useMemo(() => styles(theme), [theme])
+  // Transparent header (glass themes) doesn't reserve layout space, so the
+  // ScrollView starts under it; push content down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassContentStyle =
+    isGlass && Platform.OS !== 'android'
+      ? { paddingTop: s.content.padding + insets.top + headerHeight }
+      : null
 
   const servers = useServersStore((st) => st.servers)
   const activeServerIds = useServersStore((st) => st.activeServerIds)
@@ -96,7 +105,7 @@ export default function NotificationHealthScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView contentContainerStyle={[s.content, glassContentStyle]}>
         <View style={s.headerRow}>
           <Bell size={24} color={theme.text.accent} />
           <Text style={s.heading}>{t('settings:notificationHealth.heading')}</Text>

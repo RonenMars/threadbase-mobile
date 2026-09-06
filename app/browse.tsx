@@ -9,12 +9,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Keyboard,
+  Platform,
 } from 'react-native'
 import { useRouter, useLocalSearchParams, useNavigation, type Href } from 'expo-router'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder, X } from 'phosphor-react-native'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
@@ -43,9 +44,17 @@ type BrowseRow = { kind: 'dir' | 'file'; name: string }
 export default function BrowseScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const styles = useMemo(() => {
     return makeStyles(theme)
   }, [theme])
+  // Transparent header (glass themes) doesn't reserve layout space, so the
+  // breadcrumbs row starts under it; push it down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassBreadcrumbsStyle =
+    isGlass && Platform.OS !== 'android'
+      ? { paddingTop: styles.breadcrumbs.paddingTop + insets.top + headerHeight }
+      : null
   const { t } = useTranslation(['browse', 'common', 'sessions'])
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
@@ -343,7 +352,7 @@ export default function BrowseScreen() {
     <GestureDetector gesture={swipeBack}>
     <SafeAreaView style={styles.container} edges={['bottom']} testID="browse-screen">
       {/* Breadcrumbs */}
-      <View style={[styles.breadcrumbs, ltrContentStyle]} testID={`browse-cwd-${currentPath || '~'}`}>
+      <View style={[styles.breadcrumbs, ltrContentStyle, glassBreadcrumbsStyle]} testID={`browse-cwd-${currentPath || '~'}`}>
         <TouchableOpacity onPress={() => navigateToBreadcrumb(-1)} disabled={actionsDisabled}>
           <Text style={[styles.crumb, currentPath === '' && styles.crumbActive, actionsDisabled && styles.actionDisabled]}>~</Text>
         </TouchableOpacity>

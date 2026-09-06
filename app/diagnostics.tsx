@@ -7,8 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Share,
+  Platform,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheck, ClipboardText, Check, Export, Prohibit } from 'phosphor-react-native'
@@ -26,7 +27,15 @@ export default function DiagnosticsScreen() {
   const { t } = useTranslation('feedback')
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const s = useMemo(() => styles(theme), [theme])
+  // Transparent header (glass themes) doesn't reserve layout space, so the
+  // ScrollView starts under it; push content down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassContentStyle =
+    isGlass && Platform.OS !== 'android'
+      ? { paddingTop: s.content.padding + insets.top + headerHeight }
+      : null
 
   const [report, setReport] = useState<DiagnosticsReport | null>(null)
   const [copied, setCopied] = useState(false)
@@ -76,7 +85,7 @@ export default function DiagnosticsScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView contentContainerStyle={[s.content, glassContentStyle]}>
         <View style={s.headerRow}>
           <ShieldCheck size={24} color={theme.text.accent} />
           <Text style={s.heading}>{t('diagnostics.heading')}</Text>
