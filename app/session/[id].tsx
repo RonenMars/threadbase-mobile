@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
-import { CopySimple, InfoIcon, PencilSimple, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
+import { CopySimple, InfoIcon, PencilSimple, Sparkle, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -36,6 +36,8 @@ import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
+import { ModelEffortSheet } from '@/components/sessions/ModelEffortSheet'
+import { canSetModelEffort } from '@/lib/modelEffortSupport'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useNavLockStore } from '@/stores/navLock'
@@ -512,6 +514,7 @@ export default function SessionDetailScreen() {
   const [infoVisible, setInfoVisible] = useState(false)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
   const [reviewVisible, setReviewVisible] = useState(false)
+  const [modelEffortVisible, setModelEffortVisible] = useState(false)
   const [pendingPlan, setPendingPlan] = useState<string | null>(null)
   const [planVisible, setPlanVisible] = useState(false)
 
@@ -525,7 +528,7 @@ export default function SessionDetailScreen() {
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
   const rawKeysSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.rawKeys === true)
 
-  const { sendKeys, sendInput, sendRawKey, stopSession, adoptSession } = useSessionActions(
+  const { sendKeys, sendInput, sendRawKey, stopSession, adoptSession, setModel, setEffort } = useSessionActions(
     serverId,
     id ?? '',
   )
@@ -860,6 +863,19 @@ export default function SessionDetailScreen() {
 
   const canStopResponse = session.status === 'running' || isStreaming
 
+  // `effort` is the capability signal — a streamer too old for the PATCH routes
+  // never puts it in session state. The 404/501 checks stay as the fallback for
+  // a server that reports it but still refuses the write.
+  const modelEffortSupported = canSetModelEffort(session, [setModel.error, setEffort.error])
+
+  const applyModelEffort = ({ model, effort }: { model?: string; effort?: string }) => {
+    // The route answers 202 with nothing truthful to echo, so the sheet closes
+    // on success and lets the settle-time refetch render the real value.
+    const close = () => setModelEffortVisible(false)
+    if (effort !== undefined) setEffort.mutate(effort, model === undefined ? { onSuccess: close } : undefined)
+    if (model !== undefined) setModel.mutate(model, { onSuccess: close })
+  }
+
   const sessionHeaderActions = (
     <View style={styles.headerActions}>
       {canStopResponse ? (
@@ -916,6 +932,14 @@ export default function SessionDetailScreen() {
             onPress: () => setReviewVisible(true),
             disabled: !hasDiffs,
             testID: 'session-review-button',
+          },
+          {
+            key: 'modelEffort',
+            label: t('session.modelEffort'),
+            icon: Sparkle,
+            onPress: () => setModelEffortVisible(true),
+            disabled: !modelEffortSupported,
+            testID: 'session-model-effort-button',
           },
           {
             key: 'copy',
@@ -1183,6 +1207,19 @@ export default function SessionDetailScreen() {
         }}
         onCancel={() => setRenameSheetVisible(false)}
       />
+
+      {modelEffortVisible ? (
+        <ModelEffortSheet
+          visible
+          model={session.model}
+          effort={session.effort}
+          busy={session.status === 'running'}
+          isPending={setModel.isPending || setEffort.isPending}
+          error={setModel.error ?? setEffort.error}
+          onApply={applyModelEffort}
+          onClose={() => setModelEffortVisible(false)}
+        />
+      ) : null}
 
       <ReviewSheet
         visible={reviewVisible}

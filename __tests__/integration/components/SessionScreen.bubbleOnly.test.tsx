@@ -40,7 +40,7 @@ jest.mock('@/hooks/useSession', () => ({
   }),
 }))
 jest.mock('@/hooks/useSessionActions', () => ({
-  useSessionActions: () => ({ sendInput: { mutate: jest.fn() }, adoptSession: { mutate: jest.fn() }, sendKeys: { mutate: jest.fn(), isPending: false }, stopSession: { mutate: jest.fn(), isPending: false } }),
+  useSessionActions: () => ({ sendInput: { mutate: jest.fn() }, adoptSession: { mutate: jest.fn() }, sendKeys: { mutate: jest.fn(), isPending: false }, stopSession: { mutate: jest.fn(), isPending: false }, setModel: { mutate: jest.fn(), error: null, isPending: false }, setEffort: { mutate: jest.fn(), error: null, isPending: false } }),
 }))
 jest.mock('@/services/ws-client', () => ({
   wsManager: {

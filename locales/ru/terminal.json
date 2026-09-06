@@ -96,7 +96,20 @@
     "takeOverConfirmTitle": "Перехватить эту сессию?",
     "takeOverConfirmBody": "Процесс, запущенный в вашем терминале, будет остановлен и перезапущен здесь. Несохранённая работа в том терминале будет потеряна.",
     "takeOverFailedTitle": "Не удалось перехватить",
-    "takeOverFailedUnknown": "Неизвестная ошибка"
+    "takeOverFailedUnknown": "Неизвестная ошибка",
+    "modelEffort": "Модель и усилие",
+    "modelEffortSubtitle": "Применяется только к этой активной сессии.",
+    "modelLabel": "Модель",
+    "modelCurrent": "Сейчас: {{model}}",
+    "modelPlaceholder": "Псевдоним или полное имя модели",
+    "modelInvalid": "Используйте буквы, цифры, точки, дефисы или подчёркивания.",
+    "effortLabel": "Усилие рассуждения",
+    "effortCurrent": "Сейчас: {{effort}}",
+    "modelEffortApply": "Применить",
+    "modelEffortBusy": "Дождитесь окончания текущего хода и повторите.",
+    "modelEffortIdle": "У этой сессии нет активного терминала. Сначала возобновите её.",
+    "modelEffortUnsupported": "Этот сервер не может изменить модель для этой сессии.",
+    "modelEffortFailed": "Не удалось изменить настройку."
   },
   "leaveSession": {
     "title": "Покинуть сессию?",

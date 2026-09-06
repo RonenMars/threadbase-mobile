@@ -95,7 +95,20 @@
     "takeOverConfirmTitle": "להשתלט על הסשן?",
     "takeOverConfirmBody": "הפעולה עוצרת את התהליך שרץ בטרמינל שלך ומפעילה אותו מחדש כאן. עבודה שלא נשמרה בטרמינל תאבד.",
     "takeOverFailedTitle": "ההשתלטות נכשלה",
-    "takeOverFailedUnknown": "שגיאה לא ידועה"
+    "takeOverFailedUnknown": "שגיאה לא ידועה",
+    "modelEffort": "מודל ומאמץ",
+    "modelEffortSubtitle": "חל על הסשן החי הזה בלבד.",
+    "modelLabel": "מודל",
+    "modelCurrent": "כרגע: {{model}}",
+    "modelPlaceholder": "כינוי או שם מודל מלא",
+    "modelInvalid": "השתמשו באותיות, ספרות, נקודות, מקפים או קווים תחתונים.",
+    "effortLabel": "מאמץ חשיבה",
+    "effortCurrent": "כרגע: {{effort}}",
+    "modelEffortApply": "החל",
+    "modelEffortBusy": "המתינו לסיום התור הנוכחי ונסו שוב.",
+    "modelEffortIdle": "לסשן הזה אין טרמינל חי. חדשו אותו קודם.",
+    "modelEffortUnsupported": "השרת הזה לא יכול לשנות את המודל בסשן הזה.",
+    "modelEffortFailed": "לא הצלחנו לשנות את ההגדרה."
   },
   "leaveSession": {
     "title": "לעזוב את הסשן?",

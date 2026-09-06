@@ -177,6 +177,48 @@ export function useSessionActions(serverId: string, sessionId: string) {
       }),
   })
 
+  // Model and effort are written into the live PTY as slash commands, so the
+  // route answers 202 with nothing truthful to echo back — the client confirms
+  // by refetching the session. retry:false: a silent retry after a timeout
+  // types the same slash command twice.
+  const sessionKey = ['session', serverId, sessionId]
+
+  const setModel = useMutation({
+    retry: false,
+    mutationFn: (model: string) =>
+      api.patch(`/api/sessions/${sessionId}/model`, { model }),
+    onMutate: async (model: string) => {
+      await qc.cancelQueries({ queryKey: sessionKey })
+      const previous = qc.getQueryData<Session>(sessionKey)
+      qc.setQueryData<Session>(sessionKey, (prev) => (prev ? { ...prev, model } : prev))
+      return { previous }
+    },
+    onError: (_err, _model, ctx) => {
+      if (ctx) qc.setQueryData(sessionKey, ctx.previous)
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: sessionKey })
+    },
+  })
+
+  const setEffort = useMutation({
+    retry: false,
+    mutationFn: (effort: string) =>
+      api.patch(`/api/sessions/${sessionId}/effort`, { effort }),
+    onMutate: async (effort: string) => {
+      await qc.cancelQueries({ queryKey: sessionKey })
+      const previous = qc.getQueryData<Session>(sessionKey)
+      qc.setQueryData<Session>(sessionKey, (prev) => (prev ? { ...prev, effort } : prev))
+      return { previous }
+    },
+    onError: (_err, _effort, ctx) => {
+      if (ctx) qc.setQueryData(sessionKey, ctx.previous)
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: sessionKey })
+    },
+  })
+
   const adoptSession = useMutation({
     mutationFn: () =>
       api.post<{ sessionId: string }>(`/api/sessions/${sessionId}/adopt`),
@@ -256,5 +298,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, sendRawKey, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, answerPrompt, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, sendRawKey, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { MODEL_ALIASES } from '@/constants/models'
 import { useClaudeFlags, useUpdateClaudeFlags } from '@/hooks/useClaudeFlags'
 import { claudeFlagValueRisk } from '@/types/api'
 import type { ClaudeFlagDefinition, ClaudeFlagValue, ClaudeFlagValues } from '@/types/api'
@@ -137,6 +138,18 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
         const value = values[def.id]
         const dangerous = value !== undefined && claudeFlagValueRisk(def, value) === 'dangerous'
         const copy = flagCopy[def.id] ?? { label: def.flag, description: '' }
+        const stringInput = (
+          <TextInput
+            style={[styles.input, def.id === 'model' && styles.modelInput]}
+            value={valueToText(value)}
+            onChangeText={(text) => stage(def, textToValue(def, text))}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder={def.valueType === 'list' ? t('servers:claudeFlags.listHint') : def.flag}
+            placeholderTextColor={theme.text.secondary}
+            testID={`claude-flag-${def.id}`}
+          />
+        )
 
         return (
           <View key={def.id} style={styles.row}>
@@ -177,17 +190,34 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
                   )
                 })}
               </View>
+            ) : def.id === 'model' ? (
+              // The registry ships `model` as a free-text string with no
+              // enumValues, so the aliases are the client's own shortcut list —
+              // shared with the per-session model sheet.
+              <View style={styles.modelField}>
+                {stringInput}
+                <View style={[styles.modelAliasRow, { direction: 'ltr' }]}>
+                  {MODEL_ALIASES.map((alias) => {
+                    const selected = value === alias
+                    return (
+                      <TouchableOpacity
+                        key={alias}
+                        style={[styles.chip, selected && styles.chipActive]}
+                        onPress={() => stage(def, selected ? undefined : alias)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        testID={`claude-flag-model-${alias}`}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                          {alias}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
             ) : (
-              <TextInput
-                style={[styles.input]}
-                value={valueToText(value)}
-                onChangeText={(text) => stage(def, textToValue(def, text))}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder={def.valueType === 'list' ? t('servers:claudeFlags.listHint') : def.flag}
-                placeholderTextColor={theme.text.secondary}
-                testID={`claude-flag-${def.id}`}
-              />
+              stringInput
             )}
           </View>
         )
@@ -251,6 +281,9 @@ const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
     rowLabelDangerous: { color: theme.text.danger },
     rowDescription: { color: theme.text.secondary, fontSize: font.xs, ...rtl.copy },
     enumRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, maxWidth: '55%' },
+    modelField: { maxWidth: '55%', gap: spacing.xs, alignItems: 'flex-end' },
+    modelAliasRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    modelInput: { maxWidth: '100%' },
     chip: {
       paddingHorizontal: spacing.sm,
       // minHeight, not paddingVertical: these chips set permissionMode (and now
