@@ -36,7 +36,9 @@ export function deriveCursor(pages: RawConversationDetail[] | undefined): number
   return cursor
 }
 
-export function isEmptyFirstPage(data: ConvData | undefined): boolean {
+// Structurally typed, not ConvData: the hook's own `query.data` carries an
+// `unknown` page param, and this only ever reads the first page's length.
+export function isEmptyFirstPage(data: { pages?: RawConversationDetail[] } | undefined): boolean {
   return (data?.pages?.[0]?.messages?.length ?? -1) === 0
 }
 
