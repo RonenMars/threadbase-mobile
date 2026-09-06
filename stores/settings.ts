@@ -43,13 +43,18 @@ interface SettingsStore {
   mergeChats: boolean
   locale: SupportedLocale
   biometricLock: boolean
-  /** Opt-in crash reporting (Sentry). Default OFF. See services/sentry.ts. */
-  crashReportingEnabled: boolean
+  /** Standing Anonymous Diagnostics consent (Sentry). Default OFF. See
+   * services/sentry.ts and docs/specs/anonymous-diagnostics-consent-v0.1.md. */
+  anonymousDiagnosticsEnabled: boolean
   /** Whether the post-upgrade crash-reporting notice has been dismissed. */
   crashReportingNoticeDismissed: boolean
-  /** Whether the user declined the "turn on crash reporting?" upsell shown
-   * after a one-shot crash report, so it is never shown again. */
-  crashReportingUpsellDismissed: boolean
+  /** This installation's onboarding Anonymous Diagnostics experiment arm
+   * (spec §7): 40% treatment / 60% control. Assigned once on first hydrate,
+   * persisted, and never reassigned. `null` until assigned. */
+  onboardingDiagnosticsExperimentVariant: 'treatment' | 'control' | null
+  /** Epoch-ms timestamps of each time the post-feedback Anonymous Diagnostics
+   * suggestion was shown (spec §14: max 2 per rolling 30-day window). */
+  postFeedbackDiagnosticsSuggestionImpressions: number[]
   // Conversation row settings (Conversation list redesign §13).
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
@@ -69,9 +74,10 @@ interface SettingsStore {
   setMergeChats: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
-  setCrashReportingEnabled: (v: boolean) => void
+  setAnonymousDiagnosticsEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
-  setCrashReportingUpsellDismissed: (v: boolean) => void
+  /** Appends now() to the impression history (spec §14 frequency tracking). */
+  recordPostFeedbackDiagnosticsSuggestionImpression: () => void
   setRowTitleSource: (v: RowTitleSource) => void
   setRowPreviewMode: (v: RowPreviewMode) => void
   setRowDensity: (v: RowDensity) => void
@@ -110,9 +116,10 @@ interface PersistedSettings {
   mergeChats: boolean
   locale: SupportedLocale
   biometricLock: boolean
-  crashReportingEnabled: boolean
+  anonymousDiagnosticsEnabled: boolean
   crashReportingNoticeDismissed: boolean
-  crashReportingUpsellDismissed: boolean
+  onboardingDiagnosticsExperimentVariant: 'treatment' | 'control' | null
+  postFeedbackDiagnosticsSuggestionImpressions: number[]
   rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
   rowDensity: RowDensity
@@ -137,9 +144,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   mergeChats: true,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
-  crashReportingEnabled: false,
+  anonymousDiagnosticsEnabled: false,
   crashReportingNoticeDismissed: false,
-  crashReportingUpsellDismissed: false,
+  onboardingDiagnosticsExperimentVariant: null,
+  postFeedbackDiagnosticsSuggestionImpressions: [],
   autoNameFromMessage: true,
   aiGeneratedNames: false,
   sessionView: 'terminal',
@@ -167,11 +175,16 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setMergeChats: (mergeChats) => set({ mergeChats }),
   setLocale: (locale) => set({ locale }),
   setBiometricLock: (biometricLock) => set({ biometricLock }),
-  setCrashReportingEnabled: (crashReportingEnabled) => set({ crashReportingEnabled }),
+  setAnonymousDiagnosticsEnabled: (anonymousDiagnosticsEnabled) => set({ anonymousDiagnosticsEnabled }),
   setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
     set({ crashReportingNoticeDismissed }),
-  setCrashReportingUpsellDismissed: (crashReportingUpsellDismissed) =>
-    set({ crashReportingUpsellDismissed }),
+  recordPostFeedbackDiagnosticsSuggestionImpression: () =>
+    set((state) => ({
+      postFeedbackDiagnosticsSuggestionImpressions: [
+        ...state.postFeedbackDiagnosticsSuggestionImpressions,
+        Date.now(),
+      ],
+    })),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
   setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   setSessionView: (sessionView) => set({ sessionView }),
@@ -185,8 +198,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as Partial<PersistedSettings>
+      const parsed = raw ? (JSON.parse(raw) as Partial<PersistedSettings>) : {}
       set((state) => ({
         colorScheme: parsed.colorScheme === 'appleGlass' || parsed.colorScheme === 'dracula'
           ? 'dark'
@@ -207,11 +219,20 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           ? parsed.locale
           : DEFAULT_LOCALE,
         biometricLock: parsed.biometricLock ?? state.biometricLock,
-        crashReportingEnabled: parsed.crashReportingEnabled ?? state.crashReportingEnabled,
+        anonymousDiagnosticsEnabled: parsed.anonymousDiagnosticsEnabled ?? state.anonymousDiagnosticsEnabled,
         crashReportingNoticeDismissed:
           parsed.crashReportingNoticeDismissed ?? state.crashReportingNoticeDismissed,
-        crashReportingUpsellDismissed:
-          parsed.crashReportingUpsellDismissed ?? state.crashReportingUpsellDismissed,
+        // Assigned once, ever, for this installation (spec §7). Preference
+        // order: what's already persisted > what's already in memory (guards
+        // a second hydrate() before the first assignment finishes persisting)
+        // > a fresh 40/60 assignment.
+        onboardingDiagnosticsExperimentVariant:
+          parsed.onboardingDiagnosticsExperimentVariant ??
+          state.onboardingDiagnosticsExperimentVariant ??
+          (Math.random() < 0.4 ? 'treatment' : 'control'),
+        postFeedbackDiagnosticsSuggestionImpressions:
+          parsed.postFeedbackDiagnosticsSuggestionImpressions ??
+          state.postFeedbackDiagnosticsSuggestionImpressions,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
         aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
         sessionView: parsed.sessionView === 'chat' ? 'chat' : state.sessionView,
@@ -241,9 +262,10 @@ export function persistSettingsNow(): Promise<void> {
     mergeChats: state.mergeChats,
     locale: state.locale,
     biometricLock: state.biometricLock,
-    crashReportingEnabled: state.crashReportingEnabled,
+    anonymousDiagnosticsEnabled: state.anonymousDiagnosticsEnabled,
     crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,
-    crashReportingUpsellDismissed: state.crashReportingUpsellDismissed,
+    onboardingDiagnosticsExperimentVariant: state.onboardingDiagnosticsExperimentVariant,
+    postFeedbackDiagnosticsSuggestionImpressions: state.postFeedbackDiagnosticsSuggestionImpressions,
     autoNameFromMessage: state.autoNameFromMessage,
     aiGeneratedNames: state.aiGeneratedNames,
     sessionView: state.sessionView,

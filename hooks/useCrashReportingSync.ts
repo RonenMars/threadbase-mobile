@@ -14,10 +14,10 @@ import { setAnonymousDiagnosticsEnabled } from '@/services/sentry'
  * never throws, so this hook is safe to run unconditionally at the app root.
  */
 export function useCrashReportingSync(): void {
-  const enabled = useSettingsStore((s) => s.crashReportingEnabled)
+  const enabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
 
   useEffect(() => {
-    if (__DEV__) console.log('[sentry] consent sync fired, crashReportingEnabled =', enabled)
+    if (__DEV__) console.log('[sentry] consent sync fired, anonymousDiagnosticsEnabled =', enabled)
     void setAnonymousDiagnosticsEnabled(enabled)
   }, [enabled])
 }

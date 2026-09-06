@@ -282,8 +282,8 @@ export default function SettingsScreen() {
     setSessionView,
     biometricLock,
     setBiometricLock,
-    crashReportingEnabled,
-    setCrashReportingEnabled,
+    anonymousDiagnosticsEnabled,
+    setAnonymousDiagnosticsEnabled,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [isLeaveActionOpen, setIsLeaveActionOpen] = React.useState(false)
@@ -795,8 +795,8 @@ await refreshServerInfo(serverId)
           <GlassFill material />
           <SettingsRow
             label={t('crashReporting.title')}
-            value={crashReportingEnabled}
-            onValueChange={setCrashReportingEnabled}
+            value={anonymousDiagnosticsEnabled}
+            onValueChange={setAnonymousDiagnosticsEnabled}
             testID="settings-crash-reporting-toggle"
           />
           <Text style={s.rowNote}>{t('crashReporting.description')}</Text>

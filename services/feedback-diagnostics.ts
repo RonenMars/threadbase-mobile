@@ -50,10 +50,10 @@ function deriveAggregateConnectionMode(): FeedbackDiagnostics['connectionMode'] 
 export function buildFeedbackDiagnostics(): FeedbackDiagnostics {
   const meta = getSafeBuildMetadata()
   let serverCount = 0
-  let crashReportingEnabled = false
+  let anonymousDiagnosticsEnabled = false
   try {
     serverCount = useServersStore.getState().activeServerIds.length
-    crashReportingEnabled = useSettingsStore.getState().crashReportingEnabled
+    anonymousDiagnosticsEnabled = useSettingsStore.getState().anonymousDiagnosticsEnabled
   } catch {
     // stores unavailable — keep the safe defaults
   }
@@ -70,7 +70,7 @@ export function buildFeedbackDiagnostics(): FeedbackDiagnostics {
     easChannel: meta.easChannel,
     connectionMode: deriveAggregateConnectionMode(),
     serverCount,
-    crashReportingEnabled,
+    anonymousDiagnosticsEnabled,
   }
 }
 
@@ -88,7 +88,7 @@ export function diagnosticsToRows(d: FeedbackDiagnostics): { key: string; value:
     { key: 'environment', value: d.environment },
     { key: 'connectionMode', value: d.connectionMode },
     { key: 'serverCount', value: String(d.serverCount) },
-    { key: 'crashReportingEnabled', value: String(d.crashReportingEnabled) },
+    { key: 'anonymousDiagnosticsEnabled', value: String(d.anonymousDiagnosticsEnabled) },
   ]
   if (d.expoRuntimeVersion) rows.push({ key: 'expoRuntimeVersion', value: d.expoRuntimeVersion })
   if (d.easChannel) rows.push({ key: 'easChannel', value: d.easChannel })

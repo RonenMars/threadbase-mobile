@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Updates from 'expo-updates'
 import i18n from '@/lib/i18n'
 import { captureHandledError, reportOneShot } from '@/services/sentry'
@@ -21,12 +21,18 @@ type ReportState = 'idle' | 'sending' | 'sent' | 'failed'
  * as a function component so it can be reused verbatim for a non-throwing
  * visual preview (e.g. a dev demo button), without duplicating the markup.
  *
- * `error` is optional: when present (a real catch), a "Report this crash"
- * button is shown. It works EVEN WHEN standing crash reporting is off — this
- * is a single, explicit, user-initiated action (see reportOneShot), the same
- * category as the Help & Feedback flow, which is likewise independent of the
- * consent toggle. It never reads or changes the persisted setting itself;
- * only the follow-up upsell (accepted or declined) does that.
+ * `error` is optional: when present (a real catch) and standing Anonymous
+ * Diagnostics consent is OFF, a "Report this crash" button and an unchecked
+ * "Automatically send future crash reports and diagnostics" checkbox are
+ * shown (spec §8). Reporting works independent of consent — a single,
+ * explicit, user-initiated action (see reportOneShot) — but checking the box
+ * only takes effect as part of that same Report action, never from the
+ * checkbox tap alone: leaving the screen with it checked but never
+ * submitting leaves standing consent untouched.
+ *
+ * When consent is already ON, the qualifying error was already reported
+ * automatically (via `captureHandledError` in `componentDidCatch`), so no
+ * checkbox or report button is shown — avoiding a duplicate report.
  */
 export function RootErrorBoundaryFallback({
   onReload,
@@ -36,38 +42,19 @@ export function RootErrorBoundaryFallback({
   error?: Error
 }) {
   const [reportState, setReportState] = useState<ReportState>('idle')
-  const crashReportingEnabled = useSettingsStore((s) => s.crashReportingEnabled)
-  const upsellDismissed = useSettingsStore((s) => s.crashReportingUpsellDismissed)
-  const setCrashReportingEnabled = useSettingsStore((s) => s.setCrashReportingEnabled)
-  const setCrashReportingUpsellDismissed = useSettingsStore((s) => s.setCrashReportingUpsellDismissed)
-
-  const showUpsell = () => {
-    Alert.alert(
-      i18n.t('common:errorBoundary.upsell.title'),
-      i18n.t('common:errorBoundary.upsell.message'),
-      [
-        {
-          text: i18n.t('common:errorBoundary.upsell.notNow'),
-          style: 'cancel',
-          onPress: () => setCrashReportingUpsellDismissed(true),
-        },
-        {
-          text: i18n.t('common:errorBoundary.upsell.enable'),
-          onPress: () => setCrashReportingEnabled(true),
-        },
-      ],
-    )
-  }
+  const [enableFutureReports, setEnableFutureReports] = useState(false)
+  const anonymousDiagnosticsEnabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
+  const setAnonymousDiagnosticsEnabled = useSettingsStore((s) => s.setAnonymousDiagnosticsEnabled)
 
   const handleReport = async () => {
     if (!error || reportState === 'sending') return
     setReportState('sending')
     const eventId = await reportOneShot(error, { tag: 'render_error_boundary_manual' })
     setReportState(eventId ? 'sent' : 'failed')
-    // Only offer the upsell after a successful one-shot send, when standing
-    // reporting is currently off and the user hasn't already said "not now".
-    if (eventId && !crashReportingEnabled && !upsellDismissed) {
-      showUpsell()
+    // The checkbox only takes effect here, bundled with a successful send —
+    // never from checking it alone (spec §8).
+    if (eventId && enableFutureReports) {
+      setAnonymousDiagnosticsEnabled(true)
     }
   }
 
@@ -93,17 +80,30 @@ export function RootErrorBoundaryFallback({
       >
         <Text style={styles.buttonText}>{i18n.t('common:errorBoundary.reload')}</Text>
       </TouchableOpacity>
-      {error ? (
-        <TouchableOpacity
-          style={[styles.button, styles.reportButton, reportState === 'sent' && styles.reportButtonSent]}
-          onPress={handleReport}
-          disabled={reportState === 'sending' || reportState === 'sent'}
-          accessibilityRole="button"
-          accessibilityLabel={reportLabel}
-          testID="error-boundary-report"
-        >
-          <Text style={styles.buttonText}>{reportLabel}</Text>
-        </TouchableOpacity>
+      {error && !anonymousDiagnosticsEnabled ? (
+        <>
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setEnableFutureReports((v) => !v)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: enableFutureReports }}
+            accessibilityLabel={i18n.t('common:errorBoundary.diagnosticsCheckbox')}
+            testID="error-boundary-diagnostics-checkbox"
+          >
+            <View style={[styles.checkbox, enableFutureReports && styles.checkboxChecked]} />
+            <Text style={styles.checkboxLabel}>{i18n.t('common:errorBoundary.diagnosticsCheckbox')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.reportButton, reportState === 'sent' && styles.reportButtonSent]}
+            onPress={handleReport}
+            disabled={reportState === 'sending' || reportState === 'sent'}
+            accessibilityRole="button"
+            accessibilityLabel={reportLabel}
+            testID="error-boundary-report"
+          >
+            <Text style={styles.buttonText}>{reportLabel}</Text>
+          </TouchableOpacity>
+        </>
       ) : null}
     </View>
   )
@@ -119,8 +119,9 @@ export function RootErrorBoundaryFallback({
  * originated inside a provider). Colors match the app's dark canvas and are
  * legible in both schemes. All strings are localized via the i18n singleton.
  *
- * `captureHandledError` is a no-op when the user has not opted into crash
- * reporting, so this boundary never transmits anything without consent.
+ * `captureHandledError` is gated on standing Anonymous Diagnostics consent
+ * (see services/sentry.ts beforeSend), so this boundary never transmits
+ * anything passively without consent.
  */
 export class RootErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false, error: null }
@@ -182,4 +183,23 @@ const styles = StyleSheet.create({
   reportButtonSent: {
     borderColor: '#238636',
   },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 16,
+    minHeight: 44,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#30363d',
+  },
+  checkboxChecked: {
+    backgroundColor: '#238636',
+    borderColor: '#238636',
+  },
+  checkboxLabel: { color: '#e6edf3', fontSize: 14, flexShrink: 1 },
 })

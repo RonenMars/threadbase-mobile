@@ -26,7 +26,7 @@ beforeEach(() => {
     completedSessionFadeMs: 60000,
     terminalMaxLines: 5000,
     notifications: { ...DEFAULT_NOTIFICATIONS },
-    crashReportingEnabled: false,
+    anonymousDiagnosticsEnabled: false,
     crashReportingNoticeDismissed: false,
     sessionLeaveAction: 'ask',
     locale: 'he',
@@ -198,36 +198,36 @@ describe('SettingsStore – notifications', () => {
   })
 })
 
-describe('SettingsStore – crashReportingEnabled (opt-in consent)', () => {
+describe('SettingsStore – anonymousDiagnosticsEnabled (opt-in consent)', () => {
   it('defaults to OFF for new installations', () => {
-    expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(false)
     expect(useSettingsStore.getState().crashReportingNoticeDismissed).toBe(false)
   })
 
   it('can be enabled and disabled', () => {
-    useSettingsStore.getState().setCrashReportingEnabled(true)
-    expect(useSettingsStore.getState().crashReportingEnabled).toBe(true)
-    useSettingsStore.getState().setCrashReportingEnabled(false)
-    expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
+    useSettingsStore.getState().setAnonymousDiagnosticsEnabled(true)
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(true)
+    useSettingsStore.getState().setAnonymousDiagnosticsEnabled(false)
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(false)
   })
 
   it('persists the consent preference to AsyncStorage', async () => {
-    useSettingsStore.getState().setCrashReportingEnabled(true)
+    useSettingsStore.getState().setAnonymousDiagnosticsEnabled(true)
     await Promise.resolve()
     const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
     const payload = JSON.parse(raw[1])
-    expect(payload.crashReportingEnabled).toBe(true)
+    expect(payload.anonymousDiagnosticsEnabled).toBe(true)
   })
 
   it('restores the consent preference on hydrate', async () => {
     const stored = JSON.stringify({
-      crashReportingEnabled: true,
+      anonymousDiagnosticsEnabled: true,
       crashReportingNoticeDismissed: true,
       notifications: DEFAULT_NOTIFICATIONS,
     })
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
     await useSettingsStore.getState().hydrate()
-    expect(useSettingsStore.getState().crashReportingEnabled).toBe(true)
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(true)
     expect(useSettingsStore.getState().crashReportingNoticeDismissed).toBe(true)
   })
 
@@ -235,7 +235,81 @@ describe('SettingsStore – crashReportingEnabled (opt-in consent)', () => {
     const stored = JSON.stringify({ notifications: DEFAULT_NOTIFICATIONS })
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
     await useSettingsStore.getState().hydrate()
-    expect(useSettingsStore.getState().crashReportingEnabled).toBe(false)
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(false)
+  })
+})
+
+describe('SettingsStore – onboardingDiagnosticsExperimentVariant (spec §7)', () => {
+  let randomSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    useSettingsStore.setState({ onboardingDiagnosticsExperimentVariant: null })
+    randomSpy = jest.spyOn(Math, 'random')
+  })
+  afterEach(() => {
+    randomSpy.mockRestore()
+  })
+
+  it('assigns treatment for the bottom 40% of the random range', async () => {
+    randomSpy.mockReturnValue(0.39)
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().onboardingDiagnosticsExperimentVariant).toBe('treatment')
+  })
+
+  it('assigns control for the top 60% of the random range', async () => {
+    randomSpy.mockReturnValue(0.4)
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().onboardingDiagnosticsExperimentVariant).toBe('control')
+  })
+
+  it('is assigned even on a fresh install with nothing persisted yet', async () => {
+    randomSpy.mockReturnValue(0.1)
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().onboardingDiagnosticsExperimentVariant).toBe('treatment')
+  })
+
+  it('never reassigns once persisted, regardless of a later random draw', async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ onboardingDiagnosticsExperimentVariant: 'control' }),
+    )
+    randomSpy.mockReturnValue(0.01) // would be "treatment" if it were re-rolled
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().onboardingDiagnosticsExperimentVariant).toBe('control')
+  })
+
+  it('never reassigns across repeated hydrate() calls in the same session', async () => {
+    randomSpy.mockReturnValueOnce(0.1).mockReturnValueOnce(0.9)
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
+    await useSettingsStore.getState().hydrate()
+    const first = useSettingsStore.getState().onboardingDiagnosticsExperimentVariant
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().onboardingDiagnosticsExperimentVariant).toBe(first)
+  })
+})
+
+describe('SettingsStore – postFeedbackDiagnosticsSuggestionImpressions (spec §14)', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ postFeedbackDiagnosticsSuggestionImpressions: [] })
+  })
+
+  it('starts empty', () => {
+    expect(useSettingsStore.getState().postFeedbackDiagnosticsSuggestionImpressions).toEqual([])
+  })
+
+  it('appends a timestamp per impression, never overwriting prior ones', () => {
+    useSettingsStore.getState().recordPostFeedbackDiagnosticsSuggestionImpression()
+    useSettingsStore.getState().recordPostFeedbackDiagnosticsSuggestionImpression()
+    expect(useSettingsStore.getState().postFeedbackDiagnosticsSuggestionImpressions).toHaveLength(2)
+  })
+
+  it('restores the impression history on hydrate', async () => {
+    const stored = JSON.stringify({ postFeedbackDiagnosticsSuggestionImpressions: [111, 222] })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().postFeedbackDiagnosticsSuggestionImpressions).toEqual([111, 222])
   })
 })
 

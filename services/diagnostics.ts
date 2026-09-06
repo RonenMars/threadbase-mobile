@@ -58,7 +58,7 @@ export interface DiagnosticsReport {
   /** Coarse (minute-precision) last successful connection time, if known. */
   lastConnectionAt?: string
   notificationPermission: NotificationPermission
-  crashReportingEnabled: boolean
+  anonymousDiagnosticsEnabled: boolean
   /** Opaque last Sentry event id, if crash reporting is active. */
   sentryEventId?: string
   /** Bounded list of sanitized lifecycle events (strict enum + coarse time). */
@@ -139,14 +139,14 @@ export async function generateDiagnostics(): Promise<DiagnosticsReport> {
   let activeServerIds: string[] = []
   let displayedServerCount = 0
   let hasEverHadServer = false
-  let crashReportingEnabled = false
+  let anonymousDiagnosticsEnabled = false
   try {
     const serversState = useServersStore.getState()
     servers = serversState.servers
     activeServerIds = serversState.activeServerIds
     displayedServerCount = serversState.displayedServerIds.length
     hasEverHadServer = serversState.hasEverHadServer
-    crashReportingEnabled = useSettingsStore.getState().crashReportingEnabled
+    anonymousDiagnosticsEnabled = useSettingsStore.getState().anonymousDiagnosticsEnabled
   } catch {
     // stores unavailable — keep safe defaults
   }
@@ -187,7 +187,7 @@ export async function generateDiagnostics(): Promise<DiagnosticsReport> {
     activeSessionCount: sumActiveSessions(servers, activeServerIds),
     lastConnectionAt: lastConnectionAt(activeServerIds),
     notificationPermission,
-    crashReportingEnabled,
+    anonymousDiagnosticsEnabled,
     sentryEventId: getLastEventId(),
     recentEvents: getDiagnosticEvents(),
   }
@@ -215,7 +215,7 @@ export function diagnosticsToRows(d: DiagnosticsReport): { key: string; value: s
     { key: 'hasEverHadServer', value: String(d.hasEverHadServer) },
     { key: 'activeSessionCount', value: String(d.activeSessionCount) },
     { key: 'notificationPermission', value: d.notificationPermission },
-    { key: 'crashReportingEnabled', value: String(d.crashReportingEnabled) },
+    { key: 'anonymousDiagnosticsEnabled', value: String(d.anonymousDiagnosticsEnabled) },
   ]
   if (d.streamerVersions.length) rows.push({ key: 'streamerVersions', value: d.streamerVersions.join(', ') })
   if (d.lastConnectionAt) rows.push({ key: 'lastConnectionAt', value: d.lastConnectionAt })

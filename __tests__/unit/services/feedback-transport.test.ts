@@ -27,7 +27,7 @@ const baseReport = (): FeedbackReport => ({
     environment: 'production',
     connectionMode: 'local',
     serverCount: 2,
-    crashReportingEnabled: true,
+    anonymousDiagnosticsEnabled: true,
   },
 })
 
