@@ -42,7 +42,6 @@
     "codexBusyTitle": "This Codex session is open elsewhere",
     "codexBusyMessage": "Another Codex client currently has this session open — {{reasons}}. Codex allows only one writer, so it can't be resumed here while that client holds it.",
     "fork": "Fork into Threadbase",
-    "forkTitle": "Fork into Threadbase?",
     "forkMessage": "This starts a separate continuation of the conversation in Threadbase. The original session keeps running where it is, and the two histories diverge from this point.",
     "forkFailed": "Couldn't fork this conversation. Please try again."
   },

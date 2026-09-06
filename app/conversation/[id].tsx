@@ -38,7 +38,11 @@ import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
-import { markNavigatedToSession } from '@/lib/sessionNavGuard'
+import {
+  clearAutoNavSuppress,
+  markNavigatedToSession,
+  suppressAutoNavForPendingStart,
+} from '@/lib/sessionNavGuard'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
@@ -488,15 +492,18 @@ export default function ConversationDetailScreen() {
     // Named locally (not the outer const) so the Retry button can call it again
     // without a useCallback self-reference.
     function attempt() {
+      suppressAutoNavForPendingStart()
       resume.mutate(
         { force: true },
         {
           onSuccess: navigateToResumedSession,
-          onError: (err) =>
+          onError: (err) => {
+            clearAutoNavSuppress()
             Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err), [
               { text: t('common:button.cancel'), style: 'cancel' },
               { text: t('common:button.retry'), onPress: attempt },
-            ]),
+            ])
+          },
         },
       )
     }
@@ -508,14 +515,17 @@ export default function ConversationDetailScreen() {
   // old process to actually exit before spawning, so it cannot leave two agents
   // writing one transcript (which is what "open anyway" risks).
   const takeOverSession = useCallback(() => {
+    suppressAutoNavForPendingStart()
     adoptSession.mutate(undefined, {
       onSuccess: (data) => {
         // Same spawn race as resume — see navigateToResumedSession.
         markNavigatedToSession(data.sessionId)
         router.replace(`/session/${data.sessionId}?server=${serverId}&starting=1`)
       },
-      onError: (err) =>
-        Alert.alert(t('resume.takeOverFailed'), err instanceof Error ? err.message : String(err)),
+      onError: (err) => {
+        clearAutoNavSuppress()
+        Alert.alert(t('resume.takeOverFailed'), err instanceof Error ? err.message : String(err))
+      },
     })
   }, [adoptSession, router, serverId, t])
 
@@ -527,34 +537,39 @@ export default function ConversationDetailScreen() {
   // contract carries no idempotency key, so a retry of a fork that actually
   // succeeded server-side would leave two forks. The user can re-open the
   // collision dialog from Resume instead.
+  //
+  // No second confirmation dialog: the collision alert that offers this action
+  // already names it and already carries `resume.forkMessage`, so re-asking
+  // made the user press "Fork into Threadbase" twice to do it once.
   const forkIntoThreadbase = useCallback(() => {
-    Alert.alert(t('resume.forkTitle'), t('resume.forkMessage'), [
-      { text: t('common:button.cancel'), style: 'cancel' },
-      {
-        text: t('resume.fork'),
-        onPress: () =>
-          forkSession.mutate(undefined, {
-            onSuccess: (result) => {
-              if (result.sessionSnapshot) {
-                qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
-              }
-              const startParams = new URLSearchParams({ server: serverId })
-              if (result.projectId) startParams.set('projectId', result.projectId)
-              const projectPath = result.projectPath ?? conversation?.projectPath
-              if (projectPath) startParams.set('projectPath', projectPath)
-              // Both identities travel: the source we forked from, and the new
-              // rollout the server bound to the managed session.
-              startParams.set('forkedFromConversationId', id)
-              startParams.set('conversationId', result.conversationId)
-              startParams.set('starting', '1')
-              markNavigatedToSession(result.sessionId)
-              router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
-            },
-            onError: (err) =>
-              Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err)),
-          }),
+    // The streamer publishes session_ready over WS the same millisecond
+    // it answers this POST, and the global listener races us to push
+    // /session/<id> — after which our own replace reads as a navigation
+    // AWAY from a live session and raises the leave-options modal on
+    // arrival. Suppress auto-nav until we have navigated ourselves.
+    suppressAutoNavForPendingStart()
+    forkSession.mutate(undefined, {
+      onSuccess: (result) => {
+        if (result.sessionSnapshot) {
+          qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
+        }
+        const startParams = new URLSearchParams({ server: serverId })
+        if (result.projectId) startParams.set('projectId', result.projectId)
+        const projectPath = result.projectPath ?? conversation?.projectPath
+        if (projectPath) startParams.set('projectPath', projectPath)
+        // Both identities travel: the source we forked from, and the new
+        // rollout the server bound to the managed session.
+        startParams.set('forkedFromConversationId', id)
+        startParams.set('conversationId', result.conversationId)
+        startParams.set('starting', '1')
+        markNavigatedToSession(result.sessionId)
+        router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
       },
-    ])
+      onError: (err) => {
+        clearAutoNavSuppress()
+        Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err))
+      },
+    })
   }, [forkSession, qc, serverId, conversation?.projectPath, id, router, t])
 
   // Resume this conversation into a live session. The server soft-blocks with a
@@ -566,11 +581,13 @@ export default function ConversationDetailScreen() {
     // Named locally (not the outer const) so the Retry button can call it again
     // without a useCallback self-reference.
     function attempt() {
+      suppressAutoNavForPendingStart()
       resume.mutate(
         {},
         {
           onSuccess: navigateToResumedSession,
           onError: (err) => {
+            clearAutoNavSuppress()
             if (err instanceof ConversationBusyError) {
               const entries = err.detectedBy.length > 0 ? err.detectedBy : ['unknown']
               const reasons = Array.from(
@@ -586,9 +603,15 @@ export default function ConversationDetailScreen() {
               const isCodexLock =
                 err.reasonCode === 'CODEX_SESSION_ACTIVE' || err.provider === CODEX_CLI_PROVIDER
               const title = isCodexLock ? t('resume.codexBusyTitle') : t('resume.collisionTitle')
-              const message = isCodexLock
+              // Fork is confirmed here, not in a second dialog: this alert
+              // already names the action on its own button, so what it owed the
+              // user was the consequence — that the two histories diverge.
+              const baseMessage = isCodexLock
                 ? t('resume.codexBusyMessage', { reasons })
                 : t('resume.collisionMessage', { reasons })
+              const message = err.canFork
+                ? `${baseMessage}\n\n${t('resume.forkMessage')}`
+                : baseMessage
               Alert.alert(title, message, [
                 { text: t('common:button.cancel'), style: 'cancel' },
                 ...(err.canTakeOver

@@ -11,39 +11,39 @@
 //   - Entries auto-expire after TTL_MS so a later, legitimate session_ready
 //     for the same id (e.g. after a streamer reconnect) is not suppressed.
 //
-// Browse start race: session_ready can beat the /api/sessions/start HTTP
-// response, so we don't know the session id yet when ready fires. While a
-// browse-initiated start is in flight, suppress ALL global auto-nav; the
-// browse modal owns navigation via dismiss → next-frame push.
+// Pending-start race: session_ready can beat the HTTP response that names the
+// session (start, resume, fork), so we don't know the id yet when ready fires.
+// While such a start is in flight, suppress ALL global auto-nav; the caller
+// owns navigation once its response lands.
 
 import { clientLog } from '@/lib/clientLog'
 
 const TTL_MS = 10_000
 /** Covers START_SESSION_TIMEOUT_MS (15s) with a little margin. */
-const BROWSE_START_SUPPRESS_MS = 20_000
+const PENDING_START_SUPPRESS_MS = 20_000
 
 const recent = new Map<string, number>()
-let browseStartSuppressUntil = 0
+let pendingStartSuppressUntil = 0
 
-export function suppressAutoNavForBrowseStart(ttlMs = BROWSE_START_SUPPRESS_MS): void {
-  browseStartSuppressUntil = Date.now() + ttlMs
-  clientLog.info('sessionNavGuard', 'suppressAutoNavForBrowseStart', {
-    until: browseStartSuppressUntil,
+export function suppressAutoNavForPendingStart(ttlMs = PENDING_START_SUPPRESS_MS): void {
+  pendingStartSuppressUntil = Date.now() + ttlMs
+  clientLog.info('sessionNavGuard', 'suppressAutoNavForPendingStart', {
+    until: pendingStartSuppressUntil,
     ttlMs,
   })
 }
 
-export function clearBrowseStartAutoNavSuppress(): void {
-  if (browseStartSuppressUntil === 0) return
-  browseStartSuppressUntil = 0
-  clientLog.info('sessionNavGuard', 'clearBrowseStartAutoNavSuppress')
+export function clearAutoNavSuppress(): void {
+  if (pendingStartSuppressUntil === 0) return
+  pendingStartSuppressUntil = 0
+  clientLog.info('sessionNavGuard', 'clearAutoNavSuppress')
 }
 
 export function markNavigatedToSession(sessionId: string): void {
   const now = Date.now()
   recent.set(sessionId, now)
-  // Id-specific mark takes over; drop the blanket browse-start suppress.
-  browseStartSuppressUntil = 0
+  // Id-specific mark takes over; drop the blanket pending-start suppress.
+  pendingStartSuppressUntil = 0
   clientLog.info('sessionNavGuard', 'markNavigatedToSession', {
     sessionId,
     now,
@@ -54,15 +54,15 @@ export function markNavigatedToSession(sessionId: string): void {
 
 export function shouldSkipAutoNav(sessionId: string): boolean {
   const now = Date.now()
-  if (now < browseStartSuppressUntil) {
-    clientLog.info('sessionNavGuard', 'shouldSkipAutoNav → true (browse start pending)', {
+  if (now < pendingStartSuppressUntil) {
+    clientLog.info('sessionNavGuard', 'shouldSkipAutoNav → true (pending start)', {
       sessionId,
-      remainingMs: browseStartSuppressUntil - now,
+      remainingMs: pendingStartSuppressUntil - now,
     })
     return true
   }
-  if (browseStartSuppressUntil !== 0) {
-    browseStartSuppressUntil = 0
+  if (pendingStartSuppressUntil !== 0) {
+    pendingStartSuppressUntil = 0
   }
 
   const t = recent.get(sessionId)
