@@ -27,6 +27,8 @@ export type KnightRiderSize = keyof typeof SIZES
 interface Props {
   testID?: string
   size?: KnightRiderSize
+  /** Overrides the default "cached data" announcement for non-sync uses (e.g. the working footer). */
+  accessibilityLabel?: string
 }
 
 function scannerPalette(theme: Theme): string[] {
@@ -39,7 +41,7 @@ function scannerPalette(theme: Theme): string[] {
   ]
 }
 
-export function KnightRiderScanner({ testID, size = 'compact' }: Props) {
+export function KnightRiderScanner({ testID, size = 'compact', accessibilityLabel }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const progress = useSharedValue(0)
@@ -70,7 +72,7 @@ export function KnightRiderScanner({ testID, size = 'compact' }: Props) {
       ]}
       testID={testID}
       accessibilityRole="progressbar"
-      accessibilityLabel={t('sync.cachedData')}
+      accessibilityLabel={accessibilityLabel ?? t('sync.cachedData')}
       accessibilityState={{ busy: true }}
       pointerEvents="none"
     >
