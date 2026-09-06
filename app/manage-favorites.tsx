@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
-import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { View, Text, Pressable, FlatList, StyleSheet, Platform } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { DotsSixVertical, Folder, Lightning, Trash } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +15,15 @@ import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 export default function ManageFavoritesScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const styles = makeStyles(theme)
+  // Transparent header (glass themes) doesn't reserve layout space, so the
+  // FlatList starts under it; push content down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassContentStyle =
+    isGlass && Platform.OS !== 'android'
+      ? { paddingTop: styles.list.padding + insets.top + headerHeight }
+      : null
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const { favorites, unpinItem } = useQuickAccessStore()
@@ -67,7 +75,7 @@ export default function ManageFavoritesScreen() {
         <FlatList
           data={favorites}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, glassContentStyle]}
           renderItem={({ item }) => (
             <View style={[styles.row, isGlass && styles.rowGlass]}>
               <GlassFill />

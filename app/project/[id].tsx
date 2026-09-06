@@ -6,21 +6,31 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Platform,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import type { MultiConversation } from '@/types/api'
 import { useServersStore } from '@/stores/servers'
 
 export default function ProjectDetailScreen() {
   const theme = useTheme()
+  const isGlass = useIsGlass()
+  const insets = useSafeAreaInsets()
   const styles = makeStyles(theme)
+  // Transparent header (glass themes) doesn't reserve layout space, so
+  // content starts under it; push it down by the header's own height.
+  const headerHeight = Platform.OS === 'ios' ? 44 : 56
+  const glassTopStyle =
+    isGlass && Platform.OS !== 'android'
+      ? { paddingTop: insets.top + headerHeight }
+      : null
   const { t } = useTranslation('browse')
   const params = useLocalSearchParams<{ id: string; path?: string; server?: string }>()
   const projectPath = params.path ? decodeURIComponent(params.path) : ''
@@ -68,7 +78,7 @@ export default function ProjectDetailScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       {isError ? (
         <ScrollView
-          contentContainerStyle={styles.centered}
+          contentContainerStyle={[styles.centered, glassTopStyle]}
           refreshControl={
             <RefreshControl
               refreshing={false}
@@ -81,7 +91,7 @@ export default function ProjectDetailScreen() {
           <Text style={styles.errorHint}>{t('error.retryHint')}</Text>
         </ScrollView>
       ) : (
-        <View style={styles.listWrapper}>
+        <View style={[styles.listWrapper, glassTopStyle]}>
           <ConversationList
             conversations={displayedConversations}
             onRefresh={handleRefresh}
