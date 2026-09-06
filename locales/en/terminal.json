@@ -87,7 +87,14 @@
     "resumedHistoryLinkOr": " or ",
     "resumedHistoryLinkSearch": "search",
     "resumedHistoryLinkIn": " in ",
-    "resumedHistoryLinkTail": "the conversation history →"
+    "resumedHistoryLinkTail": "the conversation history →",
+    "externalTitle": "Launched outside Threadbase",
+    "externalMessage": "Streaming output only — prompts can't be answered from here.",
+    "takeOver": "Take over",
+    "takeOverConfirmTitle": "Take over this session?",
+    "takeOverConfirmBody": "This stops the process running in your terminal and restarts it here. Unsaved work in that terminal is lost.",
+    "takeOverFailedTitle": "Take over failed",
+    "takeOverFailedUnknown": "Unknown error"
   },
   "leaveSession": {
     "title": "Leave this session?",

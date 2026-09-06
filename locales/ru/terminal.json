@@ -89,7 +89,14 @@
     "resumedHistoryLinkOr": " или ",
     "resumedHistoryLinkSearch": "поиск",
     "resumedHistoryLinkIn": " в ",
-    "resumedHistoryLinkTail": "истории беседы →"
+    "resumedHistoryLinkTail": "истории беседы →",
+    "externalTitle": "Запущено вне Threadbase",
+    "externalMessage": "Только трансляция вывода — отвечать на запросы отсюда нельзя.",
+    "takeOver": "Перехватить",
+    "takeOverConfirmTitle": "Перехватить эту сессию?",
+    "takeOverConfirmBody": "Процесс, запущенный в вашем терминале, будет остановлен и перезапущен здесь. Несохранённая работа в том терминале будет потеряна.",
+    "takeOverFailedTitle": "Не удалось перехватить",
+    "takeOverFailedUnknown": "Неизвестная ошибка"
   },
   "leaveSession": {
     "title": "Покинуть сессию?",
