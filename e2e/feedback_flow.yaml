@@ -136,8 +136,18 @@ appId: com.ronenmars.threadbase
 # a stray "V" to the description instead of expanding the preview.
 #
 # `hideKeyboard` is deliberately not used: it is broken on Maestro 2.6.1 /
-# iOS 26.x (see issue #611). Tapping an inert heading blurs the field instead.
-- tapOn: "Help us squash a bug"
+# iOS 26.x (see issue #611). Tap the visible field label instead: CI run
+# 33987037977 found the heading at y=32, underneath the navigation bar, so
+# that tap never blurred the input and the later preview tap typed a "V".
+- tapOn: "Description"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: "Return"
+          timeout: 5000
 
 # The diagnostics opt-in is on by default; its preview toggle is present.
 - assertVisible:
@@ -150,7 +160,8 @@ appId: com.ronenmars.threadbase
 - swipe:
     start: 50%, 80%
     end: 50%, 35%
-- tapOn: "See what's included"
+- tapOn:
+    id: "feedback-diagnostics-toggle"
 - extendedWaitUntil:
     visible:
       id: "feedback-diagnostics-rows"
