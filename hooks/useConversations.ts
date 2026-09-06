@@ -23,6 +23,7 @@ import {
   etagOf,
 } from '@/hooks/conversationCursor'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
+import { inheritedHistorySeam, type RawInheritedHistory } from '@/utils/inheritedHistory'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
 // This adapter normalises them into the ConversationPage shape the app expects.
@@ -263,6 +264,7 @@ export interface RawConversationDetail {
     resumable?: boolean
     unavailable_reason?: UnavailableReason
     provider?: 'claude-code' | 'codex-cli'
+    inherited_history?: RawInheritedHistory
   }
   messages: RawMessage[]
   message_pagination?: ConversationMessagePagination
@@ -417,6 +419,7 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     resumable: first.meta.resumable,
     unavailableReason: first.meta.unavailable_reason,
     provider: first.meta.provider,
+    inheritedHistory: inheritedHistorySeam(first.meta.inherited_history),
   }
 }
 

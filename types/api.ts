@@ -1,4 +1,5 @@
 import type { ProviderName } from '@/constants/providers'
+import type { InheritedHistorySeam } from '@/utils/inheritedHistory'
 import type { DeviceCapability } from '@/types/devices'
 
 export type SessionStatus = 'running' | 'waiting_input' | 'idle'
@@ -234,6 +235,11 @@ export interface ConversationDetail extends Conversation {
    * reports as a 409 carrying `reasonCode: 'CODEX_SESSION_ACTIVE'`.
    */
   provider?: ProviderName
+  /**
+   * Where the messages this session inherited from a `codex fork` parent stop
+   * and its own turns begin. Absent unless the server reports the seam.
+   */
+  inheritedHistory?: InheritedHistorySeam
 }
 
 export interface Message {

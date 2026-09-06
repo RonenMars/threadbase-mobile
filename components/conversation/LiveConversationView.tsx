@@ -15,6 +15,7 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
+import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
@@ -104,6 +105,10 @@ export function LiveConversationView({
     maxBytes: SESSION_HISTORY_MAX_BYTES,
   })
   const historicalMessages: Message[] = data?.messages ?? []
+  const inheritedHistory = data?.inheritedHistory
+  // Matched against the rendered rows, so the seam appears as soon as the page
+  // carrying the boundary message loads.
+  const forkSeam = inheritedHistory?.kind === 'divider' ? inheritedHistory : undefined
 
   // Live appended messages (WS)
   const { liveMessages } = useConversationStream(serverId, sessionId, conversationId)
@@ -362,12 +367,17 @@ export function LiveConversationView({
         data={allMessages}
         keyExtractor={(m) => m.id}
         renderItem={({ item, index }) => (
-          <RenderErrorBoundary
-            tag="message_item"
-            rawFallback={userMessageText(item) || item.role}
-          >
-            <MessageItem message={item} isLast={index === allMessages.length - 1} />
-          </RenderErrorBoundary>
+          <>
+            {forkSeam && item.messageIndex === forkSeam.beforeMessageIndex ? (
+              <InheritedHistoryDivider seam={forkSeam} />
+            ) : null}
+            <RenderErrorBoundary
+              tag="message_item"
+              rawFallback={userMessageText(item) || item.role}
+            >
+              <MessageItem message={item} isLast={index === allMessages.length - 1} />
+            </RenderErrorBoundary>
+          </>
         )}
         maintainVisibleContentPosition={followLiveOutput
           ? { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }
@@ -377,7 +387,12 @@ export function LiveConversationView({
         onStartReached={hasNextPage ? fetchNextPage : undefined}
         onStartReachedThreshold={0.3}
         ListHeaderComponent={
-          <HistoryLoadBoundary hasOlder={Boolean(hasNextPage)} isFetching={isFetchingNextPage} />
+          <>
+            {inheritedHistory?.kind === 'unavailable' ? (
+              <InheritedHistoryDivider seam={inheritedHistory} />
+            ) : null}
+            <HistoryLoadBoundary hasOlder={Boolean(hasNextPage)} isFetching={isFetchingNextPage} />
+          </>
         }
         ListEmptyComponent={
           // A freshly-started / waiting_input session has no JSONL yet, so there

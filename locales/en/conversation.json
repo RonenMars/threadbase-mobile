@@ -22,6 +22,11 @@
     "worktreeRemoved": "This conversation ran in a git worktree that no longer exists. You can read the history, but it can't be resumed.",
     "cannotResume": "Can't resume"
   },
+  "inheritedHistory": {
+    "forked": "Forked into Threadbase",
+    "forkedAt": "Forked into Threadbase · {{time}}",
+    "unavailable": "Earlier history from before this fork isn't available."
+  },
   "resume": {
     "start": "Resume Session",
     "backToLive": "Back to Live Session",

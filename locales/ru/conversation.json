@@ -22,6 +22,11 @@
     "worktreeRemoved": "Эта беседа выполнялась в git worktree, которого больше нет. Историю можно просмотреть, но возобновить нельзя.",
     "cannotResume": "Нельзя возобновить"
   },
+  "inheritedHistory": {
+    "forked": "Форк в Threadbase",
+    "forkedAt": "Форк в Threadbase · {{time}}",
+    "unavailable": "Более ранняя история до форка больше недоступна."
+  },
   "resume": {
     "start": "Возобновить сессию",
     "backToLive": "Назад к живой сессии",

@@ -919,12 +919,14 @@ export default function ConversationDetailScreen() {
               onEndReached={fetchNewerPage}
               isFetchingOlder={isFetchingNextPage}
               isFetchingNewer={isFetchingNewerPage}
+              inheritedHistory={conversation.inheritedHistory}
               contentContainerStyle={listContentStyle}
             />
           ) : (
             <ConversationHistoryList
               messages={mergedMessages}
               lastMessageId={mergedLastMessageId}
+              inheritedHistory={conversation.inheritedHistory}
               onReady={handleListReady}
               onStartReached={fetchNextPage}
               isFetchingOlder={isFetchingNextPage}
