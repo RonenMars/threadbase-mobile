@@ -604,7 +604,25 @@ export function useConversation(
       // Re-read the ref (not a captured const) so every call — and every drain
       // iteration below — uses the latest query handle.
       const cursorAtStart = deriveCursor(queryRef.current.data?.pages)
-      if (cursorAtStart == null) return // no cached history → nothing to resume from
+      if (cursorAtStart == null) {
+        // No cursor but a cached page exists → it is the streamer's empty-200
+        // husk (`emptyConversationPayload`): the conversation was opened in the
+        // window between a session spawning and its first turn, before the
+        // provider writes the transcript (measured 0s–133s on a real box). The
+        // husk has no message_index to resume from, so the drain below can
+        // never start — and refetchOnMount/Focus/Reconnect are all off with a
+        // 7-day persisted gcTime, so nothing else re-reads this key either. The
+        // screen then renders "no messages" for the life of the cache entry on
+        // a conversation that has since filled in. Reset so the next fetch
+        // starts from -1 against real history.
+        if (isEmptyFirstPage(queryRef.current.data)) {
+          const at = Date.now()
+          if (!canTrigger(queryKeyHash, at)) return
+          stampTrigger(queryKeyHash, at)
+          void queryClient.resetQueries({ queryKey: tailKey })
+        }
+        return // no cached history → nothing to resume from
+      }
       const now = Date.now()
       if (!canTrigger(queryKeyHash, now)) return
       stampTrigger(queryKeyHash, now) // stamp once per drain, at the start

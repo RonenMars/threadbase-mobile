@@ -1198,3 +1198,166 @@ describe('useConversation — drain etag (item 3)', () => {
     jest.useRealTimers()
   })
 })
+
+// The streamer answers `GET /api/conversations/:id` with 200 and zero messages
+// when a managed session exists but its transcript does not yet — the window
+// between spawning a session and its first turn (measured 0s–133s in
+// production). Mobile caches that husk under the tail key for 7 days with every
+// auto-refetch trigger disabled, and the delta drain can't rescue it: a husk
+// carries no message_index, so deriveCursor returns undefined and the drain
+// bails before its own empty-page handling ever runs. Without a reset the
+// screen reads "no messages" forever on a conversation that has since filled in.
+describe('useConversation — empty-200 husk in the cache', () => {
+  beforeEach(() => __resetTriggerGuardForTests())
+
+  it('refetches the tail on mount when the only cached page is a husk, and renders the real history', async () => {
+    setActiveServers(['srv_husk'])
+    let tailCalls = 0
+    metaHandlers.srv_husk = () => {
+      tailCalls += 1
+      return Promise.resolve({
+        status: 200,
+        etag: `"v${tailCalls}"`,
+        body: rawConversationPage('c_husk', ['a', 'b', 'c']),
+      })
+    }
+    handlers.srv_husk = () =>
+      Promise.reject(new Error('no after_index delta expected — a husk has no cursor'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_husk', 'c_husk'], {
+      pages: [rawConversationPage('c_husk', [])],
+      pageParams: [-1],
+    })
+
+    const { result } = await renderHook(() => useConversation('srv_husk', 'c_husk'), { wrapper })
+
+    await waitFor(() => expect(result.current.data!.messages).toHaveLength(3))
+    // Exactly one tail (-1) fetch: the reset, not a refetchOnMount storm.
+    expect(tailCalls).toBe(1)
+  })
+
+  it('leaves a warm cache with real messages alone — the after_index delta still owns that path', async () => {
+    setActiveServers(['srv_warm'])
+    const paths: string[] = []
+    handlers.srv_warm = (path) => {
+      paths.push(path)
+      return Promise.resolve(
+        rawAnchoredPage('c_warm', 3, 1, 4, { has_more_newer: false, next_after_index: null }),
+      )
+    }
+    metaHandlers.srv_warm = () =>
+      Promise.reject(new Error('tail fetch must not fire — the cache is not a husk'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_warm', 'c_warm'], warmTailCache('c_warm'))
+
+    const { result } = await renderHook(() => useConversation('srv_warm', 'c_warm'), { wrapper })
+
+    await waitFor(() => expect(result.current.data!.messages).toHaveLength(4))
+    expect(paths.filter((p) => p.includes('after_index=3'))).toHaveLength(1)
+  })
+
+  it('does not reset on a cold cache — undefined pages are not a husk', async () => {
+    setActiveServers(['srv_cold'])
+    let tailCalls = 0
+    metaHandlers.srv_cold = () => {
+      tailCalls += 1
+      return Promise.resolve({
+        status: 200,
+        etag: '"v1"',
+        body: rawConversationPage('c_cold', ['a', 'b']),
+      })
+    }
+    handlers.srv_cold = () => Promise.reject(new Error('no delta expected on a cold load'))
+    const { wrapper } = wrapperWithClient()
+
+    const { result } = await renderHook(() => useConversation('srv_cold', 'c_cold'), { wrapper })
+
+    await waitFor(() => expect(result.current.data!.messages).toHaveLength(2))
+    // One ordinary first-page fetch, and no reset piled on top of it.
+    await new Promise((r) => setTimeout(r, 50))
+    expect(tailCalls).toBe(1)
+  })
+
+  it('a still-empty conversation refetches once per throttle window, never in a loop', async () => {
+    jest.useFakeTimers()
+    setActiveServers(['srv_still'])
+    let tailCalls = 0
+    metaHandlers.srv_still = () => {
+      tailCalls += 1
+      // Still no transcript: the server keeps answering with the husk.
+      return Promise.resolve({ status: 200, etag: null, body: rawConversationPage('c_still', []) })
+    }
+    handlers.srv_still = () => Promise.reject(new Error('no delta expected — still a husk'))
+    const { qc, wrapper } = wrapperWithClient()
+    qc.setQueryData(['conversation', 'srv_still', 'c_still'], {
+      pages: [rawConversationPage('c_still', [])],
+      pageParams: [-1],
+    })
+
+    const { unmount } = await renderHook(() => useConversation('srv_still', 'c_still'), { wrapper })
+
+    // Mount's reset fires once. The refetch returns another husk, which must not
+    // feed back into another reset.
+    await waitFor(() => expect(tailCalls).toBe(1))
+
+    // WS flaps inside the 5s guard are swallowed.
+    for (let i = 0; i < 5; i++) {
+      statusListener?.('srv_still', 'connected')
+      await act(() => jest.advanceTimersByTime(500))
+    }
+    expect(tailCalls).toBe(1)
+
+    // Past the guard, a reconnect earns a fresh look — the transcript may exist now.
+    await act(() => jest.advanceTimersByTime(6000))
+    statusListener?.('srv_still', 'connected')
+    await waitFor(() => expect(tailCalls).toBe(2))
+
+    unmount()
+    jest.useRealTimers()
+  })
+
+  it('a foreground after a cold load that returned the husk picks up the transcript', async () => {
+    jest.useFakeTimers()
+    setActiveServers(['srv_wake'])
+    let tailCalls = 0
+    metaHandlers.srv_wake = () => {
+      tailCalls += 1
+      return Promise.resolve({
+        status: 200,
+        etag: `"v${tailCalls}"`,
+        // First load lands in the spawn→first-turn window; by the foreground the
+        // provider has written the JSONL.
+        body:
+          tailCalls === 1
+            ? rawConversationPage('c_wake', [])
+            : rawConversationPage('c_wake', ['a', 'b', 'c']),
+      })
+    }
+    handlers.srv_wake = () => Promise.reject(new Error('no delta expected from a husk'))
+
+    // Same capture-and-never-restore approach as the delta foreground test above:
+    // react-query's focusManager also subscribes to 'change', and the real
+    // AppState.addEventListener throws in this environment.
+    const appStateHandlers: ((s: string) => void)[] = []
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((event, handler) => {
+      if (event === 'change') appStateHandlers.push(handler as (s: string) => void)
+      return { remove: jest.fn() } as never
+    })
+    const fireForeground = () => appStateHandlers.forEach((h) => h('active'))
+
+    const { wrapper } = wrapperWithClient()
+    const { result, unmount } = await renderHook(() => useConversation('srv_wake', 'c_wake'), {
+      wrapper,
+    })
+
+    await waitFor(() => expect(result.current.data!.messages).toHaveLength(0))
+    expect(tailCalls).toBe(1)
+
+    fireForeground()
+    await waitFor(() => expect(result.current.data!.messages).toHaveLength(3))
+    expect(tailCalls).toBe(2)
+
+    unmount()
+    jest.useRealTimers()
+  })
+})
