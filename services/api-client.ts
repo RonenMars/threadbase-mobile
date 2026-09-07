@@ -701,7 +701,11 @@ export interface ServerApi {
   /** Full replace. Used by the server-config endpoints, which have no per-key delete. */
   put: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
-  delete: <T>(path: string, options?: RequestOptions) => Promise<T>
+  /**
+   * A body is optional but real: `DELETE /api/push/register` identifies the token
+   * to drop in the body, so a bodiless delete there answers 400.
+   */
+  delete: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>
 }
 
 export function createApiForServer(serverId: string): ServerApi {
@@ -712,7 +716,7 @@ export function createApiForServer(serverId: string): ServerApi {
     post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('POST', path, body, serverId, options),
     put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, body, serverId, options),
     patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, body, serverId, options),
-    delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, undefined, serverId, options),
+    delete: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('DELETE', path, body, serverId, options),
   }
 }
 
@@ -742,8 +746,8 @@ export const api: ServerApi = {
     const first = useServersStore.getState().activeServerIds[0]
     return first ? request<T>('PATCH', path, body, first, options) : Promise.reject(new NetworkError('No servers configured'))
   },
-  delete: <T>(path: string, options?: RequestOptions) => {
+  delete: <T>(path: string, body?: unknown, options?: RequestOptions) => {
     const first = useServersStore.getState().activeServerIds[0]
-    return first ? request<T>('DELETE', path, undefined, first, options) : Promise.reject(new NetworkError('No servers configured'))
+    return first ? request<T>('DELETE', path, body, first, options) : Promise.reject(new NetworkError('No servers configured'))
   },
 }
