@@ -89,11 +89,6 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  const respondToPlan = useMutation({
-    ...retryOnNetwork,
-    mutationFn: (vars: { action: 'proceed' | 'cancel' | 'edit'; editedPrompt?: string }) =>
-      api.post(`/api/sessions/${sessionId}/plan-response`, vars),
-  })
 
   const respondToQuestion = useMutation({
     ...retryOnNetwork,
@@ -298,5 +293,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, sendRawKey, cancelSession, addToQueue, removeFromQueue, respondToPlan, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, sendRawKey, cancelSession, addToQueue, removeFromQueue, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

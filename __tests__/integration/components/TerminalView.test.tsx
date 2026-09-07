@@ -175,9 +175,6 @@ jest.mock('@/components/shared/SlashCommandArgModal', () => ({
 jest.mock('@/components/queue/PromptQueueSheet', () => ({
   PromptQueueSheet: () => null,
 }))
-jest.mock('@/components/queue/PlanPreviewSheet', () => ({
-  PlanPreviewSheet: () => null,
-}))
 
 const mockSearchTargetQuery = jest.fn()
 jest.mock('@/services/api-client', () => {

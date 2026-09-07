@@ -1,13 +1,4 @@
 {
-  "planPreview": {
-    "title": "معاينة الخطة",
-    "autoProceed": "متابعة تلقائية خلال {{seconds}} ث",
-    "proceed": "▶ متابعة",
-    "editPrompt": "تعديل البرومبت",
-    "sendEdit": "إرسال التعديل",
-    "cancel": "✕ إلغاء",
-    "editPlaceholder": "عدّل البرومبت قبل المتابعة…"
-  },
   "promptQueue": {
     "title": "قائمة انتظار البرومبتات",
     "pending_zero": "{{count}} قيد الانتظار",

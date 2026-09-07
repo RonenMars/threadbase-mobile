@@ -24,7 +24,6 @@ import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
-import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { wsManager } from '@/services/ws-client'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message } from '@/types/api'
@@ -44,9 +43,6 @@ interface Props {
   provider?: ProviderName | string | null
   /** Disable the composer while the session's PTY is still waking up. */
   disabled?: boolean
-  /** Plan to preview, surfaced from the session screen's plan_ready listener. */
-  pendingPlan?: string | null
-  onClosePlan?: () => void
   /** Prefer raw terminal when chat normalization looks unreliable. */
   onPreferRawTerminal?: () => void
 }
@@ -80,8 +76,6 @@ export function LiveConversationView({
   conversationId,
   provider,
   disabled = false,
-  pendingPlan = null,
-  onClosePlan,
   onPreferRawTerminal,
 }: Props) {
   const theme = useTheme()
@@ -474,15 +468,6 @@ export function LiveConversationView({
         onClose={() => setQueueVisible(false)}
       />
 
-      {pendingPlan ? (
-        <PlanPreviewSheet
-          serverId={serverId}
-          sessionId={sessionId}
-          plan={pendingPlan}
-          visible={pendingPlan != null}
-          onClose={() => onClosePlan?.()}
-        />
-      ) : null}
     </KeyboardAvoidingView>
   )
 }

@@ -15,7 +15,6 @@ jest.mock('@/hooks/useSessionActions', () => ({
     sendInput: { mutate: jest.fn(), isPending: false },
     addToQueue: { mutate: jest.fn(), isPending: false },
     removeFromQueue: { mutate: jest.fn(), isPending: false },
-    respondToPlan: { mutate: jest.fn(), isPending: false },
   }),
 }))
 

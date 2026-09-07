@@ -16,7 +16,6 @@ import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
-import { PlanPreviewSheet } from '@/components/queue/PlanPreviewSheet'
 import { conversationHref } from '@/lib/conversationHref'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { ProviderName } from '@/constants/providers'
@@ -28,8 +27,6 @@ interface Props {
   provider?: ProviderName | string | null
   parseConfidence?: ParseConfidence
   disabled?: boolean
-  pendingPlan?: string | null
-  onClosePlan?: () => void
   /** Conversation that was resumed into this session — when set, disclose missing PTY scrollback. */
   resumedConversationId?: string | null
   /** Conversation backing this session — seeds a history region above the live terminal tail. */
@@ -42,8 +39,6 @@ export function TerminalView({
   provider,
   parseConfidence: parseConfidenceProp,
   disabled = false,
-  pendingPlan = null,
-  onClosePlan,
   resumedConversationId = null,
   conversationId = null,
 }: Props) {
@@ -253,15 +248,6 @@ export function TerminalView({
         onClose={() => setQueueVisible(false)}
       />
 
-      {pendingPlan ? (
-        <PlanPreviewSheet
-          serverId={serverId}
-          sessionId={sessionId}
-          plan={pendingPlan}
-          visible={pendingPlan != null}
-          onClose={() => onClosePlan?.()}
-        />
-      ) : null}
     </KeyboardAvoidingView>
   )
 }
