@@ -7,6 +7,15 @@
 This document tracks the phased implementation. All three phases are complete and
 verified.
 
+> **Superseded 2026-09-07.** The consent/init model described below (gated
+> `Sentry.init`, feedback only transmitting when crash reporting is ON,
+> `Sentry.close()` on disable, diagnostics opt-in pre-checked) has been
+> replaced by the Anonymous Diagnostics model — see
+> `docs/specs/anonymous-diagnostics-consent-v0.1.md` and
+> `docs/audits/anonymous-diagnostics-transmission-proof.md`. Kept here as a
+> historical record of the original implementation; do not use it as current
+> reference for consent gating or feedback transmission behavior.
+
 ---
 
 ## Phase 1 — Privacy-first Sentry Crash Reporting

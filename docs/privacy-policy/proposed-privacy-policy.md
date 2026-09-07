@@ -22,6 +22,15 @@
 >
 > **Effective date:** _(historical draft — proposed: 2026-07-12)_
 > **Contact:** ronenmars@gmail.com _(superseded by support@threadbase.sh)_
+>
+> **Also stale as of 2026-09-07:** this draft's "Crash Reporting" terminology,
+> its once-only post-crash upsell description, and its framing of feedback
+> submission as a per-submission consent grant are superseded by the
+> Anonymous Diagnostics model — see
+> `docs/specs/anonymous-diagnostics-consent-v0.1.md`. The exact behavior the
+> live tb-landing policy can now describe is summarized in this repo's Phase 2
+> implementation report (search recent commits/PR for "Anonymous Diagnostics
+> consent"); edit the tb-landing locales, not this file.
 
 Threadbase is a thin client for the Claude Code sessions you run on your own
 computer, reached through a Threadbase streamer instance that you operate.

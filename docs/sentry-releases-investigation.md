@@ -349,6 +349,17 @@ is now `true`. A session is a start/end timestamp plus an `ok`/`errored`/
 `crashed` status; it carries no content and no PII, so it does not weaken the
 privacy hardening around it. Everything else in that block stays off.
 
+> **Update — 2026-09-07 (Anonymous Diagnostics).** `enableAutoSessionTracking`
+> is no longer a static `true`. It is set once, at the single unconditional
+> `Sentry.init()` call, from whatever the Anonymous Diagnostics consent value
+> is at that moment (native session tracking can't be toggled at runtime — see
+> `docs/specs/anonymous-diagnostics-consent-v0.1.md` §16). A fresh install
+> defaults to consent OFF, so `enableAutoSessionTracking` is `false` for that
+> first launch; it only becomes `true` starting the *next* launch after the
+> user turns Anonymous Diagnostics on. Release health data therefore requires
+> the user to have opted in before a given app launch, not merely at some
+> point in the past.
+
 ### Release strings now carry the platform
 
 `services/safe-metadata.ts` `getReleaseString()` interpolates

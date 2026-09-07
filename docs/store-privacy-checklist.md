@@ -1,14 +1,17 @@
 # Store Privacy Declarations — Manual Review Checklist
 
-Introducing opt-in Sentry crash reporting and user-initiated feedback changes
-what the app may transmit, so the **App Store Connect** and **Google Play
-Console** privacy declarations must be reviewed and updated by hand. These
-console settings cannot be changed from the codebase — this is a checklist of
-what **Ronen** must review and set in each console before releasing a build that
-includes these features.
+Introducing opt-in Sentry-based **Anonymous Diagnostics** (renamed from "crash
+reporting" — see `docs/specs/anonymous-diagnostics-consent-v0.1.md`) and
+user-initiated feedback changes what the app may transmit, so the **App Store
+Connect** and **Google Play Console** privacy declarations must be reviewed
+and updated by hand. These console settings cannot be changed from the
+codebase — this is a checklist of what **Ronen** must review and set in each
+console before releasing a build that includes these features.
 
 > Nothing here has been changed in any store console. This document only lists
-> what to review.
+> what to review. The exact recommended answers for each field below (derived
+> from the shipped Anonymous Diagnostics implementation) are compiled as a
+> ready-to-enter table in the Phase 2 implementation report.
 
 ## App Store Connect — App Privacy
 
@@ -16,8 +19,8 @@ Review **App Store Connect → your app → App Privacy** and update the "Data
 Collection" answers. The features add these data types (all optional / opt-in):
 
 - [ ] **Diagnostics → Crash Data** — collected in two situations: (1)
-      automatically, whenever the user has turned on the standing "Share
-      anonymous crash reports" setting; (2) as a one-time explicit action even
+      automatically, whenever the user has turned on the standing "Anonymous
+      diagnostics" setting; (2) as a one-time explicit action even
       when that setting is OFF, if the user taps "Report this crash" on the
       crash-recovery screen. Both paths send the same sanitized data through the
       same code path — declare Crash Data as collected, **optional** (the
@@ -66,8 +69,8 @@ Review **Play Console → your app → Policy → App content → Data safety** 
 update the form:
 
 - [ ] **App activity / Crash logs** — **Data collected** (not shared). Two
-      collection paths: automatic when the standing "Share anonymous crash
-      reports" setting is on, and a one-time explicit "Report this crash" tap on
+      collection paths: automatic when the standing "Anonymous diagnostics"
+      setting is on, and a one-time explicit "Report this crash" tap on
       the crash-recovery screen that works even when that setting is off.
       Optional? **Yes** for both — automatic reporting can be turned off, and the
       manual path only ever fires on an explicit tap, never in the background.
@@ -102,11 +105,15 @@ update the form:
       by default; user-initiated submissions may still use Sentry".
 - [ ] Both stores: do **not** declare advertising, tracking, or fingerprinting —
       the app does none.
-- [ ] After a manual report is sent, the app may show a one-time prompt asking
-      whether to turn on automatic crash reporting going forward; declining sets
-      a local "don't ask again" flag and the prompt never reappears. This prompt
-      does not itself send any data — only the user's Yes/No answer changes the
-      standing setting.
+- [ ] The crash-recovery screen's "Report this crash" action is bundled with
+      an unchecked "Automatically send future crash reports and diagnostics"
+      checkbox — checking it and reporting together turns on the standing
+      setting; there is no separate post-send prompt for that path. Separately,
+      after a *feedback* submission (not a crash report), if the standing
+      setting is off the app may show a non-modal suggestion offering to turn
+      it on, capped at 2 impressions per rolling 30 days — "Not now" dismisses
+      only that instance, not permanently. Neither surface itself sends any
+      data — only the user's choice changes the standing setting.
 - [ ] Publish `docs/privacy-policy/proposed-privacy-policy.md` (updated to also describe the
       manual "Report this crash" path) to <https://threadbase.sh/privacy-policy>
       **before** submitting a build with these features, and set the effective

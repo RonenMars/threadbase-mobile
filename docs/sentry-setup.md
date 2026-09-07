@@ -1,13 +1,20 @@
-# Crash Reporting (Sentry) — Setup & Privacy
+# Anonymous Diagnostics (Sentry) — Setup & Privacy
 
-Threadbase Mobile has **optional, opt-in** crash reporting built on
-[`@sentry/react-native`](https://docs.sentry.io/platforms/react-native/). It is
-**disabled by default** and never transmits anything unless the user explicitly
-enables it in **Settings → Crash Reporting** _and_ a DSN is configured _and_ the
-build environment permits reporting.
+Threadbase Mobile has **optional, opt-in Anonymous Diagnostics** built on
+[`@sentry/react-native`](https://docs.sentry.io/platforms/react-native/), off
+**by default**. See `docs/specs/anonymous-diagnostics-consent-v0.1.md` for the
+full spec — this doc covers local configuration and the manual Sentry/EAS
+dashboard steps only. **Never commit a real DSN or auth token.**
 
-This document covers local configuration and the manual Sentry/EAS dashboard
-steps. **Never commit a real DSN or auth token.**
+The Sentry SDK becomes ready (`Sentry.init` runs) at app startup whenever a
+DSN is configured and the build environment permits it — that alone
+authorizes nothing. Passive/automatic transmission (crash/error events,
+breadcrumbs, session tracking) is gated separately on the **Anonymous
+diagnostics** setting (Settings → Anonymous diagnostics), off by default.
+Explicit user actions — tapping "Report this crash" or submitting feedback —
+work independent of that setting and send only that one report (see
+`services/sentry.ts` module doc and
+`docs/audits/anonymous-diagnostics-transmission-proof.md`).
 
 ## What is (and isn't) sent
 
@@ -15,11 +22,14 @@ Everything that leaves the device passes through the centralized sanitizer
 (`services/sanitize.ts`) via `beforeSend` / `beforeBreadcrumb`. See
 `docs/privacy-policy/proposed-privacy-policy.md` for the authoritative list. In short:
 
-- **Sent (when opted in):** app version, build number, platform, OS
+- **Sent (once Anonymous Diagnostics is on, or for an explicit one-shot
+  report/feedback submission):** app version, build number, platform, OS
   major/minor, JS engine, environment/channel, Expo runtime version, EAS update
   id, an anonymous per-install UUID (for issue grouping only), a derived generic
-  connection-mode enum (`local`/`remote`/`unknown`), and scrubbed exception
-  type/message/stack frames.
+  connection-mode enum (`local`/`remote`/`unknown`), scrubbed exception
+  type/message/stack frames, and (once diagnostics is on) anonymous
+  session/release-health pings (start/end timestamp + ok/errored/crashed
+  status only).
 - **Never sent:** prompts, terminal output, source code, file contents,
   credentials, tokens, headers, server URLs, hostnames, IPs, repository
   names/paths, absolute/home paths, session names/titles, WebSocket payloads,
@@ -44,6 +54,7 @@ app at their own Sentry project via environment variables:
 | `SENTRY_PROJECT` | shell env / EAS env | Project slug, used only at build time to upload source maps. |
 | `SENTRY_AUTH_TOKEN` | shell env / EAS env (**sensitive**) | Secret. Authenticates the source-map upload. Never in `.env`, never committed. |
 
-Without `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN`, crash reporting still
-works end-to-end (events transmit with `EXPO_PUBLIC_SENTRY_DSN` + consent) —
-stack traces just show up unsymbolicated in the Sentry dashboard.
+Without `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN`, Anonymous Diagnostics
+still works end-to-end (events transmit with `EXPO_PUBLIC_SENTRY_DSN` + consent
+on, or via an explicit one-shot report/feedback submission) — stack traces
+just show up unsymbolicated in the Sentry dashboard.
