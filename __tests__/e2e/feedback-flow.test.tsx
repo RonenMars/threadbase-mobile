@@ -216,6 +216,72 @@ describe('Help & Feedback — standing consent ON (spec §11)', () => {
   })
 })
 
+describe('Help & Feedback — post-feedback diagnostics suggestion (spec §14)', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({
+      anonymousDiagnosticsEnabled: false,
+      postFeedbackDiagnosticsSuggestionImpressions: [],
+    })
+  })
+
+  async function submitFeedbackToSuccess(screen: Screen) {
+    await gotoForm(screen)
+    await type(screen, 'feedback-description-input', VALID_DESC)
+    await press(screen, 'feedback-submit')
+    await waitFor(() => expect(screen.getByTestId('feedback-success-done')).toBeTruthy())
+  }
+
+  it('shows the suggestion after a successful delivery while consent is off', async () => {
+    const screen = await renderScreen()
+    await submitFeedbackToSuccess(screen)
+    expect(screen.getByTestId('feedback-diagnostics-suggestion')).toBeTruthy()
+  })
+
+  it('records an impression when shown', async () => {
+    const screen = await renderScreen()
+    await submitFeedbackToSuccess(screen)
+    expect(useSettingsStore.getState().postFeedbackDiagnosticsSuggestionImpressions).toHaveLength(1)
+  })
+
+  it('"Enable" grants standing consent and dismisses the suggestion', async () => {
+    const screen = await renderScreen()
+    await submitFeedbackToSuccess(screen)
+    await press(screen, 'feedback-diagnostics-suggestion-enable')
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(true)
+    expect(screen.queryByTestId('feedback-diagnostics-suggestion')).toBeNull()
+  })
+
+  it('"Not now" dismisses only this instance — no permanent flag is written', async () => {
+    const screen = await renderScreen()
+    await submitFeedbackToSuccess(screen)
+    await press(screen, 'feedback-diagnostics-suggestion-not-now')
+    expect(screen.queryByTestId('feedback-diagnostics-suggestion')).toBeNull()
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(false)
+    // it can still appear again later — nothing permanent was recorded beyond the one impression timestamp
+    expect(useSettingsStore.getState().postFeedbackDiagnosticsSuggestionImpressions).toHaveLength(1)
+  })
+
+  it('is suppressed once 2 impressions already fall within the rolling 30-day window', async () => {
+    const now = Date.now()
+    useSettingsStore.setState({
+      postFeedbackDiagnosticsSuggestionImpressions: [now - 1000, now - 2000],
+    })
+    const screen = await renderScreen()
+    await submitFeedbackToSuccess(screen)
+    expect(screen.queryByTestId('feedback-diagnostics-suggestion')).toBeNull()
+  })
+
+  it('never appears when standing consent is already on', async () => {
+    useSettingsStore.setState({ anonymousDiagnosticsEnabled: true })
+    const screen = await renderScreen()
+    await submitFeedbackToSuccess(screen)
+    expect(screen.queryByTestId('feedback-diagnostics-suggestion')).toBeNull()
+    await act(async () => {
+      useSettingsStore.setState({ anonymousDiagnosticsEnabled: false })
+    })
+  })
+})
+
 describe('Help & Feedback — screenshot', () => {
   it('adds and removes a screenshot', async () => {
     ;(pickAndPrepareScreenshot as jest.Mock).mockResolvedValue({
