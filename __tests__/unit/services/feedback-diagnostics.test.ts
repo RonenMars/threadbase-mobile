@@ -4,7 +4,7 @@ import { useSettingsStore } from '@/stores/settings'
 
 describe('buildFeedbackDiagnostics', () => {
   beforeEach(() => {
-    useSettingsStore.setState({ crashReportingEnabled: false })
+    useSettingsStore.setState({ anonymousDiagnosticsEnabled: false })
     useServersStore.setState({ servers: {}, activeServerIds: [] })
   })
 
@@ -15,15 +15,15 @@ describe('buildFeedbackDiagnostics', () => {
     expect(['hermes', 'jsc']).toContain(d.jsEngine)
     expect(['local', 'remote', 'unknown']).toContain(d.connectionMode)
     expect(typeof d.serverCount).toBe('number')
-    expect(typeof d.crashReportingEnabled).toBe('boolean')
+    expect(typeof d.anonymousDiagnosticsEnabled).toBe('boolean')
     // No url/name/host/id fields leak into the shape
     const keys = Object.keys(d)
     expect(keys.some((k) => /url|host|apikey|token|name|path|id$/i.test(k) && k !== 'easUpdateId')).toBe(false)
   })
 
   it('reflects the crash-reporting consent state', () => {
-    useSettingsStore.setState({ crashReportingEnabled: true })
-    expect(buildFeedbackDiagnostics().crashReportingEnabled).toBe(true)
+    useSettingsStore.setState({ anonymousDiagnosticsEnabled: true })
+    expect(buildFeedbackDiagnostics().anonymousDiagnosticsEnabled).toBe(true)
   })
 
   it('reports server COUNT only, never server details', () => {
@@ -72,7 +72,7 @@ describe('diagnosticsToRows', () => {
     expect(keys).toContain('platform')
     expect(keys).toContain('connectionMode')
     expect(keys).toContain('serverCount')
-    expect(keys).toContain('crashReportingEnabled')
+    expect(keys).toContain('anonymousDiagnosticsEnabled')
     rows.forEach((r) => expect(typeof r.value).toBe('string'))
   })
 })

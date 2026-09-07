@@ -14,7 +14,7 @@
     "language": "שפה",
     "session": "סשן",
     "privacy": "פרטיות",
-    "crashReporting": "דיווח קריסות"
+    "anonymousDiagnostics": "אבחון אנונימי"
   },
   "session": {
     "chatView": "תצוגת צ'אט",
@@ -95,16 +95,6 @@
     "serverHealth": "בריאות שרת",
     "pairedDevices": "מכשירים מקושרים",
     "backupRestore": "גיבוי ושחזור"
-  },
-  "crashReporting": {
-    "title": "שיתוף דיווחי קריסה אנונימיים",
-    "description": "שליחת מידע טכני מנוקה על קריסות כדי לעזור לשפר את Threadbase. הנחיות, פלט טרמינל, קוד מקור, אישורי גישה, כתובות שרתים ותוכן סשנים לעולם אינם נכללים.",
-    "privacyPolicy": "מדיניות פרטיות",
-    "testCrash": "בדיקת דיווח קריסות",
-    "testThrow": "זריקת חריגה לא מטופלת",
-    "testCrashConfirmTitle": "לשלוח קריסת בדיקה?",
-    "testCrashConfirmMessage": "פעולה זו יוצרת שגיאת בדיקה כדי לוודא שהדיווח פועל. זמין רק בגרסאות פיתוח.",
-    "testCrashSend": "שלח קריסת בדיקה"
   },
   "servers": {
     "scanQr": "סרוק QR להוספת שרת"
@@ -274,5 +264,17 @@
     "planSummary": "יצירה {{create}} · עדכון {{update}} · התנגשות {{conflict}}",
     "createRow": "יצירה: {{name}}",
     "updateRow": "עדכון: {{name}}"
+  },
+  "anonymousDiagnostics": {
+    "title": "אבחון אנונימי",
+    "description": "עזרו לשפר את Threadbase על ידי שליחת דוחות קריסה ונתוני יציבות בסיסיים שאינם מקושרים לזהותכם.",
+    "learnMore": "מידע נוסף",
+    "learnMoreBody": "דוחות אבחון משתמשים במזהה התקנה אקראי כדי לקבץ דוחות קשורים מאותה התקנת אפליקציה. הם אינם מקושרים לשמכם, לכתובת האימייל, לחשבון או לזהות המכשיר שלכם.",
+    "privacyPolicy": "מדיניות פרטיות",
+    "testCrash": "בדיקת דיווח קריסות",
+    "testThrow": "זריקת חריגה לא מטופלת",
+    "testCrashConfirmTitle": "לשלוח קריסת בדיקה?",
+    "testCrashConfirmMessage": "פעולה זו יוצרת שגיאת בדיקה כדי לוודא שהדיווח פועל. זמין רק בגרסאות פיתוח.",
+    "testCrashSend": "שלח קריסת בדיקה"
   }
 }

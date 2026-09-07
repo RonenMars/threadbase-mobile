@@ -47,6 +47,7 @@
   },
   "4": {
     "files": [
+      "__tests__/integration/anonymous-diagnostics-transmission-proof.test.ts",
       "__tests__/integration/components/Badge.test.tsx",
       "__tests__/integration/components/BrowseFiles.test.tsx",
       "__tests__/integration/components/BrowseOutsideRootFallback.test.tsx",

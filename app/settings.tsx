@@ -282,8 +282,8 @@ export default function SettingsScreen() {
     setSessionView,
     biometricLock,
     setBiometricLock,
-    crashReportingEnabled,
-    setCrashReportingEnabled,
+    anonymousDiagnosticsEnabled,
+    setAnonymousDiagnosticsEnabled,
   } = useSettingsStore()
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [isLeaveActionOpen, setIsLeaveActionOpen] = React.useState(false)
@@ -310,14 +310,21 @@ export default function SettingsScreen() {
     })
   }
 
+  const handleDiagnosticsLearnMore = () => {
+    Alert.alert(
+      t('anonymousDiagnostics.title'),
+      t('anonymousDiagnostics.learnMoreBody'),
+    )
+  }
+
   const handleTestCrash = () => {
     Alert.alert(
-      t('crashReporting.testCrashConfirmTitle'),
-      t('crashReporting.testCrashConfirmMessage'),
+      t('anonymousDiagnostics.testCrashConfirmTitle'),
+      t('anonymousDiagnostics.testCrashConfirmMessage'),
       [
         { text: t('common:button.cancel', 'Cancel'), style: 'cancel' },
         {
-          text: t('crashReporting.testCrashSend'),
+          text: t('anonymousDiagnostics.testCrashSend'),
           onPress: () => {
             // Route through the explicit capture helper so it is sanitized and
             // gated on consent; never a raw crash of the app.
@@ -332,8 +339,8 @@ export default function SettingsScreen() {
 
   const handleThrowUncaught = () => {
     Alert.alert(
-      t('crashReporting.testCrashConfirmTitle'),
-      t('crashReporting.testCrashConfirmMessage'),
+      t('anonymousDiagnostics.testCrashConfirmTitle'),
+      t('anonymousDiagnostics.testCrashConfirmMessage'),
       [
         { text: t('common:button.cancel', 'Cancel'), style: 'cancel' },
         {
@@ -341,7 +348,7 @@ export default function SettingsScreen() {
           // RootErrorBoundary -> componentDidCatch -> captureHandledError, the
           // same path a genuine unhandled render crash would take — distinct
           // from the already-caught captureHandledError call above.
-          text: t('crashReporting.testCrashSend'),
+          text: t('anonymousDiagnostics.testCrashSend'),
           onPress: () => setThrowOnRender(true),
         },
       ],
@@ -790,23 +797,33 @@ await refreshServerInfo(serverId)
           />
         </View>
 
-        <SectionHeader title={t('section.crashReporting')} />
+        <SectionHeader title={t('section.anonymousDiagnostics')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill material />
           <SettingsRow
-            label={t('crashReporting.title')}
-            value={crashReportingEnabled}
-            onValueChange={setCrashReportingEnabled}
+            label={t('anonymousDiagnostics.title')}
+            value={anonymousDiagnosticsEnabled}
+            onValueChange={setAnonymousDiagnosticsEnabled}
             testID="settings-crash-reporting-toggle"
           />
-          <Text style={s.rowNote}>{t('crashReporting.description')}</Text>
+          <Text style={s.rowNote}>{t('anonymousDiagnostics.description')}</Text>
+          <TouchableOpacity
+            style={s.row}
+            onPress={handleDiagnosticsLearnMore}
+            accessibilityRole="button"
+            accessibilityLabel={t('anonymousDiagnostics.learnMore')}
+            testID="settings-diagnostics-learn-more"
+          >
+            <Text style={s.rowLabel}>{t('anonymousDiagnostics.learnMore')}</Text>
+            <SettingsChevron />
+          </TouchableOpacity>
           <TouchableOpacity
             style={s.row}
             onPress={() => Linking.openURL('https://threadbase.sh/privacy-policy')}
             accessibilityRole="button"
-            accessibilityLabel={t('crashReporting.privacyPolicy')}
+            accessibilityLabel={t('anonymousDiagnostics.privacyPolicy')}
           >
-            <Text style={s.rowLabel}>{t('crashReporting.privacyPolicy')}</Text>
+            <Text style={s.rowLabel}>{t('anonymousDiagnostics.privacyPolicy')}</Text>
             <SettingsChevron />
           </TouchableOpacity>
           {__DEV__ ? (
@@ -814,10 +831,10 @@ await refreshServerInfo(serverId)
               style={s.row}
               onPress={handleTestCrash}
               accessibilityRole="button"
-              accessibilityLabel={t('crashReporting.testCrash')}
+              accessibilityLabel={t('anonymousDiagnostics.testCrash')}
               testID="settings-test-crash-btn"
             >
-              <Text style={s.rowLabel}>{t('crashReporting.testCrash')}</Text>
+              <Text style={s.rowLabel}>{t('anonymousDiagnostics.testCrash')}</Text>
               <SettingsChevron />
             </TouchableOpacity>
           ) : null}
@@ -826,10 +843,10 @@ await refreshServerInfo(serverId)
               style={[s.row, { borderBottomWidth: 0 }]}
               onPress={handleThrowUncaught}
               accessibilityRole="button"
-              accessibilityLabel={t('crashReporting.testThrow')}
+              accessibilityLabel={t('anonymousDiagnostics.testThrow')}
               testID="settings-throw-uncaught-btn"
             >
-              <Text style={s.rowLabel}>{t('crashReporting.testThrow')}</Text>
+              <Text style={s.rowLabel}>{t('anonymousDiagnostics.testThrow')}</Text>
               <SettingsChevron />
             </TouchableOpacity>
           ) : null}

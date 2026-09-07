@@ -12,7 +12,18 @@
 - [x] Verify Session Replay, Profiling, Performance Monitoring, and Tracing are disabled. _(Verified: `replaysSessionSampleRate: 0`, `replaysOnErrorSampleRate: 0`, `tracesSampleRate: 0`, no performance integrations.)_
 - [x] Verify breadcrumbs (console, HTTP, navigation) are appropriate. _(Verified: `filterIntegrations` blocks Breadcrumbs, HttpContext, DeviceContext, etc. Only explicit `addSafeBreadcrumb` calls are allowed.)_
 
-## Crash reporting
+## Crash reporting (renamed: Anonymous Diagnostics)
+
+> **Update 2026-09-07:** the self-init/tear-down design and the
+> `initCrashReporting`/`setCrashReportingEnabled`/`disableCrashReporting`
+> functions below were replaced by the Anonymous Diagnostics model — the SDK
+> is now ready unconditionally at startup, and `setAnonymousDiagnosticsEnabled`
+> only flips a consent gate (`beforeSend`/`beforeBreadcrumb`), never
+> closes/reinitializes the client. See
+> `docs/specs/anonymous-diagnostics-consent-v0.1.md` and
+> `docs/audits/anonymous-diagnostics-transmission-proof.md` for the current,
+> verified behavior. The bullets below are the original 2026-07-18
+> verification record and no longer describe current code.
 
 - [x] Verify exactly which fields are sent for:
     - [x] JS exception _(Verified: normalized via `normalizeError` → sanitized via `beforeSend`.)_
@@ -20,8 +31,8 @@
     - [ ] Native Android crash _(Requires on-device test + Sentry dashboard inspection — human-only.)_
     - [x] Manual crash report _(Verified: same `doCaptureException` path as automatic; `reportOneShot` uses identical sanitization.)_
 - [x] Confirm installation identifier lifecycle. _(Verified: `getSentryInstallId` / `clearSentryInstallId` in `services/sentry-install-id.ts`; cleared on disable.)_
-- [x] Verify opt-in/opt-out behavior. _(Verified: `initCrashReporting` requires `consentGranted=true`; `setCrashReportingEnabled(false)` calls `disableCrashReporting` which closes client + clears install id.)_
-- [x] Verify consent model consistency. _(Verified 2026-07-18: Feature 35 implemented option (a) — both `reportOneShot` and `submitFeedbackViaSentry` self-init for explicit user actions, then tear down if standing consent was off.)_
+- [x] Verify opt-in/opt-out behavior. _(Originally verified: `initCrashReporting` requires `consentGranted=true`; `setCrashReportingEnabled(false)` calls `disableCrashReporting` which closes client + clears install id. Superseded — see update note above.)_
+- [x] Verify consent model consistency. _(Originally verified 2026-07-18: Feature 35 implemented option (a) — both `reportOneShot` and `submitFeedbackViaSentry` self-init for explicit user actions, then tear down if standing consent was off. Superseded — see update note above.)_
 
 ## Feedback
 

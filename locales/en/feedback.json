@@ -82,5 +82,11 @@
     "copyButton": "Copy report",
     "copied": "Diagnostics copied. Paste responsibly.",
     "openPage": "Open feedback page"
+  },
+  "diagnosticsSuggestion": {
+    "title": "Help improve Threadbase",
+    "body": "Enable anonymous diagnostics to automatically send future crash reports and basic stability information.",
+    "enable": "Enable anonymous diagnostics",
+    "notNow": "Not now"
   }
 }

@@ -41,7 +41,7 @@ function seedStores() {
     displayedServerIds: [SENSITIVE.serverId],
     hasEverHadServer: true,
   })
-  useSettingsStore.setState({ crashReportingEnabled: true })
+  useSettingsStore.setState({ anonymousDiagnosticsEnabled: true })
   useServerFetchStatusStore.setState({
     statuses: { [SENSITIVE.serverId]: { status: 'ok', lastCheckedAt: 1720000000000 } },
   })
@@ -64,7 +64,7 @@ describe('generateDiagnostics — safe allowlist', () => {
     expect(d.hasEverHadServer).toBe(true)
     expect(d.activeSessionCount).toBe(4)
     expect(d.streamerVersions).toEqual(['2.3.1'])
-    expect(d.crashReportingEnabled).toBe(true)
+    expect(d.anonymousDiagnosticsEnabled).toBe(true)
     expect(['granted', 'denied', 'undetermined']).toContain(d.notificationPermission)
   })
 
@@ -160,7 +160,7 @@ describe('diagnosticsToRows', () => {
     expect(keys).toContain('connectionState')
     expect(keys).toContain('serverCount')
     expect(keys).toContain('notificationPermission')
-    expect(keys).toContain('crashReportingEnabled')
+    expect(keys).toContain('anonymousDiagnosticsEnabled')
     rows.forEach((r) => expect(typeof r.value).toBe('string'))
     // no row key or value is a sensitive value
     const flat = JSON.stringify(rows)

@@ -1,22 +1,23 @@
 import { useEffect } from 'react'
 import { useSettingsStore } from '@/stores/settings'
-import { setCrashReportingEnabled } from '@/services/sentry'
+import { setAnonymousDiagnosticsEnabled } from '@/services/sentry'
 
 /**
- * Keeps the Sentry client in lockstep with the persisted consent setting.
+ * Keeps the Sentry consent gate in lockstep with the persisted setting.
  *
- * - On mount (after settings hydrate) it initializes Sentry iff consent is on.
- * - Whenever the consent toggle flips, it initializes or immediately tears down
- *   the client so disabling stops reporting right away.
+ * - On mount (after settings hydrate) it makes the SDK ready (a no-op if it
+ *   already is) and applies the hydrated consent value.
+ * - Whenever the consent toggle flips, it flips the gate immediately so
+ *   disabling stops passive reporting right away.
  *
- * `setCrashReportingEnabled` is itself gated (DSN + environment + consent) and
+ * `setAnonymousDiagnosticsEnabled` is itself gated (DSN + environment) and
  * never throws, so this hook is safe to run unconditionally at the app root.
  */
 export function useCrashReportingSync(): void {
-  const enabled = useSettingsStore((s) => s.crashReportingEnabled)
+  const enabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
 
   useEffect(() => {
-    if (__DEV__) console.log('[sentry] consent sync fired, crashReportingEnabled =', enabled)
-    void setCrashReportingEnabled(enabled)
+    if (__DEV__) console.log('[sentry] consent sync fired, anonymousDiagnosticsEnabled =', enabled)
+    void setAnonymousDiagnosticsEnabled(enabled)
   }, [enabled])
 }

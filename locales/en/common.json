@@ -46,12 +46,7 @@
     "reportSending": "Sending report…",
     "reportSent": "Report sent. Thank you.",
     "reportFailed": "Couldn't send the report. Please try again.",
-    "upsell": {
-      "title": "Turn on crash reporting?",
-      "message": "Enable crash reporting so future crashes are sent automatically. You can turn it off anytime in Settings.",
-      "enable": "Turn on",
-      "notNow": "Not now"
-    }
+    "diagnosticsCheckbox": "Automatically send future crash reports and diagnostics"
   },
   "renderError": {
     "title": "Couldn’t render this item",

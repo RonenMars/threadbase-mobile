@@ -77,7 +77,7 @@ The proposed design pins the streamer's identity key from the QR, runs a Noise `
 | **TB-M-C** | App ↔ AsyncStorage | Anything with device file access | Plain files, no encryption. |
 | **TB-M-D** | QR → camera | Whoever can see the screen | The out-of-band channel the design's server authentication depends on. |
 | **TB-M-E** | Deep link / pasted credential | **Anyone who can send the user a link** | Reaches `parsePairUri` with no camera and no out-of-band channel (`app/pair.tsx:74`). |
-| **TB-M-F** | App ↔ Sentry | Third-party crash reporting | Sanitized by `beforeSend`/`beforeBreadcrumb` (`services/sentry.ts:206-208`) — but **attachments never reach that hook** (`services/sentry.ts:465-468`). |
+| **TB-M-F** | App ↔ Sentry | Third-party crash reporting | Sanitized by `beforeSend`/`beforeBreadcrumb` (`services/sentry.ts:113` as of the Anonymous Diagnostics rewrite (2026-09-07); still gated on standing consent, not init) — but **attachments never reach that hook** (`services/sentry.ts:483 (as of 2026-09-07)`). |
 | **TB-M-G** | App ↔ streamer | Every intermediary | The design's target. Fully cleartext on the LAN path today. |
 
 **The boundary the design most changes is TB-M-G. The boundary it most *depends* on is TB-M-D** — the QR is what makes server authentication possible, and TB-M-E is the same code path with that channel removed.
@@ -101,7 +101,7 @@ The proposed design pins the streamer's identity key from the QR, runs a Noise `
 | **TB-M-09** | E | A jailbroken or rooted device reads SecureStore and the in-memory plaintext | `services/secure-store.ts:1` | That the phone is not compromised. Explicitly out of scope | **RES — out of scope, listed so it is not mistaken for a gap** |
 | **TB-M-10** | D | Pure-JS ChaCha20 cannot keep up with the terminal stream, stalling the same JS thread that renders the terminal | design §2; dilemma D-3 | That `@stablelib` throughput is adequate at PTY chunk rates on a mid-range Android device | **GAP — unmeasured; the assumption most likely to be overturned** |
 | **TB-M-11** | D | Strict WS counter closes and reconnects on any duplicate or reorder, so one intermediary artefact becomes a reconnect loop | design §4.2 | That a single TCP connection is ordered and gap-free through the whole RN WebSocket stack | **RES** (dilemma D-2 names the flip condition) |
-| **TB-M-12** | I | A feedback screenshot bypasses Sentry's `beforeSend` — attachments never touch that hook — so a screenshot of a terminal showing secrets is uploaded unsanitized | `services/sentry.ts:465-468` | That the user chose to send it and knows what was on screen | **GAP — pre-existing, user-consented, unmitigated by content sanitization** |
+| **TB-M-12** | I | A feedback screenshot bypasses Sentry's `beforeSend` — attachments never touch that hook — so a screenshot of a terminal showing secrets is uploaded unsanitized | `services/sentry.ts:483 (as of 2026-09-07)` | That the user chose to send it and knows what was on screen | **GAP — pre-existing, user-consented, unmitigated by content sanitization** |
 | **TB-M-13** | S | SecureStore survives app uninstall by design, so credentials for a server the user believed removed persist across a reinstall — and `D_priv` will inherit that property | `stores/servers.ts:108` (the code's own comment), `:162-165` | That "remove server" deletes every key (`:201` deletes the device token) | **GAP — the design adds a key to a store with this property without addressing it** |
 | **TB-M-14** | E | The device token is stored and never read — every request sends the **shared admin key**, so a compromised phone yields `admin` rather than the scoped credential its device row describes | `services/api-client.ts:200` vs `stores/servers.ts:164`, `:201` | That switching the header to the device token is safe with released streamers, which already accept it (`tb-streamer/src/api/middleware/auth.middleware.ts:71-86`) | **Mit** (design §4.1) |
 | **TB-M-15** | R | No local record of which server or device an action targeted; the connection log carries a `serverId` and an event name only | `services/ws-client.ts:95-99` | That the server keeps the audit trail. It does not either — see `tb-streamer` TB-S-14 | **GAP — unaddressed on both sides** |
@@ -309,7 +309,7 @@ Types per `threat-mitigation-mapping`: **P**reventive / **D**etective / **C**orr
 |---|---|---|---|---|
 | M10 | Invert `shouldPersistQuery` from opt-out to opt-in (`services/query-client.ts:213-218`) and bump `persistBuster` (`:195`), making the code match the comment that already claims bodies are not persisted | P | Low | TB-M-08 |
 | M11 | Web target: refuse E2EE pairing outright, or show a persistent weaker-storage banner. It must not claim the native guarantee | P | Low | TB-M-07 |
-| M12 | Warn in the feedback flow that a screenshot is uploaded as-is and bypasses content sanitization (`services/sentry.ts:465-468`) — the existing sanitizer is good and this is the one hole in it | D | Low | TB-M-12 |
+| M12 | Warn in the feedback flow that a screenshot is uploaded as-is and bypasses content sanitization (`services/sentry.ts:483 (as of 2026-09-07)`) — the existing sanitizer is good and this is the one hole in it | D | Low | TB-M-12 |
 
 ### P3 — measure before believing
 

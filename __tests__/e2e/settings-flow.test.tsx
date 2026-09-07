@@ -214,6 +214,40 @@ describe('Settings – remove server flow', () => {
   })
 })
 
+describe('Settings – anonymous diagnostics section (spec §15)', () => {
+  afterEach(async () => {
+    await act(async () => {
+      useSettingsStore.setState({ anonymousDiagnosticsEnabled: false })
+    })
+  })
+
+  it('shows the toggle labeled Anonymous diagnostics, off by default', async () => {
+    const { getAllByText, getByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(getAllByText('Anonymous diagnostics').length).toBeGreaterThan(0)
+    expect(getByTestId('settings-crash-reporting-toggle')).toBeTruthy()
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(false)
+  })
+
+  it('toggling it on updates the settings store', async () => {
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+    await act(async () => {
+      fireEvent(getByTestId('settings-crash-reporting-toggle'), 'valueChange', true)
+    })
+    expect(useSettingsStore.getState().anonymousDiagnosticsEnabled).toBe(true)
+  })
+
+  it('shows a Learn more disclosure explaining the random installation id', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+    await fireEvent.press(getByTestId('settings-diagnostics-learn-more'))
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Anonymous diagnostics',
+      expect.stringContaining('random installation ID'),
+    )
+    alertSpy.mockRestore()
+  })
+})
+
 describe('Settings – session leave action', () => {
   it('shows Action on session leave and can restore Always ask', async () => {
     const { getByText, getByTestId } = await renderWithTheme(<SettingsScreen />)

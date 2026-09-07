@@ -1,5 +1,20 @@
 # Threadbase Crash Reporting UX Recommendation
 
+> **Superseded 2026-09-07.** This recommendation was NOT adopted. The shipped
+> design (`docs/specs/anonymous-diagnostics-consent-v0.1.md` §7) does the
+> opposite of the "remove the checkbox from onboarding" recommendation below:
+> a 40% experiment arm shows an "Anonymous diagnostics" toggle on the final
+> onboarding screen, default OFF. The "ask once after first crash, remember
+> the answer forever" upsell flow described here was also replaced — the
+> RootErrorBoundary crash screen now bundles the future-reporting checkbox
+> directly into the "Report this crash" action (no separate post-send
+> prompt), and a *separate* non-modal post-feedback suggestion is
+> frequency-limited to 2 impressions per rolling 30 days, not a one-time ask.
+> Kept as historical context for why the onboarding-toggle design was
+> reconsidered; do not use its wording recommendations (e.g. "avoid the term
+> anonymous crash reports") — the feature name is now mandated as **Anonymous
+> diagnostics** everywhere.
+
 ## Recommendation
 
 Remove the crash-reporting checkbox from onboarding.

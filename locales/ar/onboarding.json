@@ -69,7 +69,11 @@
     "pillPairedNamed": "مقترن · {{name}} · {{host}} · {{port}}",
     "pillUnpaired": "لا توجد بيئة تشغيل · قرن من الإعدادات",
     "ctaPaired": "ادخل Threadbase",
-    "ctaUnpaired": "متابعة — سأقرن لاحقًا"
+    "ctaUnpaired": "متابعة — سأقرن لاحقًا",
+    "diagnosticsTitle": "التشخيصات المجهولة",
+    "diagnosticsBody": "ساعد في تحسين Threadbase عبر إرسال تقارير الأعطال وبيانات استقرار أساسية غير مرتبطة بهويتك.",
+    "diagnosticsLearnMore": "معرفة المزيد",
+    "diagnosticsLearnMoreBody": "تستخدم تقارير التشخيص معرّف تثبيت عشوائيًا بحيث يمكن تجميع التقارير المرتبطة من نفس تثبيت التطبيق. وهي غير مرتبطة باسمك أو بريدك الإلكتروني أو حسابك أو هوية جهازك."
   },
   "notifications": {
     "eyebrow": "> 04 / إشعارات",

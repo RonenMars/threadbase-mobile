@@ -46,6 +46,8 @@ import {
 import { pickAndPrepareScreenshot } from '@/services/feedback-screenshot'
 import { addSafeBreadcrumb } from '@/services/sentry'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
+import { useSettingsStore } from '@/stores/settings'
+import { isPostFeedbackDiagnosticsSuggestionEligible } from '@/lib/postFeedbackDiagnosticsSuggestion'
 import type { FeedbackCategory, FeedbackReport, FeedbackAttachment, FeedbackTransportKind } from '@/types/feedback'
 
 const PRIVACY_URL = 'https://threadbase.sh/privacy-policy'
@@ -88,11 +90,17 @@ export default function HelpFeedbackScreen() {
       ? { paddingTop: s.content.padding + insets.top + headerHeight }
       : null
 
+  const anonymousDiagnosticsEnabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
+  const setAnonymousDiagnosticsEnabled = useSettingsStore((s) => s.setAnonymousDiagnosticsEnabled)
+
   const [view, setView] = useState<View3>('landing')
   const [category, setCategory] = useState<FeedbackCategory>('bug')
   const [description, setDescription] = useState('')
   const [email, setEmail] = useState('')
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
+  // Default unchecked (spec §11) — while standing consent is off, diagnostics
+  // are opt-in per submission. While consent is on, this checkbox is hidden
+  // entirely and diagnostics are always included (see effectiveIncludeDiagnostics).
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(false)
   const [attachment, setAttachment] = useState<FeedbackAttachment | null>(null)
   const [descriptionError, setDescriptionError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -101,8 +109,13 @@ export default function HelpFeedbackScreen() {
   const [reportId] = useState(makeReportId)
   const [copied, setCopied] = useState(false)
   const [deliveredVia, setDeliveredVia] = useState<FeedbackTransportKind | null>(null)
+  const [showDiagnosticsSuggestion, setShowDiagnosticsSuggestion] = useState(false)
 
   const diagnostics = useMemo(() => buildFeedbackDiagnostics(), [])
+  // Standing consent auto-includes diagnostics regardless of the (hidden)
+  // per-submission checkbox — the user already granted standing authorization
+  // for the same diagnostics/purpose (spec §11).
+  const effectiveIncludeDiagnostics = anonymousDiagnosticsEnabled || includeDiagnostics
 
   const openForm = useCallback((cat: FeedbackCategory) => {
     setCategory(cat)
@@ -116,9 +129,9 @@ export default function HelpFeedbackScreen() {
     category,
     description: description.trim(),
     email: email.trim() || undefined,
-    diagnostics: includeDiagnostics ? diagnostics : undefined,
+    diagnostics: effectiveIncludeDiagnostics ? diagnostics : undefined,
     attachment: attachment ?? undefined,
-  }), [reportId, category, description, email, includeDiagnostics, diagnostics, attachment])
+  }), [reportId, category, description, email, effectiveIncludeDiagnostics, diagnostics, attachment])
 
   const handlePickScreenshot = useCallback(async () => {
     try {
@@ -162,6 +175,20 @@ export default function HelpFeedbackScreen() {
         recordDiagnosticEvent('feedback_submitted')
         setDeliveredVia(result.via)
         setView('success')
+        // Post-feedback Anonymous Diagnostics suggestion (spec §14): only
+        // after a successful delivery, only while consent is off, and
+        // rate-limited to 2 impressions per rolling 30-day window. Decided
+        // here (not in an effect) so the suggestion's own impression can
+        // never retroactively hide itself.
+        if (anonymousDiagnosticsEnabled) {
+          setShowDiagnosticsSuggestion(false)
+        } else {
+          const { postFeedbackDiagnosticsSuggestionImpressions, recordPostFeedbackDiagnosticsSuggestionImpression } =
+            useSettingsStore.getState()
+          const eligible = isPostFeedbackDiagnosticsSuggestionEligible(postFeedbackDiagnosticsSuggestionImpressions)
+          setShowDiagnosticsSuggestion(eligible)
+          if (eligible) recordPostFeedbackDiagnosticsSuggestionImpression()
+        }
       } else {
         // No automatic transport succeeded — offer the copy + guide fallback.
         setView('copyFallback')
@@ -171,7 +198,7 @@ export default function HelpFeedbackScreen() {
     } finally {
       setSubmitting(false)
     }
-  }, [submitting, validate, buildReport, t])
+  }, [submitting, validate, buildReport, t, anonymousDiagnosticsEnabled])
 
   const handleCopyReport = useCallback(async () => {
     const ok = await copyReportToClipboard(buildReport())
@@ -223,6 +250,36 @@ export default function HelpFeedbackScreen() {
           >
             <Text style={s.primaryBtnText}>{t('success.done')}</Text>
           </TouchableOpacity>
+
+          {showDiagnosticsSuggestion ? (
+            <View style={s.diagnosticsSuggestion} testID="feedback-diagnostics-suggestion">
+              <Text style={s.diagnosticsSuggestionTitle}>{t('diagnosticsSuggestion.title')}</Text>
+              <Text style={s.diagnosticsSuggestionBody}>{t('diagnosticsSuggestion.body')}</Text>
+              <View style={s.diagnosticsSuggestionActions}>
+                <TouchableOpacity
+                  onPress={() => setShowDiagnosticsSuggestion(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('diagnosticsSuggestion.notNow')}
+                  testID="feedback-diagnostics-suggestion-not-now"
+                  hitSlop={8}
+                >
+                  <Text style={s.diagnosticsSuggestionNotNow}>{t('diagnosticsSuggestion.notNow')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={s.diagnosticsSuggestionEnableBtn}
+                  onPress={() => {
+                    setAnonymousDiagnosticsEnabled(true)
+                    setShowDiagnosticsSuggestion(false)
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('diagnosticsSuggestion.enable')}
+                  testID="feedback-diagnostics-suggestion-enable"
+                >
+                  <Text style={s.diagnosticsSuggestionEnableText}>{t('diagnosticsSuggestion.enable')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
     )
@@ -434,22 +491,26 @@ export default function HelpFeedbackScreen() {
         )}
         <Text style={s.helperText}>{t('form.screenshotHelper')}</Text>
 
-        {/* Diagnostics opt-in */}
-        <TouchableOpacity
-          style={s.checkboxRow}
-          onPress={() => setIncludeDiagnostics((v) => !v)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: includeDiagnostics }}
-          accessibilityLabel={t('form.includeDiagnostics')}
-          testID="feedback-include-diagnostics"
-        >
-          <View style={[s.checkbox, includeDiagnostics && s.checkboxChecked]}>
-            {includeDiagnostics ? <Check size={14} color={theme.text.onAccent} weight="bold" /> : null}
-          </View>
-          <Text style={s.checkboxLabel}>{t('form.includeDiagnostics')}</Text>
-        </TouchableOpacity>
-        <Text style={s.helperText}>{t('form.diagnosticsHelper')}</Text>
-        {includeDiagnostics ? <DiagnosticsPreview diagnostics={diagnostics} /> : null}
+        {/* Diagnostics opt-in — hidden once standing consent already covers it (spec §11) */}
+        {!anonymousDiagnosticsEnabled ? (
+          <>
+            <TouchableOpacity
+              style={s.checkboxRow}
+              onPress={() => setIncludeDiagnostics((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: includeDiagnostics }}
+              accessibilityLabel={t('form.includeDiagnostics')}
+              testID="feedback-include-diagnostics"
+            >
+              <View style={[s.checkbox, includeDiagnostics && s.checkboxChecked]}>
+                {includeDiagnostics ? <Check size={14} color={theme.text.onAccent} weight="bold" /> : null}
+              </View>
+              <Text style={s.checkboxLabel}>{t('form.includeDiagnostics')}</Text>
+            </TouchableOpacity>
+            <Text style={s.helperText}>{t('form.diagnosticsHelper')}</Text>
+          </>
+        ) : null}
+        {effectiveIncludeDiagnostics ? <DiagnosticsPreview diagnostics={diagnostics} /> : null}
 
         {submitError ? <Text style={s.errorText}>{submitError}</Text> : null}
 
@@ -656,6 +717,35 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       marginTop: spacing.xs,
     },
     deliveryNoteText: { color: theme.text.secondary, fontSize: font.xs },
+    diagnosticsSuggestion: {
+      marginTop: spacing.xl,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      gap: spacing.xs,
+      maxWidth: 320,
+    },
+    diagnosticsSuggestionTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
+    diagnosticsSuggestionBody: { color: theme.text.secondary, fontSize: font.xs, lineHeight: 17 },
+    diagnosticsSuggestionActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: spacing.md,
+      marginTop: spacing.xs,
+    },
+    diagnosticsSuggestionNotNow: { color: theme.text.secondary, fontSize: font.sm, minHeight: 32 },
+    diagnosticsSuggestionEnableBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      minHeight: 32,
+      justifyContent: 'center',
+    },
+    diagnosticsSuggestionEnableText: { color: theme.text.onAccent, fontSize: font.sm, fontWeight: '600' },
     stepRow: {
       flexDirection: 'row',
       alignItems: 'center',

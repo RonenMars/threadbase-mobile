@@ -29,7 +29,7 @@ export interface FeedbackDiagnostics {
   /** Count only — never server URLs, names, or ids. */
   serverCount: number
   /** Whether crash reporting is currently enabled (context for the report). */
-  crashReportingEnabled: boolean
+  anonymousDiagnosticsEnabled: boolean
 }
 
 /** A screenshot the user explicitly attached (already compressed + EXIF-stripped). */

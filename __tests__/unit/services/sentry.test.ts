@@ -1,7 +1,9 @@
 /**
- * Tests for the Sentry crash-reporting service. Verifies the consent gating,
- * defensive init config, immediate-disable behavior, and that events/breadcrumbs
- * are routed through the sanitizer. The SDK itself is mocked in jest.setup.js.
+ * Tests for the Sentry diagnostics service. Verifies SDK-readiness is
+ * unconditional on consent, that beforeSend/beforeBreadcrumb gate passive
+ * capture on the standing consent flag, that an explicit one-shot report
+ * bypasses that gate for exactly one event, and that feedback is unaffected.
+ * The SDK itself is mocked in jest.setup.js.
  */
 
 const DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0'
@@ -16,7 +18,12 @@ function loadService(env: Record<string, string | undefined>) {
   let sdk!: typeof import('@sentry/react-native')
   jest.isolateModules(() => {
     const prev = { ...process.env }
-    Object.assign(process.env, env)
+    for (const [key, value] of Object.entries(env)) {
+      // Assigning `undefined` coerces to the string "undefined" on
+      // process.env — delete the key instead so "unset" means unset.
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     sdk = require('@sentry/react-native')
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -26,42 +33,42 @@ function loadService(env: Record<string, string | undefined>) {
   return { mod, sdk }
 }
 
-describe('sentry service — consent gating', () => {
-  it('does not initialize when consent is denied', async () => {
-    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    const ok = await mod.initCrashReporting(false)
-    expect(ok).toBe(false)
-    expect(mod.isCrashReportingActive()).toBe(false)
-    expect(sdk.init).not.toHaveBeenCalled()
-  })
-
+describe('sentry service — SDK readiness is unconditional on consent', () => {
   it('does not initialize when no DSN is configured (even with consent)', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: undefined, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    const ok = await mod.initCrashReporting(true)
-    expect(ok).toBe(false)
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
     expect(sdk.init).not.toHaveBeenCalled()
   })
 
   it('does not initialize in a dev environment without the explicit override', async () => {
     // __DEV__ is true under jest; without EXPO_PUBLIC_SENTRY_ALLOW_DEV we bail.
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: undefined })
-    const ok = await mod.initCrashReporting(true)
-    expect(ok).toBe(false)
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
     expect(sdk.init).not.toHaveBeenCalled()
   })
 
-  it('initializes when consent granted + DSN + environment permits', async () => {
+  it('initializes even when consent is OFF — readiness is not gated by consent', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    const ok = await mod.initCrashReporting(true)
-    expect(ok).toBe(true)
-    expect(mod.isCrashReportingActive()).toBe(true)
+    await mod.setAnonymousDiagnosticsEnabled(false)
+    expect(sdk.init).toHaveBeenCalledTimes(1)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
+  })
+
+  it('initializes when consent is ON', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(true)
     expect(sdk.init).toHaveBeenCalledTimes(1)
   })
 
-  it('is idempotent — a second init does not re-call the SDK', async () => {
+  it('Sentry.init runs at most once even across repeated consent toggles', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(false)
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    await mod.setAnonymousDiagnosticsEnabled(false)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     expect(sdk.init).toHaveBeenCalledTimes(1)
   })
 })
@@ -69,17 +76,15 @@ describe('sentry service — consent gating', () => {
 describe('sentry service — defensive init config', () => {
   it('disables every content-capturing feature', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts.enabled).toBe(true) // the client is always enabled; consent gates via beforeSend/beforeBreadcrumb
     expect(opts.sendDefaultPii).toBe(false)
     expect(opts.attachScreenshot).toBe(false)
     expect(opts.attachViewHierarchy).toBe(false)
     expect(opts.enableCaptureFailedRequests).toBe(false)
     expect(opts.enableUserInteractionTracing).toBe(false)
     expect(opts.enableAutoConsoleLogs).toBe(false)
-    // Sessions carry no content — only a timestamp pair and ok/errored/crashed —
-    // so this one stays on to feed crash-free rate and release adoption.
-    expect(opts.enableAutoSessionTracking).toBe(true)
     expect(opts.replaysSessionSampleRate).toBe(0)
     expect(opts.replaysOnErrorSampleRate).toBe(0)
     expect(opts.tracesSampleRate).toBe(0)
@@ -88,9 +93,19 @@ describe('sentry service — defensive init config', () => {
     expect(typeof opts.integrations).toBe('function')
   })
 
+  it('sets enableAutoSessionTracking from the consent value at the first-ever call', async () => {
+    const off = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await off.mod.setAnonymousDiagnosticsEnabled(false)
+    expect((off.sdk.init as jest.Mock).mock.calls[0][0].enableAutoSessionTracking).toBe(false)
+
+    const on = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await on.mod.setAnonymousDiagnosticsEnabled(true)
+    expect((on.sdk.init as jest.Mock).mock.calls[0][0].enableAutoSessionTracking).toBe(true)
+  })
+
   it('filters out risky default integrations', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
     const defaults = [
       { name: 'Breadcrumbs' },
@@ -118,7 +133,7 @@ describe('sentry service — defensive init config', () => {
       EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1',
       EXPO_PUBLIC_SENTRY_DEBUG: undefined,
     })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
     expect(opts.debug).toBe(false)
   })
@@ -129,14 +144,14 @@ describe('sentry service — defensive init config', () => {
       EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1',
       EXPO_PUBLIC_SENTRY_DEBUG: '1',
     })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
     expect(opts.debug).toBe(true)
   })
 
-  it('sets an anonymous install id and safe tags, never PII', async () => {
+  it('sets an anonymous install id and safe tags on consent ON, never PII', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const scope = (sdk as unknown as { __scope: { setUser: jest.Mock; setTag: jest.Mock } }).__scope
     // setUser called with an { id } object only
     const userArg = scope.setUser.mock.calls.find((c: unknown[]) => c[0] && typeof c[0] === 'object')?.[0]
@@ -151,18 +166,33 @@ describe('sentry service — defensive init config', () => {
     expect(tagKeys).toContain('app.version')
     expect(tagKeys.some((k: string) => k.includes('url') || k.includes('server'))).toBe(false)
   })
+
+  it('does not attach a user identity while the SDK is ready but consent is OFF', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.setAnonymousDiagnosticsEnabled(false)
+    const scope = (sdk as unknown as { __scope: { setUser: jest.Mock } }).__scope
+    // setUser(null) (clearing) is fine; an { id } identity object is not.
+    const identityCalls = scope.setUser.mock.calls.filter((c: unknown[]) => c[0] && typeof c[0] === 'object')
+    expect(identityCalls).toHaveLength(0)
+  })
 })
 
-describe('sentry service — beforeSend / beforeBreadcrumb route through sanitizer', () => {
-  async function getHooks() {
+describe('sentry service — beforeSend gates passive capture on standing consent', () => {
+  async function getHooks(consent: boolean) {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(consent)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
-    return { beforeSend: opts.beforeSend, beforeBreadcrumb: opts.beforeBreadcrumb }
+    return { mod, sdk, beforeSend: opts.beforeSend, beforeBreadcrumb: opts.beforeBreadcrumb }
   }
 
-  it('beforeSend strips non-allowlisted keys and secrets', async () => {
-    const { beforeSend } = await getHooks()
+  it('drops a plain event entirely while consent is OFF', async () => {
+    const { beforeSend } = await getHooks(false)
+    const event = { event_id: 'x', level: 'error', exception: { values: [{ type: 'Error', value: 'boom' }] } }
+    expect(beforeSend(event)).toBeNull()
+  })
+
+  it('lets an event through and sanitizes it while consent is ON', async () => {
+    const { beforeSend } = await getHooks(true)
     const event = {
       event_id: 'x',
       level: 'error',
@@ -173,6 +203,7 @@ describe('sentry service — beforeSend / beforeBreadcrumb route through sanitiz
     }
     const out = beforeSend(event)
     const s = JSON.stringify(out)
+    expect(out).not.toBeNull()
     expect(out.request).toBeUndefined()
     expect(out.server_name).toBeUndefined()
     expect(out.extra).toBeUndefined()
@@ -180,33 +211,53 @@ describe('sentry service — beforeSend / beforeBreadcrumb route through sanitiz
     expect(s.includes('secret.example.com')).toBe(false)
   })
 
-  it('beforeBreadcrumb drops http breadcrumbs entirely', async () => {
-    const { beforeBreadcrumb } = await getHooks()
+  it('lets a one-shot-tagged event through while consent is OFF, and strips the marker tag', async () => {
+    const { beforeSend } = await getHooks(false)
+    const event = {
+      event_id: 'x',
+      level: 'error',
+      tags: { 'diagnostics.one_shot': '1' },
+      exception: { values: [{ type: 'Error', value: 'boom' }] },
+    }
+    const out = beforeSend(event)
+    expect(out).not.toBeNull()
+    expect(out.tags?.['diagnostics.one_shot']).toBeUndefined()
+  })
+
+  it('beforeBreadcrumb drops every breadcrumb while consent is OFF', async () => {
+    const { beforeBreadcrumb } = await getHooks(false)
+    expect(beforeBreadcrumb({ category: 'app.lifecycle', message: 'app_started' })).toBeNull()
+  })
+
+  it('beforeBreadcrumb sanitizes and drops http breadcrumbs while consent is ON', async () => {
+    const { beforeBreadcrumb } = await getHooks(true)
     expect(beforeBreadcrumb({ category: 'http', data: { url: 'https://x/api' } })).toBeNull()
+    expect(beforeBreadcrumb({ category: 'app.lifecycle', message: 'app_started' })).not.toBeNull()
   })
 })
 
-describe('sentry service — immediate disable', () => {
-  it('closes the client and clears the user on disable', async () => {
+describe('sentry service — disabling consent', () => {
+  it('clears the user identity and stops passive capture, without closing the client', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
-    expect(mod.isCrashReportingActive()).toBe(true)
-    await mod.disableCrashReporting()
-    expect(mod.isCrashReportingActive()).toBe(false)
-    expect(sdk.close).toHaveBeenCalled()
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(true)
+
+    await mod.setAnonymousDiagnosticsEnabled(false)
+
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
+    expect(sdk.close).not.toHaveBeenCalled() // the client stays up — only the consent flag flips
     const scope = (sdk as unknown as { __scope: { setUser: jest.Mock } }).__scope
     expect(scope.setUser).toHaveBeenCalledWith(null)
   })
 
-  it('setCrashReportingEnabled(false) disables without prior init', async () => {
+  it('setAnonymousDiagnosticsEnabled(false) is a no-op-safe call without prior consent', async () => {
     const { mod } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await expect(mod.setCrashReportingEnabled(false)).resolves.toBeUndefined()
-    expect(mod.isCrashReportingActive()).toBe(false)
+    await expect(mod.setAnonymousDiagnosticsEnabled(false)).resolves.toBeUndefined()
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
   })
 
-  it('does not capture when inactive', async () => {
-    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    // never initialized
+  it('does not capture when the SDK never became ready', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: undefined, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     expect(mod.captureHandledError(new Error('x'))).toBeUndefined()
     expect(mod.captureSafeMessage('app_started')).toBeUndefined()
     expect(sdk.captureException).not.toHaveBeenCalled()
@@ -215,9 +266,9 @@ describe('sentry service — immediate disable', () => {
 })
 
 describe('sentry service — capture helpers', () => {
-  it('captureHandledError scrubs the error before sending', async () => {
+  it('captureHandledError scrubs the error before sending (consent ON)', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const id = mod.captureHandledError(new Error('failed to reach https://secret.tunnel.io/ws?key=tb_live_abc'), {
       tag: 'connection_failed',
     })
@@ -229,7 +280,7 @@ describe('sentry service — capture helpers', () => {
 
   it('captureSafeMessage rejects non-enum messages', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     expect(mod.captureSafeMessage('This is a free-form message with spaces')).toBeUndefined()
     expect(mod.captureSafeMessage('app_started')).toBe('evt_message')
     expect((sdk.captureMessage as jest.Mock).mock.calls.length).toBe(1)
@@ -237,7 +288,7 @@ describe('sentry service — capture helpers', () => {
 
   it('setConnectionModeTag derives a generic enum and never stores the url', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
     const scope = (sdk as unknown as { __scope: { setTag: jest.Mock } }).__scope
     scope.setTag.mockClear()
     mod.setConnectionModeTag('http://192.168.1.5:8766')
@@ -248,40 +299,47 @@ describe('sentry service — capture helpers', () => {
 })
 
 describe('sentry service — reportOneShot (works independent of standing consent)', () => {
-  it('sends a report and closes the client again when reporting was OFF', async () => {
+  it('sends a report while consent is OFF, without closing or re-initializing the client', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    expect(mod.isCrashReportingActive()).toBe(false)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
 
     const eventId = await mod.reportOneShot(new Error('one-shot test'), { tag: 'test' })
 
     expect(eventId).toBe('evt_exception')
-    expect(sdk.init).toHaveBeenCalledTimes(1) // initialized just for this report
-    expect(sdk.close).toHaveBeenCalledTimes(1) // and torn down again afterward
-    // Standing state is genuinely unaffected — still inactive afterward.
-    expect(mod.isCrashReportingActive()).toBe(false)
+    expect(sdk.init).toHaveBeenCalledTimes(1) // the one unconditional init
+    expect(sdk.close).not.toHaveBeenCalled()
+    // Standing consent is genuinely unaffected — still off afterward.
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
   })
 
-  it('does NOT flip the persisted crashReportingEnabled setting', async () => {
+  it('tags the event so beforeSend authorizes exactly this one send', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.reportOneShot(new Error('one-shot test'))
+    const scopeCallback = (sdk.captureException as jest.Mock).mock.calls[0][1]
+    const fakeScope = { setTag: jest.fn() }
+    scopeCallback(fakeScope)
+    expect(fakeScope.setTag).toHaveBeenCalledWith('diagnostics.one_shot', '1')
+  })
+
+  it('does NOT flip the persisted consent setting', async () => {
     // reportOneShot only touches the in-memory Sentry client; the settings
     // store is a separate module it never imports or writes to.
     const { mod } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     await mod.reportOneShot(new Error('one-shot test'))
-    expect(mod.isCrashReportingActive()).toBe(false)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
   })
 
-  it('reuses the existing client without closing it when reporting was already ON', async () => {
+  it('reuses the already-ready client without re-initializing when consent was already ON', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
-    await mod.initCrashReporting(true)
-    expect(mod.isCrashReportingActive()).toBe(true)
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(true)
     ;(sdk.init as jest.Mock).mockClear()
-    ;(sdk.close as jest.Mock).mockClear()
 
     const eventId = await mod.reportOneShot(new Error('one-shot test'))
 
     expect(eventId).toBe('evt_exception')
-    expect(sdk.init).not.toHaveBeenCalled() // already initialized — no re-init
-    expect(sdk.close).not.toHaveBeenCalled() // standing reporting stays open
-    expect(mod.isCrashReportingActive()).toBe(true)
+    expect(sdk.init).not.toHaveBeenCalled() // already ready — no re-init
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(true)
   })
 
   it('returns undefined and sends nothing when no DSN is configured', async () => {
@@ -307,14 +365,38 @@ describe('sentry service — reportOneShot (works independent of standing consen
     expect(capturedError.message.includes('secret.tunnel.io')).toBe(false)
   })
 
-  it('closes the one-shot client even if the capture itself throws', async () => {
+  it('returns undefined (but SDK stays ready) when the capture itself throws', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     ;(sdk.captureException as jest.Mock).mockImplementationOnce(() => {
       throw new Error('boom')
     })
     const eventId = await mod.reportOneShot(new Error('one-shot test'))
     expect(eventId).toBeUndefined()
-    expect(sdk.close).toHaveBeenCalledTimes(1) // cleanup still ran
-    expect(mod.isCrashReportingActive()).toBe(false)
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
+  })
+})
+
+describe('sentry service — submitFeedbackViaSentry (independent of consent, bypasses beforeSend)', () => {
+  it('submits feedback while consent is OFF, without closing or re-initializing the client', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    const id = await mod.submitFeedbackViaSentry({ message: 'it broke' })
+    expect(id).toBe('evt_feedback')
+    expect(sdk.init).toHaveBeenCalledTimes(1)
+    expect(sdk.close).not.toHaveBeenCalled()
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
+  })
+
+  it('returns undefined for an empty message without touching the SDK', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    const id = await mod.submitFeedbackViaSentry({ message: '   ' })
+    expect(id).toBeUndefined()
+    expect(sdk.init).not.toHaveBeenCalled()
+  })
+
+  it('returns undefined when no DSN is configured', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: undefined, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    const id = await mod.submitFeedbackViaSentry({ message: 'it broke' })
+    expect(id).toBeUndefined()
+    expect(sdk.captureFeedback).not.toHaveBeenCalled()
   })
 })

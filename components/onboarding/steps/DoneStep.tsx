@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import Animated, {
   Easing,
@@ -18,6 +18,7 @@ import Svg, {
 } from 'react-native-svg'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
+import { useSettingsStore } from '@/stores/settings'
 
 interface Props {
   onEnter: () => void
@@ -32,6 +33,19 @@ export function DoneStep({ onEnter, serverHost, serverPort, serverLabel }: Props
   const popScale = useSharedValue(0.8)
   const popOpacity = useSharedValue(0)
   const dotOpacity = useSharedValue(0.55)
+
+  // Onboarding Anonymous Diagnostics experiment (spec §7): only the 40%
+  // treatment arm sees the toggle; control gets no prompt at all. Leaving it
+  // OFF here is neutral and never suppresses the later post-feedback
+  // suggestion or the Settings control.
+  const experimentVariant = useSettingsStore((s) => s.onboardingDiagnosticsExperimentVariant)
+  const anonymousDiagnosticsEnabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
+  const setAnonymousDiagnosticsEnabled = useSettingsStore((s) => s.setAnonymousDiagnosticsEnabled)
+  const showDiagnosticsToggle = experimentVariant === 'treatment'
+
+  const handleDiagnosticsLearnMore = () => {
+    Alert.alert(t('done.diagnosticsTitle'), t('done.diagnosticsLearnMoreBody'))
+  }
 
   const pairedPill = serverLabel
     ? t('done.pillPairedNamed', { name: serverLabel, host: serverHost, port: serverPort })
@@ -120,6 +134,25 @@ export function DoneStep({ onEnter, serverHost, serverPort, serverLabel }: Props
           </Text>
         </View>
       </View>
+
+      {showDiagnosticsToggle ? (
+        <View style={styles.diagnosticsRow} testID="onboarding-diagnostics-row">
+          <View style={styles.diagnosticsTextCol}>
+            <Text style={styles.diagnosticsTitle}>{t('done.diagnosticsTitle')}</Text>
+            <Text style={styles.diagnosticsBody}>{t('done.diagnosticsBody')}</Text>
+            <TouchableOpacity onPress={handleDiagnosticsLearnMore} hitSlop={8}>
+              <Text style={styles.diagnosticsLearnMore}>{t('done.diagnosticsLearnMore')}</Text>
+            </TouchableOpacity>
+          </View>
+          <Switch
+            value={anonymousDiagnosticsEnabled}
+            onValueChange={setAnonymousDiagnosticsEnabled}
+            trackColor={{ false: colors.ink5, true: colors.green500 }}
+            thumbColor="#fff"
+            testID="onboarding-diagnostics-toggle"
+          />
+        </View>
+      ) : null}
 
       <PrimaryButton testID="onboarding-done-cta" onPress={onEnter} showIcon={false}>
         {paired ? t('done.ctaPaired') : t('done.ctaUnpaired')}
@@ -220,5 +253,36 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 15,
+  },
+  diagnosticsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: colors.ink2,
+    borderWidth: 1,
+    borderColor: colors.ink5,
+    marginBottom: 14,
+  },
+  diagnosticsTextCol: { flex: 1, gap: 2 },
+  diagnosticsTitle: {
+    color: colors.fg0,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  diagnosticsBody: {
+    color: colors.fg3,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  diagnosticsLearnMore: {
+    color: colors.green400,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
   },
 })
