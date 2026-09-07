@@ -1,13 +1,4 @@
 {
-  "planPreview": {
-    "title": "תצוגה מקדימה של תוכנית",
-    "autoProceed": "המשך אוטומטי בעוד {{seconds}}s",
-    "proceed": "▶ המשך",
-    "editPrompt": "ערוך פרומפט",
-    "sendEdit": "שלח עריכה",
-    "cancel": "✕ ביטול",
-    "editPlaceholder": "עריכת הפרומפט לפני ההמשך…"
-  },
   "promptQueue": {
     "title": "תור פרומפטים",
     "pending_one": "אחד ממתין",

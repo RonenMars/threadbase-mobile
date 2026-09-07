@@ -515,8 +515,6 @@ export default function SessionDetailScreen() {
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
   const [reviewVisible, setReviewVisible] = useState(false)
   const [modelEffortVisible, setModelEffortVisible] = useState(false)
-  const [pendingPlan, setPendingPlan] = useState<string | null>(null)
-  const [planVisible, setPlanVisible] = useState(false)
 
   const sessionFavoriteId = buildFavoriteId(serverId, 'session', id ?? '')
   const isSessionFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === sessionFavoriteId))
@@ -753,17 +751,6 @@ export default function SessionDetailScreen() {
     )
   }, [id, session?.status, session?.ptyAttached, session?.promptCount, isStreaming, hasReachedPrompt, isWakingUpEarly, isPending])
 
-  // Listen for plan_ready events for this session on the correct server
-  useEffect(() => {
-    const client = wsManager.getClient(serverId)
-    if (!client) return
-    return client.on('plan_ready', (msg) => {
-      if (msg.type === 'plan_ready' && msg.sessionId === id) {
-        setPendingPlan(msg.plan)
-        setPlanVisible(true)
-      }
-    })
-  }, [serverId, id])
 
   if (isPending) {
     return (
@@ -1097,8 +1084,6 @@ export default function SessionDetailScreen() {
                 provider={session.provider}
                 parseConfidence={parseConfidence}
                 disabled={isWakingUp}
-                pendingPlan={planVisible ? pendingPlan : null}
-                onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
                 resumedConversationId={session.resumedFromConversationId}
                 conversationId={historyConversationId}
               />
@@ -1110,8 +1095,6 @@ export default function SessionDetailScreen() {
                 conversationId={historyConversationId!}
                 provider={session.provider}
                 disabled={isWakingUp}
-                pendingPlan={planVisible ? pendingPlan : null}
-                onClosePlan={() => { setPlanVisible(false); setPendingPlan(null) }}
                 onPreferRawTerminal={() => setForceRawTerminal(true)}
               />
             )}

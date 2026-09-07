@@ -29,7 +29,6 @@ export type WSMessage =
   // watchdog in useTerminalStream on an otherwise idle socket (#946).
   | { type: 'ping'; ts: number }
   | { type: 'notification'; event: NotificationEvent }
-  | { type: 'plan_ready'; sessionId: string; plan: string }
   // Ground-truth user message: the streamer wrote this text to the PTY, so the
   // client can positively identify user-owned output instead of parsing the
   // `❯ <text>` transcript line heuristically. Additive; old streamers omit it.
