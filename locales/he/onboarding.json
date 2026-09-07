@@ -69,7 +69,11 @@
     "pillPairedNamed": "מחובר · {{name}} · {{host}} · {{port}}",
     "pillUnpaired": "אין סביבת ריצה מחוברת · חבר מהגדרות",
     "ctaPaired": "כנס ל-Threadbase",
-    "ctaUnpaired": "המשך — אחבר מאוחר יותר"
+    "ctaUnpaired": "המשך — אחבר מאוחר יותר",
+    "diagnosticsTitle": "אבחון אנונימי",
+    "diagnosticsBody": "עזרו לשפר את Threadbase על ידי שליחת דוחות קריסה ונתוני יציבות בסיסיים שאינם מקושרים לזהותכם.",
+    "diagnosticsLearnMore": "מידע נוסף",
+    "diagnosticsLearnMoreBody": "דוחות אבחון משתמשים במזהה התקנה אקראי כדי לקבץ דוחות קשורים מאותה התקנת אפליקציה. הם אינם מקושרים לשמכם, לכתובת האימייל, לחשבון או לזהות המכשיר שלכם."
   },
   "notifications": {
     "eyebrow": "> 04 / התראות",

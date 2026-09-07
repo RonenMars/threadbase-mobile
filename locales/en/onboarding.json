@@ -69,7 +69,11 @@
     "pillPairedNamed": "paired · {{name}} · {{host}} · {{port}}",
     "pillUnpaired": "no runtime paired · pair from Settings",
     "ctaPaired": "Enter Threadbase",
-    "ctaUnpaired": "Continue — I'll pair later"
+    "ctaUnpaired": "Continue — I'll pair later",
+    "diagnosticsTitle": "Anonymous diagnostics",
+    "diagnosticsBody": "Help improve Threadbase by sending crash reports and basic stability data not linked to your identity.",
+    "diagnosticsLearnMore": "Learn more",
+    "diagnosticsLearnMoreBody": "Diagnostic reports use a random installation ID so related reports from the same app installation can be grouped. They are not linked to your name, email, account, or device identity."
   },
   "notifications": {
     "eyebrow": "> 04 / NOTIFY",
