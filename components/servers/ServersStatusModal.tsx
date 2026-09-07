@@ -26,6 +26,7 @@ import { AddServerButton } from '@/components/servers/AddServerButton'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { removeServerAndUnregisterPush } from '@/services/server-removal'
 
 interface Props {
   visible: boolean
@@ -251,7 +252,7 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const router = useRouter()
-  const { servers, activeServerIds, removeServer, refreshServerInfo } = useServersStore()
+  const { servers, activeServerIds, refreshServerInfo } = useServersStore()
   const statuses = useServerStatuses(activeServerIds)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
@@ -274,7 +275,7 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
           text: i18n.t('servers:dialog.removeConfirm'),
           style: 'destructive',
           onPress: async () => {
-            await removeServer(serverId)
+            await removeServerAndUnregisterPush(serverId)
             if (activeServerIds.length <= 1) {
               onClose()
               router.replace('/onboarding')

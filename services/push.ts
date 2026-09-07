@@ -54,6 +54,25 @@ export async function registerPushToken(serverId: string): Promise<RegisterPushR
   return { ok: true }
 }
 
+/**
+ * Drop this device's push token from one server.
+ *
+ * Best-effort by design, and ordered before the credentials are erased: the
+ * request has to authenticate, and a server is very often removed precisely
+ * because it is unreachable. A failure here must never block the removal — the
+ * streamer also expires tokens whose device is revoked, so the worst case is a
+ * row that outlives the pairing rather than a removal the user cannot complete.
+ */
+export async function unregisterPushToken(serverId: string): Promise<void> {
+  try {
+    const { data: token } = await Notifications.getExpoPushTokenAsync()
+    await createApiForServer(serverId).delete('/api/push/register', { token })
+  } catch {
+    // Unreachable server, revoked credentials, no token on a simulator — all
+    // expected here, and none of them is a reason to keep the server.
+  }
+}
+
 /** Register push token with all provided servers. */
 export async function registerPushTokenForAll(serverIds: string[]): Promise<void> {
   await Promise.allSettled(serverIds.map((id) => registerPushToken(id)))

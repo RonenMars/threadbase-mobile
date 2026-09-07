@@ -1,6 +1,6 @@
 import React from 'react'
 import { Alert } from 'react-native'
-import { fireEvent } from '@testing-library/react-native'
+import { fireEvent, waitFor } from '@testing-library/react-native'
 import { EncryptionRefusalBanner } from '@/components/servers/EncryptionRefusalBanner'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
@@ -108,6 +108,10 @@ describe('EncryptionRefusalBanner', () => {
     // button were wired to nothing at all.
     const buttons = alertSpy.mock.calls[0][2]
     buttons?.find((b) => b.style === 'destructive')?.onPress?.()
-    expect(useServersStore.getState().removeServer).toHaveBeenCalledWith(SERVER_ID)
+    // Removal is awaited behind the push-token unregister now, so it lands a
+    // microtask after the press rather than synchronously with it.
+    await waitFor(() =>
+      expect(useServersStore.getState().removeServer).toHaveBeenCalledWith(SERVER_ID),
+    )
   })
 })

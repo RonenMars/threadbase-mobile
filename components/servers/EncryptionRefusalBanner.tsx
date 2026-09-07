@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useServersStore } from '@/stores/servers'
 import { encryptionPinRefuses } from '@/types/api'
+import { removeServerAndUnregisterPush } from '@/services/server-removal'
 
 /**
  * Shown when a displayed server is pinned to encryption and is not offering
@@ -21,7 +22,6 @@ export function EncryptionRefusalBanner() {
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const refreshServerInfo = useServersStore((s) => s.refreshServerInfo)
-  const removeServer = useServersStore((s) => s.removeServer)
 
   const refusedId = displayedServerIds.find((id) => {
     const server = servers[id]
@@ -41,7 +41,7 @@ export function EncryptionRefusalBanner() {
         {
           text: t('encryption.forgetConfirm'),
           style: 'destructive',
-          onPress: () => { void removeServer(serverId) },
+          onPress: () => { void removeServerAndUnregisterPush(serverId) },
         },
       ],
     )

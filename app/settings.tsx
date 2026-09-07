@@ -39,6 +39,7 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
+import { removeServerAndUnregisterPush } from '@/services/server-removal'
 
 function getAddServerActionLabel(action: AddServerAction, t: TFunction<'settings'>): string {
   switch (action) {
@@ -246,7 +247,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets()
   const { t } = useTranslation('settings')
   const router = useRouter()
-  const { servers, activeServerIds, displayedServerIds, addServer, removeServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
+  const { servers, activeServerIds, displayedServerIds, addServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
     notifications,
     setNotifications,
@@ -356,7 +357,7 @@ export default function SettingsScreen() {
   }
 
   const handleRemoveServer = async (serverId: string) => {
-    await removeServer(serverId)
+    await removeServerAndUnregisterPush(serverId)
     if (activeServerIds.length <= 1) {
       router.replace('/onboarding')
     }
