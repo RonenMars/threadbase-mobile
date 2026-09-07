@@ -122,10 +122,10 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     id: 'effort',
     icon: Gauge,
     title: 'Effort',
-    description: 'Set reasoning effort level (low / medium / high)',
+    description: 'Set reasoning effort level (low / medium / high / xhigh / max)',
     needsArgs: true,
     argLabel: 'Effort level',
-    argPlaceholder: 'low, medium, or high',
+    argPlaceholder: 'low, medium, high, xhigh, or max',
   },
   {
     id: 'schedule',

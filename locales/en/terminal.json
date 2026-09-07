@@ -94,7 +94,20 @@
     "takeOverConfirmTitle": "Take over this session?",
     "takeOverConfirmBody": "This stops the process running in your terminal and restarts it here. Unsaved work in that terminal is lost.",
     "takeOverFailedTitle": "Take over failed",
-    "takeOverFailedUnknown": "Unknown error"
+    "takeOverFailedUnknown": "Unknown error",
+    "modelEffort": "Model & effort",
+    "modelEffortSubtitle": "Applies to this live session only.",
+    "modelLabel": "Model",
+    "modelCurrent": "Currently: {{model}}",
+    "modelPlaceholder": "Alias or full model name",
+    "modelInvalid": "Use letters, digits, dots, dashes or underscores.",
+    "effortLabel": "Reasoning effort",
+    "effortCurrent": "Currently: {{effort}}",
+    "modelEffortApply": "Apply",
+    "modelEffortBusy": "Wait for the current turn to finish, then try again.",
+    "modelEffortIdle": "This session has no live terminal. Resume it first.",
+    "modelEffortUnsupported": "This server can't change the model for this session.",
+    "modelEffortFailed": "Couldn't change the setting."
   },
   "leaveSession": {
     "title": "Leave this session?",

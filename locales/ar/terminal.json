@@ -98,7 +98,20 @@
     "takeOverConfirmTitle": "الاستحواذ على هذه الجلسة؟",
     "takeOverConfirmBody": "سيؤدي ذلك إلى إيقاف العملية العاملة في الطرفية وإعادة تشغيلها هنا. يُفقد أي عمل غير محفوظ في تلك الطرفية.",
     "takeOverFailedTitle": "فشل الاستحواذ",
-    "takeOverFailedUnknown": "خطأ غير معروف"
+    "takeOverFailedUnknown": "خطأ غير معروف",
+    "modelEffort": "النموذج والجهد",
+    "modelEffortSubtitle": "ينطبق على هذه الجلسة الحية فقط.",
+    "modelLabel": "النموذج",
+    "modelCurrent": "حاليًا: {{model}}",
+    "modelPlaceholder": "اسم مختصر أو اسم نموذج كامل",
+    "modelInvalid": "استخدم حروفًا وأرقامًا ونقاطًا وشرطات أو شرطات سفلية.",
+    "effortLabel": "جهد التفكير",
+    "effortCurrent": "حاليًا: {{effort}}",
+    "modelEffortApply": "تطبيق",
+    "modelEffortBusy": "انتظر انتهاء الدور الحالي ثم حاول مرة أخرى.",
+    "modelEffortIdle": "لا تملك هذه الجلسة طرفية حية. استأنفها أولًا.",
+    "modelEffortUnsupported": "لا يستطيع هذا الخادم تغيير النموذج لهذه الجلسة.",
+    "modelEffortFailed": "تعذّر تغيير الإعداد."
   },
   "leaveSession": {
     "title": "مغادرة هذه الجلسة؟",
