@@ -14,7 +14,7 @@
     "language": "Language",
     "session": "Session",
     "privacy": "Privacy",
-    "crashReporting": "Crash Reporting"
+    "anonymousDiagnostics": "Anonymous diagnostics"
   },
   "session": {
     "chatView": "Chat view",
@@ -95,16 +95,6 @@
     "serverHealth": "Server health",
     "pairedDevices": "Paired devices",
     "backupRestore": "Backup & restore"
-  },
-  "crashReporting": {
-    "title": "Share anonymous crash reports",
-    "description": "Send sanitized technical crash information to help improve Threadbase. Prompts, terminal output, source code, credentials, server addresses, and session content are never included.",
-    "privacyPolicy": "Privacy policy",
-    "testCrash": "Test crash reporting",
-    "testThrow": "Throw uncaught exception",
-    "testCrashConfirmTitle": "Send a test crash?",
-    "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
-    "testCrashSend": "Send test crash"
   },
   "servers": {
     "scanQr": "Scan QR to add server"
@@ -272,5 +262,17 @@
     "planSummary": "Create {{create}} · update {{update}} · conflict {{conflict}}",
     "createRow": "Create: {{name}}",
     "updateRow": "Update: {{name}}"
+  },
+  "anonymousDiagnostics": {
+    "title": "Anonymous diagnostics",
+    "description": "Help improve Threadbase by sending crash reports and basic stability data not linked to your identity.",
+    "learnMore": "Learn more",
+    "learnMoreBody": "Diagnostic reports use a random installation ID so related reports from the same app installation can be grouped. They are not linked to your name, email, account, or device identity.",
+    "privacyPolicy": "Privacy policy",
+    "testCrash": "Test crash reporting",
+    "testThrow": "Throw uncaught exception",
+    "testCrashConfirmTitle": "Send a test crash?",
+    "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
+    "testCrashSend": "Send test crash"
   }
 }
