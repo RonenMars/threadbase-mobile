@@ -119,6 +119,7 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
     if (/^@\//.test(questionText) || /^\/Users\//.test(questionText)) continue
 
     const options: QuestionOption[] = []
+    const optionNumbers: number[] = []
     let selectedIndex = 0
     let sawPermission = false
 
@@ -138,10 +139,17 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
       if (/\s+\|\s+~\//.test(label) || /^@\//.test(label) || /^\/Users\//.test(label)) break
       if (m[1]) selectedIndex = options.length // ❯ cursor
       options.push({ label })
+      optionNumbers.push(Number(m[2]))
     }
 
     if (sawPermission) return null // permission gate, not a structured question
-    if (options.length >= 2) {
+    // A real menu enumerates 1..n. A numbered block scraped out of the middle of
+    // prose does not: an assistant message listing open questions 1-8 wraps item 5
+    // onto a continuation line ending in "?", which ends the contiguous run above
+    // item 6 — so the "menu" starts at 6, and tapping an option types "6" into the
+    // live session. Trade-off: this also rejects a real menu whose first rows have
+    // scrolled off the top of the screen; widen only if that is ever observed.
+    if (options.length >= 2 && optionNumbers.every((n, i) => n === i + 1)) {
       return {
         source: 'pty',
         questions: [{ question: questionText, multiSelect: false, options }],

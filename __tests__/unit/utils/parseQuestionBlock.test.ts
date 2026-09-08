@@ -242,12 +242,17 @@ describe('parseQuestionBlock', () => {
   it('parses the AskUserQuestion menu shape: ?-suffix question, numbered options, NO ❯', () => {
     // The real menu that Format 1 (needs "? " at start) and Format 2 (needs ❯)
     // both miss — this is the bug being fixed.
+    // "Chat about this" is numbered 4, not 6: a real menu enumerates 1..n. The
+    // 6 this fixture used to carry was copied from a doc comment that elided
+    // rows 4-5 with an ellipsis; the live-rig capture in the streamer's
+    // __tests__/fixtures/row7-multi-select-screen.ts numbers it 4. Don't
+    // "restore" the gap — the numbering guard would reject the block.
     const lines = [
       'Which area are you focused on?',
       '  1. macOS / Chrome',
       '  2. iOS / Safari',
       '  3. Android',
-      '  6. Chat about this',
+      '  4. Chat about this',
     ]
     const result = parseQuestionBlock(lines)
     expect(result).not.toBeNull()
@@ -301,6 +306,22 @@ describe('parseQuestionBlock', () => {
       '  2. @/Users/ronenmars/Desktop/b.jpg',
     ]
     // The @-path guard stops option collection → <2 options → null.
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('returns null for prose whose numbered rows do not start at 1 (wrapped list item)', () => {
+    // Observed 2026-09-08: a resumed session repainted an assistant message
+    // listing open questions 1-8. Item 5 wrapped onto a continuation line
+    // ending in "?", and items 6 and 7 below it became the options — a card
+    // whose taps type "6"/"7" into the live session. A real menu enumerates
+    // 1..n; this block starts at 6, so it is prose.
+    const lines = [
+      '  5. Notifications-off unregister. Two ways to make it possible: (a) mobile persists the',
+      '     last registered Expo token; or (b) the streamer accepts a device-scoped DELETE with',
+      '     no body. Which — and is it in scope at all, given the toggles are currently inert?',
+      '  6. Inert notification prefs. Four switches in Settings drive nothing.',
+      "  7. plan_ready deletion timing. 4b's removal commit is independent of 4a's findings.",
+    ]
     expect(parseQuestionBlock(lines)).toBeNull()
   })
 })
