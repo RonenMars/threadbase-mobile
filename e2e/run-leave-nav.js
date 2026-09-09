@@ -7,8 +7,9 @@
 //
 // Start the streamer first:  cd ../tb-streamer && npm run dev:verbose
 //
-// Overridable: E2E_MOCK_SERVER_URL (default http://localhost:8766) and
-// E2E_SERVER_TOKEN (default: the api_key in ~/.threadbase/server.yaml).
+// Overridable: REAL_STREAMER_CONTROL_URL (Node HTTP), REAL_STREAMER_APP_URL
+// (paired inside the app), REAL_STREAMER_SESSION_PATH (path on the streamer),
+// and E2E_SERVER_TOKEN (default: the api_key in ~/.threadbase/server.yaml).
 //
 // Args narrow the matrix: `node e2e/run-leave-nav.js kill` or `... new/kill`.
 
@@ -20,9 +21,8 @@ const path = require('path')
 const OPTIONS = ['kill', 'leave', 'kill_on_idle']
 const MODES = ['new', 'resumed']
 const REPO_ROOT = path.join(__dirname, '..')
-// Every session this script spawns is killed again at the end of its combo, so
-// the project only has to be a real directory the streamer is allowed to open.
-const SESSION_PATH = REPO_ROOT
+const DEFAULT_READY_TIMEOUT_MS = 120_000
+const DEFAULT_READY_POLL_MS = 500
 
 function streamerToken() {
   if (process.env.E2E_SERVER_TOKEN) return process.env.E2E_SERVER_TOKEN
@@ -35,7 +35,10 @@ function streamerToken() {
   return match[1]
 }
 
-function streamer(url, token) {
+function streamer(url, token, options = {}) {
+  const readyTimeoutMs = options.readyTimeoutMs ?? DEFAULT_READY_TIMEOUT_MS
+  const readyPollMs = options.readyPollMs ?? DEFAULT_READY_POLL_MS
+  const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
   // The streamer closes some responses (the NDJSON stop stream) as soon as it
   // is done writing, which surfaces here as `fetch failed / write EPIPE`. That
   // is a transport artefact of a request that did its job, so it must not take
@@ -61,25 +64,38 @@ function streamer(url, token) {
   }
   return {
     info: () => call('GET', '/api/info'),
-    // The 200 shape is `{ session }`; a slow spawn answers 202 `{ id, status:
-    // 'pending' }`, which is not usable as a row id — treat it as a failure
-    // rather than tapping a row that does not exist yet.
-    start: async () => {
+    start: async (sessionPath) => {
       const res = await request('POST', '/api/sessions/start', {
-        path: SESSION_PATH,
-        projectName: path.basename(SESSION_PATH),
+        path: sessionPath,
+        projectName: path.basename(sessionPath),
       })
       if (!res.ok) throw new Error(`start failed: ${res.status} ${res.text.slice(0, 200)}`)
       const parsed = JSON.parse(res.text)
-      const id = parsed?.session?.id
-      if (!id) throw new Error(`start did not return a ready session: ${res.text.slice(0, 200)}`)
-      return id
+      if (parsed?.session?.id) return parsed.session.id
+      if (res.status !== 202 || !parsed?.id) {
+        throw new Error(`start did not return a session id: ${res.text.slice(0, 200)}`)
+      }
+
+      const deadline = Date.now() + readyTimeoutMs
+      while (Date.now() < deadline) {
+        const pending = await call('GET', `/api/sessions/${encodeURIComponent(parsed.id)}`)
+        if (pending.ok) {
+          const session = JSON.parse(pending.text)
+          if (session.ptyAttached === true || session.status === 'waiting_input') return parsed.id
+          if (session.status === 'idle' || session.lifecycle === 'failed' || session.failureReason) {
+            throw new Error(`session ${parsed.id} failed while starting: ${pending.text.slice(0, 200)}`)
+          }
+        }
+        await sleep(readyPollMs)
+      }
+      throw new Error(`session ${parsed.id} did not become ready within ${readyTimeoutMs}ms`)
     },
     stop: (id) => call('POST', `/api/sessions/${encodeURIComponent(id)}/stop`),
-    live: async () => {
+    sessions: async () => {
       const res = await call('GET', '/api/sessions')
       if (!res.ok) return []
-      return JSON.parse(res.text).filter((s) => s.ptyAttached)
+      const parsed = JSON.parse(res.text)
+      return Array.isArray(parsed) ? parsed : parsed.sessions ?? []
     },
   }
 }
@@ -94,19 +110,7 @@ function runFlow(env) {
   }).status
 }
 
-async function main() {
-  const url = process.env.E2E_MOCK_SERVER_URL || 'http://localhost:8766'
-  const token = streamerToken()
-  const api = streamer(url, token)
-
-  const probe = await api.info().catch((err) => ({ ok: false, status: err.message }))
-  if (!probe.ok) {
-    console.error(`Streamer at ${url} did not answer GET /api/info (${probe.status}).`)
-    console.error('Start it with `npm run dev:verbose` in tb-streamer.')
-    process.exit(1)
-  }
-
-  const only = process.argv.slice(2)
+async function runMatrix({ api, appUrl, token, sessionPath, only = [], run = runFlow }) {
   const combos = []
   for (const mode of MODES) {
     for (const option of OPTIONS) {
@@ -120,13 +124,18 @@ async function main() {
   const results = []
   for (const combo of combos) {
     console.log(`\n=== leave_session_nav: ${combo.name} ===`)
+    const before = new Set((await api.sessions()).map((session) => session.id))
+    const owned = new Set()
     let existingId = ''
-    if (combo.mode === 'resumed') existingId = await api.start()
     try {
+      if (combo.mode === 'resumed') {
+        existingId = await api.start(sessionPath)
+        owned.add(existingId)
+      }
       results.push({
         ...combo,
-        code: runFlow({
-          E2E_MOCK_SERVER_URL: url,
+        code: run({
+          E2E_MOCK_SERVER_URL: appUrl,
           E2E_SERVER_TOKEN: token,
           LEAVE_OPTION: combo.option,
           SESSION_MODE: combo.mode,
@@ -134,19 +143,50 @@ async function main() {
         }),
       })
     } finally {
-      // "Leave it" and "Kill on idle" deliberately keep the PTY alive, and a
-      // failed flow can strand one at any point — so never let a combo hand
-      // the next one a machine full of live agents.
-      for (const session of await api.live()) await api.stop(session.id)
+      // A new-mode flow creates its session inside the app, so the controller
+      // learns that id by comparing the server's rows with the pre-flow
+      // snapshot. Pre-existing rows are never eligible for cleanup.
+      for (const session of await api.sessions()) {
+        if (!before.has(session.id)) owned.add(session.id)
+      }
+      for (const id of owned) await api.stop(id)
     }
   }
+
+  return results
+}
+
+async function main() {
+  const legacyUrl = process.env.E2E_MOCK_SERVER_URL || 'http://localhost:8766'
+  const controlUrl = process.env.REAL_STREAMER_CONTROL_URL || legacyUrl
+  const appUrl = process.env.REAL_STREAMER_APP_URL || legacyUrl
+  const sessionPath = process.env.REAL_STREAMER_SESSION_PATH || REPO_ROOT
+  const token = streamerToken()
+  const api = streamer(controlUrl, token, {
+    readyTimeoutMs: Number(process.env.REAL_STREAMER_READY_TIMEOUT_MS) || DEFAULT_READY_TIMEOUT_MS,
+    readyPollMs: Number(process.env.REAL_STREAMER_READY_POLL_MS) || DEFAULT_READY_POLL_MS,
+  })
+
+  const probe = await api.info().catch((err) => ({ ok: false, status: err.message }))
+  if (!probe.ok) {
+    console.error(`Streamer at ${controlUrl} did not answer GET /api/info (${probe.status}).`)
+    console.error('Start it with `npm run dev:verbose` in tb-streamer.')
+    process.exit(1)
+  }
+
+  const only = process.argv.slice(2)
+  const results = await runMatrix({ api, appUrl, token, sessionPath, only })
 
   console.log('\n=== summary ===')
   for (const r of results) console.log(`${r.code === 0 ? 'PASS' : 'FAIL'}  ${r.name}`)
   process.exit(results.some((r) => r.code !== 0) ? 1 : 0)
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}
+
+module.exports = { runMatrix, streamer }

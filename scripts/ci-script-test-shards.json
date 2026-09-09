@@ -39,7 +39,9 @@
     "__tests__/unit/scripts/localized-permission-strings.test.js",
     "__tests__/unit/scripts/merge-jest-coverage.test.js",
     "__tests__/unit/scripts/native-strings-check.test.js",
+    "__tests__/unit/scripts/real-streamer-e2e-workflow.test.js",
     "__tests__/unit/scripts/reset-podfile-lock-path-noise.test.js",
+    "__tests__/unit/scripts/run-leave-nav.test.js",
     "__tests__/unit/scripts/withLiveActivityTarget.test.js"
   ]
 }

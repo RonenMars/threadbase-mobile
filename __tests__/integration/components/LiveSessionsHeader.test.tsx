@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 
 describe('LiveSessionsHeader', () => {
@@ -23,9 +23,16 @@ describe('LiveSessionsHeader', () => {
   })
 
   it('exposes live-sessions-header when the block is collapsible', async () => {
+    const onToggle = jest.fn()
     const { getByTestId } = await render(
-      <LiveSessionsHeader count={4} hasLive collapsed onToggle={() => {}} />,
+      <LiveSessionsHeader count={4} hasLive collapsed onToggle={onToggle} />,
     )
+    fireEvent.press(getByTestId('live-sessions-header'))
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('exposes live-sessions-header when the block is not collapsible', async () => {
+    const { getByTestId } = await render(<LiveSessionsHeader count={1} hasLive />)
     expect(getByTestId('live-sessions-header')).toBeTruthy()
   })
 })

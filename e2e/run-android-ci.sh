@@ -107,6 +107,10 @@ for pkg in com.google.android.apps.nexuslauncher com.android.launcher3 com.googl
   adb shell pm disable-user --user 0 "$pkg" >/dev/null 2>&1 || \
     adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
 done
+if [ -n "${REAL_STREAMER_CONTROL_URL:-}" ]; then
+  node e2e/run-leave-nav.js
+  exit 0
+fi
 if [ -z "${FLOWS:-}" ]; then
   npm run test:e2e:mock
   exit 0

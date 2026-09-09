@@ -28,7 +28,12 @@ export function LiveSessionsHeader({ count, hasLive, collapsed, onToggle }: Prop
   const collapsible = onToggle !== undefined
 
   const inner = (
-    <View style={styles.container} accessibilityRole="header" accessibilityLabel={label}>
+    <View
+      testID="live-sessions-header"
+      style={styles.container}
+      accessibilityRole="header"
+      accessibilityLabel={label}
+    >
       {collapsible && (
         <CaretRight
           size={12}
@@ -46,7 +51,6 @@ export function LiveSessionsHeader({ count, hasLive, collapsed, onToggle }: Prop
   if (collapsible) {
     return (
       <TouchableOpacity
-        testID="live-sessions-header"
         onPress={onToggle}
         activeOpacity={0.7}
       >
