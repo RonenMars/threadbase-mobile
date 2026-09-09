@@ -191,11 +191,15 @@ queryClient.getQueryCache().subscribe((event) => {
       // using a conversation id, and 404s by construction for any conversation
       // that was never a session) added a second, phantom "Session details
       // failed to load" row to every conversation 404.
-      if ((query.meta as { silentError?: boolean } | undefined)?.silentError) return
+      const meta = query.meta as { silentError?: boolean; silentNotFound?: boolean } | undefined
+      if (meta?.silentError) return
       const err = query.state.error
       const message = err instanceof Error ? err.message : i18n.t('common:error.unexpected')
       const status =
         err && 'status' in (err as object) ? (err as { status?: number }).status : undefined
+      // Narrower than silentError: the query owns the "this is gone" case on
+      // its own screen, but still wants a server failure reported globally.
+      if (status === 404 && meta?.silentNotFound) return
       const code =
         err && 'code' in (err as object) ? (err as { code?: string }).code : undefined
       setTimeout(() => store.pushError({ category, message, status, code }), 0)

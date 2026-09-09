@@ -1,0 +1,153 @@
+# Maestro E2E — the leave-session modal must land on the app homepage
+#
+# Pressing back on a live session opens the leave-session modal. Whichever of
+# the three options is confirmed ("Kill it" / "Leave it" / "Kill on idle"),
+# once the action has been applied the app has to be on the homepage (the hub /
+# classic / tree list at `/`) — not still on the session screen, and not on the
+# conversation screen it redirects to when a session stops being live.
+#
+# Parameterised with `-e`:
+#   LEAVE_OPTION         kill | leave | kill_on_idle
+#   SESSION_MODE         new      — a session this flow starts through Browse
+#                        resumed  — a session that already existed on the
+#                                   streamer, opened from the hub
+#   EXISTING_SESSION_ID  the pre-created session id (SESSION_MODE=resumed only)
+#
+# Requires a real threadbase-streamer (`npm run dev:verbose` in tb-streamer)
+# reachable at E2E_MOCK_SERVER_URL, whose api_key is E2E_SERVER_TOKEN — the
+# mock server has no PTY, so it cannot produce the live session this modal
+# guards.
+# Usage: node e2e/run-leave-nav.js
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# --- reach a live session -------------------------------------------------
+- runFlow:
+    when:
+      true: ${SESSION_MODE == 'new'}
+    commands:
+      - tapOn:
+          id: "fab-new-session"
+          retryTapIfNoChange: true
+
+      # One paired server goes straight to Browse; more show the picker.
+      - runFlow:
+          when:
+            visible:
+              id: "new-session-server-0"
+          commands:
+            - tapOn:
+                id: "new-session-server-0"
+
+      - extendedWaitUntil:
+          visible:
+            id: "browse-screen"
+          timeout: 15000
+
+      - tapOn:
+          id: "browse-start-session"
+
+      # Spawning a real agent PTY is far slower than the mock server.
+      - extendedWaitUntil:
+          visible:
+            id: "session-detail-screen"
+          timeout: 120000
+
+- runFlow:
+    when:
+      true: ${SESSION_MODE == 'resumed'}
+    commands:
+      # The classic list collapses the live-sessions block once a server has
+      # more than three sessions (app/index.tsx SESSIONS_COLLAPSE_THRESHOLD),
+      # and a real streamer with history is always over it — so no session row
+      # renders at all until the eyebrow is expanded.
+      - extendedWaitUntil:
+          visible:
+            id: "live-sessions-header"
+          timeout: 45000
+
+      - runFlow:
+          when:
+            notVisible:
+              id: "session-row-.*"
+          commands:
+            - tapOn:
+                id: "live-sessions-header"
+
+      # The classic list merges sessions with a long conversation history, so a
+      # scroll that starts against a list with no session rows runs straight
+      # past the row it is looking for and reports it missing.
+      - extendedWaitUntil:
+          visible:
+            id: "session-row-.*"
+          timeout: 30000
+
+      - scrollUntilVisible:
+          element:
+            id: "session-row-${EXISTING_SESSION_ID}"
+          direction: DOWN
+          visibilityPercentage: 30
+          timeout: 30000
+
+      - tapOn:
+          id: "session-row-${EXISTING_SESSION_ID}"
+
+      - extendedWaitUntil:
+          visible:
+            id: "session-detail-screen"
+          timeout: 60000
+
+- takeScreenshot: e2e/_artifacts/screenshots/leave-nav-${SESSION_MODE}-${LEAVE_OPTION}-01-session
+
+# --- leave the session ----------------------------------------------------
+- tapOn:
+    id: "screen-header-back-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "leave-session-modal"
+    timeout: 10000
+
+- tapOn:
+    id: "leave-session-option-${LEAVE_OPTION}"
+
+- tapOn:
+    id: "leave-session-confirm"
+
+# A real streamer produces incidental failures a mock server never does (a slow
+# response, a conversation whose history has been pruned), and any error
+# auto-opens the recovery sheet over the hub. Close it rather than asserting
+# through it — the sheet covers the hub and takes it out of the hierarchy.
+- extendedWaitUntil:
+    visible:
+      id: "error-sheet-close"
+    timeout: 5000
+    optional: true
+
+- runFlow:
+    when:
+      visible:
+        id: "error-sheet-close"
+    commands:
+      - tapOn:
+          id: "error-sheet-close"
+      - waitForAnimationToEnd
+
+# The whole point of the flow: whatever the action was, we end up home.
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 20000
+
+- takeScreenshot: e2e/_artifacts/screenshots/leave-nav-${SESSION_MODE}-${LEAVE_OPTION}-02-after
+
+- assertVisible:
+    id: "fab-new-session"
+
+- assertNotVisible:
+    id: "session-detail-screen"

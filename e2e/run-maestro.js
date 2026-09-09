@@ -257,15 +257,25 @@ async function copyReports(reports, artifactDirectory, warnOnce) {
 // `test:e2e:mock`, `e2e/run-android-ci.sh` and the iOS scripts at once. A caller
 // that passes its own `-e E2E_MOCK_SERVER_URL=` wins; the demo and prod scripts
 // pass unrelated variables and are untouched.
-function withMockServerUrl(args) {
+function withDefaultEnv(args, name, fallback) {
   const alreadySet = args.some(
-    (arg, i) => arg === '-e' && String(args[i + 1] || '').startsWith('E2E_MOCK_SERVER_URL='),
+    (arg, i) => arg === '-e' && String(args[i + 1] || '').startsWith(`${name}=`),
   )
   if (alreadySet || args.length === 0) return args
 
-  const url = process.env.E2E_MOCK_SERVER_URL || 'http://localhost:7071'
   // After the subcommand (`test`, `record`), before the flow paths.
-  return [args[0], '-e', `E2E_MOCK_SERVER_URL=${url}`, ...args.slice(1)]
+  return [args[0], '-e', `${name}=${process.env[name] || fallback}`, ...args.slice(1)]
+}
+
+// `E2E_SERVER_TOKEN` defaults to the mock server's key so every existing flow
+// keeps pairing exactly as before; only a caller aiming at a real streamer
+// (e2e/run-leave-nav.js) has to supply one.
+function withFlowEnv(args) {
+  return withDefaultEnv(
+    withDefaultEnv(args, 'E2E_MOCK_SERVER_URL', 'http://localhost:7071'),
+    'E2E_SERVER_TOKEN',
+    'mock-key-123',
+  )
 }
 
 function withRequestedUdid(args) {
@@ -278,7 +288,7 @@ function withRequestedUdid(args) {
 function runMaestro(args) {
   return new Promise((resolve) => {
     const command = process.env.MAESTRO_BIN || 'maestro'
-    const child = spawn(command, withRequestedUdid(withMockServerUrl(args)), { stdio: 'inherit', shell: false })
+    const child = spawn(command, withRequestedUdid(withFlowEnv(args)), { stdio: 'inherit', shell: false })
     let settled = false
     let forwardedSignal = null
     const signalHandlers = new Map()

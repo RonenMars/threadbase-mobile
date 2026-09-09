@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -432,6 +432,11 @@ export default function SessionDetailScreen() {
   }>()
   const router = useRouter()
   const navigation = useNavigation()
+  // Leaving a session always lands on the homepage, never on whatever screen
+  // happens to sit under this one — and it must go through the router rather
+  // than a replayed navigation action; see LeaveContinuation in
+  // hooks/useSessionLeaveGuard.ts.
+  const navigateHome = useCallback(() => router.replace('/'), [router])
 
   // Fall back to first server if no server param provided (backwards compat)
   const fallbackServerId = useServersStore((s) => s.activeServerIds[0] ?? '')
@@ -564,6 +569,7 @@ export default function SessionDetailScreen() {
           navigation.dispatch(action as Parameters<typeof navigation.dispatch>[0])
         },
       },
+      navigateHome,
       serverId,
       sessionId: id,
       session,
@@ -960,9 +966,7 @@ export default function SessionDetailScreen() {
     </Pressable>
   )
 
-  const handleBack = () => {
-    router.replace('/')
-  }
+  const handleBack = navigateHome
 
   const presentation = deriveSessionPresentation(session)
   const capabilityLabel = presentation.capabilities.isObserveOnly

@@ -17,7 +17,27 @@ export interface SessionLeaveNavigation {
   dispatch: (action: { type: string }) => void
 }
 
-export type SessionLeavePhase = 'idle' | 'pending' | 'error' | 'errorAcked'
+// What to do once the screen is allowed to be removed. 'home' is every path
+// the user reached by choosing to leave; 'action' replays a navigation this
+// guard intercepted but has no opinion about (the automatic replacement that
+// swaps a starting session's placeholder id for its real one).
+//
+// These cannot be one mechanism. `router.replace('/')` produces a REPLACE
+// aimed at the ROOT stack and carrying no `source`, so the router falls back
+// to that stack's focused route. Re-dispatching it through this screen's
+// navigation stamps `source` with the session route's key — a key the root
+// stack has never heard of — and StackRouter answers null: the action is
+// dropped in silence, and every leave option left the user on the session
+// screen. Going home has to go through the router, not through a replay.
+type LeaveContinuation = { kind: 'home' } | { kind: 'action'; action: { type: string } }
+
+// 'navigating' spans the gap between a successful leave action and the
+// navigation it queued actually being dispatched — on iOS that gap is a real
+// wait (the native modal's dismiss, or the bounded fallback below). The screen
+// reads `isLeaving` to suppress its own history redirect, and treating that gap
+// as 'idle' is what let a killed session redirect to /conversation/<id> before
+// the guard's own navigation home landed.
+export type SessionLeavePhase = 'idle' | 'pending' | 'navigating' | 'error' | 'errorAcked'
 
 function readLeaveSetting(): unknown {
   const store = useSettingsStore as typeof useSettingsStore & {
@@ -47,6 +67,7 @@ async function sendHoldSession(serverId: string, sessionId: string): Promise<boo
 
 export function useSessionLeaveGuard(opts: {
   navigation: SessionLeaveNavigation
+  navigateHome: () => void
   serverId: string
   sessionId: string | undefined
   session: LeaveSessionSnapshot | null | undefined
@@ -64,6 +85,7 @@ export function useSessionLeaveGuard(opts: {
 } {
   const {
     navigation,
+    navigateHome,
     serverId,
     sessionId,
     session,
@@ -73,8 +95,7 @@ export function useSessionLeaveGuard(opts: {
   } = opts
   const [leaveModalVisible, setLeaveModalVisible] = useState(false)
   const [leavePhase, setLeavePhase] = useState<SessionLeavePhase>('idle')
-  const [continueAction, setContinueAction] = useState<{ type: string } | null>(null)
-  const pendingActionRef = useRef<{ type: string } | null>(null)
+  const [continuation, setContinuation] = useState<LeaveContinuation | null>(null)
   // One-shot, armed at mount and disarmed by the first REPLACE — not on a timer:
   // the automatic replacement lands whenever session_ready arrives, which can be
   // long after the screen mounted.
@@ -86,11 +107,12 @@ export function useSessionLeaveGuard(opts: {
   // finishLeave for why this needs to survive past the state flip that
   // starts the modal's close animation.
   const modalIsShowingRef = useRef(false)
-  const pendingContinueRef = useRef<{ type: string } | null>(null)
+  const pendingHomeRef = useRef(false)
   const dismissFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sessionRef = useRef(session)
   const stopRef = useRef(stopSessionMutateAsync)
   const navRef = useRef(navigation)
+  const homeRef = useRef(navigateHome)
   useEffect(() => {
     sessionRef.current = session
   }, [session])
@@ -101,16 +123,16 @@ export function useSessionLeaveGuard(opts: {
     navRef.current = navigation
   }, [navigation])
   useEffect(() => {
+    homeRef.current = navigateHome
+  }, [navigateHome])
+  useEffect(() => {
     leavePhaseRef.current = leavePhase
   }, [leavePhase])
 
-  const proceed = useCallback(
-    (action: { type: string } | null) => {
-      if (!action) return
-      setContinueAction(action)
-    },
-    [],
-  )
+  const proceed = useCallback((next: LeaveContinuation) => {
+    setLeavePhase('idle')
+    setContinuation(next)
+  }, [])
 
   // navigation.dispatch() fired while the native <Modal> is still mid-dismiss
   // can be silently dropped by iOS UIKit — the app looked like it needed a
@@ -133,39 +155,35 @@ export function useSessionLeaveGuard(opts: {
     }
   }, [])
 
-  const finishLeave = useCallback(
-    (action: { type: string } | null) => {
-      if (!action) return
-      if (Platform.OS === 'ios' && modalIsShowingRef.current) {
-        pendingContinueRef.current = action
-        clearDismissFallback()
-        dismissFallbackRef.current = setTimeout(() => {
-          dismissFallbackRef.current = null
-          if (pendingContinueRef.current !== action) return
-          pendingContinueRef.current = null
-          modalIsShowingRef.current = false
-          proceed(action)
-        }, DISMISS_FALLBACK_MS)
-        return
-      }
-      modalIsShowingRef.current = false
-      proceed(action)
-    },
-    [proceed, clearDismissFallback],
-  )
+  const finishLeave = useCallback(() => {
+    if (Platform.OS === 'ios' && modalIsShowingRef.current) {
+      pendingHomeRef.current = true
+      clearDismissFallback()
+      dismissFallbackRef.current = setTimeout(() => {
+        dismissFallbackRef.current = null
+        if (!pendingHomeRef.current) return
+        pendingHomeRef.current = false
+        modalIsShowingRef.current = false
+        proceed({ kind: 'home' })
+      }, DISMISS_FALLBACK_MS)
+      return
+    }
+    modalIsShowingRef.current = false
+    proceed({ kind: 'home' })
+  }, [proceed, clearDismissFallback])
 
   const onModalDismiss = useCallback(() => {
     clearDismissFallback()
     modalIsShowingRef.current = false
-    const action = pendingContinueRef.current
-    pendingContinueRef.current = null
-    if (action) proceed(action)
+    if (!pendingHomeRef.current) return
+    pendingHomeRef.current = false
+    proceed({ kind: 'home' })
   }, [proceed, clearDismissFallback])
 
   useEffect(() => clearDismissFallback, [clearDismissFallback])
 
   const runLeaveAction = useCallback(
-    async (choice: AppliedSessionLeaveAction, action: { type: string } | null) => {
+    async (choice: AppliedSessionLeaveAction) => {
       if (!sessionId) return
       // No special-case shortcut for 'leave': it must go through this same
       // await (applySessionLeaveAction resolves it instantly with no server
@@ -185,8 +203,8 @@ export function useSessionLeaveGuard(opts: {
         sendHold: () => sendHoldSession(serverId, sessionId),
       })
       if (outcome.ok) {
-        setLeavePhase('idle')
-        finishLeave(action)
+        setLeavePhase('navigating')
+        finishLeave()
         return
       }
       clientLog.info('session', 'leave action failed', { sessionId, serverId, applied: outcome.applied })
@@ -196,7 +214,7 @@ export function useSessionLeaveGuard(opts: {
   )
 
   const shouldPreventRemove =
-    !continueAction &&
+    !continuation &&
     (leavePhase !== 'idle' || (!isPending && Boolean(sessionId) && isLiveAttachedPty(session)))
   usePreventRemove(shouldPreventRemove, ({ data }) => {
     if (!sessionId) return
@@ -205,27 +223,25 @@ export function useSessionLeaveGuard(opts: {
     // press (or swipe) is the "now take me home" the spec asks for — skip
     // the leave-options modal entirely, this choice was already made.
     if (leavePhaseRef.current === 'errorAcked') {
-      setLeavePhase('idle')
-      proceed(pendingActionRef.current ?? data.action)
-      pendingActionRef.current = null
+      proceed({ kind: 'home' })
       return
     }
     // Still sending the action, or the error hasn't been acknowledged yet:
     // swallow the back press rather than re-opening the modal underneath it.
     if (leavePhaseRef.current !== 'idle') return
 
-    // Confirmed and waiting on the native modal's real dismiss (finishLeave)
-    // — `leavePhase` is already back to 'idle' for a plain `leave` by this
-    // point, so without this check a stray back press here would re-run
-    // decideSessionLeave and could re-open the modal underneath the one
-    // still animating out.
-    if (pendingContinueRef.current) return
+    // Confirmed and waiting on the native modal's real dismiss (finishLeave).
+    // The 'navigating' phase already swallows this one press above; the ref is
+    // the belt-and-braces version, because a stray back press here would re-run
+    // decideSessionLeave and could re-open the modal underneath the one still
+    // animating out.
+    if (pendingHomeRef.current) return
 
     if (modalVisibleRef.current) return
 
     if (skipInitialReplaceRef.current && data.action.type === 'REPLACE') {
       skipInitialReplaceRef.current = false
-      proceed(data.action)
+      proceed({ kind: 'action', action: data.action })
       return
     }
 
@@ -235,17 +251,15 @@ export function useSessionLeaveGuard(opts: {
     })
 
     if (decision.kind === 'none') {
-      proceed(data.action)
+      proceed({ kind: 'action', action: data.action })
       return
     }
 
     if (decision.kind === 'apply') {
-      pendingActionRef.current = data.action
-      void runLeaveAction(decision.action, data.action)
+      void runLeaveAction(decision.action)
       return
     }
 
-    pendingActionRef.current = data.action
     modalVisibleRef.current = true
     modalIsShowingRef.current = true
     setLeaveModalVisible(true)
@@ -255,24 +269,26 @@ export function useSessionLeaveGuard(opts: {
   // render, so depending on it here would re-dispatch the same action on every
   // subsequent render until the screen unmounts.
   useEffect(() => {
-    if (!continueAction) return
-    navRef.current.dispatch(continueAction)
-  }, [continueAction])
+    if (!continuation) return
+    if (continuation.kind === 'home') {
+      homeRef.current()
+      return
+    }
+    navRef.current.dispatch(continuation.action)
+  }, [continuation])
 
   const cancelLeave = useCallback(() => {
     modalVisibleRef.current = false
     modalIsShowingRef.current = false
-    pendingActionRef.current = null
     setLeaveModalVisible(false)
   }, [])
 
   const confirmLeave = useCallback(
     (choice: AppliedSessionLeaveAction, remember: boolean) => {
       if (remember) persistLeaveSetting(choice)
-      const action = pendingActionRef.current
       modalVisibleRef.current = false
       setLeaveModalVisible(false)
-      void runLeaveAction(choice, action)
+      void runLeaveAction(choice)
     },
     [runLeaveAction],
   )
@@ -288,7 +304,7 @@ export function useSessionLeaveGuard(opts: {
   return {
     leaveModalVisible,
     leavePhase,
-    isLeaving: leavePhase !== 'idle' || continueAction != null,
+    isLeaving: leavePhase !== 'idle' || continuation != null,
     cancelLeave,
     confirmLeave,
     dismissLeaveError,

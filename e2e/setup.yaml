@@ -110,7 +110,7 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-connect-token-input"
 
-      - inputText: "mock-key-123"
+      - inputText: "${E2E_SERVER_TOKEN}"
 
       - pressKey: Enter
 
