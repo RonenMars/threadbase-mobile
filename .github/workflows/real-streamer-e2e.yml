@@ -1,0 +1,227 @@
+name: Real Streamer E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Mobile branch, tag, commit SHA, or PR number to test'
+        required: false
+        default: 'main'
+        type: string
+      streamer_sha:
+        description: 'Full threadbase-streamer commit SHA'
+        required: false
+        default: '2177f5b634855ac9a33903d9ed780978c1aa8d30'
+        type: string
+
+concurrency:
+  group: real-streamer-e2e-${{ inputs.ref }}-${{ inputs.streamer_sha }}
+  cancel-in-progress: false
+
+jobs:
+  real-streamer-e2e:
+    name: Real streamer E2E (Android)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CONTAINER_NAME: threadbase-streamer-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+      VOLUME_NAME: threadbase-streamer-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+      STREAMER_IMAGE: threadbase-streamer-e2e:${{ inputs.streamer_sha }}
+      E2E_SERVER_TOKEN: tb_public_demo_reviewer_key
+    steps:
+      - name: Resolve mobile ref
+        id: mobile-ref
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$INPUT_REF" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
+            echo "::error::Refusing ref '$INPUT_REF' — expected a branch, tag, SHA, or PR number."
+            exit 1
+          fi
+          if printf '%s' "$INPUT_REF" | grep -Eq '^[0-9]+$'; then
+            RESOLVED="refs/pull/$INPUT_REF/head"
+          else
+            RESOLVED="$INPUT_REF"
+          fi
+          echo "ref=$RESOLVED" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.mobile-ref.outputs.ref }}
+
+      - name: Record mobile SHA
+        id: mobile-head
+        run: echo "sha=$(/usr/bin/git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate streamer commit
+        env:
+          STREAMER_SHA: ${{ inputs.streamer_sha }}
+        run: |
+          if ! printf '%s' "$STREAMER_SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::streamer_sha must be a full 40-character lowercase commit SHA."
+            exit 1
+          fi
+
+      - name: Check out pinned streamer
+        uses: actions/checkout@v5
+        with:
+          repository: RonenMars/threadbase-streamer
+          path: .ci/threadbase-streamer
+          ref: ${{ inputs.streamer_sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build deterministic streamer demo image
+        uses: docker/build-push-action@v6
+        with:
+          context: .ci/threadbase-streamer
+          file: .ci/threadbase-streamer/docker/Dockerfile
+          target: demo
+          load: true
+          tags: ${{ env.STREAMER_IMAGE }}
+          cache-from: type=gha,scope=real-streamer-demo-${{ inputs.streamer_sha }}
+          cache-to: type=gha,mode=max,scope=real-streamer-demo-${{ inputs.streamer_sha }}
+
+      - name: Start and probe streamer
+        env:
+          STREAMER_SHA: ${{ inputs.streamer_sha }}
+        run: |
+          set -euo pipefail
+          docker volume create "$VOLUME_NAME"
+          docker run --detach \
+            --name "$CONTAINER_NAME" \
+            --mount "type=volume,source=$VOLUME_NAME,target=/data" \
+            --publish 127.0.0.1:8766:8080 \
+            --env "DEMO_API_KEY=$E2E_SERVER_TOKEN" \
+            --env THREADBASE_PUBLIC_URL=http://10.0.2.2:8766 \
+            "$STREAMER_IMAGE"
+
+          deadline=$((SECONDS + 300))
+          until HEALTH_RESPONSE=$(curl -fsS http://127.0.0.1:8766/healthz); do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::Streamer did not become healthy within 300 seconds."
+              docker logs "$CONTAINER_NAME" || true
+              exit 1
+            fi
+            if [ "$(docker inspect --format '{{.State.Running}}' "$CONTAINER_NAME")" != true ]; then
+              echo "::error::Streamer container exited before becoming healthy."
+              docker logs "$CONTAINER_NAME" || true
+              exit 1
+            fi
+            sleep 2
+          done
+          curl -fsS \
+            -H "Authorization: Bearer $E2E_SERVER_TOKEN" \
+            http://127.0.0.1:8766/api/info > /dev/null
+
+          CONTAINER_ID=$(docker inspect --format '{{.Id}}' "$CONTAINER_NAME")
+          IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$STREAMER_IMAGE")
+          {
+            echo '### Real streamer provenance'
+            echo "- Container ID: \`$CONTAINER_ID\`"
+            echo "- Streamer commit: \`$STREAMER_SHA\`"
+            echo "- Image ID: \`$IMAGE_ID\`"
+            echo "- Health response: \`$HEALTH_RESPONSE\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: npm
+
+      - name: Install mobile dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Cache Android Release APK
+        id: apk-cache
+        uses: actions/cache@v5
+        with:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          key: real-streamer-e2e-apk-v1-${{ runner.os }}-x86_64-${{ steps.mobile-head.outputs.sha }}
+
+      - name: Assemble Android Release APK
+        if: ${{ steps.apk-cache.outputs.cache-hit != 'true' }}
+        env:
+          REACT_NATIVE_ARCHITECTURES: x86_64
+          TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
+          TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD: android
+          TB_MOBILE_UPLOAD_KEY_ALIAS: androiddebugkey
+          TB_MOBILE_UPLOAD_KEY_PASSWORD: android
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        working-directory: android
+        run: ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"
+
+      - name: Install Maestro CLI
+        run: |
+          MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
+          curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          INSTALLED_MAESTRO_VERSION=$(MAESTRO_CLI_NO_ANALYTICS=1 "$HOME/.maestro/bin/maestro" --version | tail -n 1)
+          if [ "$INSTALLED_MAESTRO_VERSION" != "$MAESTRO_VERSION" ]; then
+            echo "::error::Expected Maestro $MAESTRO_VERSION, installed $INSTALLED_MAESTRO_VERSION."
+            exit 1
+          fi
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install APK and run real-streamer matrix on Android API 35
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          E2E_PLATFORM: android
+          E2E_ANDROID_API_LEVEL: '35'
+          REAL_STREAMER_CONTROL_URL: http://127.0.0.1:8766
+          REAL_STREAMER_APP_URL: http://10.0.2.2:8766
+          REAL_STREAMER_SESSION_PATH: /home/demo/projects/threadbase-mobile
+          TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
+          TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD: android
+          TB_MOBILE_UPLOAD_KEY_ALIAS: androiddebugkey
+          TB_MOBILE_UPLOAD_KEY_PASSWORD: android
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: bash e2e/run-android-ci.sh
+
+      - name: Capture streamer logs
+        if: ${{ failure() }}
+        run: |
+          mkdir -p e2e/_artifacts
+          docker logs "$CONTAINER_NAME" > e2e/_artifacts/streamer.log 2>&1 || true
+
+      - name: Upload failure artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-streamer-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            e2e/_artifacts/streamer.log
+            e2e/_artifacts/debug
+            e2e/_artifacts/fallback
+            e2e/_artifacts/maestro-session
+          if-no-files-found: warn
+
+      - name: Stop streamer
+        if: ${{ always() }}
+        run: |
+          docker rm --force "$CONTAINER_NAME" 2>/dev/null || true
+          docker volume rm "$VOLUME_NAME" 2>/dev/null || true

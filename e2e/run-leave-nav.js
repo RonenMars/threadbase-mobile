@@ -127,11 +127,11 @@ async function runMatrix({ api, appUrl, token, sessionPath, only = [], run = run
     const before = new Set((await api.sessions()).map((session) => session.id))
     const owned = new Set()
     let existingId = ''
-    if (combo.mode === 'resumed') {
-      existingId = await api.start(sessionPath)
-      owned.add(existingId)
-    }
     try {
+      if (combo.mode === 'resumed') {
+        existingId = await api.start(sessionPath)
+        owned.add(existingId)
+      }
       results.push({
         ...combo,
         code: run({

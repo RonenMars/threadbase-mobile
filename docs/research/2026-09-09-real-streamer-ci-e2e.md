@@ -1,10 +1,15 @@
 # Real Streamer E2E in CI
 
-**Status:** Proposed
+**Status:** Implemented (opt-in)
 
 **Date:** 2026-09-09
 
 **Scope:** Run the leave-session navigation matrix against a real `tb-streamer` backend in GitHub Actions without invoking a hosted AI model.
+
+## Implementation
+
+The dispatch-only [Real Streamer E2E workflow](../../.github/workflows/real-streamer-e2e.yml) builds the deterministic streamer demo target at the default pinned compatibility commit `2177f5b634855ac9a33903d9ed780978c1aa8d30` and runs the Android matrix through [the ownership-safe controller](../../e2e/run-leave-nav.js).
+The workflow accepts another full streamer commit SHA for deliberate compatibility probes, records the resolved container and image identities in the job summary, and does not run on pull requests or the weekly schedule.
 
 ## Goal
 

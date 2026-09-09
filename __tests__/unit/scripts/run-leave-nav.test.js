@@ -206,4 +206,16 @@ describe('run-leave-nav real-streamer controller', () => {
     const state = await fixture.state();
     expect(state.stopped).toEqual(['flow-owned']);
   });
+
+  it('stops a pending session when readiness times out before Maestro runs', async () => {
+    const result = await runRunner(
+      ['resumed/leave'],
+      environment({ REAL_STREAMER_READY_TIMEOUT_MS: '1' }),
+    );
+
+    expect(result.status).toBe(1);
+    const state = await fixture.state();
+    expect(state.stopped).toEqual(['pending-owned']);
+    expect(fs.existsSync(maestro.log)).toBe(false);
+  });
 });
