@@ -339,7 +339,13 @@ export function useSessionDetail(serverId: string, sessionId: string) {
     },
     // Don't persist session detail across app restarts — each session is
     // ephemeral and stale persisted state causes false status flickers.
-    meta: { persist: false },
+    //
+    // silentNotFound: a 404 here is authoritative and usually something the
+    // user just asked for — "Kill it" makes this query 404 by construction.
+    // The session screen already renders its own not-found state with a way
+    // back, so the global recovery sheet only adds a row reporting the user's
+    // own action as a failure. Other statuses still surface normally.
+    meta: { persist: false, silentNotFound: true },
     // A vanished session is authoritative — retrying a 404 only delays the
     // not-found recovery UI and keeps stale favorites pinned longer.
     retry: false,

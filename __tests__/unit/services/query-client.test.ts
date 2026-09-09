@@ -182,4 +182,25 @@ describe('error banner opt-out (meta.silentError)', () => {
     expect(row.status).toBe(404)
     expect(row.code).toBe('HTTP_404')
   })
+
+  // "Kill it" makes the session-detail query 404 by construction, so the sheet
+  // reported the user's own action back to them as a failure.
+  it('pushes no row for a 404 when the query opts out of just that', async () => {
+    await failWith(['session', 'srv1', 'killed'], { persist: false, silentNotFound: true })
+    expect(useLoadingStateStore.getState().errors).toHaveLength(0)
+  })
+
+  it('still pushes a row for a non-404 when the query only opts out of not-found', async () => {
+    await queryClient
+      .fetchQuery({
+        queryKey: ['session', 'srv1', 'flaky'],
+        queryFn: () => Promise.reject(Object.assign(new Error('boom'), { status: 503 })),
+        retry: false,
+        meta: { persist: false, silentNotFound: true },
+      })
+      .catch(() => {})
+    jest.advanceTimersByTime(0)
+    expect(useLoadingStateStore.getState().errors).toHaveLength(1)
+    expect(useLoadingStateStore.getState().errors[0].status).toBe(503)
+  })
 })

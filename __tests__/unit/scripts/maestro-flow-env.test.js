@@ -3,10 +3,8 @@
  *
  * Two harness guards that fail silently and expensively when they regress.
  *
- * `run-maestro.js` must pass E2E_MOCK_SERVER_URL through with `-e`: Maestro
- * resolves `${VAR}` in a flow only from that flag, never from the environment,
- * so without it the app dials the literal host `undefined` and every onboarding
- * flow fails on a later, unrelated-looking assertion.
+ * `run-maestro.js` must pass its flow variables through with `-e`: Maestro
+ * resolves `${VAR}` in a flow only from that flag, never from the environment.
  *
  * `wait-for-mock.js` must fail loudly when nothing is listening, rather than
  * letting the suite run against a mock server that died during startup.
@@ -54,6 +52,27 @@ describe('run-maestro.js flow variables', () => {
       E2E_MOCK_SERVER_URL: 'http://10.0.2.2:7071',
     });
     expect(argv).toContain('-e E2E_MOCK_SERVER_URL=http://10.0.2.2:7071');
+  });
+
+  it('passes E2E_SERVER_TOKEN to maestro with -e', () => {
+    const { argv } = runWithStub(['test', 'e2e/launch.yaml'], {
+      E2E_SERVER_TOKEN: 'real-streamer-key',
+    });
+    expect(argv).toContain('-e E2E_SERVER_TOKEN=real-streamer-key');
+  });
+
+  it('defaults E2E_SERVER_TOKEN to the mock server key', () => {
+    const { argv } = runWithStub(['test', 'e2e/launch.yaml'], {});
+    expect(argv).toContain('-e E2E_SERVER_TOKEN=mock-key-123');
+  });
+
+  it("does not override a caller's own token", () => {
+    const { argv } = runWithStub(
+      ['test', '-e', 'E2E_SERVER_TOKEN=explicit-key', 'e2e/launch.yaml'],
+      { E2E_SERVER_TOKEN: 'environment-key' },
+    );
+    expect(argv).toContain('E2E_SERVER_TOKEN=explicit-key');
+    expect(argv).not.toContain('environment-key');
   });
 
   it('keeps the subcommand first and the flow paths last', () => {

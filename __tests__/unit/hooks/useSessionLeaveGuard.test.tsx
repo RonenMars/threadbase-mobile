@@ -21,10 +21,12 @@ const live = {
 
 function makeNav() {
   const dispatch = jest.fn()
+  const navigateHome = jest.fn()
   return {
     navigation: {
       dispatch,
     },
+    navigateHome,
     fire: async (type = 'GO_BACK') => {
       const [preventRemove, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1) ?? []
       const action = { type }
@@ -33,7 +35,7 @@ function makeNav() {
           callback({ data: { action } })
         })
       }
-      return { preventRemove, action, dispatch }
+      return { preventRemove, action, dispatch, navigateHome }
     },
     dispatch,
   }
@@ -43,12 +45,14 @@ type StopSessionMutateAsync = Parameters<typeof useSessionLeaveGuard>[0]['stopSe
 
 function LeaveGuardProbe({
   navigation,
+  navigateHome,
   session,
   isPending,
   skipInitialReplace,
   stopSessionMutateAsync,
 }: {
   navigation: ReturnType<typeof makeNav>['navigation']
+  navigateHome: () => void
   session: typeof live
   isPending: boolean
   skipInitialReplace?: boolean
@@ -58,6 +62,7 @@ function LeaveGuardProbe({
   const {
     leaveModalVisible,
     leavePhase,
+    isLeaving,
     cancelLeave,
     confirmLeave,
     dismissLeaveError,
@@ -65,6 +70,7 @@ function LeaveGuardProbe({
   } = useSessionLeaveGuard({
     // A fresh object every render, exactly like app/session/[id].tsx passes.
     navigation: { dispatch: (action) => navigation.dispatch(action) },
+    navigateHome,
     serverId: 'srv1',
     sessionId: 'sess-live',
     session,
@@ -76,6 +82,7 @@ function LeaveGuardProbe({
     <View>
       <Text testID="leave-modal-visible">{leaveModalVisible ? 'yes' : 'no'}</Text>
       <Text testID="leave-phase">{leavePhase}</Text>
+      <Text testID="leave-is-leaving">{isLeaving ? 'yes' : 'no'}</Text>
       <Pressable testID="leave-cancel" onPress={cancelLeave} />
       <Pressable testID="leave-confirm-kill" onPress={() => confirmLeave('kill', false)} />
       <Pressable testID="leave-confirm-leave" onPress={() => confirmLeave('leave', false)} />
@@ -113,6 +120,7 @@ describe('useSessionLeaveGuard', () => {
     const view = await render(
       <LeaveGuardProbe
         navigation={nav.navigation}
+        navigateHome={nav.navigateHome}
         session={session}
         isPending={extra?.isPending ?? false}
         skipInitialReplace={extra?.skipInitialReplace}
@@ -130,34 +138,34 @@ describe('useSessionLeaveGuard', () => {
   }
 
   it('Always ask: back from live session shows the modal; Cancel stays', async () => {
-    const { fire, dispatch } = await setup()
+    const { fire, navigateHome } = await setup()
     const { preventRemove } = await fire()
     expect(preventRemove).toBe(true)
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('yes')
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
 
     await fireEvent.press(screen.getByTestId('leave-cancel'))
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
     expect(wsManager.holdSessionWaitingInput).not.toHaveBeenCalled()
   })
 
   it('on iOS, dispatch waits for the real modal dismiss instead of racing it', async () => {
-    const { fire, dispatch } = await setup()
-    const { action } = await fire()
+    const { fire, navigateHome } = await setup()
+    await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
 
     // The bug this guards: dispatching while the native <Modal> is still
     // mid-close can be silently dropped by iOS, which read as "the first
     // back press does nothing; a second press then navigates with no modal."
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
     const [preventRemoveStillArmed] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
     expect(preventRemoveStillArmed).toBe(true)
 
     await fireModalDismiss()
-    expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).toHaveBeenCalled()
   })
 
   it('on iOS, dispatch fires from a bounded fallback if onDismiss never comes', async () => {
@@ -166,17 +174,17 @@ describe('useSessionLeaveGuard', () => {
     // first back press. The fallback must not depend on onDismiss at all.
     jest.useFakeTimers()
     try {
-      const { fire, dispatch } = await setup()
-      const { action } = await fire()
+      const { fire, navigateHome } = await setup()
+      await fire()
       await act(async () => {
         fireEvent.press(screen.getByTestId('leave-confirm-leave'))
       })
-      expect(dispatch).not.toHaveBeenCalled()
+      expect(navigateHome).not.toHaveBeenCalled()
 
       await act(async () => {
         jest.advanceTimersByTime(500)
       })
-      expect(dispatch).toHaveBeenCalledWith(action)
+      expect(navigateHome).toHaveBeenCalled()
     } finally {
       jest.useRealTimers()
     }
@@ -184,65 +192,66 @@ describe('useSessionLeaveGuard', () => {
 
   it('on Android, dispatch fires immediately — no onDismiss race to defer for', async () => {
     Platform.OS = 'android'
-    const { fire, dispatch } = await setup()
-    const { action } = await fire()
+    const { fire, navigateHome } = await setup()
+    await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
-    expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).toHaveBeenCalled()
   })
 
   it('a back press while awaiting the modal dismiss is swallowed, not re-prompted', async () => {
-    const { fire, dispatch } = await setup()
+    const { fire, navigateHome } = await setup()
     await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
 
     await fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
   })
 
   it('Confirm+Kill shows a loader, awaits stop, then navigates once dismissed', async () => {
-    const { fire, dispatch } = await setup()
-    const { action } = await fire()
+    const { fire, navigateHome } = await setup()
+    await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-kill'))
     expect(wsManager.holdSessionWaitingInput).not.toHaveBeenCalled()
-    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('idle'))
+    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating'))
     expect(stopSessionMutateAsync).toHaveBeenCalled()
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
 
     await fireModalDismiss()
-    expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).toHaveBeenCalled()
   })
 
   it('Confirm+Leave navigates with no stop/hold, once dismissed', async () => {
-    const { fire, dispatch } = await setup()
+    const { fire, navigateHome } = await setup()
     await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
     expect(wsManager.holdSessionWaitingInput).not.toHaveBeenCalled()
 
     await fireModalDismiss()
-    expect(dispatch).toHaveBeenCalled()
+    expect(navigateHome).toHaveBeenCalled()
   })
 
   it('allows the automatic replacement that opens a starting session', async () => {
     // No leave modal is ever shown on this path, so there is nothing to
     // dismiss — the effect-driven dispatch stays immediate.
-    const { fire, dispatch } = await setup(live, { skipInitialReplace: true })
+    const { fire, dispatch, navigateHome } = await setup(live, { skipInitialReplace: true })
     const { action } = await fire('REPLACE')
 
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
     expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).not.toHaveBeenCalled()
   })
 
   it('dispatches the continued action once, not on every later render', async () => {
-    const { fire, dispatch } = await setup()
+    const { fire, navigateHome } = await setup()
     await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
     await fireModalDismiss()
     await fireEvent.press(screen.getByTestId('force-rerender'))
 
-    expect(dispatch).toHaveBeenCalledTimes(1)
+    expect(navigateHome).toHaveBeenCalledTimes(1)
   })
 
   it('turns off removal prevention only once the deferred dispatch actually fires', async () => {
@@ -259,27 +268,47 @@ describe('useSessionLeaveGuard', () => {
   })
 
   it('Confirm+Kill on idle sends when: waiting_input, awaits the ack, then navigates once dismissed', async () => {
-    const { fire, dispatch } = await setup()
-    const { action } = await fire()
+    const { fire, navigateHome } = await setup()
+    await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-idle'))
     expect(wsManager.holdSessionWaitingInput).toHaveBeenCalledWith('srv1', 'sess-live')
-    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('idle'))
+    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating'))
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
 
     await fireModalDismiss()
-    expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).toHaveBeenCalled()
+  })
+
+  // app/session/[id].tsx suppresses its own redirect to /conversation/<id>
+  // while `isLeaving` is true. A killed session flips to history the moment
+  // the stop lands, so any gap here hands that redirect the screen and the
+  // user ends up on the conversation view instead of the homepage.
+  it('stays "leaving" for the whole deferred window, so the screen keeps suppressing its redirect', async () => {
+    const { fire, navigateHome } = await setup()
+    await fire()
+    await fireEvent.press(screen.getByTestId('leave-confirm-kill'))
+
+    // The stop has resolved and the modal is closing, but the navigation has
+    // not been dispatched yet — the exact window the redirect used to win.
+    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating'))
+    expect(navigateHome).not.toHaveBeenCalled()
+    expect(screen.getByTestId('leave-is-leaving')).toHaveTextContent('yes')
+
+    await fireModalDismiss()
+    expect(navigateHome).toHaveBeenCalled()
+    expect(screen.getByTestId('leave-is-leaving')).toHaveTextContent('yes')
   })
 
   it('kill-on-idle with no ack (old streamer / disconnected) still navigates — degrade, not error', async () => {
     ;(wsManager.holdSessionWaitingInput as jest.Mock).mockResolvedValue(null)
-    const { fire, dispatch } = await setup()
-    const { action } = await fire()
+    const { fire, navigateHome } = await setup()
+    await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-idle'))
-    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('idle'))
+    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating'))
 
     await fireModalDismiss()
-    expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).toHaveBeenCalled()
   })
 
   it('kill-on-idle denied by the streamer shows the error state instead of navigating', async () => {
@@ -287,29 +316,29 @@ describe('useSessionLeaveGuard', () => {
       ok: false,
       reason: 'permission_denied',
     })
-    const { fire, dispatch } = await setup()
+    const { fire, navigateHome } = await setup()
     await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-idle'))
     await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('error'))
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
   })
 
   it('a failed Kill it shows the error state; dismissing then pressing back navigates home', async () => {
     stopSessionMutateAsync.mockRejectedValueOnce(new Error('stop failed'))
-    const { fire, dispatch } = await setup()
-    const { action } = await fire()
+    const { fire, navigateHome } = await setup()
+    await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-kill'))
     await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('error'))
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
 
     // Acknowledging the error itself never dispatches — the error card has
     // already been visible (and closing) for a while, so no dismiss race.
     await fireEvent.press(screen.getByTestId('leave-dismiss-error'))
     expect(screen.getByTestId('leave-phase')).toHaveTextContent('errorAcked')
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
 
     await fire()
-    expect(dispatch).toHaveBeenCalledWith(action)
+    expect(navigateHome).toHaveBeenCalled()
     expect(screen.getByTestId('leave-phase')).toHaveTextContent('idle')
   })
 
@@ -320,21 +349,21 @@ describe('useSessionLeaveGuard', () => {
         resolveStop = resolve
       }),
     )
-    const { fire, dispatch } = await setup()
+    const { fire, navigateHome } = await setup()
     await fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-kill'))
     expect(screen.getByTestId('leave-phase')).toHaveTextContent('pending')
 
     await fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
 
     await act(async () => {
       resolveStop()
     })
-    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('idle'))
+    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating'))
     await fireModalDismiss()
-    expect(dispatch).toHaveBeenCalled()
+    expect(navigateHome).toHaveBeenCalled()
   })
 
   it('Don’t ask again + Kill it persists the setting; next leave stops with no modal', async () => {
@@ -342,9 +371,9 @@ describe('useSessionLeaveGuard', () => {
     await first.fire()
     await fireEvent.press(screen.getByTestId('leave-confirm-kill-remember'))
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill')
-    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('idle'))
+    await waitFor(() => expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating'))
     await fireModalDismiss()
-    await waitFor(() => expect(first.dispatch).toHaveBeenCalled())
+    await waitFor(() => expect(first.navigateHome).toHaveBeenCalled())
     await first.unmount()
 
     stopSessionMutateAsync.mockClear()
@@ -354,7 +383,7 @@ describe('useSessionLeaveGuard', () => {
     expect(preventRemove).toBe(true)
     await waitFor(() => expect(stopSessionMutateAsync).toHaveBeenCalled())
     await fireModalDismiss()
-    await waitFor(() => expect(second.dispatch).toHaveBeenCalled())
+    await waitFor(() => expect(second.navigateHome).toHaveBeenCalled())
   })
 
   it('Settings Always ask restores the modal', async () => {
@@ -391,12 +420,12 @@ describe('useSessionLeaveGuard', () => {
   })
 
   it('Always ask: empty live session also shows the modal (no auto-stop)', async () => {
-    const { fire, dispatch } = await setup(live)
+    const { fire, navigateHome } = await setup(live)
     const { preventRemove } = await fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('yes')
     expect(preventRemove).toBe(true)
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
-    expect(dispatch).not.toHaveBeenCalled()
+    expect(navigateHome).not.toHaveBeenCalled()
   })
 
   it('idle / on_hold: no modal', async () => {

@@ -184,15 +184,19 @@ test('caller arguments reach Maestro unmangled, without shell re-parsing', () =>
 
   expect(result.status).toBe(0);
 
-  // run-maestro injects `-e E2E_MOCK_SERVER_URL=...` after the subcommand, so the
+  // run-maestro injects its default flow variables after the subcommand, so the
   // received list is not identical to the caller's. What this test is about is
   // that nothing is re-parsed by a shell: every argument the caller passed must
-  // arrive verbatim and in order around that injection.
+  // arrive verbatim and in order around those injections.
   const received = JSON.parse(fs.readFileSync(argsPath, 'utf8'));
   expect(received[0]).toBe('test');
-  expect(received[1]).toBe('-e');
-  expect(received[2]).toMatch(/^E2E_MOCK_SERVER_URL=/);
-  expect(received.slice(3)).toEqual(args.slice(1));
+  expect(received.slice(1, 5)).toEqual([
+    '-e',
+    'E2E_SERVER_TOKEN=mock-key-123',
+    '-e',
+    'E2E_MOCK_SERVER_URL=http://localhost:7071',
+  ]);
+  expect(received.slice(5)).toEqual(args.slice(1));
 
   expect(fs.existsSync(path.join(fixture.root, 'nope'))).toBe(false);
 });

@@ -138,11 +138,23 @@ export function ErrorRecoverySheet({ visible, title, items, retryAllLabel, retry
       backgroundStyle={[s.sheetBg, isGlass && s.sheetBgGlass]}
       backgroundComponent={glassBackground}
       handleIndicatorStyle={s.handle}
-      accessibilityLabel={title}
-      accessibilityLiveRegion="assertive"
+      // BottomSheet defaults `accessible` to true (DEFAULT_ACCESSIBLE) and puts
+      // it on the container that wraps these children. On iOS an accessible
+      // View is a single accessibility element and its descendants are hidden,
+      // so the title, every error row, Retry all and Close collapsed into one
+      // opaque node labelled "Bottom Sheet": VoiceOver could not reach a single
+      // control in this sheet, and neither could XCUITest.
+      accessible={false}
     >
+      {/*
+        Nor an accessibilityLabel on <BottomSheet> — it re-labels that same
+        container. The sheet already announces itself explicitly through
+        announceForAccessibility above, and accessibilityLiveRegion is
+        Android-only, so it belongs on the content view where it costs
+        nothing on iOS.
+      */}
       <BottomSheetScrollView contentContainerStyle={s.content}>
-        <View testID="error-recovery-sheet">
+        <View testID="error-recovery-sheet" accessibilityLiveRegion="assertive">
           <Text style={s.title} accessibilityRole="header">{title}</Text>
           {items.map((item) => <AccordionRow key={item.id} item={item} />)}
           {retryAllLabel && onRetryAll ? (
