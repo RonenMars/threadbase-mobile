@@ -264,7 +264,7 @@ describe('TerminalOutput – answering a question', () => {
 
   it('hands a tapped gate option to the answer route by position, and does not dismiss the card', async () => {
     const onAnswerPermission = jest.fn()
-    const onDismissQuestion = jest.fn()
+    const onCancelQuestion = jest.fn()
     const { getByLabelText } = await render(
       <TerminalOutput
         lines={[]}
@@ -272,7 +272,7 @@ describe('TerminalOutput – answering a question', () => {
         activeQuestion={gate}
         onSendKeys={jest.fn()}
         onAnswerPermission={onAnswerPermission}
-        onDismissQuestion={onDismissQuestion}
+        onCancelQuestion={onCancelQuestion}
       />
     )
 
@@ -282,13 +282,13 @@ describe('TerminalOutput – answering a question', () => {
     // the gate recognising the answer, so nothing ever closes it.
     expect(onAnswerPermission).toHaveBeenCalledWith(0)
     // The card outlives the tap: it moves only once the answer has been taken.
-    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(onCancelQuestion).not.toHaveBeenCalled()
     expect(getByLabelText('Yes')).toBeTruthy()
   })
 
   it('answers a structured question without dismissing the card', async () => {
     const onAnswer = jest.fn()
-    const onDismissQuestion = jest.fn()
+    const onCancelQuestion = jest.fn()
     const { getByLabelText } = await render(
       <TerminalOutput
         lines={[]}
@@ -296,13 +296,13 @@ describe('TerminalOutput – answering a question', () => {
         activeQuestion={structured}
         onSendKeys={jest.fn()}
         onAnswer={onAnswer}
-        onDismissQuestion={onDismissQuestion}
+        onCancelQuestion={onCancelQuestion}
       />
     )
 
     await fireEvent.press(getByLabelText('B'))
     expect(onAnswer).toHaveBeenCalledWith('t1', { 'Which one?': 'B' })
-    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(onCancelQuestion).not.toHaveBeenCalled()
   })
 
   // The block carrying nothing for the tapped option used to be decided here,

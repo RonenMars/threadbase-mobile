@@ -29,9 +29,8 @@ interface Props {
   answerPhase?: QuestionPhase | null
   /** An answer is in flight; locks the rows so a double-tap cannot send twice. */
   answerBusy?: boolean
-  /** Drop the structured card locally — Esc closes the menu, but nothing on the
-   *  server notices, so the card would otherwise linger and stay tappable. */
-  onDismissQuestion?: () => void
+  /** Cancel on the structured card; the owning view decides what reaches the PTY. */
+  onCancelQuestion?: () => void
   /** Server-derived agent phase, already gated on `presentation.live`. */
   subStatus?: AgentPhase | null
 }
@@ -51,7 +50,7 @@ function getAgentPhaseLabel(phase: AgentPhase, t: TFunction<'sessions'>): string
   }
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onDismissQuestion, subStatus }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -127,7 +126,7 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
         onSelect={handleStructuredSelect}
         busy={answerBusy}
         ghost={answerPhase === 'pending'}
-        onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
+        onCancel={onCancelQuestion}
       />
     )
     : questionBlock

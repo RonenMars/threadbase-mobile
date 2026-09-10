@@ -292,7 +292,11 @@ export function useActiveQuestionReducer(sessionId: string) {
     }
   }, [accept, applyPrompt, commit, reset, sessionId])
 
-  const clear = useCallback(() => {
+  // `expectedKey` binds a clear that waited on a server reply to the card it was
+  // issued for, the same way markPending binds an answer: without it, a reply
+  // that lands after a different card arrived would take that one down instead.
+  const clear = useCallback((expectedKey?: string) => {
+    if (expectedKey !== undefined && cardRef.current?.key !== expectedKey) return
     dismissedKey.current = cardRef.current?.key ?? null
     commit(null)
   }, [commit])

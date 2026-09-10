@@ -9,6 +9,7 @@ import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
+import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
@@ -51,7 +52,7 @@ export function TerminalView({
     provider,
   )
   const confidence = parseConfidenceProp ?? parseConfidence
-  const { sendInput, sendKeys, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
+  const { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
   const {
     activeQuestion,
     answerPhase,
@@ -63,6 +64,8 @@ export function TerminalView({
     answerErrorMessage,
     answerNoticeMessage,
   } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt })
+  const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
+    useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
 
   // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
   // not in SessionHistoryFeed itself, because entering it also has to hide
@@ -156,7 +159,8 @@ export function TerminalView({
         : sendInput.error.message
       : t('dialog.sendFailedGeneric')
     : null
-  const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
+  const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage ?? cancelErrorMessage
+  const sendNoticeMessage = answerNoticeMessage ?? cancelNoticeMessage
 
   // The prompt_pending refusal is server-side and applies to `{ input }` only;
   // `{ keys }` is deliberately not arbitrated there, because Escape and arrow
@@ -198,7 +202,7 @@ export function TerminalView({
           onAnswerPrompt={handleAnswerPrompt}
           answerPhase={answerPhase}
           answerBusy={answerBusy}
-          onDismissQuestion={clearQuestion}
+          onCancelQuestion={cancelQuestion}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
           disabled={disabled}
@@ -221,7 +225,7 @@ export function TerminalView({
         attachError={attachError}
         sendError={sendErrorMessage}
         sendErrorAction={sendEscapeAction}
-        sendNotice={answerNoticeMessage}
+        sendNotice={sendNoticeMessage}
         disabled={disabled}
         voice={voice}
         micGranted={micGranted}

@@ -12,7 +12,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { NetworkError } from '@/services/api-client'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { createWrapper } from '@/test-utils'
-import type { Message } from '@/types/api'
+import { useServersStore } from '@/stores/servers'
+import type { Message, Prompt } from '@/types/api'
 
 const mockMutate = jest.fn()
 const mockMutateAsync = jest.fn(async (payload: string) => {
@@ -21,6 +22,7 @@ const mockMutateAsync = jest.fn(async (payload: string) => {
 // Settled state of the send mutation, read during render for the inline
 // composer error. Mutable so a test can stand in for "the last send failed".
 let mockSendInputState: { isError: boolean; error: Error | null } = { isError: false, error: null }
+const mockRawKeyMutate = jest.fn()
 
 // MessageItem has no stable per-message testID exposing its text (only row-level
 // testIDs for the last/search-anchor rows), so render order can't be asserted
@@ -59,6 +61,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
       ...mockSendInputState,
     },
     sendKeys: { mutate: jest.fn() },
+    sendRawKey: { mutate: mockRawKeyMutate, isPending: false, error: null },
     respondToQuestion: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
     answerPermission: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
     answerPrompt: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
@@ -415,5 +418,52 @@ describe('LiveConversationView — send refused while the ghost is pending', () 
 
     expect(screen.getByText(GHOST_LOCAL_MESSAGE)).toBeTruthy()
     expect(screen.queryByText(PROMPT_PENDING_MESSAGE)).toBeNull()
+  })
+})
+
+// The bubble view hosts the same card, so its Cancel has to take the same
+// bound route; the full reply handling is covered in PromptAnswerSeam.
+describe('LiveConversationView — cancel on a prompt card', () => {
+  it('sends the Escape bound to the card promptId over raw-key', async () => {
+    useServersStore.setState({
+      servers: {
+        srv1: {
+          id: 'srv1',
+          url: 'http://srv1',
+          apiKey: 'key',
+          isConnected: true,
+          connectionError: null,
+          serverInfo: { version: '1', machineName: 'mac', platform: 'macOS', activeSessions: 0, rawKeys: true },
+        },
+      },
+    })
+    const prompt: Prompt = {
+      schemaVersion: 1,
+      sessionId: 'sess1',
+      promptId: 'prompt-1',
+      revision: 1,
+      state: 'open',
+      intent: 'approval',
+      title: 'Approval',
+      message: 'Do you want to proceed?',
+      questions: [{
+        questionId: 'q-1',
+        text: 'Do you want to proceed?',
+        inputMode: 'single',
+        options: [{ optionId: 'opt-yes', label: 'Yes' }, { optionId: 'opt-no', label: 'No' }],
+        allowOther: false,
+        secret: 'unknown',
+      }],
+      answerRequirement: 'unknown',
+      expiresAt: null,
+      provenance: { source: 'screen', confidence: 'inferred' },
+    }
+    await renderView()
+    await act(async () => dispatchWs('prompt_snapshot', { type: 'prompt_snapshot', schemaVersion: 1, sessionId: 'sess1', sequence: 1, prompts: [prompt] }))
+
+    await act(async () => { fireEvent.press(screen.getAllByLabelText('Cancel')[0]) })
+
+    expect(mockRawKeyMutate).toHaveBeenCalledWith({ action: 'escape', promptId: 'prompt-1' }, expect.any(Object))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
   })
 })

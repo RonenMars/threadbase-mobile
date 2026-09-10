@@ -94,10 +94,13 @@ jest.mock('@/hooks/useTerminalStream', () => ({
 const mockAnswerPermission = jest.fn()
 const mockRespondToQuestion = jest.fn()
 const mockSendInput = jest.fn()
+const mockSendKeys = jest.fn()
+const mockRawKeyMutate = jest.fn()
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
     sendInput: { mutate: jest.fn(), mutateAsync: mockSendInput, isError: false, error: null },
-    sendKeys: { mutate: jest.fn() },
+    sendKeys: { mutate: mockSendKeys },
+    sendRawKey: { mutate: mockRawKeyMutate, isPending: false, error: null },
     respondToQuestion: { mutate: jest.fn(), mutateAsync: mockRespondToQuestion, isError: false, error: null },
     answerPermission: { mutate: jest.fn(), mutateAsync: mockAnswerPermission, isError: false, error: null },
     answerPrompt: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
@@ -111,6 +114,8 @@ jest.mock('@/components/queue/PromptQueueSheet', () => ({ PromptQueueSheet: () =
 
 // eslint-disable-next-line import/first
 import { TerminalView } from '@/components/terminal/TerminalView'
+// eslint-disable-next-line import/first
+import { useServersStore } from '@/stores/servers'
 
 const gate: PermissionWsMessage = {
   type: 'permission',
@@ -358,5 +363,32 @@ describe('composer text refused while a prompt is open (TerminalView)', () => {
 
     expect(input.props.value).toBe('keep me')
     expect(alertSpy).toHaveBeenCalledWith(expect.any(String), 'Failed to reach server')
+  })
+})
+
+// A legacy `permission` frame carries a gateId and a contentKey, but no prompt
+// registry id — there is nothing /raw-key could bind the Escape to. Even on a
+// server that advertises rawKeys, this card keeps the old blind write + dismiss.
+describe('permission cancel — legacy gates have no promptId to bind', () => {
+  it('uses the blind Escape even when the server supports rawKeys', async () => {
+    useServersStore.setState({
+      servers: {
+        'srv-1': {
+          id: 'srv-1',
+          url: 'http://srv-1',
+          apiKey: 'key',
+          isConnected: true,
+          connectionError: null,
+          serverInfo: { version: '1', machineName: 'mac', platform: 'macOS', activeSessions: 0, rawKeys: true },
+        },
+      },
+    })
+    await openGate()
+
+    await act(async () => { fireEvent.press(screen.getAllByLabelText('Cancel')[0]) })
+
+    expect(mockSendKeys).toHaveBeenCalledWith('\x1b')
+    expect(mockRawKeyMutate).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText('Yes')).toBeNull()
   })
 })
