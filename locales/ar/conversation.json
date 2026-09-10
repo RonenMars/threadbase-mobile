@@ -25,7 +25,8 @@
   "inheritedHistory": {
     "forked": "تفرَّع إلى Threadbase",
     "forkedAt": "تفرَّع إلى Threadbase · {{time}}",
-    "unavailable": "لم يعد السجل الأقدم السابق للتفرُّع متاحًا."
+    "unavailable": "لم يعد السجل الأقدم السابق للتفرُّع متاحًا.",
+    "openSource": "الانتقال إلى الجلسة الأصلية"
   },
   "resume": {
     "start": "استئناف السيشن",

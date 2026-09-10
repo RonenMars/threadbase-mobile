@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
-import { CopySimple, InfoIcon, PencilSimple, Sparkle, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
+import { ArrowUUpLeft, CopySimple, InfoIcon, PencilSimple, Sparkle, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -586,6 +586,16 @@ export default function SessionDetailScreen() {
     () => buildReviewFromMessages(reviewMessages).files.length > 0,
     [reviewMessages],
   )
+  // A `codex fork` session continues an earlier conversation, and the server
+  // names that parent in meta.inherited_history. Read off the query above rather
+  // than adding one: the field rides on the same conversation's meta. A non-fork
+  // or an older server simply omits it, which reads as "no parent to open", and
+  // the `unavailable` seam (source file gone) carries no id — so the entry stays
+  // disabled rather than offering a dead link.
+  const forkParentId =
+    reviewConversation?.inheritedHistory?.kind === 'divider'
+      ? reviewConversation.inheritedHistory.sourceId
+      : undefined
 
   // Leave-session policy lives in useSessionLeaveGuard.
   // Do not add a second guard here.
@@ -917,6 +927,14 @@ export default function SessionDetailScreen() {
             icon: InfoIcon,
             onPress: () => setInfoVisible(true),
             testID: 'session-info-button',
+          },
+          {
+            key: 'fork-parent',
+            label: t('conversation:inheritedHistory.openSource'),
+            icon: ArrowUUpLeft,
+            onPress: () => router.push(`/conversation/${forkParentId}?server=${serverId}`),
+            disabled: !forkParentId,
+            testID: 'session-fork-parent-button',
           },
           {
             key: 'diffs',

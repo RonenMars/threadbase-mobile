@@ -25,7 +25,8 @@
   "inheritedHistory": {
     "forked": "פוצל אל Threadbase",
     "forkedAt": "פוצל אל Threadbase · {{time}}",
-    "unavailable": "ההיסטוריה שקדמה לפיצול אינה זמינה עוד."
+    "unavailable": "ההיסטוריה שקדמה לפיצול אינה זמינה עוד.",
+    "openSource": "מעבר לשיחת המקור"
   },
   "resume": {
     "start": "המשך סשן",

@@ -13,7 +13,7 @@ export interface RawInheritedHistory {
 
 /** What the message list should draw for the inherited/own boundary, if anything. */
 export type InheritedHistorySeam =
-  | { kind: 'divider'; beforeMessageIndex: number; forkedAt?: string }
+  | { kind: 'divider'; beforeMessageIndex: number; forkedAt?: string; sourceId?: string }
   | { kind: 'unavailable' }
 
 export function inheritedHistorySeam(
@@ -27,5 +27,8 @@ export function inheritedHistorySeam(
   if (typeof index !== 'number' || !Number.isInteger(index) || index <= 0) return undefined
 
   const forkedAt = typeof raw.forked_at === 'string' && raw.forked_at ? raw.forked_at : undefined
-  return { kind: 'divider', beforeMessageIndex: index, forkedAt }
+  // Carried so the UI can offer to open the parent. Absent on an older server,
+  // which reads as "no parent to navigate to" rather than an error.
+  const sourceId = typeof raw.source_id === 'string' && raw.source_id ? raw.source_id : undefined
+  return { kind: 'divider', beforeMessageIndex: index, forkedAt, sourceId }
 }
