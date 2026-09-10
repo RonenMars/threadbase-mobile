@@ -43,10 +43,10 @@ const PROMPT: Prompt = {
  */
 describe.each([
   ['ThinkingBubble', (block: QuestionBlock, onAnswerPrompt: jest.Mock, onAnswerPermission: jest.Mock) => (
-    <ThinkingBubble lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />
+    <ThinkingBubble lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onCancelQuestion={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />
   )],
   ['TerminalOutput', (block: QuestionBlock, onAnswerPrompt: jest.Mock, onAnswerPermission: jest.Mock) => (
-    <TerminalOutput lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />
+    <TerminalOutput lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onCancelQuestion={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />
   )],
 ])('%s — provider-neutral prompt card', (_name, renderWith) => {
   it('routes a tap to onAnswerPrompt with the row position, never to the permission handler', async () => {
