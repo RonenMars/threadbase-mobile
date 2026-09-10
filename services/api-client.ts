@@ -168,19 +168,29 @@ export function isQuestionClosedError(err: Error | null): boolean {
  * not leaving up a card whose gate has closed. An unrecognised code keeps the
  * card.
  *
- * Only `gate_closed` is accompanied by a `permission_cancelled` broadcast — the
- * other two leave a live gate on screen for every other client watching the
- * session, so the server deliberately says nothing. That makes this list the
- * only thing that clears the card for those two.
+ * This list decides only whether to retry: all three are deterministic for the
+ * payload sent. Whether the card comes down is isPermissionGateClosedError.
  */
-const PERMISSION_CLOSED_CODES: readonly string[] = [
+const PERMISSION_REJECTED_CODES: readonly string[] = [
   'gate_closed',
   'gate_mismatch',
   'unknown_option',
 ]
 
-export function isPermissionClosedError(err: Error | null): boolean {
-  return err instanceof NetworkError && err.code !== undefined && PERMISSION_CLOSED_CODES.includes(err.code)
+export function isPermissionAnswerRejectedError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code !== undefined && PERMISSION_REJECTED_CODES.includes(err.code)
+}
+
+// The streamer deletes its pendingPermission — the gate that makes /input answer
+// 409 prompt_pending — only on `gate_closed` (sessions.handlers.ts gateClosed()).
+// On `gate_mismatch` and `unknown_option` it keeps that gate open, broadcasts
+// nothing, and tells the requesting client to clear its card. Both sides agreed
+// that contract and it was wrong: the card went, the gate stayed, and /input
+// kept refusing with nothing left on screen to answer (#954). So only this code
+// may clear and suppress the card; for the other two useQuestionAnswer fetches
+// the live gate instead.
+export function isPermissionGateClosedError(err: Error | null): boolean {
+  return err instanceof NetworkError && err.code === 'gate_closed'
 }
 
 /**

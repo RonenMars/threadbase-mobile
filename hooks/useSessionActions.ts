@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, isAnswerRefusedError, isPermissionClosedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
+import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { useSessionsStore } from '@/stores/sessions'
 import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
@@ -124,7 +124,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
     // closed. A retry cannot succeed, and it would overwrite the settled reason
     // the call sites read to tell a benign close from a real failure.
     retry: (count: number, err: Error) =>
-      err instanceof NetworkError && !isPermissionClosedError(err) && count < 2,
+      err instanceof NetworkError && !isPermissionAnswerRejectedError(err) && count < 2,
     mutationFn: async (vars: { contentKey?: string; gateId?: string; optionIndex: number; keys: string | null }) => {
       const sendKeysFallback = () => {
         if (vars.keys === null) {

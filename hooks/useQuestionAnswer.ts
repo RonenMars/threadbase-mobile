@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { isPermissionClosedError, isPromptClosedError, isPromptStaleError, isQuestionClosedError } from '@/services/api-client'
+import { isPermissionAnswerRejectedError, isPermissionGateClosedError, isPromptClosedError, isPromptStaleError, isQuestionClosedError } from '@/services/api-client'
 import { generateUUID } from '@/services/device-id'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import type { useSessionActions } from '@/hooks/useSessionActions'
@@ -41,6 +41,8 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
   const {
     question: activeQuestion,
     clear: clearQuestion,
+    resetAndUnsuppress,
+    requestReplay,
     markPending,
     phase: answerPhase,
     questionKey,
@@ -68,9 +70,22 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
       })
       markPending(answeredKey)
     } catch (err) {
-      if (isPermissionClosedError(err instanceof Error ? err : null)) clearQuestion()
+      const error = err instanceof Error ? err : null
+      if (isPermissionGateClosedError(error)) {
+        clearQuestion()
+      } else if (isPermissionAnswerRejectedError(error)) {
+        // The card is a stale copy of a gate the server still holds open and will
+        // not rebroadcast, and a re-tap would send the same identity and be
+        // refused again. Drop it and ask for the live gate, which also brings
+        // unknown_option's options back fresh. Unsuppressed, never clear(): on
+        // unknown_option the replay is this same gate, and a dismissedKey equal
+        // to its key would swallow it. The terminal_replay the same subscribe
+        // sends is dropped by useTerminalStream once history has been fed.
+        resetAndUnsuppress()
+        requestReplay()
+      }
     }
-  }, [activeQuestion, answerPermission, clearQuestion, markPending, questionKey])
+  }, [activeQuestion, answerPermission, clearQuestion, markPending, questionKey, requestReplay, resetAndUnsuppress])
 
   const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
     const answeredKey = questionKey
@@ -115,8 +130,12 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
   const isQuestionGoneError = isQuestionClosedError(respondToQuestion.error)
   // Same split for the gate route, and the same reason: a gate the server says
   // is closed is not a failure the user must act on, it is the prompt going
-  // away. Everything else is a real error and keeps the card up to retry.
-  const isGateClosedError = isPermissionClosedError(answerPermission.error)
+  // away. The two rejected codes swap in the live gate instead (see
+  // handleAnswerPermission); anything else is a real error and keeps the card up.
+  const isGateClosedError = isPermissionGateClosedError(answerPermission.error)
+  // gate_mismatch / unknown_option: the gate is still open, but the 409 carries
+  // only a reason, so the error's own message would read "Server returned 409".
+  const isGateRejectedError = !isGateClosedError && isPermissionAnswerRejectedError(answerPermission.error)
   // The prompt route adds a third verdict: stale. The prompt is still open and
   // the newer revision has already replaced the card, so it is a notice to look
   // again, not a failure and not a close.
@@ -130,9 +149,11 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
         ? answerPrompt.error
         : null
   const answerErrorMessage = answerFailure
-    ? answerFailure instanceof Error
-      ? answerFailure.message
-      : t('answer.failed')
+    ? answerFailure === answerPermission.error && isGateRejectedError
+      ? t('answer.promptChanged')
+      : answerFailure instanceof Error
+        ? answerFailure.message
+        : t('answer.failed')
     : null
   const answerNoticeMessage =
     (respondToQuestion.isError && isQuestionGoneError) || isGateClosedError || isPromptClosed

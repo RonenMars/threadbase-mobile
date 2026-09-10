@@ -404,5 +404,12 @@ export function useActiveQuestion(serverId: string, sessionId: string) {
     }
   }, [phase, expireIfStale])
 
-  return { question, questionKey, phase, onMessage, clear, reset, markPending, expireIfStale }
+  // Re-sending subscribe_session makes the streamer unicast whatever gate is open
+  // right now to this socket alone (server-wiring ws.replay_permission), the same
+  // replay a first subscribe gets.
+  const requestReplay = useCallback(() => {
+    wsManager.getClient(serverId)?.send({ type: 'subscribe_session', sessionId })
+  }, [serverId, sessionId])
+
+  return { question, questionKey, phase, onMessage, clear, reset, resetAndUnsuppress, requestReplay, markPending, expireIfStale }
 }
