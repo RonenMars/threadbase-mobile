@@ -1,12 +1,16 @@
 import React from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { render, waitFor } from '@testing-library/react-native'
+import { act, render, waitFor } from '@testing-library/react-native'
+import * as Notifications from 'expo-notifications'
 import { AuthGate } from '@/app/_layout'
+import { wsManager } from '@/services/ws-client'
+import type { Session } from '@/types/api'
 
 const mockReplace = jest.fn()
+const mockPush = jest.fn()
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   useSegments: () => ['onboarding'],
   useGlobalSearchParams: () => ({}),
   useRootNavigationState: () => ({ key: 'root' }),
@@ -88,5 +92,55 @@ describe('AuthGate review reload bootstrap', () => {
     })
     expect(mockReplace).not.toHaveBeenCalledWith('/')
     expect(AsyncStorage.removeItem).not.toHaveBeenCalledWith('threadbase_onboarding_resume')
+  })
+})
+
+// #957: session_ready is broadcast to every device paired with the streamer, so
+// the root listener must not navigate — only the device that started it does.
+describe('AuthGate session_ready broadcast', () => {
+  type OnAllHandler = Parameters<typeof wsManager.onAll>[1]
+  type ResponseListener = (response: {
+    notification: { request: { content: { data: { sessionId?: string; serverId?: string } } } }
+  }) => void
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
+  })
+
+  function capturedSessionReadyHandler(): OnAllHandler {
+    const call = (wsManager.onAll as jest.Mock).mock.calls.find(([type]) => type === 'session_ready')
+    if (!call) throw new Error('AuthGate did not subscribe to session_ready')
+    return call[1] as OnAllHandler
+  }
+
+  it('does not navigate for a session this device did not start', async () => {
+    await render(<AuthGate><></></AuthGate>)
+    const onSessionReady = capturedSessionReadyHandler()
+
+    await act(async () => {
+      onSessionReady({
+        type: 'session_ready',
+        serverId: 'server-1',
+        session: { id: 'sess_other_device', projectId: 'proj_1' } as Session,
+      })
+    })
+
+    expect(mockPush).not.toHaveBeenCalled()
+    expect(mockReplace).not.toHaveBeenCalledWith(expect.stringContaining('/session/'))
+  })
+
+  it('positive control: the harness observes a push from a notification tap', async () => {
+    await render(<AuthGate><></></AuthGate>)
+    const listener = (Notifications.addNotificationResponseReceivedListener as jest.Mock).mock
+      .calls[0][0] as ResponseListener
+
+    await act(async () => {
+      listener({
+        notification: { request: { content: { data: { sessionId: 'sess_tap', serverId: 'server-1' } } } },
+      })
+    })
+
+    expect(mockPush).toHaveBeenCalledWith('/session/sess_tap?server=server-1')
   })
 })
