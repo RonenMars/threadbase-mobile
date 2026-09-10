@@ -14,7 +14,6 @@ import {
   DefaultTheme as NavDefaultTheme,
   DarkTheme as NavDarkTheme,
 } from 'expo-router'
-import type { Href } from 'expo-router'
 import { CaretLeft } from 'phosphor-react-native'
 import { StatusBar } from 'expo-status-bar'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -48,7 +47,7 @@ import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
-import { markNavigatedToSession, shouldSkipAutoNav } from '@/lib/sessionNavGuard'
+import { markNavigatedToSession } from '@/lib/sessionNavGuard'
 import { resolveColdStartRoute, sessionRouteFromNotificationData } from '@/lib/coldStartDeepLink'
 import { useTranslation } from 'react-i18next'
 import { RootErrorBoundary } from '@/components/RootErrorBoundary'
@@ -222,29 +221,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       if (msg.type !== 'conversation_updated') return
       refreshEagerConversations(queryClient)
     })
+    // No navigation here: the streamer broadcasts session_ready to every paired
+    // device and the frame names no initiator, so pushing would yank devices
+    // that never started the session into it. Initiating screens navigate
+    // themselves (session/new, conversation resume/fork, the pending screen).
     const unsubReady = wsManager.onAll('session_ready', (msg) => {
       if (msg.type !== 'session_ready') return
-      clientLog.info('layout.session_ready', 'global listener received', {
+      clientLog.info('layout.session_ready', 'global listener received (no auto-nav)', {
         sessionId: msg.session.id,
         serverId: msg.serverId,
         projectId: msg.session.projectId,
         projectPath: msg.session.projectPath,
       })
-      const skip = shouldSkipAutoNav(msg.session.id)
-      if (skip) {
-        clientLog.info('layout.session_ready', 'skip auto-nav (guard marked)', {
-          sessionId: msg.session.id,
-          serverId: msg.serverId,
-        })
-        return
-      }
-      const target: Href = `/session/${msg.session.id}?server=${msg.serverId}`
-      clientLog.info('layout.session_ready', 'auto-nav router.push', {
-        sessionId: msg.session.id,
-        serverId: msg.serverId,
-        target,
-      })
-      router.push(target)
     })
     const unsubStatus = wsManager.onAnyStatusChange((serverId, status) => {
       setConnected(serverId, status === 'connected')
