@@ -25,7 +25,8 @@
   "inheritedHistory": {
     "forked": "Forked into Threadbase",
     "forkedAt": "Forked into Threadbase · {{time}}",
-    "unavailable": "Earlier history from before this fork isn't available."
+    "unavailable": "Earlier history from before this fork isn't available.",
+    "openSource": "Go to original session"
   },
   "resume": {
     "start": "Resume Session",

@@ -25,7 +25,8 @@
   "inheritedHistory": {
     "forked": "Форк в Threadbase",
     "forkedAt": "Форк в Threadbase · {{time}}",
-    "unavailable": "Более ранняя история до форка больше недоступна."
+    "unavailable": "Более ранняя история до форка больше недоступна.",
+    "openSource": "Перейти к исходной сессии"
   },
   "resume": {
     "start": "Возобновить сессию",
