@@ -9,6 +9,8 @@ import {
   PROMPT_PENDING_CODE,
   isAnswerRefusedError,
   isPromptPendingError,
+  isPermissionAnswerRejectedError,
+  isPermissionGateClosedError,
 } from '@/services/api-client'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
@@ -508,5 +510,18 @@ describe('api.post – reason fallback on the prompt-safety refusals', () => {
     expect(isPromptPendingError(new NetworkError('Server returned 409', 'gate_closed'))).toBe(false)
     expect(isAnswerRefusedError(new NetworkError('Server returned 400'))).toBe(false)
     expect(isPromptPendingError(null)).toBe(false)
+  })
+
+  // #954: all three permission-gate reasons stop the retry, but only gate_closed
+  // means the server dropped its gate, so only it may take the card down.
+  it.each([
+    ['gate_closed', true, true],
+    ['gate_mismatch', true, false],
+    ['unknown_option', true, false],
+    ['some_future_reason', false, false],
+  ])('classifies permission reason %s: rejected=%s, gate closed=%s', (reason, rejected, closed) => {
+    const err = new NetworkError('Server returned 409', reason)
+    expect(isPermissionAnswerRejectedError(err)).toBe(rejected)
+    expect(isPermissionGateClosedError(err)).toBe(closed)
   })
 })

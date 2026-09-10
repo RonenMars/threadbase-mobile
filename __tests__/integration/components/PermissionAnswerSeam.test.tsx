@@ -10,9 +10,10 @@
  * Weighted toward the exits, because that is where every defect in this work has
  * lived. In particular, a gate the server says is closed has to clear the card
  * with a calm notice: leaving it up and tappable is a regression AND wrong, since
- * the server has just said a second tap cannot succeed either. And for two of the
- * three closed reasons no `permission_cancelled` is broadcast at all, so this
- * path is the only thing that takes the card down.
+ * the server has just said a second tap cannot succeed either. Only `gate_closed`
+ * means that; on `gate_mismatch` and `unknown_option` the server's gate is still
+ * open, so the stale card drops unsuppressed and a resubscribe replays the live
+ * gate (#954).
  */
 import React from 'react'
 import { Alert } from 'react-native'
@@ -52,11 +53,12 @@ jest.mock('expo-router', () => ({
 type ClientHandler = (msg: unknown) => void
 jest.mock('@/services/ws-client', () => {
   const clientListeners = new Map<string, Set<ClientHandler>>()
+  const send = jest.fn()
   return {
     wsManager: {
       getClient: () => ({
         status: () => 'connected',
-        send: jest.fn(),
+        send,
         on: (type: string, handler: ClientHandler) => {
           if (!clientListeners.has(type)) clientListeners.set(type, new Set())
           clientListeners.get(type)!.add(handler)
@@ -65,6 +67,7 @@ jest.mock('@/services/ws-client', () => {
       }),
       onAnyStatusChange: jest.fn(() => jest.fn()),
     },
+    __wsSend: send,
     __wsTest: {
       emit: (type: string, msg: unknown) => clientListeners.get(type)?.forEach((l) => l(msg)),
     },
@@ -167,18 +170,61 @@ describe('permission answer seam — the view between the card and the route', (
     await waitFor(() => expect(screen.getByTestId('question-card-ghost')).toBeTruthy())
   })
 
-  it.each(['gate_closed', 'gate_mismatch', 'unknown_option'])(
-    'clears the card calmly on %s, with no error styling',
-    async (reason) => {
-      mockAnswerPermission.mockRejectedValue(new NetworkError('Server returned 409', reason))
-      const yes = await openGate()
+  it('clears the card calmly on gate_closed, with no error styling', async () => {
+    mockAnswerPermission.mockRejectedValue(new NetworkError('Server returned 409', 'gate_closed'))
+    const yes = await openGate()
 
-      await act(async () => { fireEvent.press(yes) })
+    await act(async () => { fireEvent.press(yes) })
 
-      await waitFor(() => expect(screen.queryByLabelText('Yes')).toBeNull())
-      expect(screen.queryByTestId('question-card-ghost')).toBeNull()
-    },
-  )
+    await waitFor(() => expect(screen.queryByLabelText('Yes')).toBeNull())
+    expect(screen.queryByTestId('question-card-ghost')).toBeNull()
+  })
+
+  // #954: the server keeps its gate — and keeps refusing /input — on these two,
+  // and broadcasts nothing. Clearing here armed the repaint suppression, so the
+  // card never came back while the composer stayed refused. Now the stale card
+  // drops unsuppressed and a resubscribe brings the live gate back. The message
+  // each reply selects is covered in useQuestionAnswer.test.tsx.
+  it.each([
+    ['gate_mismatch', 'gate-live'],
+    // Same gateId: the replay clear() would have suppressed.
+    ['unknown_option', 'gate-old'],
+  ])('on %s drops the stale card and the replayed live gate is answerable', async (reason, replayedGateId) => {
+    const { __wsSend: mockSend } = jest.requireMock('@/services/ws-client') as { __wsSend: jest.Mock }
+    mockSend.mockClear()
+    mockAnswerPermission.mockRejectedValueOnce(new NetworkError('Server returned 409', reason))
+    const Wrapper = createWrapper()
+    await render(
+      <Wrapper>
+        <TerminalView serverId="srv-1" sessionId="sess-1" />
+      </Wrapper>,
+    )
+    await act(async () => { __wsTest.emit('permission', { ...gate, gateId: 'gate-old' }) })
+    await act(async () => { fireEvent.press(screen.getByLabelText('Yes')) })
+
+    await waitFor(() => expect(screen.queryByLabelText('Yes')).toBeNull())
+    expect(mockSend).toHaveBeenCalledWith({ type: 'subscribe_session', sessionId: 'sess-1' })
+
+    await act(async () => { __wsTest.emit('permission', { ...gate, gateId: replayedGateId }) })
+    await act(async () => { fireEvent.press(screen.getByLabelText('Yes')) })
+
+    await waitFor(() => expect(mockAnswerPermission).toHaveBeenLastCalledWith(
+      expect.objectContaining({ gateId: replayedGateId }),
+    ))
+    await waitFor(() => expect(screen.getByTestId('question-card-ghost')).toBeTruthy())
+  })
+
+  // Negative control: same status, a code outside the list — the classification,
+  // not the 409, is what decides.
+  it('keeps the card up on an unrecognised 409 code', async () => {
+    mockAnswerPermission.mockRejectedValue(new NetworkError('Server returned 409', 'some_future_reason'))
+    const yes = await openGate()
+
+    await act(async () => { fireEvent.press(yes) })
+
+    await waitFor(() => expect(mockAnswerPermission).toHaveBeenCalledTimes(1))
+    expect(screen.getByLabelText('Yes')).toBeTruthy()
+  })
 
   // The other direction, and the one that would be a lockout if it were wrong:
   // a blip must not take the card away, because send stays disabled while it is

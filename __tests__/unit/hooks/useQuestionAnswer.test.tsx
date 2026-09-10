@@ -9,9 +9,11 @@ type ClientHandler = (msg: unknown) => void
 
 jest.mock('@/services/ws-client', () => {
   const clientListeners = new Map<string, Set<ClientHandler>>()
+  const send = jest.fn()
   return {
     wsManager: {
       getClient: () => ({
+        send,
         on: (type: string, handler: ClientHandler) => {
           if (!clientListeners.has(type)) clientListeners.set(type, new Set())
           clientListeners.get(type)!.add(handler)
@@ -20,6 +22,7 @@ jest.mock('@/services/ws-client', () => {
       }),
       onAnyStatusChange: () => () => {},
     },
+    __wsSend: send,
     __wsTest: {
       emit: (type: string, msg: unknown) => clientListeners.get(type)?.forEach((l) => l(msg)),
     },
@@ -131,6 +134,97 @@ describe('useQuestionAnswer – the mutations it was given', () => {
     const failed = mutation({ isError: true, error: new NetworkError('Server returned 500') })
     const { result } = await setup({ answerPermission: failed })
     expect(result.current.answerErrorMessage).toBe('Server returned 500')
+    expect(result.current.answerNoticeMessage).toBeNull()
+  })
+})
+
+// #954: only gate_closed means the streamer dropped its gate. On the other two
+// it keeps the gate open, /input keeps answering 409 prompt_pending, and nothing
+// is broadcast — so the stale card goes without suppression and the live gate is
+// asked for over the subscribe replay. The reply reads as an error, not "it's
+// closed".
+describe('useQuestionAnswer – which permission refusals take the card down', () => {
+  const { __wsSend: mockSend } = jest.requireMock('@/services/ws-client') as { __wsSend: jest.Mock }
+  const resubscribe = { type: 'subscribe_session', sessionId: 's1' }
+
+  beforeEach(() => { mockSend.mockClear() })
+
+  it('clears the card on gate_closed, arms the repaint suppression, and does not resubscribe', async () => {
+    const closed = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('409', 'gate_closed')) })
+    const { result } = await setup({ answerPermission: closed })
+    await act(() => __wsTest.emit('permission', gate))
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+    expect(result.current.activeQuestion).toBeNull()
+    expect(mockSend).not.toHaveBeenCalled()
+
+    await act(() => __wsTest.emit('permission', gate))
+    expect(result.current.activeQuestion).toBeNull()
+  })
+
+  it('drops the stale card on gate_mismatch, asks for the live gate, and the replayed gate is answerable', async () => {
+    const rejected = mutation({
+      mutateAsync: jest.fn().mockRejectedValueOnce(new NetworkError('409', 'gate_mismatch')).mockResolvedValue({ ok: true }),
+    })
+    const { result } = await setup({ answerPermission: rejected })
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-old' }))
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+
+    expect(result.current.activeQuestion).toBeNull()
+    expect(mockSend).toHaveBeenCalledWith(resubscribe)
+
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-live' }))
+    expect(result.current.answerPhase).toBe('active')
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+    expect(rejected.mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ gateId: 'gate-live' }))
+    expect(result.current.answerPhase).toBe('pending')
+  })
+
+  it('arms no suppression on gate_mismatch: a repaint of the dropped gate still lands', async () => {
+    const rejected = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('409', 'gate_mismatch')) })
+    const { result } = await setup({ answerPermission: rejected })
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-old' }))
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+    expect(result.current.activeQuestion).toBeNull()
+
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-old' }))
+    expect(result.current.answerPhase).toBe('active')
+  })
+
+  // The case clear() would have swallowed: the replay carries the same key as
+  // the card that was dropped.
+  it('re-shows the same gate replayed after unknown_option', async () => {
+    const rejected = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('409', 'unknown_option')) })
+    const { result } = await setup({ answerPermission: rejected })
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-7' }))
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+
+    expect(result.current.activeQuestion).toBeNull()
+    expect(mockSend).toHaveBeenCalledWith(resubscribe)
+
+    await act(() => __wsTest.emit('permission', { ...gate, gateId: 'gate-7' }))
+    expect(result.current.activeQuestion).not.toBeNull()
+    expect(result.current.answerPhase).toBe('active')
+  })
+
+  it('shows the closed notice, not an error, for gate_closed', async () => {
+    const { result } = await setup({ answerPermission: mutation({ isError: true, error: new NetworkError('Server returned 409', 'gate_closed') }) })
+    expect(result.current.answerNoticeMessage).toBe("That question isn't open anymore.")
+    expect(result.current.answerErrorMessage).toBeNull()
+  })
+
+  it.each(['gate_mismatch', 'unknown_option'])(
+    'shows an actionable error, not the closed notice, for %s',
+    async (reason) => {
+      const { result } = await setup({ answerPermission: mutation({ isError: true, error: new NetworkError('Server returned 409', reason) }) })
+      expect(result.current.answerErrorMessage).toBe('That prompt changed — check it and answer again.')
+      expect(result.current.answerNoticeMessage).toBeNull()
+    },
+  )
+
+  // Negative control: same status, unrecognised code — the list decides, not the 409.
+  it('keeps the server message for an unrecognised 409 code', async () => {
+    const { result } = await setup({ answerPermission: mutation({ isError: true, error: new NetworkError('Server returned 409', 'some_future_reason') }) })
+    expect(result.current.answerErrorMessage).toBe('Server returned 409')
     expect(result.current.answerNoticeMessage).toBeNull()
   })
 })

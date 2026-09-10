@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { isPermissionClosedError, NetworkError, NotFoundError } from '@/services/api-client'
+import { isPermissionAnswerRejectedError, NetworkError, NotFoundError } from '@/services/api-client'
 
 const mockPost = jest.fn().mockResolvedValue({})
 jest.mock('@/services/api-client', () => {
@@ -164,7 +164,7 @@ describe('answerPermission – fallback to /input', () => {
 
     await waitFor(() => expect(result.current.answerPermission.isError).toBe(true), { timeout: 10000 })
     expect(mockPost).not.toHaveBeenCalled()
-    expect(isPermissionClosedError(result.current.answerPermission.error)).toBe(false)
+    expect(isPermissionAnswerRejectedError(result.current.answerPermission.error)).toBe(false)
     // This throw never touched the network, so it must settle on the first
     // attempt — failureCount stays 1 rather than the 3 a retried mutation reaches.
     expect(result.current.answerPermission.failureCount).toBe(1)
@@ -188,7 +188,7 @@ describe('answerPermission – error classification', () => {
       })
 
       await waitFor(() => expect(result.current.answerPermission.isError).toBe(true))
-      expect(isPermissionClosedError(result.current.answerPermission.error)).toBe(true)
+      expect(isPermissionAnswerRejectedError(result.current.answerPermission.error)).toBe(true)
       expect(mockPost).toHaveBeenCalledTimes(1)
     },
   )
@@ -205,7 +205,7 @@ describe('answerPermission – error classification', () => {
     })
 
     await waitFor(() => expect(result.current.answerPermission.isError).toBe(true), { timeout: 10000 })
-    expect(isPermissionClosedError(result.current.answerPermission.error)).toBe(false)
+    expect(isPermissionAnswerRejectedError(result.current.answerPermission.error)).toBe(false)
     // 1 attempt + 2 retries, the same budget every other retryable send gets.
     expect(mockPost).toHaveBeenCalledTimes(3)
   }, 15000)
@@ -219,7 +219,7 @@ describe('answerPermission – error classification', () => {
     })
 
     await waitFor(() => expect(result.current.answerPermission.isError).toBe(true), { timeout: 10000 })
-    expect(isPermissionClosedError(result.current.answerPermission.error)).toBe(false)
+    expect(isPermissionAnswerRejectedError(result.current.answerPermission.error)).toBe(false)
     expect(mockPost).toHaveBeenCalledTimes(3)
   }, 15000)
 })
