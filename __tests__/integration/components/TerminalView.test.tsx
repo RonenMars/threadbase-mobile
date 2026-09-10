@@ -102,6 +102,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
       ...mockSendInputState,
     },
     sendKeys: { mutate: mockSendKeysMutate },
+    sendRawKey: { mutate: jest.fn(), isPending: false, error: null },
     respondToQuestion: {
       mutate: mockRespondToQuestionMutate,
       mutateAsync: mockRespondToQuestionMutate,

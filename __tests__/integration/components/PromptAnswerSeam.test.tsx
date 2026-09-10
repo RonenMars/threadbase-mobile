@@ -81,15 +81,23 @@ const mockAnswerPermission = jest.fn()
 const mockRespondToQuestion = jest.fn()
 const mockSendInput = jest.fn()
 const mockAnswerPrompt = jest.fn()
-jest.mock('@/hooks/useSessionActions', () => ({
-  useSessionActions: () => ({
-    sendInput: { mutate: jest.fn(), mutateAsync: mockSendInput, isError: false, error: null },
-    sendKeys: { mutate: jest.fn() },
-    respondToQuestion: { mutate: jest.fn(), mutateAsync: mockRespondToQuestion, isError: false, error: null },
-    answerPermission: { mutate: jest.fn(), mutateAsync: mockAnswerPermission, isError: false, error: null },
-    answerPrompt: { mutate: jest.fn(), mutateAsync: mockAnswerPrompt, isError: false, error: null },
-  }),
-}))
+const mockSendKeys = jest.fn()
+const mockRawKey = jest.fn()
+// sendRawKey is a real mutation around the stand-in, because the cancel path
+// reads its settled error during render to pick between notice and error.
+jest.mock('@/hooks/useSessionActions', () => {
+  const { useMutation } = jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
+  return {
+    useSessionActions: () => ({
+      sendInput: { mutate: jest.fn(), mutateAsync: mockSendInput, isError: false, error: null },
+      sendKeys: { mutate: mockSendKeys },
+      sendRawKey: useMutation({ mutationFn: (vars: { action: 'escape'; promptId?: string }) => mockRawKey(vars) }),
+      respondToQuestion: { mutate: jest.fn(), mutateAsync: mockRespondToQuestion, isError: false, error: null },
+      answerPermission: { mutate: jest.fn(), mutateAsync: mockAnswerPermission, isError: false, error: null },
+      answerPrompt: { mutate: jest.fn(), mutateAsync: mockAnswerPrompt, isError: false, error: null },
+    }),
+  }
+})
 
 jest.mock('@/components/terminal/SessionHistoryFeed', () => ({ SessionHistoryFeed: () => null }))
 jest.mock('@/components/shared/SlashCommandBoard', () => ({ SlashCommandBoard: () => null }))
@@ -98,6 +106,23 @@ jest.mock('@/components/queue/PromptQueueSheet', () => ({ PromptQueueSheet: () =
 
 // eslint-disable-next-line import/first
 import { TerminalView } from '@/components/terminal/TerminalView'
+// eslint-disable-next-line import/first
+import { useServersStore } from '@/stores/servers'
+
+function setRawKeys(supported: boolean) {
+  useServersStore.setState({
+    servers: {
+      'srv-1': {
+        id: 'srv-1',
+        url: 'http://srv-1',
+        apiKey: 'key',
+        isConnected: true,
+        connectionError: null,
+        serverInfo: { version: '1', machineName: 'mac', platform: 'macOS', activeSessions: 0, ...(supported ? { rawKeys: true as const } : {}) },
+      },
+    },
+  })
+}
 
 
 const PROMPT: Prompt = {
@@ -147,6 +172,10 @@ beforeEach(() => {
   mockAnswerPrompt.mockResolvedValue({ ok: true })
   mockAnswerPermission.mockReset()
   mockSendInput.mockReset()
+  mockSendKeys.mockReset()
+  mockRawKey.mockReset()
+  mockRawKey.mockResolvedValue({ ok: true })
+  setRawKeys(true)
 })
 
 describe('prompt answer seam — the view between the card and the contract route', () => {
@@ -205,5 +234,86 @@ describe('prompt answer seam — the view between the card and the contract rout
     expect(mockAnswerPrompt).not.toHaveBeenCalled()
     expect(screen.getAllByLabelText('Cancel').length).toBeGreaterThan(0)
     expect(screen.getByTestId('chat-send-button').props.accessibilityState?.disabled).toBe(true)
+  })
+})
+
+// Cancel is "dismiss this card", not "interrupt the agent". A blind Escape
+// written after the gate already closed lands on Claude's prompt and kills the
+// turn the user is waiting on, so a card with a registry promptId cancels over
+// /raw-key bound to it, and comes down on the server's verdict, not the tap.
+describe('prompt cancel seam — Escape bound to the card it was tapped on', () => {
+  const tapCancel = async () => {
+    await act(async () => { fireEvent.press(screen.getAllByLabelText('Cancel')[0]) })
+  }
+
+  it('sends a bound raw-key escape and never a blind /input keys write', async () => {
+    await openPrompt()
+    await tapCancel()
+
+    await waitFor(() => expect(mockRawKey).toHaveBeenCalledWith({ action: 'escape', promptId: 'prompt-1' }))
+    expect(mockSendKeys).not.toHaveBeenCalled()
+  })
+
+  it('keeps the card up until the server replies, then takes it down on a 200', async () => {
+    let settle: (v: { ok: true }) => void = () => {}
+    mockRawKey.mockImplementation(() => new Promise((res) => { settle = res }))
+    await openPrompt()
+    await tapCancel()
+
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+    await act(async () => { settle({ ok: true }) })
+    await waitFor(() => expect(screen.queryByTestId('question-card')).toBeNull())
+  })
+
+  it('treats raw_key_stale as the gate already gone: card down, calm notice, zero bytes', async () => {
+    mockRawKey.mockRejectedValue(new NetworkError('Server returned 409', 'raw_key_stale'))
+    await openPrompt()
+    await tapCancel()
+
+    await waitFor(() => expect(screen.queryByTestId('question-card')).toBeNull())
+    expect(screen.getByText("That question isn't open anymore.")).toBeTruthy()
+    expect(screen.queryByText('Server returned 409')).toBeNull()
+    expect(mockSendKeys).not.toHaveBeenCalled()
+  })
+
+  it('keeps the card up and surfaces the error on any other failure', async () => {
+    mockRawKey.mockRejectedValue(new NetworkError('Server returned 409', 'raw_key_unavailable'))
+    await openPrompt()
+    await tapCancel()
+
+    await waitFor(() => expect(screen.getByText(
+      'The focused prompt changed or is no longer available. Check the session and try again.',
+    )).toBeTruthy())
+    expect(screen.queryByText('Server returned 409')).toBeNull()
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+    expect(mockSendKeys).not.toHaveBeenCalled()
+  })
+
+  it('does not take down a different card that arrived while the cancel was in flight', async () => {
+    let fail: (e: Error) => void = () => {}
+    mockRawKey.mockImplementation(() => new Promise((_res, rej) => { fail = rej }))
+    await openPrompt()
+    await tapCancel()
+
+    const next: Prompt = {
+      ...PROMPT,
+      promptId: 'prompt-2',
+      questions: [{ ...PROMPT.questions[0], text: 'Run the tests?' }],
+    }
+    await act(async () => { __wsTest.emit('prompt_event', event(next, 2)) })
+    await act(async () => { fail(new NetworkError('Server returned 409', 'raw_key_stale')) })
+
+    expect(screen.getByText('Run the tests?')).toBeTruthy()
+  })
+
+  // Negative control: the capability flag, not the card, selects the bound path.
+  it('falls back to the blind Escape and an immediate dismiss when the server lacks rawKeys', async () => {
+    setRawKeys(false)
+    await openPrompt()
+    await tapCancel()
+
+    expect(mockSendKeys).toHaveBeenCalledWith('\x1b')
+    expect(mockRawKey).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('question-card')).toBeNull()
   })
 })

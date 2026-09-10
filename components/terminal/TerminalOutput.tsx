@@ -102,9 +102,8 @@ interface Props {
   answerPhase?: QuestionPhase | null
   /** An answer is in flight; locks the rows so a double-tap cannot send twice. */
   answerBusy?: boolean
-  /** Drop the structured card locally — Esc closes the menu, but nothing on the
-   *  server notices, so the card would otherwise linger and stay tappable. */
-  onDismissQuestion?: () => void
+  /** Cancel on the structured card; the owning view decides what reaches the PTY. */
+  onCancelQuestion?: () => void
   /**
    * Resumed sessions start a fresh PTY — prior terminal bytes are gone.
    * When set, show a scrollback-top disclosure linking to the durable conversation.
@@ -132,7 +131,7 @@ export function TerminalOutput({
   onAnswerPrompt,
   answerPhase = null,
   answerBusy = false,
-  onDismissQuestion,
+  onCancelQuestion,
   onViewResumedConversation,
   onSearchResumedConversation,
   disabled = false,
@@ -383,7 +382,7 @@ export function TerminalOutput({
           onSelect={handleStructuredSelect}
           busy={answerBusy}
           ghost={answerPhase === 'pending'}
-          onCancel={onSendKeys ? () => { onSendKeys('\x1b'); onDismissQuestion?.() } : undefined}
+          onCancel={onCancelQuestion}
         />
       ) : questionBlock && onSendKeys ? (
         <QuestionCard

@@ -65,24 +65,25 @@ describe('ThinkingBubble question lifecycle', () => {
     await waitFor(() => expect(onFadeOutComplete).toHaveBeenCalled())
   })
 
-  it('dismissing sends Esc AND drops the card locally', async () => {
+  // Cancel on a structured card is handed up and nothing more: the view decides
+  // whether an Escape reaches the PTY, because a blind one written after the
+  // gate closed interrupts the agent's turn instead of dismissing anything.
+  it('hands Cancel up without writing any keys itself', async () => {
     const onSendKeys = jest.fn()
-    const onDismissQuestion = jest.fn()
+    const onCancelQuestion = jest.fn()
     const { getAllByLabelText } = await render(
       <ThinkingBubble
         lines={[]}
         isStreaming={false}
         activeQuestion={aq}
         onSendKeys={onSendKeys}
-        onDismissQuestion={onDismissQuestion}
+        onCancelQuestion={onCancelQuestion}
       />,
     )
 
-    // Esc closes the menu on the host, but nothing tells the server, so without
-    // the local clear the card lingers and stays tappable against a dead menu.
     await fireEvent.press(getAllByLabelText('Cancel')[0])
-    expect(onSendKeys).toHaveBeenCalledWith('\x1b')
-    expect(onDismissQuestion).toHaveBeenCalled()
+    expect(onCancelQuestion).toHaveBeenCalledTimes(1)
+    expect(onSendKeys).not.toHaveBeenCalled()
   })
 
   // The server closes a permission gate only when its PTY detector sees the box
@@ -90,7 +91,7 @@ describe('ThinkingBubble question lifecycle', () => {
   // the user's own action, so the card goes on their input, not on the echo.
   it('hands a tapped gate option to the answer route by position, and does not dismiss the card', async () => {
     const onAnswerPermission = jest.fn()
-    const onDismissQuestion = jest.fn()
+    const onCancelQuestion = jest.fn()
     const gate: QuestionBlock = {
       source: 'permission',
       questions: [{
@@ -107,7 +108,7 @@ describe('ThinkingBubble question lifecycle', () => {
         activeQuestion={gate}
         onSendKeys={jest.fn()}
         onAnswerPermission={onAnswerPermission}
-        onDismissQuestion={onDismissQuestion}
+        onCancelQuestion={onCancelQuestion}
       />,
     )
 
@@ -117,25 +118,25 @@ describe('ThinkingBubble question lifecycle', () => {
     // The card outlives the tap: it moves only once the answer has been taken,
     // so a tap on a gate that already closed can clear it with a notice rather
     // than leave the user looking at nothing.
-    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(onCancelQuestion).not.toHaveBeenCalled()
     expect(getByLabelText('Yes')).toBeTruthy()
   })
 
   it('answers a structured question without dismissing the card', async () => {
     const onAnswer = jest.fn()
-    const onDismissQuestion = jest.fn()
+    const onCancelQuestion = jest.fn()
     const { getByLabelText } = await render(
       <ThinkingBubble
         lines={[]}
         isStreaming={false}
         activeQuestion={aq}
         onAnswer={onAnswer}
-        onDismissQuestion={onDismissQuestion}
+        onCancelQuestion={onCancelQuestion}
       />,
     )
 
     await fireEvent.press(getByLabelText('B'))
     expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'B' })
-    expect(onDismissQuestion).not.toHaveBeenCalled()
+    expect(onCancelQuestion).not.toHaveBeenCalled()
   })
 })

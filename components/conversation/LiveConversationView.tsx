@@ -9,6 +9,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
+import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -218,7 +219,7 @@ export function LiveConversationView({
   // Phase comes gated on `presentation.live` — never re-derive liveness here.
   const agentPhase = session ? deriveSessionPresentation(session).subStatus : null
 
-  const { sendInput, sendKeys, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
+  const { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
   const {
     activeQuestion,
     answerPhase,
@@ -230,6 +231,8 @@ export function LiveConversationView({
     answerErrorMessage,
     answerNoticeMessage,
   } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt })
+  const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
+    useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
 
   // A question arrives on the running → waiting_input edge, which is exactly the
   // edge that retires the thinking bubble. Mount on the question too, or a card
@@ -322,7 +325,8 @@ export function LiveConversationView({
         : sendInput.error.message
       : tTerminal('dialog.sendFailedGeneric')
     : null
-  const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage
+  const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage ?? cancelErrorMessage
+  const sendNoticeMessage = answerNoticeMessage ?? cancelNoticeMessage
 
   // The prompt_pending refusal is server-side and applies to `{ input }` only;
   // `{ keys }` is deliberately not arbitrated there, because Escape and arrow
@@ -409,7 +413,7 @@ export function LiveConversationView({
             onAnswerPrompt={handleAnswerPrompt}
             answerPhase={answerPhase}
             answerBusy={answerBusy}
-            onDismissQuestion={clearQuestion}
+            onCancelQuestion={cancelQuestion}
           />
         ) : null}
       />
@@ -441,7 +445,7 @@ export function LiveConversationView({
         attachError={attachError}
         sendError={sendErrorMessage}
         sendErrorAction={sendEscapeAction}
-        sendNotice={answerNoticeMessage}
+        sendNotice={sendNoticeMessage}
         disabled={disabled}
         voice={voice}
         micGranted={micGranted}
