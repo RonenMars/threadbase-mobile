@@ -17,11 +17,6 @@ import { NetworkError } from '@/services/api-client'
 import { CODEX_CLI_PROVIDER } from '@/constants/providers'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import {
-  markNavigatedToSession,
-  suppressAutoNavForPendingStart,
-  clearAutoNavSuppress,
-} from '@/lib/sessionNavGuard'
 import { clientLog } from '@/lib/clientLog'
 import type { RemediationCode } from '@/types/server-diagnostics'
 
@@ -188,21 +183,19 @@ export default function NewSessionScreen() {
     (result: { kind: 'ready'; session: { id: string; projectId?: string; projectPath?: string | null } } | { kind: 'pending'; id: string }) => {
       if (result.kind === 'ready') {
         const target = buildSessionRoute(result.session, serverId)
-        clientLog.info('startSession', 'session ready — mark + replace', {
+        clientLog.info('startSession', 'session ready — replace', {
           sessionId: result.session.id,
           target,
         })
-        markNavigatedToSession(result.session.id)
         router.replace(target)
       } else {
         // Server ready-wait timed out (202): hand over to the existing
         // exact-id pending screen, which replaces itself on session_ready.
         const target = buildSessionRoute({ id: result.id }, serverId, { starting: true })
-        clientLog.info('startSession', 'start pending — mark + replace to pending screen', {
+        clientLog.info('startSession', 'start pending — replace to pending screen', {
           sessionId: result.id,
           target,
         })
-        markNavigatedToSession(result.id)
         router.replace(target)
       }
     },
@@ -215,7 +208,6 @@ export default function NewSessionScreen() {
         message: err.message,
         code: err instanceof NetworkError ? err.code : undefined,
       })
-      clearAutoNavSuppress()
       haltedRef.current = true
       const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
       const isProviderNotInstalled = err instanceof NetworkError && err.code === PROVIDER_NOT_INSTALLED_CODE
@@ -251,19 +243,16 @@ export default function NewSessionScreen() {
     if (lastAttemptRef.current === attempt) return
     lastAttemptRef.current = attempt
     haltedRef.current = false
-    // session_ready can beat the spawn HTTP response — suppress global
-    // auto-nav until the id is known and the result handler owns navigation.
     const payload = {
       path,
       projectName,
       ...(provider === CODEX_CLI_PROVIDER ? { provider: CODEX_CLI_PROVIDER } : {}),
     }
-    clientLog.info('startSession', 'start attempt — suppress + POST', {
+    clientLog.info('startSession', 'start attempt — POST', {
       attempt,
       serverId,
       payload,
     })
-    suppressAutoNavForPendingStart()
     mutate(payload, { onSuccess: handleResult, onError: handleError })
   }, [attempt, mutate, handleResult, handleError, path, projectName, provider, serverId])
 

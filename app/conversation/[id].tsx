@@ -38,11 +38,6 @@ import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
-import {
-  clearAutoNavSuppress,
-  markNavigatedToSession,
-  suppressAutoNavForPendingStart,
-} from '@/lib/sessionNavGuard'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
@@ -466,8 +461,7 @@ export default function ConversationDetailScreen() {
   // before the PTY attaches, so the session reads idle+detached for a moment —
   // which the session screen's ended-session redirect would otherwise mistake
   // for "finished" and bounce straight back here. The pending screen replaces
-  // itself with the live session on session_ready. markNavigatedToSession stops
-  // the global session_ready listener pushing that same route a second time.
+  // itself with the live session on session_ready.
   const navigateToResumedSession = useCallback(
     (result: ResumeResult) => {
       if (result.sessionSnapshot) {
@@ -479,7 +473,6 @@ export default function ConversationDetailScreen() {
       if (projectPath) startParams.set('projectPath', projectPath)
       startParams.set('resumedFromConversationId', result.conversationId)
       startParams.set('starting', '1')
-      markNavigatedToSession(result.sessionId)
       router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
     },
     [qc, serverId, conversation?.projectPath, router],
@@ -492,13 +485,11 @@ export default function ConversationDetailScreen() {
     // Named locally (not the outer const) so the Retry button can call it again
     // without a useCallback self-reference.
     function attempt() {
-      suppressAutoNavForPendingStart()
       resume.mutate(
         { force: true },
         {
           onSuccess: navigateToResumedSession,
           onError: (err) => {
-            clearAutoNavSuppress()
             Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err), [
               { text: t('common:button.cancel'), style: 'cancel' },
               { text: t('common:button.retry'), onPress: attempt },
@@ -515,15 +506,12 @@ export default function ConversationDetailScreen() {
   // old process to actually exit before spawning, so it cannot leave two agents
   // writing one transcript (which is what "open anyway" risks).
   const takeOverSession = useCallback(() => {
-    suppressAutoNavForPendingStart()
     adoptSession.mutate(undefined, {
       onSuccess: (data) => {
         // Same spawn race as resume — see navigateToResumedSession.
-        markNavigatedToSession(data.sessionId)
         router.replace(`/session/${data.sessionId}?server=${serverId}&starting=1`)
       },
       onError: (err) => {
-        clearAutoNavSuppress()
         Alert.alert(t('resume.takeOverFailed'), err instanceof Error ? err.message : String(err))
       },
     })
@@ -542,12 +530,6 @@ export default function ConversationDetailScreen() {
   // already names it and already carries `resume.forkMessage`, so re-asking
   // made the user press "Fork into Threadbase" twice to do it once.
   const forkIntoThreadbase = useCallback(() => {
-    // The streamer publishes session_ready over WS the same millisecond
-    // it answers this POST, and the global listener races us to push
-    // /session/<id> — after which our own replace reads as a navigation
-    // AWAY from a live session and raises the leave-options modal on
-    // arrival. Suppress auto-nav until we have navigated ourselves.
-    suppressAutoNavForPendingStart()
     forkSession.mutate(undefined, {
       onSuccess: (result) => {
         if (result.sessionSnapshot) {
@@ -562,11 +544,9 @@ export default function ConversationDetailScreen() {
         startParams.set('forkedFromConversationId', id)
         startParams.set('conversationId', result.conversationId)
         startParams.set('starting', '1')
-        markNavigatedToSession(result.sessionId)
         router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
       },
       onError: (err) => {
-        clearAutoNavSuppress()
         Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err))
       },
     })
@@ -581,13 +561,11 @@ export default function ConversationDetailScreen() {
     // Named locally (not the outer const) so the Retry button can call it again
     // without a useCallback self-reference.
     function attempt() {
-      suppressAutoNavForPendingStart()
       resume.mutate(
         {},
         {
           onSuccess: navigateToResumedSession,
           onError: (err) => {
-            clearAutoNavSuppress()
             if (err instanceof ConversationBusyError) {
               const entries = err.detectedBy.length > 0 ? err.detectedBy : ['unknown']
               const reasons = Array.from(
@@ -641,7 +619,6 @@ export default function ConversationDetailScreen() {
 
   const handleBackToLiveSession = useCallback(() => {
     if (!fromSession) return
-    markNavigatedToSession(fromSession)
     router.replace(`/session/${fromSession}?server=${serverId}`)
   }, [fromSession, router, serverId])
 

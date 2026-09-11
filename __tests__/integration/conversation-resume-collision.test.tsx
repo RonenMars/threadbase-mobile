@@ -20,17 +20,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { ConversationBusyError } from '@/services/api-client'
-import {
-  clearAutoNavSuppress,
-  markNavigatedToSession,
-  suppressAutoNavForPendingStart,
-} from '@/lib/sessionNavGuard'
-
-jest.mock('@/lib/sessionNavGuard', () => ({
-  markNavigatedToSession: jest.fn(),
-  suppressAutoNavForPendingStart: jest.fn(),
-  clearAutoNavSuppress: jest.fn(),
-}))
 
 const CONV_ID = 'conv-resume'
 
@@ -134,9 +123,6 @@ describe('conversation detail — resume collision', () => {
   beforeEach(() => {
     seedServer()
     mockPost.mockReset()
-    ;(markNavigatedToSession as jest.Mock).mockClear()
-    ;(suppressAutoNavForPendingStart as jest.Mock).mockClear()
-    ;(clearAutoNavSuppress as jest.Mock).mockClear()
     mockReplace = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({
       push: jest.fn(),
@@ -226,10 +212,8 @@ describe('conversation detail — resume collision', () => {
     expect(mockPost.mock.calls[0][1]).toEqual({ sessionId: CONV_ID })
     const target = mockReplace.mock.calls[0][0] as string
     expect(target).toContain('/session/sess-clean')
-    // The PTY is not attached yet: hand off to the starting screen, and claim
-    // the navigation so the global session_ready listener doesn't push it again.
+    // The PTY is not attached yet: hand off to the starting screen.
     expect(target).toContain('starting=1')
-    expect(markNavigatedToSession).toHaveBeenCalledWith('sess-clean')
     expect(alertSpy).not.toHaveBeenCalled()
 
     alertSpy.mockRestore()
@@ -535,14 +519,6 @@ describe('conversation detail — resume collision', () => {
     // Both identities survive: what we forked from, and the rollout we got.
     expect(target).toContain('forkedFromConversationId=' + CONV_ID)
     expect(target).toContain('conversationId=conv-forked-rollout')
-    expect(markNavigatedToSession).toHaveBeenCalledWith('sess-fork')
-    // The streamer's session_ready can beat this POST's response; without the
-    // suppression the global listener pushes /session/sess-fork first and our
-    // own replace then reads as leaving a live session (leave-options modal).
-    expect(suppressAutoNavForPendingStart).toHaveBeenCalled()
-    expect(
-      (suppressAutoNavForPendingStart as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan((markNavigatedToSession as jest.Mock).mock.invocationCallOrder[0])
     expect(testQc.getQueryData(['session', 'srv1', 'sess-fork'])).toMatchObject({ id: 'sess-fork' })
 
     alertSpy.mockRestore()
@@ -571,8 +547,6 @@ describe('conversation detail — resume collision', () => {
     const buttons = (alertSpy.mock.calls[1][2] ?? []) as AlertButton[]
     expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
     expect(mockReplace).not.toHaveBeenCalled()
-    // Nobody navigated, so the blanket auto-nav suppression must be released.
-    expect(clearAutoNavSuppress).toHaveBeenCalled()
 
     alertSpy.mockRestore()
   })

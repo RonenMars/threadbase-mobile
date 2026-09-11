@@ -4,17 +4,11 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import NewSessionScreen from '@/app/session/new'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import {
-  markNavigatedToSession,
-  suppressAutoNavForPendingStart,
-  clearAutoNavSuppress,
-} from '@/lib/sessionNavGuard'
 import { NetworkError } from '@/services/api-client'
 
-// /session/new owns the whole start-spawn lifecycle: suppress global auto-nav
-// BEFORE the POST (session_ready can beat the HTTP response and we don't know
-// the id yet), show a countdown against the request budget, replace to the
-// session on success, and offer Retry/Cancel on failure.
+// /session/new owns the whole start-spawn lifecycle: fire the POST, show a
+// countdown against the request budget, replace to the session on success,
+// and offer Retry/Cancel on failure.
 
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
@@ -32,12 +26,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('@/lib/sessionNavGuard', () => ({
-  markNavigatedToSession: jest.fn(),
-  suppressAutoNavForPendingStart: jest.fn(),
-  clearAutoNavSuppress: jest.fn(),
-}))
-
 jest.mock('@/hooks/useBrowse', () => ({
   START_SESSION_TIMEOUT_MS: 15_000,
   useStartSession: () => ({ mutate: mockStartMutate, isPending: false }),
@@ -48,9 +36,6 @@ beforeEach(() => {
   mockReplace.mockClear()
   mockStartMutate.mockClear()
   mockParams.current = { server: 'srv_alpha', path: 'work', projectName: 'work' }
-  ;(markNavigatedToSession as jest.Mock).mockClear()
-  ;(suppressAutoNavForPendingStart as jest.Mock).mockClear()
-  ;(clearAutoNavSuppress as jest.Mock).mockClear()
 })
 
 async function renderScreen() {
@@ -65,14 +50,10 @@ async function renderScreen() {
 }
 
 describe('/session/new start lifecycle', () => {
-  it('suppresses auto-nav before firing the start request', async () => {
+  it('fires the start request on mount', async () => {
     const { getByText, getByTestId } = await renderScreen()
 
-    expect(suppressAutoNavForPendingStart).toHaveBeenCalledTimes(1)
     expect(mockStartMutate).toHaveBeenCalledTimes(1)
-    expect(
-      (suppressAutoNavForPendingStart as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan(mockStartMutate.mock.invocationCallOrder[0])
     expect(mockStartMutate.mock.calls[0][0]).toEqual({ path: 'work', projectName: 'work' })
     // Countdown starts at the full request budget, with the waking-up robot
     // (moved here from the session screen) and its rotating phrase.
@@ -81,17 +62,13 @@ describe('/session/new start lifecycle', () => {
     expect(getByText("I'm waking up, I'll be ready in a moment…")).toBeTruthy()
   })
 
-  it('marks the guard then replaces to the session on a ready result', async () => {
+  it('replaces to the session on a ready result', async () => {
     await renderScreen()
 
     const { onSuccess } = mockStartMutate.mock.calls[0][1]
     await act(async () => onSuccess({ kind: 'ready', session: { id: 'sess_1', projectId: 'proj_1' } }))
 
-    expect(markNavigatedToSession).toHaveBeenCalledWith('sess_1')
     expect(mockReplace).toHaveBeenCalledTimes(1)
-    expect(
-      (markNavigatedToSession as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan(mockReplace.mock.invocationCallOrder[0])
     expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining('/session/sess_1'))
   })
 
@@ -101,27 +78,24 @@ describe('/session/new start lifecycle', () => {
     const { onSuccess } = mockStartMutate.mock.calls[0][1]
     await act(async () => onSuccess({ kind: 'pending', id: 'sess_9' }))
 
-    expect(markNavigatedToSession).toHaveBeenCalledWith('sess_9')
     const target = mockReplace.mock.calls[0][0] as string
     expect(target).toContain('/session/sess_9')
     expect(target).toContain('starting=1')
   })
 
-  it('shows Retry/Cancel on failure; Retry re-suppresses and re-fires, Cancel goes back', async () => {
+  it('shows Retry/Cancel on failure; Retry re-fires, Cancel goes back', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     await renderScreen()
 
     const { onError } = mockStartMutate.mock.calls[0][1]
     await act(async () => onError(new NetworkError('boom', 'TIMEOUT')))
 
-    expect(clearAutoNavSuppress).toHaveBeenCalledTimes(1)
     expect(alertSpy).toHaveBeenCalledTimes(1)
     const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
 
-    // Retry: a fresh attempt suppresses again and re-fires the POST.
+    // Retry: a fresh attempt re-fires the POST.
     await act(async () => buttons.find((b) => b.text === 'Retry')?.onPress?.())
     await waitFor(() => expect(mockStartMutate).toHaveBeenCalledTimes(2))
-    expect(suppressAutoNavForPendingStart).toHaveBeenCalledTimes(2)
 
     // Cancel on the next failure: back to the hub, no further attempts.
     const { onError: onError2 } = mockStartMutate.mock.calls[1][1]
