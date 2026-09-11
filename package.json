@@ -110,7 +110,7 @@
     "expo-router": "~57.0.17",
     "expo-secure-store": "~57.0.1",
     "expo-speech-recognition": "56.0.1",
-    "expo-splash-screen": "~57.0.5",
+    "expo-splash-screen": "~57.0.8",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.1",
     "expo-updates": "~57.0.11",
