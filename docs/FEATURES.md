@@ -5,9 +5,14 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 ## Mobile app
 
 - [shipped] Live session view — watch a running Claude Code or Codex session in real time, in raw terminal or parsed chat view.
+- [shipped] Live working indicator — the chat view shows a working scanner for every live turn, on Claude Code as well as Codex.
+- [shipped] Real-viewport terminal — the terminal decodes at the session's actual viewport height, so a session resized from an attached terminal still renders correctly.
 - [shipped] Remote prompt input — send prompts, slash commands, and interrupts to a live session from the phone.
+- [shipped] Remote keyboard controls — send Esc, Tab, Shift+Tab, and arrow-key navigation to a live session, with a hold-to-confirm Enter.
 - [shipped] Resume a conversation into a live session — continue a past conversation live, with take-over/fork/force handling if it's already busy elsewhere.
 - [partial] Fork a session — clone a conversation into a new session; Codex only, not available for Claude Code.
+- [shipped] Forked-session history — a fork shows the conversation it continues, with a marked seam where the inherited history ends; needs streamer 1.84 or newer.
+- [shipped] Open the conversation a fork continues — jump from a fork to its parent as it stands now, not just the inherited prefix.
 - [shipped] Adopt an externally started session — take over and control a session that was launched from a normal terminal.
 - [partial] Tool approval and permission prompts — approve single-select gates and questions from the phone; multi-question and multi-select forms aren't answerable yet.
 - [shipped] Cross-session search — full-text search across a server's conversations with highlighted matches.
