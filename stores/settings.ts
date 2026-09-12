@@ -234,11 +234,17 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         // Assigned once, ever, for this installation (spec §7). Preference
         // order: what's already persisted > what's already in memory (guards
         // a second hydrate() before the first assignment finishes persisting)
-        // > a fresh 40/60 assignment.
+        // > a fresh 40/60 assignment. EXPO_PUBLIC_FORCE_DIAGNOSTICS_VARIANT=1
+        // pins the treatment arm so the onboarding toggle can be exercised on a
+        // device without reinstalling until the 40% draw lands.
         onboardingDiagnosticsExperimentVariant:
           parsed.onboardingDiagnosticsExperimentVariant ??
           state.onboardingDiagnosticsExperimentVariant ??
-          (Math.random() < 0.4 ? 'treatment' : 'control'),
+          (process.env.EXPO_PUBLIC_FORCE_DIAGNOSTICS_VARIANT === '1'
+            ? 'treatment'
+            : Math.random() < 0.4
+              ? 'treatment'
+              : 'control'),
         postFeedbackDiagnosticsSuggestionImpressions:
           parsed.postFeedbackDiagnosticsSuggestionImpressions ??
           state.postFeedbackDiagnosticsSuggestionImpressions,
