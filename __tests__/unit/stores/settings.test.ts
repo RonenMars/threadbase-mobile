@@ -29,6 +29,7 @@ beforeEach(() => {
     anonymousDiagnosticsEnabled: false,
     crashReportingNoticeDismissed: false,
     sessionLeaveAction: 'ask',
+    showProviderVersionWarning: false,
     locale: 'he',
   })
 })
@@ -340,5 +341,25 @@ describe('SettingsStore – sessionLeaveAction', () => {
     )
     await useSettingsStore.getState().hydrate()
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+  })
+})
+
+describe('SettingsStore – showProviderVersionWarning', () => {
+  it('defaults to off', () => {
+    expect(useSettingsStore.getState().showProviderVersionWarning).toBe(false)
+  })
+
+  it('persists and hydrates the toggle', async () => {
+    useSettingsStore.getState().setShowProviderVersionWarning(true)
+    await persistSettingsNow()
+    const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
+    expect(JSON.parse(raw[1]).showProviderVersionWarning).toBe(true)
+
+    useSettingsStore.setState({ showProviderVersionWarning: false })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ showProviderVersionWarning: true }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().showProviderVersionWarning).toBe(true)
   })
 })

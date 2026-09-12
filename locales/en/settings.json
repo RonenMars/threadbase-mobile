@@ -26,7 +26,9 @@
     "leaveActionKill": "Kill it",
     "leaveActionLeave": "Leave it",
     "leaveActionKillOnIdle": "Kill on idle",
-    "leaveActionNote": "Applies when you navigate away from a live session. Backgrounding the app is unchanged."
+    "leaveActionNote": "Applies when you navigate away from a live session. Backgrounding the app is unchanged.",
+    "showProviderVersionWarning": "Show unverified provider version warning",
+    "showProviderVersionWarningNote": "When the installed CLI is outside this streamer’s verified range, show a yellow note on Browse."
   },
   "permissions": {
     "camera": "Camera",

@@ -26,7 +26,9 @@
     "leaveActionKill": "עצור עכשיו",
     "leaveActionLeave": "השאר רץ",
     "leaveActionKillOnIdle": "עצור במנוחה",
-    "leaveActionNote": "חל כאשר עוברים ממסך הסשן החי. מעבר הרקע של האפליקציה לא משתנה."
+    "leaveActionNote": "חל כאשר עוברים ממסך הסשן החי. מעבר הרקע של האפליקציה לא משתנה.",
+    "showProviderVersionWarning": "הצג אזהרת גרסת ספק לא מאומתת",
+    "showProviderVersionWarningNote": "כשגרסת ה-CLI המותקנת מחוץ לטווח שאימת הסטרימר, הצג הערה צהובה במסך Browse."
   },
   "permissions": {
     "camera": "מצלמה",
