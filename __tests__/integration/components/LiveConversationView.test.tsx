@@ -119,6 +119,7 @@ jest.mock('react-native-keyboard-controller', () => ({
   KeyboardProvider: ({ children }: { children: unknown }) => children,
   KeyboardAwareScrollView: ({ children }: { children: unknown }) => children,
   KeyboardAvoidingView: ({ children }: { children: unknown }) => children,
+  useReanimatedKeyboardAnimation: () => ({ height: { value: 0 }, progress: { value: 0 } }),
   useKeyboardState: (selector?: (s: { isVisible: boolean; height: number }) => unknown) => {
     const state = { isVisible: false, height: 0 }
     return selector ? selector(state) : state
