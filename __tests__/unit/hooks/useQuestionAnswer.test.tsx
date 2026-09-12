@@ -60,10 +60,11 @@ const mutation = (over: Partial<Mutation> = {}): Mutation => ({
 // The mutations are passed in rather than created inside the hook, and these
 // stand-ins are how that is enforced: a hook that called useSessionActions()
 // itself would ignore them and read a second, independent instance.
-async function setup(over: { respondToQuestion?: Mutation; answerPermission?: Mutation; answerPrompt?: Mutation } = {}) {
+async function setup(over: { respondToQuestion?: Mutation; answerPermission?: Mutation; answerPrompt?: Mutation; onSessionQuit?: jest.Mock } = {}) {
   const respondToQuestion = over.respondToQuestion ?? mutation()
   const answerPermission = over.answerPermission ?? mutation()
   const answerPrompt = over.answerPrompt ?? mutation()
+  const onSessionQuit = over.onSessionQuit
   // A provider the hook itself does not need. It is here so the mutant that
   // calls useSessionActions() internally can actually run and report a real
   // isPending, instead of throwing for want of a provider — a mutant that
@@ -83,10 +84,11 @@ async function setup(over: { respondToQuestion?: Mutation; answerPermission?: Mu
       answerPermission: answerPermission as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
       answerPrompt: answerPrompt as any,
+      onSessionQuit,
     }),
     { wrapper },
   )
-  return { ...rendered, respondToQuestion, answerPermission, answerPrompt }
+  return { ...rendered, respondToQuestion, answerPermission, answerPrompt, onSessionQuit }
 }
 
 describe('useQuestionAnswer – the mutations it was given', () => {
@@ -424,5 +426,42 @@ describe('useQuestionAnswer – provider-neutral prompt card', () => {
   it('reports busy from the prompt mutation it was handed', async () => {
     const { result } = await setup({ answerPrompt: mutation({ isPending: true }) })
     expect(result.current.answerBusy).toBe(true)
+  })
+})
+
+const trustGate: PermissionWsMessage = {
+  type: 'permission',
+  sessionId: 's1',
+  prompt: 'Do you trust the contents of this directory?',
+  options: [
+    { index: 1, label: 'Yes, continue' },
+    { index: 2, label: 'No, quit' },
+  ],
+}
+
+describe('useQuestionAnswer – Codex trust quit leaves the session', () => {
+  it('calls onSessionQuit after a successful No, quit', async () => {
+    const onSessionQuit = jest.fn()
+    const { result } = await setup({ onSessionQuit })
+    await act(() => __wsTest.emit('permission', trustGate))
+    await act(async () => { await result.current.handleAnswerPermission(1) })
+    expect(onSessionQuit).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not leave after Yes, continue', async () => {
+    const onSessionQuit = jest.fn()
+    const { result } = await setup({ onSessionQuit })
+    await act(() => __wsTest.emit('permission', trustGate))
+    await act(async () => { await result.current.handleAnswerPermission(0) })
+    expect(onSessionQuit).not.toHaveBeenCalled()
+  })
+
+  it('does not leave when the quit answer is refused', async () => {
+    const onSessionQuit = jest.fn()
+    const closed = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('409', 'gate_closed')) })
+    const { result } = await setup({ answerPermission: closed, onSessionQuit })
+    await act(() => __wsTest.emit('permission', trustGate))
+    await act(async () => { await result.current.handleAnswerPermission(1) })
+    expect(onSessionQuit).not.toHaveBeenCalled()
   })
 })

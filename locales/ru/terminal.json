@@ -25,6 +25,7 @@
     "escape": "Esc",
     "tab": "Tab",
     "shiftTab": "Shift Tab",
+    "enter": "Enter",
     "confirm": "Удерживайте, чтобы подтвердить выбранный вариант",
     "confirmLabel": "Подтвердить выбранный вариант. Удерживайте, чтобы отправить Enter.",
     "unavailableTitle": "Удалённая клавиатура недоступна",

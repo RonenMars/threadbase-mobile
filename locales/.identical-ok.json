@@ -12,5 +12,6 @@
   "conversation.json:review.kindDiff": "technical term used verbatim in he/ar/ru prose (\"ה-diff\")",
   "terminal.json:rawKeyboard.escape": "physical keyboard keycap label",
   "terminal.json:rawKeyboard.tab": "physical keyboard keycap label",
-  "terminal.json:rawKeyboard.shiftTab": "physical keyboard keycap label"
+  "terminal.json:rawKeyboard.shiftTab": "physical keyboard keycap label",
+  "terminal.json:rawKeyboard.enter": "physical keyboard keycap label"
 }

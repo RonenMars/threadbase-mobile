@@ -25,6 +25,7 @@
     "escape": "Esc",
     "tab": "Tab",
     "shiftTab": "Shift Tab",
+    "enter": "Enter",
     "confirm": "Hold to confirm selected option",
     "confirmLabel": "Confirm selected option. Hold to send Enter.",
     "unavailableTitle": "Remote keyboard unavailable",

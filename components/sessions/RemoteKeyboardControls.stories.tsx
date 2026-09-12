@@ -16,6 +16,6 @@ export const PromptOpen: Story = {
   args: { promptId: 'prompt-1' },
 }
 
-export const EscapeOnly: Story = {
+export const Unbound: Story = {
   args: {},
 }

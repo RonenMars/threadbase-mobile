@@ -25,6 +25,7 @@
     "escape": "Esc",
     "tab": "Tab",
     "shiftTab": "Shift Tab",
+    "enter": "Enter",
     "confirm": "לחצו והחזיקו לאישור האפשרות שנבחרה",
     "confirmLabel": "אישור האפשרות שנבחרה. לחצו והחזיקו לשליחת Enter.",
     "unavailableTitle": "המקלדת המרוחקת אינה זמינה",

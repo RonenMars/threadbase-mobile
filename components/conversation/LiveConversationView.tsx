@@ -12,6 +12,7 @@ import Reanimated from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
+import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
@@ -104,6 +105,8 @@ export function LiveConversationView({
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
   const qc = useQueryClient()
+  const router = useRouter()
+  const leaveToHome = useCallback(() => router.replace('/'), [router])
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
   const keyboardInset = useKeyboardInset()
 
@@ -250,7 +253,14 @@ export function LiveConversationView({
     handleAnswerPrompt,
     answerErrorMessage,
     answerNoticeMessage,
-  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt })
+  } = useQuestionAnswer({
+    serverId,
+    sessionId,
+    respondToQuestion,
+    answerPermission,
+    answerPrompt,
+    onSessionQuit: leaveToHome,
+  })
   const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
     useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
 
@@ -439,6 +449,7 @@ export function LiveConversationView({
             answerPhase={answerPhase}
             answerBusy={answerBusy}
             onCancelQuestion={cancelQuestion}
+            onSessionQuit={leaveToHome}
           />
         ) : null}
       />

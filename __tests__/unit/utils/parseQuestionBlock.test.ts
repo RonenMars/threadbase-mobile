@@ -1,4 +1,4 @@
-import { parseQuestionBlock } from '@/utils/parseQuestionBlock'
+import { isCodexTrustQuitOption, parseQuestionBlock } from '@/utils/parseQuestionBlock'
 
 describe('parseQuestionBlock', () => {
   it('returns null for empty lines', () => {
@@ -297,6 +297,41 @@ describe('parseQuestionBlock', () => {
       '  2. No, and tell Claude what to do differently',
     ]
     expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('parses Codex directory-trust as a tappable card', () => {
+    const lines = [
+      '> You are in /Users/ronenmars/dev/open-chrome',
+      'Do you trust the contents of this directory? Working with',
+      'untrusted contents comes with higher risk of prompt',
+      'injection. Trusting the directory allows project-local config,',
+      'hooks, and exec policies to load.',
+      '> 1. Yes, continue',
+      '2. No, quit',
+      'Press enter to continue',
+    ]
+    const result = parseQuestionBlock(lines)
+    expect(result).not.toBeNull()
+    expect(result!.questions[0].question).toContain('trust the contents of this directory')
+    expect(result!.questions[0].options.map(o => o.label)).toEqual([
+      'Yes, continue',
+      'No, quit',
+    ])
+    expect(result!.selectedIndex).toBe(0)
+  })
+
+  it('identifies only the Codex trust "No, quit" row as a session-ending choice', () => {
+    const trust = parseQuestionBlock([
+      'Do you trust the contents of this directory?',
+      '  1. Yes, continue',
+      '  2. No, quit',
+    ])
+    expect(isCodexTrustQuitOption(trust!, 0)).toBe(false)
+    expect(isCodexTrustQuitOption(trust!, 1)).toBe(true)
+    expect(isCodexTrustQuitOption({
+      source: 'permission',
+      questions: [{ question: 'Proceed?', multiSelect: false, options: [{ label: 'Yes' }, { label: 'No' }] }],
+    }, 1)).toBe(false)
   })
 
   it('returns null for a ?-suffixed line with @-path "options" (not a real menu)', () => {
