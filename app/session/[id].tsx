@@ -1178,14 +1178,6 @@ export default function SessionDetailScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-        ) : session.status === 'idle' || session.status === 'on_hold' ? (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderTitle}>{t('session.ended')}</Text>
-            <Text style={styles.placeholderText}>{t('session.endedBody')}</Text>
-            {session.projectPath ? (
-              <Text style={styles.placeholderPath}>{session.projectPath}</Text>
-            ) : null}
-          </View>
         ) : null}
       </View>
 
