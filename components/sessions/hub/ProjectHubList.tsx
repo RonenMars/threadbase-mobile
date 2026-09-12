@@ -31,6 +31,7 @@ import {
   shouldForceServerChip,
 } from '@/lib/projectDisambiguation'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 
 // Memoized: the Hub root re-renders on every fetch-progress tick; with stable
 // props (query data is a stable ref mid-drain) this skips re-running the list.
@@ -369,11 +370,12 @@ export const ProjectHubList = React.memo(function ProjectHubList({
               <ProjectHubCard
                 group={item.group}
                 isOpen={openIds.has(item.group.projectId)}
-                onToggle={() => toggleOpen(item.group.projectId)}
+                onToggle={toggleOpen}
                 forceServerChip={shouldForceServerChip(item.group.projectPath, collidingPaths)}
               />
             )
           }}
+          {...LIST_WINDOW}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
           }

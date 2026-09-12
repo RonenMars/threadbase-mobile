@@ -5,6 +5,7 @@ import { useDebounce } from 'use-debounce'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
+import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
@@ -105,6 +106,7 @@ export const ClassicSessionsList = memo(function ClassicSessionsList({ sessions,
             <SessionCard session={item.session} />
           )
         }
+        {...LIST_WINDOW}
         contentContainerStyle={rows.length === 0 ? styles.emptyContent : styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={

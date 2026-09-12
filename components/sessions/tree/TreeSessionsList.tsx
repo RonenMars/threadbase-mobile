@@ -12,6 +12,7 @@ import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { SessionCard } from '@/components/sessions/SessionCard'
+import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
 import { useNavLockStore } from '@/stores/navLock'
@@ -393,6 +394,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
               tintColor="#7d8590"
             />
           }
+          {...LIST_WINDOW}
           contentContainerStyle={flatItems.length === 0 ? { flexGrow: 1 } : styles.listContent}
           ListHeaderComponent={liveSessionsBlock}
           ListEmptyComponent={
