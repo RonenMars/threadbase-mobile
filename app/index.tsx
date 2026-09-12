@@ -34,6 +34,7 @@ import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
+import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
@@ -921,6 +922,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
           }
           return renderConvCard(item.item as MultiConversation)
         }}
+        {...LIST_WINDOW}
         contentContainerStyle={styles.mergedContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />

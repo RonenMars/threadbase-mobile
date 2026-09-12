@@ -2,6 +2,10 @@ import type { ServerConfig, ServerInfo } from '@/types/api'
 import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
 import naclUtil from 'tweetnacl-util'
 import { OpenError } from '@/services/e2ee/context'
+// Known cycle: the reporter imports `authedFetch` to upload what it collects.
+// Safe because neither module touches the other during module evaluation —
+// both references are resolved at call time.
+import { reportRequestTiming } from '@/services/slow-request-log'
 import { RecordError, recordCounter, restTargetHash } from '@/services/e2ee/record'
 import {
   acquireRestContext,
@@ -109,6 +113,23 @@ export class EnvelopeError extends Error {
   }
 }
 
+/**
+ * Per-call scratch space for the one fact only the sealed path can supply.
+ *
+ * `ctxMs` is time spent awaiting `acquireRestContext`, which is where a Noise
+ * handshake shows up — one of the two suspects for the 2026-09-12 stall, and
+ * the one a log has to be able to exonerate. A boolean "did an open happen"
+ * would be wrong here: two callers awaiting the same in-flight open both pay
+ * for it while only one of them receives a context it is the first to use.
+ */
+type RequestTrace = { ctxMs: number }
+
+function outcomeOf(err: unknown): string {
+  if (err instanceof EnvelopeError) return `${err.name}:${err.code}`
+  if (err instanceof Error) return err.name
+  return 'unknown'
+}
+
 /** The absolute URL a request to `path` will hit. Exported for error messages. */
 export function serverUrl(target: Pick<AuthedTarget, 'url'>, path: string): string {
   return `${target.url.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`
@@ -174,8 +195,29 @@ export async function authedFetch(
 ): Promise<Response> {
   const url = serverUrl(target, path)
   if (!isCleartextAllowed(url)) throw new CleartextBlockedError(url)
-  if (isPinned(target)) return sealedFetch(target, path, url, init, false)
-  return plaintextFetch(target, path, url, init)
+  const sealed = isPinned(target)
+  const trace: RequestTrace = { ctxMs: 0 }
+  const startedAt = Date.now()
+  const report = (outcome: string) =>
+    reportRequestTiming({
+      serverId: target.id,
+      method: requestMethod(init),
+      path,
+      ms: Date.now() - startedAt,
+      outcome,
+      sealed,
+      ctxMs: trace.ctxMs,
+    })
+  try {
+    const response = sealed
+      ? await sealedFetch(target, path, url, init, false, trace)
+      : await plaintextFetch(target, path, url, init)
+    report(String(response.status))
+    return response
+  } catch (err) {
+    report(outcomeOf(err))
+    throw err
+  }
 }
 
 function isPinned(target: AuthedTarget): boolean {
@@ -342,6 +384,7 @@ async function sealedFetch(
   url: string,
   init: AuthedFetchInit,
   retriedUnknown: boolean,
+  trace: RequestTrace,
 ): Promise<Response> {
   const serverId = target.id
   const serverPublicKey = target.serverPublicKey
@@ -355,6 +398,7 @@ async function sealedFetch(
   const plaintext = bodyToBytes(init.body)
 
   let context
+  const contextStartedAt = Date.now()
   try {
     context = await acquireRestContext({
       serverId,
@@ -367,6 +411,10 @@ async function sealedFetch(
       throw new EnvelopeError(err.code, err.message, path, err.retryable)
     }
     throw err
+  } finally {
+    // Accumulated, not assigned: an `E2EE_CTX_UNKNOWN` retry re-enters this
+    // function, and the reopen it pays for belongs to the same request.
+    trace.ctxMs += Date.now() - contextStartedAt
   }
 
   const frame = context.send.seal(plaintext, targetHash)
@@ -400,7 +448,7 @@ async function sealedFetch(
     const code = await readErrorCode(response)
     if (response.status === 409 && code === 'E2EE_CTX_UNKNOWN' && !retriedUnknown) {
       invalidateRestContext(serverId)
-      return sealedFetch(target, path, url, init, true)
+      return sealedFetch(target, path, url, init, true, trace)
     }
     throw new EnvelopeError(
       code || 'E2EE_SEAL_FAILED',

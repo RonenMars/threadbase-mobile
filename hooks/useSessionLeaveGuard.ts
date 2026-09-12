@@ -8,6 +8,7 @@ import {
   decideSessionLeave,
   isLiveAttachedPty,
   type AppliedSessionLeaveAction,
+  type LeaveActionOutcome,
   type LeaveSessionSnapshot,
 } from '@/lib/sessionLeavePolicy'
 import { wsManager } from '@/services/ws-client'
@@ -148,6 +149,18 @@ export function useSessionLeaveGuard(opts: {
   // it — whichever fires first wins, so a missing onDismiss degrades to a
   // short delay instead of a stuck screen.
   const DISMISS_FALLBACK_MS = 400
+
+  // How long the modal waits for the server's answer before letting the user
+  // go anyway. The answer is not what makes a leave action stick: a kill is
+  // durable the moment `POST /stop` reaches the streamer, and what drives the
+  // screen to history is the WS `session_update` — which lands while this card
+  // is still spinning (observed 2026-09-12: "Session ended" rendered behind a
+  // "Sending…" card for ~10 s). Every `/stop` the streamer has served returned
+  // in under 100 ms, so a response still missing after this window is stuck on
+  // the network leg (a cold connection after foreground, an e2ee context
+  // rollover), not on the kill. A failure that arrives after the grace shows
+  // no error card — that is the trade for not holding the user on a spinner.
+  const LEAVE_ACK_GRACE_MS = 1500
   const clearDismissFallback = useCallback(() => {
     if (dismissFallbackRef.current) {
       clearTimeout(dismissFallbackRef.current)
@@ -195,14 +208,21 @@ export function useSessionLeaveGuard(opts: {
       // because their real await already provided that gap).
       modalIsShowingRef.current = true
       setLeavePhase('pending')
-      const outcome = await applySessionLeaveAction({
-        action: choice,
-        stopSession: async () => {
-          await stopRef.current()
-        },
-        sendHold: () => sendHoldSession(serverId, sessionId),
-      })
-      if (outcome.ok) {
+      let graceTimer: ReturnType<typeof setTimeout> | undefined
+      const outcome = await Promise.race<LeaveActionOutcome | 'grace'>([
+        applySessionLeaveAction({
+          action: choice,
+          stopSession: async () => {
+            await stopRef.current()
+          },
+          sendHold: () => sendHoldSession(serverId, sessionId),
+        }),
+        new Promise<'grace'>((resolve) => {
+          graceTimer = setTimeout(() => resolve('grace'), LEAVE_ACK_GRACE_MS)
+        }),
+      ])
+      clearTimeout(graceTimer)
+      if (outcome === 'grace' || outcome.ok) {
         setLeavePhase('navigating')
         finishLeave()
         return

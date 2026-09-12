@@ -27,7 +27,7 @@ export interface ProjectHubListProps {
 export interface ProjectHubCardProps {
   group: import('./useProjectGroups').ProjectGroup
   isOpen: boolean
-  onToggle: () => void
+  onToggle: (projectId: string) => void
   forceServerChip?: boolean
 }
 
