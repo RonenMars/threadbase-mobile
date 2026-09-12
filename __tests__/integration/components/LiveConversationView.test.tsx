@@ -277,6 +277,30 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getByTestId('live-conversation-list').props.data).toBe(before)
   })
 
+  // Regression: when the final agent message lands, its refetch, row swap and
+  // the thinking footer leaving are real changes; inside the 0.2 zone each one
+  // scrolled a reader who had dragged up a few lines back to the tail.
+  it('follows only from the exact bottom once the user drags, until they return', async () => {
+    await renderView()
+    const threshold = () =>
+      screen.getByTestId('live-conversation-list').props.maintainVisibleContentPosition.autoscrollToBottomThreshold
+    expect(threshold()).toBe(0.2)
+
+    await act(async () => screen.getByTestId('live-conversation-list').props.onScrollBeginDrag())
+    expect(threshold()).toBe(0)
+
+    await act(async () => screen.getByTestId('live-conversation-list').props.onMomentumScrollEnd(SCROLLED_UP))
+    expect(threshold()).toBe(0)
+
+    await act(async () => screen.getByTestId('live-conversation-list').props.onMomentumScrollEnd(AT_BOTTOM))
+    expect(threshold()).toBe(0.2)
+
+    await act(async () => screen.getByTestId('live-conversation-list').props.onScrollBeginDrag())
+    await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+    await act(async () => { fireEvent.press(screen.getByTestId('chat-jump-to-latest')) })
+    expect(threshold()).toBe(0.2)
+  })
+
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
     await renderView()
 
