@@ -41,9 +41,10 @@ jest.mock('@/components/conversation/MessageItem', () => ({
 let mockHistorical: Message[] = []
 let mockLive: Message[] = []
 let mockPtyLines: string[] = []
+let mockHistoryLoading = false
 
 jest.mock('@/hooks/useConversations', () => ({
-  useConversation: () => ({ data: { messages: mockHistorical } }),
+  useConversation: () => ({ data: { messages: mockHistorical }, isLoading: mockHistoryLoading }),
 }))
 
 jest.mock('@/hooks/useConversationStream', () => ({
@@ -160,9 +161,14 @@ afterEach(() => {
   mockSendInputState = { isError: false, error: null }
 })
 
-async function renderView() {
+async function renderView(onPreferRawTerminal?: () => void) {
   return await render(
-    <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
+    <LiveConversationView
+      serverId="srv1"
+      sessionId="sess1"
+      conversationId="conv1"
+      onPreferRawTerminal={onPreferRawTerminal}
+    />,
     { wrapper: createWrapper() },
   )
 }
@@ -184,6 +190,7 @@ describe('LiveConversationView — optimistic sent message', () => {
     mockHistorical = []
     mockLive = []
     mockPtyLines = []
+    mockHistoryLoading = false
   })
 
   it('subscribes to WS reconnect so a status flip missed while backgrounded is resynced', async () => {
@@ -319,6 +326,63 @@ describe('LiveConversationView — optimistic sent message', () => {
 
     const texts = screen.getAllByTestId('message-text').map((n) => n.props.children)
     expect(texts).toEqual(['first', 'second', 'live-third'])
+  })
+})
+
+// Regression: a resumed session's PTY replay lands before REST conversation
+// history resolves, so "0 messages" briefly means "still loading", not
+// "genuinely empty chat". Firing the raw-terminal fallback on that transient
+// read is a one-way trip (app/session/[id].tsx's forceRawTerminal never
+// resets), so it must wait for history to settle before deciding.
+describe('LiveConversationView — raw-terminal fallback vs. history-loading race', () => {
+  const LONG_PTY_BACKLOG = Array.from({ length: 30 }, (_, i) => `replayed line ${i}`)
+
+  beforeEach(() => {
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = []
+    mockHistoryLoading = false
+  })
+
+  it('does not fall back to terminal while history is still loading, even with a large PTY backlog', async () => {
+    mockHistoryLoading = true
+    mockPtyLines = LONG_PTY_BACKLOG
+    const onPreferRawTerminal = jest.fn()
+
+    await renderView(onPreferRawTerminal)
+
+    expect(onPreferRawTerminal).not.toHaveBeenCalled()
+  })
+
+  it('stays in chat once history loads with real messages, despite the same backlog', async () => {
+    mockHistoryLoading = true
+    mockPtyLines = LONG_PTY_BACKLOG
+    const onPreferRawTerminal = jest.fn()
+    const { rerender } = await renderView(onPreferRawTerminal)
+
+    mockHistoryLoading = false
+    mockHistorical = [
+      { id: 'h1', uuid: 'h1', role: 'assistant', content: [{ type: 'text', text: 'resumed reply' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await act(async () => rerender(
+      <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" onPreferRawTerminal={onPreferRawTerminal} />,
+    ))
+
+    expect(onPreferRawTerminal).not.toHaveBeenCalled()
+  })
+
+  it('still falls back to terminal once history has genuinely loaded empty with an active backlog', async () => {
+    // Not a false positive on the fix: once loading has actually finished and
+    // the chat is still empty while the PTY is clearly active, the original
+    // chat_empty_pty_active signal must still fire.
+    mockHistoryLoading = false
+    mockHistorical = []
+    mockPtyLines = LONG_PTY_BACKLOG
+    const onPreferRawTerminal = jest.fn()
+
+    await renderView(onPreferRawTerminal)
+
+    expect(onPreferRawTerminal).toHaveBeenCalled()
   })
 })
 
