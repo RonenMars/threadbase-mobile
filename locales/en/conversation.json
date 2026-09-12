@@ -35,6 +35,7 @@
     "collisionTitle": "Resume this conversation?",
     "collisionMessage": "This conversation may still be open in a terminal on your computer — {{reasons}}. Resuming it here could interfere with that session.",
     "confirm": "Resume anyway",
+    "confirmExplain": "Resume anyway continues the conversation here without closing anything else. If another program really is still using it, both will be writing to the same history.",
     "failed": "Couldn't resume this conversation. Please try again.",
     "reason": {
       "jsonl_mtime": "its history was updated moments ago",
@@ -44,11 +45,13 @@
       "file_handle": "another Codex client currently has it open"
     },
     "takeOver": "Take over",
+    "takeOverExplain": "Take over closes that session and continues the conversation here. Anything it's working on right now will stop.",
     "takeOverFailed": "Couldn't take over that session. Please try again.",
     "codexBusyTitle": "This Codex session is open elsewhere",
-    "codexBusyMessage": "Another Codex client currently has this session open — {{reasons}}. Codex allows only one writer, so it can't be resumed here while that client holds it.",
+    "codexBusyMessage": "Codex lets only one app write to a conversation at a time, and something else is holding this one.",
+    "codexBusyMessageKnownOwner": "Codex lets only one app write to a conversation at a time, and a Codex session on your computer is holding this one.",
     "fork": "Fork into Threadbase",
-    "forkMessage": "This starts a separate continuation of the conversation in Threadbase. The original session keeps running where it is, and the two histories diverge from this point.",
+    "forkExplain": "Fork into Threadbase leaves the other session running and makes a copy here with everything up to now. After this point, messages you send here won't appear there, and vice versa.",
     "forkFailed": "Couldn't fork this conversation. Please try again."
   },
   "live": {

@@ -527,7 +527,7 @@ export default function ConversationDetailScreen() {
   // collision dialog from Resume instead.
   //
   // No second confirmation dialog: the collision alert that offers this action
-  // already names it and already carries `resume.forkMessage`, so re-asking
+  // already names it and already carries `resume.forkExplain`, so re-asking
   // made the user press "Fork into Threadbase" twice to do it once.
   const forkIntoThreadbase = useCallback(() => {
     forkSession.mutate(undefined, {
@@ -581,15 +581,25 @@ export default function ConversationDetailScreen() {
               const isCodexLock =
                 err.reasonCode === 'CODEX_SESSION_ACTIVE' || err.provider === CODEX_CLI_PROVIDER
               const title = isCodexLock ? t('resume.codexBusyTitle') : t('resume.collisionTitle')
-              // Fork is confirmed here, not in a second dialog: this alert
-              // already names the action on its own button, so what it owed the
-              // user was the consequence — that the two histories diverge.
+              // `canTakeOver` on a Codex lock is the server saying the holder is
+              // a standalone `codex` TUI — the one case where naming the owner is
+              // accurate rather than a guess.
               const baseMessage = isCodexLock
-                ? t('resume.codexBusyMessage', { reasons })
+                ? t(
+                    err.canTakeOver
+                      ? 'resume.codexBusyMessageKnownOwner'
+                      : 'resume.codexBusyMessage',
+                  )
                 : t('resume.collisionMessage', { reasons })
-              const message = err.canFork
-                ? `${baseMessage}\n\n${t('resume.forkMessage')}`
-                : baseMessage
+              // Each offered action explains itself, in button order. The old copy
+              // appended one fork paragraph beginning "This starts…" — no
+              // antecedent, and take-over, the destructive one, went unexplained.
+              const explanations = [
+                err.canTakeOver ? t('resume.takeOverExplain') : null,
+                err.canFork ? t('resume.forkExplain') : null,
+                err.canForce ? t('resume.confirmExplain') : null,
+              ].filter((s): s is string => s !== null)
+              const message = [baseMessage, ...explanations].join('\n\n')
               Alert.alert(title, message, [
                 { text: t('common:button.cancel'), style: 'cancel' },
                 ...(err.canTakeOver
