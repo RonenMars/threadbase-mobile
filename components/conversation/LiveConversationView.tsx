@@ -121,7 +121,7 @@ export function LiveConversationView({
   // conversation doesn't seed the whole heap on open — the rest pages in on
   // backward scroll via onStartReached below (see docs/superpowers/specs/
   // 2026-08-15-session-history-byte-budget-design.md).
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId, {
+  const { data, isLoading: isHistoryLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId, {
     maxBytes: SESSION_HISTORY_MAX_BYTES,
   })
   const historicalMessages: Message[] = data?.messages ?? []
@@ -204,6 +204,13 @@ export function LiveConversationView({
   )
 
   useEffect(() => {
+    // A resumed session's PTY replay lands immediately while REST history is
+    // still in flight, so allMessages.length reads 0 the same way a genuinely
+    // empty chat would. Wait for history to settle before trusting "0
+    // messages" as a real chat_empty_pty_active signal — otherwise this fires
+    // on the loading race, not on an actual parse problem, and forceRawTerminal
+    // has no way back.
+    if (isHistoryLoading) return
     const decision = preferRawTerminal({
       sessionView: 'chat',
       hasConversationId: true,
@@ -214,7 +221,7 @@ export function LiveConversationView({
     if (decision.mode === 'terminal' && !decision.chatAuthoritative) {
       onPreferRawTerminal?.()
     }
-  }, [allMessages.length, ptyLines.length, parseConfidence, onPreferRawTerminal])
+  }, [isHistoryLoading, allMessages.length, ptyLines.length, parseConfidence, onPreferRawTerminal])
 
   // Show thinking bubble whenever the session is running. Mid-turn assistant
   // messages (interim replies, sub-agent dispatches) land while Claude is
