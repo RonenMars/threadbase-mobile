@@ -290,7 +290,7 @@ PODS:
     - ExpoModulesCore
   - ExpoSpeechRecognition (56.0.1):
     - ExpoModulesCore
-  - ExpoSplashScreen (57.0.6):
+  - ExpoSplashScreen (57.0.8):
     - ExpoModulesCore
   - ExpoSymbols (57.0.2):
     - ExpoModulesCore
@@ -3130,7 +3130,7 @@ SPEC CHECKSUMS:
   ExpoRouter: 9bf293bba85908c1834190e6913b22da1e573689
   ExpoSecureStore: 94793113049a2d7478dfe1a13aa15081e9f61755
   ExpoSpeechRecognition: 119acf84448579e53f841d040aad76982f945e2d
-  ExpoSplashScreen: 2dda363bfc268b92f00530ee7fa2a3be4534cf57
+  ExpoSplashScreen: 6f422fd595600d78520c6b7dcf8a908fb8a7fec0
   ExpoSymbols: 0efd93edf0f825bf3c762582b0769dd3b296235c
   ExpoSystemUI: ff3142b323ae7b4d11dc0b1dc4acfa30d92be7dc
   ExpoUI: 6867422a567a251dcc25444c706b53f479e457ae
