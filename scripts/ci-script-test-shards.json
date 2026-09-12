@@ -23,6 +23,7 @@
     "__tests__/unit/scripts/ensure-release-build-pick-newest.test.js",
     "__tests__/unit/scripts/android-camera-permission.test.js",
     "__tests__/unit/scripts/android-cleartext-policy.test.js",
+    "__tests__/unit/scripts/app-config-sentry-plugin.test.js",
     "__tests__/unit/scripts/check-sentry-env.test.js",
     "__tests__/unit/scripts/ci-integration-test-shards.test.js",
     "__tests__/unit/scripts/ci-lint-shards.test.js",

@@ -42,17 +42,19 @@ network breadcrumbs, and default PII are all **disabled** in
 ## Configuration (fork-friendly — no org/project hardcoded)
 
 `app.json` registers the Sentry Expo plugin with no `organization`/`project`
-props, so this repo carries no Sentry account details. Each builder points the
-app at their own Sentry project via environment variables:
+props, so this repo carries no Sentry account details. `app.config.js` forwards
+`SENTRY_ORG` / `SENTRY_PROJECT` into those plugin props when they are set
+(local `.env`, ship shell, or EAS). Without them the plugin warns and
+`sentry-cli` falls back to the same env vars at upload time.
 
 | Variable | Where | Purpose |
 |---|---|---|
 | `EXPO_PUBLIC_SENTRY_DSN` | `.env` | Runtime DSN the app sends events to. Public by design (not a secret). |
 | `EXPO_PUBLIC_SENTRY_ALLOW_DEV` | `.env` | Optional local QA override. Set to `1` only when you want a development build to transmit Sentry events. |
 | `EXPO_PUBLIC_SENTRY_DEBUG` | `.env` | Optional SDK troubleshooting flag. Set to `1` only when you need verbose Sentry SDK logs in Metro. |
-| `SENTRY_ORG` | shell env / EAS env | Org slug, used only at build time to upload source maps. |
-| `SENTRY_PROJECT` | shell env / EAS env | Project slug, used only at build time to upload source maps. |
-| `SENTRY_AUTH_TOKEN` | shell env / EAS env (**sensitive**) | Secret. Authenticates the source-map upload. Never in `.env`, never committed. |
+| `SENTRY_ORG` | `.env` / shell env / EAS env | Org slug. Silences the Expo plugin warning and is used at build time to upload source maps. |
+| `SENTRY_PROJECT` | `.env` / shell env / EAS env | Project slug. Same as `SENTRY_ORG`. |
+| `SENTRY_AUTH_TOKEN` | shell env / EAS env (**sensitive**) | Secret. Authenticates the source-map upload. Never committed. |
 
 Without `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN`, Anonymous Diagnostics
 still works end-to-end (events transmit with `EXPO_PUBLIC_SENTRY_DSN` + consent
