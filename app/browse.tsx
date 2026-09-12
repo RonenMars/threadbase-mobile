@@ -33,6 +33,7 @@ import { clientLog } from '@/lib/clientLog'
 import { useProviderHealth } from '@/hooks/useProviderHealth'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { findProviderHealth } from '@/types/provider-health'
+import { useSettingsStore } from '@/stores/settings'
 import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 const MAX_RECENT_DIRS = 8
@@ -71,7 +72,10 @@ export default function BrowseScreen() {
   const { data: providerHealth, isLoading: providerHealthLoading } = useProviderHealth(serverId)
   const selectedHealth = findProviderHealth(providerHealth?.providers, selectedProvider)
   const selectedUnavailable = selectedHealth?.available === false
-  const selectedWarnings = selectedHealth?.warnings ?? []
+  const showProviderVersionWarning = useSettingsStore((s) => s.showProviderVersionWarning)
+  const selectedWarnings = (selectedHealth?.warnings ?? []).filter(
+    (w) => (__DEV__ && showProviderVersionWarning) || w.code !== 'version_unverified',
+  )
   const showProviderNotes =
     selectedUnavailable ||
     selectedWarnings.length > 0 ||

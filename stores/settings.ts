@@ -41,6 +41,8 @@ interface SettingsStore {
   sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
+  /** Browse yellow note for `version_unverified`. Default off. */
+  showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
   /** Standing Anonymous Diagnostics consent (Sentry). Default OFF. See
@@ -72,6 +74,7 @@ interface SettingsStore {
   setSessionLeaveAction: (v: SessionLeaveAction) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setMergeChats: (v: boolean) => void
+  setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
   setAnonymousDiagnosticsEnabled: (v: boolean) => void
@@ -114,6 +117,7 @@ interface PersistedSettings {
   sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
   mergeChats: boolean
+  showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
   anonymousDiagnosticsEnabled: boolean
@@ -142,6 +146,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionLeaveAction: 'ask',
   sessionsLayout: 'classic',
   mergeChats: true,
+  showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
   anonymousDiagnosticsEnabled: false,
@@ -173,6 +178,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSessionLeaveAction: (sessionLeaveAction) => set({ sessionLeaveAction }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setMergeChats: (mergeChats) => set({ mergeChats }),
+  setShowProviderVersionWarning: (showProviderVersionWarning) =>
+    set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
   setBiometricLock: (biometricLock) => set({ biometricLock }),
   setAnonymousDiagnosticsEnabled: (anonymousDiagnosticsEnabled) => set({ anonymousDiagnosticsEnabled }),
@@ -215,6 +222,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         ),
         sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
         mergeChats: parsed.mergeChats ?? state.mergeChats,
+        showProviderVersionWarning:
+          parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
           ? parsed.locale
           : DEFAULT_LOCALE,
@@ -225,11 +234,17 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         // Assigned once, ever, for this installation (spec §7). Preference
         // order: what's already persisted > what's already in memory (guards
         // a second hydrate() before the first assignment finishes persisting)
-        // > a fresh 40/60 assignment.
+        // > a fresh 40/60 assignment. EXPO_PUBLIC_FORCE_DIAGNOSTICS_VARIANT=1
+        // pins the treatment arm so the onboarding toggle can be exercised on a
+        // device without reinstalling until the 40% draw lands.
         onboardingDiagnosticsExperimentVariant:
           parsed.onboardingDiagnosticsExperimentVariant ??
           state.onboardingDiagnosticsExperimentVariant ??
-          (Math.random() < 0.4 ? 'treatment' : 'control'),
+          (process.env.EXPO_PUBLIC_FORCE_DIAGNOSTICS_VARIANT === '1'
+            ? 'treatment'
+            : Math.random() < 0.4
+              ? 'treatment'
+              : 'control'),
         postFeedbackDiagnosticsSuggestionImpressions:
           parsed.postFeedbackDiagnosticsSuggestionImpressions ??
           state.postFeedbackDiagnosticsSuggestionImpressions,
@@ -260,6 +275,7 @@ export function persistSettingsNow(): Promise<void> {
     sessionLeaveAction: state.sessionLeaveAction,
     sessionsLayout: state.sessionsLayout,
     mergeChats: state.mergeChats,
+    showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,
     anonymousDiagnosticsEnabled: state.anonymousDiagnosticsEnabled,

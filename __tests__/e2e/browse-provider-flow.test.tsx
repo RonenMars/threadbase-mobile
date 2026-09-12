@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import BrowseScreen from '@/app/browse'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { useSettingsStore } from '@/stores/settings'
 
 // Browse no longer fires the start POST itself — it hands the parameters to
 // /session/new via the route, and that screen owns the mutation. The provider
@@ -76,6 +77,7 @@ beforeEach(() => {
   mockBack.mockClear()
   mockPush.mockClear()
   mockHealth = { data: { providers: [] }, isLoading: false }
+  useSettingsStore.setState({ showProviderVersionWarning: false })
 })
 
 const health = (name: string, available: boolean) => ({
@@ -229,6 +231,81 @@ describe('BrowseScreen e2e provider flow', () => {
       await fireEvent.press(getByTestId('start-provider-codex-cli'))
 
       expect(queryByText(noStructuredQuestionsText)).toBeNull()
+    })
+  })
+
+  describe('the version_unverified warning', () => {
+    const unverifiedText =
+      'Installed provider version is unverified against this streamer — it may behave differently.'
+    const notFoundText = 'Provider CLI not found on the server PATH.'
+
+    const healthWith = (warnings: { code: string; message: string }[]) => ({
+      name: 'claude-code',
+      available: true,
+      version: '1.0.0',
+      verifiedAgainst: { captured: [], min: null },
+      capabilities: {
+        freshSessionId: 'explicit',
+        resume: 'native',
+        systemPrompt: 'flag',
+        structuredQuestions: true,
+        permissionGates: true,
+        liveControl: true,
+      },
+      warnings,
+    })
+
+    it('is hidden by default', async () => {
+      mockHealth = {
+        data: { providers: [healthWith([{ code: 'version_unverified', message: 'x' }])] },
+        isLoading: false,
+      }
+      const { queryByText, queryByTestId } = await renderScreen()
+
+      expect(queryByText(unverifiedText)).toBeNull()
+      expect(queryByTestId('browse-provider-warning')).toBeNull()
+    })
+
+    it('shows when the settings toggle is on', async () => {
+      useSettingsStore.setState({ showProviderVersionWarning: true })
+      mockHealth = {
+        data: { providers: [healthWith([{ code: 'version_unverified', message: 'x' }])] },
+        isLoading: false,
+      }
+      const { getByText } = await renderScreen()
+
+      expect(getByText(unverifiedText)).toBeTruthy()
+    })
+
+    it('stays hidden in production even when the settings toggle is on', async () => {
+      const globalWithDev = global as typeof global & { __DEV__: boolean }
+      const prevDev = globalWithDev.__DEV__
+      globalWithDev.__DEV__ = false
+      useSettingsStore.setState({ showProviderVersionWarning: true })
+      mockHealth = {
+        data: { providers: [healthWith([{ code: 'version_unverified', message: 'x' }])] },
+        isLoading: false,
+      }
+      try {
+        const { queryByText, queryByTestId } = await renderScreen()
+        expect(queryByText(unverifiedText)).toBeNull()
+        expect(queryByTestId('browse-provider-warning')).toBeNull()
+      } finally {
+        globalWithDev.__DEV__ = prevDev
+      }
+    })
+
+    it('still shows other warning codes when the toggle is off', async () => {
+      mockHealth = {
+        data: {
+          providers: [healthWith([{ code: 'provider_not_found', message: 'x' }])],
+        },
+        isLoading: false,
+      }
+      const { getByText, queryByText } = await renderScreen()
+
+      expect(getByText(notFoundText)).toBeTruthy()
+      expect(queryByText(unverifiedText)).toBeNull()
     })
   })
 })
