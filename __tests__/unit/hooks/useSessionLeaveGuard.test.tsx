@@ -222,6 +222,36 @@ describe('useSessionLeaveGuard', () => {
     expect(navigateHome).toHaveBeenCalled()
   })
 
+  // The response is not what makes a kill stick — the POST is durable once the
+  // streamer has it, and the WS `session_update` is what turns the screen to
+  // history. Observed 2026-09-12: a stop the streamer answered in 26 ms left
+  // the card on "Sending…" for ~10 s while "Session ended" was already
+  // rendered behind it.
+  it('Kill it stops waiting on the response once the grace window passes', async () => {
+    jest.useFakeTimers()
+    try {
+      stopSessionMutateAsync.mockReturnValueOnce(new Promise<void>(() => {}))
+      const { fire, navigateHome } = await setup()
+      await fire()
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('leave-confirm-kill'))
+      })
+      expect(screen.getByTestId('leave-phase')).toHaveTextContent('pending')
+
+      await act(async () => {
+        jest.advanceTimersByTime(1500)
+      })
+      expect(screen.getByTestId('leave-phase')).toHaveTextContent('navigating')
+
+      await act(async () => {
+        jest.advanceTimersByTime(500)
+      })
+      expect(navigateHome).toHaveBeenCalled()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
   it('Confirm+Leave navigates with no stop/hold, once dismissed', async () => {
     const { fire, navigateHome } = await setup()
     await fire()
