@@ -17,6 +17,8 @@ Scanner, streamer, and mobile each declare `ProviderName`. They are not linked. 
 | Phone chips | `threadbase-mobile` (this repo) | `.claude/skills/add-provider/` |
 | History index | [`threadbase-scanner`](https://github.com/RonenMars/threadbase-scanner) | [`.claude/skills/add-provider/SKILL.md`](https://github.com/RonenMars/threadbase-scanner/blob/HEAD/.claude/skills/add-provider/SKILL.md) |
 
+**Keep companions in sync.** These three skills are one workflow. Changing this file (intake rules, wire-name convention, land order, companion links, or out-of-scope) means updating the other two in the same change set — PRs in `threadbase-streamer`, `threadbase-mobile`, and `threadbase-scanner`. Do not leave a companion on stale steps or a moved path.
+
 Mobile-only against an old streamer fail-opens the chip and then 501s on start. **Merge the streamer PR first** unless this is a badge-only name that history already returns.
 
 Work on a **sibling worktree** from `origin/main` (`git worktree add ../tb-mobile-worktrees/<slug> -b feat/<slug> origin/main`). Never nest under the repo root. After `worktree add`, `move_agent_to_root`. No `node_modules` in a fresh worktree: symlink from the main checkout when lockfiles match, else `npm ci`.

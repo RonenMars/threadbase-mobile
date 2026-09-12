@@ -4,7 +4,7 @@ Everything on this page is optional. None of it is needed to build, test, or con
 
 ## Claude Code
 
-This repository enables no Claude plugins or third-party marketplaces. Project-specific skills under `.claude/skills/` load without installation (local iOS shipping, opt-in EAS shipping, the fastlane fallback, Cloudflare tunnel setup, and adding a start provider). Expo framework guidance and UI design guidance belong in repository documentation or user-level tooling instead of the project skill catalog.
+This repository enables no Claude plugins or third-party marketplaces. Project-specific skills under `.claude/skills/` load without installation (local iOS shipping, opt-in EAS shipping, the fastlane fallback, Cloudflare tunnel setup, and adding a start provider). The `add-provider` skill is one third of a cross-repo workflow — if you change it, update the matching skills in `threadbase-streamer` and `threadbase-scanner` in the same change set. Expo framework guidance and UI design guidance belong in repository documentation or user-level tooling instead of the project skill catalog.
 
 ## Codex
 
