@@ -3,7 +3,7 @@
  * `src/services/providers/providerHealth.ts` + capabilities.ts.
  */
 
-import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
+import { PROVIDER_NAMES, type ProviderName } from '@/constants/providers'
 
 export type FreshSessionIdMode = 'explicit' | 'late-bound'
 export type ResumeMode = 'native' | 'unsupported'
@@ -65,7 +65,7 @@ const WARN: ReadonlySet<string> = new Set([
   'version_undetectable',
   'version_unverified',
 ])
-const NAMES: ReadonlySet<string> = new Set([CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER])
+const NAMES: ReadonlySet<string> = new Set(PROVIDER_NAMES)
 
 function isRecord(value: object): value is Record<string, string | number | boolean | null | object | object[]> {
   return !Array.isArray(value)

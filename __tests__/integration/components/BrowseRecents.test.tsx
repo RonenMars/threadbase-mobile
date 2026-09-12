@@ -314,6 +314,18 @@ describe('BrowseScreen — recent directories accordion', () => {
     expect(target).toContain('provider=codex-cli')
   })
 
+  it('carries provider=cursor-cli when Cursor is selected for a new session', async () => {
+    const { getByTestId, getByText } = await renderScreen()
+
+    await fireEvent.press(getByTestId('start-provider-cursor-cli'))
+    await fireEvent.press(getByText('Start Session Here'))
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    const target = mockPush.mock.calls[0][0] as string
+    expect(target).toContain('/session/new?')
+    expect(target).toContain('provider=cursor-cli')
+  })
+
   it('collapses the recent list when the header is tapped', async () => {
     mockSessions.current = [
       makeSession({

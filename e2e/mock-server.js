@@ -377,6 +377,21 @@ async function handleRequest(req, res) {
           },
           warnings: [],
         },
+        {
+          name: 'cursor-cli',
+          available: true,
+          version: '2026.1.0-mock',
+          verifiedAgainst: { min: '2026.1.0', captured: ['2026.1.0-mock'] },
+          capabilities: {
+            freshSessionId: 'late-bound',
+            resume: 'native',
+            systemPrompt: 'positional',
+            structuredQuestions: false,
+            permissionGates: false,
+            liveControl: true,
+          },
+          warnings: [],
+        },
       ],
     })
   }

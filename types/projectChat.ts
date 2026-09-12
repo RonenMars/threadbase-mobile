@@ -5,6 +5,8 @@
 // by a `projectId`. The Expo app keys cache, navigation, and grouping by
 // `projectId`/`type:id`, never `projectPath` — see migration spec.
 
+import type { ProviderName } from '@/constants/providers'
+
 export type ProjectChatType = 'session' | 'conversation'
 
 export type ProjectChatSource = 'session-store' | 'hdd-cache'
@@ -35,7 +37,7 @@ export interface ProjectChatConversation extends ProjectChatBase {
   type: 'conversation'
   status: 'archived' | 'resumable'
   source: 'hdd-cache'
-  provider?: 'claude-code' | 'codex-cli'
+  provider?: ProviderName
   indexedAt?: string | null
   fileMtime?: string | null
   filePath?: string | null

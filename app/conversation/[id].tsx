@@ -33,7 +33,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { createApiForServer, ConversationBusyError, NotFoundError } from '@/services/api-client'
-import { CODEX_CLI_PROVIDER } from '@/constants/providers'
+import { CODEX_CLI_PROVIDER, providerLabelKey } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
@@ -832,8 +832,7 @@ export default function ConversationDetailScreen() {
   // `resumable` is absent on older servers — treat undefined as resumable. The
   // server's flag is authoritative for both providers (streamer resumes codex
   // via `codex resume` and reports real availability).
-  const isCodex = conversation.provider === 'codex-cli'
-  const providerColor = isCodex ? brand.codex : brand.claude
+  const providerColor = brand[providerLabelKey(conversation.provider)]
   const providerDot = <View style={[styles.providerDot, { backgroundColor: providerColor }]} />
   const notResumable = conversation.resumable === false
   const unavailableMessage = notResumable

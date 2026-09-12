@@ -11,6 +11,7 @@ import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Conversation, ConversationDetail, ConversationFilter, ConversationPage, DiffHunk, Message, MessageContent, MultiConversation, TurnDuration, UnavailableReason } from '@/types/api'
 import { mark as traceMark, count as traceCount } from '@/lib/openTrace'
 import i18n from '@/lib/i18n'
+import type { ProviderName } from '@/constants/providers'
 import type { ConversationPageParam } from '@/hooks/conversationCursor'
 import {
   deriveCursor,
@@ -263,7 +264,7 @@ export interface RawConversationDetail {
     last_prompt?: string
     resumable?: boolean
     unavailable_reason?: UnavailableReason
-    provider?: 'claude-code' | 'codex-cli'
+    provider?: ProviderName
     inherited_history?: RawInheritedHistory
   }
   messages: RawMessage[]

@@ -250,6 +250,7 @@
       "streamer": "Streamer",
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
+      "providerCursor": "Cursor CLI",
       "cache": "Conversation cache",
       "pty": "PTY subsystem",
       "filesystem": "Provider history folder"

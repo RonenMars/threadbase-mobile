@@ -42,13 +42,29 @@ describe('parseProvidersResponse', () => {
           },
         ],
       },
+      {
+        name: 'cursor-cli',
+        available: true,
+        version: '2026.1.0',
+        verifiedAgainst: { captured: ['2026.1.0'], min: '2026.1.0' },
+        capabilities: {
+          freshSessionId: 'late-bound',
+          resume: 'native',
+          systemPrompt: 'positional',
+          structuredQuestions: false,
+          permissionGates: false,
+          liveControl: true,
+        },
+        warnings: [],
+      },
     ],
   }
 
   it('parses the providers envelope', () => {
     const parsed = parseProvidersResponse(valid)
-    expect(parsed?.providers).toHaveLength(2)
+    expect(parsed?.providers).toHaveLength(3)
     expect(findProviderHealth(parsed?.providers, 'codex-cli')?.available).toBe(false)
+    expect(findProviderHealth(parsed?.providers, 'cursor-cli')?.available).toBe(true)
     expect(findProviderHealth(parsed?.providers, 'codex-cli')?.warnings[0].code).toBe(
       'provider_not_found',
     )

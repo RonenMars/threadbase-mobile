@@ -255,6 +255,7 @@
       "streamer": "סטרימר",
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
+      "providerCursor": "Cursor CLI",
       "cache": "מטמון שיחות",
       "pty": "מערכת PTY",
       "filesystem": "תיקיית היסטוריית ספק"

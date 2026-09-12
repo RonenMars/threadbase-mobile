@@ -1,5 +1,6 @@
 import type { MultiSession } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
+import type { ProviderName } from '@/constants/providers'
 
 export interface TreeNode {
   name: string
@@ -53,7 +54,7 @@ export type DrillItem = {
   status?: string
   serverId?: string
   serverLabel?: string
-  provider?: 'claude-code' | 'codex-cli'
+  provider?: ProviderName
   onPress: () => void
 }
 

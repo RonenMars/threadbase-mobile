@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import type { ProviderName } from '@/constants/providers'
 import { brand, type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
@@ -32,8 +33,8 @@ interface Props {
   selectedStatuses: SessionStatus[]
   onChangeStatuses: (v: SessionStatus[]) => void
   // Filter (conversations)
-  providerFilter: 'claude-code' | 'codex-cli' | undefined
-  onChangeProviderFilter: (v: 'claude-code' | 'codex-cli' | undefined) => void
+  providerFilter: ProviderName | undefined
+  onChangeProviderFilter: (v: ProviderName | undefined) => void
 }
 
 const SNAP_POINTS = ['65%', '90%']
@@ -76,7 +77,7 @@ function isDefault(
   displayedServerIds: string[],
   activeServerIds: string[],
   sessionsLayout: SessionsLayout,
-  providerFilter: 'claude-code' | 'codex-cli' | undefined,
+  providerFilter: ProviderName | undefined,
 ): boolean {
   return (
     sortBy === DEFAULT_SORT_BY &&
@@ -307,6 +308,7 @@ export function FilterSortSheet({
             { value: undefined, label: t('filter.all') },
             { value: 'claude-code' as const, label: t('sessions:provider.claude'), color: brand.claude },
             { value: 'codex-cli' as const, label: t('sessions:provider.codex'), color: brand.codex },
+            { value: 'cursor-cli' as const, label: t('sessions:provider.cursor'), color: brand.cursor },
           ]).map((opt) => {
             const selected = providerFilter === opt.value
             return (

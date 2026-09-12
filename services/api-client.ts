@@ -4,7 +4,7 @@ import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
 import { getServerWarmupState } from './server-warmup'
 import { mark as traceMark, isTracing } from '@/lib/openTrace'
-import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
+import { isProviderName, type ProviderName } from '@/constants/providers'
 import type {
   CacheAlert,
   CacheAlertResolveAction,
@@ -110,7 +110,7 @@ export class ConversationBusyError extends Error {
     this.likelyOwner = payload.likelyOwner === 'external' ? 'external' : 'unknown'
     this.reasonCode = payload.reasonCode === 'CODEX_SESSION_ACTIVE' ? 'CODEX_SESSION_ACTIVE' : null
     this.provider =
-      payload.provider === CODEX_CLI_PROVIDER || payload.provider === CLAUDE_CODE_PROVIDER
+      typeof payload.provider === 'string' && isProviderName(payload.provider)
         ? payload.provider
         : null
     this.canForce = typeof payload.canForce === 'boolean' ? payload.canForce : true

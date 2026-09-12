@@ -26,6 +26,7 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { isTerminalSession } from '@/utils/terminalSession'
+import { providerLabelKey } from '@/constants/providers'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
@@ -1053,7 +1054,7 @@ export default function SessionDetailScreen() {
             <SessionStatusBadge session={session} isRefetching={false} />
             {session.provider ? (
               <Text style={styles.metaChip} testID="session-provider-chip">
-                {session.provider === 'codex-cli' ? t('sessions:provider.codex') : t('sessions:provider.claude')}
+                {t(`sessions:provider.${providerLabelKey(session.provider)}`)}
               </Text>
             ) : null}
             {capabilityLabel ? (

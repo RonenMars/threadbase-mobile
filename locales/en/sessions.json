@@ -21,7 +21,8 @@
   },
   "provider": {
     "codex": "Codex",
-    "claude": "Claude"
+    "claude": "Claude",
+    "cursor": "Cursor"
   },
   "filter": {
     "label": "Filter & Sort"

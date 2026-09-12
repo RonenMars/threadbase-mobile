@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
+import { providerLabelKey, type ProviderName } from '@/constants/providers'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { formatListTime, formatListTimeAccessible } from './formatListTime'
@@ -83,8 +84,8 @@ export interface ConversationListItemProps {
   showCount?: boolean
   showBranch?: boolean
 
-  /** Source provider — 'codex-cli' shows a Codex badge; 'claude-code' (default) shows nothing. */
-  provider?: 'claude-code' | 'codex-cli'
+  /** Source provider — omitted when unknown. */
+  provider?: ProviderName
 
   onPress?: () => void
   onLongPress?: () => void
@@ -313,9 +314,26 @@ export function ConversationListItem(props: ConversationListItemProps) {
             />
           ) : null}
           {provider != null ? (
-            <View style={provider === 'codex-cli' ? styles.codexBadge : styles.claudeBadge} testID="provider-badge">
-              <Text style={provider === 'codex-cli' ? styles.codexBadgeText : styles.claudeBadgeText}>
-                {provider === 'codex-cli' ? t('provider.codex') : t('provider.claude')}
+            <View
+              style={
+                providerLabelKey(provider) === 'codex'
+                  ? styles.codexBadge
+                  : providerLabelKey(provider) === 'cursor'
+                    ? styles.cursorBadge
+                    : styles.claudeBadge
+              }
+              testID="provider-badge"
+            >
+              <Text
+                style={
+                  providerLabelKey(provider) === 'codex'
+                    ? styles.codexBadgeText
+                    : providerLabelKey(provider) === 'cursor'
+                      ? styles.cursorBadgeText
+                      : styles.claudeBadgeText
+                }
+              >
+                {t(`provider.${providerLabelKey(provider)}`)}
               </Text>
             </View>
           ) : null}
@@ -447,6 +465,18 @@ function makeStyles(theme: Theme) {
     },
     claudeBadgeText: {
       color: brand.claude,
+      fontSize: font.xs - 2,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    cursorBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 4,
+      backgroundColor: `${brand.cursor}20`,
+    },
+    cursorBadgeText: {
+      color: brand.cursor,
       fontSize: font.xs - 2,
       fontWeight: '700',
       letterSpacing: 0.3,

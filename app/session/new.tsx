@@ -14,7 +14,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useStartSession, START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import { NetworkError } from '@/services/api-client'
-import { CODEX_CLI_PROVIDER } from '@/constants/providers'
+import { CLAUDE_CODE_PROVIDER, isProviderName } from '@/constants/providers'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { clientLog } from '@/lib/clientLog'
@@ -246,7 +246,11 @@ export default function NewSessionScreen() {
     const payload = {
       path,
       projectName,
-      ...(provider === CODEX_CLI_PROVIDER ? { provider: CODEX_CLI_PROVIDER } : {}),
+      ...(typeof provider === 'string' &&
+      isProviderName(provider) &&
+      provider !== CLAUDE_CODE_PROVIDER
+        ? { provider }
+        : {}),
     }
     clientLog.info('startSession', 'start attempt — POST', {
       attempt,

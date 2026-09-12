@@ -1,5 +1,5 @@
 import { NetworkError, NotFoundError } from '@/services/api-client'
-import { CODEX_CLI_PROVIDER } from '@/constants/providers'
+import { CODEX_CLI_PROVIDER, CURSOR_CLI_PROVIDER } from '@/constants/providers'
 import type { Session } from '@/types/api'
 
 /** The route is absent — a streamer that predates PATCH /model and /effort. */
@@ -25,7 +25,7 @@ export function canSetModelEffort(
   errors: readonly (Error | null | undefined)[] = [],
 ): boolean {
   if (!session) return false
-  if (session.provider === CODEX_CLI_PROVIDER) return false
+  if (session.provider === CODEX_CLI_PROVIDER || session.provider === CURSOR_CLI_PROVIDER) return false
   if (session.effort === undefined || session.effort === null) return false
   return !errors.some((e) => isRouteMissingError(e) || isUnsupportedProviderError(e))
 }

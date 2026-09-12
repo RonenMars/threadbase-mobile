@@ -260,6 +260,7 @@
       "streamer": "Стример",
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
+      "providerCursor": "Cursor CLI",
       "cache": "Кэш бесед",
       "pty": "Подсистема PTY",
       "filesystem": "Папка истории провайдера"

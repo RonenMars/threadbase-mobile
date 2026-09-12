@@ -6,6 +6,8 @@
   "shared.json:app.title": "brand name \"Threadbase\"",
   "sessions.json:provider.claude": "product name \"Claude\"",
   "sessions.json:provider.codex": "product name \"Codex\"",
+  "sessions.json:provider.cursor": "product name \"Cursor\"",
+  "servers.json:health.checks.providerCursor": "product name \"Cursor CLI\"",
   "sessions.json:noServer.repoLink": "repository URL",
   "settings.json:backup.pastePlaceholder": "JSON shape sample, not prose",
   "settings.json:language.english": "language names are endonyms — every locale lists English as \"English\"",
