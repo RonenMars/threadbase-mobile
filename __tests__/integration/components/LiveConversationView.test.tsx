@@ -277,9 +277,6 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getByTestId('live-conversation-list').props.data).toBe(before)
   })
 
-  // Regression: when the final agent message lands, its refetch, row swap and
-  // the thinking footer leaving are real changes; inside the 0.2 zone each one
-  // scrolled a reader who had dragged up a few lines back to the tail.
   // Regression: every row shared one height average, so ~60pt tool/reasoning
   // rows above a long answer were placed at ~1,200pt. Measuring them as the
   // reader scrolled up shrank the content below their offset and iOS bounced
@@ -290,27 +287,6 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(list.props.getItemType({ id: 't', role: 'assistant', content: [{ type: 'tool_use', id: 'x', name: 'Read', input: {} }] })).toBe('tool')
     expect(list.props.getItemType({ id: 'a', role: 'assistant', content: [{ type: 'text', text: 'hi' }] })).toBe('assistant')
     expect(list.props.drawDistance).toBe(2000)
-  })
-
-  it('follows only from the exact bottom once the user drags, until they return', async () => {
-    await renderView()
-    const threshold = () =>
-      screen.getByTestId('live-conversation-list').props.maintainVisibleContentPosition.autoscrollToBottomThreshold
-    expect(threshold()).toBe(0.2)
-
-    await act(async () => screen.getByTestId('live-conversation-list').props.onScrollBeginDrag())
-    expect(threshold()).toBe(0)
-
-    await act(async () => screen.getByTestId('live-conversation-list').props.onMomentumScrollEnd(SCROLLED_UP))
-    expect(threshold()).toBe(0)
-
-    await act(async () => screen.getByTestId('live-conversation-list').props.onMomentumScrollEnd(AT_BOTTOM))
-    expect(threshold()).toBe(0.2)
-
-    await act(async () => screen.getByTestId('live-conversation-list').props.onScrollBeginDrag())
-    await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
-    await act(async () => { fireEvent.press(screen.getByTestId('chat-jump-to-latest')) })
-    expect(threshold()).toBe(0.2)
   })
 
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {

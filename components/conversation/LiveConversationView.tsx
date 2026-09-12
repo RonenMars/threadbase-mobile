@@ -78,12 +78,6 @@ function userMessageText(m: Message): string {
 // threshold alone already is the follow rule: near the tail → follow, scrolled
 // up → don't.
 const CHAT_ANCHOR = { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true } as const
-// Once the reader drags, a real change inside that 0.2 zone (the final
-// message's refetch, its live→REST row swap, the thinking footer leaving)
-// still yanked them back. A 0 threshold keeps checkBounds clearing the flag
-// but only follows from the exact bottom; the reader restores 0.2 by
-// returning there.
-const CHAT_ANCHOR_READING = { autoscrollToBottomThreshold: 0, startRenderingFromBottom: true } as const
 
 let optimisticSeq = 0
 function makeOptimisticMessage(text: string): Message {
@@ -117,7 +111,6 @@ export function LiveConversationView({
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
-  const [isReading, setIsReading] = useState(false)
   const keyboardInset = useKeyboardInset()
 
   // Optimistic user turns: shown immediately on send so the bubble doesn't
@@ -399,10 +392,7 @@ export function LiveConversationView({
   // landing short until a manual scroll forces a re-layout (see
   // ConversationHistoryList's comment on this same hand-rolled machinery).
   useEffect(() => {
-    const onShow = () => {
-      setIsReading(false)
-      listRef.current?.scrollToEnd({ animated: true })
-    }
+    const onShow = () => listRef.current?.scrollToEnd({ animated: true })
     const subShow = Keyboard.addListener('keyboardDidShow', onShow)
     const subChange = Keyboard.addListener('keyboardDidChangeFrame', onShow)
     return () => { subShow.remove(); subChange.remove() }
@@ -411,19 +401,12 @@ export function LiveConversationView({
   const jumpToLatest = useCallback(() => {
     listRef.current?.scrollToEnd({ animated: true })
     setShowJumpToLatest(false)
-    setIsReading(false)
   }, [])
 
   // Drives the jump-to-latest FAB only — same rule as ConversationHistoryList.
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
     setShowJumpToLatest(contentSize.height - contentOffset.y - layoutMeasurement.height > 100)
-  }, [])
-
-  const handleScrollBeginDrag = useCallback(() => setIsReading(true), [])
-  const handleScrollSettled = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
-    if (contentSize.height - contentOffset.y - layoutMeasurement.height < 1) setIsReading(false)
   }, [])
 
   return (
@@ -451,11 +434,8 @@ export function LiveConversationView({
         // 2×drawDistance hits flash-list's bad mVCP-correction regime
         // (Shopify/flash-list#2136) and bounces the reader back to the tail.
         drawDistance={2000}
-        maintainVisibleContentPosition={isReading ? CHAT_ANCHOR_READING : CHAT_ANCHOR}
+        maintainVisibleContentPosition={CHAT_ANCHOR}
         onScroll={handleScroll}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScrollEndDrag={handleScrollSettled}
-        onMomentumScrollEnd={handleScrollSettled}
         scrollEventThrottle={16}
         onLoad={stickToEnd}
         onContentSizeChange={stickToEnd}
