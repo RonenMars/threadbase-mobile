@@ -280,6 +280,18 @@ describe('LiveConversationView — optimistic sent message', () => {
   // Regression: when the final agent message lands, its refetch, row swap and
   // the thinking footer leaving are real changes; inside the 0.2 zone each one
   // scrolled a reader who had dragged up a few lines back to the tail.
+  // Regression: every row shared one height average, so ~60pt tool/reasoning
+  // rows above a long answer were placed at ~1,200pt. Measuring them as the
+  // reader scrolled up shrank the content below their offset and iOS bounced
+  // them back to the tail. Measured on device, 2026-09-12.
+  it('estimates row heights per message shape with a 2000pt draw runway', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    expect(list.props.getItemType({ id: 't', role: 'assistant', content: [{ type: 'tool_use', id: 'x', name: 'Read', input: {} }] })).toBe('tool')
+    expect(list.props.getItemType({ id: 'a', role: 'assistant', content: [{ type: 'text', text: 'hi' }] })).toBe('assistant')
+    expect(list.props.drawDistance).toBe(2000)
+  })
+
   it('follows only from the exact bottom once the user drags, until they return', async () => {
     await renderView()
     const threshold = () =>

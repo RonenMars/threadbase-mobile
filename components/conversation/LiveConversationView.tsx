@@ -30,6 +30,7 @@ import { InheritedHistoryDivider } from '@/components/conversation/InheritedHist
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
+import { messageItemType } from '@/utils/messageItemType'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
@@ -445,6 +446,11 @@ export function LiveConversationView({
             </RenderErrorBoundary>
           </>
         )}
+        getItemType={messageItemType}
+        // Same runway as ConversationHistoryList: a last message taller than
+        // 2×drawDistance hits flash-list's bad mVCP-correction regime
+        // (Shopify/flash-list#2136) and bounces the reader back to the tail.
+        drawDistance={2000}
         maintainVisibleContentPosition={isReading ? CHAT_ANCHOR_READING : CHAT_ANCHOR}
         onScroll={handleScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
