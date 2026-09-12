@@ -6,6 +6,7 @@
 app/
 .github/
 app.json
+app.config.js
 android/
 ios/
 e2e/

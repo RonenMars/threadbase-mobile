@@ -43,6 +43,7 @@ uncertain case therefore leaves the message untagged — no reachable `origin/ma
 - `app/` — app entry + routing; imports all feature screens
 - `.github/` — CI/CD workflows + composite actions (defines every CI job)
 - `app.json` — Expo config (version, build number, plugins, native config, icon paths)
+- `app.config.js` — dynamic Expo config (forwards Sentry org/project from env into the plugin)
 - `android/` — native Android project (tracked; input to `ship-android.sh`)
 - `ios/` — native iOS project (tracked; input to `ship-ios.sh`)
 - `e2e/` — Maestro flows + mock servers (monthly CI e2e job)
