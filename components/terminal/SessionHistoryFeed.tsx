@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { LayoutAnimation, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View, type NativeSyntheticEvent, type TextInputSubmitEditingEventData } from 'react-native'
-import { FlashList } from '@shopify/flash-list'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { ArrowsIn, ArrowsOut, CaretDown, CaretUp, MagnifyingGlass } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -16,6 +16,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
 import { font, spacing, type Theme } from '@/constants/theme'
 import type { Message } from '@/types/api'
+import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
 
 interface Props {
   serverId: string
@@ -146,6 +147,8 @@ export function SessionHistoryFeed({ serverId, conversationId, isFull, onToggleF
 
   const messages: Message[] = data?.messages ?? []
   const anchoredMessages: Message[] = anchored.data?.messages ?? []
+  const listRef = useRef<FlashListRef<Message>>(null)
+  const { stickToEnd, releasePin } = useInitialScrollToEnd(listRef, true)
 
   const handleToggle = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -346,6 +349,7 @@ export function SessionHistoryFeed({ serverId, conversationId, isFull, onToggleF
         </View>
       ) : showList ? (
         <FlashList
+          ref={listRef}
           style={styles.list}
           testID="session-history-list"
           data={messages}
@@ -365,6 +369,9 @@ export function SessionHistoryFeed({ serverId, conversationId, isFull, onToggleF
           // it never live-appends, and that threshold is what snaps a reader
           // back to the last message after onStartReached fetches.
           maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
+          onLoad={stickToEnd}
+          onContentSizeChange={stickToEnd}
+          onScrollBeginDrag={releasePin}
           onStartReached={hasNextPage ? fetchNextPage : undefined}
           onStartReachedThreshold={0.3}
           ListHeaderComponent={listHeader}
