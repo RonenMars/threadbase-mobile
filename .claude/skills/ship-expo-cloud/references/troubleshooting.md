@@ -40,7 +40,7 @@ If using manual signing, verify in Apple Developer Portal that:
 # Force clean build (clears EAS cache)
 eas build --platform ios --profile production --clear-cache
 
-# Locally verify pods resolve (bundle exec pins CocoaPods to the Gemfile's 1.16.2)
+# Locally verify pods resolve (bundle exec pins CocoaPods to the Gemfile's 1.17.0)
 cd ios && bundle exec pod install --repo-update && cd ..
 ```
 

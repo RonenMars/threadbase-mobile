@@ -148,7 +148,7 @@ if (( SKIP_PREBUILD == 0 )) && [[ ! -d ios ]]; then
   npx expo prebuild --platform ios --non-interactive
 else
   echo "▸ [6/$TOTAL_STEPS] Pod install (sync Pods with node_modules)"
-  # bundle exec keeps CocoaPods on the Gemfile-pinned 1.16.2. A bare `pod install`
+  # bundle exec keeps CocoaPods on the Gemfile-pinned 1.17.0. A bare `pod install`
   # picks up a Homebrew CocoaPods and rewrites COCOAPODS:/checksums in Podfile.lock,
   # which land-version-bump.sh then commits as ship drift.
   (cd ios && bundle exec pod install --silent)

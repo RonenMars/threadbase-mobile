@@ -167,7 +167,7 @@ Whenever `package.json` or `package-lock.json` changes:
 1. Run `bundle exec pod install` from the `ios/` directory — never a bare `pod install`.
 2. Commit `package.json`, `package-lock.json`, and `ios/Podfile.lock` together.
 
-**Always `bundle exec`.** The `Gemfile` pins CocoaPods to 1.16.2 so local installs match `pod install --deployment` in deploy CI. A Homebrew CocoaPods on `PATH` shadows that pin, and a bare `pod install` run against it rewrites the `COCOAPODS:` line in `ios/Podfile.lock`, which then flips back the next time CI or a `bundle exec` user regenerates it.
+**Always `bundle exec`.** The `Gemfile` pins CocoaPods to 1.17.0 so local installs match `pod install --deployment` in deploy CI. A Homebrew CocoaPods on `PATH` shadows that pin, and a bare `pod install` run against it rewrites the `COCOAPODS:` line in `ios/Podfile.lock`, which then flips back the next time CI or a `bundle exec` user regenerates it.
 
 **Four checksums are path-dependent and are not yours to commit.** `ExpoModulesCore`, `ExpoWidgets` and `hermes-engine` generate their podspecs at install time and bake the checkout's absolute path into them (`HERMES_CLI_PATH`, the precompiled `ExpoModulesCore` tarball `file://` URL, the `ExpoWidgets` bundle copy script), and `RNSentry` behaves the same way. A pod's `SPEC CHECKSUM` is the SHA1 of its generated podspec, so those four values differ for every worktree, every machine and every CI runner — `bundle exec` does not stabilise them. Committing them is what makes `ios/Podfile.lock` ping-pong between whoever ran `pod install` last, and is the usual source of `ExpoWidgets`/`hermes-engine` checksum conflicts on rebases.
 
