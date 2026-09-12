@@ -261,6 +261,22 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(list!.props.onScrollBeginDrag).toEqual(expect.any(Function))
   })
 
+  // Regression: flash-list runs its autoscroll-to-bottom check on every `data`
+  // identity change. The FAB flips ~100pt from the tail, inside the 0.2-viewport
+  // autoscroll zone, so a fresh array on that re-render snapped the reader back.
+  it('keeps the list data identity when a scroll re-renders the view', async () => {
+    mockHistorical = [
+      { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await renderView()
+    const before = screen.getByTestId('live-conversation-list').props.data
+
+    await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+
+    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+    expect(screen.getByTestId('live-conversation-list').props.data).toBe(before)
+  })
+
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
     await renderView()
 
