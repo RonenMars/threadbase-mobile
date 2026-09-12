@@ -498,3 +498,7 @@ Any change traceable to an existing issue ends with a status update on that issu
 - **Not done** — leave it open and comment with why: blocked, superseded, out of scope, or a precondition that has to change first.
 
 Never close an issue that was not actually finished, and never leave finished work with the issue still open. If one change resolves several issues, update each of them.
+
+## Product claims
+
+Threadbase has no hosted service: the app talks only to streamers the user runs, and `README.md` and `docs/FEATURES.md` state that as fact. Before writing or changing anything about relays, hosted backends, self-hosting, or where data goes, read [docs/no-hosted-service.md](docs/no-hosted-service.md).
