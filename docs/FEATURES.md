@@ -50,7 +50,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [operator-enabled] Auto-resume on boot — resumes eligible sessions automatically at streamer startup; off by default.
 - [operator-enabled] Separate PTY host process — keeps live terminals running across a streamer restart; off by default.
 - [shipped] Remote access tunnel helper — a bundled Cloudflare quick-tunnel script and terminal UI for reaching the streamer off your LAN.
-- [server-only] Live model / reasoning-effort switching — change the model or effort of a running Claude session; implemented on the streamer, no mobile UI yet.
+- [shipped] Live model / reasoning-effort switching — change the model or effort of a running Claude session from the phone.
 - [shipped] Claude CLI flag registry — allowlisted per-server flag configuration (model, permission mode, tool allow/deny, budget).
 - [shipped] Automatic cache backups — WAL-safe snapshots of the local session cache taken before repairs.
 - [partial] Menubar tray app — a separate Electron app showing streamer health and a log viewer; not installed or launched by the streamer itself.
@@ -63,8 +63,8 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Out-of-band identity verification — compare a server's key fingerprint to confirm you're pairing with the right machine.
 - [shipped] Secure credential storage — API keys and encryption keys are stored in the iOS Keychain or Android Keystore.
 - [shipped] Minimal push payloads — ordinary notifications carry only a project name and session identifiers, never prompts or output.
-- [shipped] Crash reporting is opt-in and off by default — a JS-layer sanitizer strips prompts, output, credentials, hostnames, and paths before anything is sent.
-- [shipped] Disabling crash reporting deletes the anonymous install ID.
+- [shipped] Anonymous diagnostics — opt-in crash reports and stability data with a random installation ID; off by default. A JS-layer sanitizer strips prompts, output, credentials, hostnames, and paths before anything is sent.
+- [shipped] Disabling anonymous diagnostics deletes the anonymous install ID.
 - [shipped] No advertising, tracking, or product-analytics SDKs — no automatic capture of screens, console output, or network requests.
 - [shipped] Screenshots are never automatic — feedback screenshots are user-picked, re-encoded, and stripped of metadata.
 - [shipped] Cleartext-traffic policy — plain HTTP is only permitted to local/private-network addresses, never the open internet.
@@ -79,7 +79,6 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 
 ## Known caveats
 
-Removing a server from the app does not yet revoke its push token on the streamer.
 The Electron, VS Code, and IntelliJ surfaces mentioned elsewhere are not part of the mobile or streamer repos.
 iOS Live Activities require the streamer operator to enable a feature flag and supply APNs credentials.
 Multi-question and multi-select approval forms cannot be answered from the phone yet.
