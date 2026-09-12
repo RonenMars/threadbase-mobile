@@ -21,6 +21,7 @@ registering anything. Do not add a skill to `CLAUDE.md` just to make it visible;
 | [`ship-expo-cloud`](ship-expo-cloud/SKILL.md) | EAS cloud build and submit — **only** when the user types `/ship-expo-cloud` |
 | [`ship-fastlane`](ship-fastlane/SKILL.md) | Vanilla fastlane TestFlight pipeline — **only** when the user types `/ship-fastlane` |
 | [`setup-cloudflared`](setup-cloudflared/SKILL.md) | Exposing Metro over HTTPS through a Cloudflare tunnel for remote dev |
+| [`add-provider`](add-provider/SKILL.md) | Adding a new agent CLI start chip (health, badges, filters). Live PTY and history live in streamer/scanner companion skills |
 | `_shared` | Not a skill — shared fragments the ship skills include |
 
 The three release skills overlap deliberately and their descriptions carry the routing rules, because
