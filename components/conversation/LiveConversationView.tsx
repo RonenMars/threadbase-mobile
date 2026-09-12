@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, StyleSheet, Text, TouchableOpacity, Keyboard } from 'react-native'
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Keyboard,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
@@ -57,6 +65,16 @@ function userMessageText(m: Message): string {
     .trim()
 }
 
+// FlashList v2 owns the chat bottom-anchoring. This object is a module
+// constant and the list is NEVER switched to `{ disabled: true }`: with the
+// threshold gone, flash-list's checkBounds stops clearing its sticky
+// `pendingAutoscrollToBottom` flag (useBoundDetection.ts), which stays latched
+// `true` from when the user was last at the tail — and the next `data` change
+// fires a scrollToEnd, snapping the user back to the bottom mid-drag. The
+// threshold alone already is the follow rule: near the tail → follow, scrolled
+// up → don't.
+const CHAT_ANCHOR = { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true } as const
+
 let optimisticSeq = 0
 function makeOptimisticMessage(text: string): Message {
   optimisticSeq += 1
@@ -85,7 +103,7 @@ export function LiveConversationView({
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
   const qc = useQueryClient()
-  const [followLiveOutput, setFollowLiveOutput] = useState(true)
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false)
 
   // Optimistic user turns: shown immediately on send so the bubble doesn't
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
@@ -354,7 +372,13 @@ export function LiveConversationView({
 
   const jumpToLatest = useCallback(() => {
     listRef.current?.scrollToEnd({ animated: true })
-    setFollowLiveOutput(true)
+    setShowJumpToLatest(false)
+  }, [])
+
+  // Drives the jump-to-latest FAB only — same rule as ConversationHistoryList.
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
+    setShowJumpToLatest(contentSize.height - contentOffset.y - layoutMeasurement.height > 100)
   }, [])
 
   return (
@@ -377,10 +401,9 @@ export function LiveConversationView({
             </RenderErrorBoundary>
           </>
         )}
-        maintainVisibleContentPosition={followLiveOutput
-          ? { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }
-          : { disabled: true }}
-        onScrollBeginDrag={() => setFollowLiveOutput(false)}
+        maintainVisibleContentPosition={CHAT_ANCHOR}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
         onStartReached={hasNextPage ? fetchNextPage : undefined}
         onStartReachedThreshold={0.3}
@@ -417,7 +440,7 @@ export function LiveConversationView({
           />
         ) : null}
       />
-      {!followLiveOutput ? (
+      {showJumpToLatest ? (
         <TouchableOpacity
           style={styles.jumpToLatest}
           onPress={jumpToLatest}
