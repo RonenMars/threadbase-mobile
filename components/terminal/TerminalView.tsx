@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { Alert, View, StyleSheet } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import Reanimated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
@@ -8,6 +8,7 @@ import { ToastViewport } from '@/components/ui/ToastViewport'
 import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
 import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
@@ -143,6 +144,7 @@ export function TerminalView({
     micGranted,
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend })
+  const keyboardInset = useKeyboardInset()
 
   // The server closes the question's menu on its own (common, self-healing —
   // it also broadcasts question_cancelled, which dismisses the card), so that
@@ -175,7 +177,7 @@ export function TerminalView({
       : null
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
+    <Reanimated.View style={[styles.container, keyboardInset]}>
       <ToastViewport id="terminal" />
       <TerminalRawModeToast visible={confidence === 'low'} />
       {conversationId ? (
@@ -252,11 +254,14 @@ export function TerminalView({
         onClose={() => setQueueVisible(false)}
       />
 
-    </KeyboardAvoidingView>
+    </Reanimated.View>
   )
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   terminalVisible: {
     flex: 1,
   },

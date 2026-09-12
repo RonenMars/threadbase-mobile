@@ -8,7 +8,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import Reanimated from 'react-native-reanimated'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
@@ -22,6 +22,7 @@ import { isPromptPendingError } from '@/services/api-client'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { useComposerState } from '@/hooks/useComposerState'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
@@ -104,6 +105,7 @@ export function LiveConversationView({
   const listRef = useRef<FlashListRef<Message>>(null)
   const qc = useQueryClient()
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
+  const keyboardInset = useKeyboardInset()
 
   // Optimistic user turns: shown immediately on send so the bubble doesn't
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
@@ -382,7 +384,7 @@ export function LiveConversationView({
   }, [])
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding" automaticOffset>
+    <Reanimated.View style={[styles.container, keyboardInset]}>
       <FlashList
         ref={listRef}
         testID="live-conversation-list"
@@ -495,7 +497,7 @@ export function LiveConversationView({
         onClose={() => setQueueVisible(false)}
       />
 
-    </KeyboardAvoidingView>
+    </Reanimated.View>
   )
 }
 
