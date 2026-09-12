@@ -244,6 +244,16 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(list!.props.maintainVisibleContentPosition.disabled).toBeFalsy()
   })
 
+  it('pins to the true bottom on first load until the user drags', async () => {
+    mockHistorical = [
+      { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    expect(list!.props.onContentSizeChange).toEqual(expect.any(Function))
+    expect(list!.props.onScrollBeginDrag).toEqual(expect.any(Function))
+  })
+
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
     await renderView()
 

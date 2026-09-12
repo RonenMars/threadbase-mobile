@@ -15,18 +15,20 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CaretDown } from 'phosphor-react-native'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
+import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
 import type { Message } from '@/types/api'
 import type { InheritedHistorySeam } from '@/utils/inheritedHistory'
 import { spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
 // The message list core, shared by the tail history view and the anchored
-// search view. It owns ONLY the FlashList and its native scroll config —
-// FlashList v2 maintains bottom-anchoring, older-page-prepend position, and
-// "list has drawn" signalling itself, so there is no JS scroll-orchestration
-// here (that hand-rolled machinery is exactly what produced the gap/blink
-// bugs). The two consumers differ only in whether native bottom-anchoring is
-// on (tail) or off with app-driven scrolling (anchored search).
+// search view. FlashList v2 maintains older-page-prepend position and
+// "list has drawn" signalling. First-open still needs a JS pin-to-end:
+// startRenderingFromBottom places the last *row* from estimated heights,
+// so a last message taller than the viewport opens at that row's start.
+// The pin re-runs scrollToEnd on content-size changes until the user
+// drags, then stops so prepends cannot yank the reader back to the tail.
+// Anchored search disables the pin and drives scroll itself.
 
 // A newly-arrived message animates in only if it lands within this many rows of
 // the tail — so a live append fades in, but a jump/backfill of older history
@@ -87,6 +89,7 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     // forwarded ref so the search view can drive scrolling. Each method reads
     // listRef.current at call time, so a null capture at mount can't stick.
     const listRef = useRef<FlashListRef<Message>>(null)
+    const { stickToEnd, releasePin } = useInitialScrollToEnd(listRef, !disableAutoAnchor)
     useImperativeHandle(
       ref,
       () =>
@@ -258,10 +261,16 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
       listRef.current?.scrollToEnd({ animated: true })
     }, [])
 
+    const handleLoad = useCallback(() => {
+      stickToEnd()
+      onReady?.()
+    }, [stickToEnd, onReady])
+
     return (
       <View style={styles.wrapper} onLayout={onLayout}>
         <FlashList
           ref={listRef}
+          testID="conversation-history-list"
           data={messages}
           keyExtractor={(m) => m.id}
           renderItem={renderItem}
@@ -278,7 +287,9 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
           drawDistance={2000}
           contentContainerStyle={contentContainerStyle}
           maintainVisibleContentPosition={maintainVisibleContentPosition}
-          onLoad={onReady}
+          onLoad={handleLoad}
+          onContentSizeChange={stickToEnd}
+          onScrollBeginDrag={releasePin}
           onScroll={handleScroll}
           scrollEventThrottle={16}
           onStartReached={onStartReached}

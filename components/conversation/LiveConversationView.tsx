@@ -45,6 +45,7 @@ import { preferRawTerminal } from '@/lib/renderConfidence'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
+import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
 import { CaretDown } from 'phosphor-react-native'
 
 interface Props {
@@ -104,6 +105,7 @@ export function LiveConversationView({
   const { t: tTerminal } = useTranslation('terminal')
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
+  const { stickToEnd, releasePin } = useInitialScrollToEnd(listRef, true)
   const qc = useQueryClient()
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
@@ -416,7 +418,9 @@ export function LiveConversationView({
         maintainVisibleContentPosition={CHAT_ANCHOR}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        onLoad={() => listRef.current?.scrollToEnd({ animated: false })}
+        onLoad={stickToEnd}
+        onContentSizeChange={stickToEnd}
+        onScrollBeginDrag={releasePin}
         onStartReached={hasNextPage ? fetchNextPage : undefined}
         onStartReachedThreshold={0.3}
         ListHeaderComponent={
