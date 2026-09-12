@@ -1,4 +1,4 @@
-import { parseQuestionBlock } from '@/utils/parseQuestionBlock'
+import { isCodexTrustQuitOption, parseQuestionBlock } from '@/utils/parseQuestionBlock'
 
 describe('parseQuestionBlock', () => {
   it('returns null for empty lines', () => {
@@ -318,6 +318,20 @@ describe('parseQuestionBlock', () => {
       'No, quit',
     ])
     expect(result!.selectedIndex).toBe(0)
+  })
+
+  it('identifies only the Codex trust "No, quit" row as a session-ending choice', () => {
+    const trust = parseQuestionBlock([
+      'Do you trust the contents of this directory?',
+      '  1. Yes, continue',
+      '  2. No, quit',
+    ])
+    expect(isCodexTrustQuitOption(trust!, 0)).toBe(false)
+    expect(isCodexTrustQuitOption(trust!, 1)).toBe(true)
+    expect(isCodexTrustQuitOption({
+      source: 'permission',
+      questions: [{ question: 'Proceed?', multiSelect: false, options: [{ label: 'Yes' }, { label: 'No' }] }],
+    }, 1)).toBe(false)
   })
 
   it('returns null for a ?-suffixed line with @-path "options" (not a real menu)', () => {

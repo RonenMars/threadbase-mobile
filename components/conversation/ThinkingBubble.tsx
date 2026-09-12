@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next'
 import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { isCodexTrustQuitOption, parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
@@ -33,6 +33,7 @@ interface Props {
   onCancelQuestion?: () => void
   /** Server-derived agent phase, already gated on `presentation.live`. */
   subStatus?: AgentPhase | null
+  onSessionQuit?: () => void
 }
 
 function getAgentPhaseLabel(phase: AgentPhase, t: TFunction<'sessions'>): string {
@@ -50,7 +51,7 @@ function getAgentPhaseLabel(phase: AgentPhase, t: TFunction<'sessions'>): string
   }
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus }: Props) {
+export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus, onSessionQuit }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -76,7 +77,8 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
     const delta = optionIndex - start
     const arrow = delta > 0 ? '\x1b[B' : '\x1b[A'
     onSendKeys(arrow.repeat(Math.abs(delta)) + '\r')
-  }, [onSendKeys, questionBlock])
+    if (isCodexTrustQuitOption(questionBlock, optionIndex)) onSessionQuit?.()
+  }, [onSendKeys, onSessionQuit, questionBlock])
 
   // Answering hands the tap upward and stops. It does not dismiss the card and
   // it does not choose keystrokes: the answer route owns both the validated

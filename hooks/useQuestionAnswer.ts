@@ -4,6 +4,7 @@ import { isPermissionAnswerRejectedError, isPermissionGateClosedError, isPromptC
 import { generateUUID } from '@/services/device-id'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import type { useSessionActions } from '@/hooks/useSessionActions'
+import { isCodexTrustQuitOption } from '@/utils/parseQuestionBlock'
 import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 
 type SessionActions = ReturnType<typeof useSessionActions>
@@ -24,6 +25,8 @@ interface Params {
   respondToQuestion: SessionActions['respondToQuestion']
   answerPermission: SessionActions['answerPermission']
   answerPrompt: SessionActions['answerPrompt']
+  /** Codex directory-trust "No, quit" kills the PTY — leave the empty idle screen. */
+  onSessionQuit?: () => void
 }
 
 /**
@@ -36,7 +39,7 @@ interface Params {
  * #807). One copy also means the end-to-end seam test covers both views by
  * construction rather than by 120 lines of duplicated mock scaffolding.
  */
-export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt }: Params) {
+export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt, onSessionQuit }: Params) {
   const { t } = useTranslation('terminal')
   const {
     question: activeQuestion,
@@ -69,6 +72,7 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
         keys: permissionAnswerKeys(answered, optionIndex),
       })
       markPending(answeredKey)
+      if (isCodexTrustQuitOption(answered, optionIndex)) onSessionQuit?.()
     } catch (err) {
       const error = err instanceof Error ? err : null
       if (isPermissionGateClosedError(error)) {
@@ -85,7 +89,7 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
         requestReplay()
       }
     }
-  }, [activeQuestion, answerPermission, clearQuestion, markPending, questionKey, requestReplay, resetAndUnsuppress])
+  }, [activeQuestion, answerPermission, clearQuestion, markPending, onSessionQuit, questionKey, requestReplay, resetAndUnsuppress])
 
   const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
     const answeredKey = questionKey

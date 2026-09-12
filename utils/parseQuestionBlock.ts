@@ -191,6 +191,12 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
   return null
 }
 
+// Codex's directory-trust "No, quit" exits the process. Claude's permission
+// "No" does not — match the full trust label only.
+export function isCodexTrustQuitOption(block: QuestionBlock, optionIndex: number): boolean {
+  return /^No, quit$/i.test(block.questions[0]?.options[optionIndex]?.label ?? '')
+}
+
 export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   const stripped = lines.map(stripAnsi)
 

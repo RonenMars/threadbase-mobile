@@ -328,3 +328,43 @@ describe('TerminalOutput – answering a question', () => {
     expect(getByLabelText('Yes')).toBeTruthy()
   })
 })
+
+describe('TerminalOutput – Codex trust quit', () => {
+  it('leaves the session after a scraped No, quit tap', async () => {
+    const onSessionQuit = jest.fn()
+    const onSendKeys = jest.fn()
+    const { getByLabelText } = await render(
+      <TerminalOutput
+        lines={[
+          'Do you trust the contents of this directory?',
+          '> 1. Yes, continue',
+          '2. No, quit',
+        ]}
+        isStreaming={false}
+        onSendKeys={onSendKeys}
+        onSessionQuit={onSessionQuit}
+      />,
+    )
+    await fireEvent.press(getByLabelText('No, quit'))
+    expect(onSendKeys).toHaveBeenCalled()
+    expect(onSessionQuit).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays on the session after Yes, continue', async () => {
+    const onSessionQuit = jest.fn()
+    const { getByLabelText } = await render(
+      <TerminalOutput
+        lines={[
+          'Do you trust the contents of this directory?',
+          '> 1. Yes, continue',
+          '2. No, quit',
+        ]}
+        isStreaming={false}
+        onSendKeys={jest.fn()}
+        onSessionQuit={onSessionQuit}
+      />,
+    )
+    await fireEvent.press(getByLabelText('Yes, continue'))
+    expect(onSessionQuit).not.toHaveBeenCalled()
+  })
+})

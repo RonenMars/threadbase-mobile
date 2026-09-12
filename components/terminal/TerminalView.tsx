@@ -46,6 +46,7 @@ export function TerminalView({
 }: Props) {
   const { t } = useTranslation('terminal')
   const router = useRouter()
+  const leaveToHome = useCallback(() => router.replace('/'), [router])
   const { lines, isStreaming, userMessageTexts, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
@@ -64,7 +65,14 @@ export function TerminalView({
     handleAnswerPrompt,
     answerErrorMessage,
     answerNoticeMessage,
-  } = useQuestionAnswer({ serverId, sessionId, respondToQuestion, answerPermission, answerPrompt })
+  } = useQuestionAnswer({
+    serverId,
+    sessionId,
+    respondToQuestion,
+    answerPermission,
+    answerPrompt,
+    onSessionQuit: leaveToHome,
+  })
   const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
     useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
 
@@ -205,6 +213,7 @@ export function TerminalView({
           answerPhase={answerPhase}
           answerBusy={answerBusy}
           onCancelQuestion={cancelQuestion}
+          onSessionQuit={leaveToHome}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
           disabled={disabled}

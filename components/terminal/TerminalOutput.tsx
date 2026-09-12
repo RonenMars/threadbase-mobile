@@ -20,7 +20,7 @@ import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11
 import { ltrContentStyle, type RtlStyleKit } from '@/lib/rtl'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
-import { parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
+import { isCodexTrustQuitOption, parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
 import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
@@ -122,6 +122,8 @@ interface Props {
    * that measured empty — kick a re-anchor so they paint without a manual drag.
    */
   disabled?: boolean
+  /** Codex directory-trust "No, quit" — the PTY is about to die. */
+  onSessionQuit?: () => void
 }
 
 export function TerminalOutput({
@@ -140,6 +142,7 @@ export function TerminalOutput({
   onViewResumedConversation,
   onSearchResumedConversation,
   disabled = false,
+  onSessionQuit,
 }: Props) {
   const { t } = useTranslation('common')
   const { t: tTerminal } = useTranslation('terminal')
@@ -284,7 +287,8 @@ export function TerminalOutput({
     const arrow = delta > 0 ? '\x1b[B' : '\x1b[A'
     const keys = arrow.repeat(Math.abs(delta)) + '\r'
     onSendKeys(keys)
-  }, [onSendKeys, questionBlock])
+    if (isCodexTrustQuitOption(questionBlock, optionIndex)) onSessionQuit?.()
+  }, [onSendKeys, onSessionQuit, questionBlock])
 
   // Answering hands the tap upward and stops. It does not dismiss the card and
   // it does not choose keystrokes: the answer route owns both the validated
