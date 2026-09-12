@@ -444,7 +444,11 @@ describe('conversation detail — resume collision', () => {
     alertSpy.mockRestore()
   })
 
-  it('names the file_handle signal in the Codex collision copy', async () => {
+  // The Codex copy states the lock rather than the detection signal. Folding a
+  // `reason.*` label into it restated the stem ("has this session open — another
+  // Codex client currently has it open") and, on an empty `detectedBy`,
+  // contradicted it ("has" vs "may still be using").
+  it('states the Codex lock without restating it as a detection reason', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(codexBusy())
 
@@ -454,17 +458,51 @@ describe('conversation detail — resume collision', () => {
     })
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    const message = alertSpy.mock.calls[0][1] as string
     expect(alertSpy.mock.calls[0][0]).toBe('This Codex session is open elsewhere')
-    expect(alertSpy.mock.calls[0][1]).toContain('another Codex client currently has it open')
-    // Fork is confirmed here, so the divergence it causes is stated here.
-    expect(alertSpy.mock.calls[0][1]).toContain('separate continuation')
+    expect(message).toContain('Codex lets only one app write to a conversation at a time')
+    expect(message).not.toContain('currently has it open')
+    expect(message).not.toContain('may still be using it')
+    // Fork is confirmed here, so the paragraph names that button and its cost.
+    expect(message).toContain('Fork into Threadbase leaves the other session running')
+    // No take-over button on offer, so no take-over paragraph.
+    expect(message).not.toContain('Take over closes that session')
 
     alertSpy.mockRestore()
   })
 
+  it('names the owner and explains take-over when the server allows it', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValue(codexBusy({ canTakeOver: true }))
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    const message = alertSpy.mock.calls[0][1] as string
+    expect(message).toContain('a Codex session on your computer is holding this one')
+    // Every paragraph names a button that is actually on the dialog, in button order.
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Take over', 'Fork into Threadbase'])
+    expect(message.indexOf('Take over closes that session')).toBeGreaterThan(
+      message.indexOf('a Codex session on your computer'),
+    )
+    expect(message.indexOf('Fork into Threadbase leaves')).toBeGreaterThan(
+      message.indexOf('Take over closes that session'),
+    )
+
+    alertSpy.mockRestore()
+  })
+
+  // The `reason.*` labels still carry the non-Codex path, where the collision is
+  // a guess rather than a lock.
   it('an unknown future signal still renders readable fallback copy', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-    mockPost.mockRejectedValue(codexBusy({ detectedBy: ['lock_file_v2'] }))
+    mockPost.mockRejectedValue(
+      new ConversationBusyError('busy', { detectedBy: ['lock_file_v2'], likelyOwner: 'unknown' }),
+    )
 
     const { btn } = await renderAndFindResume()
     await act(async () => {
@@ -566,6 +604,35 @@ describe('conversation detail — resume collision', () => {
     expect(alertSpy.mock.calls[0][0]).toBe('Resume this conversation?')
     const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
     expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Take over', 'Resume anyway'])
+    // Every action but Cancel explains itself, in button order.
+    const message = alertSpy.mock.calls[0][1] as string
+    expect(message.indexOf('Take over closes that session')).toBeGreaterThan(0)
+    expect(message.indexOf('Resume anyway continues the conversation here')).toBeGreaterThan(
+      message.indexOf('Take over closes that session'),
+    )
+
+    alertSpy.mockRestore()
+  })
+
+  it('explains "Resume anyway" when it is the only action offered', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost.mockRejectedValue(
+      new ConversationBusyError('busy', { detectedBy: [], likelyOwner: 'unknown' }),
+    )
+
+    const { btn } = await renderAndFindResume()
+    await act(async () => {
+      fireEvent.press(btn)
+    })
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Resume anyway'])
+    const message = alertSpy.mock.calls[0][1] as string
+    expect(message).toContain('both will be writing to the same history')
+    // No take-over or fork button, so neither paragraph appears.
+    expect(message).not.toContain('Take over closes that session')
+    expect(message).not.toContain('Fork into Threadbase leaves')
 
     alertSpy.mockRestore()
   })
