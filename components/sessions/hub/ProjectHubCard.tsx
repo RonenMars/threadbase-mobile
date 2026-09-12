@@ -24,7 +24,10 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
 }
 
-export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
+// Memoized: the hub re-renders on every fetch-progress tick, and a project
+// card is a native glass surface — re-running every mounted one per tick is
+// what made the accordions feel unresponsive on a host with many projects.
+export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
   const { t, i18n } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
@@ -37,11 +40,11 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     const next = isOpen ? 0 : 1
     chevronProgress.value = withTiming(next, { duration: 200 })
-    onToggle()
+    onToggle(group.projectId)
     // chevronProgress is a Reanimated shared value (stable across renders);
     // omitting it avoids the react-hooks/immutability flag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, onToggle])
+  }, [isOpen, onToggle, group.projectId])
 
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 180])}deg` }],
@@ -285,4 +288,4 @@ export function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = fals
       })() : null}
     </Card>
   )
-}
+})
