@@ -19,7 +19,15 @@ export function RemoteKeyboardControls({ promptId, busy = false, onClose, onSend
   const theme = useTheme()
   const styles = makeStyles(theme)
   const key = (label: string, action: Action, confirm?: true) => (
-    <Pressable key={action} style={[styles.key, busy && styles.disabled]} disabled={busy || (action !== 'escape' && !promptId)} onPress={() => onSend(action, confirm)} accessibilityRole="button" accessibilityLabel={label}>
+    <Pressable
+      key={action}
+      testID={`remote-key-${action}`}
+      style={[styles.key, busy && styles.disabled]}
+      disabled={busy}
+      onPress={() => onSend(action, confirm)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       <Text style={styles.keyText}>{label}</Text>
     </Pressable>
   )
@@ -31,10 +39,31 @@ export function RemoteKeyboardControls({ promptId, busy = false, onClose, onSend
       </View>
       <View style={styles.row}>{key(t('rawKeyboard.escape'), 'escape')}{key(t('rawKeyboard.tab'), 'tab')}{key(t('rawKeyboard.shiftTab'), 'shift_tab')}</View>
       <View style={styles.row}>{key('←', 'left')}{key('↑', 'up')}{key('→', 'right')}</View>
-      <View style={styles.row}>{key('↓', 'down')}</View>
-      <Pressable style={[styles.confirm, (!promptId || busy) && styles.disabled]} disabled={!promptId || busy} onLongPress={() => onSend('enter', true)} delayLongPress={700} accessibilityRole="button" accessibilityLabel={t('rawKeyboard.confirmLabel')}>
-        <Text style={styles.confirmText}>{t('rawKeyboard.confirm')}</Text>
-      </Pressable>
+      <View style={styles.row}>
+        {key('↓', 'down')}
+        <Pressable
+          testID="remote-key-enter"
+          style={[styles.key, busy && styles.disabled]}
+          disabled={busy}
+          onPress={() => onSend('enter', promptId ? true : undefined)}
+          accessibilityRole="button"
+          accessibilityLabel={t('rawKeyboard.enter')}
+        >
+          <Text style={styles.keyText}>{t('rawKeyboard.enter')}</Text>
+        </Pressable>
+      </View>
+      {promptId ? (
+        <Pressable
+          style={[styles.confirm, busy && styles.disabled]}
+          disabled={busy}
+          onLongPress={() => onSend('enter', true)}
+          delayLongPress={700}
+          accessibilityRole="button"
+          accessibilityLabel={t('rawKeyboard.confirmLabel')}
+        >
+          <Text style={styles.confirmText}>{t('rawKeyboard.confirm')}</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }

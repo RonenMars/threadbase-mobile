@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
+  Keyboard,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -94,6 +95,17 @@ const WAKING_UP_BACKSTOP_MS = 15_000
 // instead of leaving the user on an indefinite spinner.
 const PENDING_PROGRESS_WINDOW_MS = 10_000
 const STUCK_AFTER_MS = 20_000
+
+const RAW_KEY_BYTES: Record<'escape' | 'up' | 'down' | 'left' | 'right' | 'tab' | 'shift_tab' | 'enter', string> = {
+  escape: '\x1b',
+  up: '\x1b[A',
+  down: '\x1b[B',
+  left: '\x1b[D',
+  right: '\x1b[C',
+  tab: '\t',
+  shift_tab: '\x1b[Z',
+  enter: '\r',
+}
 
 function PendingSessionScreen({
   serverId,
@@ -635,7 +647,10 @@ export default function SessionDetailScreen() {
       t('terminal:rawKeyboard.warning'),
       [
         { text: t('common:button.cancel'), style: 'cancel' },
-        { text: t('terminal:rawKeyboard.agree'), onPress: () => setRawKeyboardVisible(true) },
+        { text: t('terminal:rawKeyboard.agree'), onPress: () => {
+          Keyboard.dismiss()
+          setRawKeyboardVisible(true)
+        } },
       ],
     )
   }
@@ -1163,25 +1178,48 @@ export default function SessionDetailScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
+        ) : session.status === 'idle' || session.status === 'on_hold' ? (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderTitle}>{t('session.ended')}</Text>
+            <Text style={styles.placeholderText}>{t('session.endedBody')}</Text>
+            {session.projectPath ? (
+              <Text style={styles.placeholderPath}>{session.projectPath}</Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
       {rawKeyboardVisible ? (
         <RemoteKeyboardControls
-          promptId={activeQuestion?.source === 'prompt' ? activeQuestion.promptId : undefined}
-          busy={sendRawKey.isPending}
+          promptId={
+            activeQuestion?.source === 'prompt'
+              ? activeQuestion.promptId
+              : activeQuestion?.source === 'permission'
+                ? activeQuestion.permissionGateId
+                : undefined
+          }
+          busy={sendRawKey.isPending || sendKeys.isPending}
           onClose={() => setRawKeyboardVisible(false)}
-          onSend={(action, confirm) =>
+          onSend={(action, confirm) => {
+            const promptId =
+              activeQuestion?.source === 'prompt'
+                ? activeQuestion.promptId
+                : activeQuestion?.source === 'permission'
+                  ? activeQuestion.permissionGateId
+                  : undefined
+            const fail = () => Alert.alert(t('terminal:rawKeyboard.failedTitle'), t('terminal:rawKeyboard.failedBody'))
+            if (!promptId && action !== 'escape') {
+              sendKeys.mutate(RAW_KEY_BYTES[action], { onError: fail })
+              return
+            }
             sendRawKey.mutate({
               action,
-              ...(action !== 'escape' && activeQuestion?.source === 'prompt' && activeQuestion.promptId
-                ? { promptId: activeQuestion.promptId }
-                : {}),
+              ...(action !== 'escape' && promptId ? { promptId } : {}),
               ...(confirm ? { confirm } : {}),
             }, {
-              onError: () => Alert.alert(t('terminal:rawKeyboard.failedTitle'), t('terminal:rawKeyboard.failedBody')),
+              onError: fail,
             })
-          }
+          }}
         />
       ) : null}
       {infoModal}

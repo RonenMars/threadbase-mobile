@@ -69,7 +69,7 @@ const SELECTED_OPTION_RE = /^❯\s+(.+)$/
 // Format 2 entry: the ❯ cursor line must be numbered ("❯ 1. …"). A bare
 // "❯ <text>" line is the user's submitted message in the transcript (the VT
 // chrome filter deliberately lets those through) — never a menu cursor.
-const NUMBERED_SELECTED_OPTION_RE = /^❯\s+\d+\.\s+/
+const NUMBERED_SELECTED_OPTION_RE = /^[❯›>]\s+\d+\.\s+/
 // Accept 2–3 leading spaces (aligned numbered lists indent to 3). 4+ = tool output.
 const UNSELECTED_OPTION_RE = /^ {2,3}(\S.*)$/
 // Strip leading "1. " / "2. " numbering from option text
@@ -81,15 +81,44 @@ const NUMBERED_PREFIX_RE = /^\d+\.\s+/
 // matches. A numbered option row, optionally cursor-marked: "❯ 1. macOS",
 // "  2. iOS". The box gutter is stripped before matching.
 const QUESTION_SUFFIX_RE = /\?$/
-const NUMBERED_OPTION_RE = /^(❯)?\s*(\d+)\.\s+(.+?)$/
+// A Codex picker row: optional `>`/`›`/`❯` cursor, then `1. label`.
+const NUMBERED_OPTION_RE = /^([>›❯])?\s*(\d+)\.\s+(.+?)$/
 
-// Permission-gate option labels (Yes / No …). A gate is handled by the
+// Permission-gate option labels (Yes / No …). A Claude gate is handled by the
 // structured `permission` WS event, not as a radio QuestionCard — reject it
-// here so it never renders as a fake picker.
-const PERMISSION_OPTION_RE = /^(Yes|No)\b/i
+// here so it never renders as a fake picker. Codex's directory-trust rows
+// ("Yes, continue" / "No, quit") are not that gate: they often never get a
+// permission frame, so they must still scrape into a card.
+function isClaudePermissionOption(label: string): boolean {
+  if (/^Yes, continue$/i.test(label) || /^No, quit$/i.test(label)) return false
+  return /^(Yes|No)\b/i.test(label)
+}
 
 function stripNumberedPrefix(s: string): string {
   return s.replace(NUMBERED_PREFIX_RE, '')
+}
+
+function parseCodexDirectoryTrust(stripped: string[]): QuestionBlock | null {
+  const inner = stripped.map(stripBoxGutter)
+  if (!inner.some((line) => /trust the contents/i.test(line))) return null
+  const options: QuestionOption[] = []
+  let selectedIndex = 0
+  for (const line of inner) {
+    const m = line.match(NUMBERED_OPTION_RE)
+    if (!m) continue
+    const label = m[3].trim()
+    if (!/^Yes, continue$/i.test(label) && !/^No, quit$/i.test(label)) continue
+    if (m[1]) selectedIndex = options.length
+    options.push({ label })
+  }
+  if (options.length < 2) return null
+  const question = inner.find((line) => /trust the contents/i.test(line))?.trim()
+  if (!question) return null
+  return {
+    source: 'pty',
+    questions: [{ question, multiSelect: false, options }],
+    selectedIndex,
+  }
 }
 
 // Strip leading/trailing box-drawing gutters ("│ … │") and surrounding
@@ -132,7 +161,7 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
       const m = line.match(NUMBERED_OPTION_RE)
       if (!m) break // first non-numbered line ends the option block
       const label = m[3].trim()
-      if (PERMISSION_OPTION_RE.test(label)) {
+      if (isClaudePermissionOption(label)) {
         sawPermission = true
         break
       }
@@ -164,6 +193,9 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
 
 export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   const stripped = lines.map(stripAnsi)
+
+  const trust = parseCodexDirectoryTrust(stripped)
+  if (trust) return trust
 
   // --- Format 1: standard inquirer "? Question" prompt ---
   let questionLineIndex = -1
@@ -267,7 +299,7 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   // A permission gate ("Do you want to proceed? / ❯ 1. Yes / 2. No …") reaches
   // here via its ❯ cursor. It's handled by the structured `permission` WS event,
   // not as a radio card — reject so it doesn't become a fake picker.
-  if (options[0] && PERMISSION_OPTION_RE.test(options[0].label)) return null
+  if (options[0] && isClaudePermissionOption(options[0].label)) return null
 
   return {
     source: 'pty',

@@ -3,10 +3,13 @@
 // terminal_output / session_ready event will ever arrive. Waiting on WS for
 // these hangs the loader forever, so callers must render an ended state now.
 //
-// Shape (all required): ptyAttached false, status idle/on_hold, promptCount 0,
-// empty lastOutput. Legacy streamers also emit completed/failed as terminal.
+// Shape (all required): ptyAttached false, status idle/on_hold, promptCount 0.
+// Legacy streamers also emit completed/failed as terminal.
 // `ownership: 'historical'` waives the promptCount clause — see below.
 // Do NOT key on conversationId — it always equals id and is never blank.
+// lastOutput is accepted on the shape (callers pass it) but does not keep a
+// 0-prompt idle session out of the ended state — a trust-gate quit paints
+// output and then dies.
 //
 // `status` is widened to string so legacy/on_hold values the current
 // SessionStatus union no longer names are still matchable at runtime.
@@ -19,7 +22,7 @@ export interface TerminalSessionShape {
 }
 
 export function isTerminalSession(session: TerminalSessionShape): boolean {
-  const { ptyAttached, status, promptCount, lastOutput, ownership } = session
+  const { ptyAttached, status, promptCount, ownership } = session
 
   // Legacy terminal statuses — never wait on WS for these either.
   if (status === 'completed' || status === 'failed') return true
@@ -33,7 +36,6 @@ export function isTerminalSession(session: TerminalSessionShape): boolean {
   return (
     ptyAttached === false &&
     (status === 'idle' || status === 'on_hold') &&
-    (isRecovered || (promptCount ?? 0) === 0) &&
-    !lastOutput
+    (isRecovered || (promptCount ?? 0) === 0)
   )
 }

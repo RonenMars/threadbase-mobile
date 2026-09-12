@@ -8,7 +8,7 @@ const base = {
 }
 
 describe('isTerminalSession', () => {
-  it('is terminal for a dead-on-arrival session (no pty, idle, 0 prompts, empty output)', () => {
+  it('is terminal for a dead-on-arrival session (no pty, idle, 0 prompts)', () => {
     expect(isTerminalSession(base)).toBe(true)
   })
 
@@ -47,8 +47,8 @@ describe('isTerminalSession', () => {
     ).toBe(false)
   })
 
-  it('is NOT terminal when there is buffered output', () => {
-    expect(isTerminalSession({ ...base, lastOutput: 'hello' })).toBe(false)
+  it('is terminal when a 0-prompt idle session left buffered output', () => {
+    expect(isTerminalSession({ ...base, lastOutput: 'hello' })).toBe(true)
   })
 
   it('is NOT terminal while still running', () => {

@@ -38,7 +38,12 @@ const USER_PREFIX_RE = /^[❯›>]\s(.*)$/
 // streamer confirmed `<text>` as ground truth (userMessageTexts) or the set is
 // empty — old streamers send no user_message, so fall back to the heuristic.
 function isUserLine(clean: string, userMessageTexts?: Set<string>): boolean {
-  const m = clean.trim().match(USER_PREFIX_RE)
+  const trimmed = clean.trim()
+  // A numbered picker row (`> 1. Yes, continue`) shares the `>` prefix with a
+  // user transcript line; treating it as user-owned drops it from the scrape
+  // window and hides the selected option.
+  if (/^[❯›>]\s*\d+\.\s/.test(trimmed)) return false
+  const m = trimmed.match(USER_PREFIX_RE)
   if (!m) return false
   if (!userMessageTexts || userMessageTexts.size === 0) return true
   return userMessageTexts.has(m[1].trim())
