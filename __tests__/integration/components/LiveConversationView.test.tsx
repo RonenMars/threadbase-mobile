@@ -166,6 +166,15 @@ async function renderView() {
   )
 }
 
+// FlashList is mocked, so drive the FAB the way the real list does: a scroll
+// event whose distance-from-bottom is past the threshold.
+const SCROLLED_UP = {
+  nativeEvent: { contentOffset: { y: 0 }, contentSize: { height: 5000 }, layoutMeasurement: { height: 800 } },
+}
+const AT_BOTTOM = {
+  nativeEvent: { contentOffset: { y: 4200 }, contentSize: { height: 5000 }, layoutMeasurement: { height: 800 } },
+}
+
 describe('LiveConversationView — optimistic sent message', () => {
   beforeEach(() => {
     mockMutate.mockClear()
@@ -199,7 +208,7 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getByText('Found 12 apps')).toBeTruthy()
   })
 
-  it('stops following live output as soon as the user drags the chat', async () => {
+  it('offers a jump-to-latest once the user has scrolled away from the tail', async () => {
     mockHistorical = [
       { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
     ]
@@ -208,11 +217,30 @@ describe('LiveConversationView — optimistic sent message', () => {
     const messageList = screen.getByTestId('live-conversation-list')
 
     expect(messageList).toBeTruthy()
-    expect(messageList!.props.onScrollBeginDrag).toEqual(expect.any(Function))
-    await act(async () => messageList!.props.onScrollBeginDrag())
+    expect(messageList!.props.onScroll).toEqual(expect.any(Function))
+    await act(async () => messageList!.props.onScroll(SCROLLED_UP))
 
-    const jumpToLatest = screen.getByTestId('chat-jump-to-latest')
-    expect(jumpToLatest).toBeTruthy()
+    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+
+    await act(async () => messageList!.props.onScroll(AT_BOTTOM))
+    expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
+  })
+
+  // Regression: the view used to swap maintainVisibleContentPosition to
+  // `{ disabled: true }` on scroll-begin-drag. flash-list's checkBounds only
+  // clears its sticky pendingAutoscrollToBottom flag while the threshold is
+  // set, so disabling it latched that flag `true` and the next `data` change
+  // fired scrollToEnd — the user could not scroll up past the last message.
+  it('keeps bottom-anchoring enabled while the user is scrolled up', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScroll(SCROLLED_UP))
+
+    expect(list!.props.maintainVisibleContentPosition).toMatchObject({
+      autoscrollToBottomThreshold: 0.2,
+      startRenderingFromBottom: true,
+    })
+    expect(list!.props.maintainVisibleContentPosition.disabled).toBeFalsy()
   })
 
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
@@ -308,13 +336,13 @@ describe('LiveConversationView — text refused while a prompt is open', () => {
     alertSpy.mockRestore()
   })
 
-  // Drag first so the view has stopped following the tail: that is the state
-  // in which "jump back to the card" is observable (the jump button is only
-  // rendered while not following).
+  // Scroll away from the tail first: that is the state in which "jump back to
+  // the card" is observable (the jump button is only rendered while the tail is
+  // off-screen).
   async function dragThenSend(text: string) {
     await renderView()
     const list = screen.getByTestId('live-conversation-list')
-    await act(async () => list!.props.onScrollBeginDrag())
+    await act(async () => list!.props.onScroll(SCROLLED_UP))
     expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
 
     const input = screen.getByTestId('chat-message-input')
