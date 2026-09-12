@@ -62,7 +62,7 @@ DEVICE_UDID="<your-device-udid>" npm run dev:device
 
 What happens:
 
-1. `bundle exec pod install` if needed (~30s) — `bundle exec` keeps CocoaPods on the Gemfile-pinned 1.16.2.
+1. `bundle exec pod install` if needed (~30s) — `bundle exec` keeps CocoaPods on the Gemfile-pinned 1.17.0.
 2. Xcode build (~3–5 min cold, faster on warm cache).
 3. Install over USB.
 4. Metro starts on port 8081.
