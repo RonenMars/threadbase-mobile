@@ -277,6 +277,24 @@ describe('BrowseScreen e2e provider flow', () => {
       expect(getByText(unverifiedText)).toBeTruthy()
     })
 
+    it('stays hidden in production even when the settings toggle is on', async () => {
+      const globalWithDev = global as typeof global & { __DEV__: boolean }
+      const prevDev = globalWithDev.__DEV__
+      globalWithDev.__DEV__ = false
+      useSettingsStore.setState({ showProviderVersionWarning: true })
+      mockHealth = {
+        data: { providers: [healthWith([{ code: 'version_unverified', message: 'x' }])] },
+        isLoading: false,
+      }
+      try {
+        const { queryByText, queryByTestId } = await renderScreen()
+        expect(queryByText(unverifiedText)).toBeNull()
+        expect(queryByTestId('browse-provider-warning')).toBeNull()
+      } finally {
+        globalWithDev.__DEV__ = prevDev
+      }
+    })
+
     it('still shows other warning codes when the toggle is off', async () => {
       mockHealth = {
         data: {

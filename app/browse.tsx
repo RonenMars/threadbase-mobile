@@ -74,7 +74,7 @@ export default function BrowseScreen() {
   const selectedUnavailable = selectedHealth?.available === false
   const showProviderVersionWarning = useSettingsStore((s) => s.showProviderVersionWarning)
   const selectedWarnings = (selectedHealth?.warnings ?? []).filter(
-    (w) => showProviderVersionWarning || w.code !== 'version_unverified',
+    (w) => (__DEV__ && showProviderVersionWarning) || w.code !== 'version_unverified',
   )
   const showProviderNotes =
     selectedUnavailable ||

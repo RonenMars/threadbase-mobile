@@ -653,13 +653,17 @@ await refreshServerInfo(serverId)
           badge={t('session.betaBadge')}
         />
         <Text style={s.rowNote}>{t('session.chatViewNote')}</Text>
-        <SettingsRow
-          label={t('session.showProviderVersionWarning')}
-          value={showProviderVersionWarning}
-          onValueChange={setShowProviderVersionWarning}
-          testID="settings-provider-version-warning-toggle"
-        />
-        <Text style={s.rowNote}>{t('session.showProviderVersionWarningNote')}</Text>
+        {__DEV__ ? (
+          <>
+            <SettingsRow
+              label={t('session.showProviderVersionWarning')}
+              value={showProviderVersionWarning}
+              onValueChange={setShowProviderVersionWarning}
+              testID="settings-provider-version-warning-toggle"
+            />
+            <Text style={s.rowNote}>{t('session.showProviderVersionWarningNote')}</Text>
+          </>
+        ) : null}
 
         <SectionHeader title={t('section.history')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
