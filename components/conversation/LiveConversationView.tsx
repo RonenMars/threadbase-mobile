@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   StyleSheet,
@@ -30,6 +30,7 @@ import { InheritedHistoryDivider } from '@/components/conversation/InheritedHist
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
+import { messageItemType } from '@/utils/messageItemType'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
@@ -124,7 +125,6 @@ export function LiveConversationView({
   const { data, isLoading: isHistoryLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useConversation(serverId, conversationId, {
     maxBytes: SESSION_HISTORY_MAX_BYTES,
   })
-  const historicalMessages: Message[] = data?.messages ?? []
   const inheritedHistory = data?.inheritedHistory
   // Matched against the rendered rows, so the seam appears as soon as the page
   // carrying the boundary message loads.
@@ -133,39 +133,46 @@ export function LiveConversationView({
   // Live appended messages (WS)
   const { liveMessages } = useConversationStream(serverId, sessionId, conversationId)
 
-  // Historical carries a server message_index; live WS messages do not (yet —
-  // real indexes arrive with the WS-resume follow-up). Order historical by
-  // index; live messages keep arrival order after history. Never assign a
-  // synthetic index to a live message and never write one back to the query
-  // cache — the derived cursor must stay "max index over server-indexed
-  // messages" so it can't be advanced by a client-guessed value.
-  const orderedHistorical = [...historicalMessages].sort((a, b) => {
-    const ai = a.messageIndex ?? Number.MAX_SAFE_INTEGER
-    const bi = b.messageIndex ?? Number.MAX_SAFE_INTEGER
-    return ai - bi
-  })
+  // Memoized so `data` keeps its identity across unrelated re-renders.
+  // FlashList runs its autoscroll-to-bottom check on every `data` identity
+  // change, so a fresh array from e.g. the jump-to-latest FAB toggling
+  // snapped a reader who had scrolled up a few lines back to the tail.
+  const allMessages = useMemo(() => {
+    const historicalMessages: Message[] = data?.messages ?? []
+    // Historical carries a server message_index; live WS messages do not (yet —
+    // real indexes arrive with the WS-resume follow-up). Order historical by
+    // index; live messages keep arrival order after history. Never assign a
+    // synthetic index to a live message and never write one back to the query
+    // cache — the derived cursor must stay "max index over server-indexed
+    // messages" so it can't be advanced by a client-guessed value.
+    const orderedHistorical = [...historicalMessages].sort((a, b) => {
+      const ai = a.messageIndex ?? Number.MAX_SAFE_INTEGER
+      const bi = b.messageIndex ?? Number.MAX_SAFE_INTEGER
+      return ai - bi
+    })
 
-  // Deduplicate live messages against historical by uuid (id never matches
-  // across REST/WS: REST uses index-based ids, WS uses uuid/timestamp).
-  const seenUuids = new Set(orderedHistorical.map((m) => m.uuid).filter(Boolean))
-  const newLive = liveMessages.filter((m) => !m.uuid || !seenUuids.has(m.uuid))
+    // Deduplicate live messages against historical by uuid (id never matches
+    // across REST/WS: REST uses index-based ids, WS uses uuid/timestamp).
+    const seenUuids = new Set(orderedHistorical.map((m) => m.uuid).filter(Boolean))
+    const newLive = liveMessages.filter((m) => !m.uuid || !seenUuids.has(m.uuid))
 
-  // Drop optimistic turns whose echo has landed — matched one-for-one by text.
-  const allStreamed = [...orderedHistorical, ...newLive]
-  const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
-  const stillPending = (() => {
-    const remaining = [...pendingSends]
-    for (const echoText of echoedUserTexts) {
-      const idx = remaining.findIndex((m) => userMessageText(m) === echoText)
-      if (idx !== -1) remaining.splice(idx, 1)
-    }
-    return remaining
-  })()
+    // Drop optimistic turns whose echo has landed — matched one-for-one by text.
+    const allStreamed = [...orderedHistorical, ...newLive]
+    const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
+    const stillPending = (() => {
+      const remaining = [...pendingSends]
+      for (const echoText of echoedUserTexts) {
+        const idx = remaining.findIndex((m) => userMessageText(m) === echoText)
+        if (idx !== -1) remaining.splice(idx, 1)
+      }
+      return remaining
+    })()
 
-  // Order: historical → optimistic user bubble → live WS messages. Dedup by
-  // uuid then id (shared with the read-only conversation view). newLive above is
-  // recomputed inside the helper — kept local here only for the echo matching.
-  const allMessages = mergeLiveMessages(orderedHistorical, liveMessages, stillPending)
+    // Order: historical → optimistic user bubble → live WS messages. Dedup by
+    // uuid then id (shared with the read-only conversation view). newLive above is
+    // recomputed inside the helper — kept local here only for the echo matching.
+    return mergeLiveMessages(orderedHistorical, liveMessages, stillPending)
+  }, [data?.messages, liveMessages, pendingSends])
 
   // Session status for thinking indicator
   const { data: session } = useSessionDetail(serverId, sessionId)
@@ -422,6 +429,11 @@ export function LiveConversationView({
             </RenderErrorBoundary>
           </>
         )}
+        getItemType={messageItemType}
+        // Same runway as ConversationHistoryList: a last message taller than
+        // 2×drawDistance hits flash-list's bad mVCP-correction regime
+        // (Shopify/flash-list#2136) and bounces the reader back to the tail.
+        drawDistance={2000}
         maintainVisibleContentPosition={CHAT_ANCHOR}
         onScroll={handleScroll}
         scrollEventThrottle={16}

@@ -17,6 +17,7 @@ import { useAppDirection } from '@/lib/rtl'
 import { font, spacing, type Theme } from '@/constants/theme'
 import type { Message } from '@/types/api'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
+import { messageItemType } from '@/utils/messageItemType'
 
 interface Props {
   serverId: string
@@ -40,25 +41,6 @@ interface SearchTargetResponse {
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true)
-}
-
-// Same split ConversationHistoryList uses: FlashList v2's per-type height
-// average is poisoned when a ~3,000pt last message shares a pool with 46pt
-// reasoning headers, and the resulting content-size swing shoves the mVCP
-// anchor (blank-gap / viewport-teleport while scrolling up).
-function historyItemType(item: Message): string {
-  let hasThinking = false
-  let hasTool = false
-  let hasDiff = false
-  for (const b of item.content) {
-    if (b.type === 'thinking') hasThinking = true
-    else if (b.type === 'tool_use' || b.type === 'tool_result') hasTool = true
-    else if (b.type === 'diff') hasDiff = true
-  }
-  if (hasDiff) return 'diff'
-  if (hasTool) return 'tool'
-  if (hasThinking) return 'thinking'
-  return item.role === 'user' ? 'user' : 'assistant'
 }
 
 // Seeds the raw-terminal session view from the conversation, bounded by
@@ -359,7 +341,7 @@ export function SessionHistoryFeed({ serverId, conversationId, isFull, onToggleF
               <MessageItem message={item} isLast={index === messages.length - 1} />
             </RenderErrorBoundary>
           )}
-          getItemType={historyItemType}
+          getItemType={messageItemType}
           // iOS default is 250px; a last message taller than 2× that hits
           // FlashList's known-bad mVCP-correction regime (Shopify/flash-list#2136)
           // and teleports the viewport back to the tail while scrolling up.

@@ -261,6 +261,34 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(list!.props.onScrollBeginDrag).toEqual(expect.any(Function))
   })
 
+  // Regression: flash-list runs its autoscroll-to-bottom check on every `data`
+  // identity change. The FAB flips ~100pt from the tail, inside the 0.2-viewport
+  // autoscroll zone, so a fresh array on that re-render snapped the reader back.
+  it('keeps the list data identity when a scroll re-renders the view', async () => {
+    mockHistorical = [
+      { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await renderView()
+    const before = screen.getByTestId('live-conversation-list').props.data
+
+    await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+
+    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+    expect(screen.getByTestId('live-conversation-list').props.data).toBe(before)
+  })
+
+  // Regression: every row shared one height average, so ~60pt tool/reasoning
+  // rows above a long answer were placed at ~1,200pt. Measuring them as the
+  // reader scrolled up shrank the content below their offset and iOS bounced
+  // them back to the tail. Measured on device, 2026-09-12.
+  it('estimates row heights per message shape with a 2000pt draw runway', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    expect(list.props.getItemType({ id: 't', role: 'assistant', content: [{ type: 'tool_use', id: 'x', name: 'Read', input: {} }] })).toBe('tool')
+    expect(list.props.getItemType({ id: 'a', role: 'assistant', content: [{ type: 'text', text: 'hi' }] })).toBe('assistant')
+    expect(list.props.drawDistance).toBe(2000)
+  })
+
   it('shows the sent message in the bubbles immediately, before any WS echo', async () => {
     await renderView()
 
