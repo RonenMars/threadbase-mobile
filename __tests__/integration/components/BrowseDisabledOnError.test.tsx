@@ -86,6 +86,7 @@ describe('BrowseScreen — actions when the server is unreachable', () => {
     expect(getByTestId('browse-new-folder').props.accessibilityState.disabled).toBe(true)
     expect(getByTestId('start-provider-claude-code').props.accessibilityState.disabled).toBe(true)
     expect(getByTestId('start-provider-codex-cli').props.accessibilityState.disabled).toBe(true)
+    expect(getByTestId('start-provider-cursor-cli').props.accessibilityState.disabled).toBe(true)
   })
 
   it('disables them on an unreachable server even when the listing itself succeeded', async () => {

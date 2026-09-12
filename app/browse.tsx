@@ -28,7 +28,13 @@ import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
-import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, type ProviderName } from '@/constants/providers'
+import {
+  CLAUDE_CODE_PROVIDER,
+  CODEX_CLI_PROVIDER,
+  CURSOR_CLI_PROVIDER,
+  PROVIDER_NAMES,
+  type ProviderName,
+} from '@/constants/providers'
 import { clientLog } from '@/lib/clientLog'
 import { useProviderHealth } from '@/hooks/useProviderHealth'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
@@ -256,7 +262,7 @@ export default function BrowseScreen() {
   const navigateToStartScreen = useCallback(
     (path: string, projectName: string) => {
       const params = new URLSearchParams({ server: serverId ?? '', path, projectName })
-      if (selectedProvider === CODEX_CLI_PROVIDER) params.set('provider', selectedProvider)
+      if (selectedProvider !== CLAUDE_CODE_PROVIDER) params.set('provider', selectedProvider)
       const target: Href = `/session/new?${params.toString()}`
       clientLog.info('browse', 'dismiss modal + push /session/new', { target })
       router.back()
@@ -509,7 +515,7 @@ export default function BrowseScreen() {
             and assert nothing until there is something to assert.
           */}
           {providerHealthLoading
-            ? [CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER].map((provider) => (
+            ? PROVIDER_NAMES.map((provider) => (
                 <View
                   key={provider}
                   style={styles.providerOptionSkeleton}
@@ -521,6 +527,7 @@ export default function BrowseScreen() {
             : ([
             { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: brand.claude },
             { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: brand.codex },
+            { value: CURSOR_CLI_PROVIDER, label: t('sessions:provider.cursor'), color: brand.cursor },
           ]).map((option) => {
             const selected = selectedProvider === option.value
             const health = findProviderHealth(providerHealth?.providers, option.value)

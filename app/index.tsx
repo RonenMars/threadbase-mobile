@@ -60,6 +60,7 @@ import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
+import { providerLabelKey, type ProviderName } from '@/constants/providers'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
 import { GlassFill } from '@/components/ui/GlassFill'
@@ -197,7 +198,7 @@ export default function ProjectsHub() {
 
   // Filter state (sessions)
   const [selectedStatuses, setSelectedStatuses] = useState<SessionStatus[]>(ALL_STATUSES)
-  const [providerFilter, setProviderFilter] = useState<'claude-code' | 'codex-cli' | undefined>(undefined)
+  const [providerFilter, setProviderFilter] = useState<ProviderName | undefined>(undefined)
   const isSheetActive =
     sortBy !== 'lastActivity' ||
     sortOrder !== 'desc' ||
@@ -829,9 +830,21 @@ const MergedClassicList = React.memo(function MergedClassicList({
             <Text style={styles.convCardTitle} numberOfLines={1}>{convCardTitle(item)}</Text>
           )}
           {item.provider != null ? (
-            <View style={item.provider === 'codex-cli' ? styles.convCardCodexBadge : styles.convCardClaudeBadge}>
-              <Text style={item.provider === 'codex-cli' ? styles.convCardCodexBadgeText : styles.convCardClaudeBadgeText}>
-                {item.provider === 'codex-cli' ? t('provider.codex') : t('provider.claude')}
+            <View style={
+              providerLabelKey(item.provider) === 'codex'
+                ? styles.convCardCodexBadge
+                : providerLabelKey(item.provider) === 'cursor'
+                  ? styles.convCardCursorBadge
+                  : styles.convCardClaudeBadge
+            }>
+              <Text style={
+                providerLabelKey(item.provider) === 'codex'
+                  ? styles.convCardCodexBadgeText
+                  : providerLabelKey(item.provider) === 'cursor'
+                    ? styles.convCardCursorBadgeText
+                    : styles.convCardClaudeBadgeText
+              }>
+                {t(`provider.${providerLabelKey(item.provider)}`)}
               </Text>
             </View>
           ) : null}
@@ -1161,6 +1174,18 @@ function makeStyles(theme: Theme) {
   },
   convCardClaudeBadgeText: {
     color: brand.claude,
+    fontSize: font.xs - 2,
+    fontWeight: '700' as const,
+    letterSpacing: 0.3,
+  },
+  convCardCursorBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: `${brand.cursor}20`,
+  },
+  convCardCursorBadgeText: {
+    color: brand.cursor,
     fontSize: font.xs - 2,
     fontWeight: '700' as const,
     letterSpacing: 0.3,

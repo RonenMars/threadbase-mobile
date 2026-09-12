@@ -270,6 +270,7 @@
       "streamer": "الستريمر",
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
+      "providerCursor": "Cursor CLI",
       "cache": "ذاكرة المحادثات",
       "pty": "نظام PTY",
       "filesystem": "مجلد سجل المزوّد"

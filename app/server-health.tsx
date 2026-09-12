@@ -285,6 +285,8 @@ function CheckCard({
         return t('health.checks.providerClaude')
       case 'provider:codex-cli':
         return t('health.checks.providerCodex')
+      case 'provider:cursor-cli':
+        return t('health.checks.providerCursor')
       case 'cache':
         return t('health.checks.cache')
       case 'pty':
