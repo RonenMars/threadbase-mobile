@@ -53,6 +53,7 @@
       "__tests__/integration/components/BrowseOutsideRootFallback.test.tsx",
       "__tests__/integration/components/Card.test.tsx",
       "__tests__/integration/components/ChatComposer.test.tsx",
+      "__tests__/integration/components/ClassicSessionsList.liveGate.test.tsx",
       "__tests__/integration/components/ConversationHistoryList.test.tsx",
       "__tests__/integration/components/EmptyState.test.tsx",
       "__tests__/integration/components/FirstShowBanner.test.tsx",
