@@ -4,7 +4,9 @@ import * as Haptics from 'expo-haptics'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
+import { useSessionNamesStore } from '@/stores/sessionNames'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { conversationRowTitle } from '@/components/sessions/shared/rowTitle'
 import type { ConvRowProps } from './types'
 
 export function ConvRow({ conv, onLongPress, forceServerChip = false }: ConvRowProps) {
@@ -12,6 +14,9 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false }: ConvRowP
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[conv.serverId]?.color)
   const previewPref = useSettingsStore((s) => s.historyMessageDisplay)
+  const storedName = useSessionNamesStore((s) => s.getName(conv.serverId, conv.id))
+  const storedOrigin = useSessionNamesStore((s) => s.getOrigin(conv.serverId, conv.id))
+  const title = conversationRowTitle(conv, { name: storedName, origin: storedOrigin })
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -26,7 +31,7 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false }: ConvRowP
   return (
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
-      title={conv.title}
+      title={title}
       timestamp={conv.lastMessage?.timestamp ?? conv.lastActivity}
       messageCount={conv.messageCount}
       branch={conv.branch}

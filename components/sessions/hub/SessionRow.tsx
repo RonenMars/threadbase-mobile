@@ -9,10 +9,10 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession } from '@/lib/externalSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
-import { formatElapsed } from './hubUtils'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { SessionRowProps } from './types'
 
@@ -22,9 +22,9 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
-  // User rename wins; then the JSONL-derived conversation name off the session.
-  const renamedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
-  const sessionName = renamedName ?? session.sessionName
+  const storedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  const storedOrigin = useSessionNamesStore((s) => s.getOrigin(session.serverId, session.id))
+  const title = sessionRowTitle(session, { name: storedName, origin: storedOrigin })
 
   const presentation = deriveSessionPresentation(session)
   const isExternal = isExternalSession(session)
@@ -73,14 +73,12 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
 
-  const branchAndElapsed = [session.branch || t('card.noBranch'), formatElapsed(session.elapsedMs)].join(' · ')
-  const titleSuffix = sessionName?.trim() || branchAndElapsed
   const promptCountLabel = t('card.prompts', { count: session.promptCount })
   const activityTimestamp = presentation.activityAt ?? session.completedAt ?? session.startedAt
 
   return (
     <ConversationListItem
-      title={titleSuffix}
+      title={title}
       timestamp={activityTimestamp}
       messageCount={session.promptCount}
       branch={session.branch}

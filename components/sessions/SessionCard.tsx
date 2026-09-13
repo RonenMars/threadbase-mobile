@@ -7,6 +7,7 @@ import { StateBadge, getSessionTierLabel, isLiveTier } from './StateBadge'
 import { MachineBadge } from './MachineBadge'
 import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { Badge } from '@/components/ui/Badge'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
@@ -61,8 +62,9 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color) ?? SERVER_COLOR_DEFAULT
-  const customName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
-  const displayName = customName ?? session.projectName
+  const storedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  const storedOrigin = useSessionNamesStore((s) => s.getOrigin(session.serverId, session.id))
+  const displayName = sessionRowTitle(session, { name: storedName, origin: storedOrigin })
 
   // A discovered process the streamer only observes — read-only, not
   // interactive. Routing keys on `ownership` (strict).

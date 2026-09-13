@@ -54,8 +54,7 @@
     "dismiss": "סגור",
     "cancelConfirm": "האם אתם בטוחים?",
     "confirmYes": "כן",
-    "confirmNo": "לא",
-    "noBranch": "ללא git"
+    "confirmNo": "לא"
   },
   "hub": {
     "seeAll_one": "ראה את כל השיחה",

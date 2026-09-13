@@ -53,8 +53,7 @@
     "dismiss": "Dismiss",
     "cancelConfirm": "Are you sure?",
     "confirmYes": "Yes",
-    "confirmNo": "No",
-    "noBranch": "no git"
+    "confirmNo": "No"
   },
   "hub": {
     "seeAll_one": "See all {{count}} conversation",

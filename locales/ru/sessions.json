@@ -55,8 +55,7 @@
     "dismiss": "Закрыть",
     "cancelConfirm": "Вы уверены?",
     "confirmYes": "Да",
-    "confirmNo": "Нет",
-    "noBranch": "без git"
+    "confirmNo": "Нет"
   },
   "hub": {
     "seeAll_one": "Показать {{count}} беседу",

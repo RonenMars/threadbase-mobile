@@ -57,8 +57,7 @@
     "dismiss": "إغلاق",
     "cancelConfirm": "هل أنت متأكد؟",
     "confirmYes": "نعم",
-    "confirmNo": "لا",
-    "noBranch": "بدون git"
+    "confirmNo": "لا"
   },
   "hub": {
     "seeAll_zero": "لا محادثات",
