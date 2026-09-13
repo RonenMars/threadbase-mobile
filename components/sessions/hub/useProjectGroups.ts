@@ -20,14 +20,6 @@ export interface ProjectGroup {
   earliestStartMs: number
 }
 
-const STATUS_PRIORITY: Record<string, number> = {
-  running: 0,
-  waiting_input: 1,
-  idle: 2,
-  failed: 3,
-  completed: 4,
-}
-
 function toMs(isoString: string | undefined): number {
   if (!isoString) return 0
   const ms = Date.parse(isoString)
@@ -129,24 +121,10 @@ export function useProjectGroups(
         case 'projectName':
           cmp = a.projectName.localeCompare(b.projectName)
           break
+        case 'state':
         case 'lastActivity':
           cmp = b.latestActivityMs - a.latestActivityMs
           break
-        case 'startedAt':
-          cmp = b.earliestStartMs - a.earliestStartMs
-          break
-        case 'status': {
-          const aPriority = Math.min(
-            ...a.sessions.map((s) => STATUS_PRIORITY[s.status] ?? 5),
-            5,
-          )
-          const bPriority = Math.min(
-            ...b.sessions.map((s) => STATUS_PRIORITY[s.status] ?? 5),
-            5,
-          )
-          cmp = aPriority - bPriority
-          break
-        }
       }
       return sortOrder === 'asc' ? -cmp : cmp
     })

@@ -48,13 +48,12 @@ import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
-import type { ProviderName } from '@/constants/providers'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
-import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
+import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
+import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefaultFilters, type ListFilters } from '@/lib/sessionFilters'
 
-const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
 
 // Stable empty reference so a memo/child does not see a fresh [] each render
 // while the paginated query is disabled or still loading its first page.
@@ -156,18 +155,17 @@ export default function ProjectsHub() {
     ?? (manualCacheAlertServerId && cacheAlert[manualCacheAlertServerId] ? manualCacheAlertServerId : null)
   const setCacheAlertModalServerId = setManualCacheAlertServerId
 
-  // Sort state (hub mode)
-  const [sortBy, setSortBy] = useState<SortBy>('lastActivity')
+  // Order and filters. Tier, agent and recency filter client-side: the wire
+  // only knows three statuses, and an empty status list used to mean "all".
+  const [sortBy, setSortBy] = useState<SortBy>('state')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
-
-  // Filter state (sessions)
-  const [selectedStatuses, setSelectedStatuses] = useState<SessionStatus[]>(ALL_STATUSES)
-  const [providerFilter, setProviderFilter] = useState<ProviderName | undefined>(undefined)
+  const [filters, setFilters] = useState<ListFilters>(DEFAULT_FILTERS)
+  // The grouped views sort by recency when the Now list is in state order.
+  const groupedSortBy: SortBy = sortBy === 'state' ? 'lastActivity' : sortBy
   const isSheetActive =
-    sortBy !== 'lastActivity' ||
+    sortBy !== 'state' ||
     sortOrder !== 'desc' ||
-    selectedStatuses.length < ALL_STATUSES.length ||
-    providerFilter !== undefined ||
+    !isDefaultFilters(filters) ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
   // Classic tab
@@ -194,13 +192,21 @@ export default function ProjectsHub() {
     isRetrying: isRetryingFailedServers,
   } = useEagerSessions({
     sort: { sortBy, order: sortOrder },
-    filter: { status: selectedStatuses },
   })
   const [manualRefreshing, setManualRefreshing] = useState(false)
 
   const visibleSessions = useMemo(
     () => sessions.filter((s) => displayedServerIds.includes(s.serverId)),
     [sessions, displayedServerIds],
+  )
+  // The grouped views take sessions, so the same filters run over those alone.
+  const filteredSessions = useMemo(
+    () =>
+      applyListFilters(
+        visibleSessions.map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s })),
+        filters,
+      ).map((it) => it.item as MultiSession),
+    [visibleSessions, filters],
   )
 
   // Conversations data
@@ -236,8 +242,10 @@ export default function ProjectsHub() {
   // of restarting the walk.
   // See docs/adr/0001-hub-data-layer-lazy-pagination.md.
   const needsClassicConversations = !isGroupedLayout && (mergeChats || classicTab === 'history')
+  // One agent selected narrows the paged query server-side; any other mix is
+  // filtered here, where the rows already are.
   const convPages = useConversations(
-    providerFilter ? { provider: providerFilter } : undefined,
+    filters.providers.length === 1 ? { provider: filters.providers[0] } : undefined,
     refreshEpoch,
     { enabled: needsClassicConversations },
   )
@@ -317,10 +325,14 @@ export default function ProjectsHub() {
     return [...liveSessions, ...idleSessions, ...convs]
   }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
+  const filteredItems = useMemo(() => applyListFilters(mergedClassicItems, filters), [mergedClassicItems, filters])
   const sessionOnlyItems = useMemo(
-    () => mergedClassicItems.filter((it) => it.kind === 'session'),
-    [mergedClassicItems],
+    () => filteredItems.filter((it) => it.kind === 'session'),
+    [filteredItems],
   )
+  const tierCounts = useMemo(() => countByTier(mergedClassicItems), [mergedClassicItems])
+  const providerCounts = useMemo(() => countByProvider(mergedClassicItems), [mergedClassicItems])
+  const resultCount = mergeChats || classicTab === 'sessions' ? (mergeChats ? filteredItems.length : sessionOnlyItems.length) : filteredItems.length
 
   // FAB
   // When the user is drilled into a directory in TreeView, the drill store
@@ -488,7 +500,7 @@ export default function ProjectsHub() {
         />
       ) : sessionsLayout === 'tree' ? (
         <TreeSessionsList
-          sessions={visibleSessions}
+          sessions={filteredSessions}
           summaries={summaries}
           unsupportedServerIds={unsupportedServerIds}
           refreshing={manualRefreshing}
@@ -498,10 +510,10 @@ export default function ProjectsHub() {
         />
       ) : sessionsLayout === 'hub' ? (
         <ProjectHubList
-          sessions={visibleSessions}
+          sessions={filteredSessions}
           summaries={summaries}
           unsupportedServerIds={unsupportedServerIds}
-          sortBy={sortBy}
+          sortBy={groupedSortBy}
           sortOrder={sortOrder}
           refreshing={manualRefreshing}
           onRefresh={handleRefresh}
@@ -512,7 +524,9 @@ export default function ProjectsHub() {
         <View style={styles.classicContainer}>
           {mergeChats ? (
             <NowList
-              items={mergedClassicItems}
+              items={filteredItems}
+              order={sortBy}
+              direction={sortOrder}
               refreshing={manualRefreshing}
               onRefresh={handleRefresh}
               onEndReached={loadMoreConversations}
@@ -551,6 +565,8 @@ export default function ProjectsHub() {
               {classicTab === 'sessions' ? (
                 <NowList
                   items={sessionOnlyItems}
+                  order={sortBy}
+                  direction={sortOrder}
                   refreshing={manualRefreshing}
                   onRefresh={handleRefresh}
                   searchOpen={searchOpen}
@@ -606,14 +622,15 @@ export default function ProjectsHub() {
       <FilterSortSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onChangeSortBy={setSortBy}
-        onChangeSortOrder={setSortOrder}
-        selectedStatuses={selectedStatuses}
-        onChangeStatuses={setSelectedStatuses}
-        providerFilter={providerFilter}
-        onChangeProviderFilter={(v) => setProviderFilter(v === undefined ? undefined : v)}
+        order={sortBy}
+        onChangeOrder={setSortBy}
+        direction={sortOrder}
+        onChangeDirection={setSortOrder}
+        filters={filters}
+        onChangeFilters={setFilters}
+        tierCounts={tierCounts}
+        providerCounts={providerCounts}
+        resultCount={resultCount}
       />
       <NewSessionServerPicker
         visible={pickerVisible}

@@ -26,6 +26,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import type { MultiConversation, MultiSession } from '@/types/api'
+import type { SortBy, SortOrder } from '@/types/ui'
 import { EarlierRow } from './EarlierRow'
 import { GroupedNoiseRow } from './GroupedNoiseRow'
 import { NeedsYouCard } from './NeedsYouCard'
@@ -43,6 +44,9 @@ interface Props {
   conversationsFromServer: boolean
   onSearchChange: (q: string) => void
   isBackgroundRefreshing?: boolean
+  /** `state` sections the list; the other two flatten it into one ordered run. */
+  order?: SortBy
+  direction?: SortOrder
 }
 
 interface Entry {
@@ -54,7 +58,6 @@ interface Entry {
 type FlatItem =
   | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number }
   | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number }
-  | { kind: 'live'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'grouped'; key: string; members: Entry[] }
 
@@ -106,6 +109,8 @@ export const NowList = React.memo(function NowList({
   conversationsFromServer,
   onSearchChange,
   isBackgroundRefreshing,
+  order = 'state',
+  direction: sortDirection = 'desc',
 }: Props) {
   const theme = useTheme()
   const { direction } = useAppDirection()
@@ -137,7 +142,17 @@ export const NowList = React.memo(function NowList({
   }, [items, searchQuery, conversationsFromServer, getName, getNameOrigin])
 
   const flatData = useMemo((): FlatItem[] => {
-    const byTime = (a: Entry, b: Entry) => b.item.ms - a.item.ms
+    const sign = sortDirection === 'asc' ? -1 : 1
+    const byTime = (a: Entry, b: Entry) => sign * (b.item.ms - a.item.ms)
+    if (order !== 'state') {
+      const projectOf = (e: Entry) =>
+        e.item.kind === 'session' ? e.item.item.projectName : (e.item.item.projectPath.split('/').filter(Boolean).pop() ?? '')
+      const byProject = (a: Entry, b: Entry) => projectOf(a).localeCompare(projectOf(b)) || byTime(a, b)
+      const flat = withNoiseGrouped([...entries].sort(order === 'projectName' ? byProject : byTime), 'grouped-all', expandedGroups.has('grouped-all'))
+      const first = flat.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
+      if (first && first.kind === 'row') first.isFirst = true
+      return flat
+    }
     const needsYou = entries.filter((e) => e.tier === 'needsYou').sort(byTime)
     const working = entries.filter((e) => e.tier === 'working').sort(byTime)
     const earlier = entries.filter((e) => e.tier !== 'needsYou' && e.tier !== 'working').sort(byTime)
@@ -145,11 +160,11 @@ export const NowList = React.memo(function NowList({
     const out: FlatItem[] = []
     if (needsYou.length > 0) {
       out.push({ kind: 'eyebrow', key: 'eyebrow-needsYou', tone: 'needsYou', label: t('live.headerNeedsYou', { count: needsYou.length }) })
-      out.push(...needsYou.map((entry) => ({ kind: 'live' as const, key: entryKey(entry), entry, isFirst: false })))
+      out.push(...needsYou.map((entry) => ({ kind: 'row' as const, key: entryKey(entry), entry, isFirst: false })))
     }
     if (working.length > 0) {
       out.push({ kind: 'eyebrow', key: 'eyebrow-working', tone: 'working', label: t('live.headerWorking', { count: working.length }) })
-      out.push(...working.map((entry) => ({ kind: 'live' as const, key: entryKey(entry), entry, isFirst: false })))
+      out.push(...working.map((entry) => ({ kind: 'row' as const, key: entryKey(entry), entry, isFirst: false })))
     }
 
     if (multiServer) {
@@ -174,10 +189,10 @@ export const NowList = React.memo(function NowList({
       }
     }
 
-    const first = out.find((f) => (f.kind === 'live' || f.kind === 'row') && f.entry.item.kind === 'session')
-    if (first && (first.kind === 'live' || first.kind === 'row')) first.isFirst = true
+    const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
+    if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, multiServer, activeServerIds, servers, collapsedServers, expandedGroups, t])
+  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, expandedGroups, t])
 
   const toggleGroup = useCallback((key: string) => {
     setExpandedGroups((prev) => {
@@ -206,21 +221,6 @@ export const NowList = React.memo(function NowList({
             isRefreshing={isBackgroundRefreshing}
           />
         )
-      case 'live': {
-        const session = item.entry.item.item as MultiSession
-        const serverLabel = multiServer ? session.serverLabel : undefined
-        const serverColor = servers[session.serverId]?.color
-        const Card = item.entry.tier === 'needsYou' ? NeedsYouCard : WorkingCard
-        return (
-          <Card
-            session={session}
-            title={item.entry.title.title}
-            serverLabel={serverLabel}
-            serverColor={serverColor}
-            isFirst={item.isFirst}
-          />
-        )
-      }
       case 'grouped':
         return (
           <GroupedNoiseRow
@@ -229,7 +229,21 @@ export const NowList = React.memo(function NowList({
             onToggle={() => toggleGroup(item.key)}
           />
         )
-      case 'row':
+      case 'row': {
+        // A live tier is a card wherever it sits; everything else is a two-line row.
+        if (item.entry.tier === 'needsYou' || item.entry.tier === 'working') {
+          const session = item.entry.item.item as MultiSession
+          const Card = item.entry.tier === 'needsYou' ? NeedsYouCard : WorkingCard
+          return (
+            <Card
+              session={session}
+              title={item.entry.title.title}
+              serverLabel={multiServer ? session.serverLabel : undefined}
+              serverColor={servers[session.serverId]?.color}
+              isFirst={item.isFirst}
+            />
+          )
+        }
         return (
           <EarlierRow
             item={item.entry.item}
@@ -239,6 +253,7 @@ export const NowList = React.memo(function NowList({
             onLongPressConversation={setActiveConv}
           />
         )
+      }
     }
   }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, expandedGroups, toggleGroup, highlight])
 

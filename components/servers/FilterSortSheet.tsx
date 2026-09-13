@@ -2,109 +2,88 @@ import React, { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { NestableScrollContainer } from 'react-native-draggable-flatlist'
-import { Tree, SquaresFour, List, LockSimple, LockSimpleOpen, Gear, ArrowDown, ArrowUp } from 'phosphor-react-native'
+import { Check, LockSimple, LockSimpleOpen, Gear } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import type { TFunction } from 'i18next'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
+import { colorForToken } from '@/components/sessions/SessionStatusBadge'
+import { getSessionTierLabel } from '@/components/sessions/StateBadge'
 import { useServersStore } from '@/stores/servers'
-import { useSettingsStore } from '@/stores/settings'
-import type { ProviderName } from '@/constants/providers'
-import { brand, type Theme, font, radius, spacing } from '@/constants/theme'
+import { type ProviderName, providerLabelKey } from '@/constants/providers'
+import { type Theme, font, radius, spacing } from '@/constants/theme'
+import { MONO_FONT } from '@/constants/mono'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
-import type { SessionStatus } from '@/types/api'
-import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
-import { useAppDirection } from '@/lib/rtl'
+import { tierColorToken, type SessionTier } from '@/lib/sessionPresentation'
 import {
-  getSessionsLayoutLabel,
-  getSortByLabel,
-  getSortOrderLabel,
-} from './filterSortLabels'
+  ALL_PROVIDERS,
+  ALL_TIERS,
+  DEFAULT_FILTERS,
+  isDefaultFilters,
+  isNeedsMePreset,
+  type ActiveWithin,
+  type ListFilters,
+} from '@/lib/sessionFilters'
+import type { SortBy, SortOrder } from '@/types/ui'
+import { useAppDirection } from '@/lib/rtl'
+import { getActiveWithinLabel, getSortByLabel, getSortOrderLabel } from './filterSortLabels'
 
 interface Props {
   visible: boolean
   onClose: () => void
-  // Sort (hub mode)
-  sortBy: SortBy
-  sortOrder: SortOrder
-  onChangeSortBy: (v: SortBy) => void
-  onChangeSortOrder: (v: SortOrder) => void
-  // Filter (sessions)
-  selectedStatuses: SessionStatus[]
-  onChangeStatuses: (v: SessionStatus[]) => void
-  // Filter (conversations)
-  providerFilter: ProviderName | undefined
-  onChangeProviderFilter: (v: ProviderName | undefined) => void
+  order: SortBy
+  onChangeOrder: (v: SortBy) => void
+  direction: SortOrder
+  onChangeDirection: (v: SortOrder) => void
+  filters: ListFilters
+  onChangeFilters: (v: ListFilters) => void
+  /** Live counts on the unfiltered rows, so a chip says what it would keep. */
+  tierCounts: Record<SessionTier, number>
+  providerCounts: Record<ProviderName, number>
+  /** Rows the current filters keep; drives the primary button. */
+  resultCount: number
 }
 
 const SNAP_POINTS = ['65%', '90%']
+const ORDER_OPTIONS: readonly SortBy[] = ['state', 'lastActivity', 'projectName']
+const WITHIN_OPTIONS: readonly ActiveWithin[] = ['any', 'today', '7d', '30d']
+const DEFAULT_ORDER: SortBy = 'state'
+const DEFAULT_DIRECTION: SortOrder = 'desc'
 
-const LAYOUT_OPTIONS = [
-  { value: 'tree', Icon: Tree },
-  { value: 'hub', Icon: SquaresFour },
-  { value: 'classic', Icon: List },
-] as const satisfies readonly {
-  value: SessionsLayout
-  Icon: React.ComponentType<{ size: number; color: string }>
-}[]
-
-const SORT_BY_OPTIONS: readonly SortBy[] = [
-  'lastActivity',
-  'projectName',
-  'startedAt',
-  'status',
-]
-
-const SORT_ORDER_OPTIONS = [
-  { value: 'desc', Icon: ArrowDown },
-  { value: 'asc', Icon: ArrowUp },
-] as const satisfies readonly {
-  value: SortOrder
-  Icon: React.ComponentType<{ size: number; color: string }>
-}[]
-
-export const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
-
-const DEFAULT_SORT_BY: SortBy = 'lastActivity'
-const DEFAULT_SORT_ORDER: SortOrder = 'desc'
-
-const DEFAULT_SESSIONS_LAYOUT: SessionsLayout = 'classic'
-
-function isDefault(
-  sortBy: SortBy,
-  sortOrder: SortOrder,
-  selectedStatuses: SessionStatus[],
-  displayedServerIds: string[],
-  activeServerIds: string[],
-  sessionsLayout: SessionsLayout,
-  providerFilter: ProviderName | undefined,
-): boolean {
-  return (
-    sortBy === DEFAULT_SORT_BY &&
-    sortOrder === DEFAULT_SORT_ORDER &&
-    selectedStatuses.length === ALL_STATUSES.length &&
-    displayedServerIds.length === activeServerIds.length &&
-    sessionsLayout === DEFAULT_SESSIONS_LAYOUT &&
-    providerFilter === undefined
-  )
+function getProviderLabel(provider: ProviderName, t: TFunction<['servers', 'settings', 'sessions']>): string {
+  switch (providerLabelKey(provider)) {
+    case 'claude':
+      return t('sessions:provider.claude')
+    case 'codex':
+      return t('sessions:provider.codex')
+    case 'cursor':
+      return t('sessions:provider.cursor')
+  }
 }
 
-function toggleStatus(selected: SessionStatus[], status: SessionStatus): SessionStatus[] {
-  if (selected.includes(status)) return selected.filter((s) => s !== status)
-  return [...selected, status]
+function toggle<T>(list: T[], value: T): T[] {
+  return list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
 }
 
+/**
+ * Filter & sort for the session list. Navigation (the view switch) lives on the
+ * list itself, not here; every control uses one selection model — a chip is on
+ * or off — and the footer always says what the choice leaves behind.
+ */
 export function FilterSortSheet({
   visible,
   onClose,
-  sortBy,
-  sortOrder,
-  onChangeSortBy,
-  onChangeSortOrder,
-  selectedStatuses,
-  onChangeStatuses,
-  providerFilter,
-  onChangeProviderFilter,
+  order,
+  onChangeOrder,
+  direction,
+  onChangeDirection,
+  filters,
+  onChangeFilters,
+  tierCounts,
+  providerCounts,
+  resultCount,
 }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -112,13 +91,13 @@ export function FilterSortSheet({
   const setDisplayedServerIds = useServersStore((s) => s.setDisplayedServerIds)
   const reorderServers = useServersStore((s) => s.reorderServers)
   const [isEditingOrder, setIsEditingOrder] = useState(false)
-  const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
-  const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
   const theme = useTheme()
   const isGlass = useIsGlass()
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const glassBackground = useGlassSheetBackground()
-  const { t } = useTranslation(['servers', 'settings', 'sessions'])
+  const { t, i18n } = useTranslation(['servers', 'settings', 'sessions'])
+  const { t: tSessions } = useTranslation('sessions')
   // Same i18next-derived direction as the rest of the app; this sheet renders
   // inline (not in an RN Modal), so it also inherits the app root's direction.
   const { direction: localeDirection } = useAppDirection()
@@ -129,22 +108,20 @@ export function FilterSortSheet({
     router.push('/settings')
   }
 
-  const STATUS_OPTIONS: { value: SessionStatus; label: string; color: string }[] = [
-    { value: 'running', label: t('filter.statusRunning'), color: theme.status.running },
-    { value: 'waiting_input', label: t('filter.statusActive'), color: theme.status.waiting },
-    { value: 'idle', label: t('filter.statusIdle'), color: theme.status.idle },
-  ]
-
   const showServerFilter = activeServerIds.length > 1
-
-  const atDefault = isDefault(sortBy, sortOrder, selectedStatuses, displayedServerIds, activeServerIds, sessionsLayout, providerFilter)
+  const atDefault =
+    order === DEFAULT_ORDER &&
+    direction === DEFAULT_DIRECTION &&
+    isDefaultFilters(filters) &&
+    displayedServerIds.length === activeServerIds.length
+  const needsMe = isNeedsMePreset(filters)
+  const everything = isDefaultFilters(filters)
+  const noResults = resultCount === 0
 
   const handleReset = () => {
-    onChangeSortBy(DEFAULT_SORT_BY)
-    onChangeSortOrder(DEFAULT_SORT_ORDER)
-    onChangeStatuses(ALL_STATUSES)
-    onChangeProviderFilter(undefined)
-    setSessionsLayout(DEFAULT_SESSIONS_LAYOUT)
+    onChangeOrder(DEFAULT_ORDER)
+    onChangeDirection(DEFAULT_DIRECTION)
+    onChangeFilters(DEFAULT_FILTERS)
     if (showServerFilter) setDisplayedServerIds(activeServerIds)
   }
 
@@ -157,10 +134,13 @@ export function FilterSortSheet({
 
   if (!visible) return null
 
+  const eyebrow = (text: string) => text.toLocaleUpperCase(i18n.language)
+  const primaryLabel = noResults ? t('servers:filter.noResults') : t('servers:filter.showResults', { count: resultCount })
+
   const sheetContent = (
     <>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{t('filter.filterSort')}</Text>
+        <Text style={styles.title}>{t('servers:filter.filterSort')}</Text>
         <View style={styles.titleActions}>
           <TouchableOpacity
             onPress={openSettings}
@@ -177,156 +157,150 @@ export function FilterSortSheet({
             style={styles.closeButton}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={t('filter.close')}
+            accessibilityLabel={t('servers:filter.close')}
             testID="filter-sort-close-btn"
           >
-            <Text style={styles.closeButtonText}>{t('filter.close')}</Text>
+            <Text style={styles.closeButtonText}>{t('servers:filter.close')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* View */}
+      {/* Presets */}
+      <View style={styles.presetRow}>
+        <TouchableOpacity
+          onPress={() => onChangeFilters({ ...DEFAULT_FILTERS, tiers: ['needsYou'] })}
+          style={[styles.preset, styles.presetNeedsMe, needsMe && styles.presetNeedsMeOn]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: needsMe }}
+          testID="preset-needs-me"
+        >
+          <View style={[styles.chipDot, { backgroundColor: theme.status.waiting }]} />
+          <Text style={[styles.presetText, { color: theme.status.waiting }]}>{t('servers:filter.presetNeedsMe')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => onChangeFilters(DEFAULT_FILTERS)}
+          style={[styles.preset, everything && styles.presetOn]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: everything }}
+          testID="preset-everything"
+        >
+          <Text style={[styles.presetText, everything && styles.presetTextOn]}>{t('servers:filter.presetEverything')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Show — the five tiers, multi-select with live counts */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.view')}</Text>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{eyebrow(t('servers:filter.show'))}</Text>
         <View style={styles.chipRow}>
-          {LAYOUT_OPTIONS.map(({ value, Icon }) => {
-            const selected = sessionsLayout === value
-            const label = getSessionsLayoutLabel(value, t)
+          {ALL_TIERS.map((tier) => {
+            const selected = filters.tiers.includes(tier)
+            const color = colorForToken(theme, tierColorToken(tier))
             return (
               <TouchableOpacity
-                key={value}
-                onPress={() => setSessionsLayout(value)}
+                key={tier}
+                onPress={() => onChangeFilters({ ...filters, tiers: toggle(filters.tiers, tier) })}
                 style={[styles.chip, selected && styles.chipSelected]}
-                accessibilityRole="button"
-                accessibilityLabel={label}
-                accessibilityState={{ selected }}
-                testID={`layout-option-${value}`}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                testID={`tier-toggle-${tier}`}
               >
-                <Icon size={14} color={selected ? theme.text.primary : theme.text.secondary} />
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                  {label}
-                </Text>
+                {selected ? <Check size={12} color={theme.text.accent} weight="bold" /> : null}
+                <View style={[styles.chipDot, { backgroundColor: color }]} />
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{getSessionTierLabel(tier, tSessions)}</Text>
+                <Text style={styles.chipCount}>{tierCounts[tier]}</Text>
               </TouchableOpacity>
             )
           })}
         </View>
       </View>
 
-      {/* Sort by — hidden for Tree layout (sort doesn't apply to folder hierarchy) */}
-      {sessionsLayout !== 'tree' ? (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.sortBy')}</Text>
-          <View style={styles.chipRow}>
-            {SORT_BY_OPTIONS.map((option) => {
-              const selected = sortBy === option
-              return (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => onChangeSortBy(option)}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  testID={`sort-option-${option}`}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {getSortByLabel(option, t)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
-      ) : null}
-
-      {/* Order — hidden for Tree layout */}
-      {sessionsLayout !== 'tree' ? (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.order')}</Text>
-          <View style={styles.chipRow}>
-            {SORT_ORDER_OPTIONS.map((opt) => {
-              const selected = sortOrder === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => onChangeSortOrder(opt.value)}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  testID={`sort-order-${opt.value}`}
-                >
-                  <opt.Icon size={14} color={selected ? theme.text.primary : theme.text.secondary} />
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {getSortOrderLabel(opt.value, t)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
-      ) : null}
-
-      {/* Status */}
+      {/* Agent — same chip mechanics */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('filter.status')}</Text>
-          <View style={styles.quickRow}>
-            <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses(ALL_STATUSES)}>
-              <Text style={styles.quickButtonText}>{t('filter.all')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickButton} onPress={() => onChangeStatuses([])}>
-              <Text style={styles.quickButtonText}>{t('filter.none')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{eyebrow(t('servers:filter.agent'))}</Text>
         <View style={styles.chipRow}>
-          {STATUS_OPTIONS.map((opt) => {
-            const selected = selectedStatuses.includes(opt.value)
+          {ALL_PROVIDERS.map((provider) => {
+            const selected = filters.providers.includes(provider)
             return (
               <TouchableOpacity
-                key={opt.value}
-                onPress={() => onChangeStatuses(toggleStatus(selectedStatuses, opt.value))}
+                key={provider}
+                onPress={() => onChangeFilters({ ...filters, providers: toggle(filters.providers, provider) })}
                 style={[styles.chip, selected && styles.chipSelected]}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                testID={`status-toggle-${opt.value}`}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                testID={`agent-toggle-${provider}`}
               >
-                <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                  {opt.label}
-                </Text>
+                {selected ? <Check size={12} color={theme.text.accent} weight="bold" /> : null}
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{getProviderLabel(provider, t)}</Text>
+                <Text style={styles.chipCount}>{providerCounts[provider]}</Text>
               </TouchableOpacity>
             )
           })}
         </View>
       </View>
 
-      {/* Provider */}
+      {/* Active within */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{t('filter.provider')}</Text>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{eyebrow(t('servers:filter.activeWithin'))}</Text>
         <View style={styles.chipRow}>
-          {([
-            { value: undefined, label: t('filter.all') },
-            { value: 'claude-code' as const, label: t('sessions:provider.claude'), color: brand.claude },
-            { value: 'codex-cli' as const, label: t('sessions:provider.codex'), color: brand.codex },
-            { value: 'cursor-cli' as const, label: t('sessions:provider.cursor'), color: brand.cursor },
-          ]).map((opt) => {
-            const selected = providerFilter === opt.value
+          {WITHIN_OPTIONS.map((within) => {
+            const selected = filters.activeWithin === within
             return (
               <TouchableOpacity
-                key={opt.label}
-                onPress={() => onChangeProviderFilter(selected ? undefined : opt.value)}
-                style={[styles.chip, selected && styles.chipSelected, opt.color && selected ? { borderColor: opt.color } : null]}
-                accessibilityRole="button"
+                key={within}
+                onPress={() => onChangeFilters({ ...filters, activeWithin: within })}
+                style={[styles.chip, selected && styles.chipSelected]}
+                accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                testID={`provider-filter-${opt.value ?? 'all'}`}
+                testID={`within-${within}`}
               >
-                {opt.color ? <View style={[styles.chipDot, { backgroundColor: opt.color }]} /> : null}
-                <Text style={[styles.chipText, selected && styles.chipTextSelected, opt.color && selected ? { color: opt.color } : null]}>
-                  {opt.label}
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{getActiveWithinLabel(within, t)}</Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      </View>
+
+      {/* Order */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{eyebrow(t('servers:filter.order'))}</Text>
+        <View style={styles.segmented}>
+          {ORDER_OPTIONS.map((option) => {
+            const selected = order === option
+            return (
+              <TouchableOpacity
+                key={option}
+                onPress={() => onChangeOrder(option)}
+                style={[styles.segment, selected && styles.segmentSelected]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                testID={`order-${option}`}
+              >
+                <Text style={[styles.segmentText, selected && styles.segmentTextSelected]} numberOfLines={1}>
+                  {getSortByLabel(option, t)}
                 </Text>
               </TouchableOpacity>
             )
           })}
+        </View>
+        <View style={styles.directionRow}>
+          <Text style={styles.directionLabel}>{t('servers:filter.withinEachGroup')}</Text>
+          <View style={styles.segmentedSmall}>
+            {(['desc', 'asc'] as const).map((value) => {
+              const selected = direction === value
+              return (
+                <TouchableOpacity
+                  key={value}
+                  onPress={() => onChangeDirection(value)}
+                  style={[styles.segmentSmall, selected && styles.segmentSelected]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  testID={`direction-${value}`}
+                >
+                  <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{getSortOrderLabel(value, t)}</Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
         </View>
       </View>
 
@@ -334,13 +308,13 @@ export function FilterSortSheet({
       {showServerFilter ? (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('filter.servers')}</Text>
+            <Text style={styles.sectionTitle}>{eyebrow(t('servers:filter.servers'))}</Text>
             {activeServerIds.length >= 2 ? (
               <TouchableOpacity
                 onPress={() => setIsEditingOrder((v) => !v)}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={isEditingOrder ? t('filter.lockOrder') : t('filter.editOrder')}
+                accessibilityLabel={isEditingOrder ? t('servers:filter.lockOrder') : t('servers:filter.editOrder')}
                 accessibilityState={{ selected: isEditingOrder }}
                 testID="server-order-toggle"
               >
@@ -361,17 +335,6 @@ export function FilterSortSheet({
           />
         </View>
       ) : null}
-
-      {/* Reset */}
-      <TouchableOpacity
-        style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
-        onPress={handleReset}
-        disabled={atDefault}
-      >
-        <Text style={[styles.resetText, atDefault && styles.resetTextDisabled]}>
-          {t('filter.resetDefaults')}
-        </Text>
-      </TouchableOpacity>
     </>
   )
 
@@ -386,21 +349,46 @@ export function FilterSortSheet({
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
     >
-      {isEditingOrder ? (
-        <NestableScrollContainer contentContainerStyle={styles.content} testID="filter-sort-sheet">
-          {sheetContent}
-        </NestableScrollContainer>
-      ) : (
-        <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
-          {sheetContent}
-        </BottomSheetScrollView>
-      )}
+      <View style={styles.flex}>
+        {isEditingOrder ? (
+          <NestableScrollContainer contentContainerStyle={styles.content} testID="filter-sort-sheet">
+            {sheetContent}
+          </NestableScrollContainer>
+        ) : (
+          <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
+            {sheetContent}
+          </BottomSheetScrollView>
+        )}
+        {/* Sticky footer: a peer Reset and one primary action that always says what it keeps. */}
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+          <TouchableOpacity
+            style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
+            onPress={handleReset}
+            disabled={atDefault}
+            accessibilityRole="button"
+            testID="filter-reset"
+          >
+            <Text style={styles.resetText}>{t('servers:filter.resetDefaults')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.applyButton, noResults && styles.applyButtonDisabled]}
+            onPress={onClose}
+            disabled={noResults}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: noResults }}
+            testID="filter-apply"
+          >
+            <Text style={[styles.applyText, noResults && styles.applyTextDisabled]} numberOfLines={1}>{primaryLabel}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </BottomSheet>
   )
 }
 
 function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
   return StyleSheet.create({
+    flex: { flex: 1 },
     sheetBg: { backgroundColor: theme.bg.secondary },
     sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
@@ -411,9 +399,33 @@ function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
     settingsButton: { padding: spacing.xs },
     closeButton: { padding: spacing.xs },
     closeButtonText: { color: theme.text.secondary, fontSize: font.lg, lineHeight: font.lg },
+    presetRow: { flexDirection: 'row', gap: spacing.sm },
+    preset: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs + 3,
+      height: 42,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+    },
+    presetNeedsMe: { flex: 1, borderColor: `${theme.status.waiting}80` },
+    presetNeedsMeOn: { backgroundColor: `${theme.status.waiting}29`, borderColor: theme.status.waiting },
+    presetOn: { borderColor: theme.text.accent, backgroundColor: theme.bg.primary },
+    presetText: { color: theme.text.secondary, fontSize: font.sm + 1, fontWeight: '600' },
+    presetTextOn: { color: theme.text.primary },
     section: { gap: spacing.sm },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
+    sectionTitle: {
+      color: theme.text.secondary,
+      fontFamily: MONO_FONT,
+      fontSize: font.xs,
+      fontWeight: '600',
+      letterSpacing: 1.5,
+    },
     standaloneSectionTitle: {
       width: '100%',
       direction: localeDirection,
@@ -424,7 +436,7 @@ function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
+      gap: spacing.xs + 2,
       borderWidth: 1,
       borderColor: theme.border,
       backgroundColor: theme.bg.card,
@@ -433,33 +445,64 @@ function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
       paddingVertical: spacing.xs,
       minHeight: 36,
     },
-    chipSelected: { borderColor: theme.text.accent, backgroundColor: theme.bg.primary },
+    chipSelected: { borderColor: theme.text.accent, backgroundColor: `${theme.text.accent}1f` },
     chipDot: { width: 8, height: 8, borderRadius: radius.full },
     chipText: { color: theme.text.secondary, fontSize: font.base, fontWeight: '500' },
     chipTextSelected: { color: theme.text.primary },
-    quickRow: { flexDirection: 'row', gap: spacing.sm },
-    quickButton: {
-      backgroundColor: theme.bg.card,
-      borderColor: theme.border,
+    chipCount: { color: theme.text.secondary, fontSize: font.sm, fontVariant: ['tabular-nums'] },
+    segmented: {
+      flexDirection: 'row',
       borderWidth: 1,
-      borderRadius: radius.sm,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
-      minHeight: 32,
-      justifyContent: 'center',
+      borderColor: theme.border,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: theme.bg.primary,
     },
-    quickButtonText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '500' },
-    resetButton: {
-      marginTop: spacing.sm,
-      alignItems: 'center',
-      paddingVertical: spacing.sm,
-      minHeight: 44,
-      justifyContent: 'center',
+    segment: { flex: 1, paddingVertical: spacing.sm + 2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs },
+    segmentSelected: { backgroundColor: theme.bg.card },
+    segmentText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
+    segmentTextSelected: { color: theme.text.primary, fontWeight: '600' },
+    directionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+    directionLabel: { color: theme.text.secondary, fontSize: font.sm, flexShrink: 1 },
+    segmentedSmall: {
+      flexDirection: 'row',
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: radius.sm + 2,
+      overflow: 'hidden',
+      backgroundColor: theme.bg.primary,
+    },
+    segmentSmall: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.border,
     },
+    resetButton: {
+      minHeight: 48,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
     resetButtonDisabled: { opacity: 0.35 },
-    resetText: { color: theme.text.accent, fontSize: font.base, fontWeight: '500' },
-    resetTextDisabled: { color: theme.text.secondary },
+    resetText: { color: theme.text.accent, fontSize: font.base, fontWeight: '600' },
+    applyButton: {
+      flex: 1,
+      minHeight: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      backgroundColor: theme.text.accent,
+      paddingHorizontal: spacing.md,
+    },
+    applyButtonDisabled: { backgroundColor: theme.bg.card },
+    applyText: { color: theme.bg.primary, fontSize: font.base, fontWeight: '600' },
+    applyTextDisabled: { color: theme.text.secondary },
   })
 }

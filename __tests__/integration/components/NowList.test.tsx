@@ -50,10 +50,11 @@ const conversation = (overrides: Partial<MultiConversation>): MultiConversation 
 const asItem = (s: MultiSession, ms = NOW - 60_000): MergedItem => ({ kind: 'session', ms, item: s })
 const asConv = (c: MultiConversation, ms = NOW - 120_000): MergedItem => ({ kind: 'conversation', ms, item: c })
 
-function renderList(items: MergedItem[]) {
+function renderList(items: MergedItem[], order: 'state' | 'lastActivity' | 'projectName' = 'state') {
   return renderWithI18n(
     <NowList
       items={items}
+      order={order}
       refreshing={false}
       onRefresh={() => {}}
       searchQuery=""
@@ -99,6 +100,14 @@ describe('NowList', () => {
     expect(getByText('GROUPED')).toBeTruthy()
     expect(getByTestId('conversation-row-real')).toBeTruthy()
     expect(queryByTestId('conversation-row-n0')).toBeNull()
+  })
+
+  it('drops the sections in Recent order but keeps live rows as cards', async () => {
+    const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
+    const { queryByText, getByTestId } = await renderList([asItem(waiting)], 'lastActivity')
+    expect(queryByText('NEEDS YOU · 1')).toBeNull()
+    expect(getByTestId('first-session-card')).toBeTruthy()
+    expect(queryByText('Needs you')).toBeTruthy()
   })
 
   it('keeps two rejected titles as plain rows', async () => {
