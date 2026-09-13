@@ -291,8 +291,10 @@ export function ConversationListItem(props: ConversationListItemProps) {
       </View>
 
       {/* Trailing meta column: time + server chip + provider mark when non-dominant. */}
+      {/* Compact rows are one line tall, so the tail lays out sideways: a mark
+          under the time would make only the non-dominant rows taller. */}
       {!isChip ? (
-        <View style={styles.tail}>
+        <View style={[styles.tail, isCompact && styles.tailCompact]}>
           {timeText ? (
             <Text
               style={styles.time}
@@ -400,6 +402,11 @@ function makeStyles(theme: Theme) {
       alignItems: 'flex-end',
       gap: 4,
       flexShrink: 0,
+    },
+    tailCompact: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
     },
     time: {
       color: theme.text.secondary,
