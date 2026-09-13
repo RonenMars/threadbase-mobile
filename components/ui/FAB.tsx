@@ -1,8 +1,10 @@
 import React, { forwardRef, useEffect, useState } from 'react'
-import { TouchableOpacity, StyleSheet, Animated, type View } from 'react-native'
+import { TouchableOpacity, Text, StyleSheet, Animated, type View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { Plus } from 'phosphor-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/contexts/ThemeContext'
+import { font } from '@/constants/theme'
 
 interface Props {
   onPress: () => void
@@ -12,6 +14,7 @@ interface Props {
 export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, ref) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const [glowAnim] = useState(() => new Animated.Value(0.08))
 
   useEffect(() => {
@@ -39,13 +42,13 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
       onPress={onPress}
       onLayout={onLayout}
       activeOpacity={0.75}
-      accessibilityLabel="New session"
+      accessibilityLabel={t('fab.newSession')}
       accessibilityRole="button"
       testID="fab-new-session"
       style={[
         styles.fab,
         {
-          bottom: 24 + insets.bottom,
+          bottom: FAB_BOTTOM + insets.bottom,
           backgroundColor: theme.text.accent,
           shadowColor: theme.text.accent,
         },
@@ -56,23 +59,32 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
         pointerEvents="none"
         style={[styles.glow, { opacity: glowAnim, backgroundColor: theme.text.accent }]}
       />
-      <Plus size={22} color={theme.bg.primary} weight="bold" />
+      <Plus size={16} color={theme.bg.primary} weight="bold" />
+      <Text style={[styles.label, { color: theme.bg.primary }]}>{t('fab.newSession')}</Text>
     </TouchableOpacity>
   )
 })
 
-const FAB_SIZE = 56
+const FAB_HEIGHT = 44
+const FAB_BOTTOM = 24
+/**
+ * Bottom padding a scrolling list needs above the safe-area inset so its last
+ * row can scroll clear of the action pill: offset, height, and a gap.
+ */
+export const FAB_CLEARANCE = FAB_BOTTOM + FAB_HEIGHT + 28
 
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     // Physical right in both directions — `end` would pin this to the left in RTL.
     right: 20,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
+    height: FAB_HEIGHT,
+    paddingHorizontal: 18,
+    borderRadius: FAB_HEIGHT / 2,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(88,166,255,0.35)',
     // iOS shadow
@@ -82,11 +94,17 @@ const styles = StyleSheet.create({
     // Android elevation
     elevation: 8,
   },
+  label: {
+    fontSize: font.sm,
+    fontWeight: '600',
+  },
   glow: {
     position: 'absolute',
-    width: FAB_SIZE + 20,
-    height: FAB_SIZE + 20,
-    borderRadius: (FAB_SIZE + 20) / 2,
+    top: -10,
+    bottom: -10,
+    left: -10,
+    right: -10,
+    borderRadius: (FAB_HEIGHT + 20) / 2,
     // no pointer events needed — purely decorative
   },
 })

@@ -9,3 +9,5 @@ components/terminal/TerminalRawModeToast.tsx
 # @gorhom/bottom-sheet composition — native-only primitive, matches the
 # documented "don't story ... the bottom sheet" exclusion (docs/storybook.md).
 components/ui/ErrorRecoverySheet.tsx
+# Screen-sized list composition over stores, router and the quick-access sheet — the pieces (cards, rows, eyebrow) have stories.
+components/sessions/now/NowList.tsx

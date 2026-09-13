@@ -8,8 +8,11 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
-import { isPresentationLive } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
+import { FAB_CLEARANCE } from '@/components/ui/FAB'
+import { conversationRowTitle, sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
@@ -23,9 +26,12 @@ interface Props {
 export function DrillView({ node, serverId, onBack }: Props) {
   const { t } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
+  const insets = useSafeAreaInsets()
+  const listContent = [styles.drillList, { paddingBottom: FAB_CLEARANCE + insets.bottom }]
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)
+  const getNameOrigin = useSessionNamesStore((s) => s.getOrigin)
   const setCurrentDrill = useTreeDrillStore((s) => s.setCurrent)
 
   // This is the expand-to-load boundary: the tree renders from summaries
@@ -56,12 +62,12 @@ export function DrillView({ node, serverId, onBack }: Props) {
 
   const sessionItems: DrillItem[] = node.sessions.map((s) => ({
     key: `session:${s.serverId}::${s.id}`,
-    label: getSessionName(s.serverId, s.id) ?? s.projectName ?? s.projectPath,
+    label: sessionRowTitle(s, { name: getSessionName(s.serverId, s.id), origin: getNameOrigin(s.serverId, s.id) }),
     timestamp: s.completedAt ?? s.startedAt,
     messageCount: s.promptCount,
     lastOutput: s.lastOutput ?? null,
     branch: s.branch ?? null,
-    live: isPresentationLive(s),
+    tier: deriveSessionPresentation(s).tier,
     serverId: s.serverId,
     serverLabel: s.serverLabel,
     onPress: () => {
@@ -72,7 +78,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
 
   const conversationItems: DrillItem[] = conversations.map((c) => ({
     key: `conversation:${c.serverId}::${c.id}`,
-    label: c.title || c.projectPath,
+    label: conversationRowTitle(c, { name: getSessionName(c.serverId, c.id), origin: getNameOrigin(c.serverId, c.id) }),
     timestamp: c.lastMessage?.timestamp ?? c.lastActivity,
     messageCount: c.messageCount,
     firstMessage: c.firstMessage ?? null,
@@ -119,7 +125,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
           data={allItems}
           keyExtractor={(item) => item.key}
           renderItem={({ item }) => <DrillRow item={item} />}
-          contentContainerStyle={styles.drillList}
+          contentContainerStyle={listContent}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}
           ListFooterComponent={listFooter}
@@ -146,7 +152,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionHeader}>{section.title}</Text>
         )}
-        contentContainerStyle={styles.drillList}
+        contentContainerStyle={listContent}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={listFooter}

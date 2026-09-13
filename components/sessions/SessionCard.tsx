@@ -1,31 +1,26 @@
-import { useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ActionSheetIOS, Platform, Alert } from 'react-native'
-import * as Haptics from 'expo-haptics'
-import { useRouter } from 'expo-router'
-import { SessionStatusBadge } from './SessionStatusBadge'
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
+import { colorForToken } from './SessionStatusBadge'
+import { StateBadge, getSessionTierLabel, isLiveTier } from './StateBadge'
 import { MachineBadge } from './MachineBadge'
 import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { formatWaitingSince } from '@/components/sessions/shared/formatCoarseElapsed'
+import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { Badge } from '@/components/ui/Badge'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassFill } from '@/components/ui/GlassFill'
+import { useTheme } from '@/contexts/ThemeContext'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
-import { conversationHref } from '@/lib/conversationHref'
-import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
 import {
   deriveSessionPresentation,
+  tierColorToken,
   type SessionPresentationInput,
 } from '@/lib/sessionPresentation'
-import { useSessionActions } from '@/hooks/useSessionActions'
+import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
-import { useNavLockStore } from '@/stores/navLock'
 import { useTranslation } from 'react-i18next'
-import i18n from '@/lib/i18n'
-import { getSessionStatusLabel } from './sessionStatusLabel'
 
 interface Props {
   session: MultiSession
@@ -44,104 +39,41 @@ function formatElapsed(ms: number): string {
 export function SessionCard({ session, isFirstSession = false }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
-  const router = useRouter()
-  const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color) ?? SERVER_COLOR_DEFAULT
-  const customName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
-  const displayName = customName ?? session.projectName
+  const storedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
+  const storedOrigin = useSessionNamesStore((s) => s.getOrigin(session.serverId, session.id))
+  const displayName = sessionRowTitle(session, { name: storedName, origin: storedOrigin })
 
-  // A discovered process the streamer only observes — read-only, not
-  // interactive. Routing keys on `ownership` (strict); the alive indicator keys
-  // on the liveness fields with a pid fallback for older servers, so it does
-  // not require `ownership` to be present.
-  const isExternal = isExternalSession(session)
-  // Liveness is strict once the server states `ownership`; an unstated one is
-  // an older server, which still sends `pid` for a process it only discovered
-  // (managed PTY and historical shapes never carry one). Gating the loose read
-  // behind the absent-ownership case keeps a managed session that happens to be
-  // writing JSONL from reading as external.
+  // An older server states no `ownership` but still sends `pid` for a process
+  // it only discovered (managed PTY and historical shapes never carry one).
+  // `deriveSessionPresentation` keys external strictly on `ownership`, so hand
+  // it the legacy shape as external-alive rather than letting the badge and the
+  // accessibility label each derive their own answer.
   const legacyDiscovered = session.ownership == null && session.pid != null
-  const externalAlive = isExternal ? isExternalAlive(session) : legacyDiscovered
-  // `deriveSessionPresentation` keys external strictly on `ownership` so that
-  // routing stays strict, which leaves it nothing to read on the legacy shape —
-  // name it here so the badge and the accessibility label agree on one answer
-  // rather than each deriving its own.
   const presentedSession: SessionPresentationInput = legacyDiscovered
     ? { ...session, ownership: 'external', processLiveness: 'alive' }
     : session
   const presentation = deriveSessionPresentation(presentedSession)
-  const statusLabel = getSessionStatusLabel(presentation.statusLabel, t)
-  // Liveness comes from the shared derivation (lifecycle-aware), not from
-  // `status`, which a held session keeps after its process is gone.
-  const isLive = presentation.live && !presentation.externalLive
-  // Brand thread spine: amber for live (running / waiting_input), blue for an
-  // alive external (observed) session, then the server's assigned identity
-  // color when multi-server (so you can see at a glance which server the card
-  // came from), then brand blue for idle. Echoes the brand mark; not a
-  // decorative side-stripe border.
-  const spineColor = isLive
-    ? theme.status.waiting
-    : externalAlive
-      ? theme.status.completed
-      : multipleServers
-        ? serverColor
-        : theme.text.accent
+  const tierLabel = getSessionTierLabel(presentation.tier, t)
+  const liveTier = isLiveTier(presentation.tier)
+  // Thread spine: the tier colour while a process is live (amber needs-you,
+  // green working, blue observed), then the server's identity colour when
+  // multi-server, then brand blue. Echoes the brand mark; not a side-stripe.
+  const spineColor = liveTier
+    ? colorForToken(theme, tierColorToken(presentation.tier))
+    : multipleServers
+      ? serverColor
+      : theme.text.accent
+  // `statusUpdatedAt` is stamped on every status flip, so while the status is
+  // `waiting_input` it is when the wait began.
+  const waitingFor =
+    presentation.tier === 'needsYou' && session.statusUpdatedAt
+      ? t('row.waitingFor', { elapsed: formatWaitingSince(session.statusUpdatedAt) })
+      : undefined
 
-  const handlePress = useCallback(() => {
-    Haptics.selectionAsync()
-    useNavLockStore.getState().lock()
-    if (isExternal) {
-      const convId = session.boundConversationId ?? session.conversationId ?? session.id
-      router.push(conversationHref(convId, session.serverId))
-      return
-    }
-    router.push(`/session/${session.id}?server=${session.serverId}`)
-  }, [session, isExternal, router])
-
-  const handleLongPress = useCallback(() => {
-    // External sessions are read-only — suppress the input-oriented actions
-    // (Send Input / Cancel) entirely so they can never be triggered.
-    if (isExternal) return
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    const options = [
-      i18n.t('sessions:card.copyId'),
-      i18n.t('sessions:card.sendInput'),
-      i18n.t('sessions:card.cancel'),
-      i18n.t('common:button.cancel'),
-    ]
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options, destructiveButtonIndex: 2, cancelButtonIndex: 3 },
-        (index) => {
-          if (index === 2) {
-            Alert.alert(i18n.t('terminal:dialog.cancelTitle'), i18n.t('terminal:dialog.cancelMessage'), [
-              { text: i18n.t('common:button.cancel'), style: 'cancel' },
-              {
-                text: i18n.t('terminal:dialog.cancelConfirm'), style: 'destructive',
-                onPress: () => {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-                  cancelSession.mutate()
-                },
-              },
-            ])
-          } else if (index === 1) {
-            router.push(`/session/${session.id}?server=${session.serverId}`)
-          }
-        }
-      )
-    } else {
-      Alert.alert(i18n.t('sessions:card.actionsTitle'), session.projectName, [
-        { text: i18n.t('sessions:card.copyId'), onPress: () => {} },
-        { text: i18n.t('sessions:card.sendInput'), onPress: () => router.push(`/session/${session.id}?server=${session.serverId}`) },
-        { text: i18n.t('sessions:card.cancel'), style: 'destructive', onPress: () => cancelSession.mutate() },
-        { text: i18n.t('sessions:card.dismiss'), style: 'cancel' },
-      ])
-    }
-  }, [session, isExternal, cancelSession, router])
+  const { handlePress, handleLongPress } = useSessionRowActions(session)
 
   const elapsedLabel = formatElapsed(session.elapsedMs)
   const promptsLabel = t('card.prompts', { count: session.promptCount })
@@ -149,20 +81,19 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const timeLabel = lastActivityTs ? formatListTime(lastActivityTs) : null
 
   return (
-    <View style={[styles.cardWrap, isGlass && styles.cardWrapGlass]} testID={isFirstSession ? "first-session-card" : undefined}>
-      <GlassFill />
+    <View style={styles.cardWrap} testID={isFirstSession ? "first-session-card" : undefined}>
       <TouchableOpacity
         testID={`session-row-${session.id}`}
         onPress={handlePress}
         onLongPress={handleLongPress}
         activeOpacity={0.75}
-        accessibilityLabel={`Session ${displayName}, status ${statusLabel}, ${elapsedLabel}`}
+        accessibilityLabel={`Session ${displayName}, status ${tierLabel}, ${elapsedLabel}`}
         accessibilityRole="button"
         style={styles.touchable}
       >
         <View style={styles.row}>
           {/* Thread spine — structural column, brand-mark echo. */}
-          <View style={[styles.spine, { backgroundColor: spineColor, opacity: isLive || externalAlive ? 1 : 0.55 }]} />
+          <View style={[styles.spine, { backgroundColor: spineColor, opacity: liveTier ? 1 : 0.55 }]} />
 
           <View style={styles.body}>
             {/* Line 1: project name + trailing meta chips */}
@@ -186,7 +117,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
             {/* Line 2: status + runtime + prompts in mono. The bullets give
                 the row a terminal-log rhythm without adding chrome. */}
             <View style={styles.statusRow}>
-              <SessionStatusBadge session={presentedSession} />
+              <StateBadge tier={presentation.tier} qualifier={waitingFor} />
               <Text style={styles.metaSeparator}>•</Text>
               <Text style={styles.metaMono}>{elapsedLabel}</Text>
               <Text style={styles.metaSeparator}>•</Text>
@@ -214,9 +145,6 @@ function makeStyles(theme: Theme) {
     borderWidth: 1,
     borderColor: theme.border,
     overflow: 'hidden', // clip the spine to the card's rounded corners
-  },
-  cardWrapGlass: {
-    backgroundColor: 'transparent',
   },
   touchable: {
     // Touchable is the press target; the row inside lays out spine + body.

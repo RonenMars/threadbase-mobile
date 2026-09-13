@@ -67,21 +67,9 @@ appId: com.ronenmars.threadbase
       id: "hub-screen"
     timeout: 10000
 
-# Switch to hub layout.
-- tapOn: "Settings"
-- extendedWaitUntil:
-    visible: "Hub"
-    timeout: 5000
-- tapOn: "Hub"
-# Maestro's `back` (swipe-from-edge) is unreliable on iOS 26 sims; use the
-# expo-router Stack header chevron, exposed via testID in app/_layout.tsx.
+# Switch to the Projects layout with the hub's own segmented control.
 - tapOn:
-    id: "header-back"
-
-- extendedWaitUntil:
-    visible:
-      id: "hub-screen"
-    timeout: 10000
+    id: "layout-projects"
 
 # Hub renders one row per project. Project cards expose a testID
 # `hub-project-<projectName>`. FlashList virtualises rows; let paint settle

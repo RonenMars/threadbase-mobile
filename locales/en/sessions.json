@@ -53,14 +53,12 @@
     "dismiss": "Dismiss",
     "cancelConfirm": "Are you sure?",
     "confirmYes": "Yes",
-    "confirmNo": "No",
-    "noBranch": "no git"
+    "confirmNo": "No"
   },
   "hub": {
+    "browsePath": "Browse path",
     "seeAll_one": "See all {{count}} conversation",
     "seeAll_other": "See all {{count}} conversations",
-    "msgs_one": "{{count}} msg",
-    "msgs_other": "{{count}} msgs",
     "activityLive_one": "{{count}} live",
     "activityLive_other": "{{count}} live",
     "activityToday": "{{total}} today",
@@ -79,10 +77,12 @@
     "done": "Done"
   },
   "live": {
-    "headerLive_one": "LIVE · {{count}}",
-    "headerLive_other": "LIVE · {{count}}",
-    "headerIdle_one": "IDLE · {{count}}",
-    "headerIdle_other": "IDLE · {{count}}"
+    "headerNeedsYou_one": "NEEDS YOU · {{count}}",
+    "headerNeedsYou_other": "NEEDS YOU · {{count}}",
+    "headerWorking_one": "WORKING · {{count}}",
+    "headerWorking_other": "WORKING · {{count}}",
+    "headerEarlierToday": "EARLIER TODAY",
+    "headerEarlier": "EARLIER"
   },
   "preview": {
     "liveUnavailable": "Live session preview not available — open the session to see the live terminal.",
@@ -99,7 +99,8 @@
     "addToFavorites": "Add to favorites"
   },
   "fab": {
-    "noServerHint": "Add a server in Settings to get started"
+    "noServerHint": "Add a server in Settings to get started",
+    "newSession": "New session"
   },
   "noServer": {
     "title": "Connect your first server",
@@ -127,8 +128,11 @@
     "unavailablePath": "Unavailable",
     "unavailableWorktree": "Worktree gone",
     "stale": "Stale",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
+    "needsYou": "Needs you",
+    "working": "Working",
+    "resumable": "Resumable",
+    "cantResume": "Can't resume",
+    "observed": "Observed"
   },
   "phase": {
     "thinking": "Thinking",
@@ -155,5 +159,16 @@
   },
   "tree": {
     "unknownPath": "(unknown)"
+  },
+  "row": {
+    "waitingFor": "waiting {{elapsed}}",
+    "groupedOneLine_one": "{{count}} one-line session",
+    "groupedOneLine_other": "{{count}} one-line sessions",
+    "groupedPill": "GROUPED",
+    "open": "Open"
+  },
+  "layout": {
+    "now": "Now",
+    "projects": "Projects"
   }
 }

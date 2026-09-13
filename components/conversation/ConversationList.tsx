@@ -58,7 +58,6 @@ const ConversationRow = React.memo(function ConversationRow({
 }: RowProps) {
   const router = useRouter()
   const legacyPreview = useSettingsStore((s) => s.historyMessageDisplay)
-  const density = useSettingsStore((s) => s.rowDensity)
   const pathMode = useSettingsStore((s) => s.rowPathDisplay)
   const serverIndicator = useSettingsStore((s) => s.rowServerIndicator)
   const chipVariant = useSettingsStore((s) => s.rowServerChipVariant)
@@ -81,7 +80,6 @@ const ConversationRow = React.memo(function ConversationRow({
       serverColor={serverColor}
       activeServerCount={activeServerCount}
       previewMode={legacyPreview === 'last' ? 'last' : 'first'}
-      density={density}
       pathDisplayMode={pathMode}
       showServer={serverIndicator}
       serverChipVariant={chipVariant}

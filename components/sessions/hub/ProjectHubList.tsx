@@ -7,8 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useProjectGroups } from './useProjectGroups'
 import { useServerGroups } from './useServerGroups'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
+import { DrillView } from '@/components/sessions/tree/DrillView'
+import { buildTree, findProjectNode } from '@/components/sessions/tree/treeUtils'
+import type { TreeNode } from '@/components/sessions/tree/types'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
+import { useSessionNamesStore } from '@/stores/sessionNames'
+import { conversationRowTitle, sessionRowTitle, storedNameFor } from '@/components/sessions/shared/rowTitle'
 import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
@@ -25,8 +30,8 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 import { useTextDirectionStyle } from '@/lib/rtl'
-import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
-import { isPresentationLive } from '@/lib/sessionPresentation'
+import { isExternalSession } from '@/lib/externalSession'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import {
   collidingProjectPaths,
   shouldForceServerChip,
@@ -58,6 +63,17 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   // Tracks which groups are expanded, keyed by projectId (with projectPath
   // fallback during migration — see useProjectGroups).
   const [openIds, setOpenIds] = useState<Set<string>>(new Set())
+  // The path drill is the Tree layout's successor: built from the same
+  // summaries, opened from a project card instead of a folder row.
+  const [drill, setDrill] = useState<{ node: TreeNode; serverId: string } | null>(null)
+  const openDrill = useCallback((group: ProjectGroup) => {
+    const root = buildTree(
+      sessions.filter((item) => item.serverId === group.serverId),
+      summaries.filter((item) => item.serverId === group.serverId),
+    )
+    const node = findProjectNode(root, group.projectPath)
+    if (node) setDrill({ node, serverId: group.serverId })
+  }, [sessions, summaries])
   const inputRef = useRef<TextInput>(null)
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
@@ -154,6 +170,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   }, [debouncedQuery, convSearchData, sessions])
 
   const activeServerCount = activeServerIds.length
+  const names = useSessionNamesStore((s) => s.names)
+  const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
 
   const renderSearchResultItem = useCallback(
     ({ item }: { item: MultiConversation | MultiSession }) => {
@@ -161,18 +179,16 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
       const forceServerChip = shouldForceServerChip(item.projectPath, collidingPaths)
       if (isSession) {
-        const externalAlive = isExternalAlive(item)
-        const isLive = isPresentationLive(item)
+        const { tier } = deriveSessionPresentation(item)
         return (
           <ConversationListItem
             testID={`session-row-${item.id}`}
-            title={item.projectName}
+            title={sessionRowTitle(item, storedNameFor(names, nameOrigins, item.serverId, item.id))}
             path={item.projectPath}
             timestamp={item.completedAt ?? item.startedAt}
             branch={item.branch}
             messageCount={item.promptCount}
-            live={isLive}
-            external={externalAlive}
+            tier={tier}
             lastOutput={item.lastOutput || null}
             serverLabel={item.serverLabel}
             serverColor={serverColor}
@@ -188,7 +204,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       return (
         <ConversationListItem
           testID={`conversation-row-${item.id}`}
-          title={item.title}
+          title={conversationRowTitle(item, storedNameFor(names, nameOrigins, item.serverId, item.id))}
           path={item.projectPath}
           timestamp={item.lastMessage?.timestamp ?? item.lastActivity}
           messageCount={item.messageCount}
@@ -217,6 +233,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       activeServerCount,
       debouncedQuery,
       collidingPaths,
+      names,
+      nameOrigins,
     ],
   )
 
@@ -263,6 +281,10 @@ export const ProjectHubList = React.memo(function ProjectHubList({
         }), ...unsupportedRows]
       : [...groups.map((g) => ({ kind: 'group' as const, group: g })), ...unsupportedRows]
   }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers])
+
+  if (drill && !searchOpen) {
+    return <DrillView node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} />
+  }
 
   return (
     <View style={styles.container}>
@@ -373,6 +395,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
                 isOpen={openIds.has(item.group.projectId)}
                 onToggle={toggleOpen}
                 forceServerChip={shouldForceServerChip(item.group.projectPath, collidingPaths)}
+                onBrowsePath={openDrill}
               />
             )
           }}

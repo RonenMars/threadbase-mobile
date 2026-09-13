@@ -28,7 +28,7 @@ if (Platform.OS === 'android') {
 // Memoized: the hub re-renders on every fetch-progress tick, and a project
 // card is a native glass surface — re-running every mounted one per tick is
 // what made the accordions feel unresponsive on a host with many projects.
-export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
+export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false, onBrowsePath }: ProjectHubCardProps) {
   const { t, i18n } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
@@ -48,7 +48,8 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   }, [isOpen, onToggle, group.projectId])
 
   const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 180])}deg` }],
+    // CaretRight: 90° points down for "open"; 180° pointed left.
+    transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 90])}deg` }],
   }))
 
   // Expand-to-load: a closed card knows its conversation count from the
@@ -242,6 +243,17 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
               )}
             </>
           )}
+              {onBrowsePath ? (
+                <TouchableOpacity
+                  onPress={() => onBrowsePath(group)}
+                  activeOpacity={0.75}
+                  style={styles.seeAllRow}
+                  testID={`hub-browse-path-${group.projectPath}`}
+                >
+                  <Text style={styles.seeAllText}>{t('hub.browsePath')}</Text>
+                  <CaretRight size={14} color={theme.text.accent} />
+                </TouchableOpacity>
+              ) : null}
             </View>
           )}
         </View>

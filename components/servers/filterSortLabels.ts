@@ -1,44 +1,38 @@
 import type { TFunction } from 'i18next'
-import type { SortBy, SortOrder, SessionsLayout } from '@/types/ui'
+import type { SortBy, SortOrder } from '@/types/ui'
+import type { ActiveWithin } from '@/lib/sessionFilters'
 
-export function getSessionsLayoutLabel(
-  layout: SessionsLayout,
-  t: TFunction<['servers', 'settings', 'sessions']>,
-): string {
-  switch (layout) {
-    case 'tree':
-      return t('settings:appearance.layoutTree')
-    case 'hub':
-      return t('settings:appearance.layoutHub')
-    case 'classic':
-      return t('settings:appearance.layoutClassic')
-  }
-}
+type T = TFunction<['servers', 'settings', 'sessions']>
 
-export function getSortByLabel(
-  sortBy: SortBy,
-  t: TFunction<['servers', 'settings', 'sessions']>,
-): string {
+export function getSortByLabel(sortBy: SortBy, t: T): string {
   switch (sortBy) {
+    case 'state':
+      return t('servers:filter.sortStateFirst')
     case 'lastActivity':
-      return t('servers:filter.sortLastMessage')
+      return t('servers:filter.sortRecent')
     case 'projectName':
       return t('servers:filter.sortProjectName')
-    case 'startedAt':
-      return t('servers:filter.sortCreatedDate')
-    case 'status':
-      return t('servers:filter.status')
   }
 }
 
-export function getSortOrderLabel(
-  sortOrder: SortOrder,
-  t: TFunction<['servers', 'settings', 'sessions']>,
-): string {
+export function getSortOrderLabel(sortOrder: SortOrder, t: T): string {
   switch (sortOrder) {
     case 'desc':
       return t('servers:filter.newestFirst')
     case 'asc':
       return t('servers:filter.oldestFirst')
+  }
+}
+
+export function getActiveWithinLabel(within: ActiveWithin, t: T): string {
+  switch (within) {
+    case 'any':
+      return t('servers:filter.anyTime')
+    case 'today':
+      return t('servers:filter.today')
+    case '7d':
+      return t('servers:filter.sevenDays')
+    case '30d':
+      return t('servers:filter.thirtyDays')
   }
 }

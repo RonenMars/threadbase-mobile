@@ -1,8 +1,8 @@
-# Maestro E2E — Feature 1: tree drill pre-fills new-session cwd
+# Maestro E2E — Feature 1: path drill pre-fills new-session cwd
 # Flow:
-#   1. Land on the hub (Classic is the default sessionsLayout).
-#   2. Switch to Tree via FilterSortSheet (self-sufficient — no Settings visit).
-#   3. Drill into a project leaf row.
+#   1. Land on the hub (Now is the default sessionsLayout).
+#   2. Switch to Projects with the segmented control on the hub.
+#   3. Open the project card and tap its "Browse path" footer to drill in.
 #   4. Tap the FAB to start a new session.
 #   5. Assert the browse screen opened with cwd pre-filled to the drilled path.
 #
@@ -20,33 +20,28 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "hub-screen"
 
-# Classic is default; switch to Tree so drill testIDs mount.
+# Now is the default; the path drill lives under Projects (the Tree layout's
+# successor, docs/design/session-list, PR 9).
 - tapOn:
-    id: "filter-sort-button"
+    id: "layout-projects"
 
+# Fixture has three sessions under /home/user/my-project, so the hub renders
+# one card for it. Open the card, then drill into its directory.
 - extendedWaitUntil:
     visible:
-      id: "filter-sort-sheet"
-    timeout: 5000
-
-- tapOn:
-    id: "layout-option-tree"
-
-- tapOn:
-    id: "filter-sort-close-btn"
-
-# Drill into the my-project leaf row in the tree. Fixture has three sessions
-# under /home/user/my-project so it is rendered as a leaf in the compacted
-# tree. We target by testID because the LIVE strip above the tree renders
-# additional rows whose project header also reads "my-project" — a plain
-# text match would be ambiguous.
-- extendedWaitUntil:
-    visible:
-      id: "tree-row-/home/user/my-project"
+      id: "hub-project-my-project"
     timeout: 8000
 
 - tapOn:
-    id: "tree-row-/home/user/my-project"
+    id: "hub-project-my-project"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-browse-path-/home/user/my-project"
+    timeout: 5000
+
+- tapOn:
+    id: "hub-browse-path-/home/user/my-project"
 
 # DrillView mounts with a testID that encodes the drilled cwd. This is the
 # signal the FAB will read from the treeDrill store.

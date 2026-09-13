@@ -5,7 +5,7 @@ const SECURE_KEY = 'threadbase_session_names'
 
 export type NameOrigin = 'manual' | 'auto' | 'ai'
 
-function sessionKey(serverId: string, sessionId: string): string {
+export function sessionKey(serverId: string, sessionId: string): string {
   return `${serverId}::${sessionId}`
 }
 

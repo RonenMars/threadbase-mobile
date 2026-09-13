@@ -10,7 +10,7 @@
  * Sessions keep filtering client-side in both regimes, because /api/search
  * does not cover them.
  */
-import { mergedItemMatchesQuery, type MergedItem } from '@/app/index'
+import { mergedItemMatchesQuery, type MergedItem } from '@/components/sessions/now/mergedItems'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
 const conversation = (over: Partial<MultiConversation>): MergedItem => ({

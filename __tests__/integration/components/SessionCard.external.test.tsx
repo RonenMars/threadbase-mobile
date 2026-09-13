@@ -36,20 +36,20 @@ beforeEach(() => {
 })
 
 describe('SessionCard — external session', () => {
-  it('renders the distinct "External" indicator for an alive external session', async () => {
+  it('renders the distinct "Observed" tier for an alive external session', async () => {
     const session = makeSession({ ownership: 'external', processLiveness: 'alive' })
     const { getByText, queryByText } = await render(<SessionCard session={session} />)
-    expect(getByText('External')).toBeTruthy()
-    // Not indistinguishable from a dead idle session.
-    expect(queryByText('Idle')).toBeNull()
+    expect(getByText('Observed')).toBeTruthy()
+    // Not indistinguishable from a dead session.
+    expect(queryByText('Resumable')).toBeNull()
   })
 
   it('is visually distinct from a managed running session', async () => {
     const managed = await render(
       <SessionCard session={makeSession({ id: 'm', status: 'running', ptyAttached: true })} />,
     )
-    expect(managed.getByText('Running')).toBeTruthy()
-    expect(managed.queryByText('External')).toBeNull()
+    expect(managed.getByText('Working')).toBeTruthy()
+    expect(managed.queryByText('Observed')).toBeNull()
   })
 
   it('routes an external row to the read-only conversation view, not /session', async () => {
@@ -90,14 +90,14 @@ describe('SessionCard — external session', () => {
     // for a discovered process — the pid fallback surfaces the alive indicator.
     const session = makeSession({ pid: 4242 })
     const { getByText, queryByText } = await render(<SessionCard session={session} />)
-    expect(getByText('External')).toBeTruthy()
-    expect(queryByText('Idle')).toBeNull()
+    expect(getByText('Observed')).toBeTruthy()
+    expect(queryByText('Resumable')).toBeNull()
   })
 
-  it('renders a plain older-server session (no pid, no new fields) as its status', async () => {
+  it('renders a plain older-server session (no pid, no new fields) as resumable', async () => {
     const session = makeSession({ status: 'idle' })
     const { getByText } = await render(<SessionCard session={session} />)
-    expect(getByText('Idle')).toBeTruthy()
+    expect(getByText('Resumable')).toBeTruthy()
   })
 
   it('does not read a managed session as external just because it is writing JSONL', async () => {
@@ -108,26 +108,29 @@ describe('SessionCard — external session', () => {
       activity: { state: 'active_writing', lastEventAt: '2024-01-01T00:00:00Z', source: 'jsonl' },
     })
     const { getByText, queryByText } = await render(<SessionCard session={session} />)
-    expect(getByText('Running')).toBeTruthy()
-    expect(queryByText('External')).toBeNull()
+    expect(getByText('Working')).toBeTruthy()
+    expect(queryByText('Observed')).toBeNull()
   })
 })
 
 describe('SessionCard — recovered session', () => {
-  it('renders a rehydrated session as history rather than a bare idle', async () => {
+  it('renders a rehydrated session as resumable, never as live', async () => {
     const session = makeSession({ status: 'idle', ownership: 'historical' })
     const { getByText, queryByText } = await render(<SessionCard session={session} />)
-    expect(getByText('History')).toBeTruthy()
-    expect(queryByText('Idle')).toBeNull()
+    expect(getByText('Resumable')).toBeTruthy()
+    expect(queryByText('Working')).toBeNull()
   })
 
-  it('renders what an interrupted session was doing when the streamer stopped it', async () => {
+  it('collapses what an interrupted session was doing into the same resumable word', async () => {
+    // The list renders one of five words; `interruptedStatus` survives for the
+    // detail screen's SessionStatusBadge only.
     const running = await render(
       <SessionCard
         session={makeSession({ status: 'idle', ownership: 'historical', interruptedStatus: 'running' })}
       />,
     )
-    expect(running.getByText('Interrupted')).toBeTruthy()
+    expect(running.getByText('Resumable')).toBeTruthy()
+    expect(running.queryByText('Interrupted')).toBeNull()
 
     const waiting = await render(
       <SessionCard
@@ -139,12 +142,14 @@ describe('SessionCard — recovered session', () => {
         })}
       />,
     )
-    expect(waiting.getByText('Was waiting')).toBeTruthy()
+    expect(waiting.getByText('Resumable')).toBeTruthy()
+    expect(waiting.queryByText('Needs you')).toBeNull()
   })
 
-  it('renders a gone external process as stale', async () => {
+  it('renders a gone external process as resumable, not observed', async () => {
     const session = makeSession({ status: 'idle', ownership: 'external', processLiveness: 'gone' })
-    const { getByText } = await render(<SessionCard session={session} />)
-    expect(getByText('Stale')).toBeTruthy()
+    const { getByText, queryByText } = await render(<SessionCard session={session} />)
+    expect(getByText('Resumable')).toBeTruthy()
+    expect(queryByText('Observed')).toBeNull()
   })
 })

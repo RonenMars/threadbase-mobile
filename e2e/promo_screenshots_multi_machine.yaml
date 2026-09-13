@@ -135,11 +135,7 @@ appId: com.ronenmars.threadbase
     visible: ".*localhost:7072.*"
     timeout: 15000
 
-# --- Switch to the Tree layout, back to the hub -----------------------------
-- tapOn: "Tree"
-
-- waitForAnimationToEnd
-
+# --- Back to the hub, then the Projects layout ------------------------------
 - tapOn:
     id: "header-back"
 
@@ -147,6 +143,11 @@ appId: com.ronenmars.threadbase
     visible:
       id: "hub-screen"
     timeout: 8000
+
+- tapOn:
+    id: "layout-projects"
+
+- waitForAnimationToEnd
 
 - waitForAnimationToEnd:
     timeout: 3000
