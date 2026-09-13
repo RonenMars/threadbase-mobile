@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
@@ -60,7 +61,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
     messageCount: s.promptCount,
     lastOutput: s.lastOutput ?? null,
     branch: s.branch ?? null,
-    status: s.status,
+    live: isPresentationLive(s),
     serverId: s.serverId,
     serverLabel: s.serverLabel,
     onPress: () => {

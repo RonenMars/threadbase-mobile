@@ -37,6 +37,7 @@ import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -321,8 +322,7 @@ export default function ProjectsHub() {
   // brand "amber = now" frame: the user wants to see active work without
   // scrolling past archive chatter.
   const mergedClassicItems = useMemo((): MergedItem[] => {
-    const liveStatuses: SessionStatus[] = ['running', 'waiting_input']
-    const isLive = (s: MultiSession) => liveStatuses.includes(s.status)
+    const isLive = (s: MultiSession) => isPresentationLive(s)
 
     const liveSessions = visibleSessions
       .filter(isLive)
@@ -755,14 +755,14 @@ const MergedClassicList = React.memo(function MergedClassicList({
     if (!showServerHeaders) {
       const sessionItems = filteredItems.filter((it) => it.kind === 'session')
       if (sessionItems.length === 0) return filteredItems
-      const hasLive = sessionItems.some((it) => {
-        const s = it.item as MultiSession
-        return s.status === 'running' || s.status === 'waiting_input'
-      })
+      const liveCount = sessionItems.filter((it) => isPresentationLive(it.item as MultiSession)).length
+      const hasLive = liveCount > 0
       const collapsible = sessionItems.length > SESSIONS_COLLAPSE_THRESHOLD
       const nonSessionItems = filteredItems.filter((it) => it.kind !== 'session')
+      // The eyebrow reads LIVE · N when any session is live, so N must be the
+      // live ones; IDLE · N covers the whole block.
       return [
-        { kind: 'liveHeader', id: 'live-header', count: sessionItems.length, hasLive, collapsed: sessionsCollapsed, collapsible },
+        { kind: 'liveHeader', id: 'live-header', count: hasLive ? liveCount : sessionItems.length, hasLive, collapsed: sessionsCollapsed, collapsible },
         ...(collapsible && sessionsCollapsed ? [] : sessionItems),
         ...nonSessionItems,
       ]

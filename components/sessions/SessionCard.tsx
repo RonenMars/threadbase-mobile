@@ -53,7 +53,6 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const customName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
   const displayName = customName ?? session.projectName
 
-  const isLive = session.status === 'running' || session.status === 'waiting_input'
   // A discovered process the streamer only observes — read-only, not
   // interactive. Routing keys on `ownership` (strict); the alive indicator keys
   // on the liveness fields with a pid fallback for older servers, so it does
@@ -73,10 +72,11 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const presentedSession: SessionPresentationInput = legacyDiscovered
     ? { ...session, ownership: 'external', processLiveness: 'alive' }
     : session
-  const statusLabel = getSessionStatusLabel(
-    deriveSessionPresentation(presentedSession).statusLabel,
-    t,
-  )
+  const presentation = deriveSessionPresentation(presentedSession)
+  const statusLabel = getSessionStatusLabel(presentation.statusLabel, t)
+  // Liveness comes from the shared derivation (lifecycle-aware), not from
+  // `status`, which a held session keeps after its process is gone.
+  const isLive = presentation.live && !presentation.externalLive
   // Brand thread spine: amber for live (running / waiting_input), blue for an
   // alive external (observed) session, then the server's assigned identity
   // color when multi-server (so you can see at a glance which server the card
