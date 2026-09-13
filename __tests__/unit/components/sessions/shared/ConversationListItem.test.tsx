@@ -68,18 +68,18 @@ describe('ConversationListItem', () => {
     expect(text).toContain('ai-tools/tb-streamer')
   })
 
-  it('renders a LIVE pill when live=true', async () => {
+  it('renders the tier word on a session row and keeps the time', async () => {
     const tree = await render(
       <ConversationListItem
         title="active session"
         timestamp={NOW.getTime() - 60_000}
-        live
+        tier="working"
       />,
     )
     const text = collectText(tree.toJSON() as unknown as Json)
-    expect(text).toContain('LIVE')
-    // Live pill replaces the time text in the trailing slot.
-    expect(text).not.toContain('14:35')
+    expect(text).toContain('Working')
+    expect(text).not.toContain('LIVE')
+    expect(text).toContain('14:34')
   })
 
   it('shows the server chip when multi-server and showServer=auto', async () => {
