@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { AccessibilityInfo, Platform, View } from 'react-native'
+import React from 'react'
+import { Platform, View } from 'react-native'
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native'
 import { BlurView } from 'expo-blur'
 import type { BlurTint } from 'expo-blur'
@@ -8,6 +8,7 @@ import {
   isGlassEffectAPIAvailable,
 } from 'expo-glass-effect'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useReduceTransparency } from '@/hooks/useAccessibilitySettings'
 
 interface GlassViewProps extends ViewProps {
   children?: React.ReactNode
@@ -24,24 +25,7 @@ interface GlassViewProps extends ViewProps {
  */
 export function GlassView({ children, style, intensity, tint, ...rest }: GlassViewProps) {
   const theme = useTheme()
-  const [reduceTransparency, setReduceTransparency] = useState(false)
-
-  useEffect(() => {
-    if (Platform.OS !== 'ios') return
-
-    let mounted = true
-    void AccessibilityInfo.isReduceTransparencyEnabled().then((value) => {
-      if (mounted) setReduceTransparency(value)
-    })
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceTransparencyChanged',
-      setReduceTransparency,
-    )
-    return () => {
-      mounted = false
-      subscription.remove()
-    }
-  }, [])
+  const reduceTransparency = useReduceTransparency()
 
   if (Platform.OS === 'ios' && isGlassEffectAPIAvailable() && !reduceTransparency) {
     return (

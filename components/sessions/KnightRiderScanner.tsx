@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import type { Theme } from '@/constants/theme'
 
 const TRAIL = 2.6
@@ -45,18 +46,21 @@ export function KnightRiderScanner({ testID, size = 'compact', accessibilityLabe
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const progress = useSharedValue(0)
+  const reduceMotion = useReduceMotion()
   const spec = SIZES[size]
   const colors = scannerPalette(theme)
 
   useEffect(() => {
     progress.value = 0
-    progress.value = withRepeat(
-      withTiming(1, { duration: CYCLE_MS, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    )
+    if (!reduceMotion) {
+      progress.value = withRepeat(
+        withTiming(1, { duration: CYCLE_MS, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true,
+      )
+    }
     return () => cancelAnimation(progress)
-  }, [progress])
+  }, [progress, reduceMotion])
 
   return (
     <View

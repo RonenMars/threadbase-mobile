@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, TextInput, FlatList, RefreshControl } from 'react-native'
+import { View, FlatList, RefreshControl } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -8,7 +8,7 @@ import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
-import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
+import { listTopInset } from '@/components/sessions/shared/listTopInset'
 import { isToday } from '@/components/sessions/hub/hubUtils'
 import {
   resolveConversationRowTitle,
@@ -19,7 +19,6 @@ import {
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { conversationHref } from '@/lib/conversationHref'
-import { useAppDirection } from '@/lib/rtl'
 import { deriveSessionPresentation, type SessionTier } from '@/lib/sessionPresentation'
 import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
@@ -41,11 +40,13 @@ interface Props {
   refreshing: boolean
   onRefresh: () => void
   onEndReached?: () => void
-  searchOpen?: boolean
   searchQuery: string
   conversationsFromServer: boolean
-  onSearchChange: (q: string) => void
   isBackgroundRefreshing?: boolean
+  /** Height of the floating chrome; the rows scroll under it. */
+  topInset?: number
+  /** Scrolls with the rows: the quick-access strip, banners and presets. */
+  ListHeaderComponent?: React.ReactElement | null
   /** `state` sections the list; the other two flatten it into one ordered run. */
   order?: SortBy
   direction?: SortOrder
@@ -106,18 +107,17 @@ export const NowList = React.memo(function NowList({
   refreshing,
   onRefresh,
   onEndReached,
-  searchOpen,
   searchQuery,
   conversationsFromServer,
-  onSearchChange,
   isBackgroundRefreshing,
+  topInset = 0,
+  ListHeaderComponent,
   order = 'state',
   direction: sortDirection = 'desc',
 }: Props) {
   const theme = useTheme()
-  const { direction } = useAppDirection()
-  const searchStyles = makeSearchStyles(theme, direction)
   const insets = useSafeAreaInsets()
+  const inset = listTopInset(topInset)
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
@@ -264,22 +264,8 @@ export const NowList = React.memo(function NowList({
 
   return (
     <View style={{ flex: 1 }} testID="now-list">
-      {searchOpen ? (
-        <View style={searchStyles.searchBar}>
-          <TextInput
-            testID="hub-search-input"
-            style={searchStyles.searchInput}
-            value={searchQuery}
-            onChangeText={onSearchChange}
-            placeholder={t('search.placeholder')}
-            placeholderTextColor={theme.text.secondary}
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-      ) : null}
       <FlatList
+        testID="now-list-scroll"
         data={flatData}
         keyExtractor={(item) => item.key}
         renderItem={renderItem}
@@ -287,11 +273,19 @@ export const NowList = React.memo(function NowList({
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
         {...LIST_WINDOW}
-        contentContainerStyle={{
-          paddingHorizontal: spacing.sm + 2,
-          paddingBottom: FAB_CLEARANCE + insets.bottom,
-          flexGrow: 1,
-        }}
+        {...inset.props}
+        ListHeaderComponent={
+          // The header is full-bleed; undo the row gutter around it.
+          ListHeaderComponent ? <View style={{ marginHorizontal: -(spacing.sm + 2) }}>{ListHeaderComponent}</View> : null
+        }
+        contentContainerStyle={[
+          {
+            paddingHorizontal: spacing.sm + 2,
+            paddingBottom: FAB_CLEARANCE + insets.bottom,
+            flexGrow: 1,
+          },
+          inset.contentStyle,
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />

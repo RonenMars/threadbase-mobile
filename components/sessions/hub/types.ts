@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -18,10 +19,16 @@ export interface ProjectHubListProps {
   refreshing: boolean
   onRefresh: () => void
   searchOpen: boolean
+  /** Typed in the chrome's search field; debounced and sent to /api/search here. */
+  searchQuery: string
   isBackgroundRefreshing?: boolean
   /** Servers whose streamer predates /api/projects/summary — their projects
    *  can't be listed, so the hub shows an upgrade prompt for them. */
   unsupportedServerIds?: string[]
+  /** Height of the floating chrome; the cards scroll under it. */
+  topInset?: number
+  /** Scrolls with the cards: the quick-access strip and banners. */
+  ListHeaderComponent?: ReactElement | null
 }
 
 export interface ProjectHubCardProps {

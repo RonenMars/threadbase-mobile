@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { isPresentationLive } from '@/lib/sessionPresentation'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
 import { ConvRow } from './ConvRow'
@@ -36,16 +37,18 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const chevronProgress = useSharedValue(isOpen ? 1 : 0)
+  const reduceMotion = useReduceMotion()
 
   const handleToggle = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    // Reduce Motion: the body appears in place and the chevron snaps.
+    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     const next = isOpen ? 0 : 1
-    chevronProgress.value = withTiming(next, { duration: 200 })
+    chevronProgress.value = withTiming(next, { duration: reduceMotion ? 0 : 200 })
     onToggle(group.projectId)
     // chevronProgress is a Reanimated shared value (stable across renders);
     // omitting it avoids the react-hooks/immutability flag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, onToggle, group.projectId])
+  }, [isOpen, onToggle, group.projectId, reduceMotion])
 
   const chevronStyle = useAnimatedStyle(() => ({
     // CaretRight: 90° points down for "open"; 180° pointed left.

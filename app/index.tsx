@@ -6,11 +6,12 @@ import {
   Text,
   Image,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
   } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
@@ -24,6 +25,10 @@ import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { NowList } from '@/components/sessions/now/NowList'
+import { ChromeBackdrop } from '@/components/sessions/shared/ChromeBackdrop'
+import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
+import { FilterPresets } from '@/components/servers/FilterPresets'
+import { useAppDirection } from '@/lib/rtl'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
@@ -60,6 +65,10 @@ import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefa
 // while the paginated query is disabled or still loading its first page.
 const EMPTY_CONVERSATIONS: MultiConversation[] = []
 
+// First-frame guess for the chrome height below the status bar (brand row plus
+// the segmented control); onLayout replaces it before anything scrolls.
+const CHROME_ESTIMATE = 120
+
 type ClassicTab = 'sessions' | 'history'
 
 // A server may send a timestamp this build cannot parse; NaN would reach
@@ -79,6 +88,10 @@ export default function ProjectsHub() {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['sessions', 'shared', 'settings', 'servers'])
+  const insets = useSafeAreaInsets()
+  const { direction } = useAppDirection()
+  const searchStyles = makeSearchStyles(theme, direction)
+  const [chromeHeight, setChromeHeight] = useState(insets.top + CHROME_ESTIMATE)
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
@@ -401,14 +414,16 @@ export default function ProjectsHub() {
     return null
   })
 
-  return (
-    <SafeAreaView
-      style={styles.container}
-      edges={['top']}
-      testID="hub-screen"
+  // Floating chrome: brand row, Now | Projects, and the search field. Rows
+  // scroll under it. The banners below may scroll away only because this block
+  // will also carry the persistent status pill from the alert redesign.
+  const chrome = (
+    <View
+      style={[styles.chrome, { paddingTop: insets.top }]}
+      pointerEvents="box-none"
+      onLayout={(e) => setChromeHeight(e.nativeEvent.layout.height)}
     >
-      {activeServerIds.map((sid) => <SessionNamesSyncer key={sid} serverId={sid} />)}
-      {/* Header */}
+      <ChromeBackdrop />
       <View style={styles.header}>
         {/* Left: brand */}
         <View style={styles.headerLeft}>
@@ -466,16 +481,6 @@ export default function ProjectsHub() {
         </View>
       </View>
 
-      {/* Quick Access Strip */}
-      <QuickAccessStrip />
-
-      {/* Shown while server is scanning/indexing conversations on first boot */}
-      <ServerIndexingBanner />
-
-      <EncryptionRefusalBanner />
-
-      <ToastViewport id="home" />
-
       {/* Now | Projects */}
       <View style={styles.segmentRow} accessibilityRole="tablist">
         <TouchableOpacity
@@ -498,6 +503,34 @@ export default function ProjectsHub() {
         </TouchableOpacity>
       </View>
 
+      {searchOpen ? (
+        <View style={searchStyles.searchBar}>
+          <TextInput
+            testID="hub-search-input"
+            style={searchStyles.searchInput}
+            value={classicConvSearch}
+            onChangeText={setClassicConvSearch}
+            placeholder={t('search.placeholder')}
+            placeholderTextColor={theme.text.secondary}
+            autoFocus
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </View>
+      ) : null}
+    </View>
+  )
+
+  // Everything that is not chrome scrolls with the rows.
+  const listHeader = (
+    <>
+      <QuickAccessStrip />
+
+      {/* Shown while server is scanning/indexing conversations on first boot */}
+      <ServerIndexingBanner />
+
+      <EncryptionRefusalBanner />
+
       <CacheAlertBanner onPress={() => {
         const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')
         if (lowSeverityId) setCacheAlertModalServerId(lowSeverityId)
@@ -516,24 +549,41 @@ export default function ProjectsHub() {
         isRetrying={isRetryingFailedServers}
       />
 
+      {serverBanners}
+
+      {sessionsLayout === 'now' ? (
+        <View style={styles.presets}>
+          <FilterPresets filters={filters} onChange={setFilters} />
+        </View>
+      ) : null}
+    </>
+  )
+
+  return (
+    <View style={styles.container} testID="hub-screen">
+      {activeServerIds.map((sid) => <SessionNamesSyncer key={sid} serverId={sid} />)}
+
       {/* Content */}
       <View style={styles.contentArea}>
-      {allServersFailed ? null : serverBanners}
       {activeServerIds.length === 0 && !hasEverHadServer ? (
-        <NoServersWelcome />
+        <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
+          <NoServersWelcome />
+        </View>
       ) : allServersFailed ? (
-        <EmptyState
-          title={t('sessions:list.allServersOffline')}
-          subtitle={t('sessions:list.allServersOfflineSubtitle')}
-          action={{
-            label: t('servers:action.details'),
-            onPress: () => setStatusModalOpen(true),
-          }}
-          secondaryAction={{
-            label: t('servers:action.retry'),
-            onPress: () => retryFailed(),
-          }}
-        />
+        <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
+          <EmptyState
+            title={t('sessions:list.allServersOffline')}
+            subtitle={t('sessions:list.allServersOfflineSubtitle')}
+            action={{
+              label: t('servers:action.details'),
+              onPress: () => setStatusModalOpen(true),
+            }}
+            secondaryAction={{
+              label: t('servers:action.retry'),
+              onPress: () => retryFailed(),
+            }}
+          />
+        </View>
       ) : sessionsLayout === 'projects' ? (
         <ProjectHubList
           sessions={filteredSessions}
@@ -544,7 +594,10 @@ export default function ProjectsHub() {
           refreshing={manualRefreshing}
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
+          searchQuery={classicConvSearch}
           isBackgroundRefreshing={isBackgroundRefreshing}
+          topInset={chromeHeight}
+          ListHeaderComponent={listHeader}
         />
       ) : (
         <View style={styles.classicContainer}>
@@ -556,14 +609,15 @@ export default function ProjectsHub() {
               refreshing={manualRefreshing}
               onRefresh={handleRefresh}
               onEndReached={loadMoreConversations}
-              searchOpen={searchOpen}
               searchQuery={classicConvSearch}
               conversationsFromServer={Boolean(debouncedConvSearch)}
-              onSearchChange={setClassicConvSearch}
               isBackgroundRefreshing={isBackgroundRefreshing}
+              topInset={chromeHeight}
+              ListHeaderComponent={listHeader}
             />
           ) : (
-            <>
+            <View style={[styles.classicContainer, { paddingTop: chromeHeight }]}>
+              {listHeader}
               {/* Segmented control */}
               <View style={styles.segmentRow}>
                 <TouchableOpacity
@@ -594,10 +648,8 @@ export default function ProjectsHub() {
                   direction={sortOrder}
                   refreshing={manualRefreshing}
                   onRefresh={handleRefresh}
-                  searchOpen={searchOpen}
                   searchQuery={classicConvSearch}
                   conversationsFromServer={false}
-                  onSearchChange={setClassicConvSearch}
                   isBackgroundRefreshing={isBackgroundRefreshing}
                 />
               ) : (
@@ -609,17 +661,23 @@ export default function ProjectsHub() {
                   onEndReached={loadMoreConversations}
                   searchQuery={classicConvSearch}
                   onSearchChange={setClassicConvSearch}
-                  searchOpen={searchOpen}
+                  searchOpen={false}
                   isLoadingInitial={convPages.isLoading}
                   isFetchingNextPage={convPages.isFetchingNextPage}
                   loadingProgress={null}
                 />
               )}
-            </>
+            </View>
           )}
         </View>
       )}
-      <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
+      </View>
+
+      {chrome}
+      {/* Status overlays sit just below the chrome and never move the rows. */}
+      <View style={[styles.belowChrome, { top: chromeHeight }]} pointerEvents="box-none">
+        <ToastViewport id="home" />
+        <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
       </View>
 
       {/* FAB */}
@@ -692,7 +750,7 @@ export default function ProjectsHub() {
         inFlightCount={sessionsInFlight}
       />
 
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -773,15 +831,34 @@ function makeStyles(theme: Theme) {
   classicContainer: {
     flex: 1,
   },
+  chrome: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+  },
+  belowChrome: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 3,
+  },
+  presets: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingTop: spacing.sm,
+  },
+  // Translucent on purpose: it sits on the scrim, so a row passing under the
+  // chrome fades through it instead of vanishing behind an opaque block.
   segmentRow: {
     flexDirection: 'row',
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
-    backgroundColor: theme.bg.card,
+    backgroundColor: `${theme.text.accent}12`,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: `${theme.text.accent}2e`,
     overflow: 'hidden',
   },
   segmentTab: {
@@ -791,10 +868,10 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    minHeight: 36,
+    minHeight: 44,
   },
   segmentTabActive: {
-    backgroundColor: theme.bg.secondary,
+    backgroundColor: `${theme.text.accent}24`,
   },
   segmentText: {
     color: theme.text.secondary,

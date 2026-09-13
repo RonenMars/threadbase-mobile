@@ -21,9 +21,11 @@ interface Props {
   node: TreeNode
   serverId: string
   onBack: () => void
+  /** Height of the floating chrome above; the back row starts below it. */
+  topInset?: number
 }
 
-export function DrillView({ node, serverId, onBack }: Props) {
+export function DrillView({ node, serverId, onBack, topInset = 0 }: Props) {
   const { t } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   const insets = useSafeAreaInsets()
@@ -119,7 +121,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
   if (mergeChats) {
     const allItems = [...sessionItems, ...conversationItems]
     return (
-      <View style={styles.drill} testID={`drill-cwd-${node.fullPath}`}>
+      <View style={[styles.drill, { paddingTop: topInset }]} testID={`drill-cwd-${node.fullPath}`}>
         {backRow}
         <FlatList
           data={allItems}
@@ -143,7 +145,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
   ]
 
   return (
-    <View style={styles.drill} testID={`drill-cwd-${node.fullPath}`}>
+    <View style={[styles.drill, { paddingTop: topInset }]} testID={`drill-cwd-${node.fullPath}`}>
       {backRow}
       <SectionList
         sections={sections}

@@ -7,31 +7,6 @@ export function makeStyles(theme: Theme, bottomInset: number = 0) {
   container: {
     flex: 1,
   },
-  searchBar: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.bg.card,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  searchInput: {
-    flex: 1,
-    color: theme.text.primary,
-    fontSize: font.base,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  clearBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
   listContent: {
     padding: spacing.sm,
     paddingBottom: FAB_CLEARANCE + bottomInset,
