@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native'
+import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { font, spacing, type Theme } from '@/constants/theme'
 
 export function makeStyles(theme: Theme, bottomInset: number = 0) {
@@ -33,7 +34,7 @@ export function makeStyles(theme: Theme, bottomInset: number = 0) {
   },
   listContent: {
     padding: spacing.sm,
-    paddingBottom: spacing.sm + bottomInset,
+    paddingBottom: FAB_CLEARANCE + bottomInset,
   },
   emptyListContent: {
     flexGrow: 1,

@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native'
+import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { font, spacing, type Theme } from '@/constants/theme'
 import type { RtlStyleKit } from '@/lib/rtl'
 
@@ -36,7 +37,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     letterSpacing: 0.5,
   },
   drillList: {
-    paddingBottom: 80,
+    paddingBottom: FAB_CLEARANCE,
   },
   footerSpinner: {
     paddingVertical: spacing.md,
