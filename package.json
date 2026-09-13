@@ -124,7 +124,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.8",
     "react-i18next": "^17.0.12",
-    "react-native": "0.86.3",
+    "react-native": "0.87.1",
     "react-native-css": "^3.0.7",
     "react-native-draggable-flatlist": "^4.0.3",
     "react-native-gesture-handler": "~3.2.1",
