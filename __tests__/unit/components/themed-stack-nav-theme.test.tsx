@@ -121,14 +121,6 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(() => Promise.resolve()),
 }))
 jest.mock('expo-status-bar', () => ({ StatusBar: () => null }))
-jest.mock('expo-linear-gradient', () => {
-  const ReactActual = require('react') as typeof React
-  const { View } = require('react-native')
-  return {
-    LinearGradient: ({ children }: { children?: React.ReactNode }) =>
-      ReactActual.createElement(View, null, children),
-  }
-})
 jest.mock('phosphor-react-native', () => {
   const ReactActual = require('react') as typeof React
   const { View } = require('react-native')
@@ -188,18 +180,17 @@ describe('ThemedStack nav theme (expo-router ≥57.0.3 container background)', (
     mockStackRouter.canGoBack.mockReturnValue(true)
   })
 
-  it('provides a transparent nav background under a glass theme', async () => {
+  it('paints the flat canvas under a glass theme too, never a transparent one', async () => {
     await renderThemedStack(dark, true)
 
     expect(mockCapture.navTheme).toBeDefined()
-    expect(mockCapture.navTheme?.colors.background).toBe('transparent')
+    expect(mockCapture.navTheme?.colors.background).toBe(dark.bg.primary)
     expect(mockCapture.screenOptions?.headerBackground).toBeUndefined()
     // aurora is a dark-mode theme → base must be the real DarkTheme
     expect(mockCapture.navTheme?.dark).toBe(true)
     expect(mockCapture.navTheme?.colors.text).toBe(NavDarkTheme.colors.text)
-    // per-screen content must stay transparent so the gradient shows through
     expect(mockCapture.screenOptions?.contentStyle).toEqual({
-      backgroundColor: 'transparent',
+      backgroundColor: dark.bg.primary,
     })
   })
 

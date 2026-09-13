@@ -61,9 +61,8 @@ import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { providerLabelKey, type ProviderName } from '@/constants/providers'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
-import { GlassFill } from '@/components/ui/GlassFill'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -111,7 +110,6 @@ function SessionNamesSyncer({ serverId }: { serverId: string }) {
 export default function ProjectsHub() {
   useLiveInstanceCount('ProjectsHub')
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const { t } = useTranslation(['sessions', 'shared', 'settings', 'servers'])
   const router = useRouter()
@@ -409,7 +407,7 @@ export default function ProjectsHub() {
 
   return (
     <SafeAreaView
-      style={[styles.container, isGlass && styles.containerGlass]}
+      style={styles.container}
       edges={['top']}
       testID="hub-screen"
     >
@@ -558,8 +556,7 @@ export default function ProjectsHub() {
           ) : (
             <>
               {/* Segmented control */}
-              <View style={[styles.segmentRow, isGlass && styles.segmentRowGlass]}>
-                <GlassFill />
+              <View style={styles.segmentRow}>
                 <TouchableOpacity
                   style={[styles.segmentTab, classicTab === 'sessions' && styles.segmentTabActive]}
                   onPress={() => setClassicTab('sessions')}
@@ -710,7 +707,6 @@ const MergedClassicList = React.memo(function MergedClassicList({
   isBackgroundRefreshing?: boolean
 }) {
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const { direction } = useAppDirection()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const searchStyles = makeSearchStyles(theme, direction)
@@ -805,7 +801,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
   const renderConvCard = useCallback(
     (item: MultiConversation) => (
       <TouchableOpacity
-        style={[styles.convCard, isGlass && styles.convCardGlass]}
+        style={styles.convCard}
         activeOpacity={0.75}
         onPress={() => {
           useNavLockStore.getState().lock()
@@ -815,7 +811,6 @@ const MergedClassicList = React.memo(function MergedClassicList({
         accessibilityLabel={item.title || item.projectPath}
         testID={`conversation-row-${item.id}`}
       >
-        <GlassFill />
         <View style={styles.convCardTitleRow}>
           <FolderSimple size={18} color={theme.text.secondary} weight="fill" />
           {needle ? (
@@ -872,7 +867,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
         </Text>
       </TouchableOpacity>
     ),
-    [router, t, styles, theme, isGlass, searchQuery, needle],
+    [router, t, styles, theme, searchQuery, needle],
   )
 
   return (
@@ -1001,9 +996,6 @@ function makeStyles(theme: Theme) {
     flex: 1,
     backgroundColor: theme.bg.primary,
   },
-  containerGlass: {
-    backgroundColor: 'transparent',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1086,9 +1078,6 @@ function makeStyles(theme: Theme) {
     borderColor: theme.border,
     overflow: 'hidden',
   },
-  segmentRowGlass: {
-    backgroundColor: 'transparent',
-  },
   segmentTab: {
     flex: 1,
     flexDirection: 'row',
@@ -1122,10 +1111,6 @@ function makeStyles(theme: Theme) {
     borderColor: theme.border,
     gap: spacing.xs,
     marginBottom: spacing.sm,
-  },
-  convCardGlass: {
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
   },
   convCardTitleRow: {
     flexDirection: 'row',
