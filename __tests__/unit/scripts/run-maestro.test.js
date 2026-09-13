@@ -270,3 +270,67 @@ test('the default grace window covers the observed .ips write lag', () => {
   expect(match).not.toBeNull();
   expect(Number(match[1])).toBeGreaterThanOrEqual(30000);
 });
+
+function androidFixture(adbBody) {
+  fixture = makeFixture();
+  const bin = path.join(fixture.root, 'bin');
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'adb'), `#!/bin/sh\n${adbBody}\n`, {
+    mode: 0o755,
+  });
+  return {
+    E2E_PLATFORM: 'android',
+    PATH: `${bin}:${process.env.PATH}`,
+    FAKE_ARGS_LOG_PATH: path.join(fixture.root, 'args.log'),
+    E2E_ANDROID_DEVICE_WAIT_MS: '150',
+  };
+}
+
+test('Android batches preserve flow order and an earlier failure despite later success', () => {
+  const env = androidFixture('echo 1');
+  const source = fs.readFileSync(fixture.fakeMaestro, 'utf8');
+  fs.writeFileSync(
+    fixture.fakeMaestro,
+    source.replace(
+      'process.exit(Number(process.env.FAKE_EXIT_CODE || 0));',
+      "process.exit(process.argv.includes('e2e/flow-0.yaml') ? 7 : 0);",
+    ),
+  );
+  const flows = Array.from({ length: 9 }, (_, index) => `e2e/flow-${index}.yaml`);
+  const result = runGuard(fixture, { args: ['test', ...flows], env });
+  expect(result.status).toBe(7);
+  const calls = fs.readFileSync(env.FAKE_ARGS_LOG_PATH, 'utf8').trim().split('\n').map(JSON.parse);
+  expect(calls.map((args) => args.filter((arg) => arg.endsWith('.yaml')))).toEqual([
+    flows.slice(0, 4),
+    flows.slice(4, 8),
+    flows.slice(8),
+  ]);
+});
+
+test('Android stops before launching Maestro when the device remains offline', () => {
+  const env = androidFixture('echo "device offline" >&2; exit 1');
+  const result = runGuard(fixture, { env });
+  expect(result.status).toBe(1);
+  expect(result.stderr).toMatch(/Android device not ready/);
+  expect(fs.existsSync(env.FAKE_ARGS_LOG_PATH)).toBe(false);
+});
+
+test('Android bounds a hung ADB probe', () => {
+  const env = androidFixture('exec sleep 30');
+  const started = Date.now();
+  const result = runGuard(fixture, { env });
+  expect(result.status).toBe(1);
+  expect(result.stderr).toMatch(/Android device not ready/);
+  expect(Date.now() - started).toBeLessThan(5000);
+});
+
+test('Android checks readiness again before starting the next batch', () => {
+  const env = androidFixture('[ -f "$FAKE_ARGS_LOG_PATH" ] && exit 1; echo 1');
+  const flows = Array.from({ length: 5 }, (_, index) => `e2e/flow-${index}.yaml`);
+  const result = runGuard(fixture, { args: ['test', ...flows], env });
+  expect(result.status).toBe(1);
+  expect(result.stderr).toMatch(/Android device not ready/);
+  const calls = fs.readFileSync(env.FAKE_ARGS_LOG_PATH, 'utf8').trim().split('\n').map(JSON.parse);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].slice(-4)).toEqual(flows.slice(0, 4));
+});

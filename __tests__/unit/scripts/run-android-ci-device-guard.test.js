@@ -135,3 +135,21 @@ describe('run-android-ci.sh device wait', () => {
     expect(src).toMatch(/if \[ -f "\$RELEASE_APK" \]/);
   });
 });
+
+it('captures device logs and transport changes while preserving the suite failure', () => {
+  const result = runWithStubbedAdb(
+    'case "$1" in\n shell) [ "$2" = getprop ] && echo 1 ;;\n logcat) echo device-log ;;\n track-devices) echo emulator-5554 ;;\n esac\nexit 0',
+    {},
+    {
+      npm: 'sleep 1; cat e2e/_artifacts/debug/android-logcat.txt e2e/_artifacts/debug/adb-devices.txt; exit 7',
+    },
+    (dir) => {
+      const apk = path.join(dir, 'android/app/build/outputs/apk/release/app-release.apk');
+      fs.mkdirSync(path.dirname(apk), { recursive: true });
+      fs.writeFileSync(apk, 'fake-apk');
+    },
+  );
+  expect(result.status).toBe(7);
+  expect(result.stdout).toContain('device-log');
+  expect(result.stdout).toContain('emulator-5554');
+});

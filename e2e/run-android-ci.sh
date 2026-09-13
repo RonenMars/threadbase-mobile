@@ -41,6 +41,12 @@ capture_failure() {
       cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
     fi
   fi
+  for pid in "${LOGCAT_PID:-}" "${ADB_TRACK_PID:-}"; do
+    if [ -n "$pid" ]; then
+      kill "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+    fi
+  done
   exit "$STATUS"
 }
 trap capture_failure EXIT
@@ -70,6 +76,12 @@ wait_for_booted() {
 
 E2E_DEVICE_WAIT_SECONDS="${E2E_DEVICE_WAIT_SECONDS:-300}"
 wait_for_booted "$E2E_DEVICE_WAIT_SECONDS" "No booted Android device after ${E2E_DEVICE_WAIT_SECONDS}s. Attached devices:"
+# Keep host-owned diagnostics across Maestro process boundaries. These files
+# are uploaded by the existing failure artifact step, even if Maestro loses ADB.
+adb logcat -v threadtime > e2e/_artifacts/debug/android-logcat.txt 2>&1 &
+LOGCAT_PID=$!
+adb track-devices > e2e/_artifacts/debug/adb-devices.txt 2>&1 &
+ADB_TRACK_PID=$!
 adb shell input keyevent 82
 # The workflow assembles this APK before the emulator boots and restores it
 # from Actions cache on a later dispatch of the same commit. Skip gradle when

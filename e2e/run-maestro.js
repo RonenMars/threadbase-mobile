@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict'
 
-const { spawn } = require('child_process')
+const { spawn, spawnSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -317,26 +317,43 @@ function runMaestro(args) {
   })
 }
 
-// XCTest's iOS accessibility session can expire after roughly twelve minutes
-// even while the simulator and app remain healthy.  A long multi-flow Maestro
-// invocation then turns the first stale hierarchy request into a cascade of
-// failures for every remaining flow.  Keep each iOS driver session bounded;
-// Android and single-flow invocations retain their existing behavior.
-function splitIosFlowArgs(args) {
-  if (process.env.E2E_PLATFORM !== 'ios') return [args]
+// Bound driver session lifetimes: iOS accessibility sessions can expire, and
+// long Android runs have lost their ADB connection and failed all later flows.
+// Android batching is a mitigation; device diagnostics still capture failures.
+function splitFlowArgs(args) {
+  const batchSize = process.env.E2E_PLATFORM === 'android' ? 4 : 8
+  if (!['ios', 'android'].includes(process.env.E2E_PLATFORM)) return [args]
 
   const firstFlow = args.findIndex((arg) => arg.endsWith('.yaml'))
   if (firstFlow === -1) return [args]
 
   const prefix = args.slice(0, firstFlow)
   const flows = args.slice(firstFlow)
-  if (flows.length <= 8) return [args]
+  if (flows.length <= batchSize) return [args]
 
   const groups = []
-  for (let index = 0; index < flows.length; index += 8) {
-    groups.push([...prefix, ...flows.slice(index, index + 8)])
+  for (let index = 0; index < flows.length; index += batchSize) {
+    groups.push([...prefix, ...flows.slice(index, index + batchSize)])
   }
   return groups
+}
+
+async function waitForAndroidDevice() {
+  const waitMs = positiveInteger(process.env.E2E_ANDROID_DEVICE_WAIT_MS, 60000)
+  const deadline = Date.now() + waitMs
+  const deviceArgs = process.env.MAESTRO_UDID ? ['-s', process.env.MAESTRO_UDID] : []
+  while (Date.now() < deadline) {
+    const result = spawnSync('adb', [...deviceArgs, 'shell', 'getprop', 'sys.boot_completed'], {
+      encoding: 'utf8',
+      timeout: Math.max(1, Math.min(5000, deadline - Date.now())),
+    })
+    if (result.status === 0 && result.stdout.trim() === '1') return true
+    await delay(Math.max(0, Math.min(1000, deadline - Date.now())))
+  }
+  console.error(`Android device not ready after ${waitMs}ms; stopping remaining Maestro batches.`)
+  const devices = spawnSync('adb', ['devices', '-l'], { encoding: 'utf8', timeout: 1000 })
+  console.error(devices.stdout || devices.stderr || devices.error?.message || 'ADB unavailable')
+  return false
 }
 
 async function main() {
@@ -355,7 +372,11 @@ async function main() {
 
   const baseline = await listCrashReports(directories, warnOnce)
   const maestroResults = []
-  for (const args of splitIosFlowArgs(process.argv.slice(2))) {
+  for (const args of splitFlowArgs(process.argv.slice(2))) {
+    if (process.env.E2E_PLATFORM === 'android' && !(await waitForAndroidDevice())) {
+      maestroResults.push({ code: 1, signal: null })
+      break
+    }
     const result = await runMaestro(args)
     maestroResults.push(result)
     if (result.signal || result.forwardedSignal) break
