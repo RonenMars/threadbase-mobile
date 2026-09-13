@@ -9,6 +9,8 @@ import { useServerGroups } from './useServerGroups'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
+import { useSessionNamesStore } from '@/stores/sessionNames'
+import { conversationRowTitle, sessionRowTitle, storedNameFor } from '@/components/sessions/shared/rowTitle'
 import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
@@ -154,6 +156,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   }, [debouncedQuery, convSearchData, sessions])
 
   const activeServerCount = activeServerIds.length
+  const names = useSessionNamesStore((s) => s.names)
+  const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
 
   const renderSearchResultItem = useCallback(
     ({ item }: { item: MultiConversation | MultiSession }) => {
@@ -165,7 +169,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
         return (
           <ConversationListItem
             testID={`session-row-${item.id}`}
-            title={item.projectName}
+            title={sessionRowTitle(item, storedNameFor(names, nameOrigins, item.serverId, item.id))}
             path={item.projectPath}
             timestamp={item.completedAt ?? item.startedAt}
             branch={item.branch}
@@ -186,7 +190,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       return (
         <ConversationListItem
           testID={`conversation-row-${item.id}`}
-          title={item.title}
+          title={conversationRowTitle(item, storedNameFor(names, nameOrigins, item.serverId, item.id))}
           path={item.projectPath}
           timestamp={item.lastMessage?.timestamp ?? item.lastActivity}
           messageCount={item.messageCount}
@@ -215,6 +219,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       activeServerCount,
       debouncedQuery,
       collidingPaths,
+      names,
+      nameOrigins,
     ],
   )
 

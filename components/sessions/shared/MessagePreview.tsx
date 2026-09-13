@@ -1,6 +1,7 @@
 import { Text, StyleSheet } from 'react-native'
 import { font, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { cleanFirstMessage } from '@/lib/displayTitle'
 import type { SearchHighlight, SearchMatch } from '@/types/api'
 
 export type MessagePreviewMode = 'first' | 'last' | 'auto' | 'none'
@@ -145,6 +146,17 @@ function splitByNeedle(text: string, needle: string): SnippetPart[] {
   return parts
 }
 
+/**
+ * The title is the cleaned first message, so a first-message preview usually
+ * restates it. Compare after the same cleaning; a truncated preview counts as an
+ * echo when it is a prefix of the title.
+ */
+function echoesTitle(preview: string, title: string): boolean {
+  const a = normaliseForCompare(cleanFirstMessage(preview))
+  const b = normaliseForCompare(title)
+  return a === b || (preview.endsWith('…') && b.startsWith(a))
+}
+
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
   return text.slice(0, max - 1).trimEnd() + '…'
@@ -183,6 +195,7 @@ export function MessagePreview(props: MessagePreviewProps) {
   if (!text) return null
 
   const final = truncate(normalise(text), props.maxChars ?? DEFAULT_MAX)
+  if (props.rowTitle && echoesTitle(final, props.rowTitle)) return null
 
   // Highlight is optional and used only by search results. The Text node still
   // renders a single visual line; we just split on the matched substring

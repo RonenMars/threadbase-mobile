@@ -84,6 +84,30 @@ describe('MessagePreview', () => {
     expect(out).toBe('zsh: command not found')
   })
 
+  it('drops a first-message preview that only restates the row title', () => {
+    const text = rendered(
+      <MessagePreview
+        mode="first"
+        firstMessage={{ text: '# Implement ws v1' }}
+        rowTitle="Implement ws v1"
+      />,
+    )
+    expect(text).toBe('')
+  })
+
+  it('drops a truncated preview that is a prefix of the row title', () => {
+    const long = 'Does the currently running session resume into the terminal view after a reconnect, and if so why does it lose scroll position'
+    const text = rendered(<MessagePreview mode="first" firstMessage={{ text: long }} rowTitle={long} />)
+    expect(text).toBe('')
+  })
+
+  it('keeps a preview that says something the title does not', () => {
+    const text = rendered(
+      <MessagePreview mode="last" lastMessage={{ text: 'Found three stalls over 9s.' }} rowTitle="Report slow requests" />,
+    )
+    expect(text).toBe('Found three stalls over 9s.')
+  })
+
   it('returns null when nothing to render', () => {
     let r: renderer.ReactTestRenderer | null = null
     act(() => {
