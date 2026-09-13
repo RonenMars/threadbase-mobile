@@ -14,6 +14,7 @@ import {
   resolveConversationRowTitle,
   resolveSessionRowTitle,
   type RowTitle,
+  storedNameFor,
 } from '@/components/sessions/shared/rowTitle'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -115,8 +116,8 @@ export const NowList = React.memo(function NowList({
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
-  const getName = useSessionNamesStore((s) => s.getName)
-  const getNameOrigin = useSessionNamesStore((s) => s.getOrigin)
+  const names = useSessionNamesStore((s) => s.names)
+  const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
@@ -128,13 +129,13 @@ export const NowList = React.memo(function NowList({
     const q = searchQuery.trim().toLowerCase()
     const visible = q ? items.filter((it) => mergedItemMatchesQuery(it, q, conversationsFromServer)) : items
     return visible.map((item) => {
-      const stored = { name: getName(item.item.serverId, item.item.id), origin: getNameOrigin(item.item.serverId, item.item.id) }
+      const stored = storedNameFor(names, nameOrigins, item.item.serverId, item.item.id)
       if (item.kind === 'session') {
         return { item, title: resolveSessionRowTitle(item.item, stored), tier: deriveSessionPresentation(item.item).tier }
       }
       return { item, title: resolveConversationRowTitle(item.item, stored), tier: null }
     })
-  }, [items, searchQuery, conversationsFromServer, getName, getNameOrigin])
+  }, [items, searchQuery, conversationsFromServer, names, nameOrigins])
 
   const flatData = useMemo((): FlatItem[] => {
     const byTime = (a: Entry, b: Entry) => b.item.ms - a.item.ms
